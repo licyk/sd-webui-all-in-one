@@ -100,28 +100,32 @@ def test_check_accelerate_bin_reinstalls_for_kohya_repo(monkeypatch, tmp_path):
 
 
 def test_need_install_ort_ver_matrix(monkeypatch):
+    def set_torch_info(torch_ver, cuda_ver, cudnn_ver):
+        monkeypatch.setattr(onnxruntime_gpu_check, "get_torch_cuda_ver_fast", lambda: (torch_ver, cuda_ver))
+        monkeypatch.setattr(onnxruntime_gpu_check, "get_torch_cuda_ver", lambda: (torch_ver, cuda_ver, cudnn_ver))
+
     monkeypatch.setattr(onnxruntime_gpu_check.importlib.metadata, "version", lambda _name: (_ for _ in ()).throw(importlib.metadata.PackageNotFoundError("onnxruntime-gpu")))
-    monkeypatch.setattr(onnxruntime_gpu_check, "get_torch_cuda_ver_subprocess", lambda: (None, None, None))
+    set_torch_info(None, None, None)
     assert onnxruntime_gpu_check.need_install_ort_ver(skip_if_missing=False) == onnxruntime_gpu_check.OrtType.CU130
 
-    monkeypatch.setattr(onnxruntime_gpu_check, "get_torch_cuda_ver_subprocess", lambda: ("2.8.0", "13.0", "9000"))
+    set_torch_info("2.8.0", "13.0", "9000")
     monkeypatch.setattr(onnxruntime_gpu_check, "get_onnxruntime_support_cuda_version", lambda: ("12.8", "9"))
     assert onnxruntime_gpu_check.need_install_ort_ver() == onnxruntime_gpu_check.OrtType.CU130
 
-    monkeypatch.setattr(onnxruntime_gpu_check, "get_torch_cuda_ver_subprocess", lambda: ("2.5.0", "12.1", "9000"))
+    set_torch_info("2.5.0", "12.1", "9000")
     monkeypatch.setattr(onnxruntime_gpu_check, "get_onnxruntime_support_cuda_version", lambda: ("12.2", "8"))
     assert onnxruntime_gpu_check.need_install_ort_ver() == onnxruntime_gpu_check.OrtType.CU121CUDNN9
 
-    monkeypatch.setattr(onnxruntime_gpu_check, "get_torch_cuda_ver_subprocess", lambda: ("2.4.0", "12.1", "8000"))
+    set_torch_info("2.4.0", "12.1", "8000")
     monkeypatch.setattr(onnxruntime_gpu_check, "get_onnxruntime_support_cuda_version", lambda: ("11.8", "8"))
     assert onnxruntime_gpu_check.need_install_ort_ver() == onnxruntime_gpu_check.OrtType.CU121CUDNN8
 
-    monkeypatch.setattr(onnxruntime_gpu_check, "get_torch_cuda_ver_subprocess", lambda: ("2.1.0", "11.8", "8000"))
+    set_torch_info("2.1.0", "11.8", "8000")
     monkeypatch.setattr(onnxruntime_gpu_check, "get_onnxruntime_support_cuda_version", lambda: ("12.1", "8"))
     assert onnxruntime_gpu_check.need_install_ort_ver() == onnxruntime_gpu_check.OrtType.CU118
 
     monkeypatch.setattr(onnxruntime_gpu_check.sys, "platform", "win32")
-    monkeypatch.setattr(onnxruntime_gpu_check, "get_torch_cuda_ver_subprocess", lambda: ("2.5.0", "12.1", "9000"))
+    set_torch_info("2.5.0", "12.1", "9000")
     monkeypatch.setattr(onnxruntime_gpu_check, "get_onnxruntime_support_cuda_version", lambda: (None, None))
     assert onnxruntime_gpu_check.need_install_ort_ver(skip_if_missing=False) == onnxruntime_gpu_check.OrtType.CU121CUDNN9
 

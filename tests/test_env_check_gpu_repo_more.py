@@ -29,7 +29,8 @@ fix_repo = importlib.import_module("sd_webui_all_in_one.env_check.fix_sd_webui_i
     ],
 )
 def test_need_install_ort_ver_cuda_cudnn_matrix(monkeypatch, torch_info, ort_info, skip_if_missing, platform, installed_ort, expected):
-    monkeypatch.setattr(onnx_check, "get_torch_cuda_ver_subprocess", lambda: torch_info)
+    monkeypatch.setattr(onnx_check, "get_torch_cuda_ver_fast", lambda: (torch_info[0], torch_info[1]))
+    monkeypatch.setattr(onnx_check, "get_torch_cuda_ver", lambda: torch_info)
     monkeypatch.setattr(onnx_check, "get_onnxruntime_support_cuda_version", lambda: ort_info)
     monkeypatch.setattr(onnx_check.sys, "platform", platform)
 
@@ -41,6 +42,22 @@ def test_need_install_ort_ver_cuda_cudnn_matrix(monkeypatch, torch_info, ort_inf
     monkeypatch.setattr(onnx_check.importlib.metadata, "version", fake_version)
 
     assert onnx_check.need_install_ort_ver(skip_if_missing=skip_if_missing) == expected
+
+
+def test_need_install_ort_ver_reads_cudnn_lazily(monkeypatch):
+    monkeypatch.setattr(onnx_check, "get_torch_cuda_ver_fast", lambda: ("2.9.0", "13.0"))
+    monkeypatch.setattr(onnx_check, "get_torch_cuda_ver", lambda: (_ for _ in ()).throw(AssertionError("cuDNN should not be read")))
+    monkeypatch.setattr(onnx_check, "get_onnxruntime_support_cuda_version", lambda: ("13.0", "9"))
+
+    assert onnx_check.need_install_ort_ver() is None
+
+    calls = []
+    monkeypatch.setattr(onnx_check, "get_torch_cuda_ver_fast", lambda: ("2.5.0", "12.1"))
+    monkeypatch.setattr(onnx_check, "get_torch_cuda_ver", lambda: calls.append("cudnn") or ("2.5.0", "12.1", "9000"))
+    monkeypatch.setattr(onnx_check, "get_onnxruntime_support_cuda_version", lambda: ("12.1", "8"))
+
+    assert onnx_check.need_install_ort_ver() == onnx_check.OrtType.CU121CUDNN9
+    assert calls == ["cudnn"]
 
 
 @pytest.mark.parametrize(

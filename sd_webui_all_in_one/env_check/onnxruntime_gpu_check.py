@@ -156,6 +156,20 @@ def get_torch_cuda_ver() -> tuple[str | None, str | None, str | None]:
         return None, None, None
 
 
+def get_torch_cuda_ver_fast() -> tuple[str | None, str | None]:
+    """快速获取 Torch 的本体和 CUDA 版本
+
+    不导入 torch 主包, 避免为获取版本信息触发较慢的初始化逻辑。
+
+    Returns:
+        (tuple[str | None, str | None]): Torch, CUDA 版本
+    """
+    torch_data = load_source_directly("torch.version") or {}
+    torch_ver: str | None = torch_data.get("__version__")
+    cuda_ver: str | None = torch_data.get("cuda")
+    return (torch_ver, cuda_ver)
+
+
 def need_install_ort_ver(
     skip_if_missing: bool | None = True,
 ) -> OrtType | None:
@@ -171,12 +185,7 @@ def need_install_ort_ver(
         OrtType | None:
             需要安装的 ONNXRuntime GPU 类型, 不需要安装时返回 None
     """
-    # 检测是否安装了 Torch
-    torch_ver, cuda_ver, cuddn_ver = get_torch_cuda_ver_subprocess()
-    logger.debug("torch_ver: %s, cuda_ver: %s, cuddn_ver: %s", torch_ver, cuda_ver, cuddn_ver)
-    # 缺少 Torch / CUDA / cuDNN 版本时取消判断
-    if torch_ver is None or cuda_ver is None or cuddn_ver is None:
-        logger.debug("缺少 Torch / CUDA / cuDNN 版本")
+    def _fallback_if_missing_torch_detail() -> OrtType | None:
         if not skip_if_missing:
             try:
                 logger.debug("检查 ONNXRuntime GPU 是否已安装")
@@ -188,12 +197,27 @@ def need_install_ort_ver(
         logger.debug("跳过安装 ONNXRuntime GPU")
         return None
 
-    # onnxruntime 记录的 cuDNN 支持版本只有一位数, 所以 Torch 的 cuDNN 版本只能截取一位
-    cuddn_ver = cuddn_ver[0]
+    def _get_required_cudnn_ver() -> str | None:
+        _, _, cudnn_ver = get_torch_cuda_ver()
+        logger.debug("按需获取 cudnn_ver: %s", cudnn_ver)
+        if cudnn_ver is None:
+            logger.debug("缺少 Torch cuDNN 版本")
+            return None
+
+        # onnxruntime 记录的 cuDNN 支持版本只有一位数, 所以 Torch 的 cuDNN 版本只能截取一位
+        return cudnn_ver[0]
+
+    # 检测是否安装了 Torch
+    torch_ver, cuda_ver = get_torch_cuda_ver_fast()
+    logger.debug("torch_ver: %s, cuda_ver: %s", torch_ver, cuda_ver)
+    # 缺少 Torch / CUDA 版本时取消判断
+    if torch_ver is None or cuda_ver is None:
+        logger.debug("缺少 Torch / CUDA 版本")
+        return _fallback_if_missing_torch_detail()
 
     # 检测是否安装了 ONNXRuntime GPU
     ort_support_cuda_ver, ort_support_cudnn_ver = get_onnxruntime_support_cuda_version()
-    logger.debug("cuddn_ver: %s, ort_support_cuda_ver: %s, ort_support_cudnn_ver: %s", cuddn_ver, ort_support_cuda_ver, ort_support_cudnn_ver)
+    logger.debug("ort_support_cuda_ver: %s, ort_support_cudnn_ver: %s", ort_support_cuda_ver, ort_support_cudnn_ver)
     # 通常 onnxruntime 的 CUDA 版本和 cuDNN 版本会同时存在, 所以只需要判断 CUDA 版本是否存在即可
     if ort_support_cuda_ver is not None:
         # 当 onnxruntime 已安装
@@ -217,11 +241,15 @@ def need_install_ort_ver(
                 if ort_support_cudnn_ver is None:
                     return None
 
+                cudnn_ver = _get_required_cudnn_ver()
+                if cudnn_ver is None:
+                    return _fallback_if_missing_torch_detail()
+
                 # 判断 Torch 和 onnxruntime 的 cuDNN 是否匹配
-                if CommonVersionComparison(ort_support_cudnn_ver) > CommonVersionComparison(cuddn_ver):
+                if CommonVersionComparison(ort_support_cudnn_ver) > CommonVersionComparison(cudnn_ver):
                     # ort cuDNN 版本 > torch cuDNN 版本
                     return OrtType.CU121CUDNN8
-                elif CommonVersionComparison(ort_support_cudnn_ver) < CommonVersionComparison(cuddn_ver):
+                elif CommonVersionComparison(ort_support_cudnn_ver) < CommonVersionComparison(cudnn_ver):
                     # ort cuDNN 版本 < torch cuDNN 版本
                     return OrtType.CU121CUDNN9
                 else:
@@ -229,7 +257,11 @@ def need_install_ort_ver(
                     return None
             else:
                 # CUDA 版本非 12.x, 不匹配
-                if CommonVersionComparison(cuddn_ver) > CommonVersionComparison("8"):
+                cudnn_ver = _get_required_cudnn_ver()
+                if cudnn_ver is None:
+                    return _fallback_if_missing_torch_detail()
+
+                if CommonVersionComparison(cudnn_ver) > CommonVersionComparison("8"):
                     return OrtType.CU121CUDNN9
                 else:
                     return OrtType.CU121CUDNN8
@@ -261,7 +293,11 @@ def need_install_ort_ver(
             return OrtType.CU130
         elif CommonVersionComparison("12.0") <= CommonVersionComparison(cuda_ver) < CommonVersionComparison("13.0"):
             # 12.0 <= CUDA < 13.0
-            if CommonVersionComparison(cuddn_ver) > CommonVersionComparison("8"):
+            cudnn_ver = _get_required_cudnn_ver()
+            if cudnn_ver is None:
+                return _fallback_if_missing_torch_detail()
+
+            if CommonVersionComparison(cudnn_ver) > CommonVersionComparison("8"):
                 return OrtType.CU121CUDNN9
             else:
                 return OrtType.CU121CUDNN8
