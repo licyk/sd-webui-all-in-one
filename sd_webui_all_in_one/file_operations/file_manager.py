@@ -51,8 +51,12 @@ def remove_files(
             func(path_str)
 
     try:
-        if path.is_file() or path.is_symlink():
-            # 处理文件或符号链接
+        if path.is_symlink():
+            # 处理符号链接, 不跟随链接修改目标权限
+            path.unlink()
+
+        elif path.is_file():
+            # 处理文件
             os.chmod(path, stat.S_IWRITE)
             path.unlink()
 
@@ -63,6 +67,27 @@ def remove_files(
     except OSError as e:
         logger.error("删除失败: '%s' - 原因: %s", path, e)
         raise e
+
+
+def _path_exists(
+    path: Path,
+) -> bool:
+    """判断路径是否存在, 包括失效软链接"""
+    return path.exists() or path.is_symlink()
+
+
+def _copy_symlink(
+    src: Path,
+    dst: Path,
+) -> None:
+    """复制软链接本身, 不复制软链接指向的内容"""
+    if dst.exists() and dst.is_dir() and not dst.is_symlink():
+        raise IsADirectoryError(f"目标路径已存在且为目录: {dst}")
+
+    if _path_exists(dst):
+        remove_files(dst)
+
+    dst.symlink_to(os.readlink(src), target_is_directory=src.is_dir())
 
 
 def copy_files(
@@ -88,17 +113,17 @@ def copy_files(
             路径逻辑错误（如循环复制）时
     """
     try:
-        # 转换为绝对路径以进行准确的路径比对
-        src_path = src.resolve()
-        dst_path = dst.resolve()
+        # 保留软链接路径本身, 只在循环检测时解析真实路径
+        src_path = src.absolute()
+        dst_path = dst.absolute()
 
         # 检查源是否存在
-        if not src_path.exists():
+        if not _path_exists(src_path):
             logger.error("源路径不存在: '%s'", src)
             raise FileNotFoundError(f"源路径不存在: {src}")
 
         # 防止递归复制（例如将目录复制到其自身的子目录中）
-        if src_path.is_dir() and dst_path.is_relative_to(src_path):
+        if src_path.is_dir() and not src_path.is_symlink() and dst_path.resolve().is_relative_to(src_path.resolve()):
             logger.error("不能将目录复制到自身或其子目录中: '%s'", src)
             raise ValueError(f"不能将目录复制到自身或其子目录中: {src}")
 
@@ -112,7 +137,9 @@ def copy_files(
         dst_file.parent.mkdir(parents=True, exist_ok=True)
 
         # 复制操作
-        if src_path.is_file():
+        if src_path.is_symlink():
+            _copy_symlink(src_path, dst_file)
+        elif src_path.is_file():
             # copy2 会尽量保留文件元数据
             shutil.copy2(src_path, dst_file)
         else:
@@ -159,18 +186,18 @@ def copy_files_merge(
             路径逻辑错误（如循环复制）时
     """
     try:
-        src_path = src.resolve()
-        dst_path = dst.resolve()
+        src_path = src.absolute()
+        dst_path = dst.absolute()
 
-        if not src_path.exists():
+        if not _path_exists(src_path):
             logger.error("源路径不存在: '%s'", src)
             raise FileNotFoundError(f"源路径不存在: {src}")
 
-        if src_path.is_dir():
-            if src_path == dst_path:
+        if src_path.is_dir() and not src_path.is_symlink():
+            if src_path.resolve() == dst_path.resolve():
                 return
 
-            if dst_path.is_relative_to(src_path):
+            if dst_path.resolve().is_relative_to(src_path.resolve()):
                 logger.error("不能将目录复制到自身的子目录中: '%s'", src)
                 raise ValueError(f"不能将目录复制到自身的子目录中: {src}")
 
@@ -181,13 +208,19 @@ def copy_files_merge(
                 shutil.copytree(src_path, dst_path, symlinks=False, dirs_exist_ok=True)
             return
 
+        if src_path == dst_path:
+            return
+
         if dst_path.exists() and dst_path.is_dir():
             dst_file = dst_path / src_path.name
         else:
             dst_file = dst_path
 
         dst_file.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src_path, dst_file)
+        if src_path.is_symlink():
+            _copy_symlink(src_path, dst_file)
+        else:
+            shutil.copy2(src_path, dst_file)
 
     except PermissionError as e:
         logger.error("权限错误, 请检查文件权限或以管理员身份运行: %s", e)
@@ -216,12 +249,14 @@ def move_files(
             权限不足以移动文件时
         OSError:
             移动文件失败时
+        ValueError:
+            路径逻辑错误（如循环移动）时
     """
     try:
-        src_path = src.resolve()
-        dst_path = dst.resolve()
+        src_path = src.absolute()
+        dst_path = dst.absolute()
 
-        if not src_path.exists():
+        if not _path_exists(src_path):
             logger.error("源路径不存在: '%s'", src)
             raise FileNotFoundError(f"源路径不存在: {src}")
 
@@ -235,7 +270,7 @@ def move_files(
             final_dst = dst_path
 
         if src_path.is_file() or src_path.is_symlink():
-            if final_dst.is_file():
+            if final_dst.is_file() or final_dst.is_symlink():
                 remove_files(final_dst)
 
             final_dst.parent.mkdir(parents=True, exist_ok=True)
@@ -243,6 +278,12 @@ def move_files(
             return
 
         if src_path.is_dir():
+            src_real = src_path.resolve()
+            final_dst_real = final_dst.resolve()
+            if final_dst_real.is_relative_to(src_real):
+                logger.error("不能将目录移动到自身或其子目录中: '%s'", src)
+                raise ValueError(f"不能将目录移动到自身或其子目录中: {src}")
+
             if not final_dst.exists():
                 final_dst.parent.mkdir(parents=True, exist_ok=True)
                 shutil.move(str(src_path), str(final_dst))
@@ -292,10 +333,10 @@ def move_files_merge(
             路径逻辑错误（如循环移动）时
     """
     try:
-        src_path = src.resolve()
-        dst_path = dst.resolve()
+        src_path = src.absolute()
+        dst_path = dst.absolute()
 
-        if not src_path.exists():
+        if not _path_exists(src_path):
             logger.error("源路径不存在: '%s'", src)
             raise FileNotFoundError(f"源路径不存在: {src}")
 
@@ -308,7 +349,7 @@ def move_files_merge(
             else:
                 final_dst = dst_path
 
-            if final_dst.is_file():
+            if final_dst.is_file() or final_dst.is_symlink():
                 remove_files(final_dst)
 
             final_dst.parent.mkdir(parents=True, exist_ok=True)
@@ -316,7 +357,7 @@ def move_files_merge(
             return
 
         if src_path.is_dir():
-            if dst_path.is_relative_to(src_path):
+            if dst_path.resolve().is_relative_to(src_path.resolve()):
                 logger.error("不能将目录移动到自身的子目录中: '%s'", src)
                 raise ValueError(f"不能将目录移动到自身的子目录中: {src}")
 

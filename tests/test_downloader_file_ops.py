@@ -4,7 +4,6 @@ import sys
 import tarfile
 import types
 import zipfile
-from pathlib import Path
 
 import pytest
 
@@ -194,6 +193,69 @@ def test_file_operations_move_merge_directly_merges_directory(tmp_path):
     assert (dst / "keep.txt").read_text(encoding="utf-8") == "keep"
     assert (dst / "nested" / "b.txt").read_text(encoding="utf-8") == "b"
     assert (dst / "nested" / "old.txt").read_text(encoding="utf-8") == "old"
+
+
+def test_file_operations_copy_preserves_top_level_symlink(tmp_path):
+    target = tmp_path / "target.txt"
+    target.write_text("target", encoding="utf-8")
+    link = tmp_path / "link.txt"
+    link.symlink_to("target.txt")
+    dst = tmp_path / "dst"
+    dst.mkdir()
+
+    file_manager.copy_files(link, dst)
+
+    copied_link = dst / "link.txt"
+    assert copied_link.is_symlink()
+    assert os.readlink(copied_link) == "target.txt"
+    assert not (dst / "target.txt").exists()
+    assert target.read_text(encoding="utf-8") == "target"
+
+
+def test_file_operations_move_preserves_top_level_symlink(tmp_path):
+    target = tmp_path / "target.txt"
+    target.write_text("target", encoding="utf-8")
+    link = tmp_path / "link.txt"
+    link.symlink_to("target.txt")
+    moved_link = tmp_path / "moved-link.txt"
+
+    file_manager.move_files(link, moved_link)
+
+    assert not link.is_symlink()
+    assert moved_link.is_symlink()
+    assert os.readlink(moved_link) == "target.txt"
+    assert target.read_text(encoding="utf-8") == "target"
+
+
+def test_file_operations_merge_variants_preserve_directory_symlink(tmp_path):
+    target_dir = tmp_path / "target-dir"
+    target_dir.mkdir()
+    (target_dir / "a.txt").write_text("a", encoding="utf-8")
+    copy_link = tmp_path / "copy-link"
+    copy_link.symlink_to("target-dir")
+    copy_dst = tmp_path / "copy-dst"
+    copy_dst.mkdir()
+
+    file_manager.copy_files_merge(copy_link, copy_dst)
+
+    copied_link = copy_dst / "copy-link"
+    assert copied_link.is_symlink()
+    assert os.readlink(copied_link) == "target-dir"
+    assert not (copy_dst / "a.txt").exists()
+
+    move_link = tmp_path / "move-link"
+    move_link.symlink_to("target-dir")
+    move_dst = tmp_path / "move-dst"
+    move_dst.mkdir()
+
+    file_manager.move_files_merge(move_link, move_dst)
+
+    moved_link = move_dst / "move-link"
+    assert not move_link.is_symlink()
+    assert moved_link.is_symlink()
+    assert os.readlink(moved_link) == "target-dir"
+    assert not (move_dst / "a.txt").exists()
+    assert (target_dir / "a.txt").read_text(encoding="utf-8") == "a"
 
 
 def test_sync_files_and_create_symlink_preserves_existing_link_contents(tmp_path):
