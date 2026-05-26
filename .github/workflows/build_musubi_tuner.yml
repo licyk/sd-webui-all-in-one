@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup portable build
-        uses: ${{ github.workspace }}/.github/actions/setup-portable-build
+        uses: ./.github/actions/setup-portable-build
 
       - name: Launch SD-Trainer-Script Installer
         env:
@@ -35,7 +35,7 @@ jobs:
             -NoPreDownloadModel
 
       - name: Finalize portable package
-        uses: ${{ github.workspace }}/.github/actions/finalize-portable
+        uses: ./.github/actions/finalize-portable
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
