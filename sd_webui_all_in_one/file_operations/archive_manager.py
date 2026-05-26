@@ -129,13 +129,13 @@ def extract_archive(
 
 
 def create_archive(
-    sources: Iterable[Path],
+    sources: Path | Iterable[Path],
     archive_path: Path,
 ) -> None:
     """根据扩展名创建压缩包
 
     Args:
-        sources (Iterable[Path]): 要打包的文件或目录的列表
+        sources (Path | Iterable[Path]): 要打包的单个文件、目录或路径列表
         archive_path (Path): 压缩文件保存路径
     Raises:
         ValueError: 不支持的压缩或不能写入的格式
@@ -156,10 +156,11 @@ def create_archive(
         raise ValueError(f"不支持的压缩格式: {archive_path}")
 
     name = archive_path.name.lower()
-    sources = list(sources)
+    sources = [sources] if isinstance(sources, Path) else list(sources)
     archive_path.parent.mkdir(parents=True, exist_ok=True)
 
     logger.info("将 '%s' 压缩并保存到 '%s' 中", sources, archive_path)
+    logger.debug("创建压缩包: sources=%s, count=%s, archive='%s', format='%s'", sources, len(sources), archive_path, name)
 
     # zip
     if name.endswith(".zip"):

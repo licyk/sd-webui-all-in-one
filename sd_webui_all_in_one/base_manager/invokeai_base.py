@@ -723,33 +723,30 @@ def install_invokeai(
         os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
     logger.info("开始安装 InvokeAI, 安装路径: %s", invokeai_path)
 
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
+    install_invokeai_component(
+        device_type=device_type,
+        invokeai_version=invokeai_version,
+        use_pypi_mirror=use_pypi_mirror,
+        use_uv=use_uv,
+    )
 
-        install_invokeai_component(
-            device_type=device_type,
-            invokeai_version=invokeai_version,
-            use_pypi_mirror=use_pypi_mirror,
-            use_uv=use_uv,
+    install_pypatchmatch(
+        use_cn_mirror=use_pypi_mirror,
+        downloader="aria2",
+    )
+
+    if not no_pre_download_model:
+        model_path = invokeai_path / "models" / "checkpoints"
+        model_path.mkdir(parents=True, exist_ok=True)
+        save_paths = pre_download_model_for_webui(
+            dtype="invokeai",
+            model_path=invokeai_path / "models" / "checkpoints",
+            webui_base_path=invokeai_path,
+            model_name="ChenkinNoob-XL-V0.2",
+            download_resource_type=model_download_resource_type,
         )
-
-        install_pypatchmatch(
-            use_cn_mirror=use_pypi_mirror,
-            downloader="aria2",
-        )
-
-        if not no_pre_download_model:
-            model_path = invokeai_path / "models" / "checkpoints"
-            model_path.mkdir(parents=True, exist_ok=True)
-            save_paths = pre_download_model_for_webui(
-                dtype="invokeai",
-                model_path=invokeai_path / "models" / "checkpoints",
-                webui_base_path=invokeai_path,
-                model_name="ChenkinNoob-XL-V0.2",
-                download_resource_type=model_download_resource_type,
-            )
-            if save_paths is not None:
-                import_model_to_invokeai(model_list=[save_paths])
+        if save_paths is not None:
+            import_model_to_invokeai(model_list=[save_paths])
 
     logger.info("安装 InvokeAI 完成")
 
