@@ -248,10 +248,10 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # SD Trainer Installer 版本和检查更新间隔
-$script:SD_TRAINER_INSTALLER_VERSION = 466
+$script:SD_TRAINER_INSTALLER_VERSION = 467
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.2.20"
+$script:CORE_MINIMUM_VER = "2.2.21"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
