@@ -1,0 +1,51 @@
+name: Finalize Portable Package
+description: Build docs, archive, and upload a portable package.
+
+inputs:
+  install-path:
+    description: Portable package install directory.
+    required: true
+  software-name:
+    description: Portable package archive software name.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Make docs
+      shell: pwsh
+      run: |
+        python "${{ github.workspace }}/.github/make_docs.py" "${{ inputs.install-path }}"
+
+    - name: Clean cache dir
+      shell: pwsh
+      run: |
+        Remove-Item -Path "${{ inputs.install-path }}/cache" -Force -Recurse
+
+    - name: Archive
+      shell: pwsh
+      run: |
+        & "${{ github.workspace }}/.github/archive_portable.ps1" `
+          -SoftwareName "${{ inputs.software-name }}" `
+          -Workspace "${{ github.workspace }}" `
+          -Source "${{ inputs.install-path }}" `
+          -SaveDst "${{ github.workspace }}/sdnote/portable/nightly" `
+          -Author "licyk"
+
+    - name: Install HuggingFace and ModelScope library
+      shell: pwsh
+      env:
+        UV_SYSTEM_PYTHON: 1
+        UV_LINK_MODE: copy
+      run: |
+        uv pip install huggingface_hub modelscope --upgrade
+
+    - name: Upload to HuggingFace repo
+      shell: pwsh
+      run: |
+        python "${{ github.workspace }}/.github/huggingface_release.py"
+
+    - name: Upload to ModelScope repo
+      shell: pwsh
+      run: |
+        python "${{ github.workspace }}/.github/modelscope_release.py"

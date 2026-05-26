@@ -1,0 +1,8 @@
+name: Setup Portable Build
+description: Install uv for portable build workflows after checkout.
+
+runs:
+  using: composite
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@v8.1.0

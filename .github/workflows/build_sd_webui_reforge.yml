@@ -14,8 +14,8 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+      - name: Setup portable build
+        uses: ${{ github.workspace }}/.github/actions/setup-portable-build
 
       - name: Launch SD WebUI Installer
         env:
@@ -81,46 +81,12 @@ jobs:
           & "${{ github.workspace }}/.github/install_vae_approx_model.ps1" `
             -VAEApproxPath "${{ github.workspace }}/sd_webui_reforge/core/models/VAE-approx"
 
-      - name: Make docs
-        shell: pwsh
-        run: |
-          python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/sd_webui_reforge"
-
-      - name: Clean cache dir
-        shell: pwsh
-        run: |
-          Remove-Item -Path "${{ github.workspace }}/sd_webui_reforge/cache" -Force -Recurse
-
-      - name: Archive
-        shell: pwsh
-        run: |
-          & "${{ github.workspace }}/.github/archive_portable.ps1" `
-            -SoftwareName "sd_webui_reforge" `
-            -Workspace "${{ github.workspace }}" `
-            -Source "${{ github.workspace }}/sd_webui_reforge" `
-            -SaveDst "${{ github.workspace }}/sdnote/portable/nightly" `
-            -Author "licyk"
-
-      - name: Install HuggingFace and ModelScope library
-        shell: pwsh
-        env:
-          UV_SYSTEM_PYTHON: 1
-          UV_LINK_MODE: copy
-        run: |
-          uv pip install "huggingface_hub[hf_xet]" modelscope --upgrade
-
-      - name: Upload to HuggingFace repo
-        shell: pwsh
+      - name: Finalize portable package
+        uses: ${{ github.workspace }}/.github/actions/finalize-portable
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          WORKSPACE: ${{ github.workspace }}
-        run: |
-          python "${{ github.workspace }}/.github/huggingface_release.py"
-
-      - name: Upload to ModelScope repo
-        shell: pwsh
-        env:
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
           WORKSPACE: ${{ github.workspace }}
-        run: |
-          python "${{ github.workspace }}/.github/modelscope_release.py"
+        with:
+          install-path: ${{ github.workspace }}/sd_webui_reforge
+          software-name: sd_webui_reforge

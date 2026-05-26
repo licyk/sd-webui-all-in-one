@@ -13,8 +13,8 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v6
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+      - name: Setup portable build
+        uses: ${{ github.workspace }}/.github/actions/setup-portable-build
 
       - name: Launch SD-Trainer Installer
         env:
@@ -33,46 +33,12 @@ jobs:
             -DisableHuggingFaceMirror `
             -NoPreDownloadModel
 
-      - name: Make docs
-        shell: pwsh
-        run: |
-          python "${{ github.workspace }}/.github/make_docs.py" "${{ github.workspace }}/kohya_gui"
-
-      - name: Clean cache dir
-        shell: pwsh
-        run: |
-          Remove-Item -Path "${{ github.workspace }}/kohya_gui/cache" -Force -Recurse
-
-      - name: Archive
-        shell: pwsh
-        run: |
-          & "${{ github.workspace }}/.github/archive_portable.ps1" `
-            -SoftwareName "kohya_gui" `
-            -Workspace "${{ github.workspace }}" `
-            -Source "${{ github.workspace }}/kohya_gui" `
-            -SaveDst "${{ github.workspace }}/sdnote/portable/nightly" `
-            -Author "licyk"
-
-      - name: Install HuggingFace and ModelScope library
-        shell: pwsh
-        env:
-          UV_SYSTEM_PYTHON: 1
-          UV_LINK_MODE: copy
-        run: |
-          uv pip install "huggingface_hub[hf_xet]" modelscope --upgrade
-
-      - name: Upload to HuggingFace repo
-        shell: pwsh
+      - name: Finalize portable package
+        uses: ${{ github.workspace }}/.github/actions/finalize-portable
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          WORKSPACE: ${{ github.workspace }}
-        run: |
-          python "${{ github.workspace }}/.github/huggingface_release.py"
-
-      - name: Upload to ModelScope repo
-        shell: pwsh
-        env:
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
           WORKSPACE: ${{ github.workspace }}
-        run: |
-          python "${{ github.workspace }}/.github/modelscope_release.py"
+        with:
+          install-path: ${{ github.workspace }}/kohya_gui
+          software-name: kohya_gui
