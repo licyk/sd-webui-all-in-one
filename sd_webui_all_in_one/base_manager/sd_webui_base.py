@@ -56,6 +56,7 @@ from sd_webui_all_in_one.base_manager.base import (
     print_divider,
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import apply_hotpatcher_launch_env
+from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.mirror_manager import (
@@ -1464,26 +1465,15 @@ def list_sd_webui_extensions(
         else:
             status = True
 
-        info: SDWebUiLocalExtensionInfo = {"name": name, "status": status, "path": path, "url": None, "commit": None, "branch": None}
-
-        # 提取 Git 信息
-        try:
-            # 注意：如果 git_warpper 内部支持 timeout，建议在此处传入
-            info["url"] = git_warpper.get_current_branch_remote_url(ext)
-        except (ValueError, Exception):
-            pass
-
-        try:
-            info["commit"] = git_warpper.get_current_commit(ext)
-        except (ValueError, Exception):
-            pass
-
-        try:
-            info["branch"] = git_warpper.get_current_branch(ext)
-        except (ValueError, Exception):
-            pass
-
-        return info
+        repo_state = inspect_repository(ext)
+        return {
+            "name": name,
+            "status": status,
+            "path": path,
+            "url": repo_state.url,
+            "commit": repo_state.commit,
+            "branch": repo_state.branch,
+        }
 
     logger.info("获取 Stable Diffusion WebUI 扩展列表中")
     with ThreadPoolExecutor(max_workers=4) as executor:

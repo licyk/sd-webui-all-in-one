@@ -37,6 +37,7 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     apply_hotpatcher_launch_env,
     configure_hotpatcher_for_current_process,
 )
+from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.custom_exceptions import (
     AggregateError,
@@ -1080,28 +1081,14 @@ def list_invokeai_custom_nodes(
         name = ext.name
         path = ext
         status = (path / "__init__.py").is_file()
-
-        try:
-            url = git_warpper.get_current_branch_remote_url(ext)
-        except ValueError:
-            url = None
-
-        try:
-            commit = git_warpper.get_current_commit(ext)
-        except ValueError:
-            commit = None
-
-        try:
-            branch = git_warpper.get_current_branch(ext)
-        except ValueError:
-            branch = None
+        repo_state = inspect_repository(ext)
 
         info["name"] = name
         info["status"] = status
         info["path"] = path
-        info["url"] = url
-        info["commit"] = commit
-        info["branch"] = branch
+        info["url"] = repo_state.url
+        info["commit"] = repo_state.commit
+        info["branch"] = repo_state.branch
         info_list.append(info)
 
     return info_list

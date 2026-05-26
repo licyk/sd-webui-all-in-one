@@ -3,15 +3,16 @@ import json
 import pytest
 
 from sd_webui_all_in_one.custom_exceptions import AggregateError
+import sd_webui_all_in_one.base_manager.repository_inspector as repository_inspector
 import sd_webui_all_in_one.base_manager.version_manager as version_manager
 from sd_webui_all_in_one.base_manager.base import apply_github_raw_file_mirror
 from sd_webui_all_in_one.base_manager.sd_webui_base import (
     list_sd_webui_extensions,
     set_sd_webui_extensions_status,
 )
+from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
 from sd_webui_all_in_one.base_manager.version_manager import (
     filter_extension_index,
-    inspect_repository,
     parse_comfyui_custom_node_index,
     parse_extension_index,
 )
@@ -51,7 +52,7 @@ def test_inspect_repository_reads_git_info_with_single_git_command(tmp_path, mon
         calls.append((path, args))
         return "abcdef123456\x1f2026-05-02 12:00:00 +0000\x1fInitial commit"
 
-    monkeypatch.setattr(version_manager, "_git_output", _fake_git_output)
+    monkeypatch.setattr(repository_inspector, "run_git_output", _fake_git_output)
 
     state = inspect_repository(repo_path)
 
@@ -96,7 +97,7 @@ def test_inspect_repository_reads_remote_url_from_git_config_with_duplicate_keys
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(version_manager, "_git_output", lambda *_args: "abcdef\x1f2026-05-02 12:00:00 +0000\x1fFix")
+    monkeypatch.setattr(repository_inspector, "run_git_output", lambda *_args: "abcdef\x1f2026-05-02 12:00:00 +0000\x1fFix")
 
     state = inspect_repository(repo_path)
 
@@ -217,7 +218,7 @@ def test_list_commits_and_branches_parse_git_output(monkeypatch, tmp_path):
             return "\n".join(["origin/HEAD -> origin/main", "origin/dev", "main", "origin/main"])
         raise AssertionError(args)
 
-    monkeypatch.setattr(version_manager, "_git_output", fake_git_output)
+    monkeypatch.setattr(version_manager, "run_git_output", fake_git_output)
 
     commits = version_manager.list_commits(repo_path, limit=2)
     assert [(item.commit, item.is_current) for item in commits] == [("abc123", True), ("def456", False)]

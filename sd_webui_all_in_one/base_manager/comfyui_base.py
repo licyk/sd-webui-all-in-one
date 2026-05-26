@@ -26,6 +26,7 @@ from sd_webui_all_in_one.base_manager.base import (
     prepare_pytorch_install_info,
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import apply_hotpatcher_launch_env
+from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.downloader import (
     DownloadToolType,
@@ -685,26 +686,16 @@ def list_comfyui_custom_nodes(
         name = ext.name
         path = ext
         status = not name.endswith(".disabled")
-        url = None
-        commit = None
-        branch = None
+        repo_state = inspect_repository(ext)
 
-        try:
-            url = git_warpper.get_current_branch_remote_url(ext)
-        except (ValueError, Exception):
-            pass
-
-        try:
-            commit = git_warpper.get_current_commit(ext)
-        except (ValueError, Exception):
-            pass
-
-        try:
-            branch = git_warpper.get_current_branch(ext)
-        except (ValueError, Exception):
-            pass
-
-        return {"name": name, "status": status, "path": path, "url": url, "commit": commit, "branch": branch}
+        return {
+            "name": name,
+            "status": status,
+            "path": path,
+            "url": repo_state.url,
+            "commit": repo_state.commit,
+            "branch": repo_state.branch,
+        }
 
     logger.info("获取 ComfyUI 扩展列表中")
     with ThreadPoolExecutor(max_workers=4) as executor:

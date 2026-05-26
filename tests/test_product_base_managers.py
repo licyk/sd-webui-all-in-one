@@ -9,6 +9,23 @@ from sd_webui_all_in_one.base_manager import fooocus_base
 from sd_webui_all_in_one.base_manager import invokeai_base
 from sd_webui_all_in_one.base_manager import qwen_tts_webui_base
 from sd_webui_all_in_one.base_manager import sd_webui_base
+from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryState
+
+
+def _fake_repository_state(path: Path) -> RepositoryState:
+    is_git_repo = (path / ".git").exists()
+    return RepositoryState(
+        path=path,
+        is_git_repo=is_git_repo,
+        name=path.name,
+        url=f"https://example.test/{path.name}" if is_git_repo else None,
+        branch="main" if is_git_repo else None,
+        commit=f"{path.name}-full-commit" if is_git_repo else None,
+    )
+
+
+def _fail_old_git_info_reader(*_args):
+    raise AssertionError("extension lists should use inspect_repository()")
 
 
 @pytest.mark.parametrize(
@@ -128,18 +145,22 @@ def test_install_comfyui_orchestrates_extensions_models_and_missing_requirements
 
 def test_comfyui_custom_node_lifecycle(monkeypatch, tmp_path):
     custom_nodes = tmp_path / "custom_nodes"
-    custom_nodes.mkdir()
-    (custom_nodes / "installed").mkdir()
+    (custom_nodes / "installed" / ".git").mkdir(parents=True)
     (custom_nodes / "disabled.disabled").mkdir()
     (custom_nodes / "file.py").write_text("pass", encoding="utf-8")
 
-    monkeypatch.setattr(comfyui_base.git_warpper, "get_current_branch_remote_url", lambda path: f"https://example.test/{path.name}")
-    monkeypatch.setattr(comfyui_base.git_warpper, "get_current_commit", lambda _path: "abc123")
-    monkeypatch.setattr(comfyui_base.git_warpper, "get_current_branch", lambda _path: "main")
+    monkeypatch.setattr(comfyui_base, "inspect_repository", _fake_repository_state)
+    monkeypatch.setattr(comfyui_base.git_warpper, "get_current_branch_remote_url", _fail_old_git_info_reader)
+    monkeypatch.setattr(comfyui_base.git_warpper, "get_current_commit", _fail_old_git_info_reader)
+    monkeypatch.setattr(comfyui_base.git_warpper, "get_current_branch", _fail_old_git_info_reader)
 
     nodes = sorted(comfyui_base.list_comfyui_custom_nodes(tmp_path), key=lambda item: item["name"])
     assert [node["name"] for node in nodes] == ["disabled.disabled", "installed"]
     assert nodes[0]["status"] is False
+    assert nodes[0]["url"] is None
+    assert nodes[1]["url"] == "https://example.test/installed"
+    assert nodes[1]["commit"] == "installed-full-commit"
+    assert nodes[1]["branch"] == "main"
 
     moves = []
     monkeypatch.setattr(comfyui_base, "move_files", lambda src, dst: moves.append((src, dst)))
@@ -321,16 +342,22 @@ def test_sd_webui_extension_lifecycle_and_model_uninstall(monkeypatch, tmp_path)
     models = tmp_path / "models" / "Stable-diffusion"
     for folder in [extensions / "enabled" / ".git", extensions / "disabled" / ".git", models]:
         folder.mkdir(parents=True)
+    (extensions / "plain").mkdir()
     (tmp_path / "config.json").write_text('{"disabled_extensions": ["disabled"]}', encoding="utf-8")
     (models / "demo.safetensors").write_text("model", encoding="utf-8")
     (models / "other.txt").write_text("other", encoding="utf-8")
 
-    monkeypatch.setattr(sd_webui_base.git_warpper, "get_current_branch_remote_url", lambda path: f"https://example.test/{path.name}")
-    monkeypatch.setattr(sd_webui_base.git_warpper, "get_current_commit", lambda _path: "abc123")
-    monkeypatch.setattr(sd_webui_base.git_warpper, "get_current_branch", lambda _path: "main")
+    monkeypatch.setattr(sd_webui_base, "inspect_repository", _fake_repository_state)
+    monkeypatch.setattr(sd_webui_base.git_warpper, "get_current_branch_remote_url", _fail_old_git_info_reader)
+    monkeypatch.setattr(sd_webui_base.git_warpper, "get_current_commit", _fail_old_git_info_reader)
+    monkeypatch.setattr(sd_webui_base.git_warpper, "get_current_branch", _fail_old_git_info_reader)
 
     infos = sorted(sd_webui_base.list_sd_webui_extensions(tmp_path), key=lambda item: item["name"])
-    assert [(item["name"], item["status"]) for item in infos] == [("disabled", False), ("enabled", True)]
+    assert [(item["name"], item["status"]) for item in infos] == [("disabled", False), ("enabled", True), ("plain", True)]
+    assert infos[1]["url"] == "https://example.test/enabled"
+    assert infos[1]["commit"] == "enabled-full-commit"
+    assert infos[1]["branch"] == "main"
+    assert infos[2]["url"] is None
 
     sd_webui_base.set_sd_webui_extensions_status(tmp_path, "disabled", True)
     sd_webui_base.set_sd_webui_extensions_status(tmp_path, "enabled", False)
@@ -425,17 +452,22 @@ def test_invokeai_custom_node_lifecycle_and_model_download(monkeypatch, tmp_path
     nodes = tmp_path / "nodes"
     (nodes / "enabled" / ".git").mkdir(parents=True)
     (nodes / "enabled" / "__init__.py").write_text("", encoding="utf-8")
-    (nodes / "disabled" / ".git").mkdir(parents=True)
+    (nodes / "disabled").mkdir()
     (nodes / "disabled" / "__init__.py.bak").write_text("", encoding="utf-8")
     (nodes / "file.py").write_text("pass", encoding="utf-8")
     calls = []
 
-    monkeypatch.setattr(invokeai_base.git_warpper, "get_current_branch_remote_url", lambda path: f"https://example.test/{path.name}")
-    monkeypatch.setattr(invokeai_base.git_warpper, "get_current_commit", lambda _path: "abc123")
-    monkeypatch.setattr(invokeai_base.git_warpper, "get_current_branch", lambda _path: "main")
+    monkeypatch.setattr(invokeai_base, "inspect_repository", _fake_repository_state)
+    monkeypatch.setattr(invokeai_base.git_warpper, "get_current_branch_remote_url", _fail_old_git_info_reader)
+    monkeypatch.setattr(invokeai_base.git_warpper, "get_current_commit", _fail_old_git_info_reader)
+    monkeypatch.setattr(invokeai_base.git_warpper, "get_current_branch", _fail_old_git_info_reader)
 
     infos = sorted(invokeai_base.list_invokeai_custom_nodes(tmp_path), key=lambda item: item["name"])
     assert [(item["name"], item["status"]) for item in infos] == [("disabled", False), ("enabled", True)]
+    assert infos[0]["url"] is None
+    assert infos[1]["url"] == "https://example.test/enabled"
+    assert infos[1]["commit"] == "enabled-full-commit"
+    assert infos[1]["branch"] == "main"
 
     monkeypatch.setattr(invokeai_base, "move_files", lambda src, dst: calls.append(("move", src, dst)))
     invokeai_base.set_invokeai_custom_nodes_status(tmp_path, "enabled", False)
