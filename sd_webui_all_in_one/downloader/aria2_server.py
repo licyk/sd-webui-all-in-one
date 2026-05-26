@@ -1,5 +1,6 @@
 """Aria2 RPC 服务器"""
 
+from importlib import import_module
 import json
 import os
 import shutil
@@ -12,6 +13,8 @@ from tempfile import NamedTemporaryFile
 from typing import (
     Any,
     Literal,
+    Protocol,
+    cast,
 )
 from urllib.parse import urlparse
 
@@ -37,6 +40,56 @@ logger = get_logger(
 
 ARIA2_CONFIG_PATH = ROOT_PATH / "downloader" / "aria2.conf"
 """Aria2 配置文件"""
+
+
+class _ProgressBar(Protocol):
+    """下载进度条需要的最小接口"""
+
+    n: int
+
+    def update(
+        self,
+        n: int = 1,
+    ) -> None:
+        """更新进度"""
+
+    def close(
+        self,
+    ) -> None:
+        """关闭进度条"""
+
+
+def _create_progress_bar(
+    total: int,
+    file_name: str,
+    completed: int,
+) -> _ProgressBar:
+    """创建 tqdm 兼容进度条"""
+    try:
+        tqdm_factory = getattr(import_module("tqdm"), "tqdm")
+    except ImportError:
+        from sd_webui_all_in_one.simple_tqdm import SimpleTqdm
+
+        return SimpleTqdm(
+            total=total,
+            unit="B",
+            unit_scale=True,
+            unit_divisor=1024,
+            desc=file_name,
+            initial=completed,
+        )
+
+    return cast(
+        _ProgressBar,
+        tqdm_factory(
+            total=total,
+            unit="B",
+            unit_scale=True,
+            unit_divisor=1024,
+            desc=file_name,
+            initial=completed,
+        ),
+    )
 
 
 class Aria2RpcServer:
@@ -633,12 +686,7 @@ class Aria2RpcServer:
             RuntimeError:
                 下载失败或被中断
         """
-        try:
-            from tqdm import tqdm
-        except ImportError:
-            from sd_webui_all_in_one.simple_tqdm import SimpleTqdm as tqdm
-
-        pbar: Any = None
+        pbar: _ProgressBar | None = None
         consecutive_errors: int = 0  # 连续错误计数
         max_consecutive_errors: int = 5  # 最大连续错误次数
 
@@ -671,7 +719,11 @@ class Aria2RpcServer:
 
                     # 初始化进度条
                     if show_progress and pbar is None and total > 0:
-                        pbar: tqdm = tqdm(total=total, unit="B", unit_scale=True, unit_divisor=1024, desc=file_name, initial=completed)  # ty: ignore[unknown-argument]
+                        pbar = _create_progress_bar(
+                            total=total,
+                            file_name=file_name,
+                            completed=completed,
+                        )
 
                     # 更新进度条
                     if pbar is not None:
