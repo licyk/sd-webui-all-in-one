@@ -261,10 +261,17 @@ SD_WEBUI_EXTENSION_INFO_DICT: SDWebUiExtensionInfoList = [
             "sd_webui_reforge_main",
             "sd_webui_reforge_dev",
             "sd_webui_forge_classic",
-            "sd_webui_forge_neo",
             "sd_webui_amdgpu",
             "sd_next_main",
             "sd_next_dev",
+        ],
+    },
+    {
+        "name": "ADetailer-Neo",
+        "url": "https://github.com/Haoming02/ADetailer-Neo",
+        "save_dir": "extensions/ADetailer-Neo",
+        "supported_branch": [
+            "sd_webui_forge_neo",
         ],
     },
     {
