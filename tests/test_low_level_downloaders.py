@@ -731,7 +731,7 @@ def test_aria2_server_pool_refcounts_and_aria2_wrapper(monkeypatch, tmp_path):
 
         def download(self, **kwargs):
             events.append(("download", kwargs))
-            return kwargs["save_path"] / "asset.bin"
+            return kwargs["save_path"] / kwargs["save_name"]
 
     monkeypatch.setattr(aria2_downloader, "Aria2RpcServer", lambda use_external_server=False: FakeServer())
 
@@ -751,6 +751,11 @@ def test_aria2_server_pool_refcounts_and_aria2_wrapper(monkeypatch, tmp_path):
     assert events[-2][0] == "download"
     assert events[-2][1]["url"] == "https://example.test/asset.bin"
     assert events[-2][1]["save_path"] == tmp_path
+    assert events[-2][1]["save_name"] == "asset.bin"
+
+    result = aria2_downloader.aria2("https://example.test/asset.bin", path=tmp_path, save_name="renamed.bin", progress=False)
+    assert result == tmp_path / "renamed.bin"
+    assert events[-2][1]["save_name"] == "renamed.bin"
 
 
 def test_aria2_rpc_call_includes_token_and_retries(monkeypatch):

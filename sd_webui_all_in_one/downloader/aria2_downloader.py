@@ -122,10 +122,11 @@ def aria2(
     save_path = path / save_name
     server = _server_pool.acquire()
     try:
-        logger.info("下载 %s 到 %s 中", os.path.basename(url), save_path)
+        logger.info("下载 %s 到 %s 中", save_name, save_path)
         return server.download(
             url=url,
             save_path=path,
+            save_name=save_name,
             show_progress=bool(progress),
         )
     except RuntimeError as e:
