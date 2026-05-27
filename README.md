@@ -177,7 +177,7 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 
 
 ## HDM Train Kaggle Jupyter NoteBook
-[hdm_train_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/hdm_train_kaggle.ipynb)([源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/hdm_train_kaggle.ipynb))：适用于 Kaggle / Colab 部署 [HDM](https://github.com/KohakuBlueleaf/HDM)，**写来玩的脚本，可能有 BUG**，要用的话就参考 [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)。
+[hdm_train_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/hdm_train_kaggle.ipynb) [[源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/hdm_train_kaggle.ipynb)]：适用于 Kaggle / Colab 部署 [HDM](https://github.com/KohakuBlueleaf/HDM)，**写来玩的脚本，可能有 BUG**，要用的话就参考 [SD Scripts Kaggle Jupyter NoteBook](#sd-scripts-kaggle-jupyter-notebook)。
 
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/hdm_train_kaggle.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
