@@ -189,7 +189,7 @@ class BaseManager:
                 模型文件下载到本地的路径
             filename (str | None):
                 指定下载的模型文件名称
-            tool (DownloadToolType):
+            tool (DownloadToolType | None):
                 下载工具
 
         Returns:
