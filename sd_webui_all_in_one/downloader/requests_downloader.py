@@ -660,7 +660,7 @@ def download_file_from_url(
     progress: bool | None = True,
     hash_prefix: str | None = None,
     re_download: bool | None = False,
-    num_threads: int | None = 16,
+    num_threads: int | None = 8,
     resume: bool | None = True,
     max_retries: int | None = 5,
     chunk_size: int | None = DEFAULT_RANGE_CHUNK_SIZE,
@@ -720,7 +720,7 @@ def download_file_from_url(
 
         logger.info("下载 '%s' 到 '%s' 中", file_name, cached_file)
 
-        safe_num_threads = max(1, int(num_threads if num_threads is not None else 16))
+        safe_num_threads = max(1, int(num_threads if num_threads is not None else 8))
         safe_max_retries = max(1, int(max_retries if max_retries is not None else 5))
         safe_chunk_size = int(chunk_size) if chunk_size else None
         remote_info = _probe_remote_file(requests, url) if safe_num_threads > 1 else _RemoteFileInfo(total_size=0, supports_range=False)

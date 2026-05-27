@@ -531,7 +531,7 @@ class BaseManager:
         local_dir: Path | str,
         repo_type: RepoType = "model",
         folder: str | None = None,
-        num_threads: int | None = 16,
+        num_threads: int | None = 8,
     ) -> None:
         """从 HuggingFace / ModelScope 仓库下载文文件
 

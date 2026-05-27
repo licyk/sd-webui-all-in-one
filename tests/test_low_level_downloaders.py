@@ -193,7 +193,7 @@ def test_requests_downloader_adaptive_ranges_use_thread_count():
 def test_requests_downloader_adaptive_ranges_use_minimum_range_size():
     total_size = 3 * requests_downloader.ADAPTIVE_MIN_RANGE_SIZE
 
-    range_plan = requests_downloader._build_range_plan(total_size, chunk_size=None, num_threads=16)
+    range_plan = requests_downloader._build_range_plan(total_size, chunk_size=None, num_threads=8)
 
     assert range_plan.mode == "adaptive"
     assert len(range_plan.ranges) == 3
@@ -220,7 +220,7 @@ def test_requests_downloader_adaptive_ranges_avoid_small_file_oversplitting(monk
         "https://example.test/small.bin",
         save_path=tmp_path,
         progress=False,
-        num_threads=16,
+        num_threads=8,
     )
 
     assert result.read_bytes() == payload

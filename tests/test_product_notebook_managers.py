@@ -401,7 +401,7 @@ def test_sd_scripts_deprecated_compat_repo_and_helpers(monkeypatch, tmp_path):
 
     assert calls[0] == (
         "download",
-        {"api_type": "huggingface", "repo_id": "owner/repo", "local_dir": tmp_path / "local", "repo_type": "model", "folder": "aa", "num_threads": 16},
+        {"api_type": "huggingface", "repo_id": "owner/repo", "local_dir": tmp_path / "local", "repo_type": "model", "folder": "aa", "num_threads": 8},
     )
     assert calls[1][0] == "upload"
     assert calls[2] == ("archive", {"url": "https://example.test/a.zip", "local_dir": tmp_path / "out", "name": "a.zip"})

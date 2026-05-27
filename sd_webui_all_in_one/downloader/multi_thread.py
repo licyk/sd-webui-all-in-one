@@ -170,13 +170,13 @@ class MultiThreadDownloader:
 
     def start(
         self,
-        num_threads: int | None = 16,
+        num_threads: int | None = 8,
         retry_count: int | None = 3,
     ) -> None:
         """启动多线程下载器
 
         Args:
-            num_threads (int | None): 下载线程数, 默认为 16
+            num_threads (int | None): 下载线程数, 默认为 8
             retry_count (int | None): 重试次数, 默认为 3
 
         Raises:
@@ -189,7 +189,7 @@ class MultiThreadDownloader:
 
         threads: list[threading.Thread] = []
         self.start_time = datetime.datetime.now()
-        num_threads = num_threads if num_threads is not None else 16
+        num_threads = num_threads if num_threads is not None else 8
         time.sleep(0.1)  # 避免 print_progress() 计算时间时出现 division by zero
 
         # 启动工作线程
