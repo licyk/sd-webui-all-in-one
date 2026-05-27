@@ -178,7 +178,7 @@ class BaseManager:
         url: str,
         path: str | Path,
         filename: str | None = None,
-        tool: DownloadToolType = "aria2",
+        tool: DownloadToolType | None = None,
     ) -> Path | None:
         """下载模型文件到本地中
 
@@ -196,7 +196,12 @@ class BaseManager:
             (Path | None): 文件保存路径
         """
         try:
-            return download_file(url=url, path=Path(path), save_name=filename, tool=tool)
+            return download_file(
+                url=url,
+                path=Path(path),
+                save_name=filename,
+                tool=tool,
+            )
         except Exception as e:
             traceback.print_exc()
             logger.error("下载 '%s' 到 '%s' 时发生错误: %s", url, path, e)
@@ -693,7 +698,7 @@ class BaseManager:
         url: str,
         path: Path | str | None = None,
         save_name: str | None = None,
-        tool: DownloadToolType | None = "aria2",
+        tool: DownloadToolType | None = None,
     ) -> Path:
         """从链接中下载文件
 

@@ -107,7 +107,7 @@ class FooocusManager(BaseManager):
             (Path | None): 模型保存路径
         """
         path = self.workspace / self.workfolder / "models" / (model_type or "checkpoints")
-        return self.get_model(url=url, path=path, filename=filename, tool="aria2")
+        return self.get_model(url=url, path=path, filename=filename)
 
     def get_sd_model_from_list(
         self,
@@ -258,41 +258,40 @@ class FooocusManager(BaseManager):
 
         downloader_map = {
             "aria2": "aria2",
-            "requests": "request",
+            "requests": "requests",
             "urllib": "urllib",
         }
-        base_dl = downloader_map.get(downloader or "aria2")
+        base_dl = downloader_map.get(downloader) if downloader else None
 
-        sd_model_dl = base_dl or "aria2"
-        lora_dl = base_dl or "requests"
-        vae_dl = base_dl or "aria2"
-        embedding_dl = base_dl or "requests"
+        sd_model_dl = base_dl
+        lora_dl = base_dl
+        vae_dl = base_dl
+        embedding_dl = base_dl
 
         fooocus_path = self.workspace / self.workfolder
         models_base = fooocus_path / "models"
 
-        download_configs = [
-            {"key": "checkpoint_downloads", "subdir": "checkpoints", "tool": sd_model_dl},
-            {"key": "lora_downloads", "subdir": "loras", "tool": lora_dl},
-            {"key": "vae_downloads", "subdir": "vae", "tool": vae_dl},
-            {"key": "embeddings_downloads", "subdir": "embeddings", "tool": embedding_dl},
+        download_configs: list[tuple[str, str, str | None]] = [
+            ("checkpoint_downloads", "checkpoints", sd_model_dl),
+            ("lora_downloads", "loras", lora_dl),
+            ("vae_downloads", "vae", vae_dl),
+            ("embeddings_downloads", "embeddings", embedding_dl),
         ]
 
         downloader_params: list[dict[str, Any]] = []
-        for cfg in download_configs:
-            model_dict = data.get(cfg["key"], {})
-            target_path = models_base / cfg["subdir"]
+        for config_key, subdir, download_tool in download_configs:
+            model_dict = data.get(config_key, {})
+            target_path = models_base / subdir
 
             for filename, url in model_dict.items():
-                downloader_params.append(
-                    {
-                        "url": url,
-                        "path": target_path,
-                        "save_name": filename,
-                        "tool": cfg["tool"],
-                        "progress": False,
-                    }
-                )
+                download_kwargs = {
+                    "url": url,
+                    "path": target_path,
+                    "save_name": filename,
+                    "tool": download_tool,
+                    "progress": False,
+                }
+                downloader_params.append(download_kwargs)
 
         if not downloader_params:
             return

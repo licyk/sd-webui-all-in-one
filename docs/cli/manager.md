@@ -128,7 +128,7 @@ sd-webui-all-in-one self-manager download-file <下载链接> [选项]
 
 - `--path <路径>`：文件下载路径，默认当前目录。
 - `--save-name <文件名>`：文件保存名称，默认从 URL 中提取。
-- `--downloader <工具>`：下载工具，可选 `aria2`、`requests`、`urllib`，默认 `aria2`。
+- `--downloader <工具>`：下载工具，可选 `aria2`、`requests`、`urllib`，默认 `requests`。
 - `--no-progress`：禁用下载进度条。
 - `--num-threads <数量>`：`requests` 下载器的 HTTP Range 下载线程数，默认 `16`。
 - `--no-resume`：禁用 `requests` 下载器断点续传。

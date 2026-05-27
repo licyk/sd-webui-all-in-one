@@ -297,7 +297,7 @@ def install_model_from_library(
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
     model_name: str | None = None,
     model_index: int | None = None,
-    downloader: DownloadToolType | None = "aria2",
+    downloader: DownloadToolType | None = None,
     interactive_mode: bool | None = False,
     list_only: bool | None = False,
 ) -> None:
@@ -334,7 +334,7 @@ def install_model_from_url(
     sd_trainer_path: Path,
     model_url: str,
     model_type: str,
-    downloader: DownloadToolType | None = "aria2",
+    downloader: DownloadToolType | None = None,
 ) -> None:
     """从链接下载模型到 SD Trainer
 
@@ -611,7 +611,7 @@ def register_sd_trainer(
     model_lib_p.add_argument("--source", default="modelscope", dest="source", choices=MODEL_DOWNLOAD_URL_TYPE_LIST, help="模型下载源类型")
     model_lib_p.add_argument("--name", dest="name", help="模型名称")
     model_lib_p.add_argument("--index", type=int, dest="index", help="模型索引")
-    model_lib_p.add_argument("--downloader", default="aria2", dest="downloader", choices=DOWNLOAD_TOOL_TYPE_LIST, help="下载工具")
+    model_lib_p.add_argument("--downloader", default=None, dest="downloader", choices=DOWNLOAD_TOOL_TYPE_LIST, help="下载工具")
     model_lib_p.add_argument("--interactive", action="store_true", dest="interactive", help="启用交互模式")
     model_lib_p.add_argument("--list-only", action="store_true", dest="list_only", help="列出模型列表并退出")
     add_auto_mirror_argument(model_lib_p)
@@ -622,9 +622,9 @@ def register_sd_trainer(
                 download_resource_type=args.source,
                 model_name=args.name,
                 model_index=args.index,
-                downloader=args.downloader,
                 interactive_mode=args.interactive,
                 list_only=args.list_only,
+                downloader=args.downloader,
             )
         )
     )
@@ -634,7 +634,7 @@ def register_sd_trainer(
     model_url_p.add_argument("--sd-trainer-path", type=normalized_filepath, required=False, default=SD_TRAINER_ROOT_PATH, dest="sd_trainer_path", help="SD Trainer 根目录")
     model_url_p.add_argument("--url", required=True, dest="url", help="模型下载地址")
     model_url_p.add_argument("--type", required=True, dest="type", help="模型类型")
-    model_url_p.add_argument("--downloader", default="aria2", dest="downloader", choices=DOWNLOAD_TOOL_TYPE_LIST, help="下载工具")
+    model_url_p.add_argument("--downloader", default=None, dest="downloader", choices=DOWNLOAD_TOOL_TYPE_LIST, help="下载工具")
     model_url_p.set_defaults(
         func=lambda args: install_model_from_url(
             sd_trainer_path=args.sd_trainer_path,

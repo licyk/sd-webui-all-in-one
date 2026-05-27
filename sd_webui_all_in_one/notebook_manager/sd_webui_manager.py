@@ -109,7 +109,7 @@ class SDWebUIManager(BaseManager):
             path = self.workspace / self.workfolder / model_type
         else:
             path = self.workspace / self.workfolder / "models" / model_type
-        return self.get_model(url=url, path=path, filename=filename, tool="aria2")
+        return self.get_model(url=url, path=path, filename=filename)
 
     def get_sd_model_from_list(
         self,

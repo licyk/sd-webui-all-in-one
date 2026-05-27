@@ -60,7 +60,7 @@ def download_model(
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
     model_name: str | list[str] | None = None,
     model_index: int | list[int] | None = None,
-    downloader: DownloadToolType | None = "aria2",
+    downloader: DownloadToolType | None = None,
 ) -> list[Path]:
     """下载模型到 WebUI 目录中
 

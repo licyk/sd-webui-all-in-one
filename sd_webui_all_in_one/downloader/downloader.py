@@ -90,7 +90,7 @@ def download_file(
     url: str,
     path: Path | None = None,
     save_name: str | None = None,
-    tool: DownloadToolType | None = "aria2",
+    tool: DownloadToolType | None = "requests",
     progress: bool | None = True,
     num_threads: int | None = 16,
     resume: bool | None = True,
@@ -126,7 +126,7 @@ def download_file(
         path = Path.cwd()
     path.mkdir(parents=True, exist_ok=True)
 
-    selected_tool = str(tool)
+    selected_tool: DownloadToolType = tool or "requests"
     if selected_tool == "aria2" and shutil.which("aria2c") is None:
         logger.warning("未安装 Aria2, 将切换到 requests 进行下载")
         selected_tool = "requests"

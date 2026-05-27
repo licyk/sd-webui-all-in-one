@@ -77,7 +77,7 @@ sd-webui-all-in-one sd-scripts model install-library [选项]
   - `--source <源>`: 模型下载源类型 (默认: `modelscope`)。
   - `--name <名称>`: 模型名称。
   - `--index <索引>`: 模型索引。
-  - `--downloader <工具>`: 下载工具 (默认: `aria2`)。
+  - `--downloader <工具>`: 下载工具 (默认: `requests`)。
   - `--interactive`: 启用交互模式。
   - `--list-only`: 列出模型列表并退出。
 
@@ -90,7 +90,7 @@ sd-webui-all-in-one sd-scripts model install-url --url <链接> --type <类型> 
   - `--sd-scripts-path <路径>`: SD Scripts 根目录。
   - `--url <链接>`: (必填) 模型下载地址。
   - `--type <类型>`: (必填) 模型类型。
-  - `--downloader <工具>`: 下载工具 (默认: `aria2`)。
+  - `--downloader <工具>`: 下载工具 (默认: `requests`)。
 
 #### 列出模型
 ```bash

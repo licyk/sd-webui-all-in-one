@@ -151,7 +151,7 @@ def download_file_cli(
     url: str,
     path: Path | None = None,
     save_name: str | None = None,
-    tool: DownloadToolType | None = "aria2",
+    tool: DownloadToolType | None = None,
     progress: bool | None = True,
     num_threads: int | None = 16,
     resume: bool | None = True,
@@ -483,7 +483,7 @@ def register_manager(
     download_file_p.add_argument("url", type=str, help="文件下载链接")
     download_file_p.add_argument("--path", type=normalized_filepath, default=None, help="文件下载路径, 默认为当前目录")
     download_file_p.add_argument("--save-name", type=str, default=None, help="文件保存名称")
-    download_file_p.add_argument("--downloader", dest="tool", default="aria2", choices=DOWNLOAD_TOOL_TYPE_LIST, help="下载工具")
+    download_file_p.add_argument("--downloader", dest="tool", default=None, choices=DOWNLOAD_TOOL_TYPE_LIST, help="下载工具")
     download_file_p.add_argument("--no-progress", action="store_false", dest="progress", default=True, help="禁用下载进度条")
     download_file_p.add_argument("--num-threads", type=int, default=16, help="requests 下载器的单文件 HTTP Range 下载线程数")
     download_file_p.add_argument("--no-resume", action="store_false", dest="resume", default=True, help="禁用 requests 下载器断点续传")
@@ -494,12 +494,12 @@ def register_manager(
             url=args.url,
             path=args.path,
             save_name=args.save_name,
-            tool=args.tool,
             progress=args.progress,
             num_threads=args.num_threads,
             resume=args.resume,
             max_retries=args.max_retries,
             chunk_size=args.chunk_size,
+            tool=args.tool,
         )
     )
 

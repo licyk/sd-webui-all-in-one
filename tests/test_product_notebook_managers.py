@@ -114,7 +114,6 @@ def test_image_product_model_download_helpers_delegate(monkeypatch, tmp_path, cl
         "url": "https://example.test/model.bin",
         "path": tmp_path / "app" / model_path,
         "filename": "model.safetensors",
-        "tool": "aria2",
     }
     assert calls[1]["path"] == tmp_path / "app" / model_path
     assert calls[2]["path"] == tmp_path / "app" / "models/checkpoints"
@@ -137,11 +136,10 @@ def test_sd_trainer_and_invokeai_model_download_helpers_delegate(tmp_path):
             "url": "https://example.test/a.bin",
             "path": tmp_path / "trainer" / "sd-models",
             "filename": "a.safetensors",
-            "tool": "aria2",
         }
     ]
     assert invoke_calls == [
-        {"url": "https://example.test/b.bin", "path": tmp_path / "invoke" / "sd-models", "filename": None, "tool": "aria2"}
+        {"url": "https://example.test/b.bin", "path": tmp_path / "invoke" / "sd-models", "filename": None}
     ]
 
 
@@ -360,6 +358,26 @@ def test_fooocus_config_path_and_pre_download_model(monkeypatch, tmp_path):
         },
     ]
     assert captured[1] == ("start", 3)
+
+    captured.clear()
+    manager.pre_download_model("--preset demo", thread_num=2)
+    assert captured[0][1] == [
+        {
+            "url": "https://example.test/model",
+            "path": tmp_path / "fooocus" / "models/checkpoints",
+            "save_name": "model.safetensors",
+            "tool": None,
+            "progress": False,
+        },
+        {
+            "url": "https://example.test/lora",
+            "path": tmp_path / "fooocus" / "models/loras",
+            "save_name": "lora.safetensors",
+            "tool": None,
+            "progress": False,
+        },
+    ]
+    assert captured[1] == ("start", 2)
 
 
 def test_sd_scripts_deprecated_compat_repo_and_helpers(monkeypatch, tmp_path):

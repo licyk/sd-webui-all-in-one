@@ -105,7 +105,7 @@ class ComfyUIManager(BaseManager):
                 模型保存路径
         """
         path = self.workspace / self.workfolder / "models" / (model_type or "checkpoints")
-        return self.get_model(url=url, path=path, filename=filename, tool="aria2")
+        return self.get_model(url=url, path=path, filename=filename)
 
     def get_sd_model_from_list(
         self,

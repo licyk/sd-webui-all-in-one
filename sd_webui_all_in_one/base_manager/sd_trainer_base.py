@@ -575,7 +575,7 @@ def install_sd_trainer_model_from_library(
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
     model_name: str | None = None,
     model_index: int | None = None,
-    downloader: DownloadToolType | None = "aria2",
+    downloader: DownloadToolType | None = None,
     interactive_mode: bool | None = False,
     list_only: bool | None = False,
 ) -> None:
@@ -613,7 +613,7 @@ def install_sd_trainer_model_from_url(
     sd_trainer_path: Path,
     model_url: str,
     model_type: str,
-    downloader: DownloadToolType | None = "aria2",
+    downloader: DownloadToolType | None = None,
 ) -> None:
     """从链接下载模型到 SD Trainer
 
