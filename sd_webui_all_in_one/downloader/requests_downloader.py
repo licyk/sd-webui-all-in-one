@@ -23,7 +23,10 @@ from sd_webui_all_in_one.config import (
 DEFAULT_RANGE_CHUNK_SIZE: int | None = None
 """HTTP Range 默认分片大小, 为 None 时启用自适应分片"""
 
-MIN_RANGE_SPLIT_SIZE = 1024 * 1024
+ADAPTIVE_RANGES_PER_THREAD = 4
+"""自适应 HTTP Range 每个线程对应的目标分片数"""
+
+ADAPTIVE_MIN_RANGE_SIZE = 32 * 1024 * 1024
 """自适应 HTTP Range 分片的最小目标大小"""
 
 STREAM_CHUNK_SIZE = 1024 * 1024
@@ -298,11 +301,20 @@ def _save_resume_state(
 def _range_plan_to_state(
     range_plan: _RangePlan,
 ) -> dict[str, object]:
+    if range_plan.mode == "adaptive":
+        return {
+            "mode": range_plan.mode,
+            "chunk_size": range_plan.chunk_size,
+            "num_threads": range_plan.num_threads,
+            "ranges_per_thread": ADAPTIVE_RANGES_PER_THREAD,
+            "adaptive_min_range_size": ADAPTIVE_MIN_RANGE_SIZE,
+        }
+
     return {
         "mode": range_plan.mode,
         "chunk_size": range_plan.chunk_size,
         "num_threads": range_plan.num_threads,
-        "min_range_split_size": MIN_RANGE_SPLIT_SIZE if range_plan.mode == "adaptive" else None,
+        "min_range_split_size": None,
     }
 
 
@@ -330,8 +342,9 @@ def _build_range_plan(
     if total_size <= 0:
         ranges: list[tuple[int, int]] = []
     else:
-        max_ranges_by_size = max(1, total_size // MIN_RANGE_SPLIT_SIZE)
-        range_count = max(1, min(safe_num_threads, max_ranges_by_size))
+        max_ranges_by_size = max(1, total_size // ADAPTIVE_MIN_RANGE_SIZE)
+        target_range_count = safe_num_threads * ADAPTIVE_RANGES_PER_THREAD
+        range_count = max(1, min(target_range_count, max_ranges_by_size))
         range_size = max(1, (total_size + range_count - 1) // range_count)
         ranges = _build_ranges(total_size, range_size)
 
