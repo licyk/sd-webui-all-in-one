@@ -20,7 +20,7 @@
 
 - 参数区：定义安装路径、内核路径前缀、Python / PyTorch 版本、镜像、代理、构建模式和产品特定选项。
 - 路径和环境初始化：规范化安装路径，识别 `core_prefix.txt`，配置 PATH、缓存目录和产品根目录环境变量。
-- 基础组件安装：安装或更新 Python、Git、Aria2、uv / pip 和 `sd_webui_all_in_one` Python 内核。
+- 基础组件安装：安装或更新 Python、Git、uv / pip 和 `sd_webui_all_in_one` Python 内核。
 - 产品安装流程：clone 仓库、切换分支、写入配置、安装依赖、预下载模型或扩展。
 - 管理脚本生成：写出 `launch.ps1`、`update.ps1`、`terminal.ps1`、`download_models.ps1`、`version_manager.ps1` 等脚本。
 - 模式入口：根据普通安装、更新模式或构建模式决定执行路径。

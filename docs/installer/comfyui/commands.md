@@ -74,7 +74,7 @@ python <python_script.py>
 ### 下载文件
 ```
 # 命令中的 <url> 替换成下载链接，<dir> 替换成下载到的路径，<output_file_name> 替换成保存的文件名
-aria2c <url> -c -s 16 -x 16 -k 1M -d <dir> -o <output_file_name>
+sd-webui-all-in-one self-manager download-file <url> --path <dir> --save-name <output_file_name>
 ```
 
 ### 安装绘世启动器并自动配置绘世启动器所需的环境

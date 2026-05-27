@@ -944,102 +944,6 @@ function Install-Git {
 }
 
 
-# 下载 Aria2
-function Install-WindowsAria2 {
-    $urls = @(
-        "https://www.modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/aria2/windows/amd64/aria2c.exe",
-        "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/aria2/windows/amd64/aria2c.exe"
-    )
-    $i = 0
-
-    foreach ($url in $urls) {
-        Write-Log "正在下载 Aria2"
-        try {
-            $web_request_params = @{
-                Uri = $url
-                UseBasicParsing = $true
-                OutFile = (Join-NormalizedPath $env:CACHE_HOME "aria2c.exe")
-                TimeoutSec = 15
-                ErrorAction = "Stop"
-            }
-            Invoke-WebRequest @web_request_params
-            break
-        }
-        catch {
-            $i += 1
-            if ($i -lt $urls.Length) {
-                Write-Log "重试下载 Aria2 中" -Level WARNING
-            } else {
-                Write-Log "Aria2 安装失败, 终止 ComfyUI 安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
-                if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
-                exit 1
-            }
-        }
-    }
-
-    Move-Item -Path (Join-NormalizedPath $env:CACHE_HOME "aria2c.exe") -Destination (Join-NormalizedPath $script:InstallPath "git" "bin" "aria2c.exe") -Force
-    Write-Log "Aria2 下载成功"
-}
-
-function Install-Aria2 {
-    $platform = Get-CurrentPlatform
-    if ($platform -eq "windows") {
-        $aria2_cmd = Get-Command aria2c -ErrorAction SilentlyContinue
-        if ($aria2_cmd) {
-            $aria2_path_prefix = Join-NormalizedPath $script:InstallPath "git"
-            $aria2_extra_path_prefix = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "git"
-            $aria2_cmd = Get-NormalizedFilePath $aria2_cmd.Path
-            if (($aria2_cmd) -and (($aria2_cmd.ToString().StartsWith($aria2_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)) -or ($aria2_cmd.ToString().StartsWith($aria2_extra_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)))) {
-                Write-Log "aria2 已安装"
-                return
-            }
-        }
-        Install-WindowsAria2
-    }
-    elseif ($platform -eq "linux") {
-        if (Get-Command aria2c -ErrorAction SilentlyContinue) {
-            Write-Log "Aria2 已安装"
-            return
-        }
-        try {
-            Write-Log "安装 Aria2 中"
-            if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apt" -Arguments @("update"); Invoke-SmartCommand -Command "apt" -Arguments $("install", "aria2", "-y"); return }
-            if (Get-Command yum -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "yum" -Arguments $("install", "aria2", "-y"); return }
-            if (Get-Command apk -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "apk" -Arguments $("add", "aria2"); return }
-            if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "pacman" -Arguments $("-S", "aria2", "--noconfirm"); return }
-            if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "zypper" -Arguments $("install", "aria2", "-y"); return }
-            if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "nix-channel" -Arguments $("--update"); Invoke-SmartCommand -Command "nix-env" -Arguments $("-iA", "aria2"); return }
-            Write-Log "无可用的包管理器安装 Aria2, 终止安装进程, 请手动安装 Aria2" -Level ERROR
-            if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
-            exit 1
-        }
-        catch {
-            Write-Log "安装 Aria2 失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
-            if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
-            exit 1
-        }
-    }
-    elseif ($platform -eq "macos") {
-        if (Get-Command aria2c -ErrorAction SilentlyContinue) {
-            Write-Log "Aria2 已安装"
-            return
-        }
-        try {
-            Write-Log "安装 Aria2 中"
-            if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "aria2"); return }
-            if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "port" -Arguments $("install", "aria2", "-y"); return }
-            Write-Log "无可用的包管理器安装 Aria2, 终止安装进程, 请手动安装 Aria2" -Level ERROR
-            if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
-            exit 1
-        }
-        catch {
-            Write-Log "安装 Aria2 失败, 终止安装进程, 可尝试重新运行 ComfyUI Installer 重试失败的安装" -Level ERROR
-            if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
-            exit 1
-        }
-    }
-}
-
 # 安装
 function Invoke-Installation {
     New-Item -ItemType Directory -Path $script:InstallPath -Force > $null
@@ -1052,9 +956,6 @@ function Invoke-Installation {
 
     Write-Log "检测是否安装 Git"
     Install-Git
-
-    Write-Log "检测是否安装 Aria2"
-    Install-Aria2
 
     Update-SDWebUiAllInOne
     $launch_params = Get-LaunchCoreArgs
@@ -1510,97 +1411,6 @@ function Update-Installer {
     catch { exit 1 }
 }
 
-
-# 更新 Aria2 (Windows) 版本
-function Update-WindowsAria2 {
-    `$urls = @(
-        `"https://www.modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/aria2/windows/amd64/aria2c.exe`",
-        `"https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/aria2/windows/amd64/aria2c.exe`"
-    )
-    `$aria2_tmp_path = Join-NormalizedPath `$env:CACHE_HOME `"aria2c.exe`"
-    New-Item -ItemType Directory -Path `$env:CACHE_HOME -Force > `$null
-
-    foreach (`$url in `$urls) {
-        Write-Log `"下载 Aria2 中`"
-        try {
-            `$web_request_params = @{
-                Uri = `$url
-                UseBasicParsing = `$true
-                OutFile = `$aria2_tmp_path
-                TimeoutSec = 15
-                ErrorAction = `"Stop`"
-            }
-            Invoke-WebRequest @web_request_params
-            break
-        }
-        catch {
-            `$i += 1
-            if (`$i -lt `$urls.Length) {
-                Write-Log `"重试下载 Aria2 中`" -Level WARNING
-            } else {
-                Write-Log `"Aria2 下载失败, 无法更新 Aria2, 可能会导致模型下载出现问题`" -Level ERROR
-                return
-            }
-        }
-    }
-
-    `$git_cmd = Get-Command git -ErrorAction SilentlyContinue
-    if (`$git_cmd) {
-        `$git_path_prefix = Join-NormalizedPath `$script:InstallPath `"git`"
-        `$git_extra_path_prefix = Join-NormalizedPath `$script:InstallPath `$env:CORE_PREFIX `"git`"
-        `$git_cmd = Get-NormalizedFilePath `$git_cmd.Path
-        if ((`$git_cmd) -and ((`$git_cmd.ToString().StartsWith(`$git_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)) -or (`$git_cmd.ToString().StartsWith(`$git_extra_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)))) {
-            `$aria2_bin_path = Join-NormalizedPath (Split-Path -Path `$git_cmd -Parent) `"aria2c.exe`"
-        }
-        else {
-            `$aria2_bin_path = Join-NormalizedPath `$PSScriptRoot `"git`" `"bin`" `"aria2c.exe`"
-        }
-    }
-    else {
-        `$aria2_bin_path = Join-NormalizedPath `$PSScriptRoot `"git`" `"bin`" `"aria2c.exe`"
-    }
-
-    New-Item -ItemType Directory -Path (Split-Path -Path `$aria2_bin_path -Parent) -Force | Out-Null
-    Move-Item -Path `$aria2_tmp_path -Destination `$aria2_bin_path -Force
-}
-
-
-# 更新 Aria2
-function Update-Aria2 {
-    Write-Log `"检查 Aria2 是否需要更新`"
-    & python -m sd_webui_all_in_one self-manager check-aria2
-    if (`$?) {
-        Write-Log `"Aria2 无需更新`"
-        return
-    }
-    Write-Log `"更新 Aria2 中`"
-    `$platform = Get-CurrentPlatform
-    if (`$platform -eq `"windows`") {
-        Update-WindowsAria2
-    }
-    elseif (`$platform -eq `"linux`") {
-        try {
-            if (Get-Command apt -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"apt`" -Arguments @(`"update`"); Invoke-SmartCommand -Command `"apt`" -Arguments @(`"install`", `"--only-upgrade`", `"aria2`", `"-y`"); return }
-            if (Get-Command yum -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"yum`" -Arguments @(`"upgrade`", `"aria2`", `"-y`"); return }
-            if (Get-Command apk -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"apk`" -Arguments @(`"add`", `"--upgrade`", `"aria2`"); return }
-            if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"pacman`" -Arguments @(`"-Sy`", `"aria2`", `"--noconfirm`"); return }
-            if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"zypper`" -Arguments @(`"update`", `"-y`", `"aria2`"); return }
-            if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"nix-channel`" -Arguments @(`"--update`"); Invoke-SmartCommand -Command `"nix-env`" -Arguments @(`"-u`", `"aria2`"); return }
-        }
-        catch {
-            Write-Log `"更新 Aria2 失败, 可能会导致模型下载出现问题`" -Level ERROR
-        }
-    }
-    elseif (`$platform -eq `"macos`") {
-        try {
-            if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"brew`" -Arguments @(`"upgrade`", `"aria2`"); return }
-            if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command `"port`" -Arguments @(`"upgrade`", `"aria2`"); return }
-        }
-        catch {
-            Write-Log `"更新 Aria2 失败, 可能会导致模型下载出现问题`" -Level ERROR
-        }
-    }
-}
 
 
 # 获取当前平台
@@ -2134,7 +1944,6 @@ Export-ModuleMember -Function ``
     Write-FileWithStreamWriter, ``
     Update-SDWebUiAllInOne, ``
     Update-Installer, ``
-    Update-Aria2, ``
     Get-Version, ``
     Get-HelpMessage, ``
     Set-CorePrefix, ``
@@ -3274,7 +3083,7 @@ try {
         DisableAutoMirror = `$script:DisableAutoMirror
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Update-Aria2`", `"Get-HelpMessage`", `"Set-ModelMirror`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Set-ModelMirror`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3310,8 +3119,6 @@ function Get-LaunchCoreArgs {
         `$launch_params.Add(`"--interactive`") | Out-Null
     }
     Set-ModelMirror `$launch_params
-    `$launch_params.Add(`"--downloader`") | Out-Null
-    `$launch_params.Add(`"aria2`") | Out-Null
     return `$launch_params
 }
 
@@ -3325,7 +3132,6 @@ function Main {
     Set-Proxy
     Update-Installer
     Update-SDWebUiAllInOne
-    Update-Aria2
 
     if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
         Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 ComfyUI 是否已正确安装, 或者尝试运行 ComfyUI Installer 进行修复`" -Level ERROR

@@ -74,7 +74,7 @@ python <python_script.py>
 ### 下载文件
 ```powershell
 # 命令中的 <url> 替换成下载链接，<dir> 替换成下载到的路径，<output_file_name> 替换成保存的文件名
-aria2c <url> -c -s 16 -x 16 -k 1M -d <dir> -o <output_file_name>
+sd-webui-all-in-one self-manager download-file <url> --path <dir> --save-name <output_file_name>
 ```
 
 ### 列出 SD Trainer Script Installer 内置命令
