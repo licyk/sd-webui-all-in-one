@@ -225,10 +225,10 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 443
+$script:INVOKEAI_INSTALLER_VERSION = 444
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.2.23"
+$script:CORE_MINIMUM_VER = "2.2.24"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -1373,7 +1373,7 @@ function Update-Installer {
         return
     }
 
-    `$raw_params = `$script:LaunchCommandLine -replace '^.*\.dll[`"'']?[\s]*', '' -replace '^.*\.ps1[`"'']?[\s]*', ''
+    `$raw_params = `$script:LaunchCommandLine -replace '^.*?\.dll\s*[`"'']?\s*', '' -replace '^.*\.ps1\s*[`"'']?\s*', ''
     Write-Log `"更新结束, 重新启动 InvokeAI Installer 管理脚本中, 使用的命令行参数: `$raw_params`"
     try { Invoke-Expression `"& ```"`$script:OriginalScriptPath```" `$raw_params`" -ErrorAction Stop; exit `$LASTEXITCODE }
     catch { exit 1 }
