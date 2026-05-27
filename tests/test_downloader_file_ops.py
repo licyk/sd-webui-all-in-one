@@ -36,17 +36,24 @@ def test_download_file_falls_back_from_aria2_to_requests(monkeypatch, tmp_path):
 def test_download_file_falls_back_to_urllib_when_requests_missing(monkeypatch, tmp_path):
     calls = []
     real_import = builtins.__import__
+    install_calls = []
 
     def fake_import(name, *args, **kwargs):
         if name == "requests":
             raise ImportError("requests missing")
         return real_import(name, *args, **kwargs)
 
+    def fake_pip_install(*args, **kwargs):
+        install_calls.append((args, kwargs))
+        raise RuntimeError("install failed")
+
     def fake_download_executer(url, path, save_name, tool, progress, **_kwargs):
         calls.append((tool, path))
         return path / (save_name or "download.bin")
 
     monkeypatch.setattr(builtins, "__import__", fake_import)
+    monkeypatch.setattr(downloader_module, "get_auto_pypi_mirror_config", lambda: {"PIP_INDEX_URL": "https://example.test/simple"})
+    monkeypatch.setattr(downloader_module, "pip_install", fake_pip_install)
     monkeypatch.setattr(downloader_module.shutil, "which", lambda name: None if name == "aria2c" else "/bin/tool")
     monkeypatch.setattr(downloader_module, "download_executer", fake_download_executer)
 
@@ -54,6 +61,70 @@ def test_download_file_falls_back_to_urllib_when_requests_missing(monkeypatch, t
 
     assert result == tmp_path / "downloads" / "download.bin"
     assert calls == [("urllib", tmp_path / "downloads")]
+    assert install_calls == [(("requests",), {"custom_env": {"PIP_INDEX_URL": "https://example.test/simple"}})]
+
+
+def test_download_file_installs_requests_before_fallback(monkeypatch, tmp_path):
+    calls = []
+    install_calls = []
+    installed = False
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "requests":
+            if not installed:
+                raise ImportError("requests missing")
+            return types.ModuleType("requests")
+        return real_import(name, *args, **kwargs)
+
+    def fake_pip_install(*args, **kwargs):
+        nonlocal installed
+        install_calls.append((args, kwargs))
+        installed = True
+
+    def fake_download_executer(url, path, save_name, tool, progress, **_kwargs):
+        calls.append((tool, path))
+        return path / (save_name or "download.bin")
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    monkeypatch.setattr(downloader_module, "get_auto_pypi_mirror_config", lambda: {"PIP_INDEX_URL": "https://example.test/simple"})
+    monkeypatch.setattr(downloader_module, "pip_install", fake_pip_install)
+    monkeypatch.setattr(downloader_module, "download_executer", fake_download_executer)
+
+    result = downloader_module.download_file("https://example.test/file.bin", path=tmp_path / "downloads")
+
+    assert result == tmp_path / "downloads" / "download.bin"
+    assert calls == [("requests", tmp_path / "downloads")]
+    assert install_calls == [(("requests",), {"custom_env": {"PIP_INDEX_URL": "https://example.test/simple"}})]
+
+
+def test_download_file_falls_back_when_requests_still_missing_after_install(monkeypatch, tmp_path):
+    calls = []
+    install_calls = []
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "requests":
+            raise ImportError("requests missing")
+        return real_import(name, *args, **kwargs)
+
+    def fake_pip_install(*args, **kwargs):
+        install_calls.append((args, kwargs))
+
+    def fake_download_executer(url, path, save_name, tool, progress, **_kwargs):
+        calls.append((tool, path))
+        return path / (save_name or "download.bin")
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    monkeypatch.setattr(downloader_module, "get_auto_pypi_mirror_config", lambda: {"PIP_INDEX_URL": "https://example.test/simple"})
+    monkeypatch.setattr(downloader_module, "pip_install", fake_pip_install)
+    monkeypatch.setattr(downloader_module, "download_executer", fake_download_executer)
+
+    result = downloader_module.download_file("https://example.test/file.bin", path=tmp_path / "downloads")
+
+    assert result == tmp_path / "downloads" / "download.bin"
+    assert calls == [("urllib", tmp_path / "downloads")]
+    assert install_calls == [(("requests",), {"custom_env": {"PIP_INDEX_URL": "https://example.test/simple"}})]
 
 
 def test_download_archive_and_unpack_uses_url_name_and_wraps_errors(monkeypatch, tmp_path):

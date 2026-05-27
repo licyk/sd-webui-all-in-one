@@ -8,6 +8,8 @@ from sd_webui_all_in_one.downloader.requests_downloader import download_file_fro
 from sd_webui_all_in_one.downloader.urllib_downloader import download_file_from_url_urllib
 from sd_webui_all_in_one.retry_decorator import retryable
 from sd_webui_all_in_one.downloader.types import DownloadToolType
+from sd_webui_all_in_one.pkg_manager import pip_install
+from sd_webui_all_in_one.mirror_manager import get_auto_pypi_mirror_config
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
@@ -22,6 +24,33 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+
+def _is_requests_available() -> bool:
+    """检查 requests 是否可以导入"""
+    try:
+        import requests
+
+        _ = requests
+        return True
+    except ImportError:
+        return False
+
+
+def _install_requests() -> bool:
+    """尝试安装 requests, 并确认安装后可以导入"""
+    try:
+        custom_env = get_auto_pypi_mirror_config()
+        pip_install("requests", custom_env=custom_env)
+    except Exception as e:
+        logger.warning("安装 requests 失败: %s", e)
+        return False
+
+    if _is_requests_available():
+        return True
+
+    logger.warning("安装 requests 后仍无法导入")
+    return False
 
 
 @retryable(
@@ -131,14 +160,11 @@ def download_file(
         logger.warning("未安装 Aria2, 将切换到 requests 进行下载")
         selected_tool = "requests"
 
-    try:
-        if selected_tool == "requests":
-            import requests
-
-            _ = requests
-    except ImportError:
-        logger.warning("未安装 requests, 将切换到 urllib 进行下载")
-        selected_tool = "urllib"
+    if selected_tool == "requests" and not _is_requests_available():
+        logger.warning("未安装 requests, 尝试自动安装 requests")
+        if not _install_requests():
+            logger.warning("未安装 requests, 将切换到 urllib 进行下载")
+            selected_tool = "urllib"
 
     return download_executer(
         url=url,
