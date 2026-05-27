@@ -294,6 +294,50 @@ def test_self_manager_start_tunnel_cli_parse_smoke(monkeypatch, tmp_path):
     ]
 
 
+def test_self_manager_download_file_cli_parse_smoke(monkeypatch, tmp_path):
+    parser = _single_command_parser(cli_utils.register_manager)
+    calls = []
+
+    monkeypatch.setattr(cli_utils, "download_file_cli", lambda **kwargs: calls.append(kwargs))
+
+    args = parser.parse_args(
+        [
+            "self-manager",
+            "download-file",
+            "https://example.test/model.bin",
+            "--path",
+            str(tmp_path),
+            "--save-name",
+            "asset.bin",
+            "--downloader",
+            "requests",
+            "--no-progress",
+            "--num-threads",
+            "8",
+            "--no-resume",
+            "--max-retries",
+            "2",
+            "--chunk-size",
+            "4096",
+        ]
+    )
+    args.func(args)
+
+    assert calls == [
+        {
+            "url": "https://example.test/model.bin",
+            "path": tmp_path,
+            "save_name": "asset.bin",
+            "tool": "requests",
+            "progress": False,
+            "num_threads": 8,
+            "resume": False,
+            "max_retries": 2,
+            "chunk_size": 4096,
+        }
+    ]
+
+
 def test_get_env_config_prints_resolved_config_values(monkeypatch, capsys, tmp_path):
     monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL", "999")
     monkeypatch.setenv("SD_WEBUI_ROOT", "/env/sd-webui")

@@ -21,6 +21,10 @@ from sd_webui_all_in_one.cli_manager.auto_mirror import (
     add_auto_mirror_argument,
     with_auto_mirror,
 )
+from sd_webui_all_in_one.downloader.types import (
+    DOWNLOAD_TOOL_TYPE_LIST,
+    DownloadToolType,
+)
 from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
 from sd_webui_all_in_one.config import (
     LOGGER_NAME,
@@ -141,6 +145,55 @@ def get_env_config() -> None:
         if isinstance(value, Path):
             value = value.as_posix()
         print(f"{name}: '{value}'")
+
+
+def download_file_cli(
+    url: str,
+    path: Path | None = None,
+    save_name: str | None = None,
+    tool: DownloadToolType | None = "aria2",
+    progress: bool | None = True,
+    num_threads: int | None = 16,
+    resume: bool | None = True,
+    max_retries: int | None = 5,
+    chunk_size: int | None = 1024 * 1024,
+) -> None:
+    """下载文件并输出保存路径
+
+    Args:
+        url (str):
+            文件下载链接
+        path (Path | None):
+            文件下载路径
+        save_name (str | None):
+            文件保存名称
+        tool (DownloadToolType | None):
+            下载工具
+        progress (bool | None):
+            是否启用下载进度条
+        num_threads (int | None):
+            requests 下载器的单文件 HTTP Range 下载线程数
+        resume (bool | None):
+            requests 下载器是否启用断点续传
+        max_retries (int | None):
+            requests 下载器单个分片的最大重试次数
+        chunk_size (int | None):
+            requests 下载器的 HTTP Range 分片大小
+    """
+    from sd_webui_all_in_one.downloader import download_file
+
+    downloaded_path = download_file(
+        url=url,
+        path=path,
+        save_name=save_name,
+        tool=tool,
+        progress=progress,
+        num_threads=num_threads,
+        resume=resume,
+        max_retries=max_retries,
+        chunk_size=chunk_size,
+    )
+    print(downloaded_path)
 
 
 def start_tunnel(
@@ -425,6 +478,31 @@ def register_manager(
     # get-env-config
     get_env_config_p = sd_webui_all_in_one_sub.add_parser("get-env-config", help="获取 SD WebUI All In One 使用的环境变量配置")
     get_env_config_p.set_defaults(func=lambda args: get_env_config())
+
+    # download-file
+    download_file_p = sd_webui_all_in_one_sub.add_parser("download-file", help="下载文件")
+    download_file_p.add_argument("url", type=str, help="文件下载链接")
+    download_file_p.add_argument("--path", type=normalized_filepath, default=None, help="文件下载路径, 默认为当前目录")
+    download_file_p.add_argument("--save-name", type=str, default=None, help="文件保存名称")
+    download_file_p.add_argument("--downloader", dest="tool", default="aria2", choices=DOWNLOAD_TOOL_TYPE_LIST, help="下载工具")
+    download_file_p.add_argument("--no-progress", action="store_false", dest="progress", default=True, help="禁用下载进度条")
+    download_file_p.add_argument("--num-threads", type=int, default=16, help="requests 下载器的单文件 HTTP Range 下载线程数")
+    download_file_p.add_argument("--no-resume", action="store_false", dest="resume", default=True, help="禁用 requests 下载器断点续传")
+    download_file_p.add_argument("--max-retries", type=int, default=5, help="requests 下载器单个分片的最大重试次数")
+    download_file_p.add_argument("--chunk-size", type=int, default=1024 * 1024, help="requests 下载器 HTTP Range 分片大小, 单位为字节")
+    download_file_p.set_defaults(
+        func=lambda args: download_file_cli(
+            url=args.url,
+            path=args.path,
+            save_name=args.save_name,
+            tool=args.tool,
+            progress=args.progress,
+            num_threads=args.num_threads,
+            resume=args.resume,
+            max_retries=args.max_retries,
+            chunk_size=args.chunk_size,
+        )
+    )
 
     # start-tunnel
     start_tunnel_p = sd_webui_all_in_one_sub.add_parser("start-tunnel", help="启动内网穿透")

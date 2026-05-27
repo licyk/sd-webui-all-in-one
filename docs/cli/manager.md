@@ -118,6 +118,23 @@ sd-webui-all-in-one self-manager get-tcmalloc --path
 sd-webui-all-in-one self-manager get-env-config
 ```
 
+### 下载文件
+调用 Python 内核中的 `downloader.download_file()` 下载任意文件。
+```bash
+sd-webui-all-in-one self-manager download-file <下载链接> [选项]
+```
+
+高级选项：
+
+- `--path <路径>`：文件下载路径，默认当前目录。
+- `--save-name <文件名>`：文件保存名称，默认从 URL 中提取。
+- `--downloader <工具>`：下载工具，可选 `aria2`、`requests`、`urllib`，默认 `aria2`。
+- `--no-progress`：禁用下载进度条。
+- `--num-threads <数量>`：`requests` 下载器的 HTTP Range 下载线程数，默认 `16`。
+- `--no-resume`：禁用 `requests` 下载器断点续传。
+- `--max-retries <次数>`：`requests` 下载器单个分片最大重试次数，默认 `5`。
+- `--chunk-size <字节>`：`requests` 下载器 HTTP Range 分片大小，默认 `1048576`。
+
 ### 启动内网穿透
 启动内网穿透服务，将本地端口映射到公网。
 ```bash

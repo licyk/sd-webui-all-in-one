@@ -18,7 +18,7 @@ from sd_webui_all_in_one.file_operations import file_manager
 def test_download_file_falls_back_from_aria2_to_requests(monkeypatch, tmp_path):
     calls = []
 
-    def fake_download_executer(url, path, save_name, tool, progress):
+    def fake_download_executer(url, path, save_name, tool, progress, **_kwargs):
         calls.append((url, path, save_name, tool, progress))
         return path / (save_name or "download.bin")
 
@@ -42,7 +42,7 @@ def test_download_file_falls_back_to_urllib_when_requests_missing(monkeypatch, t
             raise ImportError("requests missing")
         return real_import(name, *args, **kwargs)
 
-    def fake_download_executer(url, path, save_name, tool, progress):
+    def fake_download_executer(url, path, save_name, tool, progress, **_kwargs):
         calls.append((tool, path))
         return path / (save_name or "download.bin")
 

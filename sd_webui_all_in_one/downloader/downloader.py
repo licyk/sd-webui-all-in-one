@@ -37,6 +37,10 @@ def download_executer(
     save_name: str | None,
     tool: DownloadToolType,
     progress: bool,
+    num_threads: int | None = 16,
+    resume: bool | None = True,
+    max_retries: int | None = 5,
+    chunk_size: int | None = 1024 * 1024,
 ) -> Path:
     """底层下载执行器
 
@@ -51,6 +55,14 @@ def download_executer(
             工具名称
         progress (bool):
             是否显示进度
+        num_threads (int | None):
+            requests 下载器的单文件 HTTP Range 下载线程数
+        resume (bool | None):
+            requests 下载器是否启用断点续传
+        max_retries (int | None):
+            requests 下载器单个分片的最大重试次数
+        chunk_size (int | None):
+            requests 下载器的 HTTP Range 分片大小
 
     Returns:
         Path:
@@ -59,7 +71,16 @@ def download_executer(
     if tool == "aria2":
         return aria2(url=url, path=path, save_name=save_name, progress=progress)
     elif tool == "requests":
-        return download_file_from_url(url=url, save_path=path, file_name=save_name, progress=progress)
+        return download_file_from_url(
+            url=url,
+            save_path=path,
+            file_name=save_name,
+            progress=progress,
+            num_threads=num_threads,
+            resume=resume,
+            max_retries=max_retries,
+            chunk_size=chunk_size,
+        )
     elif tool == "urllib":
         return download_file_from_url_urllib(url=url, save_path=path, file_name=save_name, progress=progress)
     return None
@@ -71,6 +92,10 @@ def download_file(
     save_name: str | None = None,
     tool: DownloadToolType | None = "aria2",
     progress: bool | None = True,
+    num_threads: int | None = 16,
+    resume: bool | None = True,
+    max_retries: int | None = 5,
+    chunk_size: int | None = 1024 * 1024,
 ) -> Path:
     """下载文件工具
 
@@ -85,6 +110,14 @@ def download_file(
             下载工具
         progress (bool | None):
             是否启用下载进度条
+        num_threads (int | None):
+            requests 下载器的单文件 HTTP Range 下载线程数
+        resume (bool | None):
+            requests 下载器是否启用断点续传
+        max_retries (int | None):
+            requests 下载器单个分片的最大重试次数
+        chunk_size (int | None):
+            requests 下载器的 HTTP Range 分片大小
 
     Returns:
         Path: 保存的文件路径
@@ -107,4 +140,14 @@ def download_file(
         logger.warning("未安装 requests, 将切换到 urllib 进行下载")
         selected_tool = "urllib"
 
-    return download_executer(url=url, path=path, save_name=save_name, tool=selected_tool, progress=bool(progress))
+    return download_executer(
+        url=url,
+        path=path,
+        save_name=save_name,
+        tool=selected_tool,
+        progress=bool(progress),
+        num_threads=num_threads,
+        resume=resume,
+        max_retries=max_retries,
+        chunk_size=chunk_size,
+    )
