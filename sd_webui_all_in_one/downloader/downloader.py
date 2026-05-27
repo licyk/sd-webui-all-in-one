@@ -40,7 +40,7 @@ def download_executer(
     num_threads: int | None = 16,
     resume: bool | None = True,
     max_retries: int | None = 5,
-    chunk_size: int | None = 1024 * 1024,
+    chunk_size: int | None = None,
 ) -> Path:
     """底层下载执行器
 
@@ -62,7 +62,7 @@ def download_executer(
         max_retries (int | None):
             requests 下载器单个分片的最大重试次数
         chunk_size (int | None):
-            requests 下载器的 HTTP Range 分片大小
+            requests 下载器的 HTTP Range 分片大小, 为 None 或 0 时启用自适应分片
 
     Returns:
         Path:
@@ -95,7 +95,7 @@ def download_file(
     num_threads: int | None = 16,
     resume: bool | None = True,
     max_retries: int | None = 5,
-    chunk_size: int | None = 1024 * 1024,
+    chunk_size: int | None = None,
 ) -> Path:
     """下载文件工具
 
@@ -117,7 +117,7 @@ def download_file(
         max_retries (int | None):
             requests 下载器单个分片的最大重试次数
         chunk_size (int | None):
-            requests 下载器的 HTTP Range 分片大小
+            requests 下载器的 HTTP Range 分片大小, 为 None 或 0 时启用自适应分片
 
     Returns:
         Path: 保存的文件路径

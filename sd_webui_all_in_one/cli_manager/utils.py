@@ -156,7 +156,7 @@ def download_file_cli(
     num_threads: int | None = 16,
     resume: bool | None = True,
     max_retries: int | None = 5,
-    chunk_size: int | None = 1024 * 1024,
+    chunk_size: int | None = None,
 ) -> None:
     """下载文件并输出保存路径
 
@@ -178,11 +178,11 @@ def download_file_cli(
         max_retries (int | None):
             requests 下载器单个分片的最大重试次数
         chunk_size (int | None):
-            requests 下载器的 HTTP Range 分片大小
+            requests 下载器的 HTTP Range 分片大小, 为 None 或 0 时启用自适应分片
     """
     from sd_webui_all_in_one.downloader import download_file
 
-    downloaded_path = download_file(
+    download_file(
         url=url,
         path=path,
         save_name=save_name,
@@ -193,7 +193,6 @@ def download_file_cli(
         max_retries=max_retries,
         chunk_size=chunk_size,
     )
-    print(downloaded_path)
 
 
 def start_tunnel(
@@ -489,7 +488,7 @@ def register_manager(
     download_file_p.add_argument("--num-threads", type=int, default=16, help="requests 下载器的单文件 HTTP Range 下载线程数")
     download_file_p.add_argument("--no-resume", action="store_false", dest="resume", default=True, help="禁用 requests 下载器断点续传")
     download_file_p.add_argument("--max-retries", type=int, default=5, help="requests 下载器单个分片的最大重试次数")
-    download_file_p.add_argument("--chunk-size", type=int, default=1024 * 1024, help="requests 下载器 HTTP Range 分片大小, 单位为字节")
+    download_file_p.add_argument("--chunk-size", type=int, default=None, help="requests 下载器 HTTP Range 分片大小, 单位为字节; 默认自适应分片")
     download_file_p.set_defaults(
         func=lambda args: download_file_cli(
             url=args.url,

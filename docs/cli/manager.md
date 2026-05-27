@@ -133,7 +133,7 @@ sd-webui-all-in-one self-manager download-file <下载链接> [选项]
 - `--num-threads <数量>`：`requests` 下载器的 HTTP Range 下载线程数，默认 `16`。
 - `--no-resume`：禁用 `requests` 下载器断点续传。
 - `--max-retries <次数>`：`requests` 下载器单个分片最大重试次数，默认 `5`。
-- `--chunk-size <字节>`：`requests` 下载器 HTTP Range 分片大小，默认 `1048576`。
+- `--chunk-size <字节>`：`requests` 下载器 HTTP Range 固定分片大小；默认不固定，自动按线程数切成少量长分片。传入 `0` 也表示自适应分片。
 
 ### 启动内网穿透
 启动内网穿透服务，将本地端口映射到公网。

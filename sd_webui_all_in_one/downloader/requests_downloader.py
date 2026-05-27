@@ -20,8 +20,17 @@ from sd_webui_all_in_one.config import (
 )
 
 
-DEFAULT_RANGE_CHUNK_SIZE = 1024 * 1024
-"""HTTP Range 分片大小"""
+DEFAULT_RANGE_CHUNK_SIZE: int | None = None
+"""HTTP Range 默认分片大小, 为 None 时启用自适应分片"""
+
+MIN_RANGE_SPLIT_SIZE = 1024 * 1024
+"""自适应 HTTP Range 分片的最小目标大小"""
+
+STREAM_CHUNK_SIZE = 1024 * 1024
+"""HTTP 响应读取块大小"""
+
+STATE_SAVE_COMPLETED_RANGE_INTERVAL = 8
+"""断点续传状态写入间隔"""
 
 STATE_VERSION = 1
 """HTTP Range 断点续传状态版本"""
@@ -61,6 +70,16 @@ class _RemoteFileInfo:
     supports_range: bool
     etag: str | None = None
     last_modified: str | None = None
+
+
+@dataclass(frozen=True)
+class _RangePlan:
+    """HTTP Range 下载计划"""
+
+    mode: str
+    chunk_size: int | None
+    num_threads: int
+    ranges: list[tuple[int, int]]
 
 
 def _get_header(
@@ -219,7 +238,7 @@ def _state_matches_remote(
     *,
     url: str,
     remote_info: _RemoteFileInfo,
-    chunk_size: int,
+    range_plan: _RangePlan,
 ) -> bool:
     if not state:
         return False
@@ -230,7 +249,7 @@ def _state_matches_remote(
         and state.get("total_size") == remote_info.total_size
         and state.get("etag") == remote_info.etag
         and state.get("last_modified") == remote_info.last_modified
-        and state.get("chunk_size") == chunk_size
+        and state.get("range_plan") == _range_plan_to_state(range_plan)
     )
 
 
@@ -259,7 +278,7 @@ def _save_resume_state(
     *,
     url: str,
     remote_info: _RemoteFileInfo,
-    chunk_size: int,
+    range_plan: _RangePlan,
     completed_ranges: set[tuple[int, int]],
 ) -> None:
     state = {
@@ -268,7 +287,7 @@ def _save_resume_state(
         "total_size": remote_info.total_size,
         "etag": remote_info.etag,
         "last_modified": remote_info.last_modified,
-        "chunk_size": chunk_size,
+        "range_plan": _range_plan_to_state(range_plan),
         "completed_ranges": [list(item) for item in sorted(completed_ranges)],
     }
     tmp_state_file = state_file.with_name(f"{state_file.name}.tmp")
@@ -276,11 +295,102 @@ def _save_resume_state(
     tmp_state_file.replace(state_file)
 
 
+def _range_plan_to_state(
+    range_plan: _RangePlan,
+) -> dict[str, object]:
+    return {
+        "mode": range_plan.mode,
+        "chunk_size": range_plan.chunk_size,
+        "num_threads": range_plan.num_threads,
+        "min_range_split_size": MIN_RANGE_SPLIT_SIZE if range_plan.mode == "adaptive" else None,
+    }
+
+
 def _build_ranges(
     total_size: int,
     chunk_size: int,
 ) -> list[tuple[int, int]]:
     return [(start, min(start + chunk_size - 1, total_size - 1)) for start in range(0, total_size, chunk_size)]
+
+
+def _build_range_plan(
+    total_size: int,
+    chunk_size: int | None,
+    num_threads: int,
+) -> _RangePlan:
+    safe_num_threads = max(1, num_threads)
+    if chunk_size is not None and chunk_size > 0:
+        return _RangePlan(
+            mode="fixed",
+            chunk_size=chunk_size,
+            num_threads=safe_num_threads,
+            ranges=_build_ranges(total_size, chunk_size),
+        )
+
+    if total_size <= 0:
+        ranges: list[tuple[int, int]] = []
+    else:
+        max_ranges_by_size = max(1, total_size // MIN_RANGE_SPLIT_SIZE)
+        range_count = max(1, min(safe_num_threads, max_ranges_by_size))
+        range_size = max(1, (total_size + range_count - 1) // range_count)
+        ranges = _build_ranges(total_size, range_size)
+
+    return _RangePlan(
+        mode="adaptive",
+        chunk_size=None,
+        num_threads=safe_num_threads,
+        ranges=ranges,
+    )
+
+
+class _ThreadLocalSessionPool:
+    """为每个下载线程复用一个 requests Session"""
+
+    def __init__(
+        self,
+        requests_module: Any,
+        pool_size: int,
+    ) -> None:
+        self.requests_module = requests_module
+        self.pool_size = max(1, pool_size)
+        self.local = threading.local()
+        self.lock = threading.Lock()
+        self.sessions: list[Any] = []
+
+    def get(self) -> Any:
+        session = getattr(self.local, "session", None)
+        if session is not None:
+            return session
+
+        session_factory = getattr(self.requests_module, "Session", None)
+        session = session_factory() if callable(session_factory) else self.requests_module
+        if session is not self.requests_module:
+            self._configure_session(session)
+            with self.lock:
+                self.sessions.append(session)
+        self.local.session = session
+        return session
+
+    def close_all(self) -> None:
+        with self.lock:
+            sessions = list(self.sessions)
+            self.sessions.clear()
+        for session in sessions:
+            closer = getattr(session, "close", None)
+            if callable(closer):
+                closer()
+
+    def _configure_session(
+        self,
+        session: Any,
+    ) -> None:
+        adapters_module = getattr(self.requests_module, "adapters", None)
+        adapter_factory = getattr(adapters_module, "HTTPAdapter", None)
+        mount = getattr(session, "mount", None)
+        if not callable(adapter_factory) or not callable(mount):
+            return
+        for prefix in ("http://", "https://"):
+            mount(prefix, adapter_factory(pool_connections=self.pool_size, pool_maxsize=self.pool_size))
 
 
 def _retry_delay_for(
@@ -297,15 +407,17 @@ def _retry_delay_for(
 
 
 def _download_range_once(
-    requests_module: Any,
+    request_client: Any,
     *,
     url: str,
     temp_file: Path,
     byte_range: tuple[int, int],
     timeout: int,
+    progress_callback: Any | None = None,
 ) -> int:
     start, end = byte_range
-    response = requests_module.get(url, stream=True, timeout=timeout, headers=_request_headers({"Range": f"bytes={start}-{end}"}))
+    response = request_client.get(url, stream=True, timeout=timeout, headers=_request_headers({"Range": f"bytes={start}-{end}"}))
+    reported_size = 0
     try:
         status_code = int(getattr(response, "status_code", 0) or 0)
         headers = getattr(response, "headers", {})
@@ -323,7 +435,7 @@ def _download_range_once(
         downloaded_size = 0
         offset = start
         with temp_file.open("r+b") as file:
-            for chunk in response.iter_content(chunk_size=64 * 1024):
+            for chunk in response.iter_content(chunk_size=STREAM_CHUNK_SIZE):
                 if not chunk:
                     continue
                 if downloaded_size + len(chunk) > expected_size:
@@ -332,32 +444,41 @@ def _download_range_once(
                 file.write(chunk)
                 offset += len(chunk)
                 downloaded_size += len(chunk)
+                reported_size += len(chunk)
+                if progress_callback is not None:
+                    progress_callback(len(chunk))
 
         if downloaded_size != expected_size:
             raise IOError(f"分片大小不匹配: 期望 {expected_size}, 实际 {downloaded_size}")
         return downloaded_size
+    except Exception:
+        if reported_size and progress_callback is not None:
+            progress_callback(-reported_size)
+        raise
     finally:
         _close_response(response)
 
 
 def _download_range_with_retries(
-    requests_module: Any,
+    session_pool: _ThreadLocalSessionPool,
     *,
     url: str,
     temp_file: Path,
     byte_range: tuple[int, int],
     timeout: int,
     max_retries: int,
+    progress_callback: Any | None = None,
 ) -> int:
     last_error: Exception | None = None
     for attempt in range(1, max_retries + 1):
         try:
             return _download_range_once(
-                requests_module,
+                session_pool.get(),
                 url=url,
                 temp_file=temp_file,
                 byte_range=byte_range,
                 timeout=timeout,
+                progress_callback=progress_callback,
             )
         except _RangeDownloadNotSupported:
             raise
@@ -383,14 +504,18 @@ def _download_file_with_ranges(
     resume: bool,
     max_retries: int,
     num_threads: int,
-    chunk_size: int,
+    chunk_size: int | None,
     timeout: int = 60,
 ) -> None:
     if remote_info.total_size <= 0 or not remote_info.supports_range:
         raise _RangeDownloadNotSupported("远端未提供可分片下载的文件大小或 Range 支持")
 
+    range_plan = _build_range_plan(remote_info.total_size, chunk_size, num_threads)
+    if not range_plan.ranges:
+        raise _RangeDownloadNotSupported("无法生成 HTTP Range 下载计划")
+
     state = _load_resume_state(state_file) if resume else None
-    if resume and temp_file.exists() and _state_matches_remote(state, url=url, remote_info=remote_info, chunk_size=chunk_size) and temp_file.stat().st_size == remote_info.total_size:
+    if resume and temp_file.exists() and _state_matches_remote(state, url=url, remote_info=remote_info, range_plan=range_plan) and temp_file.stat().st_size == remote_info.total_size:
         completed_ranges = _normalize_completed_ranges(state, remote_info.total_size)
     else:
         _cleanup_resume_files(temp_file, state_file)
@@ -398,12 +523,27 @@ def _download_file_with_ranges(
         with temp_file.open("wb") as file:
             file.truncate(remote_info.total_size)
 
-    all_ranges = _build_ranges(remote_info.total_size, chunk_size)
+    all_ranges = range_plan.ranges
     completed_ranges &= set(all_ranges)
     pending_ranges = [item for item in all_ranges if item not in completed_ranges]
     completed_size = sum(end - start + 1 for start, end in completed_ranges)
     progress_lock = threading.Lock()
     state_lock = threading.Lock()
+    session_pool = _ThreadLocalSessionPool(requests_module, pool_size=max(1, min(num_threads, len(pending_ranges) or 1)))
+    completed_since_state_save = 0
+
+    def _update_progress(delta: int) -> None:
+        with progress_lock:
+            progress_bar.update(delta)
+
+    def _flush_state() -> None:
+        _save_resume_state(
+            state_file,
+            url=url,
+            remote_info=remote_info,
+            range_plan=range_plan,
+            completed_ranges=completed_ranges,
+        )
 
     with tqdm_class(
         total=remote_info.total_size,
@@ -413,38 +553,41 @@ def _download_file_with_ranges(
         desc=temp_file.name.removesuffix(".tmp"),
         disable=not progress,
     ) as progress_bar:
-        if not pending_ranges:
-            return
+        try:
+            if not pending_ranges:
+                return
 
-        worker_count = max(1, min(num_threads, len(pending_ranges)))
-        with ThreadPoolExecutor(max_workers=worker_count) as executor:
-            future_to_range = {
-                executor.submit(
-                    _download_range_with_retries,
-                    requests_module,
-                    url=url,
-                    temp_file=temp_file,
-                    byte_range=byte_range,
-                    timeout=timeout,
-                    max_retries=max_retries,
-                ): byte_range
-                for byte_range in pending_ranges
-            }
-
-            for future in as_completed(future_to_range):
-                byte_range = future_to_range[future]
-                downloaded_size = future.result()
-                with state_lock:
-                    completed_ranges.add(byte_range)
-                    _save_resume_state(
-                        state_file,
+            worker_count = max(1, min(num_threads, len(pending_ranges)))
+            with ThreadPoolExecutor(max_workers=worker_count) as executor:
+                future_to_range = {
+                    executor.submit(
+                        _download_range_with_retries,
+                        session_pool,
                         url=url,
-                        remote_info=remote_info,
-                        chunk_size=chunk_size,
-                        completed_ranges=completed_ranges,
-                    )
-                with progress_lock:
-                    progress_bar.update(downloaded_size)
+                        temp_file=temp_file,
+                        byte_range=byte_range,
+                        timeout=timeout,
+                        max_retries=max_retries,
+                        progress_callback=_update_progress,
+                    ): byte_range
+                    for byte_range in pending_ranges
+                }
+
+                for future in as_completed(future_to_range):
+                    byte_range = future_to_range[future]
+                    future.result()
+                    with state_lock:
+                        completed_ranges.add(byte_range)
+                        completed_since_state_save += 1
+                        if completed_since_state_save >= STATE_SAVE_COMPLETED_RANGE_INTERVAL or len(completed_ranges) == len(all_ranges):
+                            _flush_state()
+                            completed_since_state_save = 0
+        except Exception:
+            with state_lock:
+                _flush_state()
+            raise
+        finally:
+            session_pool.close_all()
 
     if temp_file.stat().st_size != remote_info.total_size:
         raise IOError(f"下载文件大小不匹配: 期望 {remote_info.total_size}, 实际 {temp_file.stat().st_size}")
@@ -471,7 +614,7 @@ def _download_file_single_stream(
             disable=not progress,
         ) as progress_bar:
             with open(temp_file, "wb") as file:
-                for chunk in response.iter_content(chunk_size=1024):
+                for chunk in response.iter_content(chunk_size=STREAM_CHUNK_SIZE):
                     if chunk:
                         file.write(chunk)
                         progress_bar.update(len(chunk))
@@ -509,7 +652,7 @@ def download_file_from_url(
     max_retries: int | None = 5,
     chunk_size: int | None = DEFAULT_RANGE_CHUNK_SIZE,
 ) -> Path:
-    """使用 requrests 库下载文件
+    """使用 requests 库下载文件
 
     Args:
         url (str):
@@ -531,7 +674,7 @@ def download_file_from_url(
         max_retries (int | None):
             单个分片的最大重试次数
         chunk_size (int | None):
-            HTTP Range 分片大小
+            HTTP Range 分片大小, 为 None 或 0 时启用自适应分片
 
     Returns:
         Path: 下载的文件路径
@@ -566,7 +709,7 @@ def download_file_from_url(
 
         safe_num_threads = max(1, int(num_threads if num_threads is not None else 16))
         safe_max_retries = max(1, int(max_retries if max_retries is not None else 5))
-        safe_chunk_size = max(1, int(chunk_size if chunk_size is not None else DEFAULT_RANGE_CHUNK_SIZE))
+        safe_chunk_size = int(chunk_size) if chunk_size else None
         remote_info = _probe_remote_file(requests, url) if safe_num_threads > 1 else _RemoteFileInfo(total_size=0, supports_range=False)
 
         if remote_info.supports_range:
