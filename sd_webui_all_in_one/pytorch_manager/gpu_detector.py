@@ -72,6 +72,8 @@ def get_cuda_version() -> float:
             check=True,
         ).stdout
         match = re.search(r"CUDA Version\s+:\s+(\d+\.\d+)", output)
+        if not match:
+            match = re.search(r"CUDA UMD Version\s+:\s+(\d+\.\d+)", output)
         if match:
             return float(match.group(1))
         return 0.0

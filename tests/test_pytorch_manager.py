@@ -29,6 +29,15 @@ def test_cuda_capability_and_version_parse_subprocess(monkeypatch):
     assert gpu_detector.get_cuda_version() == 12.4
 
 
+def test_cuda_version_parse_falls_back_to_umd_version(monkeypatch):
+    def fake_run(command, **_kwargs):
+        return subprocess.CompletedProcess(command, 0, stdout="Driver Info\nCUDA UMD Version                  : 12.8\n", stderr="")
+
+    monkeypatch.setattr(gpu_detector.subprocess, "run", fake_run)
+
+    assert gpu_detector.get_cuda_version() == 12.8
+
+
 def test_windows_and_nvidia_smi_gpu_parsers(monkeypatch):
     windows_payload = {"Name": "NVIDIA RTX 4090", "AdapterCompatibility": "NVIDIA", "AdapterRAM": "123", "DriverVersion": "555"}
 
