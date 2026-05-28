@@ -986,7 +986,7 @@ function Invoke-Installation {
     }
     if (!(Test-Path (Join-NormalizedPath $script:InstallPath "launch_args.txt"))) {
         Write-Log "设置默认 ComfyUI 启动参数"
-        $content = "--auto-launch --preview-method auto --disable-cuda-malloc"
+        $content = "--auto-launch --preview-method auto --disable-cuda-malloc --enable-manager"
         Write-FileWithStreamWriter -Encoding UTF8 (Join-NormalizedPath $script:InstallPath "launch_args.txt") -Value $content
     }
 

@@ -25,7 +25,7 @@
     ComfyUI 默认使用的启动参数：
     
     ```
-    --auto-launch --preview-method auto --disable-cuda-malloc
+    --auto-launch --preview-method auto --disable-cuda-malloc --enable-manager
     ```
 
 ### 配置 Hotpatcher 补丁系统
