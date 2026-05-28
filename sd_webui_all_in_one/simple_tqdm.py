@@ -389,11 +389,7 @@ class SimpleTqdm(Generic[T]):
         """
         stream = file or sys.stdout
         with cls._lock:
-            active_bars = [
-                bar
-                for bar in cls._instances
-                if not bar.disable and not bar._closed and bar.file is stream
-            ]
+            active_bars = [bar for bar in cls._instances if not bar.disable and not bar._closed and bar.file is stream]
             for bar in sorted(active_bars, key=lambda item: item.position, reverse=True):
                 bar._clear_line()
 

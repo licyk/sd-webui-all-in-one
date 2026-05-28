@@ -185,6 +185,7 @@ def need_install_ort_ver(
         OrtType | None:
             需要安装的 ONNXRuntime GPU 类型, 不需要安装时返回 None
     """
+
     def _fallback_if_missing_torch_detail() -> OrtType | None:
         if not skip_if_missing:
             try:
