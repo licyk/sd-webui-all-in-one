@@ -675,17 +675,20 @@ def apply_git_base_config_and_github_mirror(
 
     config_path_env = custom_env.get("GIT_CONFIG_GLOBAL", None)
     if config_path_env is None:
-        git_config_path = SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / ".gitconfig"
+        if git_config_path is None:
+            config_path = SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / ".gitconfig"
+        else:
+            config_path = git_config_path
     else:
-        git_config_path = Path(config_path_env)
-        git_config_path.parent.mkdir(parents=True, exist_ok=True)
+        config_path = Path(config_path_env)
+        config_path.parent.mkdir(parents=True, exist_ok=True)
 
     set_github_mirror(
         mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-        config_path=git_config_path,
+        config_path=config_path,
     )
-    set_git_base_config(git_config_path)
-    custom_env["GIT_CONFIG_GLOBAL"] = git_config_path.as_posix()
+    set_git_base_config(config_path)
+    custom_env["GIT_CONFIG_GLOBAL"] = config_path.as_posix()
 
     return custom_env
 
