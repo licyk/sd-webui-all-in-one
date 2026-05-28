@@ -830,14 +830,29 @@ function Get-CurrentPlatform {
 function Get-CurrentArchitecture {
     if ($PSVersionTable.PSVersion.Major -ge 6) {
         $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()
-    } else {
-        $arch = $env:PROCESSOR_ARCHITECTURE.ToLower()
+    }
+    else {
+        if ([Environment]::Is64BitOperatingSystem) {
+            if ($env:PROCESSOR_ARCHITEW6432) {
+                $arch = $env:PROCESSOR_ARCHITEW6432.ToLower()
+            }
+            else {
+                $arch = $env:PROCESSOR_ARCHITECTURE.ToLower()
+            }
+        }
+        else {
+            $arch = "x86"
+        }
     }
     switch ($arch) {
-        "amd64" { "amd64" }
-        "x64"   { "amd64" }
-        "arm64" { "aarch64" }
-        default { $arch }
+        "amd64"  { return "amd64" }
+        "x64"    { return "amd64" }
+        "arm64"  { return "aarch64" }
+        "x86_64" { return "amd64" }
+        "x86"    { return "x86" }
+        "i386"   { return "x86" }
+        "i686"   { return "x86" }
+        default  { return $arch }
     }
 }
 
@@ -918,7 +933,7 @@ function Install-Git {
                 "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/git/windows/amd64/portable_git-2.53.0-x86_64.zip"
             )
         }
-        elseif ($arch -eq "arm64") {
+        elseif ($arch -eq "aarch64") {
             $urls = @(
                 "https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/git/windows/aarch64/portable_git-2.53.0-aarch64.zip",
                 "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/git/windows/aarch64/portable_git-2.53.0-aarch64.zip"
@@ -1478,14 +1493,29 @@ function Get-CurrentPlatform {
 function Get-CurrentArchitecture {
     if (`$PSVersionTable.PSVersion.Major -ge 6) {
         `$arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()
-    } else {
-        `$arch = `$env:PROCESSOR_ARCHITECTURE.ToLower()
+    }
+    else {
+        if ([Environment]::Is64BitOperatingSystem) {
+            if (`$env:PROCESSOR_ARCHITEW6432) {
+                `$arch = `$env:PROCESSOR_ARCHITEW6432.ToLower()
+            }
+            else {
+                `$arch = `$env:PROCESSOR_ARCHITECTURE.ToLower()
+            }
+        }
+        else {
+            `$arch = `"x86`"
+        }
     }
     switch (`$arch) {
-        `"amd64`" { `"amd64`" }
-        `"x64`"   { `"amd64`" }
-        `"arm64`" { `"aarch64`" }
-        default { `$arch }
+        `"amd64`"  { return `"amd64`" }
+        `"x64`"    { return `"amd64`" }
+        `"arm64`"  { return `"aarch64`" }
+        `"x86_64`" { return `"amd64`" }
+        `"x86`"    { return `"x86`" }
+        `"i386`"   { return `"x86`" }
+        `"i686`"   { return `"x86`" }
+        default  { return `$arch }
     }
 }
 
