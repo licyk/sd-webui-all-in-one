@@ -23,8 +23,7 @@
 - [一个使用 InvokeAI 5.0 的新统一画布完成常见任务的简述（升级到 InvokeAI 5.0 后必看）](https://www.youtube.com/watch?v=Tl-69JvwJ2s)
 - [如何使用 InvokeAI 5.0 的新统一画布和工作流系统](https://www.youtube.com/watch?v=y80W3PjR0Gc)
 - [InvokeAI 官方视频教程](https://www.youtube.com/@invokeai)
-- [InvokeAI Documentation](https://invoke-ai.github.io/InvokeAI)
-- [Solutions : Invoke Support Portal](https://support.invoke.ai/support/solutions)
+- [InvokeAI Documentation](https://invoke.ai)
 - [Reddit 社区](https://www.reddit.com/r/invokeai)
 
 除了上面的教程，也可以通过 Google 等平台搜索教程。
