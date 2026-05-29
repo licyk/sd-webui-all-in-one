@@ -13,6 +13,7 @@ from sd_webui_all_in_one.downloader import DownloadToolType
 from sd_webui_all_in_one.mirror_manager import (
     GITHUB_MIRROR_LIST,
     HUGGINGFACE_MIRROR_LIST,
+    get_auto_pypi_mirror_config,
     set_git_base_config,
     set_github_mirror,
 )
@@ -198,7 +199,7 @@ def install_pytorch_for_webui(
         logger.info("PyTorch / xFormers 已安装")
         return
 
-    install_pytorch(
+    install_pytorch_with_fallback(
         torch_package=pytorch_package,
         xformers_package=xformers_package,
         custom_env=custom_env,
@@ -251,7 +252,7 @@ def reinstall_pytorch(
         )
         logger.info("安装 PyTorch 中")
         _uninstall()
-        install_pytorch(
+        install_pytorch_with_fallback(
             torch_package=info["torch_ver"],
             xformers_package=info["xformers_ver"],
             custom_env=custom_env,
@@ -324,7 +325,7 @@ def reinstall_pytorch(
                 pytorch, xformers, custom_env = prepare_pytorch_install_info(use_cn_mirror=use_pypi_mirror)
                 logger.info("安装 PyTorch 中")
                 _uninstall()
-                install_pytorch(
+                install_pytorch_with_fallback(
                     torch_package=pytorch,
                     xformers_package=xformers,
                     custom_env=custom_env,
@@ -800,3 +801,60 @@ def apply_hf_mirror(
         return custom_env
 
     raise ValueError(f"传入的 HuggingFace 镜像源列表类型不支持: {type(hf_mirror)}")
+
+
+def install_pytorch_with_fallback(
+    torch_package: str | list[str] | None = None,
+    xformers_package: str | list[str] | None = None,
+    custom_env: dict[str, str] | None = None,
+    use_uv: bool | None = True,
+) -> None:
+    """使用 Pip / uv 安装 PyTorch 和 Xformers, 当失败时尝试使用回退方式安装 PyTorch
+
+    Args:
+        torch_package (str | list[str] | None):
+            PyTorch 软件包名称
+        xformers_package (str | list[str] | None):
+            Xformers 软件包名称
+        custom_env (dict[str, str] | None):
+            自定义环境变量
+        use_uv (bool | None):
+            是否使用 uv
+
+    """
+    try:
+        install_pytorch(
+            torch_package=torch_package,
+            xformers_package=xformers_package,
+            custom_env=custom_env,
+            use_uv=use_uv,
+        )
+    except RuntimeError:
+        logger.warning("安装 PyTorch 时发生错误, 尝试使用回退方式安装 PyTorch")
+        torch_package = torch_package.split() if isinstance(torch_package, str) else torch_package
+        xformers_package = xformers_package.split() if isinstance(xformers_package, str) else xformers_package
+        origin_torch_package = None
+        origin_xformers_package = None
+        if torch_package is not None:
+            origin_torch_package = torch_package.copy()
+            if "--no-deps" not in torch_package:
+                torch_package.append("--no-deps")
+        if xformers_package is not None:
+            origin_xformers_package = xformers_package.copy()
+            if "--no-deps" not in xformers_package:
+                xformers_package.append("--no-deps")
+        try:
+            install_pytorch(
+                torch_package=torch_package,
+                xformers_package=xformers_package,
+                custom_env=custom_env,
+                use_uv=use_uv,
+            )
+            install_pytorch(
+                torch_package=origin_torch_package,
+                xformers_package=origin_xformers_package,
+                custom_env=get_auto_pypi_mirror_config(),
+                use_uv=use_uv,
+            )
+        except RuntimeError as e:
+            raise RuntimeError(f"使用回退方式安装 PyTorch 时发生错误: {e}") from e

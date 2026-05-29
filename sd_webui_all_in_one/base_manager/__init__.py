@@ -12,6 +12,7 @@ from sd_webui_all_in_one.base_manager.base import (
     apply_github_raw_file_mirror,
     apply_git_base_config_and_github_mirror,
     apply_hf_mirror,
+    install_pytorch_with_fallback,
 )
 
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
@@ -201,6 +202,7 @@ __all__ = [
     "apply_github_raw_file_mirror",
     "apply_git_base_config_and_github_mirror",
     "apply_hf_mirror",
+    "install_pytorch_with_fallback",
     # hotpatcher_manager.py - Hotpatcher 配置管理
     "HOTPATCHER_PATH",
     "DEFAULT_HOTPATCHER_CONFIG_PATH",

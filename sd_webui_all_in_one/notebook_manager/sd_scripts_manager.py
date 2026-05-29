@@ -34,11 +34,13 @@ from sd_webui_all_in_one.env_manager import (
 )
 from sd_webui_all_in_one.pkg_manager import (
     install_manager_depend,
-    install_pytorch,
     install_requirements,
     pip_install,
 )
-from sd_webui_all_in_one.base_manager import clone_repo
+from sd_webui_all_in_one.base_manager import (
+    clone_repo,
+    install_pytorch_with_fallback,
+)
 
 
 logger = get_logger(
@@ -317,7 +319,7 @@ class SDScriptsManager(BaseManager):
             git_warpper.switch_commit(path=sd_scripts_path, commit=git_commit)
         # 安装 PyTorch 和 xFormers
         custom_env = generate_uv_and_pip_env_mirror_config(index_url=pytorch_mirror, extra_index_url=[], find_links=[])
-        install_pytorch(
+        install_pytorch_with_fallback(
             torch_package=torch_ver,
             xformers_package=xformers_ver,
             custom_env=custom_env,
