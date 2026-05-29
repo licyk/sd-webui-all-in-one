@@ -225,10 +225,10 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 447
+$script:INVOKEAI_INSTALLER_VERSION = 448
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.2.26"
+$script:CORE_MINIMUM_VER = "2.2.27"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
