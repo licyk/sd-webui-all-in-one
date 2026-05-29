@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -46,6 +47,7 @@ def test_prepare_pytorch_install_info_auto_and_custom_packages(monkeypatch):
         custom_pytorch_package="torch==2.6.0+cu126 torchvision==0.21.0+cu126",
         use_cn_mirror=True,
     )
+    assert torch_pkg is not None
     assert torch_pkg.startswith("torch==2.6.0+cu126")
     assert calls == [("mirror", "cu126", True)]
     assert env["PIP_EXTRA_INDEX_URL"] == "cu126-url"
@@ -89,6 +91,54 @@ def test_reinstall_pytorch_list_install_and_interactive_auto(monkeypatch):
     assert calls[-1] == (
         "install",
         {"torch_package": "torch-auto", "xformers_package": "xformers-auto", "custom_env": {"AUTO": "True"}, "use_uv": True},
+    )
+
+
+def test_install_pytorch_with_fallback_preserves_env_and_package_inputs(monkeypatch):
+    calls = []
+    torch_package = ["torch==2.8.0+cu128", "torchvision==0.23.0+cu128"]
+    xformers_package = ["xformers==0.0.32"]
+    custom_env = {"PIP_INDEX_URL": "https://torch.example/simple", "KEEP": "1"}
+
+    def fake_install_pytorch(**kwargs):
+        calls.append(("install", kwargs))
+        if len(calls) == 1:
+            raise RuntimeError("first failed")
+
+    def fake_get_auto_pypi_mirror_config(custom_env=None):
+        calls.append(("mirror", custom_env))
+        return {"AUTO": "1", **(custom_env or {})}
+
+    monkeypatch.setattr(base_module, "install_pytorch", fake_install_pytorch)
+    monkeypatch.setattr(base_module, "get_auto_pypi_mirror_config", fake_get_auto_pypi_mirror_config)
+
+    base_module.install_pytorch_with_fallback(
+        torch_package=torch_package,
+        xformers_package=xformers_package,
+        custom_env=custom_env,
+        use_uv=False,
+    )
+
+    assert torch_package == ["torch==2.8.0+cu128", "torchvision==0.23.0+cu128"]
+    assert xformers_package == ["xformers==0.0.32"]
+    assert calls[1] == (
+        "install",
+        {
+            "torch_package": ["torch==2.8.0+cu128", "torchvision==0.23.0+cu128", "--no-deps"],
+            "xformers_package": ["xformers==0.0.32", "--no-deps"],
+            "custom_env": custom_env,
+            "use_uv": False,
+        },
+    )
+    assert calls[2] == ("mirror", custom_env)
+    assert calls[3] == (
+        "install",
+        {
+            "torch_package": ["torch==2.8.0+cu128", "torchvision==0.23.0+cu128"],
+            "xformers_package": ["xformers==0.0.32"],
+            "custom_env": {"AUTO": "1", **custom_env},
+            "use_uv": False,
+        },
     )
 
 
@@ -242,4 +292,4 @@ def test_apply_hf_mirror_string_list_disabled_and_invalid(monkeypatch):
     ]
 
     with pytest.raises(ValueError):
-        base_module.apply_hf_mirror(use_hf_mirror=True, custom_hf_mirror={"bad": "type"}, origin_env={})
+        base_module.apply_hf_mirror(use_hf_mirror=True, custom_hf_mirror=cast(Any, {"bad": "type"}), origin_env={})

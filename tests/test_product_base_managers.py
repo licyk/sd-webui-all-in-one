@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -59,10 +60,10 @@ def test_product_config_installers_skip_existing_and_reject_unknown(monkeypatch,
     (tmp_path / "language" / "zh.json").write_text("{}", encoding="utf-8")
     (tmp_path / "presets" / "sd_webui_all_in_one.json").unlink()
     with pytest.raises(ValueError):
-        fooocus_base.install_fooocus_config(tmp_path, "unknown")
+        fooocus_base.install_fooocus_config(tmp_path, cast(Any, "unknown"))
 
     with pytest.raises(ValueError):
-        qwen_tts_webui_base.install_qwen_tts_webui_config(tmp_path, "unknown")
+        qwen_tts_webui_base.install_qwen_tts_webui_config(tmp_path, cast(Any, "unknown"))
 
 
 def test_comfyui_config_installs_once(monkeypatch, tmp_path):
@@ -300,7 +301,7 @@ def test_install_sd_webui_orchestrates_branch_extensions_repositories_and_models
     assert [call[0] for call in calls[-3:]] == ["model", "model", "config"]
 
     with pytest.raises(ValueError):
-        sd_webui_base.install_sd_webui(tmp_path, install_branch="unknown")
+        sd_webui_base.install_sd_webui(tmp_path, install_branch=cast(Any, "unknown"))
 
 
 def test_check_sd_webui_env_aggregates_task_failures(monkeypatch, tmp_path):
@@ -434,7 +435,11 @@ def test_invokeai_dependency_selection_and_sync_fallback(monkeypatch):
         if kwargs["torch_package"].endswith("xformers==0.0.28"):
             raise RuntimeError("xformers bad")
 
+    def fake_install_pytorch_with_fallback(**kwargs):
+        calls.append(("pytorch_fallback", kwargs))
+
     monkeypatch.setattr(invokeai_base, "install_pytorch", fake_install_pytorch)
+    monkeypatch.setattr(invokeai_base, "install_pytorch_with_fallback", fake_install_pytorch_with_fallback)
     monkeypatch.setattr(invokeai_base, "pip_install", lambda *args, **kwargs: calls.append(("pip", args, kwargs)))
 
     assert invokeai_base.get_invokeai_require_torch_version() == "2.4.1"
@@ -443,8 +448,22 @@ def test_invokeai_dependency_selection_and_sync_fallback(monkeypatch):
 
     invokeai_base.sync_invokeai_component(use_pypi_mirror=True, use_uv=False)
 
-    assert calls[0][1]["torch_package"] == "torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 xformers==0.0.28"
-    assert calls[1][1]["torch_package"] == "torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1"
+    assert calls[0] == (
+        "pytorch",
+        {
+            "torch_package": "torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 xformers==0.0.28",
+            "custom_env": {"TORCH": "cu124"},
+            "use_uv": False,
+        },
+    )
+    assert calls[1] == (
+        "pytorch_fallback",
+        {
+            "torch_package": "torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1",
+            "custom_env": {"TORCH": "cu124"},
+            "use_uv": False,
+        },
+    )
     assert calls[2] == ("pip", ("invokeai==4.2.0",), {"use_uv": False, "custom_env": {"PIP": "True"}})
 
 

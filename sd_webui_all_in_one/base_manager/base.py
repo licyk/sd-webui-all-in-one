@@ -821,7 +821,30 @@ def install_pytorch_with_fallback(
         use_uv (bool | None):
             是否使用 uv
 
+    Raises:
+        RuntimeError:
+            安装 PyTorch / xFormers 或使用回退方式安装时发生错误
     """
+
+    def _package_to_list(
+        package: str | list[str] | None,
+    ) -> list[str] | None:
+        if package is None:
+            return None
+        if isinstance(package, str):
+            return package.split()
+        return package.copy()
+
+    def _append_no_deps(
+        package: list[str] | None,
+    ) -> list[str] | None:
+        if package is None:
+            return None
+        package_with_no_deps = package.copy()
+        if "--no-deps" not in package_with_no_deps:
+            package_with_no_deps.append("--no-deps")
+        return package_with_no_deps
+
     try:
         install_pytorch(
             torch_package=torch_package,
@@ -831,29 +854,21 @@ def install_pytorch_with_fallback(
         )
     except RuntimeError:
         logger.warning("安装 PyTorch 时发生错误, 尝试使用回退方式安装 PyTorch")
-        torch_package = torch_package.split() if isinstance(torch_package, str) else torch_package
-        xformers_package = xformers_package.split() if isinstance(xformers_package, str) else xformers_package
-        origin_torch_package = None
-        origin_xformers_package = None
-        if torch_package is not None:
-            origin_torch_package = torch_package.copy()
-            if "--no-deps" not in torch_package:
-                torch_package.append("--no-deps")
-        if xformers_package is not None:
-            origin_xformers_package = xformers_package.copy()
-            if "--no-deps" not in xformers_package:
-                xformers_package.append("--no-deps")
+        origin_torch_package = _package_to_list(torch_package)
+        origin_xformers_package = _package_to_list(xformers_package)
+        fallback_torch_package = _append_no_deps(origin_torch_package)
+        fallback_xformers_package = _append_no_deps(origin_xformers_package)
         try:
             install_pytorch(
-                torch_package=torch_package,
-                xformers_package=xformers_package,
+                torch_package=fallback_torch_package,
+                xformers_package=fallback_xformers_package,
                 custom_env=custom_env,
                 use_uv=use_uv,
             )
             install_pytorch(
                 torch_package=origin_torch_package,
                 xformers_package=origin_xformers_package,
-                custom_env=get_auto_pypi_mirror_config(),
+                custom_env=get_auto_pypi_mirror_config(custom_env=custom_env),
                 use_uv=use_uv,
             )
         except RuntimeError as e:

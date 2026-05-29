@@ -69,7 +69,10 @@ from sd_webui_all_in_one.optimize import (
     get_cuda_malloc_var,
     apply_pytorch_alloc_conf,
 )
-from sd_webui_all_in_one.pkg_manager import pip_install
+from sd_webui_all_in_one.pkg_manager import (
+    install_pytorch,
+    pip_install,
+)
 from sd_webui_all_in_one.package_analyzer import (
     get_package_name,
     get_package_version,
@@ -287,7 +290,7 @@ def sync_invokeai_component(
         else:
             try:
                 logger.debug("尝试加上 xFormer 进行安装")
-                install_pytorch_with_fallback(
+                install_pytorch(
                     torch_package=torch_with_xformers,
                     custom_env=custom_env_pytorch,
                     use_uv=use_uv,
