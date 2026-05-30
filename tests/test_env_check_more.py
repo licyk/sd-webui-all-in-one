@@ -56,21 +56,33 @@ def test_check_torch_version_warning_reports_supported_type_before_installed_typ
 
 def test_check_numpy_installs_only_when_version_is_too_new(monkeypatch):
     calls = []
+    monkeypatch.setattr(fix_numpy.sys, "version_info", (3, 11))
     monkeypatch.setattr(fix_numpy.importlib.metadata, "version", lambda _name: "2.0.0")
     monkeypatch.setattr(fix_numpy, "pip_install", lambda *args, **kwargs: calls.append((args, kwargs)))
 
     fix_numpy.check_numpy(use_uv=False, custom_env={"A": "B"})
 
-    assert calls == [(("numpy==1.26.4",), {"use_uv": False, "custom_env": {"A": "B"}})]
+    assert calls == [(("numpy<2",), {"use_uv": False, "custom_env": {"A": "B"}})]
 
     calls.clear()
-    monkeypatch.setattr(fix_numpy.importlib.metadata, "version", lambda _name: "1.26.4")
+    monkeypatch.setattr(fix_numpy.importlib.metadata, "version", lambda _name: "1.99.0")
     fix_numpy.check_numpy()
     assert calls == []
 
     monkeypatch.setattr(fix_numpy.importlib.metadata, "version", lambda _name: (_ for _ in ()).throw(importlib.metadata.PackageNotFoundError("numpy")))
     with pytest.raises(RuntimeError, match="Numpy"):
         fix_numpy.check_numpy()
+
+
+def test_check_numpy_skips_for_python_312_or_newer(monkeypatch):
+    calls = []
+    monkeypatch.setattr(fix_numpy.sys, "version_info", (3, 12))
+    monkeypatch.setattr(fix_numpy.importlib.metadata, "version", lambda _name: (_ for _ in ()).throw(AssertionError("should not check numpy")))
+    monkeypatch.setattr(fix_numpy, "pip_install", lambda *args, **kwargs: calls.append((args, kwargs)))
+
+    fix_numpy.check_numpy()
+
+    assert calls == []
 
 
 def test_check_accelerate_bin_reinstalls_for_kohya_repo(monkeypatch, tmp_path):
