@@ -1,6 +1,7 @@
 """Numpy 检查工具"""
 
 import importlib.metadata
+import sys
 
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import pip_install
@@ -36,11 +37,15 @@ def check_numpy(
             检查 Numpy 版本时出现错误
     """
     logger.info("检查 Numpy 是否需要降级")
+    if sys.version_info >= (3, 12):
+        logger.info("Python 版本大于等于 3.12, 跳过 Numpy 版本检查")
+        return
+
     try:
         numpy_ver = importlib.metadata.version("numpy")
-        if PyWhlVersionComparison(numpy_ver) > PyWhlVersionComparison("1.26.4"):
-            logger.info("降级 Numoy 中")
-            pip_install("numpy==1.26.4", use_uv=use_uv, custom_env=custom_env)
+        if PyWhlVersionComparison(numpy_ver) >= PyWhlVersionComparison("2"):
+            logger.info("降级 Numpy 中")
+            pip_install("numpy<2", use_uv=use_uv, custom_env=custom_env)
             logger.info("Numpy 降级完成")
         else:
             logger.info("Numpy 无需降级")
