@@ -62,6 +62,8 @@ from sd_webui_all_in_one.package_analyzer.dependency_categorizer import (
 from sd_webui_all_in_one.package_analyzer.installation_checker import (
     get_package_version_from_library,
     is_package_installed,
+    get_missing_package_metadata_dependencies,
+    validate_package_metadata_dependencies,
     validate_requirements,
     parse_package_spec,
     check_version_constraint,
@@ -109,6 +111,8 @@ __all__ = [
     # installation_checker
     "get_package_version_from_library",
     "is_package_installed",
+    "get_missing_package_metadata_dependencies",
+    "validate_package_metadata_dependencies",
     "validate_requirements",
     "parse_package_spec",
     "check_version_constraint",

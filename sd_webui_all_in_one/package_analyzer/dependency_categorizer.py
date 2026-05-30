@@ -1,7 +1,7 @@
 """依赖导出工具"""
 
 from importlib.metadata import requires
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from sd_webui_all_in_one.package_analyzer import (
     evaluate_marker,
@@ -21,6 +21,41 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+
+def _find_extra_marker_names(marker: Any) -> set[str]:
+    """从 marker 表达式中递归提取 extra 分组名"""
+    if not isinstance(marker, (list, tuple)) or len(marker) != 3:
+        return set()
+
+    op, left, right = marker
+    if op in ("and", "or"):
+        return _find_extra_marker_names(left) | _find_extra_marker_names(right)
+
+    if op in ("==", "==="):
+        if left == "extra":
+            return {str(right)}
+        if right == "extra":
+            return {str(left)}
+
+    return set()
+
+
+def _bind_extra_marker(marker: Any, extra_name: str) -> Any:
+    """将 marker 表达式中的 extra 变量绑定到指定分组名"""
+    if not isinstance(marker, (list, tuple)) or len(marker) != 3:
+        return marker
+
+    op, left, right = marker
+    if op in ("and", "or"):
+        return (op, _bind_extra_marker(left, extra_name), _bind_extra_marker(right, extra_name))
+
+    if left == "extra":
+        left = extra_name
+    if right == "extra":
+        right = extra_name
+
+    return (op, left, right)
 
 
 class PackageDependencies(TypedDict):
@@ -133,18 +168,15 @@ def get_categorized_dependencies(
             # 拼装成合并后的字符串
             full_req_name = format_requirement(name, extras, version_specs)
 
-            is_optional = False
-            if marker and isinstance(marker, (list, tuple)):
-                if "extra" in marker:
-                    # 获取 marker 中的 extra 分组名称
-                    extra_group = marker[-1]
-                    if extra_group not in result["optional"]:
-                        result["optional"][extra_group] = []
+            extra_groups = _find_extra_marker_names(marker)
+            if extra_groups:
+                for extra_group in sorted(extra_groups):
+                    if evaluate_marker(_bind_extra_marker(marker, extra_group)):
+                        if extra_group not in result["optional"]:
+                            result["optional"][extra_group] = []
 
-                    result["optional"][extra_group].append(full_req_name)
-                    is_optional = True
-
-            if not is_optional:
+                        result["optional"][extra_group].append(full_req_name)
+            else:
                 # 检查非 extra 的 marker (如 Python 版本环境标记)
                 if evaluate_marker(marker):
                     result["mandatory"].append(full_req_name)

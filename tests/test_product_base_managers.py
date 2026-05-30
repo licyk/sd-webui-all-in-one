@@ -467,6 +467,70 @@ def test_invokeai_dependency_selection_and_sync_fallback(monkeypatch):
     assert calls[2] == ("pip", ("invokeai==4.2.0",), {"use_uv": False, "custom_env": {"PIP": "True"}})
 
 
+def test_check_invokeai_env_installs_core_then_checks_metadata(monkeypatch):
+    calls = []
+
+    monkeypatch.setattr(invokeai_base, "apply_git_base_config_and_github_mirror", lambda **_kwargs: {"GIT": "1"})
+
+    def fake_pypi(use_cn_mirror, origin_env=None):
+        env = dict(origin_env or {})
+        env["PIP"] = str(use_cn_mirror)
+        return env
+
+    monkeypatch.setattr(invokeai_base, "get_pypi_mirror_config", fake_pypi)
+    monkeypatch.setattr(invokeai_base, "get_package_version_from_library", lambda name: None if name == "invokeai" else "1.0.0")
+    monkeypatch.setattr(invokeai_base, "pip_install", lambda *args, **kwargs: calls.append(("pip", args, kwargs)))
+    monkeypatch.setattr(invokeai_base, "py_package_metadata_dependency_checker", lambda **kwargs: calls.append(("metadata", kwargs)))
+    monkeypatch.setattr(invokeai_base, "fix_torch_libomp", lambda: calls.append(("fix_torch_libomp", {})))
+    monkeypatch.setattr(invokeai_base, "check_torch_version", lambda: calls.append(("check_torch_version", {})))
+    monkeypatch.setattr(invokeai_base, "check_onnxruntime_gpu", lambda **kwargs: calls.append(("check_onnxruntime_gpu", kwargs)))
+
+    invokeai_base.check_invokeai_env(use_uv=False, use_pypi_mirror=True)
+
+    custom_env = {"GIT": "1", "PIP": "True"}
+    assert calls == [
+        ("pip", ("invokeai", "--no-deps"), {"use_uv": False, "custom_env": custom_env}),
+        ("metadata", {"package_name": "invokeai", "name": "InvokeAI", "use_uv": False, "custom_env": custom_env}),
+        ("fix_torch_libomp", {}),
+        ("check_torch_version", {}),
+        ("check_onnxruntime_gpu", {"use_uv": False, "skip_if_missing": True, "custom_env": custom_env}),
+    ]
+
+
+def test_check_invokeai_env_skips_core_install_when_installed(monkeypatch):
+    calls = []
+
+    monkeypatch.setattr(invokeai_base, "apply_git_base_config_and_github_mirror", lambda **_kwargs: {})
+    monkeypatch.setattr(invokeai_base, "get_pypi_mirror_config", lambda use_cn_mirror, origin_env=None: dict(origin_env or {}))
+    monkeypatch.setattr(invokeai_base, "get_package_version_from_library", lambda _name: "5.0.0")
+    monkeypatch.setattr(invokeai_base, "pip_install", lambda *args, **kwargs: calls.append(("pip", args, kwargs)))
+    monkeypatch.setattr(invokeai_base, "py_package_metadata_dependency_checker", lambda **kwargs: calls.append(("metadata", kwargs)))
+    monkeypatch.setattr(invokeai_base, "fix_torch_libomp", lambda: calls.append(("fix_torch_libomp", {})))
+    monkeypatch.setattr(invokeai_base, "check_torch_version", lambda: calls.append(("check_torch_version", {})))
+    monkeypatch.setattr(invokeai_base, "check_onnxruntime_gpu", lambda **kwargs: calls.append(("check_onnxruntime_gpu", kwargs)))
+
+    invokeai_base.check_invokeai_env(use_uv=True, use_pypi_mirror=False)
+
+    assert calls[0] == ("metadata", {"package_name": "invokeai", "name": "InvokeAI", "use_uv": True, "custom_env": {}})
+    assert not any(call[0] == "pip" for call in calls)
+
+
+def test_check_invokeai_env_aggregates_metadata_and_existing_errors(monkeypatch):
+    monkeypatch.setattr(invokeai_base, "apply_git_base_config_and_github_mirror", lambda **_kwargs: {})
+    monkeypatch.setattr(invokeai_base, "get_pypi_mirror_config", lambda use_cn_mirror, origin_env=None: dict(origin_env or {}))
+    monkeypatch.setattr(invokeai_base, "get_package_version_from_library", lambda _name: "5.0.0")
+    monkeypatch.setattr(invokeai_base, "pip_install", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(invokeai_base, "py_package_metadata_dependency_checker", lambda **_kwargs: (_ for _ in ()).throw(RuntimeError("metadata bad")))
+    monkeypatch.setattr(invokeai_base, "fix_torch_libomp", lambda: (_ for _ in ()).throw(RuntimeError("torch fix bad")))
+    monkeypatch.setattr(invokeai_base, "check_torch_version", lambda: None)
+    monkeypatch.setattr(invokeai_base, "check_onnxruntime_gpu", lambda **_kwargs: None)
+
+    with pytest.raises(AggregateError) as exc_info:
+        invokeai_base.check_invokeai_env()
+
+    assert [str(exc) for exc in exc_info.value.exceptions] == ["metadata bad", "torch fix bad"]
+
+
 def test_invokeai_custom_node_lifecycle_and_model_download(monkeypatch, tmp_path):
     nodes = tmp_path / "nodes"
     (nodes / "enabled" / ".git").mkdir(parents=True)

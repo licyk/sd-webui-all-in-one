@@ -52,6 +52,7 @@ from sd_webui_all_in_one.env_check import (
     check_torch_version,
     fix_torch_libomp,
     check_onnxruntime_gpu,
+    py_package_metadata_dependency_checker,
 )
 from sd_webui_all_in_one.file_operations import (
     copy_files,
@@ -74,6 +75,7 @@ from sd_webui_all_in_one.pkg_manager import (
 )
 from sd_webui_all_in_one.package_analyzer import (
     get_package_name,
+    get_package_version_from_library,
     get_package_version,
     get_package_version_specs,
     is_package_has_version,
@@ -225,6 +227,24 @@ def get_xformers_for_invokeai() -> str:
             break
 
     return " ".join([str(x).strip() for x in pytorch_ver])
+
+
+def _ensure_invokeai_package_installed(
+    use_uv: bool | None = True,
+    custom_env: dict[str, str] | None = None,
+) -> None:
+    """确保 InvokeAI 核心包已安装"""
+    if get_package_version_from_library("invokeai") is not None:
+        logger.info("检测到 InvokeAI 核心包已安装")
+        return
+
+    logger.info("未检测到 InvokeAI 核心包, 使用 --no-deps 安装 InvokeAI")
+    pip_install(
+        "invokeai",
+        "--no-deps",
+        use_uv=use_uv,
+        custom_env=custom_env,
+    )
 
 
 def sync_invokeai_component(
@@ -812,6 +832,8 @@ def check_invokeai_env(
 
     # 检查任务列表
     tasks: list[tuple[Callable, dict[str, Any]]] = [
+        (_ensure_invokeai_package_installed, {"use_uv": use_uv, "custom_env": custom_env}),
+        (py_package_metadata_dependency_checker, {"package_name": "invokeai", "name": "InvokeAI", "use_uv": use_uv, "custom_env": custom_env}),
         (fix_torch_libomp, {}),
         (check_torch_version, {}),
         (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),

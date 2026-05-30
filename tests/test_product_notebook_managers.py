@@ -1,7 +1,6 @@
 import json
 import os
 import sys
-import types
 import warnings
 from pathlib import Path
 

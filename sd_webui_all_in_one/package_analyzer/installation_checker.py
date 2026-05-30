@@ -8,6 +8,7 @@
 """
 
 import importlib.metadata
+import re
 from pathlib import Path
 
 from sd_webui_all_in_one.logger import get_logger
@@ -17,6 +18,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_NAME,
 )
 from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
+from sd_webui_all_in_one.package_analyzer.dependency_categorizer import get_categorized_dependencies
 from sd_webui_all_in_one.package_analyzer.version_utils import _try_parse_requirement
 from sd_webui_all_in_one.package_analyzer.requirement_normalizer import parse_requirement_list
 from sd_webui_all_in_one.package_analyzer.requirement_parser import read_packages_from_requirements_file
@@ -27,6 +29,63 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+
+def _normalize_extra_name(extra_name: str) -> str:
+    """标准化 optional extra 分组名"""
+    return re.sub(r"[-_.]+", "-", extra_name).lower()
+
+
+def _parse_package_metadata_dependency_request(
+    package_name: str,
+) -> tuple[str, list[str]]:
+    """解析 metadata 依赖检查请求中的包名和 optional extras"""
+    package_name = package_name.strip()
+    if not package_name:
+        raise ValueError("Python 软件包名不能为空")
+
+    parsed = _try_parse_requirement(package_name)
+    if parsed is None:
+        raise ValueError(f"无法解析 Python 软件包声明: {package_name}")
+
+    extras: list[str] = []
+    for extra in parsed.extras:
+        if extra not in extras:
+            extras.append(extra)
+
+    return parsed.name, extras
+
+
+def _get_package_metadata_dependencies(
+    package_name: str,
+) -> list[str]:
+    """获取指定包 metadata 中需要检查的依赖列表"""
+    base_name, requested_extras = _parse_package_metadata_dependency_request(package_name)
+    deps = get_categorized_dependencies(base_name)
+    requires: list[str] = []
+
+    def append_unique(requirement: str) -> None:
+        if requirement not in requires:
+            requires.append(requirement)
+
+    for requirement in deps["mandatory"]:
+        append_unique(requirement)
+
+    optional_lookup = {_normalize_extra_name(extra): extra for extra in deps["optional"]}
+    unknown_extras: list[str] = []
+    for extra in requested_extras:
+        optional_key = optional_lookup.get(_normalize_extra_name(extra))
+        if optional_key is None:
+            unknown_extras.append(extra)
+            continue
+
+        for requirement in deps["optional"][optional_key]:
+            append_unique(requirement)
+
+    if unknown_extras:
+        raise ValueError(f"未找到 '{base_name}' 的可选依赖分组: {', '.join(unknown_extras)}")
+
+    return requires
 
 
 def get_package_version_from_library(
@@ -239,6 +298,50 @@ def is_package_installed(
         logger.debug("%s %s %s 条件成立", env_pkg_version, op, pkg_version)
 
     return True
+
+
+def get_missing_package_metadata_dependencies(
+    package_name: str,
+) -> list[str]:
+    """获取 wheel metadata 中声明但当前环境缺失的依赖
+
+    Args:
+        package_name (str):
+            已安装软件包名, 支持 ``package`` 或 ``package[extra1,extra2]`` 格式.
+
+    Returns:
+        list[str]: 缺失或版本不满足约束的依赖声明列表
+
+    Raises:
+        ValueError:
+            包声明无法解析或请求的 optional extra 不存在时
+    """
+    requires = _get_package_metadata_dependencies(package_name)
+    missing: list[str] = []
+    for package in requires:
+        if not is_package_installed(package):
+            missing.append(package)
+
+    return missing
+
+
+def validate_package_metadata_dependencies(
+    package_name: str,
+) -> bool:
+    """检测 wheel metadata 中声明的依赖是否完整
+
+    Args:
+        package_name (str):
+            已安装软件包名, 支持 ``package`` 或 ``package[extra1,extra2]`` 格式.
+
+    Returns:
+        bool: 如果所有需要检查的依赖均已安装并满足版本约束则返回 ``True``
+
+    Raises:
+        ValueError:
+            包声明无法解析或请求的 optional extra 不存在时
+    """
+    return not get_missing_package_metadata_dependencies(package_name)
 
 
 def validate_requirements(

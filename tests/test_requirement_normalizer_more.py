@@ -51,13 +51,14 @@ def test_parse_requirement_list_extracts_repo_name_fallbacks():
     ) == ["fancy-package", "ssh-package"]
 
 
-def test_dependency_categorizer_formats_and_groups_markers(monkeypatch, capsys):
+def test_dependency_categorizer_formats_and_groups_markers(monkeypatch):
     monkeypatch.setattr(
         dependency_categorizer,
         "requires",
         lambda _name: [
             "core>=1.0",
             "gpu-extra>=2.0 ; extra == 'gpu'",
+            "gpu-skip>=3.0 ; extra == 'gpu'",
             "skip-me>=1.0 ; python_version < '0'",
             "bad requirement !!!",
         ],
@@ -68,18 +69,58 @@ def test_dependency_categorizer_formats_and_groups_markers(monkeypatch, capsys):
         if req.startswith("core"):
             return "core", [], [(">=", "1.0")], None
         if req.startswith("gpu-extra"):
-            return "gpu-extra", [], [(">=", "2.0")], ["extra", "==", "gpu"]
+            return "gpu-extra", [], [(">=", "2.0")], ("and", ("==", "extra", "gpu"), (">=", "3.11", "3.10"))
+        if req.startswith("gpu-skip"):
+            return "gpu-skip", [], [(">=", "3.0")], ("and", ("==", "extra", "gpu"), ("<", "3.11", "3.10"))
         if req.startswith("skip-me"):
-            return "skip-me", [], [(">=", "1.0")], ["python_version", "<", "0"]
+            return "skip-me", [], [(">=", "1.0")], ("<", "3.11", "3.10")
         raise ValueError("bad")
 
     monkeypatch.setattr(dependency_categorizer, "parse_requirement", fake_parse_requirement)
-    monkeypatch.setattr(dependency_categorizer, "evaluate_marker", lambda marker: marker is None)
 
     deps = dependency_categorizer.get_categorized_dependencies("demo")
 
     assert deps == {"mandatory": ["core>=1.0"], "optional": {"gpu": ["gpu-extra>=2.0"]}}
-    assert "解析依赖" in capsys.readouterr().out
+
+
+def test_metadata_dependency_validation_selects_mandatory_and_optional(monkeypatch):
+    deps = {
+        "mandatory": ["ok>=1.0", "missing>=2.0"],
+        "optional": {
+            "gpu": ["gpu-ok", "gpu-missing[accel]>=1.0"],
+            "ui": ["ui-ok"],
+        },
+    }
+    checked = []
+
+    monkeypatch.setattr(installation_checker, "get_categorized_dependencies", lambda name: deps if name == "demo" else {"mandatory": [], "optional": {}})
+
+    def fake_is_package_installed(package):
+        checked.append(package)
+        return package in {"ok>=1.0", "gpu-ok", "ui-ok"}
+
+    monkeypatch.setattr(installation_checker, "is_package_installed", fake_is_package_installed)
+
+    assert installation_checker.get_missing_package_metadata_dependencies("demo") == ["missing>=2.0"]
+    assert checked == ["ok>=1.0", "missing>=2.0"]
+
+    checked.clear()
+    assert installation_checker.get_missing_package_metadata_dependencies("demo[gpu,ui]") == ["missing>=2.0", "gpu-missing[accel]>=1.0"]
+    assert checked == ["ok>=1.0", "missing>=2.0", "gpu-ok", "gpu-missing[accel]>=1.0", "ui-ok"]
+
+    monkeypatch.setattr(installation_checker, "is_package_installed", lambda _package: True)
+    assert installation_checker.validate_package_metadata_dependencies("demo[gpu]") is True
+
+
+def test_metadata_dependency_validation_rejects_unknown_extra(monkeypatch):
+    monkeypatch.setattr(
+        installation_checker,
+        "get_categorized_dependencies",
+        lambda _name: {"mandatory": [], "optional": {"gpu": ["gpu-ok"]}},
+    )
+
+    with pytest.raises(ValueError, match="unknown"):
+        installation_checker.get_missing_package_metadata_dependencies("demo[unknown]")
 
 
 def test_installation_checker_package_versions_specs_and_validation(monkeypatch, tmp_path):

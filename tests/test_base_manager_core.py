@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 
 import pytest
 
@@ -190,4 +189,3 @@ def test_install_pytorch_for_webui_only_installs_missing_packages(monkeypatch):
     monkeypatch.setattr(base_module.importlib.metadata, "version", lambda _name: "installed")
     base_module.install_pytorch_for_webui("torch", "xformers")
     assert calls == []
-
