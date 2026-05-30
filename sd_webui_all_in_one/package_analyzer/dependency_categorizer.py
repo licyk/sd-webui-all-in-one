@@ -8,6 +8,19 @@ from sd_webui_all_in_one.package_analyzer import (
     parse_requirement,
 )
 from sd_webui_all_in_one.package_analyzer.py_whl_parse import get_parse_bindings
+from sd_webui_all_in_one.config import (
+    LOGGER_NAME,
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+)
+from sd_webui_all_in_one.logger import get_logger
+
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 
 class PackageDependencies(TypedDict):
@@ -137,6 +150,6 @@ def get_categorized_dependencies(
                     result["mandatory"].append(full_req_name)
 
         except Exception as e:
-            print(f"解析依赖 '{req_str}' 失败: {e}")
+            logger.error("解析依赖 '%s' 失败: %s", req_str, e)
 
     return result
