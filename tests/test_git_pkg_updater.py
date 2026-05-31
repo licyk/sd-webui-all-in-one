@@ -221,15 +221,21 @@ def test_install_pytorch_and_requirements_delegate_and_wrap(monkeypatch, tmp_pat
 
     pkg_manager.install_pytorch("torch torchvision", ["xformers"], custom_env={"X": "1"}, use_uv=False)
     pkg_manager.install_requirements(tmp_path / "requirements.txt", use_uv=False, custom_env={"Y": "2"}, cwd=tmp_path)
+    pkg_manager.install_requirements([tmp_path / "requirements.txt", tmp_path / "requirements-dev.txt"], use_uv=False, custom_env={"Z": "3"}, cwd=tmp_path)
 
     assert calls[0] == (("torch", "torchvision"), {"use_uv": False, "custom_env": {"X": "1"}})
     assert calls[1] == (("xformers",), {"use_uv": False, "custom_env": {"X": "1"}})
     assert calls[2] == (("-r", (tmp_path / "requirements.txt").as_posix()), {"use_uv": False, "custom_env": {"Y": "2"}, "cwd": tmp_path})
+    assert calls[3] == (
+        ("-r", (tmp_path / "requirements.txt").as_posix(), "-r", (tmp_path / "requirements-dev.txt").as_posix()),
+        {"use_uv": False, "custom_env": {"Z": "3"}, "cwd": tmp_path},
+    )
 
     monkeypatch.setattr(pkg_manager, "pip_install", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("bad")))
     with pytest.raises(RuntimeError) as exc:
-        pkg_manager.install_requirements(tmp_path / "requirements.txt")
+        pkg_manager.install_requirements([tmp_path / "requirements.txt", tmp_path / "requirements-dev.txt"])
     assert "requirements.txt" in str(exc.value)
+    assert "requirements-dev.txt" in str(exc.value)
 
 
 def test_updater_version_checks_and_install_commands(monkeypatch):

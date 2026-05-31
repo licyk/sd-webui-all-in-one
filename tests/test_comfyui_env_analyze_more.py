@@ -1,4 +1,6 @@
 import os
+import sys
+from pathlib import Path
 
 import pytest
 
@@ -32,8 +34,8 @@ def test_comfyui_environment_dict_updates_missing_and_conflict_lists(monkeypatch
     assert sorted(analyzer.get_comfyui_component_requires_list(env_data)) == sorted(["base-pkg==1.0", "shared<1", "shared==1.0", "missing-pkg>=2"])
     assert sorted(analyzer.statistical_need_install_require_component(env_data)) == sorted(
         [
-            (comfyui / "requirements.txt").as_posix(),
-            (enabled / "requirements.txt").as_posix(),
+            comfyui / "requirements.txt",
+            enabled / "requirements.txt",
         ]
     )
     assert analyzer.statistical_has_conflict_component(env_data, ["shared", "Shared"]) == "shared:\n - ComfyUI: shared<1\n - enabled: shared==1.0"
@@ -51,7 +53,7 @@ def test_process_comfyui_env_analysis_detects_conflicts_and_missing_paths(monkey
 
     assert env_data["ComfyUI"]["has_conflict_requires"] is True
     assert env_data["node"]["has_conflict_requires"] is True
-    assert req_list == [(comfyui / "requirements.txt").as_posix(), (node / "requirements.txt").as_posix()]
+    assert req_list == [comfyui / "requirements.txt", node / "requirements.txt"]
     assert "ComfyUI: numpy<2" in conflict_info
     assert "node: numpy>=2" in conflict_info
 
@@ -66,7 +68,7 @@ def test_comfyui_conflict_analyzer_installs_needed_requirements_and_aggregates(m
         node.mkdir(parents=True)
         (node / "requirements.txt").write_text("demo\n", encoding="utf-8")
 
-    reqs = [(node_a / "requirements.txt").as_posix(), (node_b / "requirements.txt").as_posix()]
+    reqs = [node_a / "requirements.txt", node_b / "requirements.txt"]
     calls = []
     monkeypatch.setattr(analyzer, "process_comfyui_env_analysis", lambda _path: ({}, reqs, "demo\n - node-a: demo<1\n - node-b: demo>=2"))
 
@@ -91,11 +93,99 @@ def test_comfyui_conflict_analyzer_installs_needed_requirements_and_aggregates(m
     assert calls[0][2] == node_a
     assert calls[0][3]["PYTHONPATH"].split(os.pathsep)[0] == tmp_path.as_posix()
     assert calls[1][0] == node_b / "requirements.txt"
+    assert not any(isinstance(call[0], list) for call in calls)
 
     calls.clear()
     monkeypatch.setattr(analyzer, "process_comfyui_env_analysis", lambda _path: ({}, [], "conflict"))
     analyzer.comfyui_conflict_analyzer(tmp_path, install_conflict_component_requirement=False)
     assert calls == []
+
+
+def test_comfyui_conflict_analyzer_batches_non_conflicting_requirements(monkeypatch, tmp_path):
+    node_a = tmp_path / "custom_nodes" / "node-a"
+    node_b = tmp_path / "custom_nodes" / "node-b"
+    for node in [node_a, node_b]:
+        node.mkdir(parents=True)
+        (node / "requirements.txt").write_text("demo\n", encoding="utf-8")
+
+    req_paths = [(node_a / "requirements.txt").resolve(), (node_b / "requirements.txt").resolve()]
+    calls = []
+    info_messages = []
+    monkeypatch.setattr(analyzer, "process_comfyui_env_analysis", lambda _path: ({}, req_paths, ""))
+    monkeypatch.setattr(analyzer.logger, "info", lambda message, *args: info_messages.append(message % args if args else message))
+
+    def fake_install_requirements(path, use_uv, cwd, custom_env):
+        calls.append((path, use_uv, cwd, custom_env))
+
+    monkeypatch.setattr(analyzer, "install_requirements", fake_install_requirements)
+
+    analyzer.comfyui_conflict_analyzer(tmp_path, use_uv=False, custom_env={"PYTHONPATH": "old"})
+
+    assert len(calls) == 1
+    assert calls[0][0] == req_paths
+    assert calls[0][1] is False
+    assert calls[0][2] == tmp_path.resolve()
+    assert calls[0][3]["PYTHONPATH"].split(os.pathsep)[0] == tmp_path.resolve().as_posix()
+    assert "批量安装以下 ComfyUI 组件的依赖中: node-a, node-b" in info_messages
+    assert "批量安装以下 ComfyUI 组件的依赖完成: node-a, node-b" in info_messages
+
+
+def test_comfyui_conflict_analyzer_falls_back_to_sequential_when_batch_fails(monkeypatch, tmp_path):
+    node_a = tmp_path / "custom_nodes" / "node-a"
+    node_b = tmp_path / "custom_nodes" / "node-b"
+    for node in [node_a, node_b]:
+        node.mkdir(parents=True)
+        (node / "requirements.txt").write_text("demo\n", encoding="utf-8")
+
+    req_paths = [(node_a / "requirements.txt").resolve(), (node_b / "requirements.txt").resolve()]
+    calls = []
+    monkeypatch.setattr(analyzer, "process_comfyui_env_analysis", lambda _path: ({}, req_paths, ""))
+
+    def fake_install_requirements(path, use_uv, cwd, custom_env):
+        calls.append((path, use_uv, cwd, custom_env))
+        if isinstance(path, list):
+            raise RuntimeError("batch bad")
+
+    monkeypatch.setattr(analyzer, "install_requirements", fake_install_requirements)
+
+    analyzer.comfyui_conflict_analyzer(tmp_path, use_uv=False, custom_env={"PYTHONPATH": "old"})
+
+    assert calls[0][0] == req_paths
+    assert calls[0][2] == tmp_path.resolve()
+    assert calls[1][0] == req_paths[0]
+    assert calls[1][2] == node_a
+    assert calls[2][0] == req_paths[1]
+    assert calls[2][2] == node_b
+
+
+def test_comfyui_conflict_analyzer_runs_install_scripts_sequentially(monkeypatch, tmp_path):
+    node_a = tmp_path / "custom_nodes" / "node-a"
+    node_b = tmp_path / "custom_nodes" / "node-b"
+    for node in [node_a, node_b]:
+        node.mkdir(parents=True)
+        (node / "requirements.txt").write_text("demo\n", encoding="utf-8")
+        (node / "install.py").write_text("print('install')\n", encoding="utf-8")
+
+    req_paths = [(node_a / "requirements.txt").resolve(), (node_b / "requirements.txt").resolve()]
+    events = []
+    monkeypatch.setattr(analyzer, "process_comfyui_env_analysis", lambda _path: ({}, req_paths, ""))
+
+    def fake_install_requirements(path, use_uv, cwd, custom_env):
+        events.append(("requirements", path, cwd))
+
+    def fake_run_cmd(command, cwd, custom_env):
+        events.append(("install.py", command, cwd))
+
+    monkeypatch.setattr(analyzer, "install_requirements", fake_install_requirements)
+    monkeypatch.setattr(analyzer, "run_cmd", fake_run_cmd)
+
+    analyzer.comfyui_conflict_analyzer(tmp_path, use_uv=False)
+
+    assert events == [
+        ("requirements", req_paths, tmp_path.resolve()),
+        ("install.py", [Path(sys.executable).as_posix(), (node_a / "install.py").as_posix()], node_a),
+        ("install.py", [Path(sys.executable).as_posix(), (node_b / "install.py").as_posix()], node_b),
+    ]
 
 
 def test_check_comfyui_manager_dependence_installs_only_when_needed(monkeypatch, tmp_path):

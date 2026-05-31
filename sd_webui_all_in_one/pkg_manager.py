@@ -201,7 +201,7 @@ def install_pytorch(
 
 
 def install_requirements(
-    path: Path,
+    path: Path | list[Path],
     use_uv: bool = True,
     custom_env: dict[str, str] | None = None,
     cwd: Path | None = None,
@@ -209,8 +209,8 @@ def install_requirements(
     """从 requirements.txt 文件指定安装的依赖
 
     Args:
-        path (Path):
-            requirements.txt 文件路径
+        path (Path | list[Path]):
+            单个或多个 requirements.txt 文件路径
         use_uv (bool):
             是否使用 uv 代替 Pip 进行安装
         custom_env (dict[str, str] | None):
@@ -225,10 +225,16 @@ def install_requirements(
     if custom_env is None:
         custom_env = os.environ.copy()
 
+    requirement_paths = path if isinstance(path, list) else [path]
+    requirement_names = ", ".join(item.as_posix() for item in requirement_paths)
+    requirement_args = []
+    for requirement_path in requirement_paths:
+        requirement_args.extend(["-r", requirement_path.as_posix()])
+
     try:
-        logger.info("从 %s 安装 Python 软件包中", path)
-        pip_install("-r", path.as_posix(), use_uv=use_uv, custom_env=custom_env, cwd=cwd)
-        logger.info("从 %s 安装 Python 软件包成功", path)
+        logger.info("从 %s 安装 Python 软件包中", requirement_names)
+        pip_install(*requirement_args, use_uv=use_uv, custom_env=custom_env, cwd=cwd)
+        logger.info("从 %s 安装 Python 软件包成功", requirement_names)
     except RuntimeError as e:
-        logger.info("从 %s 安装 Python 软件包时发生错误: %s", path, e)
-        raise RuntimeError(f"从 '{path}' 安装 Python 软件包时发生错误: {e}") from e
+        logger.info("从 %s 安装 Python 软件包时发生错误: %s", requirement_names, e)
+        raise RuntimeError(f"从 '{requirement_names}' 安装 Python 软件包时发生错误: {e}") from e

@@ -319,7 +319,7 @@ def get_comfyui_component_requires_list(
 
 def statistical_need_install_require_component(
     env_data: ComfyUIEnvironmentComponent,
-) -> list[str]:
+) -> list[Path]:
     """根据 ComfyUI 环境组件表字典中的 has_missing_requires 和 has_conflict_requires 字段确认需要安装依赖的列表
 
     Args:
@@ -327,14 +327,14 @@ def statistical_need_install_require_component(
             ComfyUI 环境组件表字典
 
     Returns:
-        list[str]:
+        list[Path]:
             ComfyUI 环境组件的依赖文件路径列表
     """
     requirement_list = []
     for _, details in env_data.items():
         requirement_path = details.get("requirement_path")
         if requirement_path is not None and (details.get("has_missing_requires") or details.get("has_conflict_requires")):
-            requirement_list.append(requirement_path.as_posix())
+            requirement_list.append(requirement_path)
 
     return requirement_list
 
@@ -588,13 +588,13 @@ def display_comfyui_environment_dict(
 
 
 def display_check_result(
-    requirement_list: list[str],
+    requirement_list: list[Path],
     conflict_result: str,
 ) -> None:
     """显示 ComfyUI 运行环境检查结果
 
     Args:
-        requirement_list (list[str]):
+        requirement_list (list[Path]):
             ComfyUI 组件依赖文件路径列表
         conflict_result (str):
             冲突组件统计信息
@@ -602,7 +602,7 @@ def display_check_result(
     if len(requirement_list) > 0:
         logger.debug("需要安装 ComfyUI 组件列表")
         for requirement in requirement_list:
-            component_name = requirement.split("/")[-2]
+            component_name = requirement.parent.name
             logger.debug("%s:", component_name)
             logger.debug(" - %s", requirement)
         print()
@@ -613,14 +613,14 @@ def display_check_result(
 
 def process_comfyui_env_analysis(
     comfyui_root_path: Path,
-) -> tuple[dict[str, ComponentEnvironmentDetails], list[str], str]:
+) -> tuple[dict[str, ComponentEnvironmentDetails], list[Path], str]:
     """分析 ComfyUI 环境
 
     Args:
         comfyui_root_path (Path):
             ComfyUI 根目录
     Returns:
-        (tuple[dict[str, ComponentEnvironmentDetails], list[str], str]):
+        (tuple[dict[str, ComponentEnvironmentDetails], list[Path], str]):
             ComfyUI 环境组件信息, 缺失依赖的依赖表, 冲突组件信息
 
     Raises:
@@ -679,7 +679,8 @@ def comfyui_conflict_analyzer(
         display_comfyui_environment_dict(env_data)
         display_check_result(req_list, conflict_info)
 
-    if len(conflict_info) > 0:
+    has_conflict = len(conflict_info) > 0
+    if has_conflict:
         logger.warning("检测到当前 ComfyUI 环境中安装的插件之间存在依赖冲突情况, 该问题并非致命, 但建议只保留一个插件, 否则部分功能可能无法正常使用")
         logger.warning("您可以选择按顺序安装依赖, 由于这将向环境中安装不符合版本要求的组件, 您将无法完全解决此问题, 但可避免组件由于依赖缺失而无法启动的情况")
         logger.warning("检测到冲突的依赖:")
@@ -693,8 +694,9 @@ def comfyui_conflict_analyzer(
             logger.info("忽略警告并继续启动 ComfyUI")
             return
 
-    task_sum = len(req_list)
-    count = 0
+    comfyui_root_path = comfyui_root_path.resolve()
+    req_paths = [req.resolve() for req in req_list]
+    task_sum = len(req_paths)
     if custom_env is None:
         custom_env = os.environ.copy()
 
@@ -704,15 +706,16 @@ def comfyui_conflict_analyzer(
     )
 
     err: list[Exception] = []
-    for req in req_list:
-        count += 1
-        req_path = Path(req)
+
+    def install_one_requirement(
+        req_path: Path,
+        count: int,
+    ) -> None:
         name = req_path.parent.name
-        installer_script = req_path / "install.py"
         logger.info("[%s/%s] 安装 %s 的依赖中", count, task_sum, name)
         try:
             install_requirements(
-                path=Path(req),
+                path=req_path,
                 use_uv=use_uv,
                 cwd=req_path.parent,
                 custom_env=custom_env,
@@ -721,6 +724,12 @@ def comfyui_conflict_analyzer(
             err.append(e)
             logger.error("[%s/%s] 安装 %s 的依赖失败: %s", count, task_sum, name, e)
 
+    def run_one_install_script(
+        req_path: Path,
+        count: int,
+    ) -> None:
+        name = req_path.parent.name
+        installer_script = req_path.parent / "install.py"
         if installer_script.is_file():
             logger.info("[%s/%s] 执行 %s 的安装脚本中", count, task_sum, name)
             try:
@@ -732,6 +741,33 @@ def comfyui_conflict_analyzer(
             except RuntimeError as e:
                 err.append(e)
                 logger.info("[%s/%s] 执行 %s 的安装脚本时发生错误: %s", count, task_sum, name, e)
+
+    def install_requirements_sequentially() -> None:
+        for count, req_path in enumerate(req_paths, start=1):
+            install_one_requirement(req_path, count)
+            run_one_install_script(req_path, count)
+
+    def run_install_scripts_sequentially() -> None:
+        for count, req_path in enumerate(req_paths, start=1):
+            run_one_install_script(req_path, count)
+
+    batch_requirement_names = ", ".join(req_path.parent.name for req_path in req_paths)
+    if has_conflict:
+        install_requirements_sequentially()
+    elif req_paths:
+        try:
+            logger.info("批量安装以下 ComfyUI 组件的依赖中: %s", batch_requirement_names)
+            install_requirements(
+                path=req_paths,
+                use_uv=use_uv,
+                cwd=comfyui_root_path,
+                custom_env=custom_env,
+            )
+            logger.info("批量安装以下 ComfyUI 组件的依赖完成: %s", batch_requirement_names)
+            run_install_scripts_sequentially()
+        except RuntimeError as e:
+            logger.warning("批量安装以下 ComfyUI 组件的依赖失败, 回退到按顺序安装: %s, 错误: %s", batch_requirement_names, e)
+            install_requirements_sequentially()
 
     if err:
         raise AggregateError("安装 ComfyUI 依赖时出现错误", err)
