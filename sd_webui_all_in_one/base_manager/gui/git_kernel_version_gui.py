@@ -34,7 +34,6 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     apply_window_icon,
     commit_matches_keyword,
     configure_gui_fonts,
-    normalize_search_keyword,
 )
 
 
@@ -145,7 +144,7 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             search_placeholder=f"搜索 {self.app_title} 版本...",
         )
         self.commit_tree.pack(fill=tk.BOTH, expand=True)
-        self.commit_tree.search_var.trace_add("write", lambda *_args: self.render_kernel_commits())
+        self.commit_tree.bind_search_change(self.render_kernel_commits)
 
         status_frame = ttk.Frame(self)
         status_frame.pack(fill=tk.X, side=tk.BOTTOM)
@@ -219,7 +218,7 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         """
         根据搜索条件渲染内核版本列表
         """
-        keyword = normalize_search_keyword(self.commit_tree.search_var.get(), f"搜索 {self.app_title} 版本...")
+        keyword = self.commit_tree.search_keyword()
         self.commit_tree.clear()
         for commit in self.kernel_commits:
             if not commit_matches_keyword(commit, keyword):

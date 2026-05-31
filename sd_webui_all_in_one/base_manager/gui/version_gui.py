@@ -846,6 +846,7 @@ class AdaptiveIndexList(ttk.Frame):
         self.headings = headings
         self._preferred_widths = dict(widths)
         self.widths = dict(widths)
+        self.search_placeholder = search_placeholder
         self.search_var = tk.StringVar()
         self._selected_id: str | None = None
         self._row_items: dict[str, list[int]] = {}
@@ -874,6 +875,7 @@ class AdaptiveIndexList(ttk.Frame):
         self.search_entry = EnhancedEntry(self, textvariable=self.search_var, placeholder=search_placeholder)
         if search_placeholder:
             self.search_entry.pack(fill=tk.X, padx=8, pady=(8, 6))
+        self._last_search_keyword = self.search_keyword()
 
         table_frame = ttk.Frame(self)
         table_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 8))
@@ -922,6 +924,42 @@ class AdaptiveIndexList(ttk.Frame):
             self._header_grid_color = "#dddddd"
             self._text_color = "#1f1f1f"
         self._selected_text_color = "#ffffff"
+
+    def search_keyword(
+        self,
+    ) -> str:
+        """
+        获取规范化后的真实搜索关键词。
+
+        Returns:
+            str: 去掉占位符语义后的搜索关键词。
+        """
+        return normalize_search_keyword(self.search_var.get(), self.search_placeholder or "")
+
+    def bind_search_change(
+        self,
+        callback: Callable[[], object],
+    ) -> str:
+        """
+        绑定真实搜索关键词变化回调。
+
+        Args:
+            callback (Callable[[], object]):
+                搜索关键词变化时执行的回调。
+
+        Returns:
+            str: Tk 变量监听 ID。
+        """
+        self._last_search_keyword = self.search_keyword()
+
+        def _on_search_var_changed(*_args: str) -> None:
+            keyword = self.search_keyword()
+            if keyword == self._last_search_keyword:
+                return
+            self._last_search_keyword = keyword
+            callback()
+
+        return self.search_var.trace_add("write", _on_search_var_changed)
 
     def _clear_placeholder(
         self,

@@ -35,7 +35,6 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     apply_gui_theme,
     apply_window_icon,
     configure_gui_fonts,
-    normalize_search_keyword,
     package_version_matches_keyword,
 )
 from sd_webui_all_in_one.file_operations import move_files
@@ -195,7 +194,7 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             search_placeholder="搜索 InvokeAI 版本...",
         )
         self.kernel_version_tree.pack(fill=tk.BOTH, expand=True)
-        self.kernel_version_tree.search_var.trace_add("write", lambda *_args: self.render_kernel_versions())
+        self.kernel_version_tree.bind_search_change(self.render_kernel_versions)
 
     def _create_extensions_tab(
         self,
@@ -217,7 +216,7 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             search_placeholder="搜索已安装扩展...",
         )
         self.extension_tree.pack(fill=tk.BOTH, expand=True)
-        self.extension_tree.search_var.trace_add("write", lambda *_args: self.render_extensions())
+        self.extension_tree.bind_search_change(self.render_extensions)
 
     def _create_install_tab(
         self,
@@ -296,7 +295,7 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         """
         根据搜索条件渲染 InvokeAI 内核版本列表
         """
-        keyword = normalize_search_keyword(self.kernel_version_tree.search_var.get(), "搜索 InvokeAI 版本...")
+        keyword = self.kernel_version_tree.search_keyword()
         self.kernel_version_tree.clear()
         for version in self.package_versions:
             if not package_version_matches_keyword(version, keyword):
@@ -373,9 +372,7 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         """
         渲染 InvokeAI 扩展列表
         """
-        keyword = self.extension_tree.search_var.get().strip().lower()
-        if keyword == "搜索已安装扩展...":
-            keyword = ""
+        keyword = self.extension_tree.search_keyword()
         self.extension_tree.clear()
         for ext in self.extensions:
             haystack = " ".join(str(x or "") for x in (ext.name, ext.url, ext.branch, ext.commit, ext.commit_date, ext.error)).lower()

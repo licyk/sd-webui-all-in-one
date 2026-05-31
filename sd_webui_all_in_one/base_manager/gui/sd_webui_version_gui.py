@@ -46,7 +46,6 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     apply_window_icon,
     commit_matches_keyword,
     configure_gui_fonts,
-    normalize_search_keyword,
 )
 
 
@@ -233,7 +232,7 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             search_placeholder="搜索内核版本...",
         )
         self.kernel_commit_tree.pack(fill=tk.BOTH, expand=True)
-        self.kernel_commit_tree.search_var.trace_add("write", lambda *_args: self.render_kernel_commits())
+        self.kernel_commit_tree.bind_search_change(self.render_kernel_commits)
 
     def _create_extensions_tab(
         self,
@@ -255,7 +254,7 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             search_placeholder="搜索已安装插件...",
         )
         self.extension_tree.pack(fill=tk.BOTH, expand=True)
-        self.extension_tree.search_var.trace_add("write", lambda *_args: self.render_extensions())
+        self.extension_tree.bind_search_change(self.render_extensions)
 
     def _create_install_tab(
         self,
@@ -276,7 +275,7 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             search_placeholder="搜索新插件...",
         )
         self.index_tree.pack(fill=tk.BOTH, expand=True)
-        self.index_tree.search_var.trace_add("write", lambda *_args: self.render_extension_index())
+        self.index_tree.bind_search_change(self.render_extension_index)
         self.index_tree.bind_double_click(self.install_selected_index_extension)
 
         bottom = ttk.Frame(self.install_tab)
@@ -362,7 +361,7 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         """
         根据搜索条件渲染内核版本列表
         """
-        keyword = normalize_search_keyword(self.kernel_commit_tree.search_var.get(), "搜索内核版本...")
+        keyword = self.kernel_commit_tree.search_keyword()
         self.kernel_commit_tree.clear()
         for commit in self.kernel_commits:
             if not commit_matches_keyword(commit, keyword):
@@ -395,9 +394,7 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         """
         渲染已安装扩展列表
         """
-        keyword = self.extension_tree.search_var.get().strip().lower()
-        if keyword == "搜索已安装插件...":
-            keyword = ""
+        keyword = self.extension_tree.search_keyword()
         self.extension_tree.clear()
         for ext in self.extensions:
             haystack = " ".join(str(x or "") for x in (ext.name, ext.url, ext.branch, ext.commit, ext.commit_date, ext.error)).lower()
@@ -447,9 +444,7 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         """
         渲染扩展源列表
         """
-        keyword = self.index_tree.search_var.get().strip()
-        if keyword == "搜索新插件...":
-            keyword = ""
+        keyword = self.index_tree.search_keyword()
         tag = self.tag_var.get()
         tags = [] if tag == "全部分类" else [tag]
         installed_names = {ext.name for ext in self.extensions}

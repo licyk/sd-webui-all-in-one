@@ -243,6 +243,29 @@ def test_adaptive_index_list_preserves_scroll_after_refresh(tk_root: tk.Tk) -> N
     assert after == pytest.approx(before, abs=widget._MIN_ROW_HEIGHT)  # pylint: disable=protected-access
 
 
+def test_adaptive_index_list_search_change_ignores_placeholder_churn(tk_root: tk.Tk) -> None:
+    widget = AdaptiveIndexList(
+        tk_root,
+        columns=("name",),
+        headings={"name": "名称"},
+        widths={"name": 240},
+        search_placeholder="搜索内容...",
+    )
+    widget.pack(fill=tk.BOTH, expand=True)
+    tk_root.update_idletasks()
+    calls: list[str] = []
+    widget.bind_search_change(lambda: calls.append(widget.search_keyword()))
+
+    widget.search_var.set("")
+    widget.search_var.set("搜索内容...")
+    widget.search_var.set("alpha")
+    widget.search_var.set("Alpha")
+    widget.search_var.set("")
+    widget.search_var.set("搜索内容...")
+
+    assert calls == ["alpha", ""]
+
+
 def test_adaptive_index_list_user_scroll_cancels_refresh_restore(tk_root: tk.Tk) -> None:
     widget = AdaptiveIndexList(
         tk_root,
