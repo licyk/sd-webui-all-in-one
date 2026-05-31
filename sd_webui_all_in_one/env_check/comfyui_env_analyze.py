@@ -697,6 +697,9 @@ def comfyui_conflict_analyzer(
     comfyui_root_path = comfyui_root_path.resolve()
     req_paths = [req.resolve() for req in req_list]
     task_sum = len(req_paths)
+    install_script_paths = [req_path for req_path in req_paths if (req_path.parent / "install.py").is_file()]
+    install_script_sum = len(install_script_paths)
+    install_script_index = {req_path: count for count, req_path in enumerate(install_script_paths, start=1)}
     if custom_env is None:
         custom_env = os.environ.copy()
 
@@ -730,25 +733,32 @@ def comfyui_conflict_analyzer(
     ) -> None:
         name = req_path.parent.name
         installer_script = req_path.parent / "install.py"
-        if installer_script.is_file():
-            logger.info("[%s/%s] 执行 %s 的安装脚本中", count, task_sum, name)
-            try:
-                run_cmd(
-                    [Path(sys.executable).as_posix(), installer_script.as_posix()],
-                    cwd=req_path.parent,
-                    custom_env=custom_env,
-                )
-            except RuntimeError as e:
-                err.append(e)
-                logger.info("[%s/%s] 执行 %s 的安装脚本时发生错误: %s", count, task_sum, name, e)
+        logger.info("[%s/%s] 执行 %s 的安装脚本中", count, install_script_sum, name)
+        try:
+            run_cmd(
+                [Path(sys.executable).as_posix(), installer_script.as_posix()],
+                cwd=req_path.parent,
+                custom_env=custom_env,
+            )
+        except RuntimeError as e:
+            err.append(e)
+            logger.info("[%s/%s] 执行 %s 的安装脚本时发生错误: %s", count, install_script_sum, name, e)
+
+    def run_install_script_for_requirement(req_path: Path) -> None:
+        install_script_count = install_script_index.get(req_path)
+        if install_script_count is not None:
+            run_one_install_script(req_path, install_script_count)
 
     def install_requirements_sequentially() -> None:
         for count, req_path in enumerate(req_paths, start=1):
             install_one_requirement(req_path, count)
-            run_one_install_script(req_path, count)
+            run_install_script_for_requirement(req_path)
 
     def run_install_scripts_sequentially() -> None:
-        for count, req_path in enumerate(req_paths, start=1):
+        install_script_names = ", ".join(req_path.parent.name for req_path in install_script_paths)
+        if len(install_script_paths) > 0:
+            logger.info("执行以下 ComfyUI 组件的安装脚本中: %s", install_script_names)
+        for count, req_path in enumerate(install_script_paths, start=1):
             run_one_install_script(req_path, count)
 
     batch_requirement_names = ", ".join(req_path.parent.name for req_path in req_paths)

@@ -161,14 +161,18 @@ def test_comfyui_conflict_analyzer_falls_back_to_sequential_when_batch_fails(mon
 def test_comfyui_conflict_analyzer_runs_install_scripts_sequentially(monkeypatch, tmp_path):
     node_a = tmp_path / "custom_nodes" / "node-a"
     node_b = tmp_path / "custom_nodes" / "node-b"
-    for node in [node_a, node_b]:
+    node_c = tmp_path / "custom_nodes" / "node-c"
+    for node in [node_a, node_b, node_c]:
         node.mkdir(parents=True)
         (node / "requirements.txt").write_text("demo\n", encoding="utf-8")
+    for node in [node_b, node_c]:
         (node / "install.py").write_text("print('install')\n", encoding="utf-8")
 
-    req_paths = [(node_a / "requirements.txt").resolve(), (node_b / "requirements.txt").resolve()]
+    req_paths = [(node_a / "requirements.txt").resolve(), (node_b / "requirements.txt").resolve(), (node_c / "requirements.txt").resolve()]
     events = []
+    info_messages = []
     monkeypatch.setattr(analyzer, "process_comfyui_env_analysis", lambda _path: ({}, req_paths, ""))
+    monkeypatch.setattr(analyzer.logger, "info", lambda message, *args: info_messages.append(message % args if args else message))
 
     def fake_install_requirements(path, use_uv, cwd, custom_env):
         events.append(("requirements", path, cwd))
@@ -183,9 +187,12 @@ def test_comfyui_conflict_analyzer_runs_install_scripts_sequentially(monkeypatch
 
     assert events == [
         ("requirements", req_paths, tmp_path.resolve()),
-        ("install.py", [Path(sys.executable).as_posix(), (node_a / "install.py").as_posix()], node_a),
         ("install.py", [Path(sys.executable).as_posix(), (node_b / "install.py").as_posix()], node_b),
+        ("install.py", [Path(sys.executable).as_posix(), (node_c / "install.py").as_posix()], node_c),
     ]
+    assert "执行以下 ComfyUI 组件的安装脚本中: node-b, node-c" in info_messages
+    assert "[1/2] 执行 node-b 的安装脚本中" in info_messages
+    assert "[2/2] 执行 node-c 的安装脚本中" in info_messages
 
 
 def test_check_comfyui_manager_dependence_installs_only_when_needed(monkeypatch, tmp_path):
