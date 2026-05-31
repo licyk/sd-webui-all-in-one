@@ -39,6 +39,7 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     BackgroundTaskMixin,
     BranchSwitchDialog,
     CommitSwitchDialog,
+    EnhancedEntry,
     SearchableTree,
     apply_gui_theme,
     apply_window_icon,
@@ -277,10 +278,7 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         bottom.pack(fill=tk.X, padx=8, pady=(0, 8))
         self.install_url_var = tk.StringVar()
         self.install_url_placeholder = "输入扩展 Git URL，例如 https://github.com/user/extension"
-        install_url_entry = ttk.Entry(bottom, textvariable=self.install_url_var)
-        install_url_entry.insert(0, self.install_url_placeholder)
-        install_url_entry.bind("<FocusIn>", self._clear_install_url_placeholder)
-        install_url_entry.bind("<FocusOut>", self._restore_install_url_placeholder)
+        install_url_entry = EnhancedEntry(bottom, textvariable=self.install_url_var, placeholder=self.install_url_placeholder)
         install_url_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
         ttk.Button(bottom, text="安装 URL", command=self.install_from_url).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Button(bottom, text="安装选中", command=self.install_selected_index_extension).pack(side=tk.LEFT, padx=(8, 0))

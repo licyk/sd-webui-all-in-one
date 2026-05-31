@@ -30,6 +30,7 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     BackgroundTaskMixin,
     BranchSwitchDialog,
     CommitSwitchDialog,
+    EnhancedEntry,
     SearchableTree,
     apply_gui_theme,
     apply_window_icon,
@@ -223,10 +224,7 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         ttk.Label(panel, text="扩展 Git URL:").pack(side=tk.LEFT)
         self.install_url_var = tk.StringVar()
         self.install_url_placeholder = "输入 InvokeAI 扩展 Git URL，例如 https://github.com/user/invokeai-node"
-        entry = ttk.Entry(panel, textvariable=self.install_url_var)
-        entry.insert(0, self.install_url_placeholder)
-        entry.bind("<FocusIn>", self._clear_install_url_placeholder)
-        entry.bind("<FocusOut>", self._restore_install_url_placeholder)
+        entry = EnhancedEntry(panel, textvariable=self.install_url_var, placeholder=self.install_url_placeholder)
         entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 8))
         ttk.Button(panel, text="安装", command=self.install_from_url).pack(side=tk.LEFT)
 

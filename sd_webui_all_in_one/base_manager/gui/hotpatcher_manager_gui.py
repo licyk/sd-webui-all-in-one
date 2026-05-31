@@ -32,9 +32,11 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
 )
 from sd_webui_all_in_one.base_manager.gui.version_gui import (
     BackgroundTaskMixin,
+    EnhancedEntry,
     apply_gui_theme,
     apply_window_icon,
     configure_gui_fonts,
+    install_text_context_menu,
 )
 
 
@@ -126,7 +128,8 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         toolbar = ttk.Frame(self.config_tab)
         toolbar.pack(fill=tk.X, padx=10, pady=8)
         ttk.Label(toolbar, text="配置文件:").pack(side=tk.LEFT)
-        ttk.Entry(toolbar, textvariable=self.config_path_var).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 8))
+        config_path_entry = EnhancedEntry(toolbar, textvariable=self.config_path_var)
+        config_path_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(8, 8))
         ttk.Button(toolbar, text="浏览", command=self.browse_config_path).pack(side=tk.LEFT, padx=(0, 8))
         ttk.Button(toolbar, text="导出默认", command=self.export_default_config).pack(side=tk.LEFT, padx=(0, 8))
         ttk.Button(toolbar, text="打开", command=self.open_config).pack(side=tk.LEFT, padx=(0, 8))
@@ -170,6 +173,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         json_frame = ttk.Frame(json_container)
         json_frame.pack(fill=tk.BOTH, expand=True, pady=(8, 0))
         self.json_text = tk.Text(json_frame, wrap=tk.NONE, undo=True)
+        install_text_context_menu(self.json_text, editable=True)
         json_y = ttk.Scrollbar(json_frame, orient=tk.VERTICAL, command=self.json_text.yview)
         json_x = ttk.Scrollbar(json_frame, orient=tk.HORIZONTAL, command=self.json_text.xview)
         self.json_text.configure(yscrollcommand=json_y.set, xscrollcommand=json_x.set)
@@ -272,6 +276,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         env_frame = ttk.LabelFrame(self.runtime_tab, text="启动环境变量", style="Panel.TLabelframe")
         env_frame.pack(fill=tk.BOTH, expand=True, padx=18, pady=(0, 16))
         self.env_text = tk.Text(env_frame, height=12, wrap=tk.NONE)
+        install_text_context_menu(self.env_text, editable=True)
         env_scroll = ttk.Scrollbar(env_frame, orient=tk.VERTICAL, command=self.env_text.yview)
         self.env_text.configure(yscrollcommand=env_scroll.set)
         self.env_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -297,6 +302,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         log_frame = ttk.Frame(self.logs_tab)
         log_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0, 10))
         self.log_text = tk.Text(log_frame, wrap=tk.NONE, state=tk.DISABLED)
+        install_text_context_menu(self.log_text, editable=False)
         log_y = ttk.Scrollbar(log_frame, orient=tk.VERTICAL, command=self.log_text.yview)
         log_x = ttk.Scrollbar(log_frame, orient=tk.HORIZONTAL, command=self.log_text.xview)
         self.log_text.configure(yscrollcommand=log_y.set, xscrollcommand=log_x.set)
@@ -306,9 +312,9 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         log_frame.rowconfigure(0, weight=1)
         log_frame.columnconfigure(0, weight=1)
 
-    def _entry_row(self, parent: tk.Misc, row: int, label: str, variable: tk.Variable) -> ttk.Entry:
+    def _entry_row(self, parent: tk.Misc, row: int, label: str, variable: tk.Variable) -> EnhancedEntry:
         ttk.Label(parent, text=label).grid(row=row, column=0, sticky=tk.W, pady=4, padx=(0, 8))
-        entry = ttk.Entry(parent, textvariable=variable)
+        entry = EnhancedEntry(parent, textvariable=variable)
         entry.grid(row=row, column=1, sticky=tk.EW, pady=4)
         parent.columnconfigure(1, weight=1)
         return entry
