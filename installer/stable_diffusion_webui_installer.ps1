@@ -3036,12 +3036,12 @@ function Download-Installer {
             TimeoutSec = 15
             ErrorAction = `"Stop`"
         }
-        Invoke-WebRequest @web_request_params
-        if (`$?) {
+        try {
+            Invoke-WebRequest @web_request_params
             Write-Log `"下载 SD WebUI Installer 脚本成功`"
             break
-        } else {
-            Write-Log `"下载 SD WebUI Installer 脚本失败`" -Level ERROR
+        } catch {
+            Write-Log `"下载 SD WebUI Installer 脚本失败: `$(`$_.Exception.Message)`" -Level ERROR
             `$i += 1
             if (`$i -lt `$urls.Length) {
                 Write-Log `"重试下载 SD WebUI Installer 脚本`" -Level WARNING
