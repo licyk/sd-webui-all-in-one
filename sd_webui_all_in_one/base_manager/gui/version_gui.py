@@ -29,11 +29,71 @@ from typing import (
 from sd_webui_all_in_one.base_manager.version_manager import (
     BranchInfo,
     CommitInfo,
+    PackageVersionInfo,
 )
 from sd_webui_all_in_one.config import ROOT_PATH
 
 
 T = TypeVar("T")
+
+
+def normalize_search_keyword(value: str, placeholder: str = "") -> str:
+    """
+    规范化搜索关键词并忽略占位符文本。
+
+    Args:
+        value (str):
+            搜索框当前文本。
+        placeholder (str):
+            搜索框占位符文本。
+
+    Returns:
+        str: 规范化后的搜索关键词。
+    """
+    keyword = value.strip().lower()
+    if placeholder and keyword == placeholder.strip().lower():
+        return ""
+    return keyword
+
+
+def commit_matches_keyword(commit: CommitInfo, keyword: str) -> bool:
+    """
+    判断 Git 提交信息是否匹配搜索关键词。
+
+    Args:
+        commit (CommitInfo):
+            Git 提交信息。
+        keyword (str):
+            搜索关键词。
+
+    Returns:
+        bool: 是否匹配。
+    """
+    keyword = normalize_search_keyword(keyword)
+    if not keyword:
+        return True
+    haystack = f"{commit.commit} {commit.message} {commit.date}".lower()
+    return keyword in haystack
+
+
+def package_version_matches_keyword(version: PackageVersionInfo, keyword: str) -> bool:
+    """
+    判断 PyPI 版本信息是否匹配搜索关键词。
+
+    Args:
+        version (PackageVersionInfo):
+            PyPI 版本信息。
+        keyword (str):
+            搜索关键词。
+
+    Returns:
+        bool: 是否匹配。
+    """
+    keyword = normalize_search_keyword(keyword)
+    if not keyword:
+        return True
+    haystack = f"{version.version} {version.summary} {version.upload_time}".lower()
+    return keyword in haystack
 
 
 def detect_system_theme() -> str:
@@ -348,6 +408,8 @@ class EnhancedEntry(ttk.Frame):
     在 ttk.Entry 外层增加清除按钮、右键菜单和统一的选区编辑行为。
     """
 
+    _CONTROL_MASK = 0x0004
+
     def __init__(
         self,
         master: tk.Misc,
@@ -504,8 +566,9 @@ class EnhancedEntry(ttk.Frame):
         super().destroy()
 
     def _install_bindings(self) -> None:
-        for sequence in ("<Control-a>", "<Control-A>", "<Command-a>", "<Command-A>"):
-            self.entry.bind(sequence, self._select_all)
+        if sys.platform == "darwin":
+            for sequence in ("<Command-KeyPress-a>", "<Command-KeyPress-A>"):
+                self.entry.bind(sequence, self._select_all)
         self.entry.bind("<Delete>", self._delete_selected_text)
         self.entry.bind("<BackSpace>", self._delete_selected_text)
         self.entry.bind("<KeyPress>", self._replace_selection_on_keypress, add="+")
@@ -528,6 +591,8 @@ class EnhancedEntry(ttk.Frame):
         return "break"
 
     def _replace_selection_on_keypress(self, event: tk.Event) -> str | None:
+        if self._is_select_all_event(event):
+            return self._select_all(event)
         char = getattr(event, "char", "")
         if not char or ord(char[0]) < 32 or not self._is_editable():
             return None
@@ -539,6 +604,17 @@ class EnhancedEntry(ttk.Frame):
         self.entry.insert(tk.INSERT, char)
         self._emit_changed()
         return "break"
+
+    @classmethod
+    def _is_select_all_event(cls, event: tk.Event) -> bool:
+        keysym = str(getattr(event, "keysym", "")).lower()
+        if keysym != "a":
+            return False
+        try:
+            state = int(getattr(event, "state", 0) or 0)
+        except (TypeError, ValueError):
+            return False
+        return bool(state & cls._CONTROL_MASK)
 
     def _clear_placeholder(self, _event: tk.Event) -> None:
         if self._placeholder_active():
@@ -1583,12 +1659,11 @@ class CommitSwitchDialog(tk.Toplevel):
     def _refresh(
         self,
     ) -> None:
-        keyword = self.search_var.get().strip().lower()
+        keyword = normalize_search_keyword(self.search_var.get())
         self.tree.delete(*self.tree.get_children())
         self.filtered_commits = []
         for commit in self.commits:
-            haystack = f"{commit.commit} {commit.message} {commit.date}".lower()
-            if keyword and keyword not in haystack:
+            if not commit_matches_keyword(commit, keyword):
                 continue
             self.filtered_commits.append(commit)
             self.tree.insert(

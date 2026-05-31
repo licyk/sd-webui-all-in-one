@@ -19,6 +19,7 @@ from sd_webui_all_in_one.base_manager.sd_webui_base import (
 )
 from sd_webui_all_in_one.base_manager.version_manager import (
     BranchInfo,
+    CommitInfo,
     DEFAULT_EXTENSION_INDEX_URL,
     ExtensionIndexItem,
     ExtensionManager,
@@ -43,7 +44,9 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     SearchableTree,
     apply_gui_theme,
     apply_window_icon,
+    commit_matches_keyword,
     configure_gui_fonts,
+    normalize_search_keyword,
 )
 
 
@@ -131,6 +134,7 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         )
         self.extension_index_url = self._configure_extension_index_url()
         self.repository_state: RepositoryState | None = None
+        self.kernel_commits: list[CommitInfo] = []
         self.extensions: list[ManagedExtension] = []
         self.extension_index: list[ExtensionIndexItem] = []
         self.filtered_extension_index: list[ExtensionIndexItem] = []
@@ -229,6 +233,7 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             search_placeholder="搜索内核版本...",
         )
         self.kernel_commit_tree.pack(fill=tk.BOTH, expand=True)
+        self.kernel_commit_tree.search_var.trace_add("write", lambda *_args: self.render_kernel_commits())
 
     def _create_extensions_tab(
         self,
@@ -337,10 +342,11 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
 
     def _apply_kernel_info(
         self,
-        result: tuple[RepositoryState, list],
+        result: tuple[RepositoryState, list[CommitInfo]],
     ) -> None:
         state, commits = result
         self.repository_state = state
+        self.kernel_commits = commits
         self.kernel_url_var.set(state.url or "-")
         self.kernel_branch_var.set(state.branch or "-")
         commit_text = state.commit or "-"
@@ -348,8 +354,19 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             commit_text = f"{commit_text} ({state.commit_date})"
         self.kernel_commit_var.set(commit_text)
         self.kernel_status_var.set("Git 仓库" if state.is_git_repo else (state.error or "非 Git 仓库"))
+        self.render_kernel_commits()
+
+    def render_kernel_commits(
+        self,
+    ) -> None:
+        """
+        根据搜索条件渲染内核版本列表
+        """
+        keyword = normalize_search_keyword(self.kernel_commit_tree.search_var.get(), "搜索内核版本...")
         self.kernel_commit_tree.clear()
-        for commit in commits:
+        for commit in self.kernel_commits:
+            if not commit_matches_keyword(commit, keyword):
+                continue
             self.kernel_commit_tree.tree.insert(
                 "",
                 tk.END,

@@ -15,6 +15,7 @@ from typing import Any
 
 from sd_webui_all_in_one.base_manager.version_manager import (
     BranchInfo,
+    CommitInfo,
     RepositoryState,
     configure_git_env,
     inspect_repository,
@@ -31,7 +32,9 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     SearchableTree,
     apply_gui_theme,
     apply_window_icon,
+    commit_matches_keyword,
     configure_gui_fonts,
+    normalize_search_keyword,
 )
 
 
@@ -77,6 +80,7 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             custom_github_mirror=self.custom_github_mirror,
         )
         self.repository_state: RepositoryState | None = None
+        self.kernel_commits: list[CommitInfo] = []
 
         self.title(f"{self.app_title} 版本管理")
         apply_window_icon(self)
@@ -141,6 +145,7 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             search_placeholder=f"搜索 {self.app_title} 版本...",
         )
         self.commit_tree.pack(fill=tk.BOTH, expand=True)
+        self.commit_tree.search_var.trace_add("write", lambda *_args: self.render_kernel_commits())
 
         status_frame = ttk.Frame(self)
         status_frame.pack(fill=tk.X, side=tk.BOTTOM)
@@ -194,10 +199,11 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
 
     def _apply_kernel_info(
         self,
-        result: tuple[RepositoryState, list],
+        result: tuple[RepositoryState, list[CommitInfo]],
     ) -> None:
         state, commits = result
         self.repository_state = state
+        self.kernel_commits = commits
         self.kernel_url_var.set(state.url or "-")
         self.kernel_branch_var.set(state.branch or "-")
         commit_text = state.commit or "-"
@@ -205,8 +211,19 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             commit_text = f"{commit_text} ({state.commit_date})"
         self.kernel_commit_var.set(commit_text)
         self.kernel_status_var.set("Git 仓库" if state.is_git_repo else (state.error or "非 Git 仓库"))
+        self.render_kernel_commits()
+
+    def render_kernel_commits(
+        self,
+    ) -> None:
+        """
+        根据搜索条件渲染内核版本列表
+        """
+        keyword = normalize_search_keyword(self.commit_tree.search_var.get(), f"搜索 {self.app_title} 版本...")
         self.commit_tree.clear()
-        for commit in commits:
+        for commit in self.kernel_commits:
+            if not commit_matches_keyword(commit, keyword):
+                continue
             self.commit_tree.tree.insert(
                 "",
                 tk.END,

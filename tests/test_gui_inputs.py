@@ -7,8 +7,52 @@ import pytest
 from sd_webui_all_in_one.base_manager.gui.version_gui import (
     AdaptiveIndexList,
     EnhancedEntry,
+    commit_matches_keyword,
     install_text_context_menu,
+    normalize_search_keyword,
+    package_version_matches_keyword,
 )
+from sd_webui_all_in_one.base_manager.version_manager import (
+    CommitInfo,
+    PackageVersionInfo,
+)
+
+
+def test_normalize_search_keyword_ignores_placeholder() -> None:
+    assert normalize_search_keyword("  Fix Bug  ") == "fix bug"
+    assert normalize_search_keyword("搜索内核版本...", "搜索内核版本...") == ""
+    assert normalize_search_keyword("搜索 InvokeAI 版本...", "搜索 invokeai 版本...") == ""
+
+
+def test_commit_matches_keyword_searches_visible_commit_fields() -> None:
+    commit = CommitInfo(commit="abc1234", message="Fix scheduler crash", date="2026-05-31")
+
+    assert commit_matches_keyword(commit, "scheduler")
+    assert commit_matches_keyword(commit, "ABC")
+    assert commit_matches_keyword(commit, "2026-05")
+    assert not commit_matches_keyword(commit, "missing")
+
+
+def test_package_version_matches_keyword_searches_visible_version_fields() -> None:
+    version = PackageVersionInfo(version="3.2.1", summary="InvokeAI release", upload_time="2026-05-31")
+
+    assert package_version_matches_keyword(version, "invokeai")
+    assert package_version_matches_keyword(version, "3.2")
+    assert package_version_matches_keyword(version, "2026")
+    assert not package_version_matches_keyword(version, "missing")
+
+
+def test_enhanced_entry_select_all_detection_requires_control() -> None:
+    event = tk.Event()
+    event.keysym = "a"
+    event.char = "a"
+    event.state = 0
+
+    assert not EnhancedEntry._is_select_all_event(event)  # pylint: disable=protected-access
+
+    event.state = EnhancedEntry._CONTROL_MASK  # pylint: disable=protected-access
+
+    assert EnhancedEntry._is_select_all_event(event)  # pylint: disable=protected-access
 
 
 @pytest.fixture
@@ -54,6 +98,40 @@ def test_enhanced_entry_replaces_full_selection(tk_root: tk.Tk) -> None:
 
     assert result == "break"
     assert var.get() == "Z"
+
+
+def test_enhanced_entry_plain_a_does_not_select_all(tk_root: tk.Tk) -> None:
+    var = tk.StringVar(tk_root, value="abcdef")
+    entry = EnhancedEntry(tk_root, textvariable=var)
+    entry.pack()
+    tk_root.update_idletasks()
+
+    event = tk.Event()
+    event.char = "a"
+    event.keysym = "a"
+    event.state = 0
+    result = entry._replace_selection_on_keypress(event)  # pylint: disable=protected-access
+
+    assert result is None
+    assert var.get() == "abcdef"
+    assert not entry.selection_present()
+
+
+def test_enhanced_entry_ctrl_a_selects_all(tk_root: tk.Tk) -> None:
+    var = tk.StringVar(tk_root, value="abcdef")
+    entry = EnhancedEntry(tk_root, textvariable=var)
+    entry.pack()
+    tk_root.update_idletasks()
+
+    event = tk.Event()
+    event.char = "\x01"
+    event.keysym = "a"
+    event.state = EnhancedEntry._CONTROL_MASK  # pylint: disable=protected-access
+    result = entry._replace_selection_on_keypress(event)  # pylint: disable=protected-access
+
+    assert result == "break"
+    assert var.get() == "abcdef"
+    assert entry.selection_present()
 
 
 def test_enhanced_entry_clear_button_ignores_placeholder(tk_root: tk.Tk) -> None:

@@ -35,6 +35,8 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     apply_gui_theme,
     apply_window_icon,
     configure_gui_fonts,
+    normalize_search_keyword,
+    package_version_matches_keyword,
 )
 from sd_webui_all_in_one.file_operations import move_files
 from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
@@ -193,6 +195,7 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             search_placeholder="搜索 InvokeAI 版本...",
         )
         self.kernel_version_tree.pack(fill=tk.BOTH, expand=True)
+        self.kernel_version_tree.search_var.trace_add("write", lambda *_args: self.render_kernel_versions())
 
     def _create_extensions_tab(
         self,
@@ -285,8 +288,19 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self.package_versions = versions
         self.kernel_version_var.set(self.current_version or "未安装")
         self.kernel_status_var.set("已安装" if self.current_version else "未安装 invokeai 包")
+        self.render_kernel_versions()
+
+    def render_kernel_versions(
+        self,
+    ) -> None:
+        """
+        根据搜索条件渲染 InvokeAI 内核版本列表
+        """
+        keyword = normalize_search_keyword(self.kernel_version_tree.search_var.get(), "搜索 InvokeAI 版本...")
         self.kernel_version_tree.clear()
-        for version in versions:
+        for version in self.package_versions:
+            if not package_version_matches_keyword(version, keyword):
+                continue
             self.kernel_version_tree.tree.insert(
                 "",
                 tk.END,
