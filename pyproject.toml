@@ -103,6 +103,12 @@ dev = [
 [project.scripts]
 "sd-webui-all-in-one" = "sd_webui_all_in_one.cli_manager.cli:main"
 
+[project.urls]
+Homepage = "https://github.com/licyk/sd-webui-all-in-one"
+Issues = "https://github.com/licyk/sd-webui-all-in-one/issues"
+Repository = "https://github.com/licyk/sd-webui-all-in-one"
+Documentation = "https://licyk.github.io/sd-webui-all-in-one"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["sd_webui_all_in_one*"]
@@ -137,6 +143,17 @@ ignore-long-lines = "^\\s*(# )?<?https?://\\S+>?$"
 [tool.ruff]
 line-length = 200
 indent-width = 4
+src = [
+    "sd_webui_all_in_one",
+]
+exclude = [
+    ".git",
+    "__pycache__",
+    "sd_webui_all_in_one/base_manager/gui/sv_ttk",
+    "sd_webui_all_in_one/patcher/examples",
+    "notebook",
+    ".github",
+]
 lint.ignore = [
     "E402" # module-import-not-at-top-of-file
 ]
@@ -150,6 +167,9 @@ strictness = "balanced"
 format = "text"
 show-source = false
 source-context = 1
+include = [
+    "sd_webui_all_in_one",
+]
 exclude = [
     "sd_webui_all_in_one/base_manager/gui/sv_ttk/*",
     "sd_webui_all_in_one/patcher/examples/*",
@@ -163,6 +183,9 @@ extra-paths = ["sd_webui_all_in_one/patcher"]
 output-format = "concise"
 
 [tool.ty.src]
+include = [
+    "sd_webui_all_in_one",
+]
 exclude = [
     "sd_webui_all_in_one/base_manager/gui/sv_ttk/*",
     "sd_webui_all_in_one/patcher/examples/*",
