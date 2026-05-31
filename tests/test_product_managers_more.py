@@ -84,7 +84,9 @@ def test_sd_scripts_install_exports_requirements_from_pyproject(monkeypatch, tmp
     monkeypatch.setattr(sd_scripts_base, "SD_SCRIPTS_BRANCH_LIST", ["sd_scripts_demo"])
     monkeypatch.setattr(sd_scripts_base, "SD_SCRIPTS_BRANCH_INFO_DICT", [branch_info])
     _patch_common_install_deps(monkeypatch, sd_scripts_base, calls)
-    monkeypatch.setattr(sd_scripts_base, "export_requirements_from_toml_config", lambda toml_path, save_path: calls.append(("export", toml_path, save_path)) or save_path.write_text("demo\n", encoding="utf-8"))
+    monkeypatch.setattr(
+        sd_scripts_base, "export_requirements_from_toml_config", lambda toml_path, save_path: calls.append(("export", toml_path, save_path)) or save_path.write_text("demo\n", encoding="utf-8")
+    )
 
     sd_scripts_base.install_sd_scripts(tmp_path, install_branch="sd_scripts_demo", no_pre_download_model=True)
 
@@ -191,7 +193,16 @@ def test_product_model_install_and_uninstall_helpers(monkeypatch, tmp_path, modu
 
     assert calls[0] == (
         "library",
-        {"webui_path": tmp_path, "dtype": dtype, "download_resource_type": "modelscope", "model_name": "demo", "model_index": None, "downloader": "urllib", "interactive_mode": False, "list_only": False},
+        {
+            "webui_path": tmp_path,
+            "dtype": dtype,
+            "download_resource_type": "modelscope",
+            "model_name": "demo",
+            "model_index": None,
+            "downloader": "urllib",
+            "interactive_mode": False,
+            "list_only": False,
+        },
     )
     assert calls[1] == ("download", {"url": "https://example.test/model.safetensors", "path": tmp_path / model_root / "checkpoints", "tool": "requests"})
     assert calls[2] == ("list", tmp_path / model_root / "checkpoints")

@@ -94,9 +94,7 @@ def test_requests_downloader_cache_redownload_and_hash(monkeypatch, tmp_path):
     calls = []
     payload = b"hello world"
 
-    fake_requests = types.SimpleNamespace(
-        get=lambda url, stream=True, timeout=60: calls.append((url, stream, timeout)) or FakeRequestsResponse([payload[:5], payload[5:]])
-    )
+    fake_requests = types.SimpleNamespace(get=lambda url, stream=True, timeout=60: calls.append((url, stream, timeout)) or FakeRequestsResponse([payload[:5], payload[5:]]))
     monkeypatch.setitem(sys.modules, "requests", fake_requests)
     monkeypatch.setitem(sys.modules, "tqdm", types.SimpleNamespace(tqdm=FakeTqdm))
 

@@ -189,9 +189,7 @@ def test_pip_install_uses_uv_module_when_uv_command_missing(monkeypatch, tmp_pat
     pkg_manager.pip_install("demo", "--upgrade", custom_env=custom_env, cwd=tmp_path)
 
     run_calls = [call for call in calls if call[0] == "run"]
-    assert run_calls == [
-        ("run", [Path(sys.executable).as_posix(), "-m", "uv", "pip", "install", "demo", "--upgrade"], custom_env, tmp_path)
-    ]
+    assert run_calls == [("run", [Path(sys.executable).as_posix(), "-m", "uv", "pip", "install", "demo", "--upgrade"], custom_env, tmp_path)]
 
 
 def test_install_manager_depend_filters_optional_groups_and_runs_system_commands(monkeypatch):

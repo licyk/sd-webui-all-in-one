@@ -345,12 +345,6 @@ def test_get_env_config_prints_resolved_config_values(monkeypatch, capsys, tmp_p
 
     cli_utils.get_env_config()
 
-    output = {
-        name: value
-        for name, value in (
-            line.split(": ", 1)
-            for line in capsys.readouterr().out.strip().splitlines()
-        )
-    }
+    output = {name: value for name, value in (line.split(": ", 1) for line in capsys.readouterr().out.strip().splitlines())}
     assert output["SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL"] == "'42'"
     assert output["SD_WEBUI_ROOT"] == f"'{(tmp_path / 'configured-webui').as_posix()}'"

@@ -19,7 +19,7 @@ def init_sd_webui_all_in_one_module() -> None:
         encoding="utf-8",
         errors="replace",
     ) as p:
-        for line in p.stdout: # ty: ignore[not-iterable]
+        for line in p.stdout:  # ty: ignore[not-iterable]
             print(line, end="", flush=True)
 
         p.wait()

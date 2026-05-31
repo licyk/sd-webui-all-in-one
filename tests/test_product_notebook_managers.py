@@ -137,9 +137,7 @@ def test_sd_trainer_and_invokeai_model_download_helpers_delegate(tmp_path):
             "filename": "a.safetensors",
         }
     ]
-    assert invoke_calls == [
-        {"url": "https://example.test/b.bin", "path": tmp_path / "invoke" / "sd-models", "filename": None}
-    ]
+    assert invoke_calls == [{"url": "https://example.test/b.bin", "path": tmp_path / "invoke" / "sd-models", "filename": None}]
 
 
 def test_mount_drive_links_expected_product_paths(monkeypatch, tmp_path):
@@ -196,6 +194,7 @@ def test_notebook_check_env_methods_delegate(monkeypatch, tmp_path):
     ]
 
     for module, cls, attr, path_kw in mappings:
+
         def _record(name):
             return lambda **kwargs: calls.append((name, kwargs))
 
@@ -336,7 +335,7 @@ def test_fooocus_config_path_and_pre_download_model(monkeypatch, tmp_path):
     monkeypatch.setattr(fooocus_manager, "MultiThreadDownloader", FakeDownloader)
     monkeypatch.setattr(fooocus_manager, "download_file", "download-func")
 
-    assert manager.get_config_path_from_args('--preset demo --listen') == config_path
+    assert manager.get_config_path_from_args("--preset demo --listen") == config_path
     manager.pre_download_model("--preset demo", thread_num=3, downloader="urllib")
 
     assert captured[0][0] == "download-func"

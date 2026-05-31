@@ -308,30 +308,36 @@ class TestDetectConflictPackageFromList:
 
     def test_no_conflict_different_packages(self):
         """不同包名: 无冲突"""
-        result = detect_conflict_package_from_list([
-            "torch>=1.0",
-            "numpy>=1.24",
-            "requests>=2.0",
-        ])
+        result = detect_conflict_package_from_list(
+            [
+                "torch>=1.0",
+                "numpy>=1.24",
+                "requests>=2.0",
+            ]
+        )
         assert result == []
 
     def test_conflict_same_package(self):
         """同名包版本冲突"""
-        result = detect_conflict_package_from_list([
-            "numpy==1.24.0",
-            "numpy==1.26.0",
-        ])
+        result = detect_conflict_package_from_list(
+            [
+                "numpy==1.24.0",
+                "numpy==1.26.0",
+            ]
+        )
         assert "numpy" in result
 
     def test_conflict_mixed_packages(self):
         """混合包列表中检测冲突"""
-        result = detect_conflict_package_from_list([
-            "torch>=2.0",
-            "numpy==1.24.0",
-            "requests>=2.0",
-            "numpy==1.26.0",
-            "pillow>=9.0",
-        ])
+        result = detect_conflict_package_from_list(
+            [
+                "torch>=2.0",
+                "numpy==1.24.0",
+                "requests>=2.0",
+                "numpy==1.26.0",
+                "pillow>=9.0",
+            ]
+        )
         assert "numpy" in result
         assert "torch" not in result
         assert "requests" not in result
@@ -339,34 +345,42 @@ class TestDetectConflictPackageFromList:
 
     def test_no_conflict_compatible_same_package(self):
         """同名包兼容约束: 无冲突"""
-        result = detect_conflict_package_from_list([
-            "torch>=1.0",
-            "torch<=2.0",
-        ])
+        result = detect_conflict_package_from_list(
+            [
+                "torch>=1.0",
+                "torch<=2.0",
+            ]
+        )
         assert result == []
 
     def test_conflict_range_vs_exact(self):
         """范围约束与精确版本冲突"""
-        result = detect_conflict_package_from_list([
-            "numpy>=2.0",
-            "numpy==1.24.0",
-        ])
+        result = detect_conflict_package_from_list(
+            [
+                "numpy>=2.0",
+                "numpy==1.24.0",
+            ]
+        )
         assert "numpy" in result
 
     def test_no_conflict_packages_without_version(self):
         """无版本约束的包: 无冲突"""
-        result = detect_conflict_package_from_list([
-            "torch",
-            "torch",
-        ])
+        result = detect_conflict_package_from_list(
+            [
+                "torch",
+                "torch",
+            ]
+        )
         assert result == []
 
     def test_conflict_with_normalized_names(self):
         """包名规范化后检测冲突 (下划线 vs 连字符)"""
-        result = detect_conflict_package_from_list([
-            "my-package==1.0",
-            "my_package==2.0",
-        ])
+        result = detect_conflict_package_from_list(
+            [
+                "my-package==1.0",
+                "my_package==2.0",
+            ]
+        )
         assert len(result) > 0
 
 

@@ -32,8 +32,8 @@ def test_comfyui_environment_dict_updates_missing_and_conflict_lists(monkeypatch
     assert sorted(analyzer.get_comfyui_component_requires_list(env_data)) == sorted(["base-pkg==1.0", "shared<1", "shared==1.0", "missing-pkg>=2"])
     assert sorted(analyzer.statistical_need_install_require_component(env_data)) == sorted(
         [
-        (comfyui / "requirements.txt").as_posix(),
-        (enabled / "requirements.txt").as_posix(),
+            (comfyui / "requirements.txt").as_posix(),
+            (enabled / "requirements.txt").as_posix(),
         ]
     )
     assert analyzer.statistical_has_conflict_component(env_data, ["shared", "Shared"]) == "shared:\n - ComfyUI: shared<1\n - enabled: shared==1.0"

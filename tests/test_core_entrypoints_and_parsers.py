@@ -250,9 +250,9 @@ def test_toml_parser_loads_nested_tables_arrays_and_binary_stream():
     assert parsed["products"][0]["name"] == "Hammer"
     assert parsed["products"][1]["color"] == "gray"
 
-    assert toml_parser.load(io.BytesIO(b"name = \"binary\"")) == {"name": "binary"}
+    assert toml_parser.load(io.BytesIO(b'name = "binary"')) == {"name": "binary"}
     with pytest.raises(TypeError, match="rb"):
-        toml_parser.load(io.StringIO("name = \"text\""))  # type: ignore[arg-type]
+        toml_parser.load(io.StringIO('name = "text"'))  # type: ignore[arg-type]
 
 
 def test_toml_parser_supports_toml_1_1_values_keys_and_inline_tables():

@@ -90,7 +90,11 @@ def test_check_onnxruntime_gpu_installs_expected_package_and_env(monkeypatch, or
     assert calls[1][1] == (expected_spec, "--no-cache-dir", "--no-deps")
     assert calls[1][2]["use_uv"] is False
     assert calls[1][2]["custom_env"]["KEEP"] == "1"
-    assert calls[2] == ("pip", (expected_spec,), {"use_uv": False, "custom_env": {"PIP_EXTRA_INDEX_URL": "old-extra", "UV_INDEX": "old-uv-index", "PIP_FIND_LINKS": "old-links", "UV_FIND_LINKS": "old-uv-links", "KEEP": "1"}})
+    assert calls[2] == (
+        "pip",
+        (expected_spec,),
+        {"use_uv": False, "custom_env": {"PIP_EXTRA_INDEX_URL": "old-extra", "UV_INDEX": "old-uv-index", "PIP_FIND_LINKS": "old-links", "UV_FIND_LINKS": "old-uv-links", "KEEP": "1"}},
+    )
 
     if expected_index is None:
         assert "PIP_INDEX_URL" not in custom_env
