@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from sd_webui_all_in_one.base_manager.gui.version_gui import (
+    AdaptiveIndexList,
     EnhancedEntry,
     install_text_context_menu,
 )
@@ -133,3 +134,56 @@ def test_readonly_text_context_menu_states(tk_root: tk.Tk) -> None:
     assert menu.entrycget(0, "state") == tk.DISABLED
     assert menu.entrycget(1, "state") == tk.NORMAL
     assert menu.entrycget(2, "state") == tk.DISABLED
+
+
+def test_adaptive_index_list_preserves_scroll_after_refresh(tk_root: tk.Tk) -> None:
+    widget = AdaptiveIndexList(
+        tk_root,
+        columns=("name",),
+        headings={"name": "名称"},
+        widths={"name": 240},
+    )
+    widget.pack(fill=tk.BOTH, expand=True)
+    widget.canvas.configure(width=240, height=120)
+
+    for index in range(80):
+        widget.insert(str(index), (f"item {index}",))
+    tk_root.update()
+
+    widget.canvas.yview_moveto(0.45)
+    before = widget.canvas.canvasy(0)
+    assert before > 0
+
+    widget.clear()
+    for index in range(80):
+        widget.insert(str(index), (f"new item {index}",))
+    tk_root.update()
+
+    after = widget.canvas.canvasy(0)
+    assert after > 0
+    assert after == pytest.approx(before, abs=widget._MIN_ROW_HEIGHT)  # pylint: disable=protected-access
+
+
+def test_adaptive_index_list_user_scroll_cancels_refresh_restore(tk_root: tk.Tk) -> None:
+    widget = AdaptiveIndexList(
+        tk_root,
+        columns=("name",),
+        headings={"name": "名称"},
+        widths={"name": 240},
+    )
+    widget.pack(fill=tk.BOTH, expand=True)
+    widget.canvas.configure(width=240, height=120)
+
+    for index in range(80):
+        widget.insert(str(index), (f"item {index}",))
+    tk_root.update()
+
+    widget.canvas.yview_moveto(0.45)
+    widget._pending_scroll_top = widget.canvas.canvasy(0)  # pylint: disable=protected-access
+
+    widget._on_scrollbar_yview("moveto", "0.2")  # pylint: disable=protected-access
+    user_scroll_top = widget.canvas.canvasy(0)
+    widget._restore_scroll_position()  # pylint: disable=protected-access
+
+    assert widget._pending_scroll_top is None  # pylint: disable=protected-access
+    assert widget.canvas.canvasy(0) == user_scroll_top

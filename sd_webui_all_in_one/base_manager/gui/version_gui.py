@@ -705,6 +705,8 @@ class AdaptiveIndexList(ttk.Frame):
         self._double_click_callback: Callable[[], object] | None = None
         self._content_width = sum(self.widths.get(column, 120) for column in self.columns)
         self._content_height = 0
+        self._pending_scroll_top: float | None = None
+        self._empty_clear_scroll_job: str | None = None
         self._mouse_over = False
         self._resizing_column: str | None = None
         self._resize_start_x = 0
@@ -721,7 +723,7 @@ class AdaptiveIndexList(ttk.Frame):
         table_frame.pack(fill=tk.BOTH, expand=True, padx=8, pady=(0, 8))
         self.header_canvas = tk.Canvas(table_frame, height=self._HEADER_HEIGHT, highlightthickness=0, borderwidth=0, bg=self._row_colors[0], takefocus=1)
         self.canvas = tk.Canvas(table_frame, highlightthickness=0, borderwidth=0, bg=self._row_colors[0], takefocus=1)
-        self.v_scroll = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self.canvas.yview)
+        self.v_scroll = ttk.Scrollbar(table_frame, orient=tk.VERTICAL, command=self._on_scrollbar_yview)
         self.canvas.configure(yscrollcommand=self.v_scroll.set)
 
         self.header_canvas.grid(row=0, column=0, sticky="ew")
@@ -950,6 +952,7 @@ class AdaptiveIndexList(ttk.Frame):
             return
         if event is None:
             return
+        self._cancel_scroll_restore_for_user_scroll()
         if getattr(event, "num", None) == 4:
             self.canvas.yview_scroll(-3, "units")
         elif getattr(event, "num", None) == 5:
@@ -959,12 +962,20 @@ class AdaptiveIndexList(ttk.Frame):
             if delta:
                 self.canvas.yview_scroll(int(-1 * (delta / 120)), "units")
 
+    def _on_scrollbar_yview(
+        self,
+        *args: str,
+    ) -> None:
+        self._cancel_scroll_restore_for_user_scroll()
+        self.canvas.yview(*args)
+
     def clear(
         self,
     ) -> None:
         """
         清空列表内容
         """
+        self._remember_scroll_position()
         self._cancel_pending_draws()
         self.canvas.delete("all")
         self._row_items.clear()
@@ -977,6 +988,7 @@ class AdaptiveIndexList(ttk.Frame):
         self._selected_id = None
         self._content_height = 0
         self.canvas.configure(scrollregion=(0, 0, self._content_width, self._content_height))
+        self._schedule_empty_clear_scroll_reset()
 
     def delete(
         self,
@@ -1042,6 +1054,7 @@ class AdaptiveIndexList(ttk.Frame):
         self._row_values[item_id] = values
         if item_id not in self._row_order:
             self._row_order.append(item_id)
+        self._cancel_empty_clear_scroll_reset()
         self._schedule_redraw()
         return item_id
 
@@ -1063,6 +1076,7 @@ class AdaptiveIndexList(ttk.Frame):
             self._row_values[item_id] = tuple(str(value) for value in kwargs["values"])
             if item_id not in self._row_order:
                 self._row_order.append(item_id)
+            self._cancel_empty_clear_scroll_reset()
             self._schedule_redraw()
             return None
         return {"values": self._row_values.get(item_id, ())}
@@ -1136,6 +1150,30 @@ class AdaptiveIndexList(ttk.Frame):
         self._redraw_job = None
         self._draw_batch_job = None
 
+    def _schedule_empty_clear_scroll_reset(
+        self,
+    ) -> None:
+        self._cancel_empty_clear_scroll_reset()
+        self._empty_clear_scroll_job = self.after_idle(self._clear_pending_scroll_if_empty)
+
+    def _cancel_empty_clear_scroll_reset(
+        self,
+    ) -> None:
+        if self._empty_clear_scroll_job is None:
+            return
+        try:
+            self.after_cancel(self._empty_clear_scroll_job)
+        except tk.TclError:
+            pass
+        self._empty_clear_scroll_job = None
+
+    def _clear_pending_scroll_if_empty(
+        self,
+    ) -> None:
+        self._empty_clear_scroll_job = None
+        if not self._row_order:
+            self._pending_scroll_top = None
+
     def _schedule_redraw(
         self,
     ) -> None:
@@ -1165,6 +1203,7 @@ class AdaptiveIndexList(ttk.Frame):
             except tk.TclError:
                 pass
             self._draw_batch_job = None
+        self._remember_scroll_position()
         self.canvas.delete("all")
         self._row_items.clear()
         self._row_backgrounds.clear()
@@ -1196,10 +1235,45 @@ class AdaptiveIndexList(ttk.Frame):
             self._draw_row(item_id, values)
             if time.perf_counter() - start_time >= 0.012:
                 break
+        self._restore_scroll_position()
         if self._draw_cursor < len(self._row_order):
             self._draw_batch_job = self.after(1, self._draw_next_batch)
-        elif self._selected_id and self.exists(self._selected_id):
+            return
+        if self._selected_id and self.exists(self._selected_id):
             self._select(self._selected_id)
+        self._restore_scroll_position(final=True)
+
+    def _remember_scroll_position(
+        self,
+    ) -> None:
+        if self._pending_scroll_top is not None:
+            return
+        try:
+            self._pending_scroll_top = max(0.0, float(self.canvas.canvasy(0)))
+        except tk.TclError:
+            self._pending_scroll_top = None
+
+    def _restore_scroll_position(
+        self,
+        final: bool = False,
+    ) -> None:
+        if self._pending_scroll_top is None:
+            return
+        try:
+            viewport_height = max(1, self.canvas.winfo_height())
+            max_top = max(0, self._content_height - viewport_height)
+            target_top = min(self._pending_scroll_top, max_top)
+            if self._content_height > 0:
+                self.canvas.yview_moveto(target_top / max(1, self._content_height))
+        except tk.TclError:
+            pass
+        if final:
+            self._pending_scroll_top = None
+
+    def _cancel_scroll_restore_for_user_scroll(
+        self,
+    ) -> None:
+        self._pending_scroll_top = None
 
     def _draw_row(
         self,
@@ -1323,6 +1397,7 @@ class AdaptiveIndexList(ttk.Frame):
         销毁列表并取消待执行绘制任务
         """
         self._cancel_pending_draws()
+        self._cancel_empty_clear_scroll_reset()
         super().destroy()
 
     def bind(  # ty: ignore[invalid-method-override]
