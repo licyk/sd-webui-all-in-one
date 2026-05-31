@@ -21,6 +21,17 @@ from sd_webui_all_in_one.cli_manager.auto_mirror import (
     add_auto_mirror_argument,
     with_auto_mirror,
 )
+from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
+    DEFAULT_HOTPATCHER_CONFIG_PATH,
+    apply_hotpatcher_config,
+    ensure_hotpatcher_pythonpath_first,
+    export_hotpatcher_default_config,
+    get_hotpatcher_catalog,
+    launch_hotpatcher_manager_gui,
+    load_hotpatcher_config,
+    save_hotpatcher_config,
+)
+from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.downloader.types import (
     DOWNLOAD_TOOL_TYPE_LIST,
     DownloadToolType,
@@ -180,8 +191,6 @@ def download_file_cli(
         chunk_size (int | None):
             requests 下载器的 HTTP Range 分片大小, 为 None 或 0 时启用自适应分片
     """
-    from sd_webui_all_in_one.downloader import download_file
-
     download_file(
         url=url,
         path=path,
@@ -287,9 +296,6 @@ def export_hotpatcher_config_cli(output: Path | None = None, force: bool = False
         force (bool):
             是否覆盖已有文件
     """
-
-    from sd_webui_all_in_one.base_manager.hotpatcher_manager import export_hotpatcher_default_config
-
     path = export_hotpatcher_default_config(output, overwrite=force)
     logger.info("Hotpatcher 默认配置已导出: %s", path)
 
@@ -303,9 +309,6 @@ def normalize_hotpatcher_config_cli(config: Path | None = None, write_back: bool
         write_back (bool):
             是否写回配置文件
     """
-
-    from sd_webui_all_in_one.base_manager.hotpatcher_manager import load_hotpatcher_config, save_hotpatcher_config
-
     normalized = load_hotpatcher_config(config, normalize=True)
     if write_back:
         save_hotpatcher_config(config, normalized)
@@ -321,17 +324,11 @@ def apply_hotpatcher_config_cli(config: Path | None = None) -> None:
         config (Path | None):
             配置文件路径
     """
-
-    from sd_webui_all_in_one.base_manager.hotpatcher_manager import apply_hotpatcher_config
-
     _print_json(apply_hotpatcher_config(config))
 
 
 def show_hotpatcher_catalog_cli() -> None:
     """显示 hotpatcher 功能目录"""
-
-    from sd_webui_all_in_one.base_manager.hotpatcher_manager import get_hotpatcher_catalog
-
     _print_json(get_hotpatcher_catalog())
 
 
@@ -353,17 +350,11 @@ def launch_hotpatcher_gui_cli(
         token (str):
             runtime host 访问令牌
     """
-
-    from sd_webui_all_in_one.base_manager.hotpatcher_manager import launch_hotpatcher_manager_gui
-
     launch_hotpatcher_manager_gui(config_path=config, host=host, port=port, token=token)
 
 
 def get_hotpatcher_pythonpath_cli() -> None:
     """输出注入 Hotpatcher 路径后的 PYTHONPATH"""
-
-    from sd_webui_all_in_one.base_manager.hotpatcher_manager import ensure_hotpatcher_pythonpath_first
-
     print(ensure_hotpatcher_pythonpath_first(os.environ.copy()).get("PYTHONPATH", ""))
 
 
@@ -406,9 +397,6 @@ def register_manager(
             )
         )
     )
-
-    # patcher
-    from sd_webui_all_in_one.base_manager.hotpatcher_manager import DEFAULT_HOTPATCHER_CONFIG_PATH
 
     patcher_p = sd_webui_all_in_one_sub.add_parser("patcher", help="Hotpatcher 配置管理")
     patcher_sub = patcher_p.add_subparsers(dest="patcher_action", required=True)
