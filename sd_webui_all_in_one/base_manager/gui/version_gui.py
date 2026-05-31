@@ -376,7 +376,7 @@ class EnhancedEntry(ttk.Frame):
         self._install_bindings()
         self._sync_clear_button()
 
-    def bind(  # type: ignore[override]
+    def bind(  # type: ignore[override]  # ty: ignore[invalid-method-override]
         self,
         sequence: str | None = None,
         func: Callable[[tk.Event], object] | None = None,
@@ -384,18 +384,53 @@ class EnhancedEntry(ttk.Frame):
     ) -> str | None:
         """
         将输入相关事件绑定到底层 Entry，保留复合控件的透明使用方式。
+
+        Args:
+            sequence (str | None):
+                Tk 事件序列。
+            func (Callable[[tk.Event], object] | None):
+                事件回调。
+            add (bool | str | None):
+                是否追加绑定, 默认为追加以保留内置输入行为。
+
+        Returns:
+            str | None: Tk 绑定 ID。
         """
         add_arg = "+" if add is None else add
-        return self.entry.bind(sequence, func, add_arg)
+        return self.entry.bind(sequence, func, add_arg)  # ty: ignore[no-matching-overload]
 
     def get(self) -> str:
+        """
+        获取输入框文本。
+
+        Returns:
+            str: 输入框当前文本。
+        """
         return self.entry.get()
 
     def insert(self, index: int | str, string: str) -> None:
+        """
+        在指定位置插入文本。
+
+        Args:
+            index (int | str):
+                插入位置。
+            string (str):
+                要插入的文本。
+        """
         self.entry.insert(index, string)
         self._sync_clear_button()
 
     def delete(self, first: int | str, last: int | str | None = None) -> None:
+        """
+        删除指定范围内的文本。
+
+        Args:
+            first (int | str):
+                起始位置。
+            last (int | str | None):
+                结束位置, 为 None 时只删除起始位置字符。
+        """
         if last is None:
             self.entry.delete(first)
         else:
@@ -403,27 +438,63 @@ class EnhancedEntry(ttk.Frame):
         self._sync_clear_button()
 
     def index(self, index: int | str) -> int:
+        """
+        返回指定索引对应的位置。
+
+        Args:
+            index (int | str):
+                Tk 输入框索引。
+
+        Returns:
+            int: 解析后的数字索引。
+        """
         return self.entry.index(index)
 
     def icursor(self, index: int | str) -> None:
+        """
+        移动输入光标到指定位置。
+
+        Args:
+            index (int | str):
+                目标光标位置。
+        """
         self.entry.icursor(index)
 
     def selection_range(self, start: int | str, end: int | str) -> None:
+        """
+        选中指定范围内的文本。
+
+        Args:
+            start (int | str):
+                选区起始位置。
+            end (int | str):
+                选区结束位置。
+        """
         self.entry.selection_range(start, end)
 
-    def selection_clear(self) -> None:
+    def selection_clear(self) -> None:  # ty: ignore[invalid-method-override]
+        """清除输入框文本选区。"""
         self.entry.selection_clear()
 
     def selection_present(self) -> bool:
+        """
+        检查输入框是否存在文本选区。
+
+        Returns:
+            bool: 是否存在文本选区。
+        """
         return bool(self.entry.selection_present())
 
     def focus_set(self) -> None:
+        """将键盘焦点移动到底层输入框。"""
         self.entry.focus_set()
 
     def focus(self) -> None:
+        """将键盘焦点移动到底层输入框。"""
         self.entry.focus()
 
     def destroy(self) -> None:
+        """销毁输入框并移除变量监听。"""
         if self._trace_id is not None:
             try:
                 self.variable.trace_remove("write", self._trace_id)
@@ -572,6 +643,15 @@ class EnhancedEntry(ttk.Frame):
 def install_text_context_menu(widget: tk.Text, editable: bool = True) -> tk.Menu:
     """
     为多行文本框安装剪切、复制、粘贴右键菜单。
+
+    Args:
+        widget (tk.Text):
+            要安装右键菜单的多行文本框。
+        editable (bool):
+            是否允许剪切和粘贴。
+
+    Returns:
+        tk.Menu: 已安装的右键菜单。
     """
 
     menu = tk.Menu(widget, tearoff=False)

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import tkinter as tk
-from types import SimpleNamespace
 
 import pytest
 
@@ -49,7 +48,9 @@ def test_enhanced_entry_replaces_full_selection(tk_root: tk.Tk) -> None:
     tk_root.update_idletasks()
 
     entry._select_all(tk.Event())  # pylint: disable=protected-access
-    result = entry._replace_selection_on_keypress(SimpleNamespace(char="Z"))  # pylint: disable=protected-access
+    event = tk.Event()
+    event.char = "Z"
+    result = entry._replace_selection_on_keypress(event)  # pylint: disable=protected-access
 
     assert result == "break"
     assert var.get() == "Z"
