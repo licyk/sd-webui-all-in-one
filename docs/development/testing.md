@@ -4,10 +4,40 @@
 
 ## Python 检查
 
-Ruff 工作流只检查 `sd_webui_all_in_one/`：
+Python 静态检查以 `pyproject.toml` 中的 `[tool.ruff]`、`[tool.ty]` 和 `[tool.python-docstring-checker]` 为准。默认检查范围聚焦 `sd_webui_all_in_one/`，排除 `sv_ttk` 主题源码和 patcher examples。
+
+Ruff 负责 lint 和格式化检查。提交前至少运行 lint：
 
 ```bash
 ruff check sd_webui_all_in_one
+```
+
+需要确认格式化状态时运行：
+
+```bash
+ruff format --check sd_webui_all_in_one
+```
+
+需要实际格式化时再运行：
+
+```bash
+ruff format sd_webui_all_in_one
+```
+
+ty 负责类型检查。运行时必须显式传入当前环境的 Python 可执行文件路径，避免 ty 使用到错误解释器或搜索路径：
+
+```bash
+python -m ty check --python /path/to/python --output-format concise sd_webui_all_in_one
+```
+
+如果使用当前 shell 中的解释器，可以先用 `python -c "import sys; print(sys.executable)"` 确认路径，再填入 `--python`。
+
+只有在已经创建虚拟环境、安装项目依赖，并确认当前 shell 已激活该环境时，才可以省略 `--python`，直接运行 `python -m ty check sd_webui_all_in_one`。
+
+python-docstring-checker 负责检查文档字符串完整性和参数说明。项目配置已限制默认 include / exclude 范围：
+
+```bash
+python -m python_docstring_checker .
 ```
 
 pytest 工作流会在 Python 3.10 到 3.14 上运行：
