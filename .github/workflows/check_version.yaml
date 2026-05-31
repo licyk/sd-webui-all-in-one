@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - '**.ps1'
+      - '.github/check_installer_version.ps1'
+      - 'sd_webui_all_in_one/version.py'
+      - '.github/workflows/check_version.yaml'
   delete:
   create:
   workflow_dispatch:
@@ -19,76 +22,4 @@ jobs:
       - name: Check Installer Version
         shell: pwsh
         run: |
-          function Get-Installer-Version ($path, $flag) {
-                try {
-                    $version = [int]$(
-                        Get-Content "$path" |
-                        Select-String -Pattern "$flag" |
-                        ForEach-Object { $_.ToString() }
-                    )[0].Split("=")[1].Trim()
-                }
-                catch {
-                    $version = $null
-                    Write-Host "获取 ${path} 的版本号 ${flag} 出现错误: $_"
-                }
-                return $version
-            }
-
-            function Get-Installer-Version-Format ($version) {
-                $ver = $([string]$version).ToCharArray()
-                $major = ($ver[0..($ver.Length - 3)])
-                $minor = $ver[-2]
-                $micro = $ver[-1]
-                return "v${major}.${minor}.${micro}"
-            }
-
-            $has_error = $false
-            $installer_path = "${{ github.workspace }}/installer"
-            $installer_list = @(
-                @("${installer_path}/comfyui_installer.ps1", "COMFYUI_INSTALLER_VERSION"),
-                @("${installer_path}/fooocus_installer.ps1", "FOOOCUS_INSTALLER_VERSION"),
-                @("${installer_path}/invokeai_installer.ps1", "INVOKEAI_INSTALLER_VERSION"),
-                @("${installer_path}/sd_trainer_installer.ps1", "SD_TRAINER_INSTALLER_VERSION"),
-                @("${installer_path}/sd_trainer_script_installer.ps1", "SD_TRAINER_SCRIPT_INSTALLER_VERSION"),
-                @("${installer_path}/stable_diffusion_webui_installer.ps1", "SD_WEBUI_INSTALLER_VERSION"),
-                @("${installer_path}/qwen_tts_webui_installer.ps1", "QWEN_TTS_WEBUI_INSTALLER_VERSION")
-            )
-            $data = @()
-
-            foreach ($i in $installer_list) {
-                $ver = Get-Installer-Version $i[0] $i[1]
-                if (!$ver) {
-                    $has_error = $true
-                    $ver_format = $null
-                } else {
-                    $ver_format = Get-Installer-Version-Format $ver
-                }
-                $name = [System.IO.Path]::GetFileName($i[0])
-                $data += @(
-                    [PSCustomObject]@{
-                        name = $name;
-                        ver = $ver;
-                        ver_format = $ver_format
-                    }
-                )
-            }
-
-            $data | Format-Table -AutoSize -Property @{
-                Name = "Installer";
-                Expression = {$_.name};
-                Alignment = "Left"
-            },@{
-                Name = "版本号";
-                Expression = {$_.ver_format};
-                Alignment = "Right"
-            },@{
-                Name = "版本代号";
-                Expression = {$_.ver};
-                Alignment = "Center"
-            }
-
-            if ($has_error) {
-                Write-Error "出现 Installer 获取版本失败" -ErrorAction Stop
-            } else {
-                Write-Host "版本号检查完成"
-            }
+          & "${{ github.workspace }}/.github/check_installer_version.ps1" -Workspace "${{ github.workspace }}"
