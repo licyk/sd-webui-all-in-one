@@ -76,9 +76,9 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
     def __init__(
         self,
         invokeai_path: Path,
-        use_pypi_mirror: bool | None = False,
-        use_uv: bool | None = True,
-        use_github_mirror: bool | None = False,
+        use_pypi_mirror: bool = False,
+        use_uv: bool = True,
+        use_github_mirror: bool = False,
         custom_github_mirror: str | list[str] | None = None,
     ) -> None:
         """
@@ -87,11 +87,11 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         Args:
             invokeai_path (Path):
                 InvokeAI 根目录
-            use_pypi_mirror (bool | None):
+            use_pypi_mirror (bool):
                 是否启用 PyPI 镜像源
-            use_uv (bool | None):
+            use_uv (bool):
                 是否使用 uv 安装软件包
-            use_github_mirror (bool | None):
+            use_github_mirror (bool):
                 是否启用 GitHub 镜像源
             custom_github_mirror (str | list[str] | None):
                 自定义 GitHub 镜像源
@@ -525,9 +525,9 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
 
 def launch_invokeai_version_gui(
     invokeai_path: Path,
-    use_pypi_mirror: bool | None = False,
-    use_uv: bool | None = True,
-    use_github_mirror: bool | None = False,
+    use_pypi_mirror: bool = False,
+    use_uv: bool = True,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """
@@ -536,11 +536,11 @@ def launch_invokeai_version_gui(
     Args:
         invokeai_path (Path):
             InvokeAI 根目录
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否启用 PyPI 镜像源
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装软件包
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否启用 GitHub 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 GitHub 镜像源

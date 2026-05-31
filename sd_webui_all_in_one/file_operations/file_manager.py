@@ -389,19 +389,19 @@ def move_files_merge(
 
 def get_file_list(
     path: Path,
-    resolve: bool | None = False,
+    resolve: bool = False,
     max_depth: int | None = -1,
-    show_progress: bool | None = True,
-    include_dirs: bool | None = False,
+    show_progress: bool = True,
+    include_dirs: bool = False,
 ) -> list[Path]:
     """获取当前路径下的所有文件（和可选的目录）的绝对路径
 
     Args:
         path (Path): 要获取列表的目录
-        resolve (bool | None): 将路径进行完全解析, 包括链接路径
+        resolve (bool): 将路径进行完全解析, 包括链接路径
         max_depth (int | None): 最大遍历深度, -1 表示不限制深度, 0 表示只遍历当前目录
-        show_progress (bool | None): 是否显示 tqdm 进度条
-        include_dirs (bool | None): 是否在结果中包含目录路径
+        show_progress (bool): 是否显示 tqdm 进度条
+        include_dirs (bool): 是否在结果中包含目录路径
     Returns:
         (list[Path]): 路径列表的绝对路径
     """
@@ -455,14 +455,14 @@ def get_file_list(
 def generate_dir_tree(
     start_path: Path,
     max_depth: int | None = None,
-    show_hidden: bool | None = False,
+    show_hidden: bool = False,
 ) -> None:
     """生成并打印目录树
 
     Args:
         start_path (Path): 要开始遍历的根目录路径
         max_depth (int | None): 要遍历的最大深度
-        show_hidden (bool | None): 是否显示隐藏文件
+        show_hidden (bool): 是否显示隐藏文件
     """
     if not start_path.is_dir():
         logger.error("目录 %s 不存在", start_path)
@@ -616,7 +616,7 @@ def sync_files(
 def sync_files_and_create_symlink(
     src_path: Path,
     link_path: Path,
-    src_is_file: bool | None = False,
+    src_is_file: bool = False,
 ) -> None:
     """同步文件并创建软链接
 
@@ -635,7 +635,7 @@ def sync_files_and_create_symlink(
             源路径
         link_path (Path):
             软链接路径
-        src_is_file (bool | None):
+        src_is_file (bool):
             源路径是否为文件
 
     Raises:
@@ -692,17 +692,17 @@ def is_folder_empty(
 
 def display_directories(
     *paths: Path | None,
-    recursive: bool | None = False,
-    show_hidden: bool | None = True,
+    recursive: bool = False,
+    show_hidden: bool = True,
 ) -> None:
     """列出多个指定文件夹的文件列表
 
     Args:
         *paths (Path | None):
             要展示的一个或多个路径
-        recursive (bool | None):
+        recursive (bool):
             递归显示子目录的内容
-        show_hidden (bool | None):
+        show_hidden (bool):
             显示隐藏文件
     """
     for path in paths:

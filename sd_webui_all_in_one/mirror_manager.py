@@ -317,7 +317,7 @@ def set_mirror(
 
 
 def get_pypi_mirror_config(
-    use_cn_mirror: bool | None = False,
+    use_cn_mirror: bool = False,
     origin_env: dict[str, str] | None = None,
 ) -> dict[str, str]:
     """获取带有 PyPI 镜像源配置的环境变量字典
@@ -325,7 +325,7 @@ def get_pypi_mirror_config(
     如果设置了 `SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR=1` 环境变量, 则启用 SD WebUI All In One 自带的额外 PyPI 镜像源
 
     Args:
-        use_cn_mirror (bool | None):
+        use_cn_mirror (bool):
             是否使用国内镜像源
         origin_env (dict[str, str] | None):
             原始的环境变量字典

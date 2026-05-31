@@ -230,7 +230,7 @@ def get_xformers_for_invokeai() -> str:
 
 
 def _ensure_invokeai_package_installed(
-    use_uv: bool | None = True,
+    use_uv: bool = True,
     custom_env: dict[str, str] | None = None,
 ) -> None:
     """确保 InvokeAI 核心包已安装"""
@@ -250,7 +250,7 @@ def _ensure_invokeai_package_installed(
 def sync_invokeai_component(
     device_type: PyTorchDeviceTypeCategory | None = None,
     use_pypi_mirror: bool | None = None,
-    use_uv: bool | None = True,
+    use_uv: bool = True,
 ) -> None:
     """同步 InvokeAI 组件
 
@@ -259,7 +259,7 @@ def sync_invokeai_component(
             显卡设备类型
         use_pypi_mirror (bool | None):
             是否使用国内 PyPI 镜像
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装 Python 软件包
 
     Raises:
@@ -267,6 +267,7 @@ def sync_invokeai_component(
             同步 InvokeAI 组件发生错误时
     """
     logger.info("获取 InvokeAI 安装配置")
+    resolved_use_pypi_mirror = False if use_pypi_mirror is None else use_pypi_mirror
 
     # 获取 InvokeAI 和 InvokeAI 所需的 PyTorch 的版本
     invokeai_ver = importlib.metadata.version("invokeai")
@@ -280,7 +281,7 @@ def sync_invokeai_component(
     _, _, custom_env_pytorch = prepare_pytorch_install_info(
         pytorch_mirror_type=pytorch_mirror_type,
         custom_pytorch_package=f"torch=={torch_ver}",
-        use_cn_mirror=use_pypi_mirror,
+        use_cn_mirror=resolved_use_pypi_mirror,
     )
 
     # 配置安装 PyTorch 所需的包版本声明
@@ -290,7 +291,7 @@ def sync_invokeai_component(
     torch_without_xformers = " ".join(pytorch_package.split())
 
     # 准备安装依赖的 PyPI 镜像源
-    custom_env = get_pypi_mirror_config(use_pypi_mirror)
+    custom_env = get_pypi_mirror_config(resolved_use_pypi_mirror)
 
     logger.debug("InvokeAI 所需的 PyTorch 版本: %s", torch_ver)
     logger.debug("InvokeAI 使用的 PyTorch 镜像源类型: %s", pytorch_mirror_type)
@@ -338,9 +339,9 @@ def sync_invokeai_component(
 def install_invokeai_component(
     device_type: PyTorchDeviceTypeCategory | None = None,
     invokeai_version: str | None = None,
-    upgrade: bool | None = False,
-    use_pypi_mirror: bool | None = False,
-    use_uv: bool | None = True,
+    upgrade: bool = False,
+    use_pypi_mirror: bool = False,
+    use_uv: bool = True,
 ) -> None:
     """安装 InvokeAI
 
@@ -349,11 +350,11 @@ def install_invokeai_component(
             显卡设备类型
         invokeai_version (str | None):
             指定安装 InvokeAI 的版本
-        upgrade (bool | None):
+        upgrade (bool):
             更新 InvokeAI
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否使用国内 PyPI 镜像
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装 Python 软件包
 
     Raises:
@@ -385,14 +386,14 @@ def install_invokeai_component(
 
 def import_model_to_invokeai(
     model_list: list[Path],
-    install_model_to_local: bool | None = False,
+    install_model_to_local: bool = False,
 ) -> bool:
     """将模型列表导入到 InvokeAI 中
 
     Args:
         model_list (list[Path]):
             模型路径列表
-        install_model_to_local (bool | None):
+        install_model_to_local (bool):
             是否将模型安装到 InvokeAI 路径中, 为 False 时就地安装, 为 True 时则将模型复制到 InvokeAI 目录中
 
     Returns:
@@ -555,13 +556,13 @@ def import_model_to_invokeai(
 
 
 def install_pypatchmatch(
-    use_cn_mirror: bool | None = False,
+    use_cn_mirror: bool = False,
     downloader: DownloadToolType | None = None,
 ) -> None:
     """为 Windows 的 PyPatchMatch 安装组件
 
     Args:
-        use_cn_mirror (bool | None):
+        use_cn_mirror (bool):
             是否使用国内下载镜像
         downloader (DownloadToolType | None):
             使用的下载器
@@ -703,11 +704,11 @@ def install_invokeai(
     invokeai_path: Path,
     device_type: PyTorchDeviceTypeCategory | None = None,
     invokeai_version: str | None = None,
-    use_pypi_mirror: bool | None = True,
-    use_uv: bool | None = True,
-    use_github_mirror: bool | None = False,
+    use_pypi_mirror: bool = True,
+    use_uv: bool = True,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
-    no_pre_download_model: bool | None = False,
+    no_pre_download_model: bool = False,
     model_download_resource_type: ModelDownloadUrlType | None = "modelscope",
 ) -> None:
     """安装 InvokeAI
@@ -719,15 +720,15 @@ def install_invokeai(
             设置使用的 PyTorch 镜像源类型
         invokeai_version (str | None):
             自定义安装 InvokeAI 的版本
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否使用国内 PyPI 镜像源
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装 Python 软件包
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否启用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        no_pre_download_model (bool | None):
+        no_pre_download_model (bool):
             是否禁用预下载模型
         model_download_resource_type (ModelDownloadUrlType | None):
             下载模型使用的下载源
@@ -772,15 +773,15 @@ def install_invokeai(
 
 
 def update_invokeai(
-    use_pypi_mirror: bool | None = False,
-    use_uv: bool | None = False,
+    use_pypi_mirror: bool = False,
+    use_uv: bool = False,
 ) -> None:
     """更新 InvokeAI
 
     Args:
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否使用国内 PyPI 镜像源
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装 Python 软件包
     """
     logger.info("更新 InvokeAI 中")
@@ -794,19 +795,19 @@ def update_invokeai(
 
 
 def check_invokeai_env(
-    use_uv: bool | None = True,
-    use_pypi_mirror: bool | None = False,
-    use_github_mirror: bool | None = False,
+    use_uv: bool = True,
+    use_pypi_mirror: bool = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """检查 InvokeAI 运行环境
 
     Args:
-        use_uv (bool | None):
+        use_uv (bool):
             使用 uv 安装依赖
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否使用国内 PyPI 镜像源
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
@@ -856,14 +857,14 @@ def check_invokeai_env(
 def launch_invokeai(
     invokeai_path: Path,
     launch_args: list[str] | None = None,
-    use_hf_mirror: bool | None = False,
+    use_hf_mirror: bool = False,
     custom_hf_mirror: str | list[str] | None = None,
-    use_pypi_mirror: bool | None = False,
-    use_cuda_malloc: bool | None = True,
-    enable_hotpatcher: bool | None = False,
+    use_pypi_mirror: bool = False,
+    use_cuda_malloc: bool = True,
+    enable_hotpatcher: bool = False,
     hotpatcher_config_path: str | Path | None = None,
     hotpatcher_port: int | None = None,
-    enable_hotpatcher_runtime: bool | None = False,
+    enable_hotpatcher_runtime: bool = False,
 ) -> None:
     """启动 InvokeAI
 
@@ -872,21 +873,21 @@ def launch_invokeai(
             InvokeAI 根目录
         launch_args (list[str] | None):
             启动 InvokeAI 的参数
-        use_hf_mirror (bool | None):
+        use_hf_mirror (bool):
             是否启用 HuggingFace 镜像源
         custom_hf_mirror (str | list[str] | None):
             自定义 HuggingFace 镜像源
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否启用 PyPI 镜像源
-        use_cuda_malloc (bool | None):
+        use_cuda_malloc (bool):
             是否启用 CUDA Malloc 显存优化
-        enable_hotpatcher (bool | None):
+        enable_hotpatcher (bool):
             是否启用补丁系统注入
         hotpatcher_config_path (str | Path | None):
             补丁系统配置文件路径
         hotpatcher_port (int | None):
             补丁系统 runtime 通信端口
-        enable_hotpatcher_runtime (bool | None):
+        enable_hotpatcher_runtime (bool):
             是否启用补丁系统 runtime host 连接
 
     Raises:
@@ -949,7 +950,7 @@ def launch_invokeai(
 def install_invokeai_custom_nodes(
     invokeai_path: Path,
     custom_node_url: str | list[str],
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """安装 InvokeAI 扩展
@@ -959,7 +960,7 @@ def install_invokeai_custom_nodes(
             InvokeAI 根目录
         custom_node_url (str | list[str]):
             InvokeAI 扩展下载链接
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
@@ -1116,7 +1117,7 @@ def list_invokeai_custom_nodes(
 
 def update_invokeai_custom_nodes(
     invokeai_path: Path,
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """更新 InvokeAI 扩展
@@ -1124,7 +1125,7 @@ def update_invokeai_custom_nodes(
     Args:
         invokeai_path (Path):
             InvokeAI 根目录
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
@@ -1201,8 +1202,8 @@ def install_invokeai_model_from_library(
     model_name: str | None = None,
     model_index: int | None = None,
     downloader: DownloadToolType | None = None,
-    interactive_mode: bool | None = False,
-    list_only: bool | None = False,
+    interactive_mode: bool = False,
+    list_only: bool = False,
 ) -> None:
     """为 InvokeAI 下载模型, 使用模型库进行下载
 
@@ -1217,9 +1218,9 @@ def install_invokeai_model_from_library(
             下载的模型在列表中的索引值, 索引值从 1 开始. 当同时提供 `model_name` 和 `model_index` 时, 优先使用 `model_index` 查找模型
         downloader (DownloadToolType | None):
             下载模型使用的工具
-        interactive_mode (bool | None):
+        interactive_mode (bool):
             是否启用交互模式
-        list_only (bool | None):
+        list_only (bool):
             是否仅列出模型列表并退出
     """
     paths = install_webui_model_from_library(
@@ -1460,14 +1461,14 @@ def uninstall_model_from_invokeai(
 
 def uninstall_invokeai_model(
     model_name: str,
-    interactive_mode: bool | None = False,
+    interactive_mode: bool = False,
 ) -> None:
     """卸载 InvokeAI 中的模型
 
     Args:
         model_name (str):
             模型名称
-        interactive_mode (bool | None):
+        interactive_mode (bool):
             是否启用交互模式
 
     Raises:
@@ -1504,25 +1505,26 @@ def uninstall_invokeai_model(
 
 def reinstall_invokeai_pytorch(
     device_type: PyTorchDeviceTypeCategory | None = None,
-    use_pypi_mirror: bool | None = True,
+    use_pypi_mirror: bool = True,
     use_uv: bool | None = None,
-    interactive_mode: bool | None = False,
-    list_only: bool | None = False,
+    interactive_mode: bool = False,
+    list_only: bool = False,
 ) -> None:
     """PyTorch 重装工具
 
     Args:
         device_type (PyTorchDeviceTypeCategory | None):
             PyTorch 设备类型
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否使用 PyPI 国内镜像
         use_uv (bool | None):
             是否使用 uv 进行 PyTorch 安装
-        interactive_mode (bool | None):
+        interactive_mode (bool):
             是否启用交互模式
-        list_only (bool | None):
+        list_only (bool):
             是否仅列出 PyTorch 列表并退出
     """
+    resolved_use_uv = True if use_uv is None else use_uv
 
     def _uninstall() -> None:
         run_cmd([Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "xformers", "-y"])
@@ -1533,7 +1535,7 @@ def reinstall_invokeai_pytorch(
         install_invokeai_component(
             device_type=d,
             use_pypi_mirror=use_pypi_mirror,
-            use_uv=use_uv,
+            use_uv=resolved_use_uv,
         )
 
     def _get_torch_and_xformers_ver() -> tuple[str | None, str | None]:
@@ -1594,9 +1596,9 @@ def reinstall_invokeai_pytorch(
 
 def launch_invokeai_version_gui(
     invokeai_path: Path,
-    use_pypi_mirror: bool | None = False,
-    use_uv: bool | None = True,
-    use_github_mirror: bool | None = False,
+    use_pypi_mirror: bool = False,
+    use_uv: bool = True,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """启动 InvokeAI 版本管理 GUI
@@ -1604,11 +1606,11 @@ def launch_invokeai_version_gui(
     Args:
         invokeai_path (Path):
             InvokeAI 根目录
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否使用 PyPI 国内镜像
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装 Python 软件包
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源

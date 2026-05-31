@@ -50,9 +50,9 @@ def install(
     pytorch_mirror_type: PyTorchDeviceType | None = None,
     custom_pytorch_package: str | None = None,
     custom_xformers_package: str | None = None,
-    use_pypi_mirror: bool | None = True,
-    use_uv: bool | None = True,
-    use_github_mirror: bool | None = False,
+    use_pypi_mirror: bool = True,
+    use_uv: bool = True,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
     model_download_resource_type: ModelDownloadUrlType | None = "modelscope",
 ) -> None:
@@ -67,11 +67,11 @@ def install(
             自定义 PyTorch 软件包版本声明, 例如: `torch==2.3.0+cu118 torchvision==0.18.0+cu118`
         custom_xformers_package (str | None):
             自定义 xFormers 软件包版本声明, 例如: `xformers===0.0.26.post1+cu118`
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否使用国内 PyPI 镜像源
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装 Python 软件包
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
@@ -93,7 +93,7 @@ def install(
 
 def update(
     qwen_tts_webui_path: Path,
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """更新 Qwen TTS WebUI
@@ -101,7 +101,7 @@ def update(
     Args:
         qwen_tts_webui_path (Path):
             Qwen TTS WebUI 根目录
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
@@ -115,9 +115,9 @@ def update(
 
 def check_env(
     qwen_tts_webui_path: Path,
-    use_uv: bool | None = True,
-    use_pypi_mirror: bool | None = False,
-    use_github_mirror: bool | None = False,
+    use_uv: bool = True,
+    use_pypi_mirror: bool = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """检查 Qwen TTS WebUI 运行环境
@@ -125,11 +125,11 @@ def check_env(
     Args:
         qwen_tts_webui_path (Path):
             Qwen TTS WebUI 根目录
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装 Python 软件包
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否使用国内 PyPI 镜像源
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
@@ -146,18 +146,18 @@ def check_env(
 def launch(
     qwen_tts_webui_path: Path,
     launch_args: list[str] | None = None,
-    use_hf_mirror: bool | None = False,
+    use_hf_mirror: bool = False,
     custom_hf_mirror: str | list[str] | None = None,
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
-    use_pypi_mirror: bool | None = False,
-    use_cuda_malloc: bool | None = True,
-    use_uv: bool | None = True,
-    check_launch_env: bool | None = True,
-    enable_hotpatcher: bool | None = False,
+    use_pypi_mirror: bool = False,
+    use_cuda_malloc: bool = True,
+    use_uv: bool = True,
+    check_launch_env: bool = True,
+    enable_hotpatcher: bool = False,
     hotpatcher_config_path: str | Path | None = None,
     hotpatcher_port: int | None = None,
-    enable_hotpatcher_runtime: bool | None = False,
+    enable_hotpatcher_runtime: bool = False,
 ) -> None:
     """启动 Qwen TTS WebUI
 
@@ -166,29 +166,29 @@ def launch(
             Qwen TTS WebUI 根目录
         launch_args (list[str] | None):
             启动 Qwen TTS WebUI 的参数
-        use_hf_mirror (bool | None):
+        use_hf_mirror (bool):
             是否启用 HuggingFace 镜像源
         custom_hf_mirror (str | list[str] | None):
             自定义 HuggingFace 镜像源
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否启用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否启用 PyPI 镜像源
-        use_cuda_malloc (bool | None):
+        use_cuda_malloc (bool):
             是否启用 CUDA Malloc 显存优化
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装 Python 软件包
-        check_launch_env (bool | None):
+        check_launch_env (bool):
             是否在启动前检查运行环境
-        enable_hotpatcher (bool | None):
+        enable_hotpatcher (bool):
             是否启用补丁系统注入
         hotpatcher_config_path (str | Path | None):
             补丁系统配置文件路径
         hotpatcher_port (int | None):
             补丁系统 runtime 通信端口
-        enable_hotpatcher_runtime (bool | None):
+        enable_hotpatcher_runtime (bool):
             是否启用补丁系统 runtime host 连接
 
     Raises:
@@ -242,7 +242,7 @@ def launch(
 
 def launch_version_gui(
     qwen_tts_webui_path: Path,
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """启动 Qwen TTS WebUI 版本管理 GUI
@@ -250,7 +250,7 @@ def launch_version_gui(
     Args:
         qwen_tts_webui_path (Path):
             Qwen TTS WebUI 根目录
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源

@@ -173,14 +173,14 @@ class PackageVersionInfo:
 
 
 def configure_git_env(
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> dict[str, str]:
     """
     应用项目已有 Git 配置并返回环境变量
 
     Args:
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否启用 GitHub 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 GitHub 镜像源
@@ -278,14 +278,14 @@ def list_commits(path: Path, limit: int | None = 100) -> list[CommitInfo]:
     return commits
 
 
-def list_branches(path: Path, fetch: bool | None = True) -> list[BranchInfo]:
+def list_branches(path: Path, fetch: bool = True) -> list[BranchInfo]:
     """
     列出本地和远程分支
 
     Args:
         path (Path):
             Git 仓库路径
-        fetch (bool | None):
+        fetch (bool):
             是否先拉取远程引用
 
     Returns:
@@ -321,7 +321,7 @@ def switch_repository_branch(
     path: Path,
     branch: str,
     new_url: str | None = None,
-    recurse_submodules: bool | None = False,
+    recurse_submodules: bool = False,
 ) -> None:
     """
     切换仓库分支
@@ -333,7 +333,7 @@ def switch_repository_branch(
             目标分支
         new_url (str | None):
             切换前需要设置的新远程地址
-        recurse_submodules (bool | None):
+        recurse_submodules (bool):
             是否递归更新子模块
     """
     fetch_repository(path)
@@ -389,7 +389,7 @@ class ExtensionManager:
         is_enabled: Callable[[str, Path], bool],
         set_enabled: Callable[[str, bool], None],
         ignored_names: Iterable[str] | None = None,
-        include_files: bool | None = False,
+        include_files: bool = False,
     ) -> None:
         """
         初始化扩展管理器
@@ -405,7 +405,7 @@ class ExtensionManager:
                 扩展启用状态写入函数
             ignored_names (Iterable[str] | None):
                 需要忽略的扩展名称
-            include_files (bool | None):
+            include_files (bool):
                 是否允许把单文件扩展纳入列表
         """
         self.root_path = Path(root_path)
@@ -466,7 +466,7 @@ class ExtensionManager:
     def install_extension(
         self,
         url: str,
-        use_github_mirror: bool | None = False,
+        use_github_mirror: bool = False,
         custom_github_mirror: str | list[str] | None = None,
     ) -> Path:
         """
@@ -475,7 +475,7 @@ class ExtensionManager:
         Args:
             url (str):
                 Git 仓库地址
-            use_github_mirror (bool | None):
+            use_github_mirror (bool):
                 是否启用 GitHub 镜像源
             custom_github_mirror (str | list[str] | None):
                 自定义 GitHub 镜像源

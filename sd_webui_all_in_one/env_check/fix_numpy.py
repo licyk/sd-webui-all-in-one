@@ -21,13 +21,13 @@ logger = get_logger(
 
 
 def check_numpy(
-    use_uv: bool | None = True,
+    use_uv: bool = True,
     custom_env: dict[str, str] | None = None,
 ) -> None:
     """检查 Numpy 是否需要降级
 
     Args:
-        use_uv (bool| None):
+        use_uv (bool):
             是否使用 uv 安装依赖
         custom_env (dict[str, str] | None):
             环境变量字典

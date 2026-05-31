@@ -37,7 +37,7 @@ def retryable(
     describe: str | None = None,
     catch_exceptions: type[Exception] | tuple[type[Exception], ...] = Exception,
     raise_exception: type[Exception] = RuntimeError,
-    retry_on_none: bool | None = False,
+    retry_on_none: bool = False,
 ) -> Callable[[Callable[P, T | None]], Callable[..., T]]:
     """通用的重试装饰器
 
@@ -58,7 +58,7 @@ def retryable(
             需要捕获并触发重试的异常类型
         raise_exception (type[Exception]):
             超过重试次数后抛出的异常类型
-        retry_on_none (bool | None):
+        retry_on_none (bool):
             是否在返回 None 时触发重试
 
     Returns:

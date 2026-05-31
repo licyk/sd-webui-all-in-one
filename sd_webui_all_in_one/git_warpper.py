@@ -484,7 +484,7 @@ def switch_branch(
     path: Path,
     branch: str,
     new_url: str | None = None,
-    recurse_submodules: bool | None = False,
+    recurse_submodules: bool = False,
 ) -> None:
     """切换 Git 仓库的分支和远程源
 
@@ -495,7 +495,7 @@ def switch_branch(
             要切换的分支
         new_url (str | None):
             要切换的远程源
-        recurse_submodules (bool | None):
+        recurse_submodules (bool):
             是否启用 Git 子模块
 
     Raises:

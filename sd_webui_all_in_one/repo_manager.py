@@ -227,7 +227,7 @@ class RepoManager:
         api_type: ApiType,
         repo_id: str,
         repo_type: RepoType = "model",
-        visibility: bool | None = False,
+        visibility: bool = False,
     ) -> bool:
         """检查 HuggingFace / ModelScope 仓库是否存在, 当不存在时则自动创建
 
@@ -263,7 +263,7 @@ class RepoManager:
         self,
         repo_id: str,
         repo_type: RepoType = "model",
-        visibility: bool | None = False,
+        visibility: bool = False,
     ) -> bool:
         """检查 HuggingFace 仓库是否存在, 当不存在时则自动创建
 
@@ -272,7 +272,7 @@ class RepoManager:
                 HuggingFace 仓库 ID
             repo_type (RepoType):
                 HuggingFace 仓库类型
-            visibility (bool | None):
+            visibility (bool):
                 HuggingFace 仓库可见性
 
         Returns:
@@ -295,7 +295,7 @@ class RepoManager:
         self,
         repo_id: str,
         repo_type: RepoType = "model",
-        visibility: bool | None = False,
+        visibility: bool = False,
     ) -> bool:
         """检查 ModelScope 仓库是否存在, 当不存在时则自动创建
 
@@ -304,7 +304,7 @@ class RepoManager:
                 ModelScope 仓库 ID
             repo_type (RepoType):
                 ModelScope 仓库类型
-            visibility (bool | None):
+            visibility (bool):
                 ModelScope 仓库可见性
 
         Returns:
@@ -336,8 +336,8 @@ class RepoManager:
         repo_id: str,
         upload_path: Path,
         repo_type: RepoType = "model",
-        visibility: bool | None = False,
-        num_threads: int | None = 1,
+        visibility: bool = False,
+        num_threads: int = 1,
     ) -> None:
         """上传文件夹中的内容到 HuggingFace / ModelScope 仓库中
 
@@ -350,9 +350,9 @@ class RepoManager:
                 仓库类型
             upload_path (Path):
                 要上传的文件夹
-            visibility (bool | None):
+            visibility (bool):
                 当仓库不存在时自动创建的仓库的可见性
-            num_threads (int | None):
+            num_threads (int):
                 上传线程数, 为`None`时使用单线程
 
         Raises:
@@ -588,7 +588,7 @@ class RepoManager:
         local_dir: Path,
         repo_type: RepoType = "model",
         folder: str | None = None,
-        num_threads: int | None = 8,
+        num_threads: int = 8,
     ) -> None:
         """从 HuggingFace / ModelScope 仓库下载文文件
 
@@ -648,7 +648,7 @@ class RepoManager:
                 下载路径
             folder (str | None):
                 指定下载某个文件夹, 未指定时则下载整个文件夹
-            num_threads (int | None):
+            num_threads (int):
                 下载线程
 
         Raises:
@@ -683,7 +683,7 @@ class RepoManager:
         local_dir: Path,
         repo_type: RepoType = "model",
         folder: str | None = None,
-        num_threads: int | None = 8,
+        num_threads: int = 8,
     ) -> None:
         """从 HuggingFace 仓库下载文文件
 
@@ -696,7 +696,7 @@ class RepoManager:
                 下载路径
             folder (str | None):
                 指定下载某个文件夹, 未指定时则下载整个文件夹
-            num_threads (int | None):
+            num_threads (int):
                 下载线程
         """
         from huggingface_hub import hf_hub_download
@@ -733,7 +733,7 @@ class RepoManager:
         local_dir: Path,
         repo_type: RepoType = "model",
         folder: str | None = None,
-        num_threads: int | None = 8,
+        num_threads: int = 8,
     ) -> None:
         """从 ModelScope 仓库下载文文件
 
@@ -746,7 +746,7 @@ class RepoManager:
                 下载路径
             folder (str | None):
                 指定下载某个文件夹, 未指定时则下载整个文件夹
-            num_threads (int | None):
+            num_threads (int):
                 下载线程
         """
         from modelscope import snapshot_download

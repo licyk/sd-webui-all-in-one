@@ -28,14 +28,14 @@ class LoggingColoredFormatter(logging.Formatter):
         self,
         fmt: str | None = None,
         datefmt: str | None = None,
-        color: bool | None = True,
+        color: bool = True,
     ) -> None:
         """Logging 初始化
 
         Args:
             fmt (str | None): 日志消息的格式字符串
             datefmt (str | None): 日期 / 时间的显示格式
-            color (bool | None): 是否启用彩色日志输出. 默认为 True
+            color (bool): 是否启用彩色日志输出. 默认为 True
         """
         super().__init__(fmt, datefmt)
         self.color = color
@@ -57,14 +57,14 @@ class LoggingColoredFormatter(logging.Formatter):
 def get_logger(
     name: str | None = None,
     level: int | None = logging.INFO,
-    color: bool | None = True,
+    color: bool = True,
 ) -> logging.Logger:
     """获取 Loging 对象
 
     Args:
         name (str | None): Logging 名称
         level (int | None): 日志级别
-        color (bool | None): 是否启用彩色日志
+        color (bool): 是否启用彩色日志
     Returns:
         logging.Logger: Logging 对象
     """

@@ -148,12 +148,12 @@ def is_nvidia_device():
 
 
 def get_pytorch_cuda_alloc_conf(
-    is_cuda: bool | None = True,
+    is_cuda: bool = True,
 ) -> str | None:
     """获取用于配置 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量的配置
 
     Args:
-        is_cuda (bool | None): 是否为 CUDA 设备
+        is_cuda (bool): 是否为 CUDA 设备
 
     Returns:
         (str | None): CUDA Malloc 配置

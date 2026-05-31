@@ -25,7 +25,7 @@ logger = get_logger(
 def py_dependency_checker(
     requirement_path: Path,
     name: str | None = None,
-    use_uv: bool | None = True,
+    use_uv: bool = True,
     custom_env: dict[str, str] | None = None,
 ) -> None:
     """检测依赖完整性并安装缺失依赖
@@ -35,7 +35,7 @@ def py_dependency_checker(
             依赖文件路径
         name (str | None):
             显示的名称
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装依赖
         custom_env (dict[str, str] | None):
             环境变量字典
@@ -74,7 +74,7 @@ def py_dependency_checker(
 def py_package_metadata_dependency_checker(
     package_name: str,
     name: str | None = None,
-    use_uv: bool | None = True,
+    use_uv: bool = True,
     custom_env: dict[str, str] | None = None,
 ) -> None:
     """检测 wheel metadata 依赖完整性并安装缺失依赖
@@ -84,7 +84,7 @@ def py_package_metadata_dependency_checker(
             要检查的软件包名, 支持 ``package`` 或 ``package[extra1,extra2]`` 格式
         name (str | None):
             显示的名称
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装依赖
         custom_env (dict[str, str] | None):
             环境变量字典

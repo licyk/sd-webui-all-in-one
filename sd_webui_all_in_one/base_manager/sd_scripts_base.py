@@ -203,12 +203,12 @@ def install_sd_scripts(
     pytorch_mirror_type: PyTorchDeviceType | None = None,
     custom_pytorch_package: str | None = None,
     custom_xformers_package: str | None = None,
-    use_pypi_mirror: bool | None = True,
-    use_uv: bool | None = True,
-    use_github_mirror: bool | None = False,
+    use_pypi_mirror: bool = True,
+    use_uv: bool = True,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
     install_branch: SDScriptsBranchType | None = None,
-    no_pre_download_model: bool | None = False,
+    no_pre_download_model: bool = False,
     model_download_resource_type: ModelDownloadUrlType | None = "modelscope",
 ) -> None:
     """安装 SD Scripts
@@ -222,17 +222,17 @@ def install_sd_scripts(
             自定义 PyTorch 软件包版本声明, 例如: `torch==2.3.0+cu118 torchvision==0.18.0+cu118`
         custom_xformers_package (str | None):
             自定义 xFormers 软件包版本声明, 例如: `xformers===0.0.26.post1+cu118`
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否使用国内 PyPI 镜像源
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装 Python 软件包
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
         install_branch (SDScriptsBranchType | None):
             安装的 SD Scripts 分支
-        no_pre_download_model (bool | None):
+        no_pre_download_model (bool):
             是否禁用预下载模型
         model_download_resource_type (ModelDownloadUrlType | None):
             下载模型使用的下载源
@@ -350,10 +350,10 @@ def install_sd_scripts(
 def switch_sd_scripts_branch(
     sd_scripts_path: Path,
     branch: SDScriptsBranchType | None = None,
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
-    interactive_mode: bool | None = False,
-    list_only: bool | None = False,
+    interactive_mode: bool = False,
+    list_only: bool = False,
 ) -> None:
     """切换 SD Scripts 分支
 
@@ -362,13 +362,13 @@ def switch_sd_scripts_branch(
             SD Scripts 根目录
         branch (SDScriptsBranchType | None):
             要切换的 SD Scripts 分支
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        interactive_mode (bool | None):
+        interactive_mode (bool):
             是否启用交互模式
-        list_only (bool | None):
+        list_only (bool):
             是否仅列出分支列表并退出
 
     Raises:
@@ -457,7 +457,7 @@ def switch_sd_scripts_branch(
 
 def update_sd_scripts(
     sd_scripts_path: Path,
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """更新 SD Scripts
@@ -465,7 +465,7 @@ def update_sd_scripts(
     Args:
         sd_scripts_path (Path):
             SD Scripts 根目录
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
@@ -488,23 +488,23 @@ def update_sd_scripts(
 
 def check_sd_scripts_env(
     sd_scripts_path: Path,
-    use_uv: bool | None = True,
-    use_github_mirror: bool | None = False,
+    use_uv: bool = True,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
-    use_pypi_mirror: bool | None = False,
+    use_pypi_mirror: bool = False,
 ) -> None:
     """检查 SD Scripts 运行环境
 
     Args:
         sd_scripts_path (Path):
             SD Scripts 根目录
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装 Python 软件包
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否使用国内 PyPI 镜像源
 
     Raises:
@@ -571,8 +571,8 @@ def install_sd_scripts_model_from_library(
     model_name: str | None = None,
     model_index: int | None = None,
     downloader: DownloadToolType | None = None,
-    interactive_mode: bool | None = False,
-    list_only: bool | None = False,
+    interactive_mode: bool = False,
+    list_only: bool = False,
 ) -> None:
     """为 SD Scripts 下载模型, 使用模型库进行下载
 
@@ -587,9 +587,9 @@ def install_sd_scripts_model_from_library(
             下载的模型在列表中的索引值, 索引值从 1 开始. 当同时提供 `model_name` 和 `model_index` 时, 优先使用 `model_index` 查找模型
         downloader (DownloadToolType | None):
             下载模型使用的工具
-        interactive_mode (bool | None):
+        interactive_mode (bool):
             是否启用交互模式
-        list_only (bool | None):
+        list_only (bool):
             是否仅列出模型列表并退出
     """
     install_webui_model_from_library(
@@ -651,7 +651,7 @@ def uninstall_sd_scripts_model(
     sd_scripts_path: Path,
     model_name: str,
     model_type: str | None = None,
-    interactive_mode: bool | None = False,
+    interactive_mode: bool = False,
 ) -> None:
     """卸载 SD Scripts 中的模型
 
@@ -662,7 +662,7 @@ def uninstall_sd_scripts_model(
             模型名称
         model_type (str | None):
             模型的类型
-        interactive_mode (bool | None):
+        interactive_mode (bool):
             是否启用交互模式
 
     Raises:
@@ -700,7 +700,7 @@ def uninstall_sd_scripts_model(
 
 def launch_sd_scripts_version_gui(
     sd_scripts_path: Path,
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """启动 SD Scripts 版本管理 GUI
@@ -708,7 +708,7 @@ def launch_sd_scripts_version_gui(
     Args:
         sd_scripts_path (Path):
             SD Scripts 根目录
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源

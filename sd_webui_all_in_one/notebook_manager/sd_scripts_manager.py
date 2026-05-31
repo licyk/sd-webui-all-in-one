@@ -73,7 +73,7 @@ class SDScriptsManager(BaseManager):
                 local_dir: Path | str,
                 repo_type: RepoType = "model",
                 folder: str | None = None,
-                num_threads: int | None = 8,
+                num_threads: int = 8,
                 retry: int | None = None,  # pylint: disable=unused-argument
             ):
                 warnings.warn(
@@ -96,7 +96,7 @@ class SDScriptsManager(BaseManager):
                 repo_id: str,
                 upload_path: Path | str,
                 repo_type: RepoType = "model",
-                visibility: bool | None = False,
+                visibility: bool = False,
                 retry: int | None = None,  # pylint: disable=unused-argument
             ) -> None:
                 warnings.warn(
@@ -173,13 +173,13 @@ class SDScriptsManager(BaseManager):
 
     def check_env(
         self,
-        use_uv: bool | None = True,
+        use_uv: bool = True,
         requirements_file: str | None = "requirements.txt",
     ) -> None:
         """检查 sd-scripts 运行环境
 
         Args:
-            use_uv (bool | None): 使用 uv 安装依赖
+            use_uv (bool): 使用 uv 安装依赖
             requirements_file (str | None): 依赖文件名
         """
         sd_webui_path = self.workspace / self.workfolder
@@ -201,7 +201,7 @@ class SDScriptsManager(BaseManager):
         git_commit: str | None = None,
         model_path: str | Path | None = None,
         model_list: list[list[str | int]] | None = None,
-        use_uv: bool | None = True,
+        use_uv: bool = True,
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
@@ -215,11 +215,11 @@ class SDScriptsManager(BaseManager):
         wandb_token: str | None = None,
         git_username: str | None = None,
         git_email: str | None = None,
-        check_avaliable_gpu: bool | None = False,
-        enable_tcmalloc: bool | None = True,
-        enable_cuda_malloc: bool | None = True,
+        check_avaliable_gpu: bool = False,
+        enable_tcmalloc: bool = True,
+        enable_cuda_malloc: bool = True,
         custom_sys_pkg_cmd: list[list[str]] | list[str] | bool | None = None,
-        update_core: bool | None = True,
+        update_core: bool = True,
         *args,
         **kwargs,
     ) -> None:
@@ -247,7 +247,7 @@ class SDScriptsManager(BaseManager):
             git_commit (str | None): 指定要切换到 sd-scripts 的提交记录
             model_path (str | Path | None): 指定模型下载的路径
             model_list (list[list[str | int]] | None): 模型下载列表
-            use_uv (bool | None): 使用 uv 替代 Pip 进行 Python 软件包的安装
+            use_uv (bool): 使用 uv 替代 Pip 进行 Python 软件包的安装
             pypi_index_mirror (str | None): PyPI Index 镜像源链接
             pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接
             pypi_find_links_mirror (str | None): PyPI Find Links 镜像源链接
@@ -261,13 +261,13 @@ class SDScriptsManager(BaseManager):
             wandb_token (str | None): 配置 WandB Token
             git_username (str | None): Git 用户名
             git_email (str | None): Git 邮箱
-            check_avaliable_gpu (bool | None): 检查是否有可用的 GPU, 当 GPU 不可用时引发`Exception`
-            enable_tcmalloc (bool | None): 启用 TCMalloc 内存优化
-            enable_cuda_malloc (bool | None): 启用 CUDA 显存优化
+            check_avaliable_gpu (bool): 检查是否有可用的 GPU, 当 GPU 不可用时引发`Exception`
+            enable_tcmalloc (bool): 启用 TCMalloc 内存优化
+            enable_cuda_malloc (bool): 启用 CUDA 显存优化
             custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None): 自定义调用系统包管理器命令, 设置为 None 为使用默认的调用命令, 设置为 [] 则禁用该功能
             *args: 兼容旧接口的额外位置参数
             **kwargs: 兼容旧接口的额外关键字参数
-            update_core (bool | None): 安装时更新内核和扩展
+            update_core (bool): 安装时更新内核和扩展
         Raises:
             Exception: GPU 不可用
         """

@@ -496,8 +496,8 @@ class BaseManager:
         repo_id: str,
         upload_path: Path | str,
         repo_type: RepoType = "model",
-        visibility: bool | None = False,
-        num_threads: int | None = 1,
+        visibility: bool = False,
+        num_threads: int = 1,
     ) -> None:
         """上传文件夹中的内容到 HuggingFace / ModelScope 仓库中
 
@@ -510,9 +510,9 @@ class BaseManager:
                 仓库类型
             upload_path (Path | str):
                 要上传的文件夹
-            visibility (bool | None):
+            visibility (bool):
                 当仓库不存在时自动创建的仓库的可见性
-            num_threads (int | None):
+            num_threads (int):
                 上传线程数, 为`None`时使用单线程
         """
         self.repo_manager.upload_files_to_repo(
@@ -531,7 +531,7 @@ class BaseManager:
         local_dir: Path | str,
         repo_type: RepoType = "model",
         folder: str | None = None,
-        num_threads: int | None = 8,
+        num_threads: int = 8,
     ) -> None:
         """从 HuggingFace / ModelScope 仓库下载文文件
 
@@ -591,7 +591,7 @@ class BaseManager:
                 下载路径
             folder (str | None):
                 指定下载某个文件夹, 未指定时则下载整个文件夹
-            num_threads (int | None):
+            num_threads (int):
                 下载线程
         """
         self.repo_manager.download_files_from_repo(
@@ -611,14 +611,14 @@ class BaseManager:
 
     def get_tunnel_url(
         self,
-        use_ngrok: bool | None = False,
+        use_ngrok: bool = False,
         ngrok_token: str | None = None,
-        use_cloudflare: bool | None = False,
-        use_remote_moe: bool | None = False,
-        use_localhost_run: bool | None = False,
-        use_gradio: bool | None = False,
-        use_pinggy_io: bool | None = False,
-        use_zrok: bool | None = False,
+        use_cloudflare: bool = False,
+        use_remote_moe: bool = False,
+        use_localhost_run: bool = False,
+        use_gradio: bool = False,
+        use_pinggy_io: bool = False,
+        use_zrok: bool = False,
         zrok_token: str | None = None,
         webui_name: str | None = "WebUI",
     ) -> TunnelUrl:
@@ -644,21 +644,21 @@ class BaseManager:
             ```
 
         Args:
-            use_ngrok (bool | None):
+            use_ngrok (bool):
                 启用 Ngrok 内网穿透
             ngrok_token (str | None):
                 Ngrok 账号 Token
-            use_cloudflare (bool | None):
+            use_cloudflare (bool):
                 启用 CloudFlare 内网穿透
-            use_remote_moe (bool | None):
+            use_remote_moe (bool):
                 启用 remote.moe 内网穿透
-            use_localhost_run (bool | None):
+            use_localhost_run (bool):
                 使用 localhost.run 内网穿透
-            use_gradio (bool | None):
+            use_gradio (bool):
                 使用 Gradio 内网穿透
-            use_pinggy_io (bool | None):
+            use_pinggy_io (bool):
                 使用 pinggy.io 内网穿透
-            use_zrok (bool | None):
+            use_zrok (bool):
                 使用 Zrok 内网穿透
             zrok_token (str | None):
                 Zrok 账号 Token
@@ -726,17 +726,17 @@ class BaseManager:
     def display_directories_tree(
         self,
         *paths: Path | str | None,
-        recursive: bool | None = False,
-        show_hidden: bool | None = True,
+        recursive: bool = False,
+        show_hidden: bool = True,
     ) -> None:
         """列出多个指定文件夹的文件列表
 
         Args:
             *paths (Path | str | None):
                 要展示的一个或多个路径
-            recursive (bool | None):
+            recursive (bool):
                 递归显示子目录的内容
-            show_hidden (bool | None):
+            show_hidden (bool):
                 显示隐藏文件
         """
         display_paths = [Path(p) for p in paths if p is not None]

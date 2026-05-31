@@ -63,12 +63,12 @@ def install(
     pytorch_mirror_type: PyTorchDeviceType | None = None,
     custom_pytorch_package: str | None = None,
     custom_xformers_package: str | None = None,
-    use_pypi_mirror: bool | None = True,
-    use_uv: bool | None = True,
-    use_github_mirror: bool | None = False,
+    use_pypi_mirror: bool = True,
+    use_uv: bool = True,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
-    no_pre_download_extension: bool | None = False,
-    no_pre_download_model: bool | None = False,
+    no_pre_download_extension: bool = False,
+    no_pre_download_model: bool = False,
     model_download_resource_type: ModelDownloadUrlType | None = "modelscope",
 ) -> None:
     """安装 ComfyUI
@@ -82,17 +82,17 @@ def install(
             自定义 PyTorch 软件包版本声明, 例如: `torch==2.3.0+cu118 torchvision==0.18.0+cu118`
         custom_xformers_package (str | None):
             自定义 xFormers 软件包版本声明, 例如: `xformers===0.0.26.post1+cu118`
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否使用国内 PyPI 镜像源
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装 Python 软件包
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        no_pre_download_extension (bool | None):
+        no_pre_download_extension (bool):
             是否禁用预下载 ComfyUI 扩展
-        no_pre_download_model (bool | None):
+        no_pre_download_model (bool):
             是否禁用预下载模型
         model_download_resource_type (ModelDownloadUrlType | None):
             下载模型使用的下载源
@@ -114,7 +114,7 @@ def install(
 
 def update(
     comfyui_path: Path,
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """更新 ComfyUI
@@ -122,7 +122,7 @@ def update(
     Args:
         comfyui_path (Path):
             Stable DIffusion WebUI 根目录
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
@@ -136,29 +136,29 @@ def update(
 
 def check_env(
     comfyui_path: Path,
-    install_conflict_component_requirement: bool | None = False,
-    interactive_mode: bool | None = False,
-    use_uv: bool | None = True,
-    use_github_mirror: bool | None = False,
+    install_conflict_component_requirement: bool = False,
+    interactive_mode: bool = False,
+    use_uv: bool = True,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
-    use_pypi_mirror: bool | None = False,
+    use_pypi_mirror: bool = False,
 ) -> None:
     """检查 ComfyUI 运行环境
 
     Args:
         comfyui_path (Path):
             ComfyUI 根目录
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装 Python 软件包
-        install_conflict_component_requirement (bool | None):
+        install_conflict_component_requirement (bool):
             检测到冲突依赖时是否按顺序安装组件依赖
-        interactive_mode (bool | None):
+        interactive_mode (bool):
             是否启用交互模式, 当检测到冲突依赖时将询问是否安装冲突组件依赖
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否启用 PyPI 镜像源
     """
     check_comfyui_env(
@@ -175,20 +175,20 @@ def check_env(
 def launch(
     comfyui_path: Path,
     launch_args: str | list[str] | None = None,
-    use_hf_mirror: bool | None = False,
+    use_hf_mirror: bool = False,
     custom_hf_mirror: str | list[str] | None = None,
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
-    use_pypi_mirror: bool | None = False,
-    use_cuda_malloc: bool | None = True,
-    use_uv: bool | None = True,
-    interactive_mode: bool | None = False,
-    install_conflict_component_requirement: bool | None = False,
-    check_launch_env: bool | None = True,
-    enable_hotpatcher: bool | None = False,
+    use_pypi_mirror: bool = False,
+    use_cuda_malloc: bool = True,
+    use_uv: bool = True,
+    interactive_mode: bool = False,
+    install_conflict_component_requirement: bool = False,
+    check_launch_env: bool = True,
+    enable_hotpatcher: bool = False,
     hotpatcher_config_path: str | Path | None = None,
     hotpatcher_port: int | None = None,
-    enable_hotpatcher_runtime: bool | None = False,
+    enable_hotpatcher_runtime: bool = False,
 ) -> None:
     """启动 ComfyUI
 
@@ -197,33 +197,33 @@ def launch(
             ComfyUI 根目录
         launch_args (str | list[str] | None):
             启动 ComfyUI 的参数
-        use_hf_mirror (bool | None):
+        use_hf_mirror (bool):
             是否启用 HuggingFace 镜像源
         custom_hf_mirror (str | list[str] | None):
             自定义 HuggingFace 镜像源
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否启用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否启用 PyPI 镜像源
-        use_cuda_malloc (bool | None):
+        use_cuda_malloc (bool):
             是否启用 CUDA Malloc 显存优化
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装 Python 软件包
-        interactive_mode (bool | None):
+        interactive_mode (bool):
             是否启用交互模式
-        install_conflict_component_requirement (bool | None):
+        install_conflict_component_requirement (bool):
             检测到冲突依赖时是否按顺序安装组件依赖
-        check_launch_env (bool | None):
+        check_launch_env (bool):
             是否在启动前检查运行环境
-        enable_hotpatcher (bool | None):
+        enable_hotpatcher (bool):
             是否启用补丁系统注入
         hotpatcher_config_path (str | Path | None):
             补丁系统配置文件路径
         hotpatcher_port (int | None):
             补丁系统 runtime 通信端口
-        enable_hotpatcher_runtime (bool | None):
+        enable_hotpatcher_runtime (bool):
             是否启用补丁系统 runtime host 连接
 
     Raises:
@@ -280,7 +280,7 @@ def launch(
 def install_custom_node(
     comfyui_path: Path,
     custom_node_url: str | list[str],
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """安装 ComfyUI 扩展
@@ -290,7 +290,7 @@ def install_custom_node(
             ComfyUI 根目录
         custom_node_url (str | list[str]):
             ComfyUI 扩展下载链接
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
@@ -348,7 +348,7 @@ def list_custom_nodes(
 
 def update_custom_nodes(
     comfyui_path: Path,
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """更新 ComfyUI 扩展
@@ -356,7 +356,7 @@ def update_custom_nodes(
     Args:
         comfyui_path (Path):
             ComfyUI 根目录
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
@@ -388,7 +388,7 @@ def uninstall_custom_node(
 
 def launch_version_gui(
     comfyui_path: Path,
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """启动 ComfyUI 版本管理 GUI
@@ -396,7 +396,7 @@ def launch_version_gui(
     Args:
         comfyui_path (Path):
             ComfyUI 根目录
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
@@ -414,8 +414,8 @@ def install_model_from_library(
     model_name: str | None = None,
     model_index: int | None = None,
     downloader: DownloadToolType | None = None,
-    interactive_mode: bool | None = False,
-    list_only: bool | None = False,
+    interactive_mode: bool = False,
+    list_only: bool = False,
 ) -> None:
     """为 ComfyUI 下载模型, 使用模型库进行下载
 
@@ -430,9 +430,9 @@ def install_model_from_library(
             下载的模型在列表中的索引值, 索引值从 1 开始. 当同时提供 `model_name` 和 `model_index` 时, 优先使用 `model_index` 查找模型
         downloader (DownloadToolType | None):
             下载模型使用的工具
-        interactive_mode (bool | None):
+        interactive_mode (bool):
             是否启用交互模式
-        list_only (bool | None):
+        list_only (bool):
             是否仅列出模型列表并退出
     """
     install_comfyui_model_from_library(
@@ -488,7 +488,7 @@ def uninstall_model(
     comfyui_path: Path,
     model_name: str,
     model_type: str | None = None,
-    interactive_mode: bool | None = False,
+    interactive_mode: bool = False,
 ) -> None:
     """卸载 ComfyUI 中的模型
 
@@ -499,7 +499,7 @@ def uninstall_model(
             模型名称
         model_type (str | None):
             模型的类型
-        interactive_mode (bool | None):
+        interactive_mode (bool):
             是否启用交互模式
     """
     uninstall_comfyui_model(

@@ -138,19 +138,19 @@ class FooocusManager(BaseManager):
 
     def check_env(
         self,
-        use_uv: bool | None = True,
-        use_pypi_mirror: bool | None = False,
-        use_github_mirror: bool | None = False,
+        use_uv: bool = True,
+        use_pypi_mirror: bool = False,
+        use_github_mirror: bool = False,
         custom_github_mirror: str | list[str] | None = None,
     ) -> None:
         """检查 Fooocus 运行环境
 
         Args:
-            use_uv (bool | None):
+            use_uv (bool):
                 是否使用 uv 安装 Python 软件包
-            use_pypi_mirror (bool | None):
+            use_pypi_mirror (bool):
                 是否使用 PyPI 镜像源
-            use_github_mirror (bool | None):
+            use_github_mirror (bool):
                 是否使用 Github 镜像源
             custom_github_mirror (str | list[str] | None):
                 自定义 Github 镜像源
@@ -232,7 +232,7 @@ class FooocusManager(BaseManager):
     def pre_download_model(
         self,
         cmd_args: str | list[str] | None,
-        thread_num: int | None = 8,
+        thread_num: int = 8,
         downloader: DownloadToolType | None = None,
     ) -> None:
         """从命令行获取配置文件路径并预下载模型
@@ -240,7 +240,7 @@ class FooocusManager(BaseManager):
         Args:
             cmd_args (str | list[str] | None):
                 Fooocus 命令行参数
-            thread_num (int | None):
+            thread_num (int):
                 下载模型的线程数
             downloader (DownloadToolType | None):
                 预下载模型时使用的下载器 (`aria2`, `requests`, `urllib`)
@@ -310,27 +310,27 @@ class FooocusManager(BaseManager):
         pytorch_mirror_type: PyTorchDeviceType | None = None,
         custom_pytorch_package: str | None = None,
         custom_xformers_package: str | None = None,
-        use_pypi_mirror: bool | None = False,
-        use_uv: bool | None = True,
-        use_github_mirror: bool | None = False,
+        use_pypi_mirror: bool = False,
+        use_uv: bool = True,
+        use_github_mirror: bool = False,
         custom_github_mirror: str | list[str] | None = None,
         install_branch: FooocusBranchType | None = None,
-        no_pre_download_model: bool | None = True,
-        use_cn_model_mirror: bool | None = False,
+        no_pre_download_model: bool = True,
+        use_cn_model_mirror: bool = False,
         # legecy
-        use_hf_mirror: bool | None = False,
+        use_hf_mirror: bool = False,
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
         github_mirror: str | list[str] | None = None,
         huggingface_mirror: str | None = None,
-        check_avaliable_gpu: bool | None = False,
-        enable_tcmalloc: bool | None = True,
-        enable_cuda_malloc: bool | None = True,
+        check_avaliable_gpu: bool = False,
+        enable_tcmalloc: bool = True,
+        enable_cuda_malloc: bool = True,
         custom_sys_pkg_cmd: list[list[str]] | list[str] | bool | None = None,
         huggingface_token: str | None = None,
         modelscope_token: str | None = None,
-        update_core: bool | None = True,
+        update_core: bool = True,
         *args,
         **kwargs,
     ) -> None:
@@ -343,21 +343,21 @@ class FooocusManager(BaseManager):
                 自定义 PyTorch 软件包版本声明, 例如: `torch==2.3.0+cu118 torchvision==0.18.0+cu118`
             custom_xformers_package (str | None):
                 自定义 xFormers 软件包版本声明, 例如: `xformers===0.0.26.post1+cu118`
-            use_pypi_mirror (bool | None):
+            use_pypi_mirror (bool):
                 是否使用国内 PyPI 镜像源
-            use_uv (bool | None):
+            use_uv (bool):
                 是否使用 uv 安装 Python 软件包
-            use_github_mirror (bool | None):
+            use_github_mirror (bool):
                 是否使用 Github 镜像源
             custom_github_mirror (str | list[str] | None):
                 自定义 Github 镜像源
             install_branch (FooocusBranchType | None):
                 安装的 Fooocus 分支
-            no_pre_download_model (bool | None):
+            no_pre_download_model (bool):
                 是否禁用预下载模型
-            use_cn_model_mirror (bool | None):
+            use_cn_model_mirror (bool):
                 是否使用国内镜像下载模型
-            use_hf_mirror (bool | None):
+            use_hf_mirror (bool):
                 是否启用 HuggingFace 镜像源
             pypi_index_mirror (str | None):
                 PyPI Index 镜像源链接
@@ -369,11 +369,11 @@ class FooocusManager(BaseManager):
                 Github 镜像源链接或者镜像源链接列表
             huggingface_mirror (str | None):
                 HuggingFace 镜像源链接
-            check_avaliable_gpu (bool | None):
+            check_avaliable_gpu (bool):
                 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`
-            enable_tcmalloc (bool | None):
+            enable_tcmalloc (bool):
                 是否启用 TCMalloc 内存优化
-            enable_cuda_malloc (bool | None):
+            enable_cuda_malloc (bool):
                 启用 CUDA 显存优化
             custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None):
                 自定义调用系统包管理器命令, 设置为 None 为使用默认的调用命令, 设置为 [] 则禁用该功能
@@ -385,7 +385,7 @@ class FooocusManager(BaseManager):
                 兼容旧接口的额外位置参数
             **kwargs:
                 兼容旧接口的额外关键字参数
-            update_core (bool | None):
+            update_core (bool):
                 安装时更新内核和扩展
         """
         warning_unexpected_params(

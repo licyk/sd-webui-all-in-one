@@ -29,7 +29,7 @@ logger = get_logger(
 
 def pip_install(
     *args: Any,
-    use_uv: bool | None = True,
+    use_uv: bool = True,
     custom_env: dict[str, str] | None = None,
     cwd: Path | None = None,
 ) -> None:
@@ -38,7 +38,7 @@ def pip_install(
     Args:
         *args (Any):
             要安装的 Python 软件包 (可使用 Pip / uv 命令行参数, 如`--upgrade`, `--force-reinstall`)
-        use_uv (bool | None):
+        use_uv (bool):
             使用 uv 代替 Pip 进行安装, 当 uv 安装 Python 软件包失败时, 将回退到 Pip 进行重试
         custom_env (dict[str, str] | None):
             自定义环境变量
@@ -79,7 +79,7 @@ def pip_install(
 
 
 def install_manager_depend(
-    use_uv: bool | None = True,
+    use_uv: bool = True,
     custom_env: dict[str, str] | None = None,
     custom_sys_pkg_cmd: list[list[str]] | list[str] | None = None,
 ) -> None:
@@ -104,7 +104,7 @@ def install_manager_depend(
     ```
 
     Args:
-        use_uv (bool | None):
+        use_uv (bool):
             使用 uv 代替 Pip 进行安装, 当 uv 安装 Python 软件包失败时, 将回退到 Pip 进行重试
         custom_env (dict[str, str] | None):
             自定义环境变量
@@ -156,7 +156,7 @@ def install_pytorch(
     torch_package: str | list[str] | None = None,
     xformers_package: str | list[str] | None = None,
     custom_env: dict[str, str] | None = None,
-    use_uv: bool | None = True,
+    use_uv: bool = True,
 ) -> None:
     """安装 PyTorch / xFormers
 
@@ -167,7 +167,7 @@ def install_pytorch(
             xFormers 软件包名称和版本信息, 如`xformers==0.0.18` / `["xformers==0.0.18"]`
         custom_env (dict[str, str] | None):
             包含 PyPI 镜像配置的环境变量字典
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 代替 Pip 进行安装
 
     Raises:
@@ -202,7 +202,7 @@ def install_pytorch(
 
 def install_requirements(
     path: Path,
-    use_uv: bool | None = True,
+    use_uv: bool = True,
     custom_env: dict[str, str] | None = None,
     cwd: Path | None = None,
 ) -> None:
@@ -211,7 +211,7 @@ def install_requirements(
     Args:
         path (Path):
             requirements.txt 文件路径
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 代替 Pip 进行安装
         custom_env (dict[str, str] | None):
             自定义环境变量

@@ -89,7 +89,7 @@ def aria2(
     url: str,
     path: Path | None = None,
     save_name: str | None = None,
-    progress: bool | None = True,
+    progress: bool = True,
 ) -> Path:
     """Aria2 下载工具
 
@@ -102,7 +102,7 @@ def aria2(
             下载文件的路径, 为`None`时使用当前路径
         save_name (str | None):
             保存的文件名, 为`None`时使用`url`提取保存的文件名
-        progress (bool | None):
+        progress (bool):
             是否启用下载进度条
 
     Returns:

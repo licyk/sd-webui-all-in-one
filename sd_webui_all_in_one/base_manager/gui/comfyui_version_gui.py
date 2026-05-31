@@ -87,7 +87,7 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
     def __init__(
         self,
         comfyui_path: Path,
-        use_github_mirror: bool | None = False,
+        use_github_mirror: bool = False,
         custom_github_mirror: str | list[str] | None = None,
     ) -> None:
         """
@@ -96,7 +96,7 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         Args:
             comfyui_path (Path):
                 ComfyUI 根目录
-            use_github_mirror (bool | None):
+            use_github_mirror (bool):
                 是否启用 GitHub 镜像源
             custom_github_mirror (str | list[str] | None):
                 自定义 GitHub 镜像源
@@ -716,7 +716,7 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
 
 def launch_comfyui_version_gui(
     comfyui_path: Path,
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """
@@ -725,7 +725,7 @@ def launch_comfyui_version_gui(
     Args:
         comfyui_path (Path):
             ComfyUI 根目录
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否启用 GitHub 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 GitHub 镜像源

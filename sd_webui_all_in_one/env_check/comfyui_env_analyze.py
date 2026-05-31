@@ -649,9 +649,9 @@ def process_comfyui_env_analysis(
 
 def comfyui_conflict_analyzer(
     comfyui_root_path: Path,
-    install_conflict_component_requirement: bool | None = False,
-    interactive_mode: bool | None = False,
-    use_uv: bool | None = True,
+    install_conflict_component_requirement: bool = False,
+    interactive_mode: bool = False,
+    use_uv: bool = True,
     custom_env: dict[str, str] | None = None,
 ) -> None:
     """检查并安装 ComfyUI 的依赖环境
@@ -659,11 +659,11 @@ def comfyui_conflict_analyzer(
     Args:
         comfyui_root_path (Path):
             ComfyUI 根目录
-        install_conflict_component_requirement (bool | None):
+        install_conflict_component_requirement (bool):
             检测到冲突依赖时是否按顺序安装组件依赖
-        interactive_mode (bool | None):
+        interactive_mode (bool):
             是否启用交互模式, 当检测到冲突依赖时将询问是否安装冲突组件依赖
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装依赖
         custom_env (dict[str, str] | None):
             环境变量字典
@@ -741,7 +741,7 @@ def comfyui_conflict_analyzer(
 
 def check_comfyui_manager_dependence(
     comfyui_root_path: Path,
-    use_uv: bool | None = True,
+    use_uv: bool = True,
     custom_env: dict[str, str] | None = None,
 ) -> None:
     """检查 ComfyUI Manager 依赖
@@ -749,7 +749,7 @@ def check_comfyui_manager_dependence(
     Args:
         comfyui_root_path (Path):
             ComfyUI 根目录
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装依赖
         custom_env (dict[str, str] | None):
             环境变量字典

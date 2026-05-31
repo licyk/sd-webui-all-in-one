@@ -266,14 +266,14 @@ def get_env_pytorch_type() -> PyTorchDeviceTypeCategory:
 
 def get_pytorch_mirror(
     dtype: PyTorchDeviceType,
-    use_cn_mirror: bool | None = False,
+    use_cn_mirror: bool = False,
 ) -> PyTorchMirrorInfo:
     """根据 PyTorch 类型获取对应的 PyTorch 镜像源
 
     Args:
         dtype (PyTorchDeviceType):
             PyTorch 支持的设备类型
-        use_cn_mirror (bool | None):
+        use_cn_mirror (bool):
             是否使用国内镜像源
 
     Returns:

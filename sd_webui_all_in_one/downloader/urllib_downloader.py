@@ -25,9 +25,9 @@ def download_file_from_url_urllib(
     url: str,
     save_path: Path | None = None,
     file_name: str | None = None,
-    progress: bool | None = True,
+    progress: bool = True,
     hash_prefix: str | None = None,
-    re_download: bool | None = False,
+    re_download: bool = False,
 ) -> Path:
     """使用 urllib 库下载文件
 
@@ -38,11 +38,11 @@ def download_file_from_url_urllib(
             下载路径
         file_name (str | None):
             保存的文件名, 如果为`None`则从`url`中提取文件
-        progress (bool | None):
+        progress (bool):
             是否启用下载进度条
         hash_prefix (str | None):
             sha256 十六进制字符串, 如果提供, 将检查下载文件的哈希值是否与此前缀匹配, 当不匹配时引发`ValueError`
-        re_download (bool | None):
+        re_download (bool):
             强制重新下载文件
 
     Returns:

@@ -47,7 +47,7 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         title: str,
         root_path: Path,
         branch_presets: Sequence[Mapping[str, Any]] | None = None,
-        use_github_mirror: bool | None = False,
+        use_github_mirror: bool = False,
         custom_github_mirror: str | list[str] | None = None,
     ) -> None:
         """
@@ -60,7 +60,7 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
                 Git 仓库根目录
             branch_presets (Sequence[Mapping[str, Any]] | None):
                 预设分支信息
-            use_github_mirror (bool | None):
+            use_github_mirror (bool):
                 是否启用 GitHub 镜像源
             custom_github_mirror (str | list[str] | None):
                 自定义 GitHub 镜像源
@@ -294,7 +294,7 @@ def launch_git_kernel_version_gui(
     title: str,
     root_path: Path,
     branch_presets: Sequence[Mapping[str, Any]] | None = None,
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """
@@ -307,7 +307,7 @@ def launch_git_kernel_version_gui(
             Git 仓库根目录
         branch_presets (Sequence[Mapping[str, Any]] | None):
             预设分支信息
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否启用 GitHub 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 GitHub 镜像源

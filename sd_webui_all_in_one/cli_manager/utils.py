@@ -52,12 +52,12 @@ logger = get_logger(
 
 
 def check_pip(
-    use_pypi_mirror: bool | None = False,
+    use_pypi_mirror: bool = False,
 ) -> None:
     """检查 Pip 版本并尝试更新
 
     Args:
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否使用 PyPI 国内镜像
     """
     check_and_update_pip(
@@ -66,12 +66,12 @@ def check_pip(
 
 
 def check_uv(
-    use_pypi_mirror: bool | None = False,
+    use_pypi_mirror: bool = False,
 ) -> None:
     """检查 uv 版本并尝试更新
 
     Args:
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否使用 PyPI 国内镜像
     """
     check_and_update_uv(
@@ -103,12 +103,12 @@ def get_cuda_malloc() -> None:
 
 
 def get_tcmalloc(
-    output_path: bool | None = False,
+    output_path: bool = False,
 ) -> None:
     """获取支持当前系统的 TCMalloc 配置
 
     Args:
-        output_path (bool | None):
+        output_path (bool):
             是否只输出可用的 TCMalloc 库路径
     """
     silence_logger_output()
@@ -152,10 +152,10 @@ def download_file_cli(
     path: Path | None = None,
     save_name: str | None = None,
     tool: DownloadToolType | None = None,
-    progress: bool | None = True,
-    num_threads: int | None = 8,
-    resume: bool | None = True,
-    max_retries: int | None = 5,
+    progress: bool = True,
+    num_threads: int = 8,
+    resume: bool = True,
+    max_retries: int = 5,
     chunk_size: int | None = None,
 ) -> None:
     """下载文件并输出保存路径
@@ -169,13 +169,13 @@ def download_file_cli(
             文件保存名称
         tool (DownloadToolType | None):
             下载工具
-        progress (bool | None):
+        progress (bool):
             是否启用下载进度条
-        num_threads (int | None):
+        num_threads (int):
             requests 下载器的单文件 HTTP Range 下载线程数
-        resume (bool | None):
+        resume (bool):
             requests 下载器是否启用断点续传
-        max_retries (int | None):
+        max_retries (int):
             requests 下载器单个分片的最大重试次数
         chunk_size (int | None):
             requests 下载器的 HTTP Range 分片大小, 为 None 或 0 时启用自适应分片
@@ -200,12 +200,12 @@ def start_tunnel(
     workspace: Path | None = None,
     use_ngrok: bool = False,
     ngrok_token: str | None = None,
-    use_cloudflare: bool | None = False,
-    use_remote_moe: bool | None = False,
-    use_localhost_run: bool | None = False,
-    use_gradio: bool | None = False,
-    use_pinggy_io: bool | None = False,
-    use_zrok: bool | None = False,
+    use_cloudflare: bool = False,
+    use_remote_moe: bool = False,
+    use_localhost_run: bool = False,
+    use_gradio: bool = False,
+    use_pinggy_io: bool = False,
+    use_zrok: bool = False,
     zrok_token: str | None = None,
 ) -> None:
     """启动内网穿透
@@ -219,17 +219,17 @@ def start_tunnel(
             启用 Ngrok 内网穿透
         ngrok_token (str | None):
             Ngrok 账号 Token
-        use_cloudflare (bool | None):
+        use_cloudflare (bool):
             启用 CloudFlare 内网穿透
-        use_remote_moe (bool | None):
+        use_remote_moe (bool):
             启用 remote.moe 内网穿透
-        use_localhost_run (bool | None):
+        use_localhost_run (bool):
             使用 localhost.run 内网穿透
-        use_gradio (bool | None):
+        use_gradio (bool):
             使用 Gradio 内网穿透
-        use_pinggy_io (bool | None):
+        use_pinggy_io (bool):
             使用 pinggy.io 内网穿透
-        use_zrok (bool | None):
+        use_zrok (bool):
             使用 Zrok 内网穿透
         zrok_token (str | None):
             Zrok 账号 Token

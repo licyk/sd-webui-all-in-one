@@ -66,9 +66,9 @@ def download_executer(
     save_name: str | None,
     tool: DownloadToolType,
     progress: bool,
-    num_threads: int | None = 8,
-    resume: bool | None = True,
-    max_retries: int | None = 5,
+    num_threads: int = 8,
+    resume: bool = True,
+    max_retries: int = 5,
     chunk_size: int | None = None,
 ) -> Path:
     """底层下载执行器
@@ -84,11 +84,11 @@ def download_executer(
             工具名称
         progress (bool):
             是否显示进度
-        num_threads (int | None):
+        num_threads (int):
             requests 下载器的单文件 HTTP Range 下载线程数
-        resume (bool | None):
+        resume (bool):
             requests 下载器是否启用断点续传
-        max_retries (int | None):
+        max_retries (int):
             requests 下载器单个分片的最大重试次数
         chunk_size (int | None):
             requests 下载器的 HTTP Range 分片大小, 为 None 或 0 时启用自适应分片
@@ -120,10 +120,10 @@ def download_file(
     path: Path | None = None,
     save_name: str | None = None,
     tool: DownloadToolType | None = "requests",
-    progress: bool | None = True,
-    num_threads: int | None = 8,
-    resume: bool | None = True,
-    max_retries: int | None = 5,
+    progress: bool = True,
+    num_threads: int = 8,
+    resume: bool = True,
+    max_retries: int = 5,
     chunk_size: int | None = None,
 ) -> Path:
     """下载文件工具
@@ -137,13 +137,13 @@ def download_file(
             文件保存名称
         tool (DownloadToolType | None):
             下载工具
-        progress (bool | None):
+        progress (bool):
             是否启用下载进度条
-        num_threads (int | None):
+        num_threads (int):
             requests 下载器的单文件 HTTP Range 下载线程数
-        resume (bool | None):
+        resume (bool):
             requests 下载器是否启用断点续传
-        max_retries (int | None):
+        max_retries (int):
             requests 下载器单个分片的最大重试次数
         chunk_size (int | None):
             requests 下载器的 HTTP Range 分片大小, 为 None 或 0 时启用自适应分片

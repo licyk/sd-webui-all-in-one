@@ -45,21 +45,21 @@ class SDTrainerScriptsManager(BaseManager):
 
     def check_env(
         self,
-        use_uv: bool | None = True,
-        use_github_mirror: bool | None = False,
+        use_uv: bool = True,
+        use_github_mirror: bool = False,
         custom_github_mirror: str | list[str] | None = None,
-        use_pypi_mirror: bool | None = False,
+        use_pypi_mirror: bool = False,
     ) -> None:
         """检查 sd-scripts 运行环境
 
         Args:
-            use_uv (bool | None):
+            use_uv (bool):
                 是否使用 uv 安装 Python 软件包
-            use_github_mirror (bool | None):
+            use_github_mirror (bool):
                 是否使用 Github 镜像源
             custom_github_mirror (str | list[str] | None):
                 自定义 Github 镜像源
-            use_pypi_mirror (bool | None):
+            use_pypi_mirror (bool):
                 是否使用国内 PyPI 镜像源
         """
         check_sd_scripts_env(
@@ -75,15 +75,15 @@ class SDTrainerScriptsManager(BaseManager):
         pytorch_mirror_type: PyTorchDeviceType | None = None,
         custom_pytorch_package: str | None = None,
         custom_xformers_package: str | None = None,
-        use_pypi_mirror: bool | None = True,
-        use_uv: bool | None = True,
-        use_github_mirror: bool | None = False,
+        use_pypi_mirror: bool = True,
+        use_uv: bool = True,
+        use_github_mirror: bool = False,
         custom_github_mirror: str | list[str] | None = None,
         install_branch: SDScriptsBranchType | None = None,
-        no_pre_download_model: bool | None = False,
-        use_cn_model_mirror: bool | None = True,
+        no_pre_download_model: bool = False,
+        use_cn_model_mirror: bool = True,
         # legecy
-        use_hf_mirror: bool | None = False,
+        use_hf_mirror: bool = False,
         model_path: str | Path | None = None,
         model_list: list[list[str | int]] | None = None,
         pypi_index_mirror: str | None = None,
@@ -96,11 +96,11 @@ class SDTrainerScriptsManager(BaseManager):
         wandb_token: str | None = None,
         git_username: str | None = None,
         git_email: str | None = None,
-        check_avaliable_gpu: bool | None = False,
-        enable_tcmalloc: bool | None = True,
-        enable_cuda_malloc: bool | None = True,
+        check_avaliable_gpu: bool = False,
+        enable_tcmalloc: bool = True,
+        enable_cuda_malloc: bool = True,
         custom_sys_pkg_cmd: list[list[str]] | list[str] | bool | None = None,
-        update_core: bool | None = True,
+        update_core: bool = True,
         *args,
         **kwargs,
     ) -> None:
@@ -113,21 +113,21 @@ class SDTrainerScriptsManager(BaseManager):
                 自定义 PyTorch 软件包版本声明, 例如: `torch==2.3.0+cu118 torchvision==0.18.0+cu118`
             custom_xformers_package (str | None):
                 自定义 xFormers 软件包版本声明, 例如: `xformers===0.0.26.post1+cu118`
-            use_pypi_mirror (bool | None):
+            use_pypi_mirror (bool):
                 是否使用国内 PyPI 镜像源
-            use_uv (bool | None):
+            use_uv (bool):
                 是否使用 uv 安装 Python 软件包
-            use_github_mirror (bool | None):
+            use_github_mirror (bool):
                 是否使用 Github 镜像源
             custom_github_mirror (str | list[str] | None):
                 自定义 Github 镜像源
             install_branch (SDScriptsBranchType | None):
                 安装的 SD Scripts 分支
-            no_pre_download_model (bool | None):
+            no_pre_download_model (bool):
                 是否禁用预下载模型
-            use_cn_model_mirror (bool | None):
+            use_cn_model_mirror (bool):
                 是否使用国内镜像下载模型
-            use_hf_mirror (bool | None):
+            use_hf_mirror (bool):
                 是否启用 HuggingFace 镜像源
             model_path (str | Path | None):
                 指定模型下载的路径
@@ -153,11 +153,11 @@ class SDTrainerScriptsManager(BaseManager):
                 Git 用户名
             git_email (str | None):
                 Git 邮箱
-            check_avaliable_gpu (bool | None):
+            check_avaliable_gpu (bool):
                 检查是否有可用的 GPU
-            enable_tcmalloc (bool | None):
+            enable_tcmalloc (bool):
                 启用 TCMalloc 内存优化
-            enable_cuda_malloc (bool | None):
+            enable_cuda_malloc (bool):
                 启用 CUDA 显存优化
             custom_sys_pkg_cmd (list[list[str]] | list[str] | bool | None):
                 自定义调用系统包管理器命令, 设置为 None 为使用默认的调用命令, 设置为 [] 则禁用该功能
@@ -165,7 +165,7 @@ class SDTrainerScriptsManager(BaseManager):
                 兼容旧接口的额外位置参数
             **kwargs:
                 兼容旧接口的额外关键字参数
-            update_core (bool | None):
+            update_core (bool):
                 安装时更新内核和扩展
         """
         warning_unexpected_params(

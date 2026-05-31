@@ -79,7 +79,7 @@ def prepare_pytorch_install_info(
     pytorch_mirror_type: PyTorchDeviceType | None = None,
     custom_pytorch_package: str | None = None,
     custom_xformers_package: str | None = None,
-    use_cn_mirror: bool | None = False,
+    use_cn_mirror: bool = False,
 ) -> tuple[str | None, str | None, dict[str, str]]:
     """配置安装 PyTorch 所需的 PyTorch, xFormers 包版本声明和 PyTorch 镜像源
 
@@ -90,7 +90,7 @@ def prepare_pytorch_install_info(
             自定义 PyTorch 软件包版本声明, 例如: `torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118`
         custom_xformers_package (str | None):
             自定义 xFormers 软件包版本声明, 例如: `xformers===0.0.26.post1+cu118`
-        use_cn_mirror (bool | None):
+        use_cn_mirror (bool):
             是否使用国内镜像
 
     Returns:
@@ -166,7 +166,7 @@ def install_pytorch_for_webui(
     pytorch_package: str | None = None,
     xformers_package: str | None = None,
     custom_env: dict[str, str] | None = None,
-    use_uv: bool | None = True,
+    use_uv: bool = True,
 ) -> None:
     """为 WebUI 环境安装 PyTorch
 
@@ -177,7 +177,7 @@ def install_pytorch_for_webui(
             xFormers 包版本声明
         custom_env (dict[str, str] | None):
             环境变量字典, 用于设置安装 PyTorch 时使用的 PyTorch 镜像源
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 进行 PyTorch 安装
     """
     logger.info("检查 PyTorch / xFormers 是否需要安装")
@@ -212,11 +212,11 @@ def install_pytorch_for_webui(
 def reinstall_pytorch(
     pytorch_name: str | None = None,
     pytorch_index: int | None = None,
-    use_pypi_mirror: bool | None = True,
+    use_pypi_mirror: bool = True,
     use_uv: bool | None = None,
-    interactive_mode: bool | None = False,
-    list_only: bool | None = False,
-    force_reinstall: bool | None = False,
+    interactive_mode: bool = False,
+    list_only: bool = False,
+    force_reinstall: bool = False,
 ) -> None:
     """PyTorch 重装工具
 
@@ -225,17 +225,18 @@ def reinstall_pytorch(
             PyTorch 版本组合名称
         pytorch_index (int | None):
             PyTorch 版本组合索引值
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否使用 PyPI 国内镜像
         use_uv (bool | None):
             是否使用 uv 进行 PyTorch 安装
-        interactive_mode (bool | None):
+        interactive_mode (bool):
             是否启用交互模式
-        list_only (bool | None):
+        list_only (bool):
             是否仅列出 PyTorch 列表并退出
-        force_reinstall (bool | None):
+        force_reinstall (bool):
             是否强制重装 PyTorch
     """
+    resolved_use_uv = True if use_uv is None else use_uv
 
     def _install(
         input_name: str | None = None,
@@ -256,7 +257,7 @@ def reinstall_pytorch(
             torch_package=info["torch_ver"],
             xformers_package=info["xformers_ver"],
             custom_env=custom_env,
-            use_uv=use_uv,
+            use_uv=resolved_use_uv,
         )
 
     def _uninstall() -> None:
@@ -329,7 +330,7 @@ def reinstall_pytorch(
                     torch_package=pytorch,
                     xformers_package=xformers,
                     custom_env=custom_env,
-                    use_uv=use_uv,
+                    use_uv=resolved_use_uv,
                 )
                 return
 
@@ -398,7 +399,7 @@ def pre_download_model_for_webui(
     webui_base_path: Path,
     model_name: str | list[str],
     download_resource_type: ModelDownloadUrlType | None,
-    check_exists: bool | None = True,
+    check_exists: bool = True,
 ) -> Path | None:
     """为 WebUI 预下载模型
 
@@ -413,7 +414,7 @@ def pre_download_model_for_webui(
             预下载的模型名称
         download_resource_type (ModelDownloadUrlType | None):
             模型下载源类型
-        check_exists (bool | None):
+        check_exists (bool):
             检查模型目录中是否已经存在模型而跳过预下载模型
 
     Returns:
@@ -533,8 +534,8 @@ def install_webui_model_from_library(
     model_name: str | None = None,
     model_index: int | None = None,
     downloader: DownloadToolType | None = None,
-    interactive_mode: bool | None = False,
-    list_only: bool | None = False,
+    interactive_mode: bool = False,
+    list_only: bool = False,
 ) -> list[Path] | None:
     """为 WebUI 下载模型, 使用模型库进行下载
 
@@ -551,9 +552,9 @@ def install_webui_model_from_library(
             下载的模型在列表中的索引值, 索引值从 1 开始. 当同时提供 `model_name` 和 `model_index` 时, 优先使用 `model_index` 查找模型
         downloader (DownloadToolType | None):
             下载模型使用的工具
-        interactive_mode (bool | None):
+        interactive_mode (bool):
             是否启用交互模式
-        list_only (bool | None):
+        list_only (bool):
             是否仅列出模型列表并退出
 
     Returns:
@@ -649,7 +650,7 @@ def install_webui_model_from_library(
 
 def apply_git_base_config_and_github_mirror(
     git_config_path: Path | None = None,
-    use_github_mirror: bool | None = False,
+    use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
     origin_env: dict[str, str] | None = None,
 ) -> dict[str, str]:
@@ -658,7 +659,7 @@ def apply_git_base_config_and_github_mirror(
     Args:
         git_config_path (Path | None):
             Git 配置文件路径
-        use_github_mirror (bool | None):
+        use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
@@ -747,14 +748,14 @@ def apply_github_raw_file_mirror(
 
 
 def apply_hf_mirror(
-    use_hf_mirror: bool | None = False,
+    use_hf_mirror: bool = False,
     custom_hf_mirror: str | list[str] | None = None,
     origin_env: dict[str, str] | None = None,
 ) -> dict[str, str]:
     """配置 HuggingFace 镜像源
 
     Args:
-        use_hf_mirror (bool | None):
+        use_hf_mirror (bool):
             是否启用 HuggingFace 镜像源
         custom_hf_mirror (str | list[str] | None):
             自定义 HuggingFace 镜像源
@@ -807,7 +808,7 @@ def install_pytorch_with_fallback(
     torch_package: str | list[str] | None = None,
     xformers_package: str | list[str] | None = None,
     custom_env: dict[str, str] | None = None,
-    use_uv: bool | None = True,
+    use_uv: bool = True,
 ) -> None:
     """使用 Pip / uv 安装 PyTorch 和 Xformers, 当失败时尝试使用回退方式安装 PyTorch
 
@@ -818,7 +819,7 @@ def install_pytorch_with_fallback(
             Xformers 软件包名称
         custom_env (dict[str, str] | None):
             自定义环境变量
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv
 
     Raises:

@@ -182,10 +182,10 @@ def apply_hotpatcher_config(config_or_path: dict[str, Any] | str | Path | None =
 
 def apply_hotpatcher_launch_env(
     origin_env: dict[str, str] | None = None,
-    enabled: bool | None = False,
+    enabled: bool = False,
     config_path: str | Path | None = None,
     port: int | None = None,
-    enable_runtime: bool | None = False,
+    enable_runtime: bool = False,
 ) -> dict[str, str]:
     """
     为 WebUI 启动环境注入 hotpatcher bootstrap 变量。
@@ -193,13 +193,13 @@ def apply_hotpatcher_launch_env(
     Args:
         origin_env (dict[str, str] | None):
             原始环境变量。
-        enabled (bool | None):
+        enabled (bool):
             是否启用 hotpatcher。关闭时会移除现有 hotpatcher 环境变量。
         config_path (str | Path | None):
             配置文件路径。为 None 时优先使用默认配置文件，不存在则注入默认配置 JSON。
         port (int | None):
             runtime host 端口。为 None 时使用默认端口。
-        enable_runtime (bool | None):
+        enable_runtime (bool):
             是否注入 runtime host 连接变量。默认只做本地补丁配置注入。
 
     Returns:
@@ -250,7 +250,7 @@ def apply_hotpatcher_launch_env(
     return env
 
 
-def configure_hotpatcher_for_current_process(enabled: bool | None = False) -> Any:
+def configure_hotpatcher_for_current_process(enabled: bool = False) -> Any:
     """
     在当前 Python 进程中根据 hotpatcher 环境变量执行 bootstrap
 
@@ -258,7 +258,7 @@ def configure_hotpatcher_for_current_process(enabled: bool | None = False) -> An
     在解释器启动时自动执行。
 
     Args:
-        enabled (bool | None):
+        enabled (bool):
             是否启用当前进程 hotpatcher bootstrap。
 
     Returns:

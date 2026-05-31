@@ -111,39 +111,39 @@ class TunnelManager:
 
     def start_tunnel(
         self,
-        use_ngrok: bool | None = False,
+        use_ngrok: bool = False,
         ngrok_token: str | None = None,
-        use_cloudflare: bool | None = False,
-        use_remote_moe: bool | None = False,
-        use_localhost_run: bool | None = False,
-        use_gradio: bool | None = False,
-        use_pinggy_io: bool | None = False,
-        use_zrok: bool | None = False,
+        use_cloudflare: bool = False,
+        use_remote_moe: bool = False,
+        use_localhost_run: bool = False,
+        use_gradio: bool = False,
+        use_pinggy_io: bool = False,
+        use_zrok: bool = False,
         zrok_token: str | None = None,
-        check: bool | None = True,
+        check: bool = True,
     ) -> TunnelUrl:
         """启动内网穿透
 
         Args:
-            use_ngrok (bool | None):
+            use_ngrok (bool):
                 启用 Ngrok 内网穿透
             ngrok_token (str | None):
                 Ngrok 账号 Token
-            use_cloudflare (bool | None):
+            use_cloudflare (bool):
                 启用 CloudFlare 内网穿透
-            use_remote_moe (bool | None):
+            use_remote_moe (bool):
                 启用 remote.moe 内网穿透
-            use_localhost_run (bool | None):
+            use_localhost_run (bool):
                 使用 localhost.run 内网穿透
-            use_gradio (bool | None):
+            use_gradio (bool):
                 使用 Gradio 内网穿透
-            use_pinggy_io (bool | None):
+            use_pinggy_io (bool):
                 使用 pinggy.io 内网穿透
-            use_zrok (bool | None):
+            use_zrok (bool):
                 使用 Zrok 内网穿透
             zrok_token (str | None):
                 Zrok 账号 Token
-            check (bool | None):
+            check (bool):
                 检查内网穿透是否启动成功
 
         Returns:

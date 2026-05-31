@@ -52,7 +52,7 @@ def preprocess_command(command: list[str] | str, shell: bool) -> list[str] | str
     return command
 
 
-def patch_uv_to_subprocess(symlink: bool | None = False) -> None:
+def patch_uv_to_subprocess(symlink: bool = False) -> None:
     """
     使用 ``subprocess.run()`` 执行 Pip 时替换成 uv
 
@@ -61,7 +61,7 @@ def patch_uv_to_subprocess(symlink: bool | None = False) -> None:
     ``subprocess.run``，``unpatch_uv_to_subprocess()`` 不会覆盖那个新 wrapper。
 
     Args:
-        symlink (bool | None):
+        symlink (bool):
             是否为 ``uv pip`` 添加 ``--link-mode symlink``
     """
 

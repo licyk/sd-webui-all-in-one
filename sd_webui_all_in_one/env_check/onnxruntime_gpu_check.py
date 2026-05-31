@@ -171,12 +171,12 @@ def get_torch_cuda_ver_fast() -> tuple[str | None, str | None]:
 
 
 def need_install_ort_ver(
-    skip_if_missing: bool | None = True,
+    skip_if_missing: bool = True,
 ) -> OrtType | None:
     """判断需要安装的 onnxruntime 版本
 
     Args:
-        skip_if_missing (bool | None):
+        skip_if_missing (bool):
             当 onnxruntime 未安装时是否跳过检查
             - `True`: 未安装时则不给出需要安装的 ONNXRuntime GPU 版本
             - `False`: 即使 ONNXRuntime GPU 未安装也给出推荐安装的 ONNXRuntime GPU 版本
@@ -308,16 +308,16 @@ def need_install_ort_ver(
 
 
 def check_onnxruntime_gpu(
-    use_uv: bool | None = True,
-    skip_if_missing: bool | None = False,
+    use_uv: bool = True,
+    skip_if_missing: bool = False,
     custom_env: dict[str, str] | None = None,
 ) -> None:
     """检查并修复 ONNXRuntime GPU 版本问题
 
     Args:
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 安装依赖
-        skip_if_missing (bool | None):
+        skip_if_missing (bool):
             当 onnxruntime 未安装时是否跳过检查
             - `True`: 未安装时则不给出需要安装的 ONNXRuntime GPU 版本
             - `False`: 即使 ONNXRuntime GPU 未安装也给出推荐安装的 ONNXRuntime GPU 版本
