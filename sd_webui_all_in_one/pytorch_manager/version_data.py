@@ -40,18 +40,56 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
         },
     },
     {
-        "name": "Torch + xFormers",
-        "dtype": "all",
+        "name": "Torch (CUDA)",
+        "dtype": "cu130",
         "platform": ["win32", "linux"],
         "torch_ver": "torch torchvision torchaudio",
-        "xformers_ver": "xformers",
+        "xformers_ver": None,
         "index_mirror": {
-            "official": [PYPI_INDEX_MIRROR_OFFICIAL],
-            "mirror": [PYPI_INDEX_MIRROR_TENCENT],
+            "official": [PYTORCH_MIRROR_DICT["cu130"][0]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["cu130"][0]],
         },
         "extra_index_mirror": {
             "official": [],
-            "mirror": [PYPI_EXTRA_INDEX_MIRROR_CERNET],
+            "mirror": [],
+        },
+        "find_links": {
+            "official": [],
+            "mirror": [],
+        },
+    },
+    {
+        "name": "Torch (ROCm)",
+        "dtype": "rocm7.2",
+        "platform": ["linux"],
+        "torch_ver": "torch torchvision torchaudio",
+        "xformers_ver": None,
+        "index_mirror": {
+            "official": [PYTORCH_MIRROR_DICT["rocm7.2"][0]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm7.2"][0]],
+        },
+        "extra_index_mirror": {
+            "official": [],
+            "mirror": [],
+        },
+        "find_links": {
+            "official": [],
+            "mirror": [],
+        },
+    },
+    {
+        "name": "Torch (XPU)",
+        "dtype": "xpu",
+        "platform": ["win32", "linux"],
+        "torch_ver": "torch torchvision torchaudio",
+        "xformers_ver": None,
+        "index_mirror": {
+            "official": [PYTORCH_MIRROR_DICT["xpu"][0]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["xpu"][0]],
+        },
+        "extra_index_mirror": {
+            "official": [],
+            "mirror": [],
         },
         "find_links": {
             "official": [],
@@ -132,6 +170,63 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
         "find_links": {
             "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_win"][0]],
             "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_win"][0]],
+        },
+    },
+    {
+        "name": "Torch + xFormers",
+        "dtype": "all",
+        "platform": ["win32", "linux"],
+        "torch_ver": "torch torchvision torchaudio",
+        "xformers_ver": "xformers",
+        "index_mirror": {
+            "official": [PYPI_INDEX_MIRROR_OFFICIAL],
+            "mirror": [PYPI_INDEX_MIRROR_TENCENT],
+        },
+        "extra_index_mirror": {
+            "official": [],
+            "mirror": [PYPI_EXTRA_INDEX_MIRROR_CERNET],
+        },
+        "find_links": {
+            "official": [],
+            "mirror": [],
+        },
+    },
+    {
+        "name": "Torch + xFormers (CUDA)",
+        "dtype": "cu130",
+        "platform": ["win32", "linux"],
+        "torch_ver": "torch torchvision torchaudio",
+        "xformers_ver": "xformers",
+        "index_mirror": {
+            "official": [PYTORCH_MIRROR_DICT["cu130"][0]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["cu130"][0]],
+        },
+        "extra_index_mirror": {
+            "official": [],
+            "mirror": [],
+        },
+        "find_links": {
+            "official": [],
+            "mirror": [],
+        },
+    },
+    {
+        "name": "Torch + xFormers (ROCm)",
+        "dtype": "rocm7.2",
+        "platform": ["linux"],
+        "torch_ver": "torch torchvision torchaudio",
+        "xformers_ver": "xformers",
+        "index_mirror": {
+            "official": [PYTORCH_MIRROR_DICT["rocm7.2"][0]],
+            "mirror": [PYTORCH_MIRROR_NJU_DICT["rocm7.2"][0]],
+        },
+        "extra_index_mirror": {
+            "official": [],
+            "mirror": [],
+        },
+        "find_links": {
+            "official": [],
+            "mirror": [],
         },
     },
     {
