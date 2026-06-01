@@ -846,6 +846,74 @@ def install_pytorch_with_fallback(
             package_with_no_deps.append("--no-deps")
         return package_with_no_deps
 
+    def _dedupe_mirror_values(
+        values: list[str],
+    ) -> list[str]:
+        deduped_values: list[str] = []
+        for value in values:
+            if value not in deduped_values:
+                deduped_values.append(value)
+        return deduped_values
+
+    def _get_mirror_values(
+        env: dict[str, str] | None,
+        env_names: tuple[str, ...],
+        split_comma: bool = False,
+    ) -> list[str]:
+        if env is None:
+            return []
+
+        mirror_values: list[str] = []
+        for env_name in env_names:
+            mirror_value = env.get(env_name)
+            if mirror_value is None:
+                continue
+
+            if split_comma:
+                mirror_value = mirror_value.replace(",", " ")
+
+            mirror_values.extend([x.strip() for x in mirror_value.split() if x.strip() != ""])
+
+        return _dedupe_mirror_values(mirror_values)
+
+    def _get_first_mirror_value(
+        env: dict[str, str] | None,
+        env_names: tuple[str, ...],
+    ) -> str | None:
+        mirror_values = _get_mirror_values(env=env, env_names=env_names)
+        if len(mirror_values) == 0:
+            return None
+        return mirror_values[0]
+
+    def _build_merged_pypi_mirror_env(
+        auto_pypi_mirror_env: dict[str, str] | None,
+    ) -> dict[str, str]:
+        if auto_pypi_mirror_env is None:
+            auto_pypi_mirror_env = get_auto_pypi_mirror_config(custom_env=custom_env)
+
+        custom_extra_index_url = _get_mirror_values(custom_env, ("PIP_EXTRA_INDEX_URL", "UV_INDEX"))
+        auto_extra_index_url = _get_mirror_values(auto_pypi_mirror_env, ("PIP_EXTRA_INDEX_URL", "UV_INDEX"))
+        extra_index_url = _dedupe_mirror_values(custom_extra_index_url + auto_extra_index_url)
+
+        custom_find_links = _get_mirror_values(custom_env, ("PIP_FIND_LINKS", "UV_FIND_LINKS"), split_comma=True)
+        auto_find_links = _get_mirror_values(auto_pypi_mirror_env, ("PIP_FIND_LINKS", "UV_FIND_LINKS"), split_comma=True)
+        find_links = _dedupe_mirror_values(custom_find_links + auto_find_links)
+
+        index_url = _get_first_mirror_value(custom_env, ("PIP_INDEX_URL", "UV_DEFAULT_INDEX"))
+        if index_url is None:
+            index_url = _get_first_mirror_value(auto_pypi_mirror_env, ("PIP_INDEX_URL", "UV_DEFAULT_INDEX"))
+        if index_url is None and len(custom_extra_index_url) > 0:
+            index_url = custom_extra_index_url[0]
+        if index_url is None:
+            index_url = ""
+
+        return generate_uv_and_pip_env_mirror_config(
+            index_url=index_url,
+            extra_index_url=extra_index_url,
+            find_links=find_links,
+            origin_env=custom_env,
+        )
+
     try:
         install_pytorch(
             torch_package=torch_package,
@@ -859,6 +927,7 @@ def install_pytorch_with_fallback(
         origin_xformers_package = _package_to_list(xformers_package)
         fallback_torch_package = _append_no_deps(origin_torch_package)
         fallback_xformers_package = _append_no_deps(origin_xformers_package)
+        auto_pypi_mirror_env: dict[str, str] | None = None
         try:
             install_pytorch(
                 torch_package=fallback_torch_package,
@@ -866,11 +935,21 @@ def install_pytorch_with_fallback(
                 custom_env=custom_env,
                 use_uv=use_uv,
             )
+            auto_pypi_mirror_env = get_auto_pypi_mirror_config(custom_env=custom_env)
             install_pytorch(
                 torch_package=origin_torch_package,
                 xformers_package=origin_xformers_package,
-                custom_env=get_auto_pypi_mirror_config(custom_env=custom_env),
+                custom_env=auto_pypi_mirror_env,
                 use_uv=use_uv,
             )
-        except RuntimeError as e:
-            raise RuntimeError(f"使用回退方式安装 PyTorch 时发生错误: {e}") from e
+        except RuntimeError as fallback_error:
+            logger.warning("使用回退方式安装 PyTorch 时发生错误, 尝试合并镜像源后安装 PyTorch")
+            try:
+                install_pytorch(
+                    torch_package=origin_torch_package,
+                    xformers_package=origin_xformers_package,
+                    custom_env=_build_merged_pypi_mirror_env(auto_pypi_mirror_env=auto_pypi_mirror_env),
+                    use_uv=use_uv,
+                )
+            except RuntimeError as merged_mirror_error:
+                raise RuntimeError(f"使用回退方式安装 PyTorch 时发生错误: {fallback_error}; 使用合并镜像源安装 PyTorch 时发生错误: {merged_mirror_error}") from merged_mirror_error

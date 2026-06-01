@@ -140,6 +140,110 @@ def test_install_pytorch_with_fallback_preserves_env_and_package_inputs(monkeypa
             "use_uv": False,
         },
     )
+    assert len(calls) == 4
+
+
+def test_install_pytorch_with_fallback_merges_mirror_env_after_existing_fallback_fails(monkeypatch):
+    install_calls = []
+    mirror_calls = []
+    torch_package = ["torch==2.8.0+cu128", "torchvision==0.23.0+cu128"]
+    xformers_package = ["xformers==0.0.32"]
+    custom_env = {
+        "PIP_INDEX_URL": "https://custom-index.example/simple",
+        "PIP_EXTRA_INDEX_URL": "https://custom-extra.example/simple https://shared-extra.example/simple",
+        "UV_INDEX": "https://custom-uv-extra.example/simple https://shared-extra.example/simple",
+        "PIP_FIND_LINKS": "https://custom-wheels.example https://shared-wheels.example",
+        "UV_FIND_LINKS": "https://custom-uv-wheels.example,https://shared-wheels.example",
+        "KEEP": "1",
+    }
+
+    def fake_install_pytorch(**kwargs):
+        install_calls.append(kwargs)
+        if len(install_calls) in [1, 3]:
+            raise RuntimeError("install failed")
+
+    def fake_get_auto_pypi_mirror_config(custom_env=None):
+        mirror_calls.append(custom_env)
+        return {
+            **(custom_env or {}),
+            "PIP_INDEX_URL": "https://auto-index.example/simple",
+            "UV_DEFAULT_INDEX": "https://auto-index.example/simple",
+            "PIP_EXTRA_INDEX_URL": "https://shared-extra.example/simple https://auto-extra.example/simple",
+            "UV_INDEX": "https://auto-uv-extra.example/simple https://custom-extra.example/simple",
+            "PIP_FIND_LINKS": "https://shared-wheels.example https://auto-wheels.example",
+            "UV_FIND_LINKS": "https://auto-uv-wheels.example,https://custom-uv-wheels.example",
+        }
+
+    monkeypatch.setattr(base_module, "install_pytorch", fake_install_pytorch)
+    monkeypatch.setattr(base_module, "get_auto_pypi_mirror_config", fake_get_auto_pypi_mirror_config)
+
+    base_module.install_pytorch_with_fallback(
+        torch_package=torch_package,
+        xformers_package=xformers_package,
+        custom_env=custom_env,
+        use_uv=False,
+    )
+
+    assert torch_package == ["torch==2.8.0+cu128", "torchvision==0.23.0+cu128"]
+    assert xformers_package == ["xformers==0.0.32"]
+    assert len(mirror_calls) == 1
+    assert mirror_calls[0] is custom_env
+    assert len(install_calls) == 4
+    assert install_calls[1]["torch_package"] == ["torch==2.8.0+cu128", "torchvision==0.23.0+cu128", "--no-deps"]
+    assert install_calls[1]["xformers_package"] == ["xformers==0.0.32", "--no-deps"]
+    assert install_calls[3]["torch_package"] == ["torch==2.8.0+cu128", "torchvision==0.23.0+cu128"]
+    assert install_calls[3]["xformers_package"] == ["xformers==0.0.32"]
+    assert "--no-deps" not in install_calls[3]["torch_package"]
+    assert "--no-deps" not in install_calls[3]["xformers_package"]
+
+    merged_env = install_calls[3]["custom_env"]
+    assert merged_env["KEEP"] == "1"
+    assert merged_env["PIP_INDEX_URL"] == "https://custom-index.example/simple"
+    assert merged_env["UV_DEFAULT_INDEX"] == "https://custom-index.example/simple"
+    assert (
+        merged_env["PIP_EXTRA_INDEX_URL"]
+        == "https://custom-extra.example/simple https://shared-extra.example/simple https://custom-uv-extra.example/simple https://auto-extra.example/simple https://auto-uv-extra.example/simple"
+    )
+    assert (
+        merged_env["UV_INDEX"]
+        == "https://custom-extra.example/simple https://shared-extra.example/simple https://custom-uv-extra.example/simple https://auto-extra.example/simple https://auto-uv-extra.example/simple"
+    )
+    assert merged_env["PIP_FIND_LINKS"] == "https://custom-wheels.example https://shared-wheels.example https://custom-uv-wheels.example https://auto-wheels.example https://auto-uv-wheels.example"
+    assert merged_env["UV_FIND_LINKS"] == "https://custom-wheels.example,https://shared-wheels.example,https://custom-uv-wheels.example,https://auto-wheels.example,https://auto-uv-wheels.example"
+
+
+def test_install_pytorch_with_fallback_uses_first_custom_extra_index_when_no_index(monkeypatch):
+    install_calls = []
+    custom_env = {
+        "PIP_EXTRA_INDEX_URL": "https://custom-extra-a.example/simple https://custom-extra-b.example/simple",
+        "UV_INDEX": "https://custom-extra-c.example/simple",
+    }
+
+    def fake_install_pytorch(**kwargs):
+        install_calls.append(kwargs)
+        if len(install_calls) in [1, 3]:
+            raise RuntimeError("install failed")
+
+    def fake_get_auto_pypi_mirror_config(custom_env=None):
+        return {
+            **(custom_env or {}),
+            "PIP_EXTRA_INDEX_URL": "https://auto-extra.example/simple",
+            "PIP_FIND_LINKS": "https://auto-wheels.example",
+        }
+
+    monkeypatch.setattr(base_module, "install_pytorch", fake_install_pytorch)
+    monkeypatch.setattr(base_module, "get_auto_pypi_mirror_config", fake_get_auto_pypi_mirror_config)
+
+    base_module.install_pytorch_with_fallback(
+        torch_package=["torch==2.8.0+cu128"],
+        xformers_package=["xformers==0.0.32"],
+        custom_env=custom_env,
+        use_uv=True,
+    )
+
+    merged_env = install_calls[3]["custom_env"]
+    assert merged_env["PIP_INDEX_URL"] == "https://custom-extra-a.example/simple"
+    assert merged_env["UV_DEFAULT_INDEX"] == "https://custom-extra-a.example/simple"
 
 
 def test_install_webui_model_from_library_interactive_direct_search(monkeypatch, tmp_path):
