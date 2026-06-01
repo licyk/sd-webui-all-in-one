@@ -895,11 +895,7 @@ function Install-Python {
         $py_ver = $script:InstallPythonVersion
     }
     else {
-        if ((Get-InstallBranch) -in @("sd_webui_forge_classic", "sd_webui_forge_neo")) {
-            $py_ver = "3.13"
-        } else {
-            $py_ver = "3.11"
-        }
+        $py_ver = "3.11"
     }
     $platform = Get-CurrentPlatform
     $arch = Get-CurrentArchitecture
