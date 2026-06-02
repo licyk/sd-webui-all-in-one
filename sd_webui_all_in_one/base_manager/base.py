@@ -479,8 +479,12 @@ def launch_webui(
         custom_env = ensure_hotpatcher_pythonpath_first(custom_env)
 
     cmd = [Path(sys.executable).as_posix(), (webui_path / launch_script).as_posix()] + launch_args
+    print_divider("=")
     try:
-        run_cmd(cmd, custom_env=custom_env, cwd=webui_path)
+        try:
+            run_cmd(cmd, custom_env=custom_env, cwd=webui_path)
+        finally:
+            print_divider("=")
     except KeyboardInterrupt:
         logger.info("已关闭 %s", webui_name)
     except RuntimeError as e:

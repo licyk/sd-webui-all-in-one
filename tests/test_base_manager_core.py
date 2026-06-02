@@ -72,29 +72,39 @@ def test_launch_webui_builds_command_env_and_wraps_runtime_errors(monkeypatch, t
     webui.mkdir()
     (webui / "launch.py").write_text("print('ok')", encoding="utf-8")
     captured = {}
+    events = []
 
     def fake_run_cmd(command, custom_env=None, cwd=None):
+        events.append("run")
         captured["command"] = command
         captured["custom_env"] = custom_env
         captured["cwd"] = cwd
 
+    def fake_print_divider(char=None):
+        events.append(("divider", char))
+
     monkeypatch.setattr(base_module, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(base_module, "print_divider", fake_print_divider)
     base_module.launch_webui(webui, "launch.py", launch_args=["--api"], custom_env={"PYTHONPATH": "existing"})
 
     assert captured["command"][-2:] == [(webui / "launch.py").as_posix(), "--api"]
     assert captured["cwd"] == webui
     assert captured["custom_env"]["PYTHONPATH"].split(os.pathsep)[:2] == [webui.as_posix(), "existing"]
+    assert events == [("divider", "="), "run", ("divider", "=")]
 
     def fail_run_cmd(*_args, **_kwargs):
+        events.append("run_fail")
         raise RuntimeError("boom")
 
     monkeypatch.setattr(base_module, "run_cmd", fail_run_cmd)
+    events.clear()
 
     with pytest.raises(WebUiRuntimeError) as exc:
         base_module.launch_webui(webui, "launch.py", webui_name="Demo")
 
     assert "Demo" in str(exc.value)
     assert "boom" in str(exc.value)
+    assert events == [("divider", "="), "run_fail", ("divider", "=")]
 
 
 def test_pre_download_model_for_webui_skips_existing_or_missing_and_downloads_empty(monkeypatch, tmp_path):

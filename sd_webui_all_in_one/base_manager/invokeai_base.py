@@ -937,9 +937,13 @@ def launch_invokeai(
     if launch_args is not None:
         sys.argv = [sys.argv[0]] + launch_args
     sys.argv[0] = re.sub(r"(-script\.pyw|\.exe)?$", "", sys.argv[0])
+    print_divider("=")
     try:
-        run_invokeai()
-        raise KeyboardInterrupt()
+        try:
+            run_invokeai()
+            raise KeyboardInterrupt()
+        finally:
+            print_divider("=")
     except KeyboardInterrupt:
         logger.info("已退出 InvokeAI")
         os._exit(0)

@@ -152,7 +152,7 @@ def test_apply_hotpatcher_launch_env_can_disable_and_clear_existing_values():
 
 def test_sitecustomize_bootstrap_does_not_reapply_in_python_children(monkeypatch, tmp_path):
     monkeypatch.setattr(hotpatcher_manager, "DEFAULT_HOTPATCHER_CONFIG_PATH", tmp_path / "missing.json")
-    env = apply_hotpatcher_launch_env(os.environ, enabled=True)
+    env = apply_hotpatcher_launch_env(dict(os.environ), enabled=True)
     env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_JSON"] = json.dumps(
         {
             "services": {"apply_on_bootstrap": True},
@@ -446,6 +446,7 @@ def test_invokeai_launch_injects_hotpatcher_in_current_process(monkeypatch, tmp_
     from sd_webui_all_in_one.base_manager import invokeai_base
 
     configure_calls = []
+    events = []
     fake_env = {
         "PYTHONPATH": "existing",
         "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME": "stale",
@@ -457,13 +458,20 @@ def test_invokeai_launch_injects_hotpatcher_in_current_process(monkeypatch, tmp_
     def fake_exit(code):
         raise SystemExit(code)
 
+    def fake_print_divider(char=None):
+        events.append(("divider", char))
+
+    def fake_run_invokeai():
+        events.append("run")
+
     monkeypatch.setattr(invokeai_base.os, "environ", fake_env)
     monkeypatch.setattr(invokeai_base.os, "_exit", fake_exit)
     monkeypatch.setattr(invokeai_base.sys, "argv", ["invokeai"])
     monkeypatch.setattr(invokeai_base, "apply_hf_mirror", fake_env_passthrough)
     monkeypatch.setattr(invokeai_base, "get_pypi_mirror_config", fake_env_passthrough)
     monkeypatch.setattr(invokeai_base, "get_cuda_malloc_var", lambda: None)
-    monkeypatch.setattr(invokeai_base, "run_invokeai", lambda: None)
+    monkeypatch.setattr(invokeai_base, "print_divider", fake_print_divider)
+    monkeypatch.setattr(invokeai_base, "run_invokeai", fake_run_invokeai)
     monkeypatch.setattr(
         invokeai_base,
         "configure_hotpatcher_for_current_process",
@@ -475,8 +483,10 @@ def test_invokeai_launch_injects_hotpatcher_in_current_process(monkeypatch, tmp_
 
     assert configure_calls == [False]
     assert all(not key.startswith(HOTPATCHER_ENV_PREFIX) for key in fake_env)
+    assert events == [("divider", "="), "run", ("divider", "=")]
 
     configure_calls.clear()
+    events.clear()
     config_path = tmp_path / "invokeai_patcher.json"
     with pytest.raises(SystemExit):
         invokeai_base.launch_invokeai(
@@ -492,8 +502,10 @@ def test_invokeai_launch_injects_hotpatcher_in_current_process(monkeypatch, tmp_
     assert fake_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE"] == config_path.as_posix()
     assert "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME" not in fake_env
     assert "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT" not in fake_env
+    assert events == [("divider", "="), "run", ("divider", "=")]
 
     configure_calls.clear()
+    events.clear()
     with pytest.raises(SystemExit):
         invokeai_base.launch_invokeai(
             tmp_path,
@@ -507,6 +519,7 @@ def test_invokeai_launch_injects_hotpatcher_in_current_process(monkeypatch, tmp_
     assert configure_calls == [True]
     assert fake_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME"] == "1"
     assert fake_env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT"] == "9902"
+    assert events == [("divider", "="), "run", ("divider", "=")]
 
 
 @pytest.mark.parametrize(
