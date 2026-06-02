@@ -2430,8 +2430,8 @@ function Main {
             `$help_msg = @`"
 
 
-            [问题反馈]
-            运行失败。如需反馈，请打开 Issue：
+            [问题反馈指南]
+            如需反馈问题，请打开 Issue 页面：
             https://github.com/licyk/sd-webui-all-in-one/issues
             请附上：安装器名称、操作系统、问题描述、复现步骤、完整控制台日志。
 `"@
