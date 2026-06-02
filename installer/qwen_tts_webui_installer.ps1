@@ -220,7 +220,7 @@ $script:HotpatcherPortSet = $PSBoundParameters.ContainsKey("HotpatcherPort")
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # Qwen TTS WebUI Installer 版本和检查更新间隔
-$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 264
+$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 265
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.36"
@@ -2319,16 +2319,10 @@ function Main {
             `$help_msg = @`"
 
 
-            [问题反馈指南]
-            当遇到错误时，请访问 Issue 页面反馈问题，并提供以下信息:
-
-            1. 使用的安装器 (例如: Qwen TTS WebUI Installer)
-            2. 使用的操作系统
-            3. 问题的详细描述
-            4. 复现问题的具体步骤
-            5. 控制台中所有的日志信息
-
-            Issue 页面地址: https://github.com/licyk/sd-webui-all-in-one/issues
+            [问题反馈]
+            运行失败。如需反馈，请打开 Issue：
+            https://github.com/licyk/sd-webui-all-in-one/issues
+            请附上：安装器名称、操作系统、问题描述、复现步骤、完整控制台日志。
 `"@
             Write-Log `"Qwen TTS WebUI 出现异常, 已退出, 请检查控制台日志`${help_msg}`" -Level ERROR
         }
