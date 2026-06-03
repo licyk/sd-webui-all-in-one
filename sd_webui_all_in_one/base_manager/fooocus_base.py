@@ -37,6 +37,7 @@ from sd_webui_all_in_one.env_check import (
     check_numpy,
     fix_torch_libomp,
     check_onnxruntime_gpu,
+    check_fooocus_hf_mirror_arg,
 )
 from sd_webui_all_in_one.file_operations import (
     copy_files,
@@ -181,6 +182,10 @@ def install_fooocus_config(
         copy_files(preset, preset_path)
     if not translate_path.exists():
         copy_files(FOOOCUS_TRANSLATE_ZH_PATH, translate_path)
+
+
+def _launch_args_has_option(launch_args: list[str], option_name: str) -> bool:
+    return any(arg == option_name or arg.startswith(f"{option_name}=") for arg in launch_args)
 
 
 def install_fooocus(
@@ -594,6 +599,7 @@ def launch_fooocus(
     if git_config_global is not None:
         os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
 
+    launch_args = launch_args or []
     hf_mirror_args: list[str] = []
 
     if use_hf_mirror:
@@ -602,12 +608,12 @@ def launch_fooocus(
             custom_hf_mirror=(HUGGINGFACE_MIRROR_LIST if custom_hf_mirror is None else custom_hf_mirror) if use_hf_mirror else None,
             origin_env=custom_env,
         )
-        try:
-            url = git_warpper.get_current_branch_remote_url(fooocus_path)
-            if ("lllyasviel/Fooocus" in (url or "") or "licyk/Fooocus" in (url or "")) and custom_env.get("HF_ENDPOINT") is not None:
-                hf_mirror_args.extend(["--hf-mirror", custom_env["HF_ENDPOINT"]])
-        except Exception as e:
-            logger.debug("获取 Fooocus 远程源失败: %s", e)
+        if (
+            custom_env.get("HF_ENDPOINT") is not None
+            and not _launch_args_has_option(launch_args, "--hf-mirror")
+            and check_fooocus_hf_mirror_arg(fooocus_path)
+        ):
+            hf_mirror_args.extend(["--hf-mirror", custom_env["HF_ENDPOINT"]])
 
     custom_env = get_pypi_mirror_config(
         use_cn_mirror=use_pypi_mirror,
@@ -634,7 +640,7 @@ def launch_fooocus(
         webui_path=fooocus_path,
         launch_script="launch.py",
         webui_name="Fooocus",
-        launch_args=(launch_args or []) + hf_mirror_args,
+        launch_args=launch_args + hf_mirror_args,
         custom_env=custom_env,
     )
 

@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 fix_dependencies = importlib.import_module("sd_webui_all_in_one.env_check.fix_dependencies")
+check_fooocus_args = importlib.import_module("sd_webui_all_in_one.env_check.check_fooocus_args")
 fix_forge_neo_alert = importlib.import_module("sd_webui_all_in_one.env_check.fix_forge_neo_alert")
 fix_torch = importlib.import_module("sd_webui_all_in_one.env_check.fix_torch")
 ext_installer = importlib.import_module("sd_webui_all_in_one.env_check.sd_webui_extension_dependency_installer")
@@ -141,6 +142,36 @@ def test_fix_forge_neo_alert_process_cleanup(monkeypatch, tmp_path):
         "join",
         "close",
     ]
+
+
+def test_check_fooocus_hf_mirror_arg_detects_supported_parser(tmp_path):
+    modules = tmp_path / "ldm_patched" / "modules"
+    modules.mkdir(parents=True)
+    (tmp_path / "ldm_patched" / "__init__.py").write_text("", encoding="utf-8")
+    (modules / "__init__.py").write_text("", encoding="utf-8")
+    (modules / "args_parser.py").write_text(
+        "import argparse\nparser = argparse.ArgumentParser()\nparser.add_argument('--hf-mirror')\n",
+        encoding="utf-8",
+    )
+
+    assert check_fooocus_args.check_fooocus_hf_mirror_arg(tmp_path, timeout=5) is True
+
+
+def test_check_fooocus_hf_mirror_arg_rejects_missing_or_unsupported_parser(tmp_path):
+    missing = tmp_path / "missing"
+    missing.mkdir()
+    assert check_fooocus_args.check_fooocus_hf_mirror_arg(missing, timeout=5) is False
+
+    modules = tmp_path / "unsupported" / "ldm_patched" / "modules"
+    modules.mkdir(parents=True)
+    (tmp_path / "unsupported" / "ldm_patched" / "__init__.py").write_text("", encoding="utf-8")
+    (modules / "__init__.py").write_text("", encoding="utf-8")
+    (modules / "args_parser.py").write_text(
+        "import argparse\nparser = argparse.ArgumentParser()\nparser.add_argument('--listen')\n",
+        encoding="utf-8",
+    )
+
+    assert check_fooocus_args.check_fooocus_hf_mirror_arg(tmp_path / "unsupported", timeout=5) is False
 
 
 def test_py_dependency_checker_installs_missing_and_wraps(monkeypatch, tmp_path):

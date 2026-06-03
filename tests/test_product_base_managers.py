@@ -240,7 +240,12 @@ def test_launch_helpers_build_env_and_delegate(monkeypatch, tmp_path):
         monkeypatch.setattr(module, "apply_hotpatcher_launch_env", lambda **kwargs: {"HOTPATCH": str(kwargs["enabled"]), **kwargs["origin_env"]})
         monkeypatch.setattr(module, "launch_webui", lambda **kwargs: calls.append((module.__name__, kwargs)))
 
-    monkeypatch.setattr(fooocus_base.git_warpper, "get_current_branch_remote_url", lambda _path: "https://github.com/licyk/Fooocus")
+    monkeypatch.setattr(fooocus_base, "check_fooocus_hf_mirror_arg", lambda _path: True)
+    monkeypatch.setattr(
+        fooocus_base.git_warpper,
+        "get_current_branch_remote_url",
+        lambda _path: (_ for _ in ()).throw(AssertionError("should not inspect git remote")),
+    )
 
     comfyui_base.launch_comfyui(tmp_path / "comfy", launch_args=["--listen"], use_hf_mirror=True, use_cuda_malloc=True, enable_hotpatcher=True)
     fooocus_base.launch_fooocus(tmp_path / "fooocus", launch_args=["--preset", "x"], use_hf_mirror=True, use_cuda_malloc=True)
@@ -251,6 +256,66 @@ def test_launch_helpers_build_env_and_delegate(monkeypatch, tmp_path):
     assert calls[0][1]["custom_env"]["HOTPATCH"] == "True"
     assert calls[1][1]["launch_args"] == ["--preset", "x", "--hf-mirror", "https://hf.example"]
     assert calls[2][1]["launch_script"] == "launch.py"
+
+
+def test_fooocus_launch_skips_hf_mirror_arg_when_parser_does_not_support_it(monkeypatch, tmp_path):
+    calls = []
+
+    def fake_hf(**kwargs):
+        env = kwargs["origin_env"].copy()
+        env["HF_ENDPOINT"] = "https://hf.example"
+        return env
+
+    monkeypatch.setattr(fooocus_base, "apply_git_base_config_and_github_mirror", lambda **kwargs: kwargs["origin_env"])
+    monkeypatch.setattr(fooocus_base, "apply_hf_mirror", fake_hf)
+    monkeypatch.setattr(fooocus_base, "check_fooocus_hf_mirror_arg", lambda _path: False)
+    monkeypatch.setattr(fooocus_base, "get_pypi_mirror_config", lambda use_cn_mirror=False, origin_env=None: origin_env or {})
+    monkeypatch.setattr(fooocus_base, "get_cuda_malloc_var", lambda: None)
+    monkeypatch.setattr(fooocus_base, "apply_hotpatcher_launch_env", lambda **kwargs: kwargs["origin_env"])
+    monkeypatch.setattr(fooocus_base, "launch_webui", lambda **kwargs: calls.append(kwargs))
+    monkeypatch.setattr(
+        fooocus_base.git_warpper,
+        "get_current_branch_remote_url",
+        lambda _path: (_ for _ in ()).throw(AssertionError("should not inspect git remote")),
+    )
+
+    fooocus_base.launch_fooocus(tmp_path, launch_args=["--preset", "x"], use_hf_mirror=True)
+
+    assert calls[0]["launch_args"] == ["--preset", "x"]
+    assert calls[0]["custom_env"]["HF_ENDPOINT"] == "https://hf.example"
+
+
+@pytest.mark.parametrize(
+    "launch_args",
+    [
+        ["--preset", "x", "--hf-mirror", "https://custom.example"],
+        ["--preset", "x", "--hf-mirror=https://custom.example"],
+    ],
+)
+def test_fooocus_launch_does_not_duplicate_user_hf_mirror_arg(monkeypatch, tmp_path, launch_args):
+    calls = []
+
+    def fake_hf(**kwargs):
+        env = kwargs["origin_env"].copy()
+        env["HF_ENDPOINT"] = "https://hf.example"
+        return env
+
+    monkeypatch.setattr(fooocus_base, "apply_git_base_config_and_github_mirror", lambda **kwargs: kwargs["origin_env"])
+    monkeypatch.setattr(fooocus_base, "apply_hf_mirror", fake_hf)
+    monkeypatch.setattr(
+        fooocus_base,
+        "check_fooocus_hf_mirror_arg",
+        lambda _path: (_ for _ in ()).throw(AssertionError("should not check parser")),
+    )
+    monkeypatch.setattr(fooocus_base, "get_pypi_mirror_config", lambda use_cn_mirror=False, origin_env=None: origin_env or {})
+    monkeypatch.setattr(fooocus_base, "get_cuda_malloc_var", lambda: None)
+    monkeypatch.setattr(fooocus_base, "apply_hotpatcher_launch_env", lambda **kwargs: kwargs["origin_env"])
+    monkeypatch.setattr(fooocus_base, "launch_webui", lambda **kwargs: calls.append(kwargs))
+
+    fooocus_base.launch_fooocus(tmp_path, launch_args=launch_args, use_hf_mirror=True)
+
+    assert calls[0]["launch_args"] == launch_args
+    assert calls[0]["custom_env"]["HF_ENDPOINT"] == "https://hf.example"
 
 
 def test_install_sd_webui_orchestrates_branch_extensions_repositories_and_models(monkeypatch, tmp_path):
