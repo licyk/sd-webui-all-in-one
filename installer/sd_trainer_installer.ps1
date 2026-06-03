@@ -52,11 +52,12 @@
 "@)][string]$UseCustomGithubMirror,
 
     [Parameter(HelpMessage=@"
-指定 SD Trainer Installer 安装的 SD-Trainer 分支 (sd_trainer_main, kohya_gui_main)
+指定 SD Trainer Installer 安装的 SD-Trainer 分支 (sd_trainer_main, sd_trainer_next_main, kohya_gui_main)
 未指定该参数时, 默认安装 Akegarasu/SD-Trainer 分支
 支持指定安装的分支如下:
-    sd_trainer_main:    Akegarasu - SD-Trainer 分支
-    kohya_gui_main:     bmaltais - Kohya GUI 分支
+    sd_trainer_main:         Akegarasu - SD-Trainer 分支
+    sd_trainer_next_main:    wochenlong - SD Trainer Next 分支
+    kohya_gui_main:          bmaltais - Kohya GUI 分支
 "@)][string]$InstallBranch,
 
     [Parameter(HelpMessage=@"
@@ -573,10 +574,12 @@ function Set-GithubMirror {
 
 function Get-InstallBranch {
     $branch_mapping_table = @(
-        @{ Key = "sd_trainer";      Val = "sd_trainer_main" }
-        @{ Key = "sd_trainer_main"; Val = "sd_trainer_main" }
-        @{ Key = "kohya_gui";       Val = "kohya_gui_main" }
-        @{ Key = "kohya_gui_main";  Val = "kohya_gui_main" }
+        @{ Key = "sd_trainer";           Val = "sd_trainer_main" }
+        @{ Key = "sd_trainer_main";      Val = "sd_trainer_main" }
+        @{ Key = "sd_trainer_next";      Val = "sd_trainer_next_main" }
+        @{ Key = "sd_trainer_next_main"; Val = "sd_trainer_next_main" }
+        @{ Key = "kohya_gui";            Val = "kohya_gui_main" }
+        @{ Key = "kohya_gui_main";       Val = "kohya_gui_main" }
     )
     $target_branch = $null
     foreach ($item in $branch_mapping_table) {
@@ -1015,8 +1018,9 @@ function Invoke-Installation {
 
     $target_branch = Get-InstallBranch
     $launch_args_map = @{
-        "sd_trainer_main"   = "--skip-prepare-onnxruntime"
-        "kohya_gui_main"    = "--inbrowser --language zh-CN --noverify"
+        "sd_trainer_main"      = "--skip-prepare-onnxruntime"
+        "sd_trainer_next_main" = "--skip-prepare-onnxruntime"
+        "kohya_gui_main"       = "--inbrowser --language zh-CN --noverify"
     }
     if (!(Test-Path (Join-NormalizedPath $script:InstallPath "launch_args.txt"))) {
         Write-Log "设置默认 SD Trainer 启动参数"
@@ -2218,6 +2222,8 @@ function Add-Shortcut {
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
         if ((`$branch -eq `"Akegarasu/lora-scripts`") -or (`$branch -eq `"Akegarasu/lora-scripts.git`")) {
             `$filename = `"SD-Trainer`"
+        } elseif ((`$branch -eq `"wochenlong/lora-scripts-next`") -or (`$branch -eq `"wochenlong/lora-scripts-next.git`")) {
+            `$filename = `"SD-Trainer-Next`"
         } elseif ((`$branch -eq `"bmaltais/kohya_ss`") -or (`$branch -eq `"bmaltais/kohya_ss.git`")) {
             `$filename = `"Kohya-GUI`"
         } else {
@@ -2912,14 +2918,17 @@ function Get-LocalSetting {
     }
 
     `$git_repo_map = @{
-        `"Akegarasu/lora-scripts`"  = `"sd_trainer_main`"
-        `"bmaltais/kohya_ss`"       = `"kohya_gui_main`"
+        `"Akegarasu/lora-scripts`"        = `"sd_trainer_main`"
+        `"wochenlong/lora-scripts-next`"  = `"sd_trainer_next_main`"
+        `"bmaltais/kohya_ss`"             = `"kohya_gui_main`"
     }
     `$fallback_check_list = @(
-        @{ Key = `"sd_trainer`";        Val = `"sd_trainer_main`" }
-        @{ Key = `"sd_trainer_main`";   Val = `"sd_trainer_main`" }
-        @{ Key = `"kohya_gui`";         Val = `"kohya_gui_main`" }
-        @{ Key = `"kohya_gui_main`";    Val = `"kohya_gui_main`" }
+        @{ Key = `"sd_trainer`";             Val = `"sd_trainer_main`" }
+        @{ Key = `"sd_trainer_main`";        Val = `"sd_trainer_main`" }
+        @{ Key = `"sd_trainer_next`";        Val = `"sd_trainer_next_main`" }
+        @{ Key = `"sd_trainer_next_main`";   Val = `"sd_trainer_next_main`" }
+        @{ Key = `"kohya_gui`";              Val = `"kohya_gui_main`" }
+        @{ Key = `"kohya_gui_main`";         Val = `"kohya_gui_main`" }
     )
     `$detected_branch = `$null
     if ((Get-Command git -ErrorAction SilentlyContinue) -and (Test-Path (Join-NormalizedPath `$PSScriptRoot `$Env:CORE_PREFIX `".git`"))) {
@@ -4229,7 +4238,7 @@ SD Trainer Installer 文档：https://licyk.github.io/sd-webui-all-in-one/instal
 1. 运行 launch.ps1 启动 SD Trainer。启动成功后，浏览器会打开或终端会显示访问地址。
 2. 需要训练用模型时运行 download_models.ps1；模型放置位置和推荐资源见模型与资源文档。
 3. 需要更新 SD Trainer 时运行 update.ps1。
-4. 需要切换 SD Trainer / Kohya GUI 分支时运行 switch_branch.ps1。
+4. 需要切换 SD Trainer / SD Trainer Next / Kohya GUI 分支时运行 switch_branch.ps1。
 5. 需要执行 Python、Pip、Git 命令时运行 terminal.ps1，或先运行 activate.ps1 激活环境。
 
 二、常用脚本速查
@@ -4237,7 +4246,7 @@ SD Trainer Installer 文档：https://licyk.github.io/sd-webui-all-in-one/instal
 - update.ps1：更新 SD Trainer 和管理脚本。
 - download_models.ps1：下载训练用模型到 models 目录。
 - reinstall_pytorch.ps1：PyTorch 损坏、版本不匹配或需要切换 CUDA / ROCm / XPU 版本时使用。
-- switch_branch.ps1：切换 SD Trainer / Kohya GUI 分支。
+- switch_branch.ps1：切换 SD Trainer / SD Trainer Next / Kohya GUI 分支。
 - version_manager.ps1：管理 SD Trainer 版本。
 - settings.ps1：调整代理、镜像、uv、启动参数、内核路径前缀等本地设置。
 - terminal.ps1：打开已配置好的 PowerShell 终端。
@@ -4271,6 +4280,7 @@ SD Trainer Installer 文档：https://licyk.github.io/sd-webui-all-in-one/instal
 
 sd-webui-all-in-one 项目地址：https://github.com/licyk/sd-webui-all-in-one
 SD Trainer 项目地址：https://github.com/Akegarasu/lora-scripts
+SD Trainer Next 项目地址：https://github.com/wochenlong/lora-scripts-next
 Kohya GUI 项目地址：https://github.com/bmaltais/kohya_ss
 
 

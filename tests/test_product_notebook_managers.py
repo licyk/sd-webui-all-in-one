@@ -17,6 +17,9 @@ from sd_webui_all_in_one.notebook_manager import sd_trainer_scripts_manager
 from sd_webui_all_in_one.notebook_manager import sd_webui_manager
 
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
 class FakeRepoManager:
     def __init__(self, hf_token=None, ms_token=None):
         self.hf_token = hf_token
@@ -75,6 +78,25 @@ def test_product_notebook_launch_commands_and_run_delegate(monkeypatch, tmp_path
                 "display_mode": "terminal",
             }
         ]
+
+
+def test_sd_trainer_installer_exposes_next_branch():
+    installer = (REPO_ROOT / "installer/sd_trainer_installer.ps1").read_text(encoding="utf-8-sig")
+
+    assert "sd_trainer_next_main" in installer
+    assert "sd_trainer_next" in installer
+    assert "wochenlong/lora-scripts-next" in installer
+    assert "SD Trainer Next 项目地址：https://github.com/wochenlong/lora-scripts-next" in installer
+
+
+def test_sd_trainer_colab_exposes_next_branch_preset():
+    notebook = json.loads((REPO_ROOT / "notebook/sd_trainer_colab.ipynb").read_text(encoding="utf-8"))
+    source = "".join(line for cell in notebook["cells"] for line in cell.get("source", []))
+
+    assert "wochenlong/SD Trainer Next 分支" in source
+    assert '"branch": "sd_trainer_next_main"' in source
+    assert 'SD_TRAINER_BRANCH_PRESET = "Akegarasu/SD-Trainer 分支"  # @param ["Akegarasu/SD-Trainer 分支", "wochenlong/SD Trainer Next 分支", "bmaltais/Kohya GUI 分支"]' in source
+    assert 'INSTALL_BRANCH = SD_TRAINER_BRANCH_PRESET_DICT.get(SD_TRAINER_BRANCH_PRESET).get("branch")' in source
 
 
 def test_sd_trainer_launch_command_prefers_kohya_gui_when_gui_missing(tmp_path):
