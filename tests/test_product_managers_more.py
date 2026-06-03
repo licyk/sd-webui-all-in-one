@@ -8,6 +8,20 @@ from sd_webui_all_in_one.base_manager import sd_scripts_base
 from sd_webui_all_in_one.base_manager import sd_trainer_base
 
 
+def test_sd_trainer_next_branch_metadata():
+    assert "sd_trainer_next_main" in sd_trainer_base.SD_TRAINER_BRANCH_LIST
+
+    branch_info = [x for x in sd_trainer_base.SD_TRAINER_BRANCH_INFO_DICT if x["dtype"] == "sd_trainer_next_main"][0]
+
+    assert branch_info == {
+        "name": "wochenlong - SD Trainer Next 分支",
+        "dtype": "sd_trainer_next_main",
+        "url": "https://github.com/wochenlong/lora-scripts-next",
+        "branch": "main",
+        "use_submodule": True,
+    }
+
+
 def _patch_common_install_deps(monkeypatch, module, calls):
     monkeypatch.setattr(module, "prepare_pytorch_install_info", lambda **kwargs: ("torch", "xformers", {"TORCH": "env"}))
     monkeypatch.setattr(module, "get_pypi_mirror_config", lambda use_cn_mirror=True, origin_env=None: {"PIP": str(use_cn_mirror), **(origin_env or {})})

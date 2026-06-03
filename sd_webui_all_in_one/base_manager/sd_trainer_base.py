@@ -72,6 +72,7 @@ logger = get_logger(
 
 SDTrainerBranchType: TypeAlias = Literal[
     "sd_trainer_main",
+    "sd_trainer_next_main",
     "kohya_gui_main",
 ]
 """SD Trainer 分支类型"""
@@ -105,7 +106,14 @@ SD_TRAINER_BRANCH_INFO_DICT: list[SDTrainerBranchInfo] = [
         "dtype": "sd_trainer_main",
         "url": "https://github.com/Akegarasu/lora-scripts",
         "branch": "main",
-        "use_submodule": False,
+        "use_submodule": True,
+    },
+    {
+        "name": "wochenlong - SD Trainer Next 分支",
+        "dtype": "sd_trainer_next_main",
+        "url": "https://github.com/wochenlong/lora-scripts-next",
+        "branch": "main",
+        "use_submodule": True,
     },
     {
         "name": "bmaltais - Kohya GUI 分支",

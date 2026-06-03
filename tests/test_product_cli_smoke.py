@@ -156,6 +156,69 @@ def test_product_cli_install_update_check_reinstall_and_model_smoke(monkeypatch,
     assert calls[-1][1]["model_name"] == "alpha"
 
 
+def test_sd_trainer_cli_accepts_next_branch(monkeypatch, tmp_path):
+    parser = _parser(sd_trainer_cli.register_sd_trainer)
+    calls = []
+
+    monkeypatch.setattr(sd_trainer_cli, "install", lambda **kwargs: calls.append(("install", kwargs)))
+    monkeypatch.setattr(sd_trainer_cli, "switch", lambda **kwargs: calls.append(("switch", kwargs)))
+
+    args = parser.parse_args(
+        [
+            "sd-trainer",
+            "install",
+            "--sd-trainer-path",
+            str(tmp_path),
+            "--no-auto-mirror",
+            "--install-branch",
+            "sd_trainer_next_main",
+        ]
+    )
+    args.func(args)
+
+    assert calls[-1] == (
+        "install",
+        {
+            "sd_trainer_path": tmp_path,
+            "pytorch_mirror_type": None,
+            "custom_pytorch_package": None,
+            "custom_xformers_package": None,
+            "use_pypi_mirror": True,
+            "use_uv": True,
+            "use_github_mirror": True,
+            "custom_github_mirror": None,
+            "install_branch": "sd_trainer_next_main",
+            "no_pre_download_model": False,
+            "model_download_resource_type": "modelscope",
+        },
+    )
+
+    args = parser.parse_args(
+        [
+            "sd-trainer",
+            "switch",
+            "--sd-trainer-path",
+            str(tmp_path),
+            "--no-auto-mirror",
+            "--branch",
+            "sd_trainer_next_main",
+        ]
+    )
+    args.func(args)
+
+    assert calls[-1] == (
+        "switch",
+        {
+            "sd_trainer_path": tmp_path,
+            "branch": "sd_trainer_next_main",
+            "use_github_mirror": True,
+            "custom_github_mirror": None,
+            "interactive_mode": False,
+            "list_only": False,
+        },
+    )
+
+
 @pytest.mark.parametrize(
     ("module", "register", "root", "path_arg", "path_key"),
     [
