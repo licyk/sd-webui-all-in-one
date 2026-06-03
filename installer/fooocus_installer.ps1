@@ -1489,6 +1489,192 @@ function Get-CurrentPlatform {
 }
 
 
+# 检测 Windows 长路径支持是否启用
+function Test-WindowsLongPathsEnabled {
+    if ((Get-CurrentPlatform) -ne `"windows`") {
+        return `$true
+    }
+
+    try {
+        `$reg = Get-ItemProperty -Path `"HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem`" -Name `"LongPathsEnabled`" -ErrorAction Stop
+        `$property = `$reg.PSObject.Properties[`"LongPathsEnabled`"]
+        if (`$null -eq `$property) {
+            Write-Log `"Windows 长路径支持注册表值缺失`" -Level WARNING
+            return `$false
+        }
+        `$enabled = ([int]`$property.Value -eq 1)
+        if (`$enabled) {
+            Write-Log `"Windows 长路径支持已启用`"
+        } else {
+            Write-Log `"Windows 长路径支持未启用`" -Level WARNING
+        }
+        return `$enabled
+    } catch {
+        Write-Log `"读取 Windows 长路径支持状态失败: `$(`$_.Exception.Message)`" -Level WARNING
+        return `$false
+    }
+}
+
+
+# 获取当前 PowerShell 可执行文件
+function Get-CurrentPowerShellExecutable {
+    try {
+        `$process = Get-Process -Id `$PID -ErrorAction Stop
+        `$path = [string]`$process.Path
+        if ((-not [string]::IsNullOrWhiteSpace(`$path)) -and (Test-Path -LiteralPath `$path -PathType Leaf)) {
+            return `$path
+        }
+    } catch {
+        Write-Log `"当前 PowerShell 可执行文件查找失败: `$(`$_.Exception.Message)`" -Level WARNING
+    }
+
+    `$pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
+    if (`$pwsh) {
+        return `$pwsh.Source
+    }
+    `$powershell = Get-Command powershell -ErrorAction SilentlyContinue
+    if (`$powershell) {
+        return `$powershell.Source
+    }
+    return `$null
+}
+
+
+function Quote-ProcessArgument {
+    param ([AllowNull()][string]`$Argument)
+    if (`$null -eq `$Argument) {
+        return ([string][char]34 + [string][char]34)
+    }
+    if (`$Argument.Length -eq 0) {
+        return ([string][char]34 + [string][char]34)
+    }
+    `$quote = [string][char]34
+    `$needs_quote = (`$Argument -match '\s') -or `$Argument.Contains(`$quote)
+    if (-not `$needs_quote) {
+        return `$Argument
+    }
+    `$escaped = `$Argument -replace `$quote, ([string][char]96 + `$quote)
+    return (`$quote + `$escaped + `$quote)
+}
+
+
+function Join-ProcessArguments {
+    param ([AllowNull()][string[]]`$Arguments)
+    if (`$null -eq `$Arguments) {
+        return [string]::Empty
+    }
+    return ((`$Arguments | ForEach-Object { Quote-ProcessArgument `$_ }) -join ' ')
+}
+
+
+# 以管理员权限启用 Windows 长路径支持
+function Enable-WindowsLongPathsElevated {
+    `$id = [guid]::NewGuid().ToString(`"N`")
+    `$temp_dir = [System.IO.Path]::GetTempPath()
+    `$worker_path = Join-Path `$temp_dir `"sd-webui-all-in-one-enable-long-paths-`$id.ps1`"
+    `$status_path = Join-Path `$temp_dir `"sd-webui-all-in-one-enable-long-paths-`$id.status`"
+    `$worker_script = @'
+param(
+    [Parameter(Mandatory=`$true)][string]`$StatusPath
+)
+`$ErrorActionPreference = 'Stop'
+try {
+    New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force | Out-Null
+    Set-Content -LiteralPath `$StatusPath -Encoding UTF8 -Value 'SUCCESS'
+    exit 0
+} catch {
+    try { Set-Content -LiteralPath `$StatusPath -Encoding UTF8 -Value ('FAILURE: ' + `$_.Exception.Message) } catch {}
+    exit 1
+}
+'@
+
+    try {
+        Set-Content -LiteralPath `$worker_path -Encoding UTF8 -Value `$worker_script
+        `$command = Get-CurrentPowerShellExecutable
+        if ([string]::IsNullOrWhiteSpace(`$command)) {
+            throw `"未找到 PowerShell 可执行文件`"
+        }
+        `$argument_line = Join-ProcessArguments @(`"-NoLogo`", `"-NoProfile`", `"-ExecutionPolicy`", `"Bypass`", `"-File`", `$worker_path, `"-StatusPath`", `$status_path)
+        Write-Log `"正在请求管理员权限以启用 Windows 长路径支持`"
+        `$process = Start-Process -FilePath `$command -ArgumentList `$argument_line -Verb RunAs -Wait -PassThru -ErrorAction Stop
+        `$exit_code = if (`$null -ne `$process) { [int]`$process.ExitCode } else { -1 }
+        `$status = `$null
+        if (Test-Path -LiteralPath `$status_path -PathType Leaf) {
+            `$status = Get-Content -LiteralPath `$status_path -Raw -Encoding UTF8 -ErrorAction SilentlyContinue
+        }
+        if (Test-WindowsLongPathsEnabled) {
+            Write-Log `"Windows 长路径支持已成功启用`"
+            return [PSCustomObject]@{ Success = `$true; Canceled = `$false; Message = `"Windows 长路径支持已启用。`"; ExitCode = `$exit_code }
+        }
+        `$message = if (-not [string]::IsNullOrWhiteSpace(`$status)) { `$status.Trim() } else { `"管理员进程未能启用 Windows 长路径支持。退出代码: `$exit_code`" }
+        Write-Log `"Windows 长路径支持启用失败: `$message`" -Level WARNING
+        return [PSCustomObject]@{ Success = `$false; Canceled = `$false; Message = `$message; ExitCode = `$exit_code }
+    } catch {
+        `$exception = `$_.Exception
+        `$is_canceled = `$false
+        if (`$exception -is [System.ComponentModel.Win32Exception] -and `$exception.NativeErrorCode -eq 1223) {
+            `$is_canceled = `$true
+        }
+        if (`$exception.Message -match `"cancel|取消`") {
+            `$is_canceled = `$true
+        }
+        if (`$is_canceled) {
+            Write-Log `"用户取消了启用 Windows 长路径支持的管理员权限请求`" -Level WARNING
+            return [PSCustomObject]@{ Success = `$false; Canceled = `$true; Message = `"用户取消了管理员权限请求。`"; ExitCode = -1 }
+        }
+        Write-Log `"启动管理员进程启用 Windows 长路径支持失败: `$(`$exception.Message)`" -Level WARNING
+        return [PSCustomObject]@{ Success = `$false; Canceled = `$false; Message = `$exception.Message; ExitCode = -1 }
+    } finally {
+        Remove-Item -LiteralPath `$worker_path -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath `$status_path -Force -ErrorAction SilentlyContinue
+    }
+}
+
+
+# 启动时检查 Windows 长路径支持
+function Invoke-WindowsLongPathsStartupCheck {
+    if ((Get-CurrentPlatform) -ne `"windows`") {
+        return
+    }
+    if (`$script:BuildMode) {
+        Write-Log `"构建模式已启用, 跳过 Windows 长路径支持弹窗检查`"
+        return
+    }
+    if (Test-WindowsLongPathsEnabled) {
+        return
+    }
+
+    Write-Log `"检测到 Windows 长路径支持未启用, 建议启用以避免路径过长导致安装或启动失败`" -Level WARNING
+    try {
+        Add-Type -AssemblyName PresentationFramework
+        `$msg_title = `"启用 Windows 长路径支持`"
+        `$msg_text = `"检测到当前系统尚未启用 Windows 长路径支持。``n``nAI WebUI / 训练工具的依赖、扩展、模型缓存目录可能很深，未启用时可能导致下载、解压、安装或启动失败。``n``n是否现在以管理员权限启用 Windows 长路径支持？`"
+        `$result = [System.Windows.MessageBox]::Show(`$msg_text, `$msg_title, [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+        if (`$result -ne [System.Windows.MessageBoxResult]::Yes) {
+            Write-Log `"已跳过启用 Windows 长路径支持。之后可以运行 configure_env.bat, 或手动执行 New-ItemProperty 命令启用 LongPathsEnabled`" -Level WARNING
+            return
+        }
+
+        `$enable_result = Enable-WindowsLongPathsElevated
+        if (`$enable_result.Success) {
+            [System.Windows.MessageBox]::Show(`"Windows 长路径支持已启用。``n``n部分程序可能需要重新启动后才能完全识别该系统设置。`", `"启用完成`", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+            return
+        }
+
+        if (`$enable_result.Canceled) {
+            Write-Log `"管理员权限请求已取消, Windows 长路径支持未启用。之后可以运行 configure_env.bat 或手动执行 New-ItemProperty 命令启用 LongPathsEnabled`" -Level WARNING
+            [System.Windows.MessageBox]::Show(`"未获得管理员权限，Windows 长路径支持尚未启用。``n``n启动脚本会继续运行；之后可以运行 configure_env.bat，或手动执行注册表命令启用。`", `"未启用长路径支持`", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
+            return
+        }
+
+        Write-Log `"启用 Windows 长路径支持失败: `$(`$enable_result.Message)`" -Level WARNING
+        [System.Windows.MessageBox]::Show(`"启用 Windows 长路径支持失败。``n``n`$(`$enable_result.Message)``n``n启动脚本会继续运行；之后可以运行 configure_env.bat，或手动执行注册表命令启用。`", `"启用失败`", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
+    } catch {
+        Write-Log `"Windows 长路径支持弹窗检查失败: `$(`$_.Exception.Message)`" -Level WARNING
+    }
+}
+
+
 # 获取当前架构
 function Get-CurrentArchitecture {
     if (`$PSVersionTable.PSVersion.Major -ge 6) {
@@ -2037,6 +2223,7 @@ Export-ModuleMember -Function ``
     Join-NormalizedPath, ``
     Get-NormalizedFilePath, ``
     Get-CurrentPlatform, ``
+    Invoke-WindowsLongPathsStartupCheck, ``
     Get-CurrentArchitecture, ``
     New-AppShortcut, ``
     Test-PythonAndGit, ``
@@ -2166,7 +2353,7 @@ try {
         EnableHotpatcherRuntime = `$script:EnableHotpatcherRuntime
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Invoke-WindowsLongPathsStartupCheck`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2399,6 +2586,9 @@ function Main {
     Get-Version
     Set-CorePrefix
     Initialize-EnvPath
+    if (!(`$script:BuildMode)) {
+        Invoke-WindowsLongPathsStartupCheck
+    }
     Test-PythonAndGit
     Set-Proxy
     Update-Installer
@@ -2409,7 +2599,9 @@ function Main {
         Exit-ManagerScript -ExitCode 1
     }
 
-    Test-MSVCPPRedistributable
+    if (!(`$script:BuildMode)) {
+        Test-MSVCPPRedistributable
+    }
     `$launch_args = Get-LaunchCoreArgs
     Add-Shortcut
 
