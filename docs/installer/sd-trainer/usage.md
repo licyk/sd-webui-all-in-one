@@ -18,6 +18,8 @@
 
 !!! note
     SD-Trainer 可用的启动参数可阅读：[Akegarasu/lora-scripts ### 程序参数](https://github.com/Akegarasu/lora-scripts/blob/main/README-zh.md#%E7%A8%8B%E5%BA%8F%E5%8F%82%E6%95%B0)
+
+    SD Trainer Next 可用的启动参数可参考：[wochenlong/lora-scripts-next](https://github.com/wochenlong/lora-scripts-next)
     
     Kohya GUI 可用的启动参数可阅读：[bmaltais/kohya_ss - Starting GUI Service](https://github.com/bmaltais/kohya_ss?tab=readme-ov-file#starting-gui-service)
     
@@ -25,6 +27,12 @@
     
     SD-Trainer 默认使用的启动参数：
     
+    ```
+    --skip-prepare-onnxruntime
+    ```
+
+    SD Trainer Next 默认使用的启动参数：
+
     ```
     --skip-prepare-onnxruntime
     ```
@@ -51,6 +59,7 @@ Hotpatcher 默认只做本地补丁注入。需要 runtime host 连接时，可�
 支持切换到的分支如下。
 
 - [Akegarasu/SD-Trainer](https://github.com/Akegarasu/lora-scripts)
+- [wochenlong/SD Trainer Next](https://github.com/wochenlong/lora-scripts-next)
 - [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)
 
 !!! note

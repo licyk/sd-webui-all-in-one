@@ -1,0 +1,45 @@
+name: Build SD Trainer Next
+
+on:
+  workflow_dispatch:
+
+jobs:
+  Build-SD-Trainer-Next:
+    name: Build SD Trainer Next
+    runs-on: windows-latest
+    env:
+      PYTHONIOENCODING: utf-8
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Setup portable build
+        uses: ./.github/actions/setup-portable-build
+
+      - name: Launch SD-Trainer Installer
+        env:
+          SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY: 1
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/installer/sd_trainer_installer.ps1" `
+            -InstallPath "${{ github.workspace }}/sd_trainer_next" `
+            -PyTorchMirrorType cu128 `
+            -BuildMode `
+            -BuildWithLaunch `
+            -InstallBranch "sd_trainer_next_main" `
+            -DisableAutoMirror `
+            -DisablePyPIMirror `
+            -DisableGithubMirror `
+            -InstallHanamizuki `
+            -DisableHuggingFaceMirror `
+            -NoPreDownloadModel
+
+      - name: Finalize portable package
+        uses: ./.github/actions/finalize-portable
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
+          WORKSPACE: ${{ github.workspace }}
+        with:
+          install-path: ${{ github.workspace }}/sd_trainer_next
+          software-name: sd_trainer_next

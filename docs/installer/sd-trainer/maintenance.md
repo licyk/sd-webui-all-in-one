@@ -115,12 +115,12 @@ D:/SD-Trainer
 ### 卸载 SD-Trainer
 使用 SD Trainer Installer 安装 SD-Trainer 后，主要文件都存放在 `SD-Trainer` 文件夹中。确认模型、训练集、输出文件等重要数据已经备份后，删除该文件夹即可卸载 SD-Trainer。
 
-如果创建过快捷启动方式，还需要按系统删除对应快捷方式。SD-Trainer 的快捷方式名称会根据安装分支变化，常见名称包括 `SD-Trainer`、`Kohya-GUI`。
+如果创建过快捷启动方式，还需要按系统删除对应快捷方式。SD-Trainer 的快捷方式名称会根据安装分支变化，常见名称包括 `SD-Trainer`、`SD-Trainer-Next`、`Kohya-GUI`。
 
 Windows 可在 PowerShell 中运行：
 
 ```powershell
-$shortcutNames = @("SD-Trainer", "Kohya-GUI")
+$shortcutNames = @("SD-Trainer", "SD-Trainer-Next", "Kohya-GUI")
 foreach ($name in $shortcutNames) {
     Remove-Item -Path "$([System.Environment]::GetFolderPath("Desktop"))\$name.lnk" -Force -ErrorAction SilentlyContinue
     Remove-Item -Path "$Env:APPDATA\Microsoft\Windows\Start Menu\Programs\$name.lnk" -Force -ErrorAction SilentlyContinue
@@ -130,7 +130,7 @@ foreach ($name in $shortcutNames) {
 Linux 可在 PowerShell 中运行：
 
 ```powershell
-$shortcutNames = @("SD-Trainer", "Kohya-GUI")
+$shortcutNames = @("SD-Trainer", "SD-Trainer-Next", "Kohya-GUI")
 foreach ($name in $shortcutNames) {
     Remove-Item -Path "$HOME/Desktop/$name.desktop" -Force -ErrorAction SilentlyContinue
     Remove-Item -Path "$HOME/.local/share/applications/$name.desktop" -Force -ErrorAction SilentlyContinue
@@ -140,7 +140,7 @@ foreach ($name in $shortcutNames) {
 macOS 可在 PowerShell 中运行：
 
 ```powershell
-$shortcutNames = @("SD-Trainer", "Kohya-GUI")
+$shortcutNames = @("SD-Trainer", "SD-Trainer-Next", "Kohya-GUI")
 foreach ($name in $shortcutNames) {
     Remove-Item -Path "$HOME/Desktop/$name.app" -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item -Path "/Applications/$name.app" -Recurse -Force -ErrorAction SilentlyContinue

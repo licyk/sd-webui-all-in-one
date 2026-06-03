@@ -99,6 +99,7 @@ SD WebUI All In One 提供本地安装、整合包下载、Launcher 管理、Jup
 - [InvokeAI](https://github.com/invoke-ai/InvokeAI)
 - [Fooocus](https://github.com/lllyasviel/Fooocus)
 - [SD-Trainer](https://github.com/Akegarasu/lora-scripts)
+- [SD Trainer Next](https://github.com/wochenlong/lora-scripts-next)
 - [Kohya GUI](https://github.com/bmaltais/kohya_ss)
 - [sd-scripts](https://github.com/kohya-ss/sd-scripts)
 - [ai-toolkit](https://github.com/ostris/ai-toolkit)
@@ -123,6 +124,7 @@ SD WebUI All In One 提供本地安装、整合包下载、Launcher 管理、Jup
 - [InvokeAI](https://github.com/invoke-ai/InvokeAI)
 - [Fooocus](https://github.com/lllyasviel/Fooocus)
 - [SD-Trainer](https://github.com/Akegarasu/lora-scripts)
+- [SD Trainer Next](https://github.com/wochenlong/lora-scripts-next)
 - [Kohya GUI](https://github.com/bmaltais/kohya_ss)
 - [sd-scripts](https://github.com/kohya-ss/sd-scripts)
 - [ai-toolkit](https://github.com/ostris/ai-toolkit)
@@ -171,7 +173,7 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 
 
 ## SD Trainer Colab Jupyter NoteBook
-[sd_trainer_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_trainer_colab.ipynb) [[源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/sd_trainer_colab.ipynb)]：适用于 Colab 一键部署 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) / [Kohya GUI](https://github.com/bmaltais/kohya_ss)。
+[sd_trainer_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/sd_trainer_colab.ipynb) [[源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/sd_trainer_colab.ipynb)]：适用于 Colab 一键部署 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) / [SD Trainer Next](https://github.com/wochenlong/lora-scripts-next) / [Kohya GUI](https://github.com/bmaltais/kohya_ss)。
 
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/sd_trainer_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
@@ -267,7 +269,7 @@ Windows / Linux / macOS 平台安装、启动和管理 [Fooocus](https://github.
 
 
 ## SD-Trainer Installer
-Windows / Linux / macOS 平台安装、启动和管理 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) / [Kohya GUI](https://github.com/bmaltais/kohya_ss)。
+Windows / Linux / macOS 平台安装、启动和管理 [SD-Trainer](https://github.com/Akegarasu/lora-scripts) / [SD Trainer Next](https://github.com/wochenlong/lora-scripts-next) / [Kohya GUI](https://github.com/bmaltais/kohya_ss)。
 
 使用说明：[SD Trainer Installer 文档](https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer)。
 
@@ -305,6 +307,7 @@ Windows / Linux / macOS 平台安装、启动和管理 [Qwen TTS WebUI](https://
 |Build [Fooocus](https://github.com/lllyasviel/Fooocus) Portable|[![Build Fooocus](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_fooocus.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_fooocus.yml)|
 |Build [InvokeAI](https://github.com/invoke-ai/InvokeAI) Portable|[![Build InvokeAI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_invokeai.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_invokeai.yml)|
 |Build [SD-Trainer](https://github.com/Akegarasu/lora-scripts) Portable|[![Build SD-Trainer](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_trainer.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_trainer.yml)|
+|Build [SD Trainer Next](https://github.com/wochenlong/lora-scripts-next) Portable|[![Build SD Trainer Next](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_trainer_next.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_trainer_next.yml)|
 |Build [Kohya GUI](https://github.com/bmaltais/kohya_ss) Portable|[![Build Kohya GUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_kohya_gui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_kohya_gui.yml)|
 |Build [SD Scripts](https://github.com/kohya-ss/sd-scripts) Portable|[![Build SD Scripts](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_scripts.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_scripts.yml)|
 |Build [Musubi Tuner](https://github.com/kohya-ss/musubi-tuner) Portable|[![Build Musubi Tuner](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml)|

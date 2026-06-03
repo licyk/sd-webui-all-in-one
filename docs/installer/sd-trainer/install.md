@@ -44,9 +44,10 @@ SD Trainer Installer 默认情况下安装的是 [Akegarasu/SD-Trainer](https://
 |配置文件名|对应安装的分支|
 |---|---|
 |`install_sd_trainer_main.txt`|[Akegarasu/SD-Trainer](https://github.com/Akegarasu/lora-scripts)|
+|`install_sd_trainer_next_main.txt`|[wochenlong/SD Trainer Next](https://github.com/wochenlong/lora-scripts-next)|
 |`install_kohya_gui_main.txt`|[bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)|
 
-上表使用当前代码中的 `InstallBranch` 分支标识作为配置文件名。旧版短名称配置文件仍由安装器兼容识别，新建配置时建议使用上表文件名。
+上表使用当前代码中的 `InstallBranch` 分支标识作为配置文件名。
 
 如果创建了配置文件，将 SD Trainer Installer 和配置文件放在一起，如下所示。
 

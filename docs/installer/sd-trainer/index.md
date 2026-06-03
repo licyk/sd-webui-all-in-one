@@ -13,9 +13,10 @@
 - [常用命令](commands.md)
 
 ## 简介
-用于在 Windows / Linux / MacOS 系统上快速安装、启动和管理 SD-Trainer 的 PowerShell 安装器。
+用于在 Windows / Linux / MacOS 系统上快速安装、启动和管理 SD-Trainer 系列训练 WebUI 的 PowerShell 安装器。
 
 支持部署的 SD-Trainer 分支如下。
 
 - [Akegarasu/SD-Trainer](https://github.com/Akegarasu/lora-scripts)
+- [wochenlong/SD Trainer Next](https://github.com/wochenlong/lora-scripts-next)
 - [bmaltais/Kohya GUI](https://github.com/bmaltais/kohya_ss)
