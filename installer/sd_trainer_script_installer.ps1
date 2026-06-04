@@ -2178,6 +2178,165 @@ function Test-PythonAndGit {
 }
 
 
+# 检测 Microsoft Visual C++ Redistributable
+function Test-MSVCPPRedistributable {
+    if ((Get-CurrentPlatform) -ne `"windows`") {
+        Write-Log `"非 Windows 系统，跳过 Microsoft Visual C++ Redistributable 检测`"
+        return
+    }
+
+    Write-Log `"检测 Microsoft Visual C++ Redistributable 是否缺失`"
+
+    if ([string]::IsNullOrEmpty(`$env:SYSTEMROOT)) {
+        `$vc_runtime_dll_path = Join-NormalizedPath `"C:/`" `"Windows`" `"System32`" `"vcruntime140_1.dll`"
+    } else {
+        `$vc_runtime_dll_path = Join-NormalizedPath `$env:SYSTEMROOT `"System32`" `"vcruntime140_1.dll`"
+    }
+
+    if (Test-Path `$vc_runtime_dll_path) {
+        Write-Log `"Microsoft Visual C++ Redistributable 未缺失`"
+        return
+    }
+
+    Write-Log `"检测到 Microsoft Visual C++ Redistributable 缺失, 这可能导致 PyTorch 无法正常识别 GPU 导致报错`" -Level WARNING
+    Write-Log `"请下载并安装 Microsoft Visual C++ Redistributable 后重新启动`"
+
+    Add-Type -AssemblyName PresentationFramework
+    `$msg_text = `"检测到系统缺失 Microsoft Visual C++ Redistributable, 这可能导致程序无法正常运行。请下载并安装该组件, 并重新启动以解决问题。``n``n是否立即打开下载页面?`"
+    `$msg_title = `"缺失系统组件`"
+    `$result = [System.Windows.MessageBox]::Show(`$msg_text, `$msg_title, [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+
+    if (`$result -eq [System.Windows.MessageBoxResult]::Yes) {
+        `$download_url = `"https://aka.ms/vs/17/release/vc_redist.x64.exe`"
+        Write-Log `"正在打开下载链接: `$download_url`"
+        Start-Process `$download_url
+    }
+}
+
+
+# 设置 CUDA 内存分配器
+function Set-PyTorch-CUDA-Memory-Alloc {
+    if ((!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`"))) -and (!(`$DisableCUDAMalloc))) {
+        Write-Log `"检测是否可设置 CUDA 内存分配器`"
+    } else {
+        Write-Log `"检测到 disable_set_pytorch_cuda_memory_alloc.txt 配置文件 / -DisableCUDAMalloc 命令行参数, 已禁用自动设置 CUDA 内存分配器`"
+        return
+    }
+
+    `$conf = `$(python -m sd_webui_all_in_one self-manager get-cuda-malloc)
+
+    if (`$conf) {
+        Write-Log `"配置 CUDA 内存分配器`"
+        `$Env:PYTORCH_CUDA_ALLOC_CONF = `$conf
+        `$Env:PYTORCH_ALLOC_CONF = `$conf
+    } else {
+        Write-Log `"显卡非 Nvidia 显卡, 无法设置 CUDA 内存分配器`" -Level WARNING
+    }
+}
+
+
+# 清理 Hotpatcher 环境变量
+function Clear-Hotpatcher-Env {
+    Get-ChildItem Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_* -ErrorAction SilentlyContinue | ForEach-Object {
+        Remove-Item `"Env:`$(`$_.Name)`" -ErrorAction SilentlyContinue
+    }
+}
+
+
+# 检测 Hotpatcher 端口
+function Test-HotpatcherPort {
+    param ([int]`$Port)
+    return ((`$Port -ge 1) -and (`$Port -le 65535))
+}
+
+
+# 获取 Hotpatcher 配置文件路径
+function Resolve-HotpatcherConfigPath {
+    param ([string]`$ConfigPath)
+    if ([string]::IsNullOrWhiteSpace(`$ConfigPath)) {
+        return Join-NormalizedPath `$PSScriptRoot `"patcher_config.json`"
+    }
+    if ([System.IO.Path]::IsPathRooted(`$ConfigPath)) {
+        return Join-NormalizedPath `$ConfigPath
+    }
+    return Join-NormalizedPath `$PSScriptRoot `$ConfigPath
+}
+
+
+# 获取 Hotpatcher 端口
+function Get-HotpatcherPort {
+    if (`$script:HotpatcherPortProvided) {
+        if (Test-HotpatcherPort `$script:HotpatcherPort) {
+            return `$script:HotpatcherPort
+        }
+        Write-Log `"Hotpatcher 端口无效, 已使用默认端口 8765: `$(`$script:HotpatcherPort). 可用范围为 1 ~ 65535`" -Level WARNING
+        return 8765
+    }
+
+    `$port_file = Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`"
+    if (!(Test-Path `$port_file)) {
+        return 8765
+    }
+
+    `$port_text = Get-TrimmedTextFile `$port_file -Encoding UTF8
+    `$port_value = 0
+    if (([int]::TryParse(`$port_text, [ref]`$port_value)) -and (Test-HotpatcherPort `$port_value)) {
+        return `$port_value
+    }
+
+    Write-Log `"hotpatcher_port.txt 中的 Hotpatcher 端口无效, 已使用默认端口 8765: `$port_text. 可用范围为 1 ~ 65535`" -Level WARNING
+    return 8765
+}
+
+
+# 设置 Hotpatcher 补丁系统环境变量
+function Set-Hotpatcher-Env {
+    Clear-Hotpatcher-Env
+    if ((`$script:DisableHotpatcher) -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_hotpatcher.txt`"))) {
+        Write-Log `"检测到 disable_hotpatcher.txt 配置文件 / -DisableHotpatcher 命令行参数, 已禁用 Hotpatcher 补丁系统`"
+        return
+    }
+
+    `$pythonpath = `$(python -m sd_webui_all_in_one self-manager patcher get-pythonpath)
+    `$exit_code = Get-NativeCommandExitCode -Success `$?
+    if ((`$exit_code -ne 0) -or ([string]::IsNullOrWhiteSpace(`$pythonpath))) {
+        Write-Log `"获取 Hotpatcher PYTHONPATH 失败, 终止 SD Trainer Script 环境初始化`" -Level ERROR
+        Exit-ManagerScript -ExitCode `$exit_code
+    }
+    `$Env:PYTHONPATH = `$pythonpath
+
+    `$config_path = Resolve-HotpatcherConfigPath `$script:HotpatcherConfig
+    if (([string]::IsNullOrWhiteSpace(`$script:HotpatcherConfig)) -and (!(Test-Path `$config_path))) {
+        Write-Log `"Hotpatcher 默认配置不存在, 正在导出默认配置: `$config_path`"
+        & python -m sd_webui_all_in_one self-manager patcher export-config --output `"`$config_path`" *> `$null
+        `$exit_code = Get-NativeCommandExitCode -Success `$?
+        if (`$exit_code -ne 0) {
+            Write-Log `"导出 Hotpatcher 默认配置失败, 终止 SD Trainer Script 环境初始化`" -Level ERROR
+            Exit-ManagerScript -ExitCode `$exit_code
+        }
+    }
+
+    `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE = `"file`"
+    `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE = `$config_path
+
+    `$hotpatcher_runtime_enabled = `$script:EnableHotpatcherRuntime -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher_runtime.txt`"))
+    if (`$hotpatcher_runtime_enabled) {
+        `$hotpatcher_port = Get-HotpatcherPort
+        `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME = `"1`"
+        `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST = `"127.0.0.1`"
+        `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT = [string]`$hotpatcher_port
+        `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES = `"1`"
+        Write-Log `"检测到 enable_hotpatcher_runtime.txt 配置文件 / -EnableHotpatcherRuntime 命令行参数, 已启用 Hotpatcher runtime host 连接`"
+        Write-Log `"Hotpatcher runtime 通信端口: `$hotpatcher_port`"
+    } elseif (`$script:HotpatcherPortProvided -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`"))) {
+        Write-Log `"检测到 Hotpatcher 端口配置, 但未启用 Hotpatcher runtime, 已忽略该端口配置`" -Level WARNING
+    }
+
+    Write-Log `"Hotpatcher 补丁系统默认启用`"
+    Write-Log `"Hotpatcher 配置文件: `$config_path`"
+}
+
+
 Export-ModuleMember -Function ``
     Initialize-EnvPath, ``
     Write-Log, ``
@@ -2197,6 +2356,13 @@ Export-ModuleMember -Function ``
     Set-GithubMirror, ``
     Set-uv, ``
     Set-PyTorchCUDAMemoryAlloc, ``
+    Test-MSVCPPRedistributable, ``
+    Set-PyTorch-CUDA-Memory-Alloc, ``
+    Clear-Hotpatcher-Env, ``
+    Test-HotpatcherPort, ``
+    Resolve-HotpatcherConfigPath, ``
+    Get-HotpatcherPort, ``
+    Set-Hotpatcher-Env, ``
     Join-NormalizedPath, ``
     Get-NormalizedFilePath, ``
     Get-CurrentPlatform, ``
@@ -2381,7 +2547,7 @@ try {
         BuildMode = `$script:BuildMode
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Invoke-WindowsLongPathsStartupCheck`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Invoke-WindowsLongPathsStartupCheck`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Test-MSVCPPRedistributable`", `"Set-PyTorch-CUDA-Memory-Alloc`", `"Set-Hotpatcher-Env`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2414,165 +2580,6 @@ catch {
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
     if ((-not `$script:BuildMode) -and (-not `$script:NoPause)) { Read-Host | Out-Null }
     exit 1
-}
-
-
-# 检测 Microsoft Visual C++ Redistributable
-function Test-MSVCPPRedistributable {
-    if ((Get-CurrentPlatform) -ne `"windows`") {
-        Write-Log `"非 Windows 系统，跳过 Microsoft Visual C++ Redistributable 检测`"
-        return
-    }
-
-    Write-Log `"检测 Microsoft Visual C++ Redistributable 是否缺失`"
-
-    if ([string]::IsNullOrEmpty(`$env:SYSTEMROOT)) {
-        `$vc_runtime_dll_path = Join-NormalizedPath `"C:/`" `"Windows`" `"System32`" `"vcruntime140_1.dll`"
-    } else {
-        `$vc_runtime_dll_path = Join-NormalizedPath `$env:SYSTEMROOT `"System32`" `"vcruntime140_1.dll`"
-    }
-
-    if (Test-Path `$vc_runtime_dll_path) {
-        Write-Log `"Microsoft Visual C++ Redistributable 未缺失`"
-        return
-    }
-
-    Write-Log `"检测到 Microsoft Visual C++ Redistributable 缺失, 这可能导致 PyTorch 无法正常识别 GPU 导致报错`" -Level WARNING
-    Write-Log `"请下载并安装 Microsoft Visual C++ Redistributable 后重新启动`"
-
-    Add-Type -AssemblyName PresentationFramework
-    `$msg_text = `"检测到系统缺失 Microsoft Visual C++ Redistributable, 这可能导致程序无法正常运行。请下载并安装该组件, 并重新启动以解决问题。``n``n是否立即打开下载页面?`"
-    `$msg_title = `"缺失系统组件`"
-    `$result = [System.Windows.MessageBox]::Show(`$msg_text, `$msg_title, [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
-
-    if (`$result -eq [System.Windows.MessageBoxResult]::Yes) {
-        `$download_url = `"https://aka.ms/vs/17/release/vc_redist.x64.exe`"
-        Write-Log `"正在打开下载链接: `$download_url`"
-        Start-Process `$download_url
-    }
-}
-
-
-# 设置 CUDA 内存分配器
-function Set-PyTorch-CUDA-Memory-Alloc {
-    if ((!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`"))) -and (!(`$DisableCUDAMalloc))) {
-        Write-Log `"检测是否可设置 CUDA 内存分配器`"
-    } else {
-        Write-Log `"检测到 disable_set_pytorch_cuda_memory_alloc.txt 配置文件 / -DisableCUDAMalloc 命令行参数, 已禁用自动设置 CUDA 内存分配器`"
-        return
-    }
-
-    `$conf = `$(python -m sd_webui_all_in_one self-manager get-cuda-malloc)
-
-    if (`$conf) {
-        Write-Log `"配置 CUDA 内存分配器`"
-        `$Env:PYTORCH_CUDA_ALLOC_CONF = `$conf
-        `$Env:PYTORCH_ALLOC_CONF = `$conf
-    } else {
-        Write-Log `"显卡非 Nvidia 显卡, 无法设置 CUDA 内存分配器`" -Level WARNING
-    }
-}
-
-
-# 清理 Hotpatcher 环境变量
-function Clear-Hotpatcher-Env {
-    Get-ChildItem Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_* -ErrorAction SilentlyContinue | ForEach-Object {
-        Remove-Item `"Env:`$(`$_.Name)`" -ErrorAction SilentlyContinue
-    }
-}
-
-
-# 检测 Hotpatcher 端口
-function Test-HotpatcherPort {
-    param ([int]`$Port)
-    return ((`$Port -ge 1) -and (`$Port -le 65535))
-}
-
-
-# 获取 Hotpatcher 配置文件路径
-function Resolve-HotpatcherConfigPath {
-    param ([string]`$ConfigPath)
-    if ([string]::IsNullOrWhiteSpace(`$ConfigPath)) {
-        return Join-NormalizedPath `$PSScriptRoot `"patcher_config.json`"
-    }
-    if ([System.IO.Path]::IsPathRooted(`$ConfigPath)) {
-        return Join-NormalizedPath `$ConfigPath
-    }
-    return Join-NormalizedPath `$PSScriptRoot `$ConfigPath
-}
-
-
-# 获取 Hotpatcher 端口
-function Get-HotpatcherPort {
-    if (`$script:HotpatcherPortProvided) {
-        if (Test-HotpatcherPort `$script:HotpatcherPort) {
-            return `$script:HotpatcherPort
-        }
-        Write-Log `"Hotpatcher 端口无效, 已使用默认端口 8765: `$(`$script:HotpatcherPort). 可用范围为 1 ~ 65535`" -Level WARNING
-        return 8765
-    }
-
-    `$port_file = Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`"
-    if (!(Test-Path `$port_file)) {
-        return 8765
-    }
-
-    `$port_text = Get-TrimmedTextFile `$port_file -Encoding UTF8
-    `$port_value = 0
-    if (([int]::TryParse(`$port_text, [ref]`$port_value)) -and (Test-HotpatcherPort `$port_value)) {
-        return `$port_value
-    }
-
-    Write-Log `"hotpatcher_port.txt 中的 Hotpatcher 端口无效, 已使用默认端口 8765: `$port_text. 可用范围为 1 ~ 65535`" -Level WARNING
-    return 8765
-}
-
-
-# 设置 Hotpatcher 补丁系统环境变量
-function Set-Hotpatcher-Env {
-    Clear-Hotpatcher-Env
-    if ((`$script:DisableHotpatcher) -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_hotpatcher.txt`"))) {
-        Write-Log `"检测到 disable_hotpatcher.txt 配置文件 / -DisableHotpatcher 命令行参数, 已禁用 Hotpatcher 补丁系统`"
-        return
-    }
-
-    `$pythonpath = `$(python -m sd_webui_all_in_one self-manager patcher get-pythonpath)
-    `$exit_code = Get-NativeCommandExitCode -Success `$?
-    if ((`$exit_code -ne 0) -or ([string]::IsNullOrWhiteSpace(`$pythonpath))) {
-        Write-Log `"获取 Hotpatcher PYTHONPATH 失败, 终止 SD Trainer Script 环境初始化`" -Level ERROR
-        Exit-ManagerScript -ExitCode `$exit_code
-    }
-    `$Env:PYTHONPATH = `$pythonpath
-
-    `$config_path = Resolve-HotpatcherConfigPath `$script:HotpatcherConfig
-    if (([string]::IsNullOrWhiteSpace(`$script:HotpatcherConfig)) -and (!(Test-Path `$config_path))) {
-        Write-Log `"Hotpatcher 默认配置不存在, 正在导出默认配置: `$config_path`"
-        & python -m sd_webui_all_in_one self-manager patcher export-config --output `"`$config_path`" *> `$null
-        `$exit_code = Get-NativeCommandExitCode -Success `$?
-        if (`$exit_code -ne 0) {
-            Write-Log `"导出 Hotpatcher 默认配置失败, 终止 SD Trainer Script 环境初始化`" -Level ERROR
-            Exit-ManagerScript -ExitCode `$exit_code
-        }
-    }
-
-    `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE = `"file`"
-    `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE = `$config_path
-
-    `$hotpatcher_runtime_enabled = `$script:EnableHotpatcherRuntime -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher_runtime.txt`"))
-    if (`$hotpatcher_runtime_enabled) {
-        `$hotpatcher_port = Get-HotpatcherPort
-        `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME = `"1`"
-        `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST = `"127.0.0.1`"
-        `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT = [string]`$hotpatcher_port
-        `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES = `"1`"
-        Write-Log `"检测到 enable_hotpatcher_runtime.txt 配置文件 / -EnableHotpatcherRuntime 命令行参数, 已启用 Hotpatcher runtime host 连接`"
-        Write-Log `"Hotpatcher runtime 通信端口: `$hotpatcher_port`"
-    } elseif (`$script:HotpatcherPortProvided -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`"))) {
-        Write-Log `"检测到 Hotpatcher 端口配置, 但未启用 Hotpatcher runtime, 已忽略该端口配置`" -Level WARNING
-    }
-
-    Write-Log `"Hotpatcher 补丁系统默认启用`"
-    Write-Log `"Hotpatcher 配置文件: `$config_path`"
 }
 
 

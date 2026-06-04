@@ -36,6 +36,12 @@ def _extract_init_template(text: str) -> str:
     return text[start:end]
 
 
+def _extract_modules_template(text: str) -> str:
+    start = text.index("# 通用模块脚本\nfunction Write-ModulesScript")
+    end = text.index("# 启动脚本", start)
+    return text[start:end]
+
+
 def test_installer_templates_include_windows_long_path_helpers():
     helper_names = [
         "Test-WindowsLongPathsEnabled",
@@ -112,6 +118,69 @@ def test_init_template_imports_and_calls_windows_long_path_check():
         assert import_lines, script_path
         assert '`"Invoke-WindowsLongPathsStartupCheck`"' in import_lines[0]
         assert main_call_pattern.search(init_template), script_path
+
+
+def test_launch_runtime_helpers_are_moved_to_modules_template():
+    helper_names = [
+        "Get-WebUILaunchArgs",
+        "Add-Shortcut",
+        "Test-MSVCPPRedistributable",
+        "Test-WebUIEnv",
+        "Set-Hotpatcher",
+    ]
+
+    for script_path in LAUNCH_INSTALLER_SCRIPTS:
+        installer = _read_installer(script_path)
+        modules_template = _extract_modules_template(installer)
+        launch_template = _extract_launch_template(installer)
+        import_lines = [
+            line
+            for line in launch_template.splitlines()
+            if "Import-Module" in line and "modules.psm1" in line
+        ]
+
+        assert import_lines, script_path
+        for helper_name in helper_names:
+            assert f"function {helper_name}" in modules_template, script_path
+            assert f"function {helper_name}" not in launch_template, script_path
+            assert f"    {helper_name}, ``" in modules_template, script_path
+            assert f'`"{helper_name}`"' in import_lines[0], script_path
+
+
+def test_init_runtime_helpers_are_moved_to_modules_template():
+    helper_names = [
+        "Test-MSVCPPRedistributable",
+        "Set-PyTorch-CUDA-Memory-Alloc",
+        "Clear-Hotpatcher-Env",
+        "Test-HotpatcherPort",
+        "Resolve-HotpatcherConfigPath",
+        "Get-HotpatcherPort",
+        "Set-Hotpatcher-Env",
+    ]
+    imported_helper_names = [
+        "Test-MSVCPPRedistributable",
+        "Set-PyTorch-CUDA-Memory-Alloc",
+        "Set-Hotpatcher-Env",
+    ]
+
+    for script_path in INIT_INSTALLER_SCRIPTS:
+        installer = _read_installer(script_path)
+        modules_template = _extract_modules_template(installer)
+        init_template = _extract_init_template(installer)
+        import_lines = [
+            line
+            for line in init_template.splitlines()
+            if "Import-Module" in line and "modules.psm1" in line
+        ]
+
+        assert import_lines, script_path
+        for helper_name in helper_names:
+            assert f"function {helper_name}" in modules_template, script_path
+            assert f"function {helper_name}" not in init_template, script_path
+            assert f"    {helper_name}, ``" in modules_template, script_path
+
+        for helper_name in imported_helper_names:
+            assert f'`"{helper_name}`"' in import_lines[0], script_path
 
 
 def test_msvc_check_is_skipped_in_build_mode():

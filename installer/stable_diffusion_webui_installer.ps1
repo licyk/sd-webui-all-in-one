@@ -2227,194 +2227,6 @@ function Test-PythonAndGit {
 }
 
 
-Export-ModuleMember -Function ``
-    Initialize-EnvPath, ``
-    Write-Log, ``
-    Format-CommandLineArgumentForLog, ``
-    Format-CoreCliCommandForLog, ``
-    Write-CoreCliFailureCommand, ``
-    Write-FileWithStreamWriter, ``
-    Update-SDWebUiAllInOne, ``
-    Update-Installer, ``
-    Get-Version, ``
-    Get-HelpMessage, ``
-    Set-CorePrefix, ``
-    Set-Proxy, ``
-    Set-PyPIMirror, ``
-    Set-ModelMirror, ``
-    Set-HuggingFaceMirror, ``
-    Set-GithubMirror, ``
-    Set-uv, ``
-    Set-PyTorchCUDAMemoryAlloc, ``
-    Join-NormalizedPath, ``
-    Get-NormalizedFilePath, ``
-    Get-CurrentPlatform, ``
-    Invoke-WindowsLongPathsStartupCheck, ``
-    Get-CurrentArchitecture, ``
-    New-AppShortcut, ``
-    Test-PythonAndGit, ``
-    Get-NativeCommandExitCode, ``
-    Exit-ManagerScript, ``
-    Get-TrimmedTextFile
-".Trim()
-    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "modules.psm1")) { "更新" } else { "生成" }) modules.psm1 中"
-    Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "modules.psm1") -Value $content
-}
-
-
-# 启动脚本
-function Write-LaunchScript {
-    $content = "
-param (
-    [Parameter(HelpMessage=@`"
-获取 SD WebUI Installer 的帮助信息
-`"@)][switch]`$Help,
-
-    [Parameter(HelpMessage=@`"
-设置内核的路径前缀, 默认路径前缀为 core
-`"@)][string]`$CorePrefix,
-
-    [Parameter(HelpMessage=@`"
-启用 SD WebUI Installer 构建模式
-`"@)][switch]`$BuildMode,
-
-    [Parameter(HelpMessage=@`"
-禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
-`"@)][switch]`$DisablePyPIMirror,
-
-    [Parameter(HelpMessage=@`"
-禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
-`"@)][switch]`$DisableAutoMirror,
-
-    [Parameter(HelpMessage=@`"
-禁用 SD WebUI Installer 更新检查
-`"@)][switch]`$DisableUpdate,
-
-    [Parameter(HelpMessage=@`"
-禁用 SD WebUI Installer 自动设置代理服务器
-`"@)][switch]`$DisableProxy,
-
-    [Parameter(HelpMessage=@`"
-使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
-`"@)][string]`$UseCustomProxy,
-
-    [Parameter(HelpMessage=@`"
-禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
-`"@)][switch]`$DisableHuggingFaceMirror,
-
-    [Parameter(HelpMessage=@`"
-使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
-`"@)][string]`$UseCustomHuggingFaceMirror,
-
-    [Parameter(HelpMessage=@`"
-禁用 SD WebUI Installer 自动设置 Github 镜像源
-`"@)][switch]`$DisableGithubMirror,
-
-    [Parameter(HelpMessage=@`"
-使用自定义的 Github 镜像站地址
-`"@)][string]`$UseCustomGithubMirror,
-
-    [Parameter(HelpMessage=@`"
-禁用 SD WebUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
-`"@)][switch]`$DisableUV,
-
-    [Parameter(HelpMessage=@`"
-设置 Stable Diffusion WebUI 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg ```"--fast --auto-launch```" 进行启用
-`"@)][string]`$LaunchArg,
-
-    [Parameter(HelpMessage=@`"
-禁用 Hotpatcher 补丁系统注入
-`"@)][switch]`$DisableHotpatcher,
-
-    [Parameter(HelpMessage=@`"
-设置 Hotpatcher 补丁系统配置文件路径
-`"@)][string]`$HotpatcherConfig,
-
-    [Parameter(HelpMessage=@`"
-设置 Hotpatcher runtime 通信端口, 范围为 1 到 65535
-`"@)][int]`$HotpatcherPort,
-
-    [Parameter(HelpMessage=@`"
-启用 Hotpatcher runtime host 连接
-`"@)][switch]`$EnableHotpatcherRuntime,
-
-    [Parameter(HelpMessage=@`"
-创建 Stable Diffusion WebUI 启动快捷方式
-`"@)][switch]`$EnableShortcut,
-
-    [Parameter(HelpMessage=@`"
-禁用 SD WebUI Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
-`"@)][switch]`$DisableCUDAMalloc,
-
-    [Parameter(HelpMessage=@`"
-禁用 SD WebUI Installer 检查 Stable Diffusion WebUI 运行环境中存在的问题, 禁用后可能会导致 Stable Diffusion WebUI 环境中存在的问题无法被发现并修复
-`"@)][switch]`$DisableEnvCheck,
-
-    [Parameter(HelpMessage=@`"
-脚本执行完成后不暂停, 直接退出
-`"@)][switch]`$NoPause
-)
-try {
-    `$config = @{
-        OriginalScriptPath = `$script:PSCommandPath
-        LaunchCommandLine = if (`$script:MyInvocation.Line) { `$script:MyInvocation.Line } else { `$([Environment]::CommandLine) }
-        Help = `$script:Help
-        CorePrefix = `$script:CorePrefix
-        DisableUV = `$script:DisableUV
-        DisableProxy = `$script:DisableProxy
-        UseCustomProxy = `$script:UseCustomProxy
-        DisablePyPIMirror = `$script:DisablePyPIMirror
-        DisableAutoMirror = `$script:DisableAutoMirror
-        DisableHuggingFaceMirror = `$script:DisableHuggingFaceMirror
-        UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
-        DisableGithubMirror = `$script:DisableGithubMirror
-        UseCustomGithubMirror = `$script:UseCustomGithubMirror
-        DisableCUDAMalloc = `$script:DisableCUDAMalloc
-        DisableUpdate = `$script:DisableUpdate
-        BuildMode = `$script:BuildMode
-        DisableHotpatcher = `$script:DisableHotpatcher
-        HotpatcherConfig = `$script:HotpatcherConfig
-        HotpatcherPort = `$script:HotpatcherPort
-        HotpatcherPortProvided = `$PSBoundParameters.ContainsKey(`"HotpatcherPort`")
-        EnableHotpatcherRuntime = `$script:EnableHotpatcherRuntime
-        NoPause = `$script:NoPause
-    }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Invoke-WindowsLongPathsStartupCheck`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
-        param (`$cfg)
-        `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
-        `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
-        `$script:Help = `$cfg.Help
-        `$script:CorePrefix = `$cfg.CorePrefix
-        `$script:DisableUV = `$cfg.DisableUV
-        `$script:DisableProxy = `$cfg.DisableProxy
-        `$script:UseCustomProxy = `$cfg.UseCustomProxy
-        `$script:DisablePyPIMirror = `$cfg.DisablePyPIMirror
-        `$script:DisableAutoMirror = `$cfg.DisableAutoMirror
-        `$script:DisableHuggingFaceMirror = `$cfg.DisableHuggingFaceMirror
-        `$script:UseCustomHuggingFaceMirror = `$cfg.UseCustomHuggingFaceMirror
-        `$script:DisableGithubMirror = `$cfg.DisableGithubMirror
-        `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
-        `$script:DisableCUDAMalloc = `$cfg.DisableCUDAMalloc
-        `$script:DisableUpdate = `$cfg.DisableUpdate
-        `$script:BuildMode = `$cfg.BuildMode
-        `$script:DisableHotpatcher = `$cfg.DisableHotpatcher
-        `$script:HotpatcherConfig = `$cfg.HotpatcherConfig
-        `$script:HotpatcherPort = `$cfg.HotpatcherPort
-        `$script:HotpatcherPortProvided = `$cfg.HotpatcherPortProvided
-        `$script:EnableHotpatcherRuntime = `$cfg.EnableHotpatcherRuntime
-        `$script:NoPause = `$cfg.NoPause
-    }, `$config)
-}
-catch {
-    Write-Error `"导入 Installer 模块发生错误: `$_`"
-    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
-    Write-Host `"launch_stable_diffusion_webui_installer.ps1`" -ForegroundColor Yellow -NoNewline
-    Write-Host `" 脚本修复该问题`" -ForegroundColor White
-    if ((-not `$script:BuildMode) -and (-not `$script:NoPause)) { Read-Host | Out-Null }
-    exit 1
-}
-
-
 # 获取启动参数
 function Get-WebUILaunchArgs {
     param ([System.Collections.ArrayList]`$ArrayList)
@@ -2593,6 +2405,199 @@ function Test-WebUIEnv {
         Write-Log `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 Stable Diffusion WebUI 运行环境检测, 这可能会导致 Stable Diffusion WebUI 运行环境中存在的问题无法被发现并解决`" -Level WARNING
         `$ArrayList.Add(`"--no-check-env`") | Out-Null
     }
+}
+
+
+Export-ModuleMember -Function ``
+    Initialize-EnvPath, ``
+    Write-Log, ``
+    Format-CommandLineArgumentForLog, ``
+    Format-CoreCliCommandForLog, ``
+    Write-CoreCliFailureCommand, ``
+    Write-FileWithStreamWriter, ``
+    Update-SDWebUiAllInOne, ``
+    Update-Installer, ``
+    Get-Version, ``
+    Get-HelpMessage, ``
+    Set-CorePrefix, ``
+    Set-Proxy, ``
+    Set-PyPIMirror, ``
+    Set-ModelMirror, ``
+    Set-HuggingFaceMirror, ``
+    Set-GithubMirror, ``
+    Set-uv, ``
+    Set-PyTorchCUDAMemoryAlloc, ``
+    Get-WebUILaunchArgs, ``
+    Add-Shortcut, ``
+    Test-MSVCPPRedistributable, ``
+    Test-WebUIEnv, ``
+    Set-Hotpatcher, ``
+    Join-NormalizedPath, ``
+    Get-NormalizedFilePath, ``
+    Get-CurrentPlatform, ``
+    Invoke-WindowsLongPathsStartupCheck, ``
+    Get-CurrentArchitecture, ``
+    New-AppShortcut, ``
+    Test-PythonAndGit, ``
+    Get-NativeCommandExitCode, ``
+    Exit-ManagerScript, ``
+    Get-TrimmedTextFile
+".Trim()
+    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "modules.psm1")) { "更新" } else { "生成" }) modules.psm1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "modules.psm1") -Value $content
+}
+
+
+# 启动脚本
+function Write-LaunchScript {
+    $content = "
+param (
+    [Parameter(HelpMessage=@`"
+获取 SD WebUI Installer 的帮助信息
+`"@)][switch]`$Help,
+
+    [Parameter(HelpMessage=@`"
+设置内核的路径前缀, 默认路径前缀为 core
+`"@)][string]`$CorePrefix,
+
+    [Parameter(HelpMessage=@`"
+启用 SD WebUI Installer 构建模式
+`"@)][switch]`$BuildMode,
+
+    [Parameter(HelpMessage=@`"
+禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
+`"@)][switch]`$DisablePyPIMirror,
+
+    [Parameter(HelpMessage=@`"
+禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
+`"@)][switch]`$DisableAutoMirror,
+
+    [Parameter(HelpMessage=@`"
+禁用 SD WebUI Installer 更新检查
+`"@)][switch]`$DisableUpdate,
+
+    [Parameter(HelpMessage=@`"
+禁用 SD WebUI Installer 自动设置代理服务器
+`"@)][switch]`$DisableProxy,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+`"@)][string]`$UseCustomProxy,
+
+    [Parameter(HelpMessage=@`"
+禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+`"@)][switch]`$DisableHuggingFaceMirror,
+
+    [Parameter(HelpMessage=@`"
+使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+`"@)][string]`$UseCustomHuggingFaceMirror,
+
+    [Parameter(HelpMessage=@`"
+禁用 SD WebUI Installer 自动设置 Github 镜像源
+`"@)][switch]`$DisableGithubMirror,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的 Github 镜像站地址
+`"@)][string]`$UseCustomGithubMirror,
+
+    [Parameter(HelpMessage=@`"
+禁用 SD WebUI Installer 使用 uv 安装 Python 软件包, 使用 Pip 安装 Python 软件包
+`"@)][switch]`$DisableUV,
+
+    [Parameter(HelpMessage=@`"
+设置 Stable Diffusion WebUI 自定义启动参数, 如启用 --fast 和 --auto-launch, 则使用 -LaunchArg ```"--fast --auto-launch```" 进行启用
+`"@)][string]`$LaunchArg,
+
+    [Parameter(HelpMessage=@`"
+禁用 Hotpatcher 补丁系统注入
+`"@)][switch]`$DisableHotpatcher,
+
+    [Parameter(HelpMessage=@`"
+设置 Hotpatcher 补丁系统配置文件路径
+`"@)][string]`$HotpatcherConfig,
+
+    [Parameter(HelpMessage=@`"
+设置 Hotpatcher runtime 通信端口, 范围为 1 到 65535
+`"@)][int]`$HotpatcherPort,
+
+    [Parameter(HelpMessage=@`"
+启用 Hotpatcher runtime host 连接
+`"@)][switch]`$EnableHotpatcherRuntime,
+
+    [Parameter(HelpMessage=@`"
+创建 Stable Diffusion WebUI 启动快捷方式
+`"@)][switch]`$EnableShortcut,
+
+    [Parameter(HelpMessage=@`"
+禁用 SD WebUI Installer 通过 PYTORCH_CUDA_ALLOC_CONF / PYTORCH_ALLOC_CONF 环境变量设置 CUDA 内存分配器
+`"@)][switch]`$DisableCUDAMalloc,
+
+    [Parameter(HelpMessage=@`"
+禁用 SD WebUI Installer 检查 Stable Diffusion WebUI 运行环境中存在的问题, 禁用后可能会导致 Stable Diffusion WebUI 环境中存在的问题无法被发现并修复
+`"@)][switch]`$DisableEnvCheck,
+
+    [Parameter(HelpMessage=@`"
+脚本执行完成后不暂停, 直接退出
+`"@)][switch]`$NoPause
+)
+try {
+    `$config = @{
+        OriginalScriptPath = `$script:PSCommandPath
+        LaunchCommandLine = if (`$script:MyInvocation.Line) { `$script:MyInvocation.Line } else { `$([Environment]::CommandLine) }
+        Help = `$script:Help
+        CorePrefix = `$script:CorePrefix
+        DisableUV = `$script:DisableUV
+        DisableProxy = `$script:DisableProxy
+        UseCustomProxy = `$script:UseCustomProxy
+        DisablePyPIMirror = `$script:DisablePyPIMirror
+        DisableAutoMirror = `$script:DisableAutoMirror
+        DisableHuggingFaceMirror = `$script:DisableHuggingFaceMirror
+        UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
+        DisableGithubMirror = `$script:DisableGithubMirror
+        UseCustomGithubMirror = `$script:UseCustomGithubMirror
+        DisableCUDAMalloc = `$script:DisableCUDAMalloc
+        DisableUpdate = `$script:DisableUpdate
+        BuildMode = `$script:BuildMode
+        DisableHotpatcher = `$script:DisableHotpatcher
+        HotpatcherConfig = `$script:HotpatcherConfig
+        HotpatcherPort = `$script:HotpatcherPort
+        HotpatcherPortProvided = `$PSBoundParameters.ContainsKey(`"HotpatcherPort`")
+        EnableHotpatcherRuntime = `$script:EnableHotpatcherRuntime
+        NoPause = `$script:NoPause
+    }
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Invoke-WindowsLongPathsStartupCheck`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Get-WebUILaunchArgs`", `"Add-Shortcut`", `"Test-MSVCPPRedistributable`", `"Test-WebUIEnv`", `"Set-Hotpatcher`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+        param (`$cfg)
+        `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
+        `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:Help = `$cfg.Help
+        `$script:CorePrefix = `$cfg.CorePrefix
+        `$script:DisableUV = `$cfg.DisableUV
+        `$script:DisableProxy = `$cfg.DisableProxy
+        `$script:UseCustomProxy = `$cfg.UseCustomProxy
+        `$script:DisablePyPIMirror = `$cfg.DisablePyPIMirror
+        `$script:DisableAutoMirror = `$cfg.DisableAutoMirror
+        `$script:DisableHuggingFaceMirror = `$cfg.DisableHuggingFaceMirror
+        `$script:UseCustomHuggingFaceMirror = `$cfg.UseCustomHuggingFaceMirror
+        `$script:DisableGithubMirror = `$cfg.DisableGithubMirror
+        `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
+        `$script:DisableCUDAMalloc = `$cfg.DisableCUDAMalloc
+        `$script:DisableUpdate = `$cfg.DisableUpdate
+        `$script:BuildMode = `$cfg.BuildMode
+        `$script:DisableHotpatcher = `$cfg.DisableHotpatcher
+        `$script:HotpatcherConfig = `$cfg.HotpatcherConfig
+        `$script:HotpatcherPort = `$cfg.HotpatcherPort
+        `$script:HotpatcherPortProvided = `$cfg.HotpatcherPortProvided
+        `$script:EnableHotpatcherRuntime = `$cfg.EnableHotpatcherRuntime
+        `$script:NoPause = `$cfg.NoPause
+    }, `$config)
+}
+catch {
+    Write-Error `"导入 Installer 模块发生错误: `$_`"
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
+    Write-Host `"launch_stable_diffusion_webui_installer.ps1`" -ForegroundColor Yellow -NoNewline
+    Write-Host `" 脚本修复该问题`" -ForegroundColor White
+    if ((-not `$script:BuildMode) -and (-not `$script:NoPause)) { Read-Host | Out-Null }
+    exit 1
 }
 
 
