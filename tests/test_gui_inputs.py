@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import tkinter as tk
+import time
 
 import pytest
 
@@ -215,6 +216,20 @@ def test_readonly_text_context_menu_states(tk_root: tk.Tk) -> None:
     assert menu.entrycget(2, "state") == tk.DISABLED
 
 
+def _drain_adaptive_index_list_draws(
+    tk_root: tk.Tk,
+    widget: AdaptiveIndexList,
+) -> None:
+    for _ in range(50):
+        tk_root.update()
+        if widget._redraw_job is None and widget._draw_batch_job is None:  # pylint: disable=protected-access
+            return
+        time.sleep(0.01)
+    tk_root.update()
+    assert widget._redraw_job is None  # pylint: disable=protected-access
+    assert widget._draw_batch_job is None  # pylint: disable=protected-access
+
+
 def test_adaptive_index_list_preserves_scroll_after_refresh(tk_root: tk.Tk) -> None:
     widget = AdaptiveIndexList(
         tk_root,
@@ -227,7 +242,7 @@ def test_adaptive_index_list_preserves_scroll_after_refresh(tk_root: tk.Tk) -> N
 
     for index in range(80):
         widget.insert(str(index), (f"item {index}",))
-    tk_root.update()
+    _drain_adaptive_index_list_draws(tk_root, widget)
 
     widget.canvas.yview_moveto(0.45)
     before = widget.canvas.canvasy(0)
@@ -236,7 +251,7 @@ def test_adaptive_index_list_preserves_scroll_after_refresh(tk_root: tk.Tk) -> N
     widget.clear()
     for index in range(80):
         widget.insert(str(index), (f"new item {index}",))
-    tk_root.update()
+    _drain_adaptive_index_list_draws(tk_root, widget)
 
     after = widget.canvas.canvasy(0)
     assert after > 0
