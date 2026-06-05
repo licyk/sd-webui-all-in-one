@@ -6,7 +6,7 @@ edit_uri = "edit/main/docs/"
 copyright = "Copyright &copy; 2026 licyk"
 extra_javascript = [
     "javascripts/giscus.js", 
-    "javascripts/umami.js",
+    "javascripts/site.js",
 ]
 nav = [
     {"主页" = "index.md"},

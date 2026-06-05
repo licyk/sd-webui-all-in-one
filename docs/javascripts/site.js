@@ -1,18 +1,18 @@
 (function () {
-    const umamiConfig = {
+    const siteScriptConfig = {
         src: "https://licyk-blog-umami.netlify.app/script.js",
         "data-website-id": "308fc79d-d064-456b-9e02-5d45b944e030",
         defer: "",
     };
 
-    function loadUmami() {
-        const selector = `script[src="${umamiConfig.src}"][data-website-id="${umamiConfig["data-website-id"]}"]`;
+    function loadSiteScript() {
+        const selector = `script[src="${siteScriptConfig.src}"][data-website-id="${siteScriptConfig["data-website-id"]}"]`;
         if (document.querySelector(selector)) {
             return;
         }
 
         const script = document.createElement("script");
-        for (const [key, value] of Object.entries(umamiConfig)) {
+        for (const [key, value] of Object.entries(siteScriptConfig)) {
             script.setAttribute(key, value);
         }
 
@@ -20,10 +20,10 @@
     }
 
     if (typeof document$ !== "undefined") {
-        document$.subscribe(loadUmami);
+        document$.subscribe(loadSiteScript);
     } else if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", loadUmami);
+        document.addEventListener("DOMContentLoaded", loadSiteScript);
     } else {
-        loadUmami();
+        loadSiteScript();
     }
 })();
