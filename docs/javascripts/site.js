@@ -1,6 +1,6 @@
 (function () {
     const siteScriptConfig = {
-        src: "https://licyk-blog-umami.netlify.app/script.js",
+        src: "https://licyk-umami.netlify.app/script.js",
         "data-website-id": "308fc79d-d064-456b-9e02-5d45b944e030",
         defer: "",
     };
