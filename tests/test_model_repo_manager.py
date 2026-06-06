@@ -398,6 +398,13 @@ def test_repo_manager_upload_skips_matching_hash_and_aggregates_failures(monkeyp
     manager = _repo_manager_with_apis()
     uploaded = []
     list_calls = []
+    upload_log_indexes = []
+
+    def fake_log_info(message, *args, **_kwargs):
+        if message == "[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中":
+            upload_log_indexes.append(args[:2])
+
+    monkeypatch.setattr(repo_module.logger, "info", fake_log_info)
 
     class FakeHfApi:
         def upload_file(self, **kwargs):
@@ -414,8 +421,10 @@ def test_repo_manager_upload_skips_matching_hash_and_aggregates_failures(monkeyp
     assert list_calls[0]["revision"] == "upload-branch"
     assert {kwargs["path_in_repo"] for kwargs in uploaded} == {"changed.txt", "new.txt"}
     assert {kwargs["revision"] for kwargs in uploaded} == {"upload-branch"}
+    assert upload_log_indexes == [(1, 2), (2, 2)]
 
     ms_uploaded = []
+    upload_log_indexes.clear()
 
     class FakeMsApi:
         def upload_file(self, **kwargs):
@@ -431,6 +440,7 @@ def test_repo_manager_upload_skips_matching_hash_and_aggregates_failures(monkeyp
 
     assert {kwargs["path_in_repo"] for kwargs in ms_uploaded} == {"changed.txt", "new.txt"}
     assert {kwargs["revision"] for kwargs in ms_uploaded} == {"ms-branch"}
+    assert upload_log_indexes == [(1, 2), (2, 2)]
 
     class FailingHfApi:
         def upload_file(self, **_kwargs):
@@ -438,11 +448,13 @@ def test_repo_manager_upload_skips_matching_hash_and_aggregates_failures(monkeyp
 
     manager.hf_api = FailingHfApi()
     manager.get_repo_files_metadata = lambda **_kwargs: []
+    upload_log_indexes.clear()
 
     with pytest.raises(AggregateError) as exc:
         manager.upload_files_to_huggingface("owner/repo", upload_root, num_threads=1)
 
     assert len(exc.value.exceptions) == 3
+    assert upload_log_indexes == [(1, 3), (2, 3), (3, 3)]
 
 
 def test_repo_manager_download_filters_huggingface_and_modelscope(monkeypatch, tmp_path):
@@ -520,6 +532,13 @@ def test_repo_manager_mirror_repo_files_uses_metadata_and_revision(monkeypatch):
     metadata_calls = []
     download_calls = []
     uploaded = []
+    mirror_log_indexes = []
+
+    def fake_log_info(message, *args, **_kwargs):
+        if message == "[%s/%s] 镜像 %s":
+            mirror_log_indexes.append(args[:2])
+
+    monkeypatch.setattr(repo_module.logger, "info", fake_log_info)
 
     def fake_check_repo(**kwargs):
         check_calls.append(kwargs)
@@ -597,6 +616,7 @@ def test_repo_manager_mirror_repo_files_uses_metadata_and_revision(monkeypatch):
     assert {kwargs["repo_type"] for kwargs in uploaded} == {"dataset"}
     assert {kwargs["revision"] for kwargs in uploaded} == {"mirror-rev"}
     assert {kwargs["token"] for kwargs in uploaded} == {"ms-token"}
+    assert mirror_log_indexes == [(1, 2), (2, 2)]
 
 
 def test_repo_manager_mirror_repo_files_can_use_fast_download(monkeypatch):

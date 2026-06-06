@@ -930,19 +930,19 @@ class RepoManager:
         logger.info("上传到 HuggingFace 仓库: %s -> HuggingFace/%s", upload_path, repo_id)
         files_count = len(upload_files)
         err: list[Exception] = []
-        upload_tasks: list[tuple[int, Path]] = []
+        upload_tasks: list[Path] = []
 
         for index, upload_file in enumerate(upload_files, start=1):
             upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
             repo_file_metadata = repo_files.get(upload_file_rel_path)
             if repo_file_metadata is None:
-                upload_tasks.append((index, upload_file))
+                upload_tasks.append(upload_file)
                 continue
 
             remote_sha256 = _normalize_sha256(repo_file_metadata.get("sha256"))
             local_sha256 = _file_sha256(upload_file)
             if remote_sha256 is None or local_sha256 != remote_sha256:
-                upload_tasks.append((index, upload_file))
+                upload_tasks.append(upload_file)
                 logger.info(
                     "[%s/%s] %s 已存在于 HuggingFace 仓库中但 hash 缺失或不同, 将重新上传",
                     index,
@@ -985,6 +985,7 @@ class RepoManager:
 
         if upload_tasks:
             logger.info("实际需要上传文件数量: %s", len(upload_tasks))
+        upload_count = len(upload_tasks)
 
         err_lock = Lock()
 
@@ -993,7 +994,7 @@ class RepoManager:
         ) -> None:
             index, upload_file = task
             upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
-            logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中", index, files_count, upload_file, repo_id, repo_type)
+            logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中", index, upload_count, upload_file, repo_id, repo_type)
             try:
                 _upload_file(
                     repo_id=repo_id,
@@ -1004,15 +1005,15 @@ class RepoManager:
             except RuntimeError as e:
                 with err_lock:
                     err.append(e)
-                logger.error("[%s/%s] 上传 %s 最终失败: %s", index, files_count, upload_file.name, e)
+                logger.error("[%s/%s] 上传 %s 最终失败: %s", index, upload_count, upload_file.name, e)
 
         max_workers = max(1, num_threads)
         if max_workers == 1:
-            for task in upload_tasks:
+            for task in enumerate(upload_tasks, start=1):
                 _run_upload(task)
         else:
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                list(executor.map(_run_upload, upload_tasks))
+                list(executor.map(_run_upload, enumerate(upload_tasks, start=1)))
 
         if err:
             raise AggregateError(f"上传 {repo_id} (类型: {repo_type}) 时发生了错误", err)
@@ -1057,19 +1058,19 @@ class RepoManager:
         logger.info("上传到 ModelScope 仓库: %s -> ModelScope/%s", upload_path, repo_id)
         files_count = len(upload_files)
         err: list[Exception] = []
-        upload_tasks: list[tuple[int, Path]] = []
+        upload_tasks: list[Path] = []
 
         for index, upload_file in enumerate(upload_files, start=1):
             upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
             repo_file_metadata = repo_files.get(upload_file_rel_path)
             if repo_file_metadata is None:
-                upload_tasks.append((index, upload_file))
+                upload_tasks.append(upload_file)
                 continue
 
             remote_sha256 = _normalize_sha256(repo_file_metadata.get("sha256"))
             local_sha256 = _file_sha256(upload_file)
             if remote_sha256 is None or local_sha256 != remote_sha256:
-                upload_tasks.append((index, upload_file))
+                upload_tasks.append(upload_file)
                 logger.info(
                     "[%s/%s] %s 已存在于 ModelScope 仓库中但 hash 缺失或不同, 将重新上传",
                     index,
@@ -1113,6 +1114,7 @@ class RepoManager:
 
         if upload_tasks:
             logger.info("实际需要上传文件数量: %s", len(upload_tasks))
+        upload_count = len(upload_tasks)
 
         err_lock = Lock()
 
@@ -1121,7 +1123,7 @@ class RepoManager:
         ) -> None:
             index, upload_file = task
             upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
-            logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中", index, files_count, upload_file, repo_id, repo_type)
+            logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中", index, upload_count, upload_file, repo_id, repo_type)
             try:
                 _upload_file(
                     repo_id=repo_id,
@@ -1132,15 +1134,15 @@ class RepoManager:
             except RuntimeError as e:
                 with err_lock:
                     err.append(e)
-                logger.error("[%s/%s] 上传 %s 最终失败: %s", index, files_count, upload_file.name, e)
+                logger.error("[%s/%s] 上传 %s 最终失败: %s", index, upload_count, upload_file.name, e)
 
         max_workers = max(1, num_threads)
         if max_workers == 1:
-            for task in upload_tasks:
+            for task in enumerate(upload_tasks, start=1):
                 _run_upload(task)
         else:
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                list(executor.map(_run_upload, upload_tasks))
+                list(executor.map(_run_upload, enumerate(upload_tasks, start=1)))
 
         if err:
             raise AggregateError(f"上传 {repo_id} (类型: {repo_type}) 时发生了错误", err)
@@ -1241,16 +1243,16 @@ class RepoManager:
             )
         )
 
-        mirror_tasks: list[tuple[int, str]] = []
+        mirror_tasks: list[str] = []
         files_count = len(src_files)
         for index, (repo_file, src_metadata) in enumerate(src_files.items(), start=1):
             dst_metadata = dst_files.get(repo_file)
             if dst_metadata is None:
-                mirror_tasks.append((index, repo_file))
+                mirror_tasks.append(repo_file)
                 continue
 
             if not _repo_file_hash_matches(src_metadata, dst_metadata):
-                mirror_tasks.append((index, repo_file))
+                mirror_tasks.append(repo_file)
                 logger.info(
                     "[%s/%s] %s 已存在于目标仓库中但 hash 缺失或不同, 将重新镜像",
                     index,
@@ -1270,6 +1272,7 @@ class RepoManager:
         if not mirror_tasks:
             logger.info("镜像仓库文件完成")
             return
+        mirror_count = len(mirror_tasks)
 
         actual_retry_times = max(1, retry_times)
 
@@ -1284,7 +1287,7 @@ class RepoManager:
             with tempfile.TemporaryDirectory(prefix="repo-mirror-") as tmp_dir_str:
                 tmp_dir = Path(tmp_dir_str)
                 file_path = tmp_dir / repo_file
-                logger.info("[%s/%s] 镜像 %s", index, files_count, repo_file)
+                logger.info("[%s/%s] 镜像 %s", index, mirror_count, repo_file)
 
                 if use_fast_download:
                     download_url = self.get_repo_file_download_url(
@@ -1360,15 +1363,15 @@ class RepoManager:
             except RuntimeError as e:
                 with err_lock:
                     err.append(e)
-                logger.error("[%s/%s] 镜像 %s 最终失败: %s", index, files_count, repo_file, e)
+                logger.error("[%s/%s] 镜像 %s 最终失败: %s", index, mirror_count, repo_file, e)
 
         max_workers = max(1, num_threads)
         if max_workers == 1:
-            for task in mirror_tasks:
+            for task in enumerate(mirror_tasks, start=1):
                 _run_mirror(task)
         else:
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                list(executor.map(_run_mirror, mirror_tasks))
+                list(executor.map(_run_mirror, enumerate(mirror_tasks, start=1)))
 
         if err:
             raise AggregateError(f"镜像 {src_repo_id} -> {dst_repo_id} 时发生了错误", err)
