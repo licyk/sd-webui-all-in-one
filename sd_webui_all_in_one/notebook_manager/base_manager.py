@@ -41,6 +41,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
     LOGGER_NAME,
+    RETRY_TIMES,
 )
 from sd_webui_all_in_one.file_operations import (
     copy_files,
@@ -514,7 +515,7 @@ class BaseManager:
             visibility (bool):
                 当仓库不存在时自动创建的仓库的可见性
             num_threads (int):
-                上传线程数, 为`None`时使用单线程
+                上传线程数
             revision (str | None):
                 指定上传目标分支或标签, 为`None`时使用第三方库默认值
         """
@@ -697,8 +698,8 @@ class BaseManager:
         dst_repo_type: RepoType = "model",
         visibility: bool = False,
         revision: str | None = None,
-        num_threads: int | None = 1,
-        retry_times: int | None = None,
+        num_threads: int = 1,
+        retry_times: int = RETRY_TIMES,
         use_fast_download: bool = False,
         download_tool: DownloadToolType | None = "requests",
         download_num_threads: int = 8,
@@ -723,9 +724,9 @@ class BaseManager:
                 当目标仓库不存在时自动创建的仓库的可见性
             revision (str | None):
                 指定源仓库读取和目标仓库上传的分支、标签或提交哈希, 为`None`时使用第三方库默认值
-            num_threads (int | None):
-                镜像线程数, 为`None`时使用单线程
-            retry_times (int | None):
+            num_threads (int):
+                镜像线程数
+            retry_times (int):
                 单个文件镜像失败后的重试次数
             use_fast_download (bool):
                 是否使用项目内`download_file()`下载器进行下载
@@ -736,24 +737,6 @@ class BaseManager:
             download_progress (bool):
                 `use_fast_download`启用时是否显示下载进度
         """
-        if retry_times is None:
-            self.repo_manager.mirror_repo_files(
-                src_api_type=src_api_type,
-                dst_api_type=dst_api_type,
-                src_repo_id=src_repo_id,
-                dst_repo_id=dst_repo_id,
-                src_repo_type=src_repo_type,
-                dst_repo_type=dst_repo_type,
-                visibility=visibility,
-                revision=revision,
-                num_threads=num_threads,
-                use_fast_download=use_fast_download,
-                download_tool=download_tool,
-                download_num_threads=download_num_threads,
-                download_progress=download_progress,
-            )
-            return
-
         self.repo_manager.mirror_repo_files(
             src_api_type=src_api_type,
             dst_api_type=dst_api_type,

@@ -170,14 +170,14 @@ class MultiThreadDownloader:
 
     def start(
         self,
-        num_threads: int | None = 8,
-        retry_count: int | None = 3,
+        num_threads: int = 8,
+        retry_count: int = 3,
     ) -> None:
         """启动多线程下载器
 
         Args:
-            num_threads (int | None): 下载线程数, 默认为 8
-            retry_count (int | None): 重试次数, 默认为 3
+            num_threads (int): 下载线程数, 默认为 8
+            retry_count (int): 重试次数, 默认为 3
 
         Raises:
             AggregateError:
@@ -185,11 +185,11 @@ class MultiThreadDownloader:
         """
 
         # 将重试次数作为属性传递给下载函数
-        self.retry = retry_count if retry_count is not None else 3
+        self.retry = retry_count
 
         threads: list[threading.Thread] = []
         self.start_time = datetime.datetime.now()
-        num_threads = num_threads if num_threads is not None else 8
+        num_threads = max(1, num_threads)
         time.sleep(0.1)  # 避免 print_progress() 计算时间时出现 division by zero
 
         # 启动工作线程

@@ -341,7 +341,8 @@ def test_repo_manager_file_download_urls(monkeypatch):
     ms_calls = []
     modelscope_module = types.ModuleType("modelscope")
     hub_module = types.ModuleType("modelscope.hub")
-    constants_module = types.ModuleType("modelscope.hub.constants")
+    utils_module = types.ModuleType("modelscope.utils")
+    constants_module = types.ModuleType("modelscope.utils.constant")
     constants_module.DEFAULT_MODEL_REVISION = "master"
     constants_module.DEFAULT_DATASET_REVISION = "master"
     file_download_module = types.ModuleType("modelscope.hub.file_download")
@@ -353,8 +354,9 @@ def test_repo_manager_file_download_urls(monkeypatch):
     file_download_module.get_file_download_url = fake_get_file_download_url
     monkeypatch.setitem(sys.modules, "modelscope", modelscope_module)
     monkeypatch.setitem(sys.modules, "modelscope.hub", hub_module)
-    monkeypatch.setitem(sys.modules, "modelscope.hub.constants", constants_module)
     monkeypatch.setitem(sys.modules, "modelscope.hub.file_download", file_download_module)
+    monkeypatch.setitem(sys.modules, "modelscope.utils", utils_module)
+    monkeypatch.setitem(sys.modules, "modelscope.utils.constant", constants_module)
 
     class FakeMsApi:
         def get_dataset_file_url(self, **kwargs):

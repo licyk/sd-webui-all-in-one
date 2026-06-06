@@ -849,7 +849,7 @@ class RepoManager:
             visibility (bool):
                 当仓库不存在时自动创建的仓库的可见性
             num_threads (int):
-                上传线程数, 为`None`时使用单线程
+                上传线程数
             revision (str | None):
                 指定上传目标分支或标签, 为`None`时使用第三方库默认值
 
@@ -897,7 +897,7 @@ class RepoManager:
         repo_id: str,
         upload_path: Path,
         repo_type: RepoType = "model",
-        num_threads: int | None = 1,
+        num_threads: int = 1,
         revision: str | None = None,
     ) -> None:
         """上传文件夹中的内容到 HuggingFace 仓库中
@@ -909,8 +909,8 @@ class RepoManager:
                 HuggingFace 仓库类型
             upload_path (Path):
                 要上传到 HuggingFace 仓库的文件夹
-            num_threads (int | None):
-                上传线程数, 为`None`时使用单线程
+            num_threads (int):
+                上传线程数
             revision (str | None):
                 指定上传目标分支或标签, 为`None`时使用 HuggingFace 默认值
 
@@ -1006,7 +1006,7 @@ class RepoManager:
                     err.append(e)
                 logger.error("[%s/%s] 上传 %s 最终失败: %s", index, files_count, upload_file.name, e)
 
-        max_workers = 1 if num_threads is None else max(1, num_threads)
+        max_workers = max(1, num_threads)
         if max_workers == 1:
             for task in upload_tasks:
                 _run_upload(task)
@@ -1024,7 +1024,7 @@ class RepoManager:
         repo_id: str,
         upload_path: Path,
         repo_type: RepoType = "model",
-        num_threads: int | None = 1,
+        num_threads: int = 1,
         revision: str | None = None,
     ) -> None:
         """上传文件夹中的内容到 ModelScope 仓库中
@@ -1036,8 +1036,8 @@ class RepoManager:
                 ModelScope 仓库类型
             upload_path (Path):
                 要上传到 ModelScope 仓库的文件夹
-            num_threads (int | None):
-                上传线程数, 为`None`时使用单线程
+            num_threads (int):
+                上传线程数
             revision (str | None):
                 指定上传目标分支或标签, 为`None`时使用 ModelScope 默认值
 
@@ -1134,7 +1134,7 @@ class RepoManager:
                     err.append(e)
                 logger.error("[%s/%s] 上传 %s 最终失败: %s", index, files_count, upload_file.name, e)
 
-        max_workers = 1 if num_threads is None else max(1, num_threads)
+        max_workers = max(1, num_threads)
         if max_workers == 1:
             for task in upload_tasks:
                 _run_upload(task)
@@ -1157,8 +1157,8 @@ class RepoManager:
         dst_repo_type: RepoType = "model",
         visibility: bool = False,
         revision: str | None = None,
-        num_threads: int | None = 1,
-        retry_times: int | None = RETRY_TIMES,
+        num_threads: int = 1,
+        retry_times: int = RETRY_TIMES,
         use_fast_download: bool = False,
         download_tool: DownloadToolType | None = "requests",
         download_num_threads: int = 8,
@@ -1183,10 +1183,10 @@ class RepoManager:
                 当目标仓库不存在时自动创建的仓库的可见性
             revision (str | None):
                 指定源仓库读取和目标仓库上传的分支、标签或提交哈希, 为`None`时使用第三方库默认值
-            num_threads (int | None):
-                镜像线程数, 为`None`时使用单线程
-            retry_times (int | None):
-                单个文件镜像失败后的重试次数, 为`None`时不重试
+            num_threads (int):
+                镜像线程数
+            retry_times (int):
+                单个文件镜像失败后的重试次数
             use_fast_download (bool):
                 是否使用项目内`download_file()`下载器进行下载
             download_tool (DownloadToolType | None):
@@ -1271,7 +1271,7 @@ class RepoManager:
             logger.info("镜像仓库文件完成")
             return
 
-        actual_retry_times = max(1, retry_times if retry_times is not None else 1)
+        actual_retry_times = max(1, retry_times)
 
         @retryable(
             times=actual_retry_times,
@@ -1362,7 +1362,7 @@ class RepoManager:
                     err.append(e)
                 logger.error("[%s/%s] 镜像 %s 最终失败: %s", index, files_count, repo_file, e)
 
-        max_workers = 1 if num_threads is None else max(1, num_threads)
+        max_workers = max(1, num_threads)
         if max_workers == 1:
             for task in mirror_tasks:
                 _run_mirror(task)
