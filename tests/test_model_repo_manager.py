@@ -144,6 +144,102 @@ def test_repo_manager_modelscope_file_listing_and_creation(monkeypatch):
     assert calls[-1][1]["visibility"] == "private"
 
 
+def test_repo_manager_file_download_urls(monkeypatch):
+    manager = _repo_manager_with_apis()
+    hf_calls = []
+
+    hf_module = types.ModuleType("huggingface_hub")
+
+    def fake_hf_hub_url(**kwargs):
+        hf_calls.append(("url", kwargs))
+        return "https://hf.example/owner/repo/resolve/main/weights/a.bin"
+
+    def fake_get_hf_file_metadata(**kwargs):
+        hf_calls.append(("module_metadata", kwargs))
+        return types.SimpleNamespace(location="https://cdn.example/fallback.bin")
+
+    hf_module.hf_hub_url = fake_hf_hub_url
+    hf_module.get_hf_file_metadata = fake_get_hf_file_metadata
+    monkeypatch.setitem(sys.modules, "huggingface_hub", hf_module)
+
+    class FakeHfApi:
+        endpoint = "https://hf.example"
+
+        def get_hf_file_metadata(self, **kwargs):
+            hf_calls.append(("api_metadata", kwargs))
+            return types.SimpleNamespace(location="https://cdn.example/a.bin")
+
+    manager.hf_api = FakeHfApi()
+    manager.hf_token = "hf-token"
+
+    assert (
+        manager.get_hf_repo_file_download_url("owner/repo", "weights/a.bin", revision="main")
+        == "https://cdn.example/a.bin"
+    )
+    assert hf_calls == [
+        (
+            "url",
+            {
+                "repo_id": "owner/repo",
+                "filename": "weights/a.bin",
+                "repo_type": "model",
+                "endpoint": "https://hf.example",
+                "revision": "main",
+            },
+        ),
+        (
+            "api_metadata",
+            {"url": "https://hf.example/owner/repo/resolve/main/weights/a.bin", "token": "hf-token"},
+        ),
+    ]
+
+    ms_calls = []
+    modelscope_module = types.ModuleType("modelscope")
+    hub_module = types.ModuleType("modelscope.hub")
+    constants_module = types.ModuleType("modelscope.hub.constants")
+    constants_module.DEFAULT_MODEL_REVISION = "master"
+    constants_module.DEFAULT_DATASET_REVISION = "master"
+    file_download_module = types.ModuleType("modelscope.hub.file_download")
+
+    def fake_get_file_download_url(**kwargs):
+        ms_calls.append(("model_url", kwargs))
+        return f"https://ms.example/model/{kwargs['revision']}/{kwargs['file_path']}"
+
+    file_download_module.get_file_download_url = fake_get_file_download_url
+    monkeypatch.setitem(sys.modules, "modelscope", modelscope_module)
+    monkeypatch.setitem(sys.modules, "modelscope.hub", hub_module)
+    monkeypatch.setitem(sys.modules, "modelscope.hub.constants", constants_module)
+    monkeypatch.setitem(sys.modules, "modelscope.hub.file_download", file_download_module)
+
+    class FakeMsApi:
+        def get_dataset_file_url(self, **kwargs):
+            ms_calls.append(("dataset_url", kwargs))
+            return f"https://ms.example/dataset/{kwargs['revision']}/{kwargs['file_name']}"
+
+    manager.ms_api = FakeMsApi()
+
+    assert (
+        manager.get_ms_repo_file_download_url("owner/model", "weights/a.bin", revision="v1")
+        == "https://ms.example/model/v1/weights/a.bin"
+    )
+    assert (
+        manager.get_repo_file_download_url("modelscope", "owner/dataset", "data/a.txt", repo_type="dataset")
+        == "https://ms.example/dataset/master/data/a.txt"
+    )
+    assert ms_calls == [
+        ("model_url", {"model_id": "owner/model", "file_path": "weights/a.bin", "revision": "v1"}),
+        (
+            "dataset_url",
+            {
+                "file_name": "data/a.txt",
+                "dataset_name": "dataset",
+                "namespace": "owner",
+                "revision": "master",
+            },
+        ),
+    ]
+
+
 def test_repo_manager_upload_skips_existing_and_aggregates_failures(monkeypatch, tmp_path):
     monkeypatch.setattr(repo_module, "RETRY_TIMES", 1)
     upload_root = tmp_path / "upload"

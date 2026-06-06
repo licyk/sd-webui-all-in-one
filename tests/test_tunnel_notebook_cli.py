@@ -152,6 +152,10 @@ class FakeRepoManager:
     def download_files_from_repo(self, **kwargs):
         self.calls.append(("download", kwargs))
 
+    def get_repo_file_download_url(self, **kwargs):
+        self.calls.append(("download_url", kwargs))
+        return "https://example.test/download.bin"
+
 
 class FakeTunnelManager:
     def __init__(self, workspace, port):
@@ -236,6 +240,23 @@ def test_notebook_gpu_check_and_delegates(monkeypatch, notebook_manager, tmp_pat
     assert notebook_manager.repo_manager.calls[1][0] == "download"
     assert notebook_manager.repo_manager.calls[0][1]["revision"] == "hf-rev"
     assert notebook_manager.repo_manager.calls[1][1]["revision"] == "ms-rev"
+    url = notebook_manager.get_repo_file_download_url(
+        "huggingface",
+        "owner/repo",
+        "weights/a.bin",
+        revision="hf-rev",
+    )
+    assert url == "https://example.test/download.bin"
+    assert notebook_manager.repo_manager.calls[2] == (
+        "download_url",
+        {
+            "api_type": "huggingface",
+            "repo_id": "owner/repo",
+            "file_path": "weights/a.bin",
+            "repo_type": "model",
+            "revision": "hf-rev",
+        },
+    )
 
     tunnel = notebook_manager.get_tunnel_url(use_cloudflare=True, webui_name="Demo")
     assert tunnel["cloudflare"] == "https://cf.example"

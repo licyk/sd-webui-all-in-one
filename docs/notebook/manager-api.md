@@ -48,6 +48,7 @@ sd_webui = SDWebUIManager(
 - `download_file_from_url()`：从链接下载任意文件。
 - `upload_files_to_repo()`：上传文件到 HuggingFace 或 ModelScope。
 - `download_files_from_repo()`：从 HuggingFace 或 ModelScope 下载文件。
+- `get_repo_file_download_url()`：获取 HuggingFace 或 ModelScope 仓库中文件的下载地址。
 - `get_tunnel_url()`：启动内网穿透并打印访问地址。
 - `stop_all_tunnels()`：停止已启动的内网穿透。
 - `clear_output()`：清理 Jupyter Notebook 输出。
@@ -126,6 +127,18 @@ manager.download_files_from_repo(
     local_dir="/kaggle/dataset",
     repo_type="model",
     folder="dataset",
+    revision="main",
+)
+```
+
+获取仓库中单个文件的下载地址：
+
+```python
+url = manager.get_repo_file_download_url(
+    api_type="huggingface",
+    repo_id="owner/repo",
+    file_path="dataset/data.json",
+    repo_type="model",
     revision="main",
 )
 ```
