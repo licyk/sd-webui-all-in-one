@@ -1,5 +1,6 @@
 """HuggingFace / Modelscope 仓库管理工具"""
 
+import hashlib
 import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -64,6 +65,30 @@ def _object_to_dict(value: Any) -> dict[str, Any]:
     if isinstance(value, dict):
         return dict(value)
     return dict(getattr(value, "__dict__", {}))
+
+
+def _file_sha256(file_path: Path) -> str:
+    hash_sha256 = hashlib.sha256()
+    with file_path.open("rb") as file:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            hash_sha256.update(chunk)
+    return hash_sha256.hexdigest()
+
+
+def _repo_file_metadata_by_path(repo_files_metadata: list[RepoFileMetadata]) -> dict[str, RepoFileMetadata]:
+    return {
+        metadata["path"]: metadata
+        for metadata in repo_files_metadata
+        if metadata.get("type") == "file" and metadata.get("path")
+    }
+
+
+def _normalize_sha256(value: Any) -> str | None:
+    if value is None:
+        return None
+
+    normalized = str(value).strip().lower()
+    return normalized or None
 
 
 class RepoManager:
@@ -883,8 +908,8 @@ class RepoManager:
                 上传任务出现错误时
         """
         upload_files = get_file_list(upload_path)
-        repo_files = set(
-            self.get_repo_file(
+        repo_files = _repo_file_metadata_by_path(
+            self.get_repo_files_metadata(
                 api_type="huggingface",
                 repo_id=repo_id,
                 repo_type=repo_type,
@@ -894,12 +919,33 @@ class RepoManager:
         logger.info("上传到 HuggingFace 仓库: %s -> HuggingFace/%s", upload_path, repo_id)
         files_count = len(upload_files)
         err: list[Exception] = []
-        upload_tasks = [(index, upload_file) for index, upload_file in enumerate(upload_files, start=1) if upload_file.relative_to(upload_path).as_posix() not in repo_files]
+        upload_tasks: list[tuple[int, Path]] = []
 
         for index, upload_file in enumerate(upload_files, start=1):
             upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
-            if upload_file_rel_path in repo_files:
-                logger.info("[%s/%s] %s 已存在于 HuggingFace 仓库中, 跳过上传", index, files_count, upload_file)
+            repo_file_metadata = repo_files.get(upload_file_rel_path)
+            if repo_file_metadata is None:
+                upload_tasks.append((index, upload_file))
+                continue
+
+            remote_sha256 = _normalize_sha256(repo_file_metadata.get("sha256"))
+            local_sha256 = _file_sha256(upload_file)
+            if remote_sha256 is None or local_sha256 != remote_sha256:
+                upload_tasks.append((index, upload_file))
+                logger.info(
+                    "[%s/%s] %s 已存在于 HuggingFace 仓库中但 hash 缺失或不同, 将重新上传",
+                    index,
+                    files_count,
+                    upload_file,
+                )
+                continue
+
+            logger.info(
+                "[%s/%s] %s 已存在于 HuggingFace 仓库中且 hash 相同, 跳过上传",
+                index,
+                files_count,
+                upload_file,
+            )
 
         @retryable(
             times=RETRY_TIMES,
@@ -989,8 +1035,8 @@ class RepoManager:
                 上传任务出现错误时
         """
         upload_files = get_file_list(upload_path)
-        repo_files = set(
-            self.get_repo_file(
+        repo_files = _repo_file_metadata_by_path(
+            self.get_repo_files_metadata(
                 api_type="modelscope",
                 repo_id=repo_id,
                 repo_type=repo_type,
@@ -1000,12 +1046,33 @@ class RepoManager:
         logger.info("上传到 ModelScope 仓库: %s -> ModelScope/%s", upload_path, repo_id)
         files_count = len(upload_files)
         err: list[Exception] = []
-        upload_tasks = [(index, upload_file) for index, upload_file in enumerate(upload_files, start=1) if upload_file.relative_to(upload_path).as_posix() not in repo_files]
+        upload_tasks: list[tuple[int, Path]] = []
 
         for index, upload_file in enumerate(upload_files, start=1):
             upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
-            if upload_file_rel_path in repo_files:
-                logger.info("[%s/%s] %s 已存在于 ModelScope 仓库中, 跳过上传", index, files_count, upload_file)
+            repo_file_metadata = repo_files.get(upload_file_rel_path)
+            if repo_file_metadata is None:
+                upload_tasks.append((index, upload_file))
+                continue
+
+            remote_sha256 = _normalize_sha256(repo_file_metadata.get("sha256"))
+            local_sha256 = _file_sha256(upload_file)
+            if remote_sha256 is None or local_sha256 != remote_sha256:
+                upload_tasks.append((index, upload_file))
+                logger.info(
+                    "[%s/%s] %s 已存在于 ModelScope 仓库中但 hash 缺失或不同, 将重新上传",
+                    index,
+                    files_count,
+                    upload_file,
+                )
+                continue
+
+            logger.info(
+                "[%s/%s] %s 已存在于 ModelScope 仓库中且 hash 相同, 跳过上传",
+                index,
+                files_count,
+                upload_file,
+            )
 
         @retryable(
             times=RETRY_TIMES,

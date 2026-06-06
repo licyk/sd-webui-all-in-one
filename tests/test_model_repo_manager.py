@@ -1,3 +1,4 @@
+import hashlib
 import sys
 import types
 
@@ -27,6 +28,10 @@ MODEL_FIXTURES = [
         "save_dir": {"sd_webui": "models/Stable-diffusion"},
     },
 ]
+
+
+def _sha256(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
 def test_model_library_export_query_search_and_download(monkeypatch, tmp_path, capsys):
@@ -379,11 +384,12 @@ def test_repo_manager_file_download_urls(monkeypatch):
     ]
 
 
-def test_repo_manager_upload_skips_existing_and_aggregates_failures(monkeypatch, tmp_path):
+def test_repo_manager_upload_skips_matching_hash_and_aggregates_failures(monkeypatch, tmp_path):
     monkeypatch.setattr(repo_module, "RETRY_TIMES", 1)
     upload_root = tmp_path / "upload"
     upload_root.mkdir()
     (upload_root / "existing.txt").write_text("old", encoding="utf-8")
+    (upload_root / "changed.txt").write_text("changed-local", encoding="utf-8")
     (upload_root / "new.txt").write_text("new", encoding="utf-8")
 
     manager = _repo_manager_with_apis()
@@ -395,13 +401,16 @@ def test_repo_manager_upload_skips_existing_and_aggregates_failures(monkeypatch,
             uploaded.append(kwargs)
 
     manager.hf_api = FakeHfApi()
-    manager.get_repo_file = lambda **kwargs: list_calls.append(kwargs) or ["existing.txt"]
+    manager.get_repo_files_metadata = lambda **kwargs: list_calls.append(kwargs) or [
+        {"path": "existing.txt", "type": "file", "sha256": _sha256("old")},
+        {"path": "changed.txt", "type": "file", "sha256": _sha256("changed-remote")},
+    ]
 
     manager.upload_files_to_huggingface("owner/repo", upload_root, num_threads=1, revision="upload-branch")
 
     assert list_calls[0]["revision"] == "upload-branch"
-    assert uploaded[0]["path_in_repo"] == "new.txt"
-    assert uploaded[0]["revision"] == "upload-branch"
+    assert {kwargs["path_in_repo"] for kwargs in uploaded} == {"changed.txt", "new.txt"}
+    assert {kwargs["revision"] for kwargs in uploaded} == {"upload-branch"}
 
     ms_uploaded = []
 
@@ -410,11 +419,14 @@ def test_repo_manager_upload_skips_existing_and_aggregates_failures(monkeypatch,
             ms_uploaded.append(kwargs)
 
     manager.ms_api = FakeMsApi()
-    manager.get_repo_file = lambda **_kwargs: []
+    manager.get_repo_files_metadata = lambda **_kwargs: [
+        {"path": "existing.txt", "type": "file", "sha256": _sha256("old")},
+        {"path": "changed.txt", "type": "file", "sha256": _sha256("changed-remote")},
+    ]
 
     manager.upload_files_to_modelscope("owner/repo", upload_root, num_threads=1, revision="ms-branch")
 
-    assert {kwargs["path_in_repo"] for kwargs in ms_uploaded} == {"existing.txt", "new.txt"}
+    assert {kwargs["path_in_repo"] for kwargs in ms_uploaded} == {"changed.txt", "new.txt"}
     assert {kwargs["revision"] for kwargs in ms_uploaded} == {"ms-branch"}
 
     class FailingHfApi:
@@ -422,12 +434,12 @@ def test_repo_manager_upload_skips_existing_and_aggregates_failures(monkeypatch,
             raise ValueError("boom")
 
     manager.hf_api = FailingHfApi()
-    manager.get_repo_file = lambda **_kwargs: []
+    manager.get_repo_files_metadata = lambda **_kwargs: []
 
     with pytest.raises(AggregateError) as exc:
         manager.upload_files_to_huggingface("owner/repo", upload_root, num_threads=1)
 
-    assert len(exc.value.exceptions) == 2
+    assert len(exc.value.exceptions) == 3
 
 
 def test_repo_manager_download_filters_huggingface_and_modelscope(monkeypatch, tmp_path):
