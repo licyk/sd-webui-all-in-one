@@ -1,6 +1,7 @@
 import hashlib
 import sys
 import types
+from pathlib import Path
 
 import pytest
 
@@ -509,3 +510,153 @@ def test_repo_manager_download_filters_huggingface_and_modelscope(monkeypatch, t
         ],
     )
     assert captured[1] == ("start", 2)
+
+
+def test_repo_manager_mirror_repo_files_uses_metadata_and_revision(monkeypatch):
+    manager = _repo_manager_with_apis()
+    check_calls = []
+    metadata_calls = []
+    download_calls = []
+    uploaded = []
+
+    def fake_check_repo(**kwargs):
+        check_calls.append(kwargs)
+        return True
+
+    def fake_get_repo_files_metadata(**kwargs):
+        metadata_calls.append(kwargs)
+        if kwargs["api_type"] == "huggingface":
+            return [
+                {"path": "same.bin", "type": "file", "sha256": _sha256("same")},
+                {"path": "changed.bin", "type": "file", "sha256": _sha256("changed-local")},
+                {"path": "missing.bin", "type": "file", "sha256": _sha256("missing")},
+                {"path": "folder", "type": "directory", "sha256": None},
+            ]
+        return [
+            {"path": "same.bin", "type": "file", "sha256": _sha256("same")},
+            {"path": "changed.bin", "type": "file", "sha256": _sha256("changed-remote")},
+        ]
+
+    def fake_hf_hub_download(**kwargs):
+        download_calls.append(kwargs)
+        file_path = Path(kwargs["local_dir"]) / kwargs["filename"]
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(kwargs["filename"], encoding="utf-8")
+        return file_path
+
+    class FakeMsApi:
+        def upload_file(self, **kwargs):
+            assert kwargs["path_or_fileobj"].exists()
+            uploaded.append(kwargs)
+
+    manager.check_repo = fake_check_repo
+    manager.get_repo_files_metadata = fake_get_repo_files_metadata
+    manager.ms_api = FakeMsApi()
+    monkeypatch.setitem(sys.modules, "huggingface_hub", types.SimpleNamespace(hf_hub_download=fake_hf_hub_download))
+
+    manager.mirror_repo_files(
+        src_api_type="huggingface",
+        dst_api_type="modelscope",
+        src_repo_id="owner/src",
+        dst_repo_id="owner/dst",
+        src_repo_type="model",
+        dst_repo_type="dataset",
+        visibility=True,
+        revision="mirror-rev",
+        num_threads=1,
+        retry_times=1,
+    )
+
+    assert check_calls == [
+        {
+            "api_type": "modelscope",
+            "repo_id": "owner/dst",
+            "repo_type": "dataset",
+            "visibility": True,
+        }
+    ]
+    assert metadata_calls == [
+        {
+            "api_type": "huggingface",
+            "repo_id": "owner/src",
+            "repo_type": "model",
+            "revision": "mirror-rev",
+        },
+        {
+            "api_type": "modelscope",
+            "repo_id": "owner/dst",
+            "repo_type": "dataset",
+            "revision": "mirror-rev",
+        },
+    ]
+    assert {kwargs["filename"] for kwargs in download_calls} == {"changed.bin", "missing.bin"}
+    assert {kwargs["revision"] for kwargs in download_calls} == {"mirror-rev"}
+    assert {kwargs["path_in_repo"] for kwargs in uploaded} == {"changed.bin", "missing.bin"}
+    assert {kwargs["repo_type"] for kwargs in uploaded} == {"dataset"}
+    assert {kwargs["revision"] for kwargs in uploaded} == {"mirror-rev"}
+    assert {kwargs["token"] for kwargs in uploaded} == {"ms-token"}
+
+
+def test_repo_manager_mirror_repo_files_can_use_fast_download(monkeypatch):
+    manager = _repo_manager_with_apis()
+    download_url_calls = []
+    download_calls = []
+    uploaded = []
+
+    class FakeHfApi:
+        def upload_file(self, **kwargs):
+            assert kwargs["path_or_fileobj"].exists()
+            uploaded.append(kwargs)
+
+    manager.hf_api = FakeHfApi()
+    manager.check_repo = lambda **_kwargs: True
+    manager.get_repo_files_metadata = lambda **kwargs: [
+        {"path": "nested/file.bin", "type": "file", "sha256": _sha256("src")}
+    ] if kwargs["api_type"] == "modelscope" else []
+
+    def fake_get_repo_file_download_url(**kwargs):
+        download_url_calls.append(kwargs)
+        return "https://example.test/nested/file.bin"
+
+    def fake_download_file(**kwargs):
+        download_calls.append(kwargs)
+        file_path = Path(kwargs["path"]) / kwargs["save_name"]
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text("downloaded", encoding="utf-8")
+        return file_path
+
+    manager.get_repo_file_download_url = fake_get_repo_file_download_url
+    monkeypatch.setattr(repo_module, "download_file", fake_download_file)
+
+    manager.mirror_repo_files(
+        src_api_type="modelscope",
+        dst_api_type="huggingface",
+        src_repo_id="owner/src",
+        dst_repo_id="owner/dst",
+        revision="fast-rev",
+        use_fast_download=True,
+        download_tool="aria2",
+        download_num_threads=16,
+        download_progress=False,
+        num_threads=1,
+        retry_times=1,
+    )
+
+    assert download_url_calls == [
+        {
+            "api_type": "modelscope",
+            "repo_id": "owner/src",
+            "file_path": "nested/file.bin",
+            "repo_type": "model",
+            "revision": "fast-rev",
+        }
+    ]
+    assert len(download_calls) == 1
+    assert download_calls[0]["url"] == "https://example.test/nested/file.bin"
+    assert download_calls[0]["path"].name == "nested"
+    assert download_calls[0]["save_name"] == "file.bin"
+    assert download_calls[0]["tool"] == "aria2"
+    assert download_calls[0]["num_threads"] == 16
+    assert download_calls[0]["progress"] is False
+    assert uploaded[0]["path_in_repo"] == "nested/file.bin"
+    assert uploaded[0]["revision"] == "fast-rev"

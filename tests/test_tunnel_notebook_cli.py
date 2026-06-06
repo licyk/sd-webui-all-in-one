@@ -160,6 +160,9 @@ class FakeRepoManager:
         self.calls.append(("download_url", kwargs))
         return "https://example.test/download.bin"
 
+    def mirror_repo_files(self, **kwargs):
+        self.calls.append(("mirror", kwargs))
+
 
 class FakeTunnelManager:
     def __init__(self, workspace, port):
@@ -277,6 +280,40 @@ def test_notebook_gpu_check_and_delegates(monkeypatch, notebook_manager, tmp_pat
             "repo_type": "dataset",
             "include_dirs": True,
             "include_raw": True,
+        },
+    )
+    notebook_manager.mirror_repo_files(
+        "huggingface",
+        "modelscope",
+        "owner/src",
+        "owner/dst",
+        dst_repo_type="dataset",
+        visibility=True,
+        revision="mirror-rev",
+        num_threads=4,
+        retry_times=2,
+        use_fast_download=True,
+        download_tool="aria2",
+        download_num_threads=16,
+        download_progress=False,
+    )
+    assert notebook_manager.repo_manager.calls[4] == (
+        "mirror",
+        {
+            "src_api_type": "huggingface",
+            "dst_api_type": "modelscope",
+            "src_repo_id": "owner/src",
+            "dst_repo_id": "owner/dst",
+            "src_repo_type": "model",
+            "dst_repo_type": "dataset",
+            "visibility": True,
+            "num_threads": 4,
+            "use_fast_download": True,
+            "download_tool": "aria2",
+            "download_num_threads": 16,
+            "download_progress": False,
+            "revision": "mirror-rev",
+            "retry_times": 2,
         },
     )
 

@@ -2,6 +2,7 @@
 
 import hashlib
 import os
+import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Lock
@@ -15,7 +16,11 @@ from sd_webui_all_in_one.config import (
     RETRY_TIMES,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.downloader import MultiThreadDownloader
+from sd_webui_all_in_one.downloader import (
+    DownloadToolType,
+    MultiThreadDownloader,
+    download_file,
+)
 from sd_webui_all_in_one.retry_decorator import retryable
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 
@@ -89,6 +94,12 @@ def _normalize_sha256(value: Any) -> str | None:
 
     normalized = str(value).strip().lower()
     return normalized or None
+
+
+def _repo_file_hash_matches(src_metadata: RepoFileMetadata, dst_metadata: RepoFileMetadata) -> bool:
+    src_sha256 = _normalize_sha256(src_metadata.get("sha256"))
+    dst_sha256 = _normalize_sha256(dst_metadata.get("sha256"))
+    return src_sha256 is not None and dst_sha256 is not None and src_sha256 == dst_sha256
 
 
 class RepoManager:
@@ -1135,6 +1146,234 @@ class RepoManager:
             raise AggregateError(f"上传 {repo_id} (类型: {repo_type}) 时发生了错误", err)
 
         logger.info("上传 %s 到 %s (类型: %s) 完成", upload_path, repo_id, repo_type)
+
+    def mirror_repo_files(
+        self,
+        src_api_type: ApiType,
+        dst_api_type: ApiType,
+        src_repo_id: str,
+        dst_repo_id: str,
+        src_repo_type: RepoType = "model",
+        dst_repo_type: RepoType = "model",
+        visibility: bool = False,
+        revision: str | None = None,
+        num_threads: int | None = 1,
+        retry_times: int | None = RETRY_TIMES,
+        use_fast_download: bool = False,
+        download_tool: DownloadToolType | None = "requests",
+        download_num_threads: int = 8,
+        download_progress: bool = True,
+    ) -> None:
+        """镜像 HuggingFace / ModelScope 仓库文件
+
+        Args:
+            src_api_type (ApiType):
+                源仓库 API 类型
+            dst_api_type (ApiType):
+                目标仓库 API 类型
+            src_repo_id (str):
+                源仓库 ID
+            dst_repo_id (str):
+                目标仓库 ID
+            src_repo_type (RepoType):
+                源仓库类型
+            dst_repo_type (RepoType):
+                目标仓库类型
+            visibility (bool):
+                当目标仓库不存在时自动创建的仓库的可见性
+            revision (str | None):
+                指定源仓库读取和目标仓库上传的分支、标签或提交哈希, 为`None`时使用第三方库默认值
+            num_threads (int | None):
+                镜像线程数, 为`None`时使用单线程
+            retry_times (int | None):
+                单个文件镜像失败后的重试次数, 为`None`时不重试
+            use_fast_download (bool):
+                是否使用项目内`download_file()`下载器进行下载
+            download_tool (DownloadToolType | None):
+                `use_fast_download`启用时使用的下载器
+            download_num_threads (int):
+                `use_fast_download`启用时传给`download_file()`的下载线程数
+            download_progress (bool):
+                `use_fast_download`启用时是否显示下载进度
+
+        Raises:
+            AggregateError:
+                镜像任务出现错误时
+            ValueError:
+                API 类型未知时
+        """
+        if src_api_type not in ["huggingface", "modelscope"]:
+            raise ValueError(f"未知的源 API 类型: {src_api_type}")
+        if dst_api_type not in ["huggingface", "modelscope"]:
+            raise ValueError(f"未知的目标 API 类型: {dst_api_type}")
+
+        logger.info(
+            "镜像仓库文件: %s/%s (类型: %s) -> %s/%s (类型: %s)",
+            src_api_type,
+            src_repo_id,
+            src_repo_type,
+            dst_api_type,
+            dst_repo_id,
+            dst_repo_type,
+        )
+
+        self.check_repo(
+            api_type=dst_api_type,
+            repo_id=dst_repo_id,
+            repo_type=dst_repo_type,
+            visibility=visibility,
+        )
+
+        src_files = _repo_file_metadata_by_path(
+            self.get_repo_files_metadata(
+                api_type=src_api_type,
+                repo_id=src_repo_id,
+                repo_type=src_repo_type,
+                revision=revision,
+            )
+        )
+        dst_files = _repo_file_metadata_by_path(
+            self.get_repo_files_metadata(
+                api_type=dst_api_type,
+                repo_id=dst_repo_id,
+                repo_type=dst_repo_type,
+                revision=revision,
+            )
+        )
+
+        mirror_tasks: list[tuple[int, str]] = []
+        files_count = len(src_files)
+        for index, (repo_file, src_metadata) in enumerate(src_files.items(), start=1):
+            dst_metadata = dst_files.get(repo_file)
+            if dst_metadata is None:
+                mirror_tasks.append((index, repo_file))
+                continue
+
+            if not _repo_file_hash_matches(src_metadata, dst_metadata):
+                mirror_tasks.append((index, repo_file))
+                logger.info(
+                    "[%s/%s] %s 已存在于目标仓库中但 hash 缺失或不同, 将重新镜像",
+                    index,
+                    files_count,
+                    repo_file,
+                )
+                continue
+
+            logger.info(
+                "[%s/%s] %s 已存在于目标仓库中且 hash 相同, 跳过镜像",
+                index,
+                files_count,
+                repo_file,
+            )
+
+        logger.info("需要镜像的文件数量: %s", len(mirror_tasks))
+        if not mirror_tasks:
+            logger.info("镜像仓库文件完成")
+            return
+
+        actual_retry_times = max(1, retry_times if retry_times is not None else 1)
+
+        @retryable(
+            times=actual_retry_times,
+            describe="镜像仓库文件",
+            catch_exceptions=(Exception),
+            raise_exception=(RuntimeError),
+            retry_on_none=False,
+        )
+        def _mirror_file(repo_file: str, index: int) -> None:
+            with tempfile.TemporaryDirectory(prefix="repo-mirror-") as tmp_dir_str:
+                tmp_dir = Path(tmp_dir_str)
+                file_path = tmp_dir / repo_file
+                logger.info("[%s/%s] 镜像 %s", index, files_count, repo_file)
+
+                if use_fast_download:
+                    download_url = self.get_repo_file_download_url(
+                        api_type=src_api_type,
+                        repo_id=src_repo_id,
+                        file_path=repo_file,
+                        repo_type=src_repo_type,
+                        revision=revision,
+                    )
+                    download_file(
+                        url=download_url,
+                        path=file_path.parent,
+                        save_name=file_path.name,
+                        tool=download_tool,
+                        progress=download_progress,
+                        num_threads=download_num_threads,
+                    )
+                elif src_api_type == "huggingface":
+                    from huggingface_hub import hf_hub_download
+
+                    hf_hub_download(
+                        **_add_revision(
+                            {
+                                "repo_id": src_repo_id,
+                                "repo_type": src_repo_type,
+                                "filename": repo_file,
+                                "local_dir": tmp_dir,
+                            },
+                            revision,
+                        )
+                    )
+                else:
+                    from modelscope import snapshot_download
+
+                    snapshot_download(
+                        **_add_revision(
+                            {
+                                "repo_id": src_repo_id,
+                                "repo_type": src_repo_type,
+                                "allow_patterns": repo_file,
+                                "local_dir": tmp_dir,
+                            },
+                            revision,
+                        )
+                    )
+
+                if not file_path.exists():
+                    raise FileNotFoundError(f"镜像下载后的文件不存在: {file_path}")
+
+                upload_kwargs = _add_revision(
+                    {
+                        "repo_id": dst_repo_id,
+                        "repo_type": dst_repo_type,
+                        "path_in_repo": repo_file,
+                        "path_or_fileobj": file_path,
+                        "commit_message": f"Mirror {repo_file}",
+                    },
+                    revision,
+                )
+                if dst_api_type == "huggingface":
+                    self.hf_api.upload_file(**upload_kwargs)
+                else:
+                    upload_kwargs["token"] = self.ms_token
+                    self.ms_api.upload_file(**upload_kwargs)
+
+        err: list[Exception] = []
+        err_lock = Lock()
+
+        def _run_mirror(task: tuple[int, str]) -> None:
+            index, repo_file = task
+            try:
+                _mirror_file(repo_file=repo_file, index=index)
+            except RuntimeError as e:
+                with err_lock:
+                    err.append(e)
+                logger.error("[%s/%s] 镜像 %s 最终失败: %s", index, files_count, repo_file, e)
+
+        max_workers = 1 if num_threads is None else max(1, num_threads)
+        if max_workers == 1:
+            for task in mirror_tasks:
+                _run_mirror(task)
+        else:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                list(executor.map(_run_mirror, mirror_tasks))
+
+        if err:
+            raise AggregateError(f"镜像 {src_repo_id} -> {dst_repo_id} 时发生了错误", err)
+
+        logger.info("镜像仓库文件完成")
 
     def download_files_from_repo(
         self,

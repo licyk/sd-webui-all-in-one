@@ -691,6 +691,75 @@ class BaseManager:
             url_kwargs["revision"] = revision
         return self.repo_manager.get_repo_file_download_url(**url_kwargs)
 
+    def mirror_repo_files(
+        self,
+        src_api_type: ApiType,
+        dst_api_type: ApiType,
+        src_repo_id: str,
+        dst_repo_id: str,
+        src_repo_type: RepoType = "model",
+        dst_repo_type: RepoType = "model",
+        visibility: bool = False,
+        revision: str | None = None,
+        num_threads: int | None = 1,
+        retry_times: int | None = None,
+        use_fast_download: bool = False,
+        download_tool: DownloadToolType | None = "requests",
+        download_num_threads: int = 8,
+        download_progress: bool = True,
+    ) -> None:
+        """镜像 HuggingFace / ModelScope 仓库文件
+
+        Args:
+            src_api_type (ApiType):
+                源仓库 API 类型
+            dst_api_type (ApiType):
+                目标仓库 API 类型
+            src_repo_id (str):
+                源仓库 ID
+            dst_repo_id (str):
+                目标仓库 ID
+            src_repo_type (RepoType):
+                源仓库类型
+            dst_repo_type (RepoType):
+                目标仓库类型
+            visibility (bool):
+                当目标仓库不存在时自动创建的仓库的可见性
+            revision (str | None):
+                指定源仓库读取和目标仓库上传的分支、标签或提交哈希, 为`None`时使用第三方库默认值
+            num_threads (int | None):
+                镜像线程数, 为`None`时使用单线程
+            retry_times (int | None):
+                单个文件镜像失败后的重试次数
+            use_fast_download (bool):
+                是否使用项目内`download_file()`下载器进行下载
+            download_tool (DownloadToolType | None):
+                `use_fast_download`启用时使用的下载器
+            download_num_threads (int):
+                `use_fast_download`启用时传给`download_file()`的下载线程数
+            download_progress (bool):
+                `use_fast_download`启用时是否显示下载进度
+        """
+        mirror_kwargs = {
+            "src_api_type": src_api_type,
+            "dst_api_type": dst_api_type,
+            "src_repo_id": src_repo_id,
+            "dst_repo_id": dst_repo_id,
+            "src_repo_type": src_repo_type,
+            "dst_repo_type": dst_repo_type,
+            "visibility": visibility,
+            "num_threads": num_threads,
+            "use_fast_download": use_fast_download,
+            "download_tool": download_tool,
+            "download_num_threads": download_num_threads,
+            "download_progress": download_progress,
+        }
+        if revision is not None:
+            mirror_kwargs["revision"] = revision
+        if retry_times is not None:
+            mirror_kwargs["retry_times"] = retry_times
+        self.repo_manager.mirror_repo_files(**mirror_kwargs)
+
     def clear_output(
         self,
     ) -> None:
