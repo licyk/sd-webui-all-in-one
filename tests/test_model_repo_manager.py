@@ -144,6 +144,145 @@ def test_repo_manager_modelscope_file_listing_and_creation(monkeypatch):
     assert calls[-1][1]["visibility"] == "private"
 
 
+def test_repo_manager_files_metadata_normalizes_huggingface_and_modelscope():
+    manager = _repo_manager_with_apis()
+    hf_calls = []
+
+    class FakeHfApi:
+        def list_repo_tree(self, **kwargs):
+            hf_calls.append(kwargs)
+            return [
+                types.SimpleNamespace(
+                    path="weights/a.bin",
+                    size=123,
+                    blob_id="blob-id",
+                    lfs=types.SimpleNamespace(sha256="hf-sha256"),
+                    last_commit=types.SimpleNamespace(oid="hf-commit"),
+                ),
+                types.SimpleNamespace(
+                    path="weights",
+                    tree_id="tree-id",
+                    last_commit=types.SimpleNamespace(oid="tree-commit"),
+                ),
+            ]
+
+    manager.hf_api = FakeHfApi()
+
+    assert manager.get_hf_repo_files_metadata("owner/repo", revision="main") == [
+        {
+            "path": "weights/a.bin",
+            "name": "a.bin",
+            "type": "file",
+            "size": 123,
+            "sha256": "hf-sha256",
+            "is_lfs": True,
+            "object_id": "blob-id",
+            "revision": "hf-commit",
+        }
+    ]
+    assert hf_calls[0] == {"repo_id": "owner/repo", "repo_type": "model", "recursive": True, "revision": "main"}
+
+    hf_with_dirs = manager.get_hf_repo_files_metadata(
+        "owner/repo",
+        revision="main",
+        include_dirs=True,
+        include_raw=True,
+    )
+    assert hf_with_dirs[1] == {
+        "path": "weights",
+        "name": "weights",
+        "type": "directory",
+        "size": None,
+        "sha256": None,
+        "is_lfs": None,
+        "object_id": "tree-id",
+        "revision": "tree-commit",
+        "raw": {
+            "path": "weights",
+            "tree_id": "tree-id",
+            "last_commit": types.SimpleNamespace(oid="tree-commit"),
+        },
+    }
+
+    ms_calls = []
+
+    class FakeMsApi:
+        def get_model_files(self, **kwargs):
+            ms_calls.append(("model_files", kwargs))
+            return [
+                {
+                    "Path": "weights/a.bin",
+                    "Name": "a.bin",
+                    "Type": "blob",
+                    "Size": 456,
+                    "Sha256": "ms-sha256",
+                    "IsLFS": False,
+                    "Revision": "ms-commit",
+                },
+                {
+                    "Path": "weights",
+                    "Name": "weights",
+                    "Type": "tree",
+                    "Size": 0,
+                },
+            ]
+
+        def get_dataset_id_and_type(self, **kwargs):
+            ms_calls.append(("dataset_id", kwargs))
+            return "dataset-id", "dataset"
+
+        def get_dataset_files(self, **kwargs):
+            ms_calls.append(("dataset_files", kwargs))
+            return [
+                {
+                    "Path": "data/a.txt",
+                    "Type": "blob",
+                    "Size": 10,
+                    "Sha256": "dataset-sha256",
+                    "Revision": "dataset-commit",
+                }
+            ]
+
+    manager.ms_api = FakeMsApi()
+
+    assert manager.get_ms_repo_files_metadata("owner/model", revision="v1", include_dirs=True) == [
+        {
+            "path": "weights/a.bin",
+            "name": "a.bin",
+            "type": "file",
+            "size": 456,
+            "sha256": "ms-sha256",
+            "is_lfs": False,
+            "object_id": "ms-sha256",
+            "revision": "ms-commit",
+        },
+        {
+            "path": "weights",
+            "name": "weights",
+            "type": "directory",
+            "size": None,
+            "sha256": None,
+            "is_lfs": None,
+            "object_id": None,
+            "revision": "v1",
+        },
+    ]
+    assert ms_calls[0] == ("model_files", {"model_id": "owner/model", "recursive": True, "revision": "v1"})
+
+    assert manager.get_repo_files_metadata("modelscope", "owner/dataset", repo_type="dataset") == [
+        {
+            "path": "data/a.txt",
+            "name": "a.txt",
+            "type": "file",
+            "size": 10,
+            "sha256": "dataset-sha256",
+            "is_lfs": None,
+            "object_id": "dataset-sha256",
+            "revision": "dataset-commit",
+        }
+    ]
+
+
 def test_repo_manager_file_download_urls(monkeypatch):
     manager = _repo_manager_with_apis()
     hf_calls = []

@@ -615,6 +615,46 @@ class BaseManager:
             download_kwargs["revision"] = revision
         self.repo_manager.download_files_from_repo(**download_kwargs)
 
+    def get_repo_files_metadata(
+        self,
+        api_type: ApiType,
+        repo_id: str,
+        repo_type: RepoType = "model",
+        revision: str | None = None,
+        include_dirs: bool = False,
+        include_raw: bool = False,
+    ) -> list[dict[str, object]]:
+        """获取 HuggingFace / ModelScope 仓库文件元数据列表
+
+        Args:
+            api_type (ApiType):
+                Api 类型
+            repo_id (str):
+                仓库 ID
+            repo_type (RepoType):
+                仓库类型
+            revision (str | None):
+                指定仓库分支、标签或提交哈希, 为`None`时使用第三方库默认值
+            include_dirs (bool):
+                是否包含目录条目
+            include_raw (bool):
+                是否包含第三方库原始返回
+
+        Returns:
+            list[dict[str, object]]:
+                归一化后的仓库文件元数据列表
+        """
+        metadata_kwargs = {
+            "api_type": api_type,
+            "repo_id": repo_id,
+            "repo_type": repo_type,
+            "include_dirs": include_dirs,
+            "include_raw": include_raw,
+        }
+        if revision is not None:
+            metadata_kwargs["revision"] = revision
+        return self.repo_manager.get_repo_files_metadata(**metadata_kwargs)
+
     def get_repo_file_download_url(
         self,
         api_type: ApiType,

@@ -152,6 +152,10 @@ class FakeRepoManager:
     def download_files_from_repo(self, **kwargs):
         self.calls.append(("download", kwargs))
 
+    def get_repo_files_metadata(self, **kwargs):
+        self.calls.append(("metadata", kwargs))
+        return [{"path": "weights/a.bin"}]
+
     def get_repo_file_download_url(self, **kwargs):
         self.calls.append(("download_url", kwargs))
         return "https://example.test/download.bin"
@@ -255,6 +259,24 @@ def test_notebook_gpu_check_and_delegates(monkeypatch, notebook_manager, tmp_pat
             "file_path": "weights/a.bin",
             "repo_type": "model",
             "revision": "hf-rev",
+        },
+    )
+    metadata = notebook_manager.get_repo_files_metadata(
+        "modelscope",
+        "owner/repo",
+        repo_type="dataset",
+        include_dirs=True,
+        include_raw=True,
+    )
+    assert metadata == [{"path": "weights/a.bin"}]
+    assert notebook_manager.repo_manager.calls[3] == (
+        "metadata",
+        {
+            "api_type": "modelscope",
+            "repo_id": "owner/repo",
+            "repo_type": "dataset",
+            "include_dirs": True,
+            "include_raw": True,
         },
     )
 
