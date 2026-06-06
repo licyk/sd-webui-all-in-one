@@ -82,17 +82,26 @@ class SDScriptsManager(BaseManager):
                     category=DeprecationWarning,
                     stacklevel=2,
                 )
-                download_kwargs = {
-                    "api_type": api_type,
-                    "repo_id": repo_id,
-                    "local_dir": Path(local_dir),
-                    "repo_type": repo_type,
-                    "folder": folder,
-                    "num_threads": num_threads,
-                }
-                if revision is not None:
-                    download_kwargs["revision"] = revision
-                Repo._self.download_files_from_repo(**download_kwargs)
+                if revision is None:
+                    Repo._self.download_files_from_repo(
+                        api_type=api_type,
+                        repo_id=repo_id,
+                        local_dir=Path(local_dir),
+                        repo_type=repo_type,
+                        folder=folder,
+                        num_threads=num_threads,
+                    )
+                    return
+
+                Repo._self.download_files_from_repo(
+                    api_type=api_type,
+                    repo_id=repo_id,
+                    local_dir=Path(local_dir),
+                    repo_type=repo_type,
+                    folder=folder,
+                    num_threads=num_threads,
+                    revision=revision,
+                )
 
             def upload_files_to_repo(  # pylint: disable=missing-function-docstring
                 self,
@@ -109,16 +118,24 @@ class SDScriptsManager(BaseManager):
                     category=DeprecationWarning,
                     stacklevel=2,
                 )
-                upload_kwargs = {
-                    "api_type": api_type,
-                    "repo_id": repo_id,
-                    "upload_path": Path(upload_path),
-                    "repo_type": repo_type,
-                    "visibility": visibility,
-                }
-                if revision is not None:
-                    upload_kwargs["revision"] = revision
-                Repo._self.upload_files_to_repo(**upload_kwargs)
+                if revision is None:
+                    Repo._self.upload_files_to_repo(
+                        api_type=api_type,
+                        repo_id=repo_id,
+                        upload_path=Path(upload_path),
+                        repo_type=repo_type,
+                        visibility=visibility,
+                    )
+                    return
+
+                Repo._self.upload_files_to_repo(
+                    api_type=api_type,
+                    repo_id=repo_id,
+                    upload_path=Path(upload_path),
+                    repo_type=repo_type,
+                    visibility=visibility,
+                    revision=revision,
+                )
 
         self.repo = Repo()
 

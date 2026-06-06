@@ -686,8 +686,8 @@ class RepoManager:
             ValueError:
                 ModelScope 不支持的仓库类型
         """
-        from modelscope.hub.constants import DEFAULT_DATASET_REVISION, DEFAULT_MODEL_REVISION
         from modelscope.hub.file_download import get_file_download_url
+        from modelscope.utils.constant import DEFAULT_DATASET_REVISION, DEFAULT_MODEL_REVISION
 
         if repo_type == "model":
             return get_file_download_url(

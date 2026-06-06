@@ -518,17 +518,15 @@ class BaseManager:
             revision (str | None):
                 指定上传目标分支或标签, 为`None`时使用第三方库默认值
         """
-        upload_kwargs = {
-            "api_type": api_type,
-            "repo_id": repo_id,
-            "upload_path": Path(upload_path),
-            "repo_type": repo_type,
-            "visibility": visibility,
-            "num_threads": num_threads,
-        }
-        if revision is not None:
-            upload_kwargs["revision"] = revision
-        self.repo_manager.upload_files_to_repo(**upload_kwargs)
+        self.repo_manager.upload_files_to_repo(
+            api_type=api_type,
+            repo_id=repo_id,
+            upload_path=Path(upload_path),
+            repo_type=repo_type,
+            visibility=visibility,
+            num_threads=num_threads,
+            revision=revision,
+        )
 
     def download_files_from_repo(
         self,
@@ -603,17 +601,15 @@ class BaseManager:
             revision (str | None):
                 指定下载的分支、标签或提交哈希, 为`None`时使用第三方库默认值
         """
-        download_kwargs = {
-            "api_type": api_type,
-            "repo_id": repo_id,
-            "local_dir": Path(local_dir),
-            "repo_type": repo_type,
-            "folder": folder,
-            "num_threads": num_threads,
-        }
-        if revision is not None:
-            download_kwargs["revision"] = revision
-        self.repo_manager.download_files_from_repo(**download_kwargs)
+        self.repo_manager.download_files_from_repo(
+            api_type=api_type,
+            repo_id=repo_id,
+            local_dir=Path(local_dir),
+            repo_type=repo_type,
+            folder=folder,
+            num_threads=num_threads,
+            revision=revision,
+        )
 
     def get_repo_files_metadata(
         self,
@@ -740,25 +736,40 @@ class BaseManager:
             download_progress (bool):
                 `use_fast_download`启用时是否显示下载进度
         """
-        mirror_kwargs = {
-            "src_api_type": src_api_type,
-            "dst_api_type": dst_api_type,
-            "src_repo_id": src_repo_id,
-            "dst_repo_id": dst_repo_id,
-            "src_repo_type": src_repo_type,
-            "dst_repo_type": dst_repo_type,
-            "visibility": visibility,
-            "num_threads": num_threads,
-            "use_fast_download": use_fast_download,
-            "download_tool": download_tool,
-            "download_num_threads": download_num_threads,
-            "download_progress": download_progress,
-        }
-        if revision is not None:
-            mirror_kwargs["revision"] = revision
-        if retry_times is not None:
-            mirror_kwargs["retry_times"] = retry_times
-        self.repo_manager.mirror_repo_files(**mirror_kwargs)
+        if retry_times is None:
+            self.repo_manager.mirror_repo_files(
+                src_api_type=src_api_type,
+                dst_api_type=dst_api_type,
+                src_repo_id=src_repo_id,
+                dst_repo_id=dst_repo_id,
+                src_repo_type=src_repo_type,
+                dst_repo_type=dst_repo_type,
+                visibility=visibility,
+                revision=revision,
+                num_threads=num_threads,
+                use_fast_download=use_fast_download,
+                download_tool=download_tool,
+                download_num_threads=download_num_threads,
+                download_progress=download_progress,
+            )
+            return
+
+        self.repo_manager.mirror_repo_files(
+            src_api_type=src_api_type,
+            dst_api_type=dst_api_type,
+            src_repo_id=src_repo_id,
+            dst_repo_id=dst_repo_id,
+            src_repo_type=src_repo_type,
+            dst_repo_type=dst_repo_type,
+            visibility=visibility,
+            revision=revision,
+            num_threads=num_threads,
+            retry_times=retry_times,
+            use_fast_download=use_fast_download,
+            download_tool=download_tool,
+            download_num_threads=download_num_threads,
+            download_progress=download_progress,
+        )
 
     def clear_output(
         self,
