@@ -75,20 +75,24 @@ class SDScriptsManager(BaseManager):
                 folder: str | None = None,
                 num_threads: int = 8,
                 retry: int | None = None,  # pylint: disable=unused-argument
+                revision: str | None = None,
             ):
                 warnings.warn(
                     "SDScriptsManager.repo.download_files_from_repo() 已弃用, 请使用 SDScriptsManager.download_files_from_repo() 代替",
                     category=DeprecationWarning,
                     stacklevel=2,
                 )
-                Repo._self.download_files_from_repo(
-                    api_type=api_type,
-                    repo_id=repo_id,
-                    local_dir=Path(local_dir),
-                    repo_type=repo_type,
-                    folder=folder,
-                    num_threads=num_threads,
-                )
+                download_kwargs = {
+                    "api_type": api_type,
+                    "repo_id": repo_id,
+                    "local_dir": Path(local_dir),
+                    "repo_type": repo_type,
+                    "folder": folder,
+                    "num_threads": num_threads,
+                }
+                if revision is not None:
+                    download_kwargs["revision"] = revision
+                Repo._self.download_files_from_repo(**download_kwargs)
 
             def upload_files_to_repo(  # pylint: disable=missing-function-docstring
                 self,
@@ -98,19 +102,23 @@ class SDScriptsManager(BaseManager):
                 repo_type: RepoType = "model",
                 visibility: bool = False,
                 retry: int | None = None,  # pylint: disable=unused-argument
+                revision: str | None = None,
             ) -> None:
                 warnings.warn(
                     "SDScriptsManager.repo.upload_files_to_repo() 已弃用, 请使用 SDScriptsManager.upload_files_to_repo() 代替",
                     category=DeprecationWarning,
                     stacklevel=2,
                 )
-                Repo._self.upload_files_to_repo(
-                    api_type=api_type,
-                    repo_id=repo_id,
-                    upload_path=Path(upload_path),
-                    repo_type=repo_type,
-                    visibility=visibility,
-                )
+                upload_kwargs = {
+                    "api_type": api_type,
+                    "repo_id": repo_id,
+                    "upload_path": Path(upload_path),
+                    "repo_type": repo_type,
+                    "visibility": visibility,
+                }
+                if revision is not None:
+                    upload_kwargs["revision"] = revision
+                Repo._self.upload_files_to_repo(**upload_kwargs)
 
         self.repo = Repo()
 

@@ -126,6 +126,7 @@ manager.download_files_from_repo(
     local_dir="/kaggle/dataset",
     repo_type="model",
     folder="dataset",
+    revision="main",
 )
 ```
 

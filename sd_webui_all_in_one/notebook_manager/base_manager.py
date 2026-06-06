@@ -498,6 +498,7 @@ class BaseManager:
         repo_type: RepoType = "model",
         visibility: bool = False,
         num_threads: int = 1,
+        revision: str | None = None,
     ) -> None:
         """上传文件夹中的内容到 HuggingFace / ModelScope 仓库中
 
@@ -514,15 +515,20 @@ class BaseManager:
                 当仓库不存在时自动创建的仓库的可见性
             num_threads (int):
                 上传线程数, 为`None`时使用单线程
+            revision (str | None):
+                指定上传目标分支或标签, 为`None`时使用第三方库默认值
         """
-        self.repo_manager.upload_files_to_repo(
-            api_type=api_type,
-            repo_id=repo_id,
-            upload_path=Path(upload_path),
-            repo_type=repo_type,
-            visibility=visibility,
-            num_threads=num_threads,
-        )
+        upload_kwargs = {
+            "api_type": api_type,
+            "repo_id": repo_id,
+            "upload_path": Path(upload_path),
+            "repo_type": repo_type,
+            "visibility": visibility,
+            "num_threads": num_threads,
+        }
+        if revision is not None:
+            upload_kwargs["revision"] = revision
+        self.repo_manager.upload_files_to_repo(**upload_kwargs)
 
     def download_files_from_repo(
         self,
@@ -532,6 +538,7 @@ class BaseManager:
         repo_type: RepoType = "model",
         folder: str | None = None,
         num_threads: int = 8,
+        revision: str | None = None,
     ) -> None:
         """从 HuggingFace / ModelScope 仓库下载文文件
 
@@ -593,15 +600,20 @@ class BaseManager:
                 指定下载某个文件夹, 未指定时则下载整个文件夹
             num_threads (int):
                 下载线程
+            revision (str | None):
+                指定下载的分支、标签或提交哈希, 为`None`时使用第三方库默认值
         """
-        self.repo_manager.download_files_from_repo(
-            api_type=api_type,
-            repo_id=repo_id,
-            local_dir=Path(local_dir),
-            repo_type=repo_type,
-            folder=folder,
-            num_threads=num_threads,
-        )
+        download_kwargs = {
+            "api_type": api_type,
+            "repo_id": repo_id,
+            "local_dir": Path(local_dir),
+            "repo_type": repo_type,
+            "folder": folder,
+            "num_threads": num_threads,
+        }
+        if revision is not None:
+            download_kwargs["revision"] = revision
+        self.repo_manager.download_files_from_repo(**download_kwargs)
 
     def clear_output(
         self,

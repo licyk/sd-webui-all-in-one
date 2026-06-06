@@ -216,10 +216,26 @@ def test_notebook_gpu_check_and_delegates(monkeypatch, notebook_manager, tmp_pat
     notebook_manager.download_and_extract("https://example.test/a.zip", tmp_path / "out", name="a.zip")
     assert download_calls == [{"url": "https://example.test/a.zip", "local_dir": tmp_path / "out", "name": "a.zip"}]
 
-    notebook_manager.upload_files_to_repo("huggingface", "owner/repo", tmp_path / "upload", visibility=True, num_threads=2)
-    notebook_manager.download_files_from_repo("modelscope", "owner/repo", tmp_path / "download", folder="aa", num_threads=3)
+    notebook_manager.upload_files_to_repo(
+        "huggingface",
+        "owner/repo",
+        tmp_path / "upload",
+        visibility=True,
+        num_threads=2,
+        revision="hf-rev",
+    )
+    notebook_manager.download_files_from_repo(
+        "modelscope",
+        "owner/repo",
+        tmp_path / "download",
+        folder="aa",
+        num_threads=3,
+        revision="ms-rev",
+    )
     assert notebook_manager.repo_manager.calls[0][0] == "upload"
     assert notebook_manager.repo_manager.calls[1][0] == "download"
+    assert notebook_manager.repo_manager.calls[0][1]["revision"] == "hf-rev"
+    assert notebook_manager.repo_manager.calls[1][1]["revision"] == "ms-rev"
 
     tunnel = notebook_manager.get_tunnel_url(use_cloudflare=True, webui_name="Demo")
     assert tunnel["cloudflare"] == "https://cf.example"

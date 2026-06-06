@@ -31,6 +31,15 @@ RepoType: TypeAlias = Literal["model", "dataset", "space"]
 """HuggingFace / ModelScope 仓库类型"""
 
 
+def _add_revision(
+    kwargs: dict[str, Any],
+    revision: str | None,
+) -> dict[str, Any]:
+    if revision is not None:
+        kwargs["revision"] = revision
+    return kwargs
+
+
 class RepoManager:
     """HuggingFace / ModelScope 仓库管理器
 
@@ -94,6 +103,7 @@ class RepoManager:
         api_type: ApiType,
         repo_id: str,
         repo_type: RepoType = "model",
+        revision: str | None = None,
     ) -> list[str]:
         """获取 HuggingFace / ModelScope 仓库文件列表
 
@@ -104,6 +114,8 @@ class RepoManager:
                 HuggingFace / ModelScope 仓库 ID
             repo_type (RepoType):
                 HuggingFace / ModelScope 仓库类型
+            revision (str | None):
+                指定仓库分支、标签或提交哈希, 为`None`时使用第三方库默认值
 
         Returns:
             list[str]:
@@ -117,10 +129,10 @@ class RepoManager:
         """
         if api_type == "huggingface":
             logger.info("获取 HuggingFace 仓库 %s (类型: %s) 的文件列表", repo_id, repo_type)
-            return self.get_hf_repo_files(repo_id, repo_type)
+            return self.get_hf_repo_files(**_add_revision({"repo_id": repo_id, "repo_type": repo_type}, revision))
         if api_type == "modelscope":
             logger.info("获取 ModelScope 仓库 %s (类型: %s) 的文件列表", repo_id, repo_type)
-            return self.get_ms_repo_files(repo_id, repo_type)
+            return self.get_ms_repo_files(**_add_revision({"repo_id": repo_id, "repo_type": repo_type}, revision))
 
         logger.error("未知 Api 类型: %s", api_type)
         raise ValueError(f"未知的 API 类型: {api_type}")
@@ -129,6 +141,7 @@ class RepoManager:
         self,
         repo_id: str,
         repo_type: RepoType = "model",
+        revision: str | None = None,
     ) -> list[str]:
         """获取 HuggingFace 仓库文件列表
 
@@ -137,20 +150,27 @@ class RepoManager:
                 HuggingFace 仓库 ID
             repo_type (RepoType):
                 HuggingFace 仓库类型
+            revision (str | None):
+                指定仓库分支、标签或提交哈希, 为`None`时使用 HuggingFace 默认值
 
         Returns:
             list[str]:
                 仓库文件列表
         """
-        return self.hf_api.list_repo_files(
-            repo_id=repo_id,
-            repo_type=repo_type,
+        list_kwargs: dict[str, Any] = _add_revision(
+            {
+                "repo_id": repo_id,
+                "repo_type": repo_type,
+            },
+            revision,
         )
+        return self.hf_api.list_repo_files(**list_kwargs)
 
     def get_ms_repo_files(
         self,
         repo_id: str,
         repo_type: RepoType = "model",
+        revision: str | None = None,
     ) -> list[str]:
         """获取 ModelScope 仓库文件列表
 
@@ -159,6 +179,8 @@ class RepoManager:
                 ModelScope 仓库 ID
             repo_type (RepoType):
                 ModelScope 仓库类型
+            revision (str | None):
+                指定仓库分支、标签或提交哈希, 为`None`时使用 ModelScope 默认值
 
         Returns:
             list[str]:
@@ -176,10 +198,14 @@ class RepoManager:
             return [file["Path"] for file in repo_files if file["Type"] != "tree"]
 
         if repo_type == "model":
-            repo_files = self.ms_api.get_model_files(
-                model_id=repo_id,
-                recursive=True,
+            list_kwargs = _add_revision(
+                {
+                    "model_id": repo_id,
+                    "recursive": True,
+                },
+                revision,
             )
+            repo_files = self.ms_api.get_model_files(**list_kwargs)
             return _get_file_path(repo_files)
         if repo_type == "dataset":
             all_files = []
@@ -191,13 +217,17 @@ class RepoManager:
                 namespace=owner,
             )
             while True:
-                repo_files = self.ms_api.get_dataset_files(
-                    repo_id=repo_id,
-                    recursive=True,
-                    page_number=page_number,
-                    page_size=page_size,
-                    dataset_hub_id=dataset_hub_id,
+                list_kwargs = _add_revision(
+                    {
+                        "repo_id": repo_id,
+                        "recursive": True,
+                        "page_number": page_number,
+                        "page_size": page_size,
+                        "dataset_hub_id": dataset_hub_id,
+                    },
+                    revision,
                 )
+                repo_files = self.ms_api.get_dataset_files(**list_kwargs)
                 if not repo_files:
                     break
 
@@ -338,6 +368,7 @@ class RepoManager:
         repo_type: RepoType = "model",
         visibility: bool = False,
         num_threads: int = 1,
+        revision: str | None = None,
     ) -> None:
         """上传文件夹中的内容到 HuggingFace / ModelScope 仓库中
 
@@ -354,6 +385,8 @@ class RepoManager:
                 当仓库不存在时自动创建的仓库的可见性
             num_threads (int):
                 上传线程数, 为`None`时使用单线程
+            revision (str | None):
+                指定上传目标分支或标签, 为`None`时使用第三方库默认值
 
         Raises:
             ValueError:
@@ -371,17 +404,27 @@ class RepoManager:
 
         if api_type == "huggingface":
             self.upload_files_to_huggingface(
-                repo_id=repo_id,
-                repo_type=repo_type,
-                upload_path=upload_path,
-                num_threads=num_threads,
+                **_add_revision(
+                    {
+                        "repo_id": repo_id,
+                        "repo_type": repo_type,
+                        "upload_path": upload_path,
+                        "num_threads": num_threads,
+                    },
+                    revision,
+                )
             )
         elif api_type == "modelscope":
             self.upload_files_to_modelscope(
-                repo_id=repo_id,
-                repo_type=repo_type,
-                upload_path=upload_path,
-                num_threads=num_threads,
+                **_add_revision(
+                    {
+                        "repo_id": repo_id,
+                        "repo_type": repo_type,
+                        "upload_path": upload_path,
+                        "num_threads": num_threads,
+                    },
+                    revision,
+                )
             )
 
     def upload_files_to_huggingface(
@@ -390,6 +433,7 @@ class RepoManager:
         upload_path: Path,
         repo_type: RepoType = "model",
         num_threads: int | None = 1,
+        revision: str | None = None,
     ) -> None:
         """上传文件夹中的内容到 HuggingFace 仓库中
 
@@ -402,6 +446,8 @@ class RepoManager:
                 要上传到 HuggingFace 仓库的文件夹
             num_threads (int | None):
                 上传线程数, 为`None`时使用单线程
+            revision (str | None):
+                指定上传目标分支或标签, 为`None`时使用 HuggingFace 默认值
 
         Raises:
             AggregateError:
@@ -413,6 +459,7 @@ class RepoManager:
                 api_type="huggingface",
                 repo_id=repo_id,
                 repo_type=repo_type,
+                revision=revision,
             )
         )
         logger.info("上传到 HuggingFace 仓库: %s -> HuggingFace/%s", upload_path, repo_id)
@@ -438,13 +485,17 @@ class RepoManager:
             path_in_repo: str,
             path_or_fileobj: Path,
         ) -> None:
-            self.hf_api.upload_file(
-                repo_id=repo_id,
-                repo_type=repo_type,
-                path_in_repo=path_in_repo,
-                path_or_fileobj=path_or_fileobj,
-                commit_message=f"Upload {path_or_fileobj.name}",
+            upload_kwargs = _add_revision(
+                {
+                    "repo_id": repo_id,
+                    "repo_type": repo_type,
+                    "path_in_repo": path_in_repo,
+                    "path_or_fileobj": path_or_fileobj,
+                    "commit_message": f"Upload {path_or_fileobj.name}",
+                },
+                revision,
             )
+            self.hf_api.upload_file(**upload_kwargs)
 
         if upload_tasks:
             logger.info("实际需要上传文件数量: %s", len(upload_tasks))
@@ -488,6 +539,7 @@ class RepoManager:
         upload_path: Path,
         repo_type: RepoType = "model",
         num_threads: int | None = 1,
+        revision: str | None = None,
     ) -> None:
         """上传文件夹中的内容到 ModelScope 仓库中
 
@@ -500,6 +552,8 @@ class RepoManager:
                 要上传到 ModelScope 仓库的文件夹
             num_threads (int | None):
                 上传线程数, 为`None`时使用单线程
+            revision (str | None):
+                指定上传目标分支或标签, 为`None`时使用 ModelScope 默认值
 
         Raises:
             AggregateError:
@@ -511,6 +565,7 @@ class RepoManager:
                 api_type="modelscope",
                 repo_id=repo_id,
                 repo_type=repo_type,
+                revision=revision,
             )
         )
         logger.info("上传到 ModelScope 仓库: %s -> ModelScope/%s", upload_path, repo_id)
@@ -536,14 +591,18 @@ class RepoManager:
             path_in_repo: str,
             path_or_fileobj: Path,
         ) -> None:
-            self.ms_api.upload_file(
-                repo_id=repo_id,
-                repo_type=repo_type,
-                path_in_repo=path_in_repo,
-                path_or_fileobj=path_or_fileobj,
-                commit_message=f"Upload {path_or_fileobj.name}",
-                token=self.ms_token,
+            upload_kwargs = _add_revision(
+                {
+                    "repo_id": repo_id,
+                    "repo_type": repo_type,
+                    "path_in_repo": path_in_repo,
+                    "path_or_fileobj": path_or_fileobj,
+                    "commit_message": f"Upload {path_or_fileobj.name}",
+                    "token": self.ms_token,
+                },
+                revision,
             )
+            self.ms_api.upload_file(**upload_kwargs)
 
         if upload_tasks:
             logger.info("实际需要上传文件数量: %s", len(upload_tasks))
@@ -589,6 +648,7 @@ class RepoManager:
         repo_type: RepoType = "model",
         folder: str | None = None,
         num_threads: int = 8,
+        revision: str | None = None,
     ) -> None:
         """从 HuggingFace / ModelScope 仓库下载文文件
 
@@ -650,6 +710,8 @@ class RepoManager:
                 指定下载某个文件夹, 未指定时则下载整个文件夹
             num_threads (int):
                 下载线程
+            revision (str | None):
+                指定下载的分支、标签或提交哈希, 为`None`时使用第三方库默认值
 
         Raises:
             ValueError:
@@ -661,20 +723,30 @@ class RepoManager:
         logger.info("从 %s (类型: %s) 下载文件中", repo_id, repo_type)
         if api_type == "huggingface":
             self.download_files_from_huggingface(
-                repo_id=repo_id,
-                repo_type=repo_type,
-                local_dir=local_dir,
-                folder=folder,
-                num_threads=num_threads,
+                **_add_revision(
+                    {
+                        "repo_id": repo_id,
+                        "repo_type": repo_type,
+                        "local_dir": local_dir,
+                        "folder": folder,
+                        "num_threads": num_threads,
+                    },
+                    revision,
+                )
             )
 
         if api_type == "modelscope":
             self.download_files_from_modelscope(
-                repo_id=repo_id,
-                repo_type=repo_type,
-                local_dir=local_dir,
-                folder=folder,
-                num_threads=num_threads,
+                **_add_revision(
+                    {
+                        "repo_id": repo_id,
+                        "repo_type": repo_type,
+                        "local_dir": local_dir,
+                        "folder": folder,
+                        "num_threads": num_threads,
+                    },
+                    revision,
+                )
             )
 
     def download_files_from_huggingface(
@@ -684,6 +756,7 @@ class RepoManager:
         repo_type: RepoType = "model",
         folder: str | None = None,
         num_threads: int = 8,
+        revision: str | None = None,
     ) -> None:
         """从 HuggingFace 仓库下载文文件
 
@@ -698,6 +771,8 @@ class RepoManager:
                 指定下载某个文件夹, 未指定时则下载整个文件夹
             num_threads (int):
                 下载线程
+            revision (str | None):
+                指定下载的分支、标签或提交哈希, 为`None`时使用 HuggingFace 默认值
         """
         from huggingface_hub import hf_hub_download
 
@@ -705,6 +780,7 @@ class RepoManager:
             api_type="huggingface",
             repo_id=repo_id,
             repo_type=repo_type,
+            revision=revision,
         )
         download_task: list[dict[str, Any]] = []
 
@@ -712,12 +788,15 @@ class RepoManager:
             if folder is not None and not repo_file.startswith(folder):
                 continue
             download_task.append(
-                {
-                    "repo_id": repo_id,
-                    "repo_type": repo_type,
-                    "local_dir": local_dir,
-                    "filename": repo_file,
-                }
+                _add_revision(
+                    {
+                        "repo_id": repo_id,
+                        "repo_type": repo_type,
+                        "local_dir": local_dir,
+                        "filename": repo_file,
+                    },
+                    revision,
+                )
             )
 
         if folder is not None:
@@ -734,6 +813,7 @@ class RepoManager:
         repo_type: RepoType = "model",
         folder: str | None = None,
         num_threads: int = 8,
+        revision: str | None = None,
     ) -> None:
         """从 ModelScope 仓库下载文文件
 
@@ -748,6 +828,8 @@ class RepoManager:
                 指定下载某个文件夹, 未指定时则下载整个文件夹
             num_threads (int):
                 下载线程
+            revision (str | None):
+                指定下载的分支、标签或提交哈希, 为`None`时使用 ModelScope 默认值
         """
         from modelscope import snapshot_download
 
@@ -755,6 +837,7 @@ class RepoManager:
             api_type="modelscope",
             repo_id=repo_id,
             repo_type=repo_type,
+            revision=revision,
         )
         download_task: list[dict[str, Any]] = []
 
@@ -762,12 +845,15 @@ class RepoManager:
             if folder is not None and not repo_file.startswith(folder):
                 continue
             download_task.append(
-                {
-                    "repo_id": repo_id,
-                    "repo_type": repo_type,
-                    "local_dir": local_dir,
-                    "allow_patterns": repo_file,
-                }
+                _add_revision(
+                    {
+                        "repo_id": repo_id,
+                        "repo_type": repo_type,
+                        "local_dir": local_dir,
+                        "allow_patterns": repo_file,
+                    },
+                    revision,
+                )
             )
 
         if folder is not None:

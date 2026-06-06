@@ -100,7 +100,8 @@ def test_repo_manager_huggingface_file_listing_and_creation():
 
     manager.hf_api = FakeHfApi()
 
-    assert manager.get_hf_repo_files("owner/repo", "model") == ["a.txt"]
+    assert manager.get_hf_repo_files("owner/repo", "model", revision="dev") == ["a.txt"]
+    assert calls[0] == ("list", {"repo_id": "owner/repo", "repo_type": "model", "revision": "dev"})
     assert manager.check_hf_repo("owner/repo", "dataset", visibility=True) is True
     assert calls[-1] == ("create", {"repo_id": "owner/repo", "repo_type": "dataset", "private": False})
 
@@ -134,8 +135,11 @@ def test_repo_manager_modelscope_file_listing_and_creation(monkeypatch):
 
     manager.ms_api = FakeMsApi()
 
-    assert manager.get_ms_repo_files("owner/model", "model") == ["weights/a.bin"]
-    assert manager.get_ms_repo_files("owner/dataset", "dataset") == ["data/a.txt"]
+    assert manager.get_ms_repo_files("owner/model", "model", revision="v1") == ["weights/a.bin"]
+    assert calls[0] == ("model_files", {"model_id": "owner/model", "recursive": True, "revision": "v1"})
+    assert manager.get_ms_repo_files("owner/dataset", "dataset", revision="v2") == ["data/a.txt"]
+    assert calls[2][0] == "dataset_files"
+    assert calls[2][1]["revision"] == "v2"
     assert manager.check_ms_repo("owner/model", "model", visibility=False) is True
     assert calls[-1][1]["visibility"] == "private"
 
@@ -149,17 +153,34 @@ def test_repo_manager_upload_skips_existing_and_aggregates_failures(monkeypatch,
 
     manager = _repo_manager_with_apis()
     uploaded = []
+    list_calls = []
 
     class FakeHfApi:
         def upload_file(self, **kwargs):
-            uploaded.append(kwargs["path_in_repo"])
+            uploaded.append(kwargs)
 
     manager.hf_api = FakeHfApi()
-    manager.get_repo_file = lambda **_kwargs: ["existing.txt"]
+    manager.get_repo_file = lambda **kwargs: list_calls.append(kwargs) or ["existing.txt"]
 
-    manager.upload_files_to_huggingface("owner/repo", upload_root, num_threads=1)
+    manager.upload_files_to_huggingface("owner/repo", upload_root, num_threads=1, revision="upload-branch")
 
-    assert uploaded == ["new.txt"]
+    assert list_calls[0]["revision"] == "upload-branch"
+    assert uploaded[0]["path_in_repo"] == "new.txt"
+    assert uploaded[0]["revision"] == "upload-branch"
+
+    ms_uploaded = []
+
+    class FakeMsApi:
+        def upload_file(self, **kwargs):
+            ms_uploaded.append(kwargs)
+
+    manager.ms_api = FakeMsApi()
+    manager.get_repo_file = lambda **_kwargs: []
+
+    manager.upload_files_to_modelscope("owner/repo", upload_root, num_threads=1, revision="ms-branch")
+
+    assert {kwargs["path_in_repo"] for kwargs in ms_uploaded} == {"existing.txt", "new.txt"}
+    assert {kwargs["revision"] for kwargs in ms_uploaded} == {"ms-branch"}
 
     class FailingHfApi:
         def upload_file(self, **_kwargs):
@@ -191,20 +212,53 @@ def test_repo_manager_download_filters_huggingface_and_modelscope(monkeypatch, t
     manager = _repo_manager_with_apis()
     manager.get_repo_file = lambda **_kwargs: ["aa/a.txt", "bb/b.txt", "aa/nested/c.txt"]
 
-    manager.download_files_from_huggingface("owner/repo", tmp_path, folder="aa/", num_threads=3)
+    manager.download_files_from_huggingface(
+        "owner/repo",
+        tmp_path,
+        folder="aa/",
+        num_threads=3,
+        revision="hf-rev",
+    )
     assert captured[0] == (
         "hf-download",
         [
-            {"repo_id": "owner/repo", "repo_type": "model", "local_dir": tmp_path, "filename": "aa/a.txt"},
-            {"repo_id": "owner/repo", "repo_type": "model", "local_dir": tmp_path, "filename": "aa/nested/c.txt"},
+            {
+                "repo_id": "owner/repo",
+                "repo_type": "model",
+                "local_dir": tmp_path,
+                "filename": "aa/a.txt",
+                "revision": "hf-rev",
+            },
+            {
+                "repo_id": "owner/repo",
+                "repo_type": "model",
+                "local_dir": tmp_path,
+                "filename": "aa/nested/c.txt",
+                "revision": "hf-rev",
+            },
         ],
     )
     assert captured[1] == ("start", 3)
 
     captured.clear()
-    manager.download_files_from_modelscope("owner/repo", tmp_path, repo_type="dataset", folder="bb/", num_threads=2)
+    manager.download_files_from_modelscope(
+        "owner/repo",
+        tmp_path,
+        repo_type="dataset",
+        folder="bb/",
+        num_threads=2,
+        revision="ms-rev",
+    )
     assert captured[0] == (
         "ms-download",
-        [{"repo_id": "owner/repo", "repo_type": "dataset", "local_dir": tmp_path, "allow_patterns": "bb/b.txt"}],
+        [
+            {
+                "repo_id": "owner/repo",
+                "repo_type": "dataset",
+                "local_dir": tmp_path,
+                "allow_patterns": "bb/b.txt",
+                "revision": "ms-rev",
+            }
+        ],
     )
     assert captured[1] == ("start", 2)
