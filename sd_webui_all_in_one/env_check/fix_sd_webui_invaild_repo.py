@@ -45,19 +45,46 @@ def fix_stable_diffusion_invaild_repo_url(
         custom_env = os.environ.copy()
 
     custom_env.pop("GIT_CONFIG_GLOBAL", None)
+    git_command_prefix = ["git", "-C", stable_diffusion_path.as_posix()]
     try:
         repo_url = run_cmd(
-            ["git", "-C", stable_diffusion_path.as_posix(), "remote", "get-url", "origin"],
+            [*git_command_prefix, "remote", "get-url", "origin"],
             custom_env=custom_env,
             live=False,
         )
+    except RuntimeError as e:
+        try:
+            remotes = run_cmd(
+                [*git_command_prefix, "remote"],
+                custom_env=custom_env,
+                live=False,
+            )
+        except RuntimeError:
+            raise RuntimeError(f"修复 Stable Diffusion WebUI 无效的组件仓库源时发生错误: {e}") from e
+
+        remote_names = {remote.strip() for remote in (remotes or "").splitlines()}
+        if "origin" in remote_names:
+            raise RuntimeError(f"修复 Stable Diffusion WebUI 无效的组件仓库源时发生错误: {e}") from e
+
+        try:
+            run_cmd(
+                [*git_command_prefix, "remote", "add", "origin", new_repo_url],
+                custom_env=custom_env,
+                live=False,
+            )
+            logger.info("添加仓库源: origin -> %s", new_repo_url)
+            return
+        except RuntimeError as add_error:
+            logger.error("修复 Stable Diffusion WebUI 无效的组件仓库源时发生错误: %s", add_error)
+            raise RuntimeError(f"修复 Stable Diffusion WebUI 无效的组件仓库源时发生错误: {add_error}") from add_error
     except Exception as e:
         raise RuntimeError(f"修复 Stable Diffusion WebUI 无效的组件仓库源时发生错误: {e}") from e
 
+    repo_url = (repo_url or "").strip()
     if repo_url in ["https://github.com/Stability-AI/stablediffusion.git", "https://github.com/Stability-AI/stablediffusion"]:
         try:
             run_cmd(
-                ["git", "-C", stable_diffusion_path.as_posix(), "remote", "set-url", "origin", new_repo_url],
+                [*git_command_prefix, "remote", "set-url", "origin", new_repo_url],
                 custom_env=custom_env,
                 live=False,
             )

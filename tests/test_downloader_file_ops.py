@@ -1,4 +1,5 @@
 import builtins
+import io
 import os
 import sys
 import tarfile
@@ -373,6 +374,67 @@ def test_archive_manager_zip_tar_and_unsupported(monkeypatch, tmp_path):
         archive_manager.extract_archive(tmp_path / "bad.exe", tmp_path / "bad-out")
 
 
+def test_archive_manager_format_detection_matches_supported_handlers(tmp_path):
+    assert archive_manager.is_supported_archive_format(tmp_path / "sample.TGZ") is True
+    assert archive_manager.is_supported_archive_format(tmp_path / "sample.tbz2") is True
+    assert archive_manager.is_supported_archive_format(tmp_path / "sample.txz") is True
+    assert archive_manager.is_supported_archive_format(tmp_path / "sample.tlz") is True
+    assert archive_manager.is_supported_archive_format(tmp_path / "sample.tar.7z") is True
+
+    assert archive_manager.is_supported_archive_format(tmp_path / "sample.tar.Z") is False
+    assert archive_manager.is_supported_archive_format(tmp_path / "sample.tar.lz") is False
+
+
+def test_archive_create_installs_optional_dependency_before_reimport(monkeypatch, tmp_path):
+    source = tmp_path / "source.txt"
+    source.write_text("payload", encoding="utf-8")
+    archive_path = tmp_path / "created.7z"
+    installed = False
+    install_calls = []
+    import_calls = []
+    write_calls = []
+
+    class FakeSevenZipFile:
+        def __init__(self, path, mode):
+            self.path = path
+            self.mode = mode
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def write(self, path, arcname):
+            write_calls.append((path, arcname))
+
+    fake_py7zr = types.SimpleNamespace(SevenZipFile=FakeSevenZipFile)
+    real_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name != "py7zr":
+            return real_import(name, *args, **kwargs)
+        import_calls.append(name)
+        if name == "py7zr" and not installed:
+            raise ImportError("py7zr missing")
+        return fake_py7zr
+
+    def fake_pip_install(package_name, custom_env):
+        nonlocal installed
+        installed = True
+        install_calls.append((package_name, custom_env))
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+    monkeypatch.setattr(archive_manager, "_get_auto_pypi_mirror_config", lambda: {"PIP_INDEX_URL": "https://example.test/simple"})
+    monkeypatch.setattr(archive_manager, "_pip_install_package", fake_pip_install)
+
+    archive_manager.create_archive([source], archive_path)
+
+    assert import_calls == ["py7zr", "py7zr"]
+    assert install_calls == [("py7zr", {"PIP_INDEX_URL": "https://example.test/simple"})]
+    assert write_calls == [(source.as_posix(), "source.txt")]
+
+
 def test_archive_create_tar_variants_and_write_errors(monkeypatch, tmp_path):
     monkeypatch.setitem(sys.modules, "py7zr", types.SimpleNamespace(SevenZipFile=object))
     monkeypatch.setitem(sys.modules, "zstandard", types.SimpleNamespace(ZstdCompressor=object))
@@ -396,6 +458,27 @@ def test_archive_create_tar_variants_and_write_errors(monkeypatch, tmp_path):
 
     with pytest.raises(ValueError, match="unsupported|不支持"):
         archive_manager.create_archive([source_dir], tmp_path / "bad.bin")
+
+
+def test_archive_extract_rejects_unsafe_member_paths(tmp_path):
+    zip_path = tmp_path / "unsafe.zip"
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.writestr("../outside.txt", "unsafe")
+
+    with pytest.raises(ValueError, match="不安全"):
+        archive_manager.extract_archive(zip_path, tmp_path / "zip-out")
+    assert not (tmp_path / "outside.txt").exists()
+
+    tar_path = tmp_path / "unsafe.tar"
+    payload = b"unsafe"
+    tar_info = tarfile.TarInfo("../outside.txt")
+    tar_info.size = len(payload)
+    with tarfile.open(tar_path, "w") as tf:
+        tf.addfile(tar_info, io.BytesIO(payload))
+
+    with pytest.raises(ValueError, match="不安全"):
+        archive_manager.extract_archive(tar_path, tmp_path / "tar-out")
+    assert not (tmp_path / "outside.txt").exists()
 
 
 def test_file_operations_error_paths_tree_and_empty_status(tmp_path, capsys):

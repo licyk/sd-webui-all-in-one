@@ -153,3 +153,28 @@ def test_fix_stable_diffusion_invalid_repo_url(monkeypatch, tmp_path):
     monkeypatch.setattr(fix_repo, "run_cmd", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("git bad")))
     with pytest.raises(RuntimeError, match="无效的组件仓库源"):
         fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env.copy())
+
+
+def test_fix_stable_diffusion_invalid_repo_url_adds_missing_origin(monkeypatch, tmp_path):
+    stable_repo = tmp_path / "repositories" / "stable-diffusion-stability-ai"
+    stable_repo.mkdir(parents=True)
+    env = {"GIT_CONFIG_GLOBAL": "/tmp/global", "KEEP": "1"}
+    calls = []
+
+    monkeypatch.setattr(fix_repo.git_warpper, "is_git_repo", lambda path: path == stable_repo)
+
+    def fake_run_cmd(command, custom_env=None, live=True):
+        calls.append((command, custom_env, live))
+        assert "GIT_CONFIG_GLOBAL" not in custom_env
+        if command[-3:] == ["remote", "get-url", "origin"]:
+            raise RuntimeError("No such remote 'origin'")
+        if command[-1:] == ["remote"]:
+            return "upstream\n"
+        return ""
+
+    monkeypatch.setattr(fix_repo, "run_cmd", fake_run_cmd)
+    fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env.copy())
+
+    assert calls[0][0] == ["git", "-C", stable_repo.as_posix(), "remote", "get-url", "origin"]
+    assert calls[1][0] == ["git", "-C", stable_repo.as_posix(), "remote"]
+    assert calls[2][0] == ["git", "-C", stable_repo.as_posix(), "remote", "add", "origin", "https://github.com/licyk/stablediffusion"]
