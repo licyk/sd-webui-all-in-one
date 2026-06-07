@@ -431,7 +431,7 @@ def test_archive_create_installs_optional_dependency_before_reimport(monkeypatch
 
     assert import_calls == ["py7zr", "py7zr"]
     assert install_calls == ["py7zr"]
-    assert write_calls == [(source.as_posix(), "source.txt")]
+    assert write_calls == [(str(source), "source.txt")]
 
 
 def test_install_optional_dependency_uses_mirror_config(monkeypatch):
