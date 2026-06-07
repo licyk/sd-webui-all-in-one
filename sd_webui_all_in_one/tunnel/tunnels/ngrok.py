@@ -64,13 +64,13 @@ class NgrokTunnel(BaseTunnel):
 
         # 导入或安装 pyngrok
         try:
-            from pyngrok import conf, ngrok  # ty: ignore[unresolved-import]
-            from pyngrok.exception import PyngrokError  # ty: ignore[unresolved-import]
+            from pyngrok import conf, ngrok
+            from pyngrok.exception import PyngrokError
         except ImportError:
             try:
                 install_optional_dependency("pyngrok")
-                from pyngrok import conf, ngrok  # ty: ignore[unresolved-import]
-                from pyngrok.exception import PyngrokError  # ty: ignore[unresolved-import]
+                from pyngrok import conf, ngrok
+                from pyngrok.exception import PyngrokError
             except (RuntimeError, ImportError) as e:
                 logger.error("安装 Ngrok 内网穿透模块失败: %s", e)
                 raise RuntimeError(f"安装 Ngrok 内网穿透模块失败: {e}") from e
@@ -84,10 +84,14 @@ class NgrokTunnel(BaseTunnel):
             ssh_tunnels = ngrok.get_tunnels(conf.get_default())
 
             if len(ssh_tunnels) == 0:
-                ssh_tunnel = ngrok.connect(self.port, bind_tls=True)
-                self._url = ssh_tunnel.public_url
+                ssh_tunnel = ngrok.connect(str(self.port), bind_tls=True)
             else:
-                self._url = ssh_tunnels[0].public_url
+                ssh_tunnel = ssh_tunnels[0]
+
+            if ssh_tunnel.public_url is None:
+                raise RuntimeError("Ngrok 未返回内网穿透访问地址")
+
+            self._url = ssh_tunnel.public_url
 
             logger.info("Ngrok 内网穿透启动完成")
             return self._url
@@ -105,7 +109,8 @@ class NgrokTunnel(BaseTunnel):
         if self._ngrok_module:
             try:
                 logger.info("正在停止 Ngrok 内网穿透")
-                self._ngrok_module.disconnect(self._url)
+                if self._url is not None:
+                    self._ngrok_module.disconnect(self._url)
                 logger.info("Ngrok 内网穿透已停止")
             except Exception as e:
                 logger.error("停止 Ngrok 内网穿透时发生错误: %s", e)

@@ -133,20 +133,43 @@ def test_ssh_based_tunnel_classes_configure_expected_arguments(tmp_path):
 
 
 def test_cloudflare_tunnel_start_stop_and_install_failure(monkeypatch, tmp_path):
-    class FakeCloudflareTunnel:
-        tunnel = "https://cf.example"
-
+    class FakeProcess:
         def __init__(self):
             self.terminated = False
+
+        def poll(self):
+            return 0 if self.terminated else None
 
         def terminate(self):
             self.terminated = True
 
+        def wait(self, timeout=None):
+            return 0
+
+    class FakeCloudflareTunnel:
+        tunnel = "https://cf.example"
+
+        def __init__(self):
+            self.process = FakeProcess()
+            self.terminated = False
+
+    class FakeCloudflareClient:
+        def __init__(self, tunnel):
+            self.tunnel = tunnel
+
+        def __call__(self, port):
+            return self.tunnel
+
+        def terminate(self, port):
+            self.tunnel.terminated = True
+            self.tunnel.process.terminate()
+
     fake = FakeCloudflareTunnel()
-    monkeypatch.setitem(sys.modules, "pycloudflared", types.SimpleNamespace(try_cloudflare=lambda port: fake))
+    monkeypatch.setitem(sys.modules, "pycloudflared", types.SimpleNamespace(try_cloudflare=FakeCloudflareClient(fake)))
 
     tunnel = cloudflare.CloudflareTunnel(7860, tmp_path)
     assert tunnel.start() == "https://cf.example"
+    assert tunnel.is_running is True
     tunnel.stop()
     assert fake.terminated is True
 

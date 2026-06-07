@@ -98,6 +98,9 @@ dev = [
     "tqdm",
     "modelscope",
     "huggingface_hub",
+    "pyngrok",
+    "pycloudflared",
+    "gradio-tunneling",
 ]
 
 [project.scripts]
