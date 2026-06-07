@@ -38,6 +38,15 @@ The -RegRename option mirrors Firefox's fallback for systems where a kernel
 driver or protection layer interferes with UserChoice subkeys. It renames the
 association key temporarily, edits UserChoice, then renames it back.
 
+.INTEGRATION
+This file can be dot-sourced as a small library:
+
+  . .\Set-Ps1DefaultPowerShell.ps1
+  Invoke-Ps1DefaultPowerShellConfiguration -Force
+
+When dot-sourced, the script only defines functions. When executed normally, it
+runs Invoke-Ps1DefaultPowerShellConfiguration with the script parameters.
+
 .REFERENCES
 Mozilla Firefox source:
   https://github.com/mozilla-firefox/firefox/blob/main/browser/components/shell/WindowsUserChoice.cpp
@@ -61,26 +70,15 @@ param(
     [switch]$Force
 )
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
+function Initialize-UserChoiceNativeTypes {
+    [CmdletBinding()]
+    param()
 
-if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
-    throw "This script only runs on Windows."
-}
+    if ("UserChoiceNative" -as [type]) {
+        return
+    }
 
-if (-not $Extension.StartsWith(".")) {
-    throw "This script targets file extensions. Extension must start with '.', for example '.ps1'."
-}
-
-if ([Environment]::Is64BitOperatingSystem -and -not [Environment]::Is64BitProcess) {
-    Write-Warning "You are running a 32-bit PowerShell process on 64-bit Windows. Use 64-bit PowerShell if the association does not take."
-}
-
-if (-not (Test-Path -LiteralPath $PowerShellPath)) {
-    throw "PowerShell executable was not found: $PowerShellPath"
-}
-
-$source = @"
+    $source = @"
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System;
@@ -89,7 +87,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 
-public static class UserChoiceSetter
+public static class UserChoiceNative
 {
     private const int ERROR_SUCCESS = 0;
     private const int SHCNE_ASSOCCHANGED = 0x08000000;
@@ -404,63 +402,248 @@ public static class UserChoiceSetter
 }
 "@
 
-Add-Type -TypeDefinition $source
-
-$sid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-$normalizedExtension = $Extension.ToLowerInvariant()
-
-if (-not [UserChoiceSetter]::ProgIdExists($ProgId)) {
-    throw "ProgID '$ProgId' does not exist under HKCR. Register the handler before assigning it."
+    Add-Type -TypeDefinition $source -ErrorAction Stop | Out-Null
 }
 
-$openCommand = '"' + $PowerShellPath + '" -NoProfile -File "%1" %*'
+function Assert-DefaultAssociationEnvironment {
+    [CmdletBinding()]
+    param()
 
-Write-Host "Target extension : $normalizedExtension"
-Write-Host "Target ProgID    : $ProgId"
-Write-Host "Current user SID : $sid"
-Write-Host "Open command     : $openCommand"
-Write-Host "RegRename        : $([bool]$RegRename)"
+    if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
+        throw "This script only runs on Windows."
+    }
 
-if (-not $Force) {
-    Write-Host ""
-    Write-Host "Preview only. Re-run with -Force to write HKCU UserChoice and HKCU ProgID open command."
-    return
+    if ([Environment]::Is64BitOperatingSystem -and -not [Environment]::Is64BitProcess) {
+        Write-Warning "You are running a 32-bit PowerShell process on 64-bit Windows. Use 64-bit PowerShell if the association does not take."
+    }
 }
 
-if ($PSCmdlet.ShouldProcess("$normalizedExtension -> $ProgId", "write current-user default file association")) {
-    # Ensure the selected ProgID's normal Open verb actually runs PowerShell.
-    # This does not bypass UserChoice; it defines what happens after UserChoice
-    # resolves .ps1 to Microsoft.PowerShellScript.1.
-    $classesRoot = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey("Software\Classes\$ProgId\Shell", $true)
+function Normalize-FileExtension {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Extension
+    )
+
+    $normalizedExtension = $Extension.Trim().ToLowerInvariant()
+
+    if ([string]::IsNullOrWhiteSpace($normalizedExtension)) {
+        throw "Extension cannot be empty."
+    }
+
+    if (-not $normalizedExtension.StartsWith(".")) {
+        throw "This script targets file extensions. Extension must start with '.', for example '.ps1'."
+    }
+
+    return $normalizedExtension
+}
+
+function Get-CurrentUserStringSid {
+    [CmdletBinding()]
+    param()
+
+    return [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+}
+
+function Test-ProgId {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ProgId
+    )
+
+    Initialize-UserChoiceNativeTypes
+    return [UserChoiceNative]::ProgIdExists($ProgId)
+}
+
+function Get-PowerShellOpenCommand {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$PowerShellPath
+    )
+
+    if ([string]::IsNullOrWhiteSpace($PowerShellPath)) {
+        throw "PowerShellPath cannot be empty."
+    }
+
+    if (-not (Test-Path -LiteralPath $PowerShellPath)) {
+        throw "PowerShell executable was not found: $PowerShellPath"
+    }
+
+    return '"' + $PowerShellPath + '" -NoProfile -File "%1" %*'
+}
+
+function Set-ProgIdOpenCommand {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ProgId,
+
+        [Parameter(Mandatory = $true)]
+        [string]$OpenCommand
+    )
+
+    $shellKey = $null
+    $commandKey = $null
+
     try {
-        $classesRoot.SetValue("", "Open", [Microsoft.Win32.RegistryValueKind]::String)
+        $shellKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey("Software\Classes\$ProgId\Shell", $true)
+        if ($null -eq $shellKey) {
+            throw "Could not open or create HKCU:\Software\Classes\$ProgId\Shell."
+        }
+        $shellKey.SetValue("", "Open", [Microsoft.Win32.RegistryValueKind]::String)
+
+        $commandKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey("Software\Classes\$ProgId\Shell\Open\Command", $true)
+        if ($null -eq $commandKey) {
+            throw "Could not open or create HKCU:\Software\Classes\$ProgId\Shell\Open\Command."
+        }
+        $commandKey.SetValue("", $OpenCommand, [Microsoft.Win32.RegistryValueKind]::String)
     }
     finally {
-        $classesRoot.Dispose()
+        if ($null -ne $commandKey) {
+            $commandKey.Dispose()
+        }
+
+        if ($null -ne $shellKey) {
+            $shellKey.Dispose()
+        }
+    }
+}
+
+function Wait-UserChoiceHashWriteWindow {
+    [CmdletBinding()]
+    param(
+        [int]$MinimumMillisecondsRemaining = 2000,
+        [int]$SleepBufferMilliseconds = 200
+    )
+
+    $now = [DateTime]::UtcNow
+    $millisecondsLeft = ((60 - $now.Second) * 1000) - $now.Millisecond
+
+    if ($millisecondsLeft -le $MinimumMillisecondsRemaining) {
+        Start-Sleep -Milliseconds ($millisecondsLeft + $SleepBufferMilliseconds)
+    }
+}
+
+function Set-UserChoiceAssociation {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Extension,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ProgId,
+
+        [Parameter(Mandatory = $true)]
+        [string]$UserSid,
+
+        [switch]$RegRename
+    )
+
+    Initialize-UserChoiceNativeTypes
+    Wait-UserChoiceHashWriteWindow
+
+    $hash = [UserChoiceNative]::GenerateHash($Extension, $UserSid, $ProgId, [DateTime]::UtcNow)
+    [UserChoiceNative]::SetUserChoice($Extension, $ProgId, $hash, [bool]$RegRename)
+    [UserChoiceNative]::NotifyAssociationChanged()
+
+    return [UserChoiceNative]::ValidateUserChoiceHash($Extension, $UserSid)
+}
+
+function New-DefaultAssociationPlan {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Extension,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ProgId,
+
+        [Parameter(Mandatory = $true)]
+        [string]$UserSid,
+
+        [Parameter(Mandatory = $true)]
+        [string]$OpenCommand,
+
+        [switch]$RegRename
+    )
+
+    return [pscustomobject]@{
+        Extension = $Extension
+        ProgId = $ProgId
+        UserSid = $UserSid
+        OpenCommand = $OpenCommand
+        RegRename = [bool]$RegRename
+    }
+}
+
+function Write-DefaultAssociationPlan {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [pscustomobject]$Plan
+    )
+
+    Write-Host "Target extension : $($Plan.Extension)"
+    Write-Host "Target ProgID    : $($Plan.ProgId)"
+    Write-Host "Current user SID : $($Plan.UserSid)"
+    Write-Host "Open command     : $($Plan.OpenCommand)"
+    Write-Host "RegRename        : $($Plan.RegRename)"
+}
+
+function Invoke-Ps1DefaultPowerShellConfiguration {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [string]$Extension = ".ps1",
+        [string]$ProgId = "Microsoft.PowerShellScript.1",
+        [string]$PowerShellPath = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe",
+        [switch]$RegRename,
+        [switch]$Force
+    )
+
+    Set-StrictMode -Version Latest
+    $ErrorActionPreference = "Stop"
+
+    Assert-DefaultAssociationEnvironment
+    Initialize-UserChoiceNativeTypes
+
+    $normalizedExtension = Normalize-FileExtension -Extension $Extension
+    $openCommand = Get-PowerShellOpenCommand -PowerShellPath $PowerShellPath
+
+    if (-not (Test-ProgId -ProgId $ProgId)) {
+        throw "ProgID '$ProgId' does not exist under HKCR. Register the handler before assigning it."
     }
 
-    $commandKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey("Software\Classes\$ProgId\Shell\Open\Command", $true)
-    try {
-        $commandKey.SetValue("", $openCommand, [Microsoft.Win32.RegistryValueKind]::String)
+    $plan = New-DefaultAssociationPlan `
+        -Extension $normalizedExtension `
+        -ProgId $ProgId `
+        -UserSid (Get-CurrentUserStringSid) `
+        -OpenCommand $openCommand `
+        -RegRename:$RegRename
+
+    Write-DefaultAssociationPlan -Plan $plan
+
+    if (-not $Force) {
+        Write-Host ""
+        Write-Host "Preview only. Re-run with -Force to write HKCU UserChoice and HKCU ProgID open command."
+        return
     }
-    finally {
-        $commandKey.Dispose()
+
+    if ($PSCmdlet.ShouldProcess("$normalizedExtension -> $ProgId", "write current-user default file association")) {
+        # This defines what happens after UserChoice resolves .ps1 to the ProgID.
+        Set-ProgIdOpenCommand -ProgId $ProgId -OpenCommand $openCommand
+
+        $validation = Set-UserChoiceAssociation `
+            -Extension $normalizedExtension `
+            -ProgId $ProgId `
+            -UserSid $plan.UserSid `
+            -RegRename:$RegRename
+
+        Write-Host $validation
     }
+}
 
-    # The UserChoice Hash expires at the minute boundary. Keep generation close
-    # to the registry write, and avoid starting when less than about 2 seconds
-    # remain in the current UTC minute.
-    $secondsLeft = 60 - [DateTime]::UtcNow.Second
-    if ($secondsLeft -le 2) {
-        Start-Sleep -Milliseconds (($secondsLeft * 1000) + 200)
-    }
-
-    $timestamp = [DateTime]::UtcNow
-    $hash = [UserChoiceSetter]::GenerateHash($normalizedExtension, $sid, $ProgId, $timestamp)
-
-    [UserChoiceSetter]::SetUserChoice($normalizedExtension, $ProgId, $hash, [bool]$RegRename)
-    [UserChoiceSetter]::NotifyAssociationChanged()
-
-    $validation = [UserChoiceSetter]::ValidateUserChoiceHash($normalizedExtension, $sid)
-    Write-Host $validation
+if ($MyInvocation.InvocationName -ne ".") {
+    Invoke-Ps1DefaultPowerShellConfiguration @PSBoundParameters
 }
