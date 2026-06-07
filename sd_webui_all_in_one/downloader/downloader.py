@@ -8,8 +8,7 @@ from sd_webui_all_in_one.downloader.requests_downloader import download_file_fro
 from sd_webui_all_in_one.downloader.urllib_downloader import download_file_from_url_urllib
 from sd_webui_all_in_one.retry_decorator import retryable
 from sd_webui_all_in_one.downloader.types import DownloadToolType
-from sd_webui_all_in_one.pkg_manager import pip_install
-from sd_webui_all_in_one.mirror_manager import get_auto_pypi_mirror_config
+from sd_webui_all_in_one.optional_dependency import try_install_optional_dependency
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
@@ -39,11 +38,7 @@ def _is_requests_available() -> bool:
 
 def _install_requests() -> bool:
     """尝试安装 requests, 并确认安装后可以导入"""
-    try:
-        custom_env = get_auto_pypi_mirror_config()
-        pip_install("requests", custom_env=custom_env)
-    except Exception as e:
-        logger.warning("安装 requests 失败: %s", e)
+    if not try_install_optional_dependency("requests"):
         return False
 
     if _is_requests_available():

@@ -301,6 +301,7 @@ def extract_archive(
         extract_to (Path): 解压到的路径
     Raises:
         ValueError: 不支持解压时
+        RuntimeError: 安装解压所需的可选依赖失败时
     """
     archive_format = _get_archive_format(archive_path, SUPPORTED_EXTRACT_ARCHIVE_FORMAT)
     if archive_format is None:
@@ -370,6 +371,7 @@ def create_archive(
         archive_path (Path): 压缩文件保存路径
     Raises:
         ValueError: 不支持的压缩或不能写入的格式
+        RuntimeError: 安装压缩所需的可选依赖失败时
     """
     archive_format = _get_archive_format(archive_path, SUPPORTED_CREATE_ARCHIVE_FORMAT)
     if archive_format is None:

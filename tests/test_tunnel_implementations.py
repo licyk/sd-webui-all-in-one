@@ -151,7 +151,7 @@ def test_cloudflare_tunnel_start_stop_and_install_failure(monkeypatch, tmp_path)
     assert fake.terminated is True
 
     monkeypatch.setitem(sys.modules, "pycloudflared", None)
-    monkeypatch.setattr(cloudflare, "pip_install", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("install failed")))
+    monkeypatch.setattr(cloudflare, "install_optional_dependency", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("install failed")))
     with pytest.raises(RuntimeError, match="安装 CloudFlare"):
         cloudflare.CloudflareTunnel(7860, tmp_path).start()
 
@@ -172,8 +172,8 @@ def test_gradio_tunnel_uses_api_payload_and_kills(monkeypatch, tmp_path):
             self.killed = True
 
     fake_main = types.ModuleType("gradio_tunneling.main")
-    fake_main.Tunnel = FakeTunnel
-    fake_main.GRADIO_API_SERVER = "https://api.example"
+    setattr(fake_main, "Tunnel", FakeTunnel)
+    setattr(fake_main, "GRADIO_API_SERVER", "https://api.example")
     monkeypatch.setitem(sys.modules, "gradio_tunneling", types.ModuleType("gradio_tunneling"))
     monkeypatch.setitem(sys.modules, "gradio_tunneling.main", fake_main)
     monkeypatch.setitem(
@@ -204,10 +204,10 @@ def test_ngrok_tunnel_reuses_existing_or_connects_and_disconnects(monkeypatch, t
     )
     fake_conf = types.SimpleNamespace(get_default=lambda: default_conf)
     fake_pyngrok = types.ModuleType("pyngrok")
-    fake_pyngrok.conf = fake_conf
-    fake_pyngrok.ngrok = fake_ngrok
+    setattr(fake_pyngrok, "conf", fake_conf)
+    setattr(fake_pyngrok, "ngrok", fake_ngrok)
     fake_exception = types.ModuleType("pyngrok.exception")
-    fake_exception.PyngrokError = PyngrokError
+    setattr(fake_exception, "PyngrokError", PyngrokError)
     monkeypatch.setitem(sys.modules, "pyngrok", fake_pyngrok)
     monkeypatch.setitem(sys.modules, "pyngrok.exception", fake_exception)
 
@@ -304,11 +304,11 @@ def test_zrok_start_parses_url_and_stop_disables(monkeypatch, tmp_path):
 
     assert tunnel.start() == "https://rp123.shares.zrok.io"
     assert run_calls == [([zrok_bin.as_posix(), "enable", "token"], True)]
-    assert tunnel._process.command == [zrok_bin.as_posix(), "share", "public", "7860", "--headless"]
+    assert getattr(tunnel._process, "command") == [zrok_bin.as_posix(), "share", "public", "7860", "--headless"]
 
     tunnel.stop()
     assert run_calls[-1] == ([zrok_bin.as_posix(), "disable"], False)
-    assert tunnel._process.terminated is True
+    assert getattr(tunnel._process, "terminated") is True
 
 
 def test_zrok_start_wraps_enable_failure(monkeypatch, tmp_path):
