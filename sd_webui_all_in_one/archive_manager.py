@@ -13,6 +13,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_NAME,
 )
 from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.optional_dependency import install_optional_dependency
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -94,26 +95,6 @@ def _get_archive_format(
         if name.endswith(suffix):
             return suffix
     return None
-
-
-def _get_auto_pypi_mirror_config() -> dict[str, str]:
-    """获取 PyPI 镜像配置"""
-    from sd_webui_all_in_one.mirror_manager import get_auto_pypi_mirror_config
-
-    return get_auto_pypi_mirror_config()
-
-
-def _pip_install_package(
-    package_name: str,
-    custom_env: dict[str, str],
-) -> None:
-    """安装 Python 软件包"""
-    from sd_webui_all_in_one.pkg_manager import pip_install
-
-    pip_install(
-        package_name,
-        custom_env=custom_env,
-    )
 
 
 def _is_path_in_directory(
@@ -201,8 +182,7 @@ def _extract_tar_zst(
         import zstandard as zstd
     except ImportError:
         try:
-            custom_env = _get_auto_pypi_mirror_config()
-            _pip_install_package("zstandard", custom_env)
+            install_optional_dependency("zstandard")
             import zstandard as zstd
         except (RuntimeError, ImportError) as e:
             logger.error("安装 zstandard 模块失败: %s", e)
@@ -284,8 +264,7 @@ def _create_tar_zst(
         import zstandard as zstd
     except ImportError:
         try:
-            custom_env = _get_auto_pypi_mirror_config()
-            _pip_install_package("zstandard", custom_env)
+            install_optional_dependency("zstandard")
             import zstandard as zstd
         except (RuntimeError, ImportError) as e:
             logger.error("安装 zstandard 模块失败: %s", e)
@@ -352,8 +331,7 @@ def extract_archive(
             import py7zr
         except ImportError:
             try:
-                custom_env = _get_auto_pypi_mirror_config()
-                _pip_install_package("py7zr", custom_env)
+                install_optional_dependency("py7zr")
                 import py7zr
             except (RuntimeError, ImportError) as e:
                 logger.error("安装 py7zr 模块失败: %s", e)
@@ -368,8 +346,7 @@ def extract_archive(
             import rarfile
         except ImportError:
             try:
-                custom_env = _get_auto_pypi_mirror_config()
-                _pip_install_package("rarfile", custom_env)
+                install_optional_dependency("rarfile")
                 import rarfile
             except (RuntimeError, ImportError) as e:
                 logger.error("安装 rarfile 模块失败: %s", e)
@@ -416,8 +393,7 @@ def create_archive(
             import py7zr
         except ImportError:
             try:
-                custom_env = _get_auto_pypi_mirror_config()
-                _pip_install_package("py7zr", custom_env)
+                install_optional_dependency("py7zr")
                 import py7zr
             except (RuntimeError, ImportError) as e:
                 logger.error("安装 py7zr 模块失败: %s", e)

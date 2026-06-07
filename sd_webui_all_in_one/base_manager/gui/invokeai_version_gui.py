@@ -37,7 +37,7 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     configure_gui_fonts,
     package_version_matches_keyword,
 )
-from sd_webui_all_in_one.file_operations import move_files
+from sd_webui_all_in_one.file_manager import move_files
 from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
 
 

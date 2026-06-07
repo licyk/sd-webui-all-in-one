@@ -47,7 +47,7 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     commit_matches_keyword,
     configure_gui_fonts,
 )
-from sd_webui_all_in_one.file_operations import move_files
+from sd_webui_all_in_one.file_manager import move_files
 
 
 COMFYUI_CUSTOM_NODE_INDEX_URL = "https://raw.githubusercontent.com/Comfy-Org/ComfyUI-Manager/refs/heads/main/custom-node-list.json"

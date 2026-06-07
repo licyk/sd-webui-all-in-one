@@ -12,8 +12,9 @@ from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.downloader import archive_downloader
 from sd_webui_all_in_one.downloader import downloader as downloader_module
 from sd_webui_all_in_one.downloader.multi_thread import MultiThreadDownloader
-from sd_webui_all_in_one.file_operations import archive_manager
-from sd_webui_all_in_one.file_operations import file_manager
+from sd_webui_all_in_one import archive_manager
+from sd_webui_all_in_one import file_manager
+from sd_webui_all_in_one import optional_dependency
 
 
 def test_download_file_falls_back_from_aria2_to_requests(monkeypatch, tmp_path):
@@ -184,7 +185,7 @@ def test_multi_thread_downloader_runs_args_kwargs_and_aggregates_errors():
     assert len(exc.value.exceptions) == 2
 
 
-def test_file_operations_copy_move_remove_scan_and_sync(tmp_path):
+def test_file_manager_copy_move_remove_scan_and_sync(tmp_path):
     src = tmp_path / "src"
     src.mkdir()
     (src / "a.txt").write_text("a", encoding="utf-8")
@@ -218,7 +219,7 @@ def test_file_operations_copy_move_remove_scan_and_sync(tmp_path):
     assert not moved.exists()
 
 
-def test_file_operations_copy_merge_directly_merges_directory(tmp_path):
+def test_file_manager_copy_merge_directly_merges_directory(tmp_path):
     src = tmp_path / "t"
     src.mkdir()
     (src / "a.txt").write_text("new", encoding="utf-8")
@@ -242,7 +243,7 @@ def test_file_operations_copy_merge_directly_merges_directory(tmp_path):
     assert (src / "a.txt").exists()
 
 
-def test_file_operations_move_merge_directly_merges_directory(tmp_path):
+def test_file_manager_move_merge_directly_merges_directory(tmp_path):
     src = tmp_path / "t"
     src.mkdir()
     (src / "a.txt").write_text("new", encoding="utf-8")
@@ -267,7 +268,7 @@ def test_file_operations_move_merge_directly_merges_directory(tmp_path):
     assert (dst / "nested" / "old.txt").read_text(encoding="utf-8") == "old"
 
 
-def test_file_operations_copy_preserves_top_level_symlink(tmp_path):
+def test_file_manager_copy_preserves_top_level_symlink(tmp_path):
     target = tmp_path / "target.txt"
     target.write_text("target", encoding="utf-8")
     link = tmp_path / "link.txt"
@@ -284,7 +285,7 @@ def test_file_operations_copy_preserves_top_level_symlink(tmp_path):
     assert target.read_text(encoding="utf-8") == "target"
 
 
-def test_file_operations_move_preserves_top_level_symlink(tmp_path):
+def test_file_manager_move_preserves_top_level_symlink(tmp_path):
     target = tmp_path / "target.txt"
     target.write_text("target", encoding="utf-8")
     link = tmp_path / "link.txt"
@@ -299,7 +300,7 @@ def test_file_operations_move_preserves_top_level_symlink(tmp_path):
     assert target.read_text(encoding="utf-8") == "target"
 
 
-def test_file_operations_merge_variants_preserve_directory_symlink(tmp_path):
+def test_file_manager_merge_variants_preserve_directory_symlink(tmp_path):
     target_dir = tmp_path / "target-dir"
     target_dir.mkdir()
     (target_dir / "a.txt").write_text("a", encoding="utf-8")
@@ -419,20 +420,30 @@ def test_archive_create_installs_optional_dependency_before_reimport(monkeypatch
             raise ImportError("py7zr missing")
         return fake_py7zr
 
-    def fake_pip_install(package_name, custom_env):
+    def fake_install_optional_dependency(package_name):
         nonlocal installed
         installed = True
-        install_calls.append((package_name, custom_env))
+        install_calls.append(package_name)
 
     monkeypatch.setattr(builtins, "__import__", fake_import)
-    monkeypatch.setattr(archive_manager, "_get_auto_pypi_mirror_config", lambda: {"PIP_INDEX_URL": "https://example.test/simple"})
-    monkeypatch.setattr(archive_manager, "_pip_install_package", fake_pip_install)
+    monkeypatch.setattr(archive_manager, "install_optional_dependency", fake_install_optional_dependency)
 
     archive_manager.create_archive([source], archive_path)
 
     assert import_calls == ["py7zr", "py7zr"]
-    assert install_calls == [("py7zr", {"PIP_INDEX_URL": "https://example.test/simple"})]
+    assert install_calls == ["py7zr"]
     assert write_calls == [(source.as_posix(), "source.txt")]
+
+
+def test_install_optional_dependency_uses_mirror_config(monkeypatch):
+    calls = []
+
+    monkeypatch.setattr(optional_dependency, "get_auto_pypi_mirror_config", lambda: {"PIP_INDEX_URL": "https://example.test/simple"})
+    monkeypatch.setattr(optional_dependency, "pip_install", lambda *args, **kwargs: calls.append((args, kwargs)))
+
+    optional_dependency.install_optional_dependency("demo-package")
+
+    assert calls == [(("demo-package",), {"custom_env": {"PIP_INDEX_URL": "https://example.test/simple"}})]
 
 
 def test_archive_create_tar_variants_and_write_errors(monkeypatch, tmp_path):
@@ -481,7 +492,7 @@ def test_archive_extract_rejects_unsafe_member_paths(tmp_path):
     assert not (tmp_path / "outside.txt").exists()
 
 
-def test_file_operations_error_paths_tree_and_empty_status(tmp_path, capsys):
+def test_file_manager_error_paths_tree_and_empty_status(tmp_path, capsys):
     with pytest.raises(FileNotFoundError):
         file_manager.copy_files(tmp_path / "missing", tmp_path / "out")
 

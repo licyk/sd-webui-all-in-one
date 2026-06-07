@@ -25,7 +25,7 @@ from sd_webui_all_in_one.base_manager.repository_inspector import (
     run_git_output,
 )
 from sd_webui_all_in_one.custom_exceptions import AggregateError
-from sd_webui_all_in_one.file_operations import remove_files
+from sd_webui_all_in_one.file_manager import remove_files
 from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST
 from sd_webui_all_in_one.package_analyzer import CommonVersionComparison
 

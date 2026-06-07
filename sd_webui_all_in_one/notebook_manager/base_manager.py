@@ -43,7 +43,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_NAME,
     RETRY_TIMES,
 )
-from sd_webui_all_in_one.file_operations import (
+from sd_webui_all_in_one.file_manager import (
     copy_files,
     display_directories,
     remove_files,

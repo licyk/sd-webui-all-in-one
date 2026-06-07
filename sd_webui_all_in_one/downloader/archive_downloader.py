@@ -5,7 +5,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from urllib.parse import urlparse
 
-from sd_webui_all_in_one.file_operations import extract_archive
+from sd_webui_all_in_one.archive_manager import extract_archive
 from sd_webui_all_in_one.downloader.downloader import download_file
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
@@ -30,7 +30,7 @@ def download_archive_and_unpack(
 
     Args:
         url (str):
-            压缩包下载链接, 压缩包支持的格式: .zip, .7z, .rar, .tar, .tar.Z, .tar.lz, .tar.lzma, .tar.bz2, .tar.7z, .tar.gz, .tar.xz, .tar.zst
+            压缩包下载链接, 压缩包支持的格式: .zip, .7z, .rar, .tar, .tar.lzma, .tar.bz2, .tar.gz, .tar.xz, .tar.zst, .tgz, .tbz2, .txz, .tlz
         local_dir (Path):
             下载路径
         name (str | None):

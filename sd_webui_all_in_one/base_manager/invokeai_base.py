@@ -54,7 +54,7 @@ from sd_webui_all_in_one.env_check import (
     check_onnxruntime_gpu,
     py_package_metadata_dependency_checker,
 )
-from sd_webui_all_in_one.file_operations import (
+from sd_webui_all_in_one.file_manager import (
     copy_files,
     move_files,
     remove_files,

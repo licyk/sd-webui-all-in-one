@@ -36,7 +36,7 @@ from sd_webui_all_in_one.env_check import (
     fix_torch_libomp,
     check_onnxruntime_gpu,
 )
-from sd_webui_all_in_one.file_operations import (
+from sd_webui_all_in_one.file_manager import (
     generate_dir_tree,
     get_file_list,
     remove_files,

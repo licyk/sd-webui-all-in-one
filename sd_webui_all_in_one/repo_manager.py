@@ -9,7 +9,7 @@ from threading import Lock
 from typing import Any, Literal, TypeAlias
 
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.file_operations import get_file_list
+from sd_webui_all_in_one.file_manager import get_file_list
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
     LOGGER_COLOR,

@@ -39,7 +39,7 @@ from sd_webui_all_in_one.env_check import (
     check_onnxruntime_gpu,
     check_fooocus_hf_mirror_arg,
 )
-from sd_webui_all_in_one.file_operations import (
+from sd_webui_all_in_one.file_manager import (
     copy_files,
     generate_dir_tree,
     get_file_list,
