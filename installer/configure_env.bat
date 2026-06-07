@@ -32,6 +32,12 @@ if '%errorlevel%' NEQ '0' (
     echo :: Enable long paths supported
     echo :: Executing command: "New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force"
     powershell -NoLogo -NoProfile -Command "New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force"
+    echo :: Set .ps1 default open method to PowerShell
+    echo :: Download set_ps1_default_powershell.ps1 from mirrors and execute it
+    powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -Command "& { $ErrorActionPreference = 'Stop'; [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; $urls = @('https://github.com/licyk/sd-webui-all-in-one/raw/main/.github/set_ps1_default_powershell.ps1', 'https://gitee.com/licyk/sd-webui-all-in-one/raw/main/.github/set_ps1_default_powershell.ps1', 'https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/.github/set_ps1_default_powershell.ps1'); $localAppData = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData); $cacheDir = Join-Path $localAppData 'Temp'; New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null; $scriptPath = Join-Path $cacheDir 'set_ps1_default_powershell.ps1'; $downloaded = $false; foreach ($url in $urls) { Write-Host (':: Trying to download: ' + $url); try { $tempPath = $scriptPath + '.download'; if (Test-Path -LiteralPath $tempPath) { Remove-Item -LiteralPath $tempPath -Force }; Invoke-WebRequest -Uri $url -OutFile $tempPath -UseBasicParsing -ErrorAction Stop; if ((Test-Path -LiteralPath $tempPath) -and ((Get-Item -LiteralPath $tempPath).Length -gt 0)) { Move-Item -LiteralPath $tempPath -Destination $scriptPath -Force; $downloaded = $true; Write-Host (':: Downloaded to: ' + $scriptPath); break } } catch { Write-Warning ('Download failed: ' + $url + ' - ' + $_.Exception.Message) } }; if (-not $downloaded) { throw 'Failed to download set_ps1_default_powershell.ps1 from all mirrors.' }; & $scriptPath -Force }"
+    if "%errorlevel%" NEQ "0" (
+        echo :: Failed to set .ps1 default open method, please check network or run set_ps1_default_powershell.ps1 manually
+    )
     echo :: Configure completed
     echo :: Exit environment configuration script
     pause
