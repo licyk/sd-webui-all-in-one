@@ -223,7 +223,7 @@ class SDTrainerScriptsManager(BaseManager):
         pip_install("urllib3", "--upgrade", use_uv=use_uv)
         check_numpy(use_uv=use_uv)
         self.get_model_from_list(path=model_path, model_list=model_list)
-        self.restart_repo_manager(
+        self.repo_manager.configure_tokens(
             hf_token=huggingface_token,
             ms_token=modelscope_token,
         )

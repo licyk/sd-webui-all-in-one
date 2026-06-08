@@ -1,4 +1,5 @@
 import hashlib
+import os
 import sys
 import types
 from pathlib import Path
@@ -169,6 +170,44 @@ def test_repo_manager_modelscope_api_lazy_init_login_and_cache(monkeypatch):
     assert init_calls == ["init"]
     assert login_calls == ["ms-token"]
     assert import_calls == ["modelscope"]
+
+
+def test_repo_manager_configure_tokens_updates_environment_and_invalidates_cached_apis(monkeypatch):
+    monkeypatch.delenv("HF_TOKEN", raising=False)
+    monkeypatch.delenv("MODELSCOPE_API_TOKEN", raising=False)
+    manager = RepoManager()
+    hf_api = object()
+    ms_api = object()
+    manager.hf_api = hf_api
+    manager.ms_api = ms_api
+
+    manager.configure_tokens(hf_token="hf-token", ms_token="ms-token")
+
+    assert manager.hf_token == "hf-token"
+    assert manager.ms_token == "ms-token"
+    assert manager._hf_api is repo_module._API_NOT_INITIALIZED
+    assert manager._ms_api is repo_module._API_NOT_INITIALIZED
+    assert os.environ["HF_TOKEN"] == "hf-token"
+    assert os.environ["MODELSCOPE_API_TOKEN"] == "ms-token"
+
+
+def test_repo_manager_configure_tokens_keeps_existing_tokens_for_none(monkeypatch):
+    manager = RepoManager(hf_token="hf-token", ms_token="ms-token")
+    hf_api = object()
+    ms_api = object()
+    manager.hf_api = hf_api
+    manager.ms_api = ms_api
+    monkeypatch.setenv("HF_TOKEN", "hf-token")
+    monkeypatch.setenv("MODELSCOPE_API_TOKEN", "ms-token")
+
+    manager.configure_tokens(hf_token=None, ms_token=None)
+
+    assert manager.hf_token == "hf-token"
+    assert manager.ms_token == "ms-token"
+    assert manager._hf_api is hf_api
+    assert manager._ms_api is ms_api
+    assert os.environ["HF_TOKEN"] == "hf-token"
+    assert os.environ["MODELSCOPE_API_TOKEN"] == "ms-token"
 
 
 def test_repo_manager_huggingface_api_installs_missing_dependency_before_reimport(monkeypatch):

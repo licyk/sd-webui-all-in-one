@@ -295,7 +295,7 @@ def test_sd_webui_install_orchestrates_notebook_steps(monkeypatch, tmp_path):
     manager.install_extension = lambda **kwargs: calls.append(("extension", kwargs))
     manager.update_extensions = lambda **kwargs: calls.append(("update-extension", kwargs))
     manager.get_sd_model_from_list = lambda models: calls.append(("models", models))
-    manager.restart_repo_manager = lambda **kwargs: calls.append(("repo", kwargs))
+    manager.repo_manager.configure_tokens = lambda **kwargs: calls.append(("repo-token", kwargs))
     manager.check_avaliable_gpu = lambda: calls.append(("gpu", None))
     manager.tcmalloc_manager.configure_tcmalloc = lambda: calls.append(("tcmalloc", None))
 
@@ -325,7 +325,7 @@ def test_sd_webui_install_orchestrates_notebook_steps(monkeypatch, tmp_path):
     assert install_call["model_download_resource_type"] == "modelscope"
     assert ("extension", {"extension": ["ext"], "use_github_mirror": True, "custom_github_mirror": None}) in calls
     assert ("models", [{"url": "model"}]) in calls
-    assert ("repo", {"hf_token": "hf", "ms_token": "ms"}) in calls
+    assert ("repo-token", {"hf_token": "hf", "ms_token": "ms"}) in calls
     assert ("tcmalloc", None) in calls
     assert ("cuda-malloc", None) in calls
 

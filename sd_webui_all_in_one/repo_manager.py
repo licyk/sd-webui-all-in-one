@@ -218,9 +218,37 @@ class RepoManager:
             ms_api.login(access_token=self.ms_token)
         return ms_api
 
+    def configure_tokens(
+        self,
+        hf_token: str | None = None,
+        ms_token: str | None = None,
+    ) -> None:
+        """配置 HuggingFace / ModelScope Token
+
+        Args:
+            hf_token (str | None):
+                HuggingFace Token, 为`None`时保持当前配置
+            ms_token (str | None):
+                ModelScope Token, 为`None`时保持当前配置
+        """
+        if hf_token is not None and hf_token != self.hf_token:
+            self.hf_token = hf_token
+            os.environ["HF_TOKEN"] = hf_token
+            self._hf_api = _API_NOT_INITIALIZED
+
+        if ms_token is not None and ms_token != self.ms_token:
+            self.ms_token = ms_token
+            os.environ["MODELSCOPE_API_TOKEN"] = ms_token
+            self._ms_api = _API_NOT_INITIALIZED
+
     @property
     def hf_api(self) -> "HfApi":
-        """HuggingFace API 客户端实例, 首次访问时懒初始化"""
+        """HuggingFace API 客户端实例, 首次访问时懒初始化
+
+        Returns:
+            HfApi:
+                HuggingFace API 客户端实例
+        """
         if getattr(self, "_hf_api", _API_NOT_INITIALIZED) is _API_NOT_INITIALIZED:
             with self._get_hf_api_lock():
                 if getattr(self, "_hf_api", _API_NOT_INITIALIZED) is _API_NOT_INITIALIZED:
@@ -233,7 +261,12 @@ class RepoManager:
 
     @property
     def ms_api(self) -> "HubApi":
-        """ModelScope API 客户端实例, 首次访问时懒初始化"""
+        """ModelScope API 客户端实例, 首次访问时懒初始化
+
+        Returns:
+            HubApi:
+                ModelScope API 客户端实例
+        """
         if getattr(self, "_ms_api", _API_NOT_INITIALIZED) is _API_NOT_INITIALIZED:
             with self._get_ms_api_lock():
                 if getattr(self, "_ms_api", _API_NOT_INITIALIZED) is _API_NOT_INITIALIZED:

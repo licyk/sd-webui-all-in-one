@@ -271,7 +271,7 @@ class QwenTTSWebUIManager(BaseManager):
                 custom_github_mirror=custom_github_mirror,
             )
 
-        self.restart_repo_manager(
+        self.repo_manager.configure_tokens(
             hf_token=huggingface_token,
             ms_token=modelscope_token,
         )

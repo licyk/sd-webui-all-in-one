@@ -405,7 +405,7 @@ class SDWebUIManager(BaseManager):
         if model_list is not None:
             self.get_sd_model_from_list(model_list)
 
-        self.restart_repo_manager(
+        self.repo_manager.configure_tokens(
             hf_token=huggingface_token,
             ms_token=modelscope_token,
         )

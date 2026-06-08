@@ -132,23 +132,6 @@ class BaseManager:
         """
         self.tun_manager.stop_all()
 
-    def restart_repo_manager(
-        self,
-        hf_token: str | None = None,
-        ms_token: str | None = None,
-    ) -> None:
-        """重新初始化 HuggingFace / ModelScope 仓库管理工具
-
-        Args:
-            hf_token (str | None): HugggingFace Token, 不为`None`时配置`HF_TOKEN`环境变量
-            ms_token (str | None): ModelScope Token, 不为`None`时配置`MODELSCOPE_API_TOKEN`环境变量
-        """
-        logger.info("重启 HuggingFace / ModelScope 仓库管理模块")
-        self.repo_manager = RepoManager(
-            hf_token=hf_token,
-            ms_token=ms_token,
-        )
-
     def get_secret(
         self,
         secret_type: SecretType,
