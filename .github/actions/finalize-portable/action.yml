@@ -40,12 +40,7 @@ runs:
       run: |
         uv pip install huggingface_hub modelscope --upgrade
 
-    - name: Upload to HuggingFace repo
+    - name: Upload to HuggingFace and ModelScope repos
       shell: pwsh
       run: |
-        python "${{ github.workspace }}/.github/huggingface_release.py"
-
-    - name: Upload to ModelScope repo
-      shell: pwsh
-      run: |
-        python "${{ github.workspace }}/.github/modelscope_release.py"
+        python -u "${{ github.workspace }}/.github/upload_portable_release.py"
