@@ -160,10 +160,6 @@ def parse_package_spec(
     return (package.strip(), [], False)
 
 
-# 保留旧名作为别名, 兼容内部调用
-_parse_package_spec = parse_package_spec
-
-
 def _split_package_spec(
     package: str,
 ) -> tuple[str, str, str | None]:
