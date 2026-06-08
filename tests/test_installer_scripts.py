@@ -198,3 +198,14 @@ def test_msvc_check_is_skipped_in_build_mode():
     for script_path in INIT_INSTALLER_SCRIPTS:
         init_template = _extract_init_template(_read_installer(script_path))
         assert msvc_guard_pattern.search(init_template), script_path
+
+
+def test_installer_scripts_use_refactored_self_manager_paths():
+    for script_path in LAUNCH_INSTALLER_SCRIPTS + INIT_INSTALLER_SCRIPTS:
+        installer = _read_installer(script_path)
+        assert "self-manager get proxy" in installer, script_path
+        assert "self-manager get-proxy" not in installer, script_path
+
+    init_installer = _read_installer(INIT_INSTALLER_SCRIPTS[0])
+    assert "self-manager get cuda-malloc" in init_installer
+    assert "self-manager get-cuda-malloc" not in init_installer

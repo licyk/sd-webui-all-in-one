@@ -4,18 +4,18 @@
 用于管理 `sd-webui-all-in-one` 自身的组件和补丁。
 
 !!! note
-    `check-pip` 和 `check-uv` 默认启用自动镜像源选择，并支持 `--no-auto-mirror`。自动模式会根据网络检测结果强制覆盖 `--no-pypi-mirror`；需要手动控制 PyPI 镜像时，请同时添加 `--no-auto-mirror`。
+    `check pip` 和 `check uv` 默认启用自动镜像源选择，并支持 `--no-auto-mirror`。自动模式会根据网络检测结果强制覆盖 `--no-pypi-mirror`；需要手动控制 PyPI 镜像时，请同时添加 `--no-auto-mirror`。
 
 ### 检查 Aria2
 检查 Aria2 是否需要更新。
 ```bash
-sd-webui-all-in-one self-manager check-aria2
+sd-webui-all-in-one self-manager check aria2
 ```
 *注：当退出代码非 0 时说明需要更新。*
 
 ### 检查并更新 Pip
 ```bash
-sd-webui-all-in-one self-manager check-pip [选项]
+sd-webui-all-in-one self-manager check pip [选项]
 ```
 
 高级选项：
@@ -25,7 +25,7 @@ sd-webui-all-in-one self-manager check-pip [选项]
 
 ### 检查并更新 uv
 ```bash
-sd-webui-all-in-one self-manager check-uv [选项]
+sd-webui-all-in-one self-manager check uv [选项]
 ```
 
 高级选项：
@@ -99,23 +99,23 @@ sd-webui-all-in-one self-manager patcher gui [选项]
 
 ### 获取当前系统代理配置
 ```bash
-sd-webui-all-in-one self-manager get-proxy
+sd-webui-all-in-one self-manager get proxy
 ```
 
 ### 获取适合当前系统的 CUDA 内存分配器配置
 ```bash
-sd-webui-all-in-one self-manager get-cuda-malloc
+sd-webui-all-in-one self-manager get cuda-malloc
 ```
 
 ### 获取适合当前系统的 TCMalloc 配置
 ```bash
-sd-webui-all-in-one self-manager get-tcmalloc
-sd-webui-all-in-one self-manager get-tcmalloc --path
+sd-webui-all-in-one self-manager get tcmalloc
+sd-webui-all-in-one self-manager get tcmalloc --path
 ```
 
 ### 获取 SD WebUI All In One 使用的环境变量配置
 ```bash
-sd-webui-all-in-one self-manager get-env-config
+sd-webui-all-in-one self-manager get env-config
 ```
 
 ### 下载文件

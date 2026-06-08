@@ -1781,7 +1781,7 @@ function Set-Proxy {
         }
     }
     if (`$Legacy) {
-        `$proxy_value = & python -m sd_webui_all_in_one self-manager get-proxy
+        `$proxy_value = & python -m sd_webui_all_in_one self-manager get proxy
         if (![string]::IsNullOrWhiteSpace(`$proxy_value)) {
             `$env:HTTP_PROXY = `$proxy_value
             `$env:HTTPS_PROXY = `$proxy_value

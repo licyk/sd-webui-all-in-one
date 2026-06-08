@@ -314,13 +314,42 @@ def test_self_manager_patcher_cli_parser(tmp_path):
     assert pythonpath_args.patcher_action == "get-pythonpath"
     assert callable(pythonpath_args.func)
 
-    tcmalloc_args = parser.parse_args(["self-manager", "get-tcmalloc"])
-    assert tcmalloc_args.sd_webui_all_in_one_action == "get-tcmalloc"
+    check_pip_args = parser.parse_args(["self-manager", "check", "pip", "--no-pypi-mirror", "--no-auto-mirror"])
+    assert check_pip_args.sd_webui_all_in_one_action == "check"
+    assert check_pip_args.check_action == "pip"
+    assert check_pip_args.use_pypi_mirror is False
+    assert check_pip_args.auto_mirror is False
+    assert callable(check_pip_args.func)
+
+    check_uv_args = parser.parse_args(["self-manager", "check", "uv"])
+    assert check_uv_args.sd_webui_all_in_one_action == "check"
+    assert check_uv_args.check_action == "uv"
+    assert callable(check_uv_args.func)
+
+    check_aria2_args = parser.parse_args(["self-manager", "check", "aria2"])
+    assert check_aria2_args.sd_webui_all_in_one_action == "check"
+    assert check_aria2_args.check_action == "aria2"
+    assert callable(check_aria2_args.func)
+
+    proxy_args = parser.parse_args(["self-manager", "get", "proxy"])
+    assert proxy_args.sd_webui_all_in_one_action == "get"
+    assert proxy_args.get_action == "proxy"
+    assert callable(proxy_args.func)
+
+    env_config_args = parser.parse_args(["self-manager", "get", "env-config"])
+    assert env_config_args.sd_webui_all_in_one_action == "get"
+    assert env_config_args.get_action == "env-config"
+    assert callable(env_config_args.func)
+
+    tcmalloc_args = parser.parse_args(["self-manager", "get", "tcmalloc"])
+    assert tcmalloc_args.sd_webui_all_in_one_action == "get"
+    assert tcmalloc_args.get_action == "tcmalloc"
     assert tcmalloc_args.path is False
     assert callable(tcmalloc_args.func)
 
-    tcmalloc_path_args = parser.parse_args(["self-manager", "get-tcmalloc", "--path"])
-    assert tcmalloc_path_args.sd_webui_all_in_one_action == "get-tcmalloc"
+    tcmalloc_path_args = parser.parse_args(["self-manager", "get", "tcmalloc", "--path"])
+    assert tcmalloc_path_args.sd_webui_all_in_one_action == "get"
+    assert tcmalloc_path_args.get_action == "tcmalloc"
     assert tcmalloc_path_args.path is True
     assert callable(tcmalloc_path_args.func)
 
@@ -330,6 +359,27 @@ def test_self_manager_patcher_cli_parser(tmp_path):
     assert gui_args.host == "127.0.0.1"
     assert gui_args.port == 8765
     assert callable(gui_args.func)
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["self-manager", "check-aria2"],
+        ["self-manager", "check-pip"],
+        ["self-manager", "check-uv"],
+        ["self-manager", "get-proxy"],
+        ["self-manager", "get-cuda-malloc"],
+        ["self-manager", "get-tcmalloc"],
+        ["self-manager", "get-env-config"],
+    ],
+)
+def test_self_manager_legacy_check_and_get_paths_are_removed(argv):
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest="main_command", required=True)
+    register_manager(subparsers)
+
+    with pytest.raises(SystemExit):
+        parser.parse_args(argv)
 
 
 def test_self_manager_patcher_get_pythonpath_cli(monkeypatch, capsys):

@@ -370,12 +370,15 @@ def register_manager(
     sd_webui_all_in_one_parser: argparse.ArgumentParser = subparsers.add_parser("self-manager", help="SD WebUI All In One 相关命令")
     sd_webui_all_in_one_sub = sd_webui_all_in_one_parser.add_subparsers(dest="sd_webui_all_in_one_action", required=True)
 
-    # check-aria2
-    check_aria2_p = sd_webui_all_in_one_sub.add_parser("check-aria2", help="检查 Aria2 是否需要更新 (当退出代码非 0 时则说明需要更新)")
+    check_p = sd_webui_all_in_one_sub.add_parser("check", help="检查并更新组件")
+    check_sub = check_p.add_subparsers(dest="check_action", required=True)
+
+    # check aria2
+    check_aria2_p = check_sub.add_parser("aria2", help="检查 Aria2 是否需要更新 (当退出代码非 0 时则说明需要更新)")
     check_aria2_p.set_defaults(func=lambda args: check_aria2())
 
-    # check-pip
-    check_pip_p = sd_webui_all_in_one_sub.add_parser("check-pip", help="检查 Pip 是否需要更新并尝试更新")
+    # check pip
+    check_pip_p = check_sub.add_parser("pip", help="检查 Pip 是否需要更新并尝试更新")
     check_pip_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     add_auto_mirror_argument(check_pip_p)
     check_pip_p.set_defaults(
@@ -386,8 +389,8 @@ def register_manager(
         )
     )
 
-    # check-uv
-    check_uv_p = sd_webui_all_in_one_sub.add_parser("check-uv", help="检查 uv 是否需要更新并尝试更新")
+    # check uv
+    check_uv_p = check_sub.add_parser("uv", help="检查 uv 是否需要更新并尝试更新")
     check_uv_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     add_auto_mirror_argument(check_uv_p)
     check_uv_p.set_defaults(
@@ -449,21 +452,24 @@ def register_manager(
         )
     )
 
-    # get-proxy
-    get_proxy_p = sd_webui_all_in_one_sub.add_parser("get-proxy", help="获取系统代理地址")
+    get_p = sd_webui_all_in_one_sub.add_parser("get", help="获取配置或环境信息")
+    get_sub = get_p.add_subparsers(dest="get_action", required=True)
+
+    # get proxy
+    get_proxy_p = get_sub.add_parser("proxy", help="获取系统代理地址")
     get_proxy_p.set_defaults(func=lambda args: get_proxy())
 
-    # get-cuda-malloc
-    get_cuda_malloc_p = sd_webui_all_in_one_sub.add_parser("get-cuda-malloc", help="获取支持当前设备的 CUDA 内存分配器配置")
+    # get cuda-malloc
+    get_cuda_malloc_p = get_sub.add_parser("cuda-malloc", help="获取支持当前设备的 CUDA 内存分配器配置")
     get_cuda_malloc_p.set_defaults(func=lambda args: get_cuda_malloc())
 
-    # get-tcmalloc
-    get_tcmalloc_p = sd_webui_all_in_one_sub.add_parser("get-tcmalloc", help="获取支持当前系统的 TCMalloc 配置")
+    # get tcmalloc
+    get_tcmalloc_p = get_sub.add_parser("tcmalloc", help="获取支持当前系统的 TCMalloc 配置")
     get_tcmalloc_p.add_argument("--path", action="store_true", help="只输出可用的 TCMalloc 库路径")
     get_tcmalloc_p.set_defaults(func=lambda args: get_tcmalloc(output_path=args.path))
 
-    # get-env-config
-    get_env_config_p = sd_webui_all_in_one_sub.add_parser("get-env-config", help="获取 SD WebUI All In One 使用的环境变量配置")
+    # get env-config
+    get_env_config_p = get_sub.add_parser("env-config", help="获取 SD WebUI All In One 使用的环境变量配置")
     get_env_config_p.set_defaults(func=lambda args: get_env_config())
 
     # download-file

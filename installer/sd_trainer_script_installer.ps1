@@ -1808,7 +1808,7 @@ function Set-Proxy {
         }
     }
     if (`$Legacy) {
-        `$proxy_value = & python -m sd_webui_all_in_one self-manager get-proxy
+        `$proxy_value = & python -m sd_webui_all_in_one self-manager get proxy
         if (![string]::IsNullOrWhiteSpace(`$proxy_value)) {
             `$env:HTTP_PROXY = `$proxy_value
             `$env:HTTPS_PROXY = `$proxy_value
@@ -2223,7 +2223,7 @@ function Set-PyTorch-CUDA-Memory-Alloc {
         return
     }
 
-    `$conf = `$(python -m sd_webui_all_in_one self-manager get-cuda-malloc)
+    `$conf = `$(python -m sd_webui_all_in_one self-manager get cuda-malloc)
 
     if (`$conf) {
         Write-Log `"配置 CUDA 内存分配器`"
