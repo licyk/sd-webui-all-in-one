@@ -433,6 +433,47 @@ def test_self_manager_download_file_cli_parse_smoke(monkeypatch, tmp_path):
     ]
 
 
+def test_self_manager_archive_cli_parse_smoke(monkeypatch, tmp_path):
+    parser = _single_command_parser(cli_utils.register_manager)
+    calls = []
+
+    monkeypatch.setattr(cli_utils, "extract_archive_cli", lambda **kwargs: calls.append(("extract", kwargs)))
+    monkeypatch.setattr(cli_utils, "compress_archive_cli", lambda **kwargs: calls.append(("compress", kwargs)))
+
+    args = parser.parse_args(["self-manager", "archive", "extract", str(tmp_path / "archive.zip"), "--output", str(tmp_path / "out")])
+    args.func(args)
+
+    args = parser.parse_args(
+        [
+            "self-manager",
+            "archive",
+            "compress",
+            str(tmp_path / "source"),
+            str(tmp_path / "file.txt"),
+            "--output",
+            str(tmp_path / "created.zip"),
+        ]
+    )
+    args.func(args)
+
+    assert calls == [
+        (
+            "extract",
+            {
+                "archive_path": tmp_path / "archive.zip",
+                "output": tmp_path / "out",
+            },
+        ),
+        (
+            "compress",
+            {
+                "sources": [tmp_path / "source", tmp_path / "file.txt"],
+                "output": tmp_path / "created.zip",
+            },
+        ),
+    ]
+
+
 def test_get_env_config_prints_resolved_config_values(monkeypatch, capsys, tmp_path):
     monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL", "999")
     monkeypatch.setenv("SD_WEBUI_ROOT", "/env/sd-webui")

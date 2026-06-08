@@ -135,6 +135,39 @@ sd-webui-all-in-one self-manager download-file <下载链接> [选项]
 - `--max-retries <次数>`：`requests` 下载器单个分片最大重试次数，默认 `5`。
 - `--chunk-size <字节>`：`requests` 下载器 HTTP Range 固定分片大小；默认自适应，按线程数生成多段较大 Range（约每线程 4 段，单段目标不小于 32MiB）。传入 `0` 也表示自适应分片。
 
+### 压缩包解压和压缩
+调用 Python 内核中的压缩包工具解压或创建压缩包。
+
+#### 解压压缩包
+```bash
+sd-webui-all-in-one self-manager archive extract <压缩包路径> --output <输出路径>
+```
+
+位置参数：
+
+- `<压缩包路径>`：要解压的压缩包。
+
+高级选项：
+
+- `--output <输出路径>`：解压目标目录。
+
+#### 创建压缩包
+```bash
+sd-webui-all-in-one self-manager archive compress <源路径...> --output <压缩包路径>
+```
+
+位置参数：
+
+- `<源路径...>`：要压缩的一个或多个文件 / 目录。
+
+高级选项：
+
+- `--output <压缩包路径>`：压缩包保存路径，文件扩展名决定实际使用的压缩格式。
+
+支持解压的格式：`.zip`、`.7z`、`.rar`、`.tar`、`.tar.lzma`、`.tar.bz2`、`.tar.gz`、`.tar.xz`、`.tar.zst`、`.tgz`、`.tbz2`、`.txz`、`.tlz`。
+
+支持创建的格式：`.zip`、`.7z`、`.tar`、`.tar.lzma`、`.tar.bz2`、`.tar.gz`、`.tar.xz`、`.tar.zst`、`.tgz`、`.tbz2`、`.txz`、`.tlz`。
+
 ### 启动内网穿透
 启动内网穿透服务，将本地端口映射到公网。
 ```bash

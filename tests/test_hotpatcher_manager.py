@@ -353,6 +353,30 @@ def test_self_manager_patcher_cli_parser(tmp_path):
     assert tcmalloc_path_args.path is True
     assert callable(tcmalloc_path_args.func)
 
+    extract_args = parser.parse_args(["self-manager", "archive", "extract", str(tmp_path / "archive.zip"), "--output", str(tmp_path / "out")])
+    assert extract_args.sd_webui_all_in_one_action == "archive"
+    assert extract_args.archive_action == "extract"
+    assert extract_args.archive_path == tmp_path / "archive.zip"
+    assert extract_args.output == tmp_path / "out"
+    assert callable(extract_args.func)
+
+    compress_args = parser.parse_args(
+        [
+            "self-manager",
+            "archive",
+            "compress",
+            str(tmp_path / "source-a"),
+            str(tmp_path / "source-b.txt"),
+            "--output",
+            str(tmp_path / "created.tar.gz"),
+        ]
+    )
+    assert compress_args.sd_webui_all_in_one_action == "archive"
+    assert compress_args.archive_action == "compress"
+    assert compress_args.sources == [tmp_path / "source-a", tmp_path / "source-b.txt"]
+    assert compress_args.output == tmp_path / "created.tar.gz"
+    assert callable(compress_args.func)
+
     gui_args = parser.parse_args(["self-manager", "patcher", "gui"])
     assert gui_args.patcher_action == "gui"
     assert gui_args.config == DEFAULT_HOTPATCHER_CONFIG_PATH
