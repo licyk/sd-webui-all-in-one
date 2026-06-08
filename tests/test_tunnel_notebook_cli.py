@@ -452,6 +452,7 @@ def test_self_manager_archive_cli_parse_smoke(monkeypatch, tmp_path):
             str(tmp_path / "file.txt"),
             "--output",
             str(tmp_path / "created.zip"),
+            "--no-progress",
         ]
     )
     args.func(args)
@@ -462,6 +463,7 @@ def test_self_manager_archive_cli_parse_smoke(monkeypatch, tmp_path):
             {
                 "archive_path": tmp_path / "archive.zip",
                 "output": tmp_path / "out",
+                "progress": True,
             },
         ),
         (
@@ -469,6 +471,7 @@ def test_self_manager_archive_cli_parse_smoke(monkeypatch, tmp_path):
             {
                 "sources": [tmp_path / "source", tmp_path / "file.txt"],
                 "output": tmp_path / "created.zip",
+                "progress": False,
             },
         ),
     ]

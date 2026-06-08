@@ -374,6 +374,55 @@ def test_archive_manager_zip_tar_and_unsupported(monkeypatch, tmp_path):
         archive_manager.extract_archive(tmp_path / "bad.exe", tmp_path / "bad-out")
 
 
+def test_archive_manager_progress_updates_byte_operations(monkeypatch, tmp_path):
+    progress_bars = []
+
+    class FakeTqdm:
+        def __init__(self, total, desc, unit, disable, unit_scale=False, unit_divisor=1000):
+            self.total = total
+            self.desc = desc
+            self.unit = unit
+            self.disable = disable
+            self.unit_scale = unit_scale
+            self.unit_divisor = unit_divisor
+            self.n = 0
+            progress_bars.append(self)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return None
+
+        def update(self, value):
+            self.n += value
+
+    monkeypatch.setattr(archive_manager, "_get_tqdm_class", lambda: FakeTqdm)
+
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    (source_dir / "a.txt").write_text("a", encoding="utf-8")
+    (source_dir / "b.txt").write_text("b", encoding="utf-8")
+
+    archive_path = tmp_path / "created.zip"
+    archive_manager.create_archive([source_dir], archive_path, progress=True)
+    archive_manager.extract_archive(archive_path, tmp_path / "out", progress=True)
+
+    tar_path = tmp_path / "created.tar"
+    archive_manager.create_archive([source_dir], tar_path, progress=True)
+    archive_manager.extract_archive(tar_path, tmp_path / "tar-out", progress=True)
+
+    archive_manager.create_archive([source_dir / "a.txt"], tmp_path / "disabled.zip", progress=False)
+
+    assert [(bar.total, bar.n, bar.unit, bar.disable) for bar in progress_bars] == [
+        (2, 2, "B", False),
+        (2, 2, "B", False),
+        (2, 2, "B", False),
+        (2, 2, "B", False),
+        (1, 1, "B", True),
+    ]
+
+
 def test_archive_manager_format_detection_matches_supported_handlers(tmp_path):
     assert archive_manager.is_supported_archive_format(tmp_path / "sample.TGZ") is True
     assert archive_manager.is_supported_archive_format(tmp_path / "sample.tbz2") is True

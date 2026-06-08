@@ -211,6 +211,7 @@ def download_file_cli(
 def extract_archive_cli(
     archive_path: Path,
     output: Path,
+    progress: bool = True,
 ) -> None:
     """解压压缩包
 
@@ -219,16 +220,20 @@ def extract_archive_cli(
             压缩包路径
         output (Path):
             解压输出路径
+        progress (bool):
+            是否启用解压进度条
     """
     extract_archive(
         archive_path=archive_path,
         extract_to=output,
+        progress=progress,
     )
 
 
 def compress_archive_cli(
     sources: list[Path],
     output: Path,
+    progress: bool = True,
 ) -> None:
     """创建压缩包
 
@@ -237,10 +242,13 @@ def compress_archive_cli(
             要压缩的文件或目录列表
         output (Path):
             压缩包保存路径
+        progress (bool):
+            是否启用压缩进度条
     """
     create_archive(
         sources=sources,
         archive_path=output,
+        progress=progress,
     )
 
 
@@ -543,20 +551,24 @@ def register_manager(
     archive_extract_p = archive_sub.add_parser("extract", help="解压压缩包")
     archive_extract_p.add_argument("archive_path", type=normalized_filepath, help="压缩包路径")
     archive_extract_p.add_argument("--output", type=normalized_filepath, required=True, help="解压输出路径")
+    archive_extract_p.add_argument("--no-progress", action="store_false", dest="progress", default=True, help="禁用解压进度条")
     archive_extract_p.set_defaults(
         func=lambda args: extract_archive_cli(
             archive_path=args.archive_path,
             output=args.output,
+            progress=args.progress,
         )
     )
 
     archive_compress_p = archive_sub.add_parser("compress", help="创建压缩包")
     archive_compress_p.add_argument("sources", type=normalized_filepath, nargs="+", help="要压缩的文件或目录路径")
     archive_compress_p.add_argument("--output", type=normalized_filepath, required=True, help="压缩包保存路径，文件扩展名决定实际使用的压缩格式")
+    archive_compress_p.add_argument("--no-progress", action="store_false", dest="progress", default=True, help="禁用压缩进度条")
     archive_compress_p.set_defaults(
         func=lambda args: compress_archive_cli(
             sources=args.sources,
             output=args.output,
+            progress=args.progress,
         )
     )
 

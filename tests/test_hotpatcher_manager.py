@@ -358,6 +358,7 @@ def test_self_manager_patcher_cli_parser(tmp_path):
     assert extract_args.archive_action == "extract"
     assert extract_args.archive_path == tmp_path / "archive.zip"
     assert extract_args.output == tmp_path / "out"
+    assert extract_args.progress is True
     assert callable(extract_args.func)
 
     compress_args = parser.parse_args(
@@ -369,12 +370,14 @@ def test_self_manager_patcher_cli_parser(tmp_path):
             str(tmp_path / "source-b.txt"),
             "--output",
             str(tmp_path / "created.tar.gz"),
+            "--no-progress",
         ]
     )
     assert compress_args.sd_webui_all_in_one_action == "archive"
     assert compress_args.archive_action == "compress"
     assert compress_args.sources == [tmp_path / "source-a", tmp_path / "source-b.txt"]
     assert compress_args.output == tmp_path / "created.tar.gz"
+    assert compress_args.progress is False
     assert callable(compress_args.func)
 
     gui_args = parser.parse_args(["self-manager", "patcher", "gui"])
