@@ -254,7 +254,7 @@ class Monkey:
                     if len(result) == 1:
                         source = result[0]
                     elif len(result) == 2:
-                        source, filename = result  # ty: ignore[invalid-assignment]
+                        source, filename = result
                     else:
                         raise ValueError("Invalid source patch return value")
                 else:

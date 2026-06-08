@@ -260,7 +260,19 @@ def _set_zip_member_attrs(
 ) -> None:
     """恢复 zip 成员时间和权限属性"""
     try:
-        timestamp = time.mktime(member.date_time + (0, 0, -1))
+        timestamp = time.mktime(
+            (
+                member.date_time[0],
+                member.date_time[1],
+                member.date_time[2],
+                member.date_time[3],
+                member.date_time[4],
+                member.date_time[5],
+                0,
+                0,
+                -1,
+            )
+        )
         os.utime(target_path, (timestamp, timestamp))
     except (OSError, OverflowError, ValueError):
         pass
@@ -325,10 +337,12 @@ def _set_tar_member_attrs(
         tar_ref.chown(member, target, numeric_owner=False)
         tar_ref.chmod(member, target)
         tar_ref.utime(member, target)
-    except OSError as e:
-        tar_ref._handle_fatal_error(e)
-    except tarfile.ExtractError as e:
-        tar_ref._handle_nonfatal_error(e)
+    except OSError:
+        if tar_ref.errorlevel > 0:
+            raise
+    except tarfile.ExtractError:
+        if tar_ref.errorlevel > 1:
+            raise
 
 
 def _extract_tar_lzma(
