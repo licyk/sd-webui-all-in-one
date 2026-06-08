@@ -1,12 +1,13 @@
 """HuggingFace / Modelscope 仓库管理工具"""
 
 import hashlib
+import importlib
 import os
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Lock
-from typing import Any, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.file_manager import get_file_list
@@ -21,8 +22,13 @@ from sd_webui_all_in_one.downloader import (
     MultiThreadDownloader,
     download_file,
 )
+from sd_webui_all_in_one.optional_dependency import install_optional_dependency
 from sd_webui_all_in_one.retry_decorator import retryable
 from sd_webui_all_in_one.custom_exceptions import AggregateError
+
+if TYPE_CHECKING:
+    from huggingface_hub import HfApi
+    from modelscope import HubApi
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -41,6 +47,9 @@ RepoFileType: TypeAlias = Literal["file", "directory"]
 
 RepoFileMetadata: TypeAlias = dict[str, Any]
 """归一化后的仓库文件元数据"""
+
+_API_NOT_INITIALIZED = object()
+"""API 客户端未初始化标记"""
 
 
 def _add_revision(
@@ -102,6 +111,42 @@ def _repo_file_hash_matches(src_metadata: RepoFileMetadata, dst_metadata: RepoFi
     return src_sha256 is not None and dst_sha256 is not None and src_sha256 == dst_sha256
 
 
+def _ensure_optional_dependency(
+    module_name: str,
+    package_name: str,
+    display_name: str | None = None,
+) -> None:
+    """确保可选依赖可导入, 导入失败时先安装依赖后再重试"""
+    display_name = display_name or module_name
+    try:
+        importlib.import_module(module_name)
+        return
+    except ImportError as import_error:
+        logger.warning("%s 模块导入失败, 尝试自动安装依赖: %s", display_name, import_error)
+
+    try:
+        install_optional_dependency(package_name, display_name=display_name)
+        importlib.invalidate_caches()
+        importlib.import_module(module_name)
+    except (RuntimeError, ImportError) as e:
+        logger.error("导入 %s 模块失败: %s", display_name, e)
+        raise RuntimeError(f"导入 {display_name} 模块失败: {e}") from e
+
+
+def _ensure_huggingface_hub(
+    module_name: str = "huggingface_hub",
+) -> None:
+    """确保 huggingface_hub 相关模块可导入, 缺失时自动安装 huggingface_hub"""
+    _ensure_optional_dependency(module_name, "huggingface_hub", display_name=module_name)
+
+
+def _ensure_modelscope(
+    module_name: str = "modelscope",
+) -> None:
+    """确保 modelscope 相关模块可导入, 缺失时自动安装 modelscope"""
+    _ensure_optional_dependency(module_name, "modelscope", display_name=module_name)
+
+
 class RepoManager:
     """HuggingFace / ModelScope 仓库管理器
 
@@ -129,29 +174,75 @@ class RepoManager:
             ms_token (str | None):
                 ModelScope Token, 不为`None`时配置`MODELSCOPE_API_TOKEN`环境变量
         """
-        self.hf_api: Any = NotImplemented
-        self.hf_token: str | None = None
-        self.ms_api: Any = NotImplemented
-        self.ms_token: str | None = None
-        try:
-            from huggingface_hub import HfApi
+        self._hf_api: "HfApi | object" = _API_NOT_INITIALIZED
+        self._ms_api: "HubApi | object" = _API_NOT_INITIALIZED
+        self._hf_api_lock = Lock()
+        self._ms_api_lock = Lock()
+        self.hf_token: str | None = hf_token
+        self.ms_token: str | None = ms_token
+        if hf_token is not None:
+            os.environ["HF_TOKEN"] = hf_token
+        if ms_token is not None:
+            os.environ["MODELSCOPE_API_TOKEN"] = ms_token
 
-            self.hf_api = HfApi(token=hf_token)
-            if hf_token is not None:
-                os.environ["HF_TOKEN"] = hf_token
-                self.hf_token = hf_token
-        except Exception as e:
-            logger.warning("HuggingFace 库未安装, 部分功能将不可用: %s", e)
-        try:
-            from modelscope import HubApi
+    def _get_hf_api_lock(self) -> Lock:
+        """获取 HuggingFace API 懒初始化锁"""
+        lock = getattr(self, "_hf_api_lock", None)
+        if lock is None:
+            lock = Lock()
+            self._hf_api_lock = lock
+        return lock
 
-            self.ms_api = HubApi()
-            if ms_token is not None:
-                os.environ["MODELSCOPE_API_TOKEN"] = ms_token
-                self.ms_api.login(access_token=ms_token)
-                self.ms_token = ms_token
-        except Exception as e:
-            logger.warning("ModelScope 库未安装, 部分功能将不可用: %s", e)
+    def _get_ms_api_lock(self) -> Lock:
+        """获取 ModelScope API 懒初始化锁"""
+        lock = getattr(self, "_ms_api_lock", None)
+        if lock is None:
+            lock = Lock()
+            self._ms_api_lock = lock
+        return lock
+
+    def _init_hf_api(self) -> "HfApi":
+        """初始化 HuggingFace API 客户端"""
+        _ensure_huggingface_hub()
+        from huggingface_hub import HfApi
+
+        return HfApi(token=self.hf_token)
+
+    def _init_ms_api(self) -> "HubApi":
+        """初始化 ModelScope API 客户端"""
+        _ensure_modelscope()
+        from modelscope import HubApi
+
+        ms_api = HubApi()
+        if self.ms_token is not None:
+            ms_api.login(access_token=self.ms_token)
+        return ms_api
+
+    @property
+    def hf_api(self) -> "HfApi":
+        """HuggingFace API 客户端实例, 首次访问时懒初始化"""
+        if getattr(self, "_hf_api", _API_NOT_INITIALIZED) is _API_NOT_INITIALIZED:
+            with self._get_hf_api_lock():
+                if getattr(self, "_hf_api", _API_NOT_INITIALIZED) is _API_NOT_INITIALIZED:
+                    self._hf_api = self._init_hf_api()
+        return cast("HfApi", self._hf_api)
+
+    @hf_api.setter
+    def hf_api(self, value: Any) -> None:
+        self._hf_api = value
+
+    @property
+    def ms_api(self) -> "HubApi":
+        """ModelScope API 客户端实例, 首次访问时懒初始化"""
+        if getattr(self, "_ms_api", _API_NOT_INITIALIZED) is _API_NOT_INITIALIZED:
+            with self._get_ms_api_lock():
+                if getattr(self, "_ms_api", _API_NOT_INITIALIZED) is _API_NOT_INITIALIZED:
+                    self._ms_api = self._init_ms_api()
+        return cast("HubApi", self._ms_api)
+
+    @ms_api.setter
+    def ms_api(self, value: Any) -> None:
+        self._ms_api = value
 
     @retryable(
         times=RETRY_TIMES,
@@ -640,21 +731,24 @@ class RepoManager:
             str:
                 文件下载地址
         """
+        _ensure_huggingface_hub()
         from huggingface_hub import get_hf_file_metadata, hf_hub_url
+
+        hf_api = self.hf_api
 
         url_kwargs: dict[str, Any] = _add_revision(
             {
                 "repo_id": repo_id,
                 "filename": file_path,
                 "repo_type": repo_type,
-                "endpoint": getattr(self.hf_api, "endpoint", None),
+                "endpoint": getattr(hf_api, "endpoint", None),
             },
             revision,
         )
         url = hf_hub_url(**url_kwargs)
 
-        if hasattr(self.hf_api, "get_hf_file_metadata"):
-            metadata = self.hf_api.get_hf_file_metadata(url=url, token=self.hf_token)
+        if hasattr(hf_api, "get_hf_file_metadata"):
+            metadata = hf_api.get_hf_file_metadata(url=url, token=self.hf_token)
         else:
             metadata = get_hf_file_metadata(url=url, token=self.hf_token)
         return metadata.location or url
@@ -686,6 +780,8 @@ class RepoManager:
             ValueError:
                 ModelScope 不支持的仓库类型
         """
+        _ensure_modelscope("modelscope.hub.file_download")
+        _ensure_modelscope("modelscope.utils.constant")
         from modelscope.hub.file_download import get_file_download_url
         from modelscope.utils.constant import DEFAULT_DATASET_REVISION, DEFAULT_MODEL_REVISION
 
@@ -810,6 +906,7 @@ class RepoManager:
             ValueError:
                 仓库类型未知时
         """
+        _ensure_modelscope("modelscope.hub.constants")
         from modelscope.hub.constants import Visibility
 
         if repo_type not in ["model", "dataset"]:
@@ -1306,9 +1403,7 @@ class RepoManager:
                         num_threads=download_num_threads,
                     )
                 elif src_api_type == "huggingface":
-                    from huggingface_hub import hf_hub_download
-
-                    hf_hub_download(
+                    self.hf_api.hf_hub_download(
                         **_add_revision(
                             {
                                 "repo_id": src_repo_id,
@@ -1320,6 +1415,7 @@ class RepoManager:
                         )
                     )
                 else:
+                    _ensure_modelscope()
                     from modelscope import snapshot_download
 
                     snapshot_download(
@@ -1512,7 +1608,7 @@ class RepoManager:
             revision (str | None):
                 指定下载的分支、标签或提交哈希, 为`None`时使用 HuggingFace 默认值
         """
-        from huggingface_hub import hf_hub_download
+        _ensure_huggingface_hub()
 
         repo_files = self.get_repo_file(
             api_type="huggingface",
@@ -1541,7 +1637,7 @@ class RepoManager:
             logger.info("指定下载文件: %s", folder)
         logger.info("下载文件数量: %s", len(download_task))
 
-        files_downloader = MultiThreadDownloader(download_func=hf_hub_download, download_kwargs_list=download_task)
+        files_downloader = MultiThreadDownloader(download_func=self.hf_api.hf_hub_download, download_kwargs_list=download_task)
         files_downloader.start(num_threads=num_threads)
 
     def download_files_from_modelscope(
@@ -1569,6 +1665,7 @@ class RepoManager:
             revision (str | None):
                 指定下载的分支、标签或提交哈希, 为`None`时使用 ModelScope 默认值
         """
+        _ensure_modelscope()
         from modelscope import snapshot_download
 
         repo_files = self.get_repo_file(

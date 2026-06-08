@@ -88,6 +88,182 @@ def _repo_manager_with_apis():
     return manager
 
 
+def test_repo_manager_init_defers_optional_api_imports(monkeypatch):
+    import_calls = []
+
+    def fake_import_module(name):
+        import_calls.append(name)
+        raise AssertionError(f"{name} should not be imported during RepoManager init")
+
+    monkeypatch.setattr(repo_module.importlib, "import_module", fake_import_module)
+
+    manager = RepoManager(hf_token="hf-token", ms_token="ms-token")
+
+    assert import_calls == []
+    assert manager.hf_token == "hf-token"
+    assert manager.ms_token == "ms-token"
+
+
+def test_repo_manager_huggingface_api_lazy_init_and_cache(monkeypatch):
+    import_calls = []
+    init_calls = []
+
+    class FakeHfApi:
+        def __init__(self, token=None):
+            init_calls.append(token)
+
+    hf_module = types.ModuleType("huggingface_hub")
+    hf_module.HfApi = FakeHfApi
+    monkeypatch.setitem(sys.modules, "huggingface_hub", hf_module)
+
+    def fake_import_module(name):
+        import_calls.append(name)
+        assert name == "huggingface_hub"
+        return hf_module
+
+    monkeypatch.setattr(repo_module.importlib, "import_module", fake_import_module)
+
+    manager = RepoManager(hf_token="hf-token")
+    assert import_calls == []
+
+    first_api = manager.hf_api
+    second_api = manager.hf_api
+
+    assert first_api is second_api
+    assert isinstance(first_api, FakeHfApi)
+    assert init_calls == ["hf-token"]
+    assert import_calls == ["huggingface_hub"]
+
+
+def test_repo_manager_modelscope_api_lazy_init_login_and_cache(monkeypatch):
+    import_calls = []
+    init_calls = []
+    login_calls = []
+
+    class FakeMsApi:
+        def __init__(self):
+            init_calls.append("init")
+
+        def login(self, access_token):
+            login_calls.append(access_token)
+
+    modelscope_module = types.ModuleType("modelscope")
+    modelscope_module.HubApi = FakeMsApi
+    monkeypatch.setitem(sys.modules, "modelscope", modelscope_module)
+
+    def fake_import_module(name):
+        import_calls.append(name)
+        assert name == "modelscope"
+        return modelscope_module
+
+    monkeypatch.setattr(repo_module.importlib, "import_module", fake_import_module)
+
+    manager = RepoManager(ms_token="ms-token")
+    assert import_calls == []
+
+    first_api = manager.ms_api
+    second_api = manager.ms_api
+
+    assert first_api is second_api
+    assert isinstance(first_api, FakeMsApi)
+    assert init_calls == ["init"]
+    assert login_calls == ["ms-token"]
+    assert import_calls == ["modelscope"]
+
+
+def test_repo_manager_huggingface_api_installs_missing_dependency_before_reimport(monkeypatch):
+    installed = False
+    import_calls = []
+    install_calls = []
+
+    class FakeHfApi:
+        def __init__(self, token=None):
+            self.token = token
+
+    hf_module = types.ModuleType("huggingface_hub")
+    hf_module.HfApi = FakeHfApi
+
+    def fake_import_module(name):
+        import_calls.append(name)
+        assert name == "huggingface_hub"
+        if not installed:
+            raise ImportError("huggingface_hub missing")
+        monkeypatch.setitem(sys.modules, "huggingface_hub", hf_module)
+        return hf_module
+
+    def fake_install_optional_dependency(package_name, display_name=None):
+        nonlocal installed
+        installed = True
+        install_calls.append((package_name, display_name))
+
+    monkeypatch.setattr(repo_module.importlib, "import_module", fake_import_module)
+    monkeypatch.setattr(repo_module, "install_optional_dependency", fake_install_optional_dependency)
+
+    manager = RepoManager(hf_token="hf-token")
+
+    assert manager.hf_api.token == "hf-token"
+    assert import_calls == ["huggingface_hub", "huggingface_hub"]
+    assert install_calls == [("huggingface_hub", "huggingface_hub")]
+
+
+def test_repo_manager_modelscope_api_installs_missing_dependency_before_reimport(monkeypatch):
+    installed = False
+    import_calls = []
+    install_calls = []
+    login_calls = []
+
+    class FakeMsApi:
+        def login(self, access_token):
+            login_calls.append(access_token)
+
+    modelscope_module = types.ModuleType("modelscope")
+    modelscope_module.HubApi = FakeMsApi
+
+    def fake_import_module(name):
+        import_calls.append(name)
+        assert name == "modelscope"
+        if not installed:
+            raise ImportError("modelscope missing")
+        monkeypatch.setitem(sys.modules, "modelscope", modelscope_module)
+        return modelscope_module
+
+    def fake_install_optional_dependency(package_name, display_name=None):
+        nonlocal installed
+        installed = True
+        install_calls.append((package_name, display_name))
+
+    monkeypatch.setattr(repo_module.importlib, "import_module", fake_import_module)
+    monkeypatch.setattr(repo_module, "install_optional_dependency", fake_install_optional_dependency)
+
+    manager = RepoManager(ms_token="ms-token")
+
+    assert manager.ms_api is manager.ms_api
+    assert import_calls == ["modelscope", "modelscope"]
+    assert install_calls == [("modelscope", "modelscope")]
+    assert login_calls == ["ms-token"]
+
+
+@pytest.mark.parametrize("install_fails", [False, True])
+def test_repo_manager_lazy_import_failure_raises_runtime_error(monkeypatch, install_fails):
+    def fake_import_module(name):
+        assert name == "huggingface_hub"
+        raise ImportError("huggingface_hub missing")
+
+    def fake_install_optional_dependency(package_name, display_name=None):
+        assert package_name == "huggingface_hub"
+        assert display_name == "huggingface_hub"
+        if install_fails:
+            raise RuntimeError("install failed")
+
+    monkeypatch.setattr(repo_module.importlib, "import_module", fake_import_module)
+    monkeypatch.setattr(repo_module, "install_optional_dependency", fake_install_optional_dependency)
+
+    manager = RepoManager()
+
+    with pytest.raises(RuntimeError, match="huggingface_hub"):
+        manager.hf_api
+
+
 def test_repo_manager_huggingface_file_listing_and_creation():
     manager = _repo_manager_with_apis()
     calls = []
@@ -472,6 +648,7 @@ def test_repo_manager_download_filters_huggingface_and_modelscope(monkeypatch, t
     monkeypatch.setitem(sys.modules, "modelscope", types.SimpleNamespace(snapshot_download="ms-download"))
 
     manager = _repo_manager_with_apis()
+    manager.hf_api = types.SimpleNamespace(hf_hub_download="hf-download")
     manager.get_repo_file = lambda **_kwargs: ["aa/a.txt", "bb/b.txt", "aa/nested/c.txt"]
 
     manager.download_files_from_huggingface(
@@ -572,6 +749,7 @@ def test_repo_manager_mirror_repo_files_uses_metadata_and_revision(monkeypatch):
 
     manager.check_repo = fake_check_repo
     manager.get_repo_files_metadata = fake_get_repo_files_metadata
+    manager.hf_api = types.SimpleNamespace(hf_hub_download=fake_hf_hub_download)
     manager.ms_api = FakeMsApi()
     monkeypatch.setitem(sys.modules, "huggingface_hub", types.SimpleNamespace(hf_hub_download=fake_hf_hub_download))
 
