@@ -481,13 +481,25 @@ function Set-ProgIdOpenCommand {
         [string]$ProgId,
 
         [Parameter(Mandatory = $true)]
-        [string]$OpenCommand
+        [string]$OpenCommand,
+
+        [string]$FriendlyName = "Windows PowerShell Script"
     )
 
+    $progIdKey = $null
     $shellKey = $null
     $commandKey = $null
 
     try {
+        $progIdKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey("Software\Classes\$ProgId", $true)
+        if ($null -eq $progIdKey) {
+            throw "Could not open or create HKCU:\Software\Classes\$ProgId."
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($FriendlyName)) {
+            $progIdKey.SetValue("", $FriendlyName, [Microsoft.Win32.RegistryValueKind]::String)
+        }
+
         $shellKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey("Software\Classes\$ProgId\Shell", $true)
         if ($null -eq $shellKey) {
             throw "Could not open or create HKCU:\Software\Classes\$ProgId\Shell."
@@ -507,6 +519,10 @@ function Set-ProgIdOpenCommand {
 
         if ($null -ne $shellKey) {
             $shellKey.Dispose()
+        }
+
+        if ($null -ne $progIdKey) {
+            $progIdKey.Dispose()
         }
     }
 }
@@ -610,10 +626,7 @@ function Invoke-Ps1DefaultPowerShellConfiguration {
 
     $normalizedExtension = Normalize-FileExtension -Extension $Extension
     $openCommand = Get-PowerShellOpenCommand -PowerShellPath $PowerShellPath
-
-    if (-not (Test-ProgId -ProgId $ProgId)) {
-        throw "ProgID '$ProgId' does not exist under HKCR. Register the handler before assigning it."
-    }
+    $progIdExists = Test-ProgId -ProgId $ProgId
 
     $plan = New-DefaultAssociationPlan `
         -Extension $normalizedExtension `
@@ -623,6 +636,15 @@ function Invoke-Ps1DefaultPowerShellConfiguration {
         -RegRename:$RegRename
 
     Write-DefaultAssociationPlan -Plan $plan
+
+    if (-not $progIdExists) {
+        if ($Force) {
+            Write-Warning "ProgID '$ProgId' does not exist under HKCR. It will be registered under HKCU before UserChoice is written."
+        }
+        else {
+            Write-Warning "ProgID '$ProgId' does not exist under HKCR. Re-run with -Force to register it under HKCU and write UserChoice."
+        }
+    }
 
     if (-not $Force) {
         Write-Host ""
