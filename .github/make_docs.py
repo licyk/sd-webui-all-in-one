@@ -90,7 +90,7 @@ exit %errorlevel%
     print("[INFO] 生成文档查询脚本")
     write_content_to_file(
         content=content,
-        save_path=base_path / "打开文档.bat",
+        save_path=base_path / "打开帮助.bat",
         use_crlf=True,
     )
 
