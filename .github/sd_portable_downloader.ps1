@@ -69,17 +69,11 @@
 
 .AUTHOR
     licyk
-
-.VERSION
-    1.0.2
-
-.HISTORY
-
 #>
 param (
     [string]$ScriptRootPath
 )
-$script:SD_PORTABLE_DOWNLOADER_VERSION = 105
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 106
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -176,7 +170,7 @@ function Show-Update-Popup {
         <StackPanel Margin="25">
             <TextBlock Text="发现新版本！" FontSize="20" FontWeight="Bold" Foreground="#0078D4" Margin="0,0,0,8"/>
             <TextBlock Text="最新版本: $v  (当前版本: $cv)" FontSize="12" Foreground="$($t.TextSec)" Margin="0,0,0,15"/>
-            <TextBlock Text="建议下载最新的 .bat 启动器以获得更好的体验。" FontSize="13" Foreground="$($t.TextMain)" Margin="0,0,0,20" TextWrapping="Wrap"/>
+            <TextBlock Text="建议下载最新的 AI 整合包下载器以获得更好的体验。" FontSize="13" Foreground="$($t.TextMain)" Margin="0,0,0,20" TextWrapping="Wrap"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Name="GithubBtn" Content="GitHub 下载" Margin="0,0,10,0" Cursor="Hand" Background="#0078D4" Foreground="White" Padding="12,6" BorderThickness="0">
                     <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
@@ -184,7 +178,7 @@ function Show-Update-Popup {
                 <Button Name="GiteeBtn" Content="Gitee 下载" Margin="0,0,10,0" Cursor="Hand" Background="#0078D4" Foreground="White" Padding="12,6" BorderThickness="0">
                     <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                 </Button>
-                <Button Name="CloseBtn" Content="稍后" Cursor="Hand" Background="$($t.BtnGray)" Foreground="$($t.BtnGrayText)" Padding="15,6" BorderThickness="0">
+                <Button Name="CloseBtn" Content="取消" Cursor="Hand" Background="$($t.BtnGray)" Foreground="$($t.BtnGrayText)" Padding="15,6" BorderThickness="0">
                     <Button.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="6"/></Style></Button.Resources>
                 </Button>
             </StackPanel>
@@ -699,23 +693,111 @@ function Start-App {
         <!-- 现代滚动条样式 -->
         <Style TargetType="ScrollBar">
             <Setter Property="Background" Value="$($colors.ScrollBG)"/>
-            <Setter Property="Width" Value="8"/>
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="MinWidth" Value="12"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ScrollBar">
-                        <Grid Name="Bg" Background="{TemplateBinding Background}" SnapsToDevicePixels="true">
-                            <Track Name="PART_Track" IsDirectionReversed="true" IsEnabled="{TemplateBinding IsEnabled}">
+                        <Grid Name="Bg" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="16"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="16"/>
+                            </Grid.RowDefinitions>
+
+                            <RepeatButton Name="LineUpButton" Grid.Row="0" Command="ScrollBar.LineUpCommand"
+                                          Focusable="False" Opacity="0" BorderThickness="0" Background="Transparent"
+                                          ToolTip="向上滚动">
+                                <RepeatButton.Template>
+                                    <ControlTemplate TargetType="RepeatButton">
+                                        <Border Name="ButtonBorder" Background="Transparent" CornerRadius="6">
+                                            <Path Name="Arrow" Data="M 0 5 L 4 1 L 8 5 Z" Fill="{DynamicResource TextSecBrush}"
+                                                  Width="8" Height="5" Stretch="Uniform"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="ButtonBorder" Property="Background" Value="$($colors.BtnHover)"/>
+                                                <Setter TargetName="Arrow" Property="Fill" Value="{DynamicResource PrimaryBrush}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter TargetName="ButtonBorder" Property="Background" Value="#220078D4"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </RepeatButton.Template>
+                            </RepeatButton>
+
+                            <Track Name="PART_Track" Grid.Row="1" IsDirectionReversed="true" IsEnabled="{TemplateBinding IsEnabled}">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageUpCommand" Focusable="False" Opacity="0">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Background="Transparent"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
                                 <Track.Thumb>
                                     <Thumb>
                                         <Thumb.Template>
                                             <ControlTemplate TargetType="Thumb">
-                                                <Border Background="$($colors.ScrollThumb)" CornerRadius="4" Margin="1,0"/>
+                                                <Border Name="ThumbBorder" Background="$($colors.ScrollThumb)" CornerRadius="4" Margin="2,0"/>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ThumbBorder" Property="Background" Value="#990078D4"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsDragging" Value="True">
+                                                        <Setter TargetName="ThumbBorder" Property="Background" Value="#CC0078D4"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
                                             </ControlTemplate>
                                         </Thumb.Template>
                                     </Thumb>
                                 </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageDownCommand" Focusable="False" Opacity="0">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate TargetType="RepeatButton">
+                                                <Border Background="Transparent"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
                             </Track>
+
+                            <RepeatButton Name="LineDownButton" Grid.Row="2" Command="ScrollBar.LineDownCommand"
+                                          Focusable="False" Opacity="0" BorderThickness="0" Background="Transparent"
+                                          ToolTip="向下滚动">
+                                <RepeatButton.Template>
+                                    <ControlTemplate TargetType="RepeatButton">
+                                        <Border Name="ButtonBorder" Background="Transparent" CornerRadius="6">
+                                            <Path Name="Arrow" Data="M 0 1 L 4 5 L 8 1 Z" Fill="{DynamicResource TextSecBrush}"
+                                                  Width="8" Height="5" Stretch="Uniform"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="ButtonBorder" Property="Background" Value="$($colors.BtnHover)"/>
+                                                <Setter TargetName="Arrow" Property="Fill" Value="{DynamicResource PrimaryBrush}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter TargetName="ButtonBorder" Property="Background" Value="#220078D4"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </RepeatButton.Template>
+                            </RepeatButton>
                         </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="LineUpButton" Property="Opacity" Value="1"/>
+                                <Setter TargetName="LineDownButton" Property="Opacity" Value="1"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bg" Property="Opacity" Value="0.35"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -1182,14 +1264,61 @@ function Start-App {
                                 <DataGridTemplateColumn Header="操作" Width="80">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Button Name="KillTask" Content="终止" Height="22" Padding="8,0" FontSize="11"
-                                                    Background="#FFF1F0" Foreground="#E81123" BorderBrush="#FFCCC7">
+                                            <Button Name="KillTask" Height="22" Padding="8,0" FontSize="11">
                                                 <Button.Style>
                                                     <Style TargetType="Button">
+                                                        <Setter Property="Content" Value="终止"/>
+                                                        <Setter Property="Background" Value="#FFF1F0"/>
+                                                        <Setter Property="Foreground" Value="#E81123"/>
+                                                        <Setter Property="BorderBrush" Value="#FFCCC7"/>
+                                                        <Setter Property="BorderThickness" Value="1"/>
+                                                        <Setter Property="Cursor" Value="Hand"/>
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="Button">
+                                                                    <Border Name="ActionBorder"
+                                                                            Background="{TemplateBinding Background}"
+                                                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                                                            CornerRadius="4">
+                                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                                                                    </Border>
+                                                                    <ControlTemplate.Triggers>
+                                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                                            <Setter TargetName="ActionBorder" Property="Background" Value="#FFE5E5"/>
+                                                                        </Trigger>
+                                                                        <Trigger Property="IsPressed" Value="True">
+                                                                            <Setter TargetName="ActionBorder" Property="Background" Value="#FFD6D6"/>
+                                                                        </Trigger>
+                                                                        <Trigger Property="IsEnabled" Value="False">
+                                                                            <Setter Property="Cursor" Value="Arrow"/>
+                                                                        </Trigger>
+                                                                    </ControlTemplate.Triggers>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding Status}" Value="已完成"><Setter Property="IsEnabled" Value="False"/></DataTrigger>
-                                                            <DataTrigger Binding="{Binding Status}" Value="失败"><Setter Property="IsEnabled" Value="False"/></DataTrigger>
-                                                            <DataTrigger Binding="{Binding Status}" Value="已取消"><Setter Property="IsEnabled" Value="False"/></DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="已完成">
+                                                                <Setter Property="Content" Value="完成"/>
+                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                                <Setter Property="Background" Value="{DynamicResource BtnNormalBrush}"/>
+                                                                <Setter Property="Foreground" Value="{DynamicResource TextSecBrush}"/>
+                                                                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="失败">
+                                                                <Setter Property="Content" Value="失败"/>
+                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                                <Setter Property="Background" Value="{DynamicResource BtnNormalBrush}"/>
+                                                                <Setter Property="Foreground" Value="{DynamicResource TextSecBrush}"/>
+                                                                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status}" Value="已取消">
+                                                                <Setter Property="Content" Value="已取消"/>
+                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                                <Setter Property="Background" Value="{DynamicResource BtnNormalBrush}"/>
+                                                                <Setter Property="Foreground" Value="{DynamicResource TextSecBrush}"/>
+                                                                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                                            </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
                                                 </Button.Style>
@@ -1406,37 +1535,136 @@ function Start-App {
     $UI.LauncherBtn.Add_Click({ Open-Url -Url "https://licyk.github.io/sd-webui-all-in-one/tools/launcher-gui" })
     $UI.IssueBtn.Add_Click({ Open-Url -Url "https://github.com/licyk/sd-webui-all-in-one/issues" })
 
-    # 队列显隐切换 (增加过渡动画)
-    $UI.ToggleQueueBtn.Add_Click({
-        $duration = [TimeSpan]::FromMilliseconds(300)
-        $targetHeight = 140 # 设定的展开高度
+    $UI.ToggleQueueBtn.Tag = $true
 
-        if ($UI.QueueBorder.Visibility -eq "Visible" -and $UI.QueueBorder.Height -gt 0) {
+    # 队列显隐切换 (使用缓动与轻微位移让过渡更自然)
+    $UI.ToggleQueueBtn.Add_Click({
+        $targetHeight = 140 # 设定的展开高度
+        $queueBorder = $UI.QueueBorder
+        $queueHeader = $UI.QueueHeader
+        $statTextBottom = $UI.StatTextBottom
+        $toggleQueueBtn = $UI.ToggleQueueBtn
+
+        $queueTransform = $queueBorder.RenderTransform
+        if (-not ($queueTransform -is [System.Windows.Media.TranslateTransform])) {
+            $queueTransform = New-Object System.Windows.Media.TranslateTransform
+            $queueBorder.RenderTransform = $queueTransform
+        }
+
+        $headerTransform = $queueHeader.RenderTransform
+        if (-not ($headerTransform -is [System.Windows.Media.TranslateTransform])) {
+            $headerTransform = New-Object System.Windows.Media.TranslateTransform
+            $queueHeader.RenderTransform = $headerTransform
+        }
+
+        $expandDuration = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(340))
+        $collapseDuration = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(240))
+        $fadeDuration = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(180))
+
+        $expandEase = New-Object System.Windows.Media.Animation.QuarticEase
+        $expandEase.EasingMode = [System.Windows.Media.Animation.EasingMode]::EaseOut
+        $collapseEase = New-Object System.Windows.Media.Animation.CubicEase
+        $collapseEase.EasingMode = [System.Windows.Media.Animation.EasingMode]::EaseIn
+        $fadeEase = New-Object System.Windows.Media.Animation.SineEase
+        $fadeEase.EasingMode = [System.Windows.Media.Animation.EasingMode]::EaseOut
+
+        $toggleQueueBtn.IsEnabled = $false
+        $queueBorder.BeginAnimation([System.Windows.Controls.Border]::HeightProperty, $null)
+        $queueBorder.BeginAnimation([System.Windows.Controls.Border]::OpacityProperty, $null)
+        $queueHeader.BeginAnimation([System.Windows.Controls.Grid]::OpacityProperty, $null)
+        $queueTransform.BeginAnimation([System.Windows.Media.TranslateTransform]::YProperty, $null)
+        $headerTransform.BeginAnimation([System.Windows.Media.TranslateTransform]::YProperty, $null)
+
+        $isQueueExpanded = [bool]$toggleQueueBtn.Tag
+        if ($isQueueExpanded) {
             # 收起动画
-            $animHeight = New-Object System.Windows.Media.Animation.DoubleAnimation(0, $duration)
-            $animOpacity = New-Object System.Windows.Media.Animation.DoubleAnimation(0, $duration)
+            $toggleQueueBtn.Tag = $false
+            $currentHeight = if ($queueBorder.ActualHeight -gt 0) { $queueBorder.ActualHeight } else { $targetHeight }
+            $queueBorder.Height = $currentHeight
+
+            $animHeight = New-Object System.Windows.Media.Animation.DoubleAnimation
+            $animHeight.From = [double]$currentHeight
+            $animHeight.To = 0
+            $animHeight.Duration = $collapseDuration
+            $animHeight.EasingFunction = $collapseEase
+
+            $animOpacity = New-Object System.Windows.Media.Animation.DoubleAnimation
+            $animOpacity.From = $queueBorder.Opacity
+            $animOpacity.To = 0
+            $animOpacity.Duration = $fadeDuration
+            $animOpacity.EasingFunction = $fadeEase
+
+            $animSlide = New-Object System.Windows.Media.Animation.DoubleAnimation
+            $animSlide.From = 0
+            $animSlide.To = -8
+            $animSlide.Duration = $collapseDuration
+            $animSlide.EasingFunction = $collapseEase
 
             $animHeight.add_Completed({
-                $UI.QueueBorder.Visibility = "Collapsed"
-                $UI.QueueHeader.Visibility = "Collapsed"
-                $UI.StatTextBottom.Visibility = "Visible"
-            })
+                $queueBorder.Visibility = [System.Windows.Visibility]::Collapsed
+                $queueHeader.Visibility = [System.Windows.Visibility]::Collapsed
+                $queueBorder.Height = 0
+                $queueBorder.Opacity = 0
+                $queueHeader.Opacity = 0
+                $queueTransform.Y = -8
+                $headerTransform.Y = -8
+                $statTextBottom.Visibility = [System.Windows.Visibility]::Visible
+                $statTextBottom.Opacity = 0
+                $statFade = New-Object System.Windows.Media.Animation.DoubleAnimation
+                $statFade.To = 1
+                $statFade.Duration = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds(160))
+                $statFade.EasingFunction = $fadeEase
+                $statTextBottom.BeginAnimation([System.Windows.Controls.TextBlock]::OpacityProperty, $statFade)
+                $toggleQueueBtn.IsEnabled = $true
+            }.GetNewClosure())
 
-            $UI.QueueBorder.BeginAnimation([System.Windows.Controls.Border]::HeightProperty, $animHeight)
-            $UI.QueueBorder.BeginAnimation([System.Windows.Controls.Border]::OpacityProperty, $animOpacity)
-            $UI.QueueHeader.BeginAnimation([System.Windows.Controls.Grid]::OpacityProperty, $animOpacity)
+            $queueBorder.BeginAnimation([System.Windows.Controls.Border]::HeightProperty, $animHeight)
+            $queueBorder.BeginAnimation([System.Windows.Controls.Border]::OpacityProperty, $animOpacity)
+            $queueHeader.BeginAnimation([System.Windows.Controls.Grid]::OpacityProperty, $animOpacity)
+            $queueTransform.BeginAnimation([System.Windows.Media.TranslateTransform]::YProperty, $animSlide)
+            $headerTransform.BeginAnimation([System.Windows.Media.TranslateTransform]::YProperty, $animSlide)
         } else {
             # 展开动画
-            $UI.QueueBorder.Visibility = "Visible"
-            $UI.QueueHeader.Visibility = "Visible"
-            $UI.StatTextBottom.Visibility = "Collapsed"
+            $toggleQueueBtn.Tag = $true
+            $queueBorder.Visibility = [System.Windows.Visibility]::Visible
+            $queueHeader.Visibility = [System.Windows.Visibility]::Visible
+            $statTextBottom.Visibility = [System.Windows.Visibility]::Collapsed
+            $queueBorder.Height = 0
+            $queueBorder.Opacity = 0
+            $queueHeader.Opacity = 0
+            $queueTransform.Y = 8
+            $headerTransform.Y = 8
 
-            $animHeight = New-Object System.Windows.Media.Animation.DoubleAnimation($targetHeight, $duration)
-            $animOpacity = New-Object System.Windows.Media.Animation.DoubleAnimation(1, $duration)
+            $animHeight = New-Object System.Windows.Media.Animation.DoubleAnimation
+            $animHeight.From = 0
+            $animHeight.To = $targetHeight
+            $animHeight.Duration = $expandDuration
+            $animHeight.EasingFunction = $expandEase
 
-            $UI.QueueBorder.BeginAnimation([System.Windows.Controls.Border]::HeightProperty, $animHeight)
-            $UI.QueueBorder.BeginAnimation([System.Windows.Controls.Border]::OpacityProperty, $animOpacity)
-            $UI.QueueHeader.BeginAnimation([System.Windows.Controls.Grid]::OpacityProperty, $animOpacity)
+            $animOpacity = New-Object System.Windows.Media.Animation.DoubleAnimation
+            $animOpacity.To = 1
+            $animOpacity.Duration = $fadeDuration
+            $animOpacity.EasingFunction = $fadeEase
+
+            $animSlide = New-Object System.Windows.Media.Animation.DoubleAnimation
+            $animSlide.To = 0
+            $animSlide.Duration = $expandDuration
+            $animSlide.EasingFunction = $expandEase
+
+            $animHeight.add_Completed({
+                $queueBorder.Height = $targetHeight
+                $queueBorder.Opacity = 1
+                $queueHeader.Opacity = 1
+                $queueTransform.Y = 0
+                $headerTransform.Y = 0
+                $toggleQueueBtn.IsEnabled = $true
+            }.GetNewClosure())
+
+            $queueBorder.BeginAnimation([System.Windows.Controls.Border]::HeightProperty, $animHeight)
+            $queueBorder.BeginAnimation([System.Windows.Controls.Border]::OpacityProperty, $animOpacity)
+            $queueHeader.BeginAnimation([System.Windows.Controls.Grid]::OpacityProperty, $animOpacity)
+            $queueTransform.BeginAnimation([System.Windows.Media.TranslateTransform]::YProperty, $animSlide)
+            $headerTransform.BeginAnimation([System.Windows.Media.TranslateTransform]::YProperty, $animSlide)
         }
     })
 
