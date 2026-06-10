@@ -12,7 +12,7 @@ class HotpatcherState:
     """
     hotpatcher 默认进程状态。
 
-    Attributes:
+    属性:
         monkey_zoo (Any):
             import hook 使用的补丁注册表。
         import_hook_finder (Any):
@@ -75,7 +75,7 @@ def get_default_state() -> HotpatcherState:
     """
     获取默认 hotpatcher 进程状态。
 
-    Returns:
+    返回:
         HotpatcherState:
             默认状态对象。
     """

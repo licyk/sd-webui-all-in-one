@@ -46,7 +46,7 @@ class StackShadowFinder(MetaPathFinder):
     finder 会拦截匹配前缀的模块导入, 读取源码并用合成文件名重新 compile,
     从而让异常栈中的文件名不暴露真实路径。
 
-    Attributes:
+    属性:
         prefixes (tuple[str, ...]):
             需要隐藏的模块名前缀
         filename_template (str):
@@ -78,7 +78,7 @@ class StackShadowFinder(MetaPathFinder):
         """
         重新配置栈隐藏规则
 
-        Args:
+        参数:
             prefixes (Iterable[str]):
                 需要隐藏的模块名前缀
             filename_template (str):
@@ -101,7 +101,7 @@ class StackShadowFinder(MetaPathFinder):
         """
         查找并包装需要隐藏的模块 spec
 
-        Args:
+        参数:
             fullname (str):
                 完整模块名
             path (list[str] | None):
@@ -109,7 +109,7 @@ class StackShadowFinder(MetaPathFinder):
             target (ModuleType | None):
                 reload 目标模块
 
-        Returns:
+        返回:
             ModuleSpec | None:
                 已替换 loader 的 spec, 或不处理时返回 None
         """
@@ -172,11 +172,11 @@ class StackShadowSourceLoader(Loader):
         """
         使用默认模块创建逻辑
 
-        Args:
+        参数:
             spec (ModuleSpec):
                 目标模块 spec
 
-        Returns:
+        返回:
             ModuleType | None:
                 返回 None 表示交给 import 系统默认创建
         """
@@ -187,11 +187,11 @@ class StackShadowSourceLoader(Loader):
         """
         使用合成文件名编译源码
 
-        Args:
+        参数:
             fullname (str | None):
                 完整模块名
 
-        Returns:
+        返回:
             CodeType:
                 带隐藏文件名的 code object
         """
@@ -205,7 +205,7 @@ class StackShadowSourceLoader(Loader):
         """
         执行隐藏文件名后的模块代码
 
-        Args:
+        参数:
             module (ModuleType):
                 目标模块对象
         """
@@ -225,7 +225,7 @@ def install_stack_shadower(
     """
     安装或重新配置栈隐藏 finder
 
-    Args:
+    参数:
         prefixes (Iterable[str] | str):
             需要隐藏的模块名前缀。字符串会按逗号拆分。
         filename_template (str):
@@ -235,7 +235,7 @@ def install_stack_shadower(
         state (HotpatcherState | None):
             可选状态对象。为 None 时使用默认状态。
 
-    Returns:
+    返回:
         StackShadowFinder:
             已安装或已重新配置的 finder
     """
@@ -268,7 +268,7 @@ def uninstall_stack_shadower(*, state: HotpatcherState | None = None) -> None:
 
     会从 ``sys.meta_path`` 中移除 finder 并清空缓存。
 
-    Args:
+    参数:
         state (HotpatcherState | None):
             可选状态对象。为 None 时使用默认状态。
     """
@@ -287,11 +287,11 @@ def is_stack_shadower_installed(*, state: HotpatcherState | None = None) -> bool
     """
     检查栈隐藏 finder 是否已安装
 
-    Args:
+    参数:
         state (HotpatcherState | None):
             可选状态对象。为 None 时使用默认状态。
 
-    Returns:
+    返回:
         bool:
             finder 当前位于 ``sys.meta_path`` 中时返回 True
     """
@@ -307,11 +307,11 @@ def configure_stack_shadower_from_env(*, state: HotpatcherState | None = None) -
 
     只有 ``SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SHADOW=1`` 时才会安装。
 
-    Args:
+    参数:
         state (HotpatcherState | None):
             可选状态对象。为 None 时使用默认状态。
 
-    Returns:
+    返回:
         StackShadowFinder | None:
             已安装的 finder。未启用时返回 None。
     """

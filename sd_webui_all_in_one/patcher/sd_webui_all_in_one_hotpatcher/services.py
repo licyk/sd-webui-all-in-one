@@ -106,6 +106,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "hf_endpoint_mirror": {
             "enabled": False,
         },
+        "xformers_cutlass": {
+            "enabled": False,
+        },
         "uv_pip": {
             "enabled": False,
             "symlink": False,
@@ -353,6 +356,17 @@ SETTING_SCHEMA: dict[str, Any] = {
                 "type": "bool",
                 "title": "启用",
                 "description": "启用 Hugging Face endpoint 镜像补丁。",
+            },
+        },
+    },
+    "extensions.xformers_cutlass": {
+        "title": "xFormers CUTLASS",
+        "description": "在 torch>=2.9.0 且 xformers>=0.0.33 时提升 CUTLASS FwOp CUDA capability 上限。",
+        "settings": {
+            "enabled": {
+                "type": "bool",
+                "title": "启用",
+                "description": "启用 xFormers CUTLASS CUDA capability 补丁；版本不满足时会自动跳过。",
             },
         },
     },
@@ -978,6 +992,18 @@ def _apply_extension_config(config: dict[str, Any], result: dict[str, Any]) -> N
             result,
         )
 
+    xformers_cutlass = _section(extensions, "xformers_cutlass")
+    if xformers_cutlass.get("enabled"):
+        from sd_webui_all_in_one_hotpatcher_ext.xformers_cutlass import (
+            apply_from_config as apply_xformers_cutlass,
+        )
+
+        _apply_optional_step(
+            "extensions.xformers_cutlass",
+            lambda: apply_xformers_cutlass(xformers_cutlass),
+            result,
+        )
+
 
 def _is_extension_index_enabled(config: dict[str, Any]) -> bool:
     return any(isinstance(section, dict) and bool(section.get("enabled")) for section in (config.get("webui"), config.get("comfyui_manager")))
@@ -987,6 +1013,20 @@ def _apply_step(feature: str, callback: Any, result: dict[str, Any]) -> None:
     try:
         callback()
         result["applied"].append(feature)
+    except Exception as exc:  # pragma: no cover - exercised through service-level tests
+        result["errors"].append(
+            {
+                "feature": feature,
+                "code": type(exc).__name__,
+                "message": str(exc),
+            }
+        )
+
+
+def _apply_optional_step(feature: str, callback: Any, result: dict[str, Any]) -> None:
+    try:
+        if callback():
+            result["applied"].append(feature)
     except Exception as exc:  # pragma: no cover - exercised through service-level tests
         result["errors"].append(
             {
@@ -1041,6 +1081,8 @@ def _attach_feature_state(features: dict[str, Any], defaults: dict[str, Any], st
     features["extensions.extension_index"]["active"] = False
     features["extensions.hf_endpoint_mirror"]["default"] = defaults["extensions"]["hf_endpoint_mirror"]
     features["extensions.hf_endpoint_mirror"]["active"] = False
+    features["extensions.xformers_cutlass"]["default"] = defaults["extensions"]["xformers_cutlass"]
+    features["extensions.xformers_cutlass"]["active"] = _is_xformers_cutlass_patch_active()
     features["extensions.uv_pip"]["default"] = defaults["extensions"]["uv_pip"]
     features["extensions.uv_pip"]["active"] = _is_uv_pip_patch_installed()
     _attach_setting_defaults(features)
@@ -1051,6 +1093,15 @@ def _is_uv_pip_patch_installed() -> bool:
         from sd_webui_all_in_one_hotpatcher_ext.uv_pip import is_uv_patch_installed
 
         return is_uv_patch_installed()
+    except Exception:
+        return False
+
+
+def _is_xformers_cutlass_patch_active() -> bool:
+    try:
+        from sd_webui_all_in_one_hotpatcher_ext.xformers_cutlass import is_xformers_cutlass_patch_active
+
+        return is_xformers_cutlass_patch_active()
     except Exception:
         return False
 

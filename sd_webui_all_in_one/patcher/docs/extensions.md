@@ -391,6 +391,43 @@ uv pip ...
 
 services catalog 中对应功能路径是 `extensions.uv_pip`。
 
+## xFormers CUTLASS 扩展示例
+
+xFormers CUTLASS 扩展用于补丁：
+
+```python
+xformers.ops.fmha.cutlass.FwOp.CUDA_MAXIMUM_COMPUTE_CAPABILITY
+```
+
+当当前环境满足 `torch>=2.9.0` 且 `xformers>=0.0.33` 时，扩展会把该值设置为 `(12, 1)`，并同步 `BwOp.CUDA_MAXIMUM_COMPUTE_CAPABILITY`。版本比较使用 Py 库中的 PEP 440 / whl 版本比较逻辑，因此 `2.9.0+cu129` 这类 local version 会按公共版本参与 `>=` 判断。
+
+当前 API：
+
+```python
+from sd_webui_all_in_one_hotpatcher_ext.xformers_cutlass import (
+    apply_from_config,
+    patch_xformers_cutlass_cuda_capability,
+)
+```
+
+### `patch_xformers_cutlass_cuda_capability()`
+
+在版本条件满足时安装 import hook，并注册 `xformers.ops.fmha.cutlass` 的 module patch。补丁会在目标模块导入后执行；如果目标模块已经导入，则会立即对当前模块对象应用一次。
+
+如果 `torch` / `xformers` 未安装、无法读取版本，或版本低于门槛，函数会直接跳过，不注册补丁，也不抛出异常。
+
+### `apply_from_config(config)`
+
+支持配置：
+
+```python
+{
+    "enabled": True
+}
+```
+
+services catalog 中对应功能路径是 `extensions.xformers_cutlass`。即使配置启用，版本条件不满足时也会安静跳过。
+
 ## 扩展测试策略
 
 不要依赖真实大型库。ZLUDA 测试没有导入真实 torch，而是在 `tmp_path` 创建 fake torch 包：

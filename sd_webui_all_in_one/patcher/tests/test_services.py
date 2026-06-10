@@ -146,11 +146,12 @@ def test_default_config_is_json_serializable_and_contains_features():
     assert defaults["runtime"]["logs"]["hook_policy"] == "cooperative"
     assert defaults["runtime"]["logs"]["hook_check_interval"] == 1
     assert defaults["runtime"]["logs"]["fd_capture"] == "0"
-    assert {"zluda", "extension_index", "hf_endpoint_mirror", "uv_pip"} <= set(defaults["extensions"])
+    assert {"zluda", "extension_index", "hf_endpoint_mirror", "xformers_cutlass", "uv_pip"} <= set(defaults["extensions"])
     assert defaults["extensions"]["extension_index"]["webui"]["enabled"] is False
     assert defaults["extensions"]["extension_index"]["webui"]["url"] == "auto"
     assert defaults["extensions"]["extension_index"]["comfyui_manager"]["enabled"] is False
     assert defaults["extensions"]["extension_index"]["comfyui_manager"]["url"] == "auto"
+    assert defaults["extensions"]["xformers_cutlass"]["enabled"] is False
     assert defaults["extensions"]["uv_pip"]["enabled"] is False
 
 
@@ -214,6 +215,7 @@ def test_load_config_file_writes_missing_defaults(tmp_path):
     assert loaded["extensions"]["hf_endpoint_mirror"]["enabled"] is True
     assert written["extensions"]["hf_endpoint_mirror"]["enabled"] is True
     assert "zluda" in written["extensions"]
+    assert "xformers_cutlass" in written["extensions"]
     assert "uv_pip" in written["extensions"]
     assert "core" in written
 
@@ -241,9 +243,14 @@ def test_apply_config_enables_core_and_extension_patches(monkeypatch):
     def fake_uv_pip(config):
         calls.append(("uv_pip", config["symlink"]))
 
+    def fake_xformers_cutlass(config):
+        calls.append(("xformers_cutlass", config["enabled"]))
+        return True
+
     monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.zluda.apply_from_config", fake_zluda)
     monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.extension_index.apply_from_config", fake_extension_index)
     monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.hf_endpoint_mirror.apply_from_config", fake_hf_endpoint)
+    monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.xformers_cutlass.apply_from_config", fake_xformers_cutlass)
     monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.uv_pip.apply_from_config", fake_uv_pip)
 
     result = apply_config(
@@ -256,6 +263,7 @@ def test_apply_config_enables_core_and_extension_patches(monkeypatch):
                 "zluda": {"enabled": True, "compat": True},
                 "extension_index": {"comfyui_manager": {"enabled": True}},
                 "hf_endpoint_mirror": {"enabled": True},
+                "xformers_cutlass": {"enabled": True},
                 "uv_pip": {"enabled": True, "symlink": True},
             },
         }
@@ -266,7 +274,18 @@ def test_apply_config_enables_core_and_extension_patches(monkeypatch):
     assert ("zluda", True) in calls
     assert ("extension_index", True) in calls
     assert ("hf_endpoint_mirror", True) in calls
+    assert ("xformers_cutlass", True) in calls
     assert ("uv_pip", True) in calls
+    assert "extensions.xformers_cutlass" in result["applied"]
+    assert result["errors"] == []
+
+
+def test_apply_config_does_not_report_skipped_xformers_cutlass_patch(monkeypatch):
+    monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.xformers_cutlass.apply_from_config", lambda _config: False)
+
+    result = apply_config({"extensions": {"xformers_cutlass": {"enabled": True}}})
+
+    assert "extensions.xformers_cutlass" not in result["applied"]
     assert result["errors"] == []
 
 
@@ -379,6 +398,9 @@ def test_catalog_reports_registered_patches():
     assert extension_index_settings["comfyui_manager.enabled"]["default"] is False
     assert extension_index_settings["comfyui_manager.url"]["type"] == "str"
     assert extension_index_settings["comfyui_manager.url"]["default"] == "auto"
+    xformers_cutlass_settings = features["extensions.xformers_cutlass"]["settings"]
+    assert xformers_cutlass_settings["enabled"]["type"] == "bool"
+    assert xformers_cutlass_settings["enabled"]["default"] is False
 
 
 def test_handle_request_json_supports_services_requests(tmp_path):

@@ -47,7 +47,7 @@ def install_log_capture(
     重复调用会返回当前已安装的采集器, 避免重复挂载 root logging handler、
     stdout/stderr tee 和 subprocess patch。
 
-    Args:
+    参数:
         client (RuntimeClient):
             发送日志事件的运行时客户端
         capture_logging (bool):
@@ -75,7 +75,7 @@ def install_log_capture(
         state (HotpatcherState | None):
             可选状态对象。为 None 时使用默认状态。
 
-    Returns:
+    返回:
         LogCapture:
             已安装的日志采集器
     """
@@ -107,7 +107,7 @@ def install_log_capture(
 def uninstall_log_capture(*, state: HotpatcherState | None = None) -> None:
     """卸载当前进程级日志采集器
 
-    Args:
+    参数:
         state (HotpatcherState | None):
             可选状态对象。为 None 时使用默认状态。
     """
@@ -130,7 +130,7 @@ def configure_log_capture_from_env(
 
     ``SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOGS=1`` 或配置中的 ``logs`` 为真时启用。
 
-    Args:
+    参数:
         client (RuntimeClient):
             发送日志事件的运行时客户端
         config (dict[str, Any] | None):
@@ -138,7 +138,7 @@ def configure_log_capture_from_env(
         state (HotpatcherState | None):
             可选状态对象。为 None 时使用默认状态。
 
-    Returns:
+    返回:
         LogCapture | None:
             已安装的日志采集器。未启用时返回 None。
     """
@@ -201,7 +201,7 @@ class LogMessage:
     """
     待发送的日志消息
 
-    Attributes:
+    属性:
         message_type (str):
             runtime 事件类型
         payload (dict[str, Any]):
@@ -216,7 +216,7 @@ class RuntimeLogHandler(logging.Handler):
     """
     转发 logging 记录的 handler
 
-    Attributes:
+    属性:
         capture (LogCapture):
             接收结构化日志记录的采集器
     """
@@ -263,7 +263,7 @@ class StreamTee:
     写入时会先尽量写回原始 stream, 再把文本作为 ``log.stream`` 事件送入采集器。
     原始 stream 异常只上报状态, 不再抛回业务代码。
 
-    Attributes:
+    属性:
         capture (LogCapture):
             接收 stream 事件的采集器
         stream_name (str):
@@ -282,11 +282,11 @@ class StreamTee:
         """
         写入文本并镜像为日志事件
 
-        Args:
+        参数:
             text (str):
                 待写入文本
 
-        Returns:
+        返回:
             int:
                 原始 stream 返回的写入结果
         """
@@ -312,7 +312,7 @@ class StreamTee:
         """
         判断原始 stream 是否连接到 TTY
 
-        Returns:
+        返回:
             bool:
                 原始 stream 的 isatty 结果
         """
@@ -323,7 +323,7 @@ class StreamTee:
         """
         获取原始 stream 的文件描述符
 
-        Returns:
+        返回:
             int:
                 文件描述符
         """
@@ -335,7 +335,7 @@ class StreamTee:
         """
         原始 stream 编码
 
-        Returns:
+        返回:
             str | None:
                 编码名称
         """
@@ -347,7 +347,7 @@ class StreamTee:
         """
         原始 stream 错误处理策略
 
-        Returns:
+        返回:
             str | None:
                 错误处理策略名称
         """
@@ -359,7 +359,7 @@ class StreamTee:
         """
         原始 stream 是否已关闭
 
-        Returns:
+        返回:
             bool:
                 原始 stream 的 closed 状态
         """
@@ -370,11 +370,11 @@ class StreamTee:
         """
         代理访问原始 stream 属性
 
-        Args:
+        参数:
             name (str):
                 属性名
 
-        Returns:
+        返回:
             Any:
                 原始 stream 上的属性值
         """
@@ -389,7 +389,7 @@ class FdWritebackStream:
     这个对象只用于 subprocess force 模式, 避免子进程输出写回时再次进入
     fd 捕获管道造成重复事件。
 
-    Attributes:
+    属性:
         fd_capture (FdStreamCapture):
             fd 级标准流捕获器。
         fallback (TextIO):
@@ -404,11 +404,11 @@ class FdWritebackStream:
         """
         写入文本到安装 fd 捕获前的原始文件描述符
 
-        Args:
+        参数:
             text (str):
                 待写入文本。
 
-        Returns:
+        返回:
             int:
                 写入的字节数或 fallback stream 返回的写入结果。
         """
@@ -431,11 +431,11 @@ class FdWritebackStream:
         """
         代理访问 fallback stream 属性
 
-        Args:
+        参数:
             name (str):
                 属性名。
 
-        Returns:
+        返回:
             Any:
                 fallback stream 上的属性值。
         """
@@ -450,7 +450,7 @@ class FdStreamCapture:
     通过 ``dup2`` 把 stdout/stderr fd 指向 pipe, 后台线程读取 pipe、
     写回安装前的原始 fd, 并发送 ``source=fd`` 的 ``log.stream``。
 
-    Attributes:
+    属性:
         capture (LogCapture):
             接收 fd stream 事件的采集器。
         stream_name (str):
@@ -476,7 +476,7 @@ class FdStreamCapture:
         """
         安装 fd 级标准流捕获
 
-        Returns:
+        返回:
             bool:
                 安装成功时返回 True。当前环境不支持或安装失败时返回 False。
         """
@@ -540,7 +540,7 @@ class FdStreamCapture:
         """
         判断当前标准流 fd 是否仍指向捕获 pipe
 
-        Returns:
+        返回:
             bool:
                 当前 fd 仍由本捕获器接管时返回 True。
         """
@@ -551,11 +551,11 @@ class FdStreamCapture:
         """
         构建写回原始 fd 的 stream 代理
 
-        Args:
+        参数:
             fallback (TextIO):
                 fd 写回失败时使用的 fallback stream。
 
-        Returns:
+        返回:
             FdWritebackStream:
                 写回原始 fd 的 stream 代理。
         """
@@ -583,7 +583,7 @@ class SubprocessCapture:
 
     通过 patch ``subprocess.Popen`` 捕获 safe 或 force 模式下的子进程输出。
 
-    Attributes:
+    属性:
         capture (LogCapture):
             接收子进程输出事件的采集器
         mode (str):
@@ -613,7 +613,7 @@ class SubprocessCapture:
     def install(self) -> None:
         """安装 subprocess.Popen patch
 
-        Raises:
+        抛出:
             ValueError:
                 subprocess 捕获模式不受支持时抛出。
         """
@@ -640,7 +640,7 @@ class SubprocessCapture:
         """
         判断当前 subprocess.Popen 是否仍是本采集器安装的包装类
 
-        Returns:
+        返回:
             bool:
                 当前 subprocess.Popen 仍是本采集器安装的包装类时返回 True。
         """
@@ -651,7 +651,7 @@ class SubprocessCapture:
         """
         重新包住当前 subprocess.Popen
 
-        Returns:
+        返回:
             bool:
                 重新包装成功时返回 True。
         """
@@ -836,7 +836,7 @@ class LogCapture:
 
     统一管理 logging handler、stdout/stderr tee、subprocess patch 和后台发送线程。
 
-    Attributes:
+    属性:
         client (RuntimeClient):
             发送日志事件的运行时客户端
         capture_logging (bool):
@@ -933,7 +933,7 @@ class LogCapture:
         """
         提交日志事件到后台队列
 
-        Args:
+        参数:
             message_type (str):
                 runtime 事件类型
             payload (dict[str, Any]):
@@ -952,7 +952,7 @@ class LogCapture:
         """
         提交标准流日志事件
 
-        Args:
+        参数:
             stream (str):
                 流名称
             text (Any):
@@ -981,7 +981,7 @@ class LogCapture:
         """
         提交子进程标准流日志事件
 
-        Args:
+        参数:
             stream (str):
                 流名称
             text (Any):
@@ -1008,7 +1008,7 @@ class LogCapture:
         """
         提交日志 hook 健康状态事件
 
-        Args:
+        参数:
             component (str):
                 hook 组件名称
             status (str):
@@ -1036,7 +1036,7 @@ class LogCapture:
         下游 write/flush 抛错时, 日志采集器保持 best-effort, 避免把异常抛回
         import/print 调用点导致业务模块加载失败。
 
-        Args:
+        参数:
             stream_name (str):
                 标准流名称。
             operation (str):
@@ -1059,7 +1059,7 @@ class LogCapture:
         """
         判断当前线程是否允许采集日志
 
-        Returns:
+        返回:
             bool:
                 未处于递归保护状态时返回 True
         """
@@ -1070,11 +1070,11 @@ class LogCapture:
         """
         判断 logging 记录是否应跳过
 
-        Args:
+        参数:
             record (logging.LogRecord):
                 logging 记录
 
-        Returns:
+        返回:
             bool:
                 需要跳过时返回 True
         """
