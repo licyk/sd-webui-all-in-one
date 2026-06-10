@@ -73,7 +73,7 @@
 param (
     [string]$ScriptRootPath
 )
-$script:SD_PORTABLE_DOWNLOADER_VERSION = 106
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 107
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -676,7 +676,7 @@ function Start-App {
     [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="AI 整合包下载器" Height="700" Width="900"
+        Title="AI 整合包下载器" Height="745" Width="900"
         MinHeight="500" MinWidth="700"
         WindowStartupLocation="CenterScreen" WindowStyle="None" AllowsTransparency="True"
         Background="Transparent" ResizeMode="CanResizeWithGrip">
@@ -1070,8 +1070,8 @@ function Start-App {
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
                     <!-- 现代化的下载图标 (圆形+箭头) -->
                     <Path Data="M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2M12,17L7,12H10V8H14V12H17L12,17Z"
-                          Fill="{DynamicResource PrimaryBrush}" Width="18" Height="18" Stretch="Uniform" Margin="0,0,8,0"/>
-                    <TextBlock Text="AI 整合包下载器" FontSize="12" Foreground="{DynamicResource TextSecBrush}" IsHitTestVisible="False"/>
+                          Fill="{DynamicResource PrimaryBrush}" Width="18" Height="18" Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock Text="AI 整合包下载器" FontSize="12" Foreground="{DynamicResource TextSecBrush}" VerticalAlignment="Center" LineHeight="18" LineStackingStrategy="BlockLineHeight" Margin="0,1,0,0" IsHitTestVisible="False"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <!-- 最小化 -->
@@ -1098,24 +1098,33 @@ function Start-App {
 
                 <!-- 顶部信息 -->
                 <Grid Grid.Row="0" Margin="0,0,0,15">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0">
-                        <TextBlock Name="UpdateTime" Text="状态: 正在初始化..." FontSize="11" Foreground="{DynamicResource TextSecBrush}"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,12">
-                            <TextBlock Text="版本:" VerticalAlignment="Center" Foreground="{DynamicResource TextMainBrush}" Margin="0,0,10,0"/>
-                            <RadioButton Name="Stable" Content="Stable" GroupName="V" VerticalAlignment="Center"/>
-                            <RadioButton Name="Nightly" Content="Nightly" IsChecked="True" GroupName="V" Margin="12,0" VerticalAlignment="Center"/>
-                            <Border Width="1" Height="14" Background="{DynamicResource BorderBrush}" Margin="10,0,20,0"/>
-                            <TextBlock Text="下载源:" VerticalAlignment="Center" Foreground="{DynamicResource TextMainBrush}" Margin="0,0,10,0"/>
-                            <RadioButton Name="HF" Content="HuggingFace" GroupName="S" VerticalAlignment="Center"/>
-                            <RadioButton Name="MS" Content="ModelScope" IsChecked="True" GroupName="S" Margin="12,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+
+                    <Border Grid.Row="0" Grid.ColumnSpan="2" Background="#EAF5FF" BorderBrush="#B7D9FF" BorderThickness="1" CornerRadius="6" Padding="12,9" Margin="0,0,0,12">
+                        <TextBlock Text="整合包的使用方法可以点击「整合包使用说明」查看。" Foreground="#005A9E" FontSize="13" TextWrapping="Wrap"/>
+                    </Border>
+
+                    <TextBlock Name="UpdateTime" Grid.Row="1" Grid.Column="0" Text="状态: 正在初始化..." FontSize="11" Foreground="{DynamicResource TextSecBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Name="ProjBtn" Content="项目主页" Margin="0,0,8,0" Padding="10,4" Background="{DynamicResource BtnNormalBrush}"/>
-                        <Button Name="DocBtn" Content="使用说明" Margin="0,0,8,0" Padding="10,4" Background="{DynamicResource BtnNormalBrush}"/>
+                        <Button Name="DocBtn" Content="整合包使用说明" Margin="0,0,8,0" Padding="10,4" Background="{DynamicResource BtnNormalBrush}"/>
+                        <Button Name="TutorialBtn" Content="AI绘画教程" Margin="0,0,8,0" Padding="10,4" Background="{DynamicResource BtnNormalBrush}"/>
                         <Button Name="LauncherBtn" Content="启动器下载" Margin="0,0,8,0" Padding="10,4" Background="{DynamicResource BtnNormalBrush}"/>
                         <Button Name="IssueBtn" Content="问题反馈" Padding="10,4" Background="{DynamicResource BtnNormalBrush}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,12">
+                        <TextBlock Text="版本:" VerticalAlignment="Center" Foreground="{DynamicResource TextMainBrush}" Margin="0,0,10,0"/>
+                        <RadioButton Name="Stable" Content="Stable" GroupName="V" VerticalAlignment="Center"/>
+                        <RadioButton Name="Nightly" Content="Nightly" IsChecked="True" GroupName="V" Margin="12,0" VerticalAlignment="Center"/>
+                        <Border Width="1" Height="14" Background="{DynamicResource BorderBrush}" Margin="10,0,20,0"/>
+                        <TextBlock Text="下载源:" VerticalAlignment="Center" Foreground="{DynamicResource TextMainBrush}" Margin="0,0,10,0"/>
+                        <RadioButton Name="HF" Content="HuggingFace" GroupName="S" VerticalAlignment="Center"/>
+                        <RadioButton Name="MS" Content="ModelScope" IsChecked="True" GroupName="S" Margin="12,0" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
 
@@ -1375,7 +1384,7 @@ function Start-App {
         StableRadio = $window.FindName("Stable"); NightlyRadio = $window.FindName("Nightly"); HFRadio = $window.FindName("HF"); MSRadio = $window.FindName("MS")
         RefreshBtn = $window.FindName("RefreshBtn"); ToggleQueueBtn = $window.FindName("ToggleQueueBtn"); BrowseBtn = $window.FindName("BrowseBtn")
         AutoExtract = $window.FindName("AutoExtract"); AutoDelete = $window.FindName("AutoDelete")
-        ProjBtn = $window.FindName("ProjBtn"); DocBtn = $window.FindName("DocBtn"); LauncherBtn = $window.FindName("LauncherBtn"); IssueBtn = $window.FindName("IssueBtn");
+        ProjBtn = $window.FindName("ProjBtn"); DocBtn = $window.FindName("DocBtn"); TutorialBtn = $window.FindName("TutorialBtn"); LauncherBtn = $window.FindName("LauncherBtn"); IssueBtn = $window.FindName("IssueBtn");
         LoadingOverlay = $window.FindName("LoadingOverlay")
         TitleBar = $window.FindName("TitleBar"); CloseBtn = $window.FindName("CloseBtn")
         MinBtn = $window.FindName("MinBtn"); MaxBtn = $window.FindName("MaxBtn")
@@ -1532,6 +1541,7 @@ function Start-App {
 
     $UI.ProjBtn.Add_Click({ Open-Url -Url "https://github.com/licyk/sd-webui-all-in-one" })
     $UI.DocBtn.Add_Click({ Open-Url -Url "https://licyk.github.io/sd-webui-all-in-one/portable/portable" })
+    $UI.TutorialBtn.Add_Click({ Open-Url -Url "https://sdnote.netlify.app" })
     $UI.LauncherBtn.Add_Click({ Open-Url -Url "https://licyk.github.io/sd-webui-all-in-one/tools/launcher-gui" })
     $UI.IssueBtn.Add_Click({ Open-Url -Url "https://github.com/licyk/sd-webui-all-in-one/issues" })
 

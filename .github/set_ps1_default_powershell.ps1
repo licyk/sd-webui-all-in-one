@@ -5,15 +5,21 @@ Sets the current user's .ps1 default opener to PowerShell on Windows 10/11.
 .DESCRIPTION
 Windows protects per-user default application choices with a UserChoice Hash:
 
-  HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ps1\UserChoice
-    ProgID
-    Hash
+	  HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ps1\UserChoice
+	    ProgID
+	    Hash
 
-If ProgID is edited without a valid Hash, Windows treats it as tampering and
-resets or ignores the association. This script follows the same general approach
-Mozilla Firefox uses for its "set default browser" flow: generate the expected
-UserChoice Hash, delete and recreate the UserChoice key, then notify Explorer
-that associations changed.
+	On newer Windows 11 builds, Explorer can also keep the latest selected ProgID at:
+
+	  HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.ps1\UserChoiceLatest\ProgId
+	    ProgId
+
+	If ProgID is edited without a valid Hash, Windows treats it as tampering and
+	resets or ignores the association. This script follows the same general approach
+	Mozilla Firefox uses for its "set default browser" flow: generate the expected
+	UserChoice Hash, delete and recreate the UserChoice key, then notify Explorer
+	that associations changed. It also updates UserChoiceLatest\ProgId so Windows 11
+	default-app UI and Explorer entry points do not keep pointing at the old ProgID.
 
 This is intentionally marked experimental. The UserChoice Hash algorithm is not
 a documented Microsoft API and may change in Windows updates. Microsoft supports
@@ -70,13 +76,21 @@ param(
     [switch]$Force
 )
 
+$script:UserChoiceNativeType = $null
+
 function Initialize-UserChoiceNativeTypes {
     [CmdletBinding()]
     param()
 
-    if ("UserChoiceNative" -as [type]) {
-        return
+    $existingNativeType = Get-Variable -Scope Script -Name "UserChoiceNativeType" -ErrorAction SilentlyContinue
+    if ($null -ne $existingNativeType -and $existingNativeType.Value -is [type]) {
+        return $existingNativeType.Value
     }
+
+    # Add-Type cannot replace a previously loaded class in the same PowerShell
+    # process. Use a unique class name so repeated script updates in one session
+    # cannot accidentally keep running an older embedded C# implementation.
+    $nativeTypeName = "UserChoiceNative_$([Guid]::NewGuid().ToString("N"))"
 
     $source = @"
 using Microsoft.Win32;
@@ -87,7 +101,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 
-public static class UserChoiceNative
+public static class __USER_CHOICE_NATIVE_TYPE__
 {
     private const int ERROR_SUCCESS = 0;
     private const int SHCNE_ASSOCCHANGED = 0x08000000;
@@ -225,6 +239,8 @@ public static class UserChoiceNative
                     userChoice.SetValue("ProgID", progId, RegistryValueKind.String);
                     userChoice.SetValue("Hash", hash, RegistryValueKind.String);
                 }
+
+                SetUserChoiceLatest(assocKey, progId);
             }
             finally
             {
@@ -236,6 +252,36 @@ public static class UserChoiceNative
                         throw new InvalidOperationException("RegRenameKey back to association failed: " + result);
                     }
                 }
+            }
+        }
+    }
+
+    private static void SetUserChoiceLatest(RegistryKey assocKey, string progId)
+    {
+        using (RegistryKey latestRoot = assocKey.CreateSubKey("UserChoiceLatest", true))
+        {
+            if (latestRoot == null)
+            {
+                throw new InvalidOperationException("Could not open or create UserChoiceLatest key.");
+            }
+
+            try
+            {
+                latestRoot.DeleteSubKey("ProgId", false);
+            }
+            catch (ArgumentException)
+            {
+                // Missing UserChoiceLatest\ProgId is fine.
+            }
+
+            using (RegistryKey latestProgId = latestRoot.CreateSubKey("ProgId", true))
+            {
+                if (latestProgId == null)
+                {
+                    throw new InvalidOperationException("Could not create UserChoiceLatest\\ProgId key.");
+                }
+
+                latestProgId.SetValue("ProgId", progId, RegistryValueKind.String);
             }
         }
     }
@@ -273,6 +319,27 @@ public static class UserChoiceNative
 
             return "Mismatch: stored ProgID=" + progId + ", stored Hash=" + storedHash +
                    ", computed Hash=" + computedHash + ".";
+        }
+    }
+
+    public static string ValidateUserChoiceLatest(string association, string expectedProgId)
+    {
+        string path = GetAssociationKeyPath(association) + "\\UserChoiceLatest\\ProgId";
+
+        using (RegistryKey key = Registry.CurrentUser.OpenSubKey(path, false))
+        {
+            if (key == null)
+            {
+                return "UserChoiceLatest\\ProgId key does not exist.";
+            }
+
+            string progId = key.GetValue("ProgId") as string;
+            if (StringComparer.Ordinal.Equals(progId, expectedProgId))
+            {
+                return "OK: UserChoiceLatest ProgId matches " + expectedProgId + ".";
+            }
+
+            return "Mismatch: UserChoiceLatest ProgId=" + progId + ", expected ProgId=" + expectedProgId + ".";
         }
     }
 
@@ -402,7 +469,15 @@ public static class UserChoiceNative
 }
 "@
 
+    $source = $source.Replace("__USER_CHOICE_NATIVE_TYPE__", $nativeTypeName)
     Add-Type -TypeDefinition $source -ErrorAction Stop | Out-Null
+    $script:UserChoiceNativeType = $nativeTypeName -as [type]
+
+    if ($null -eq $script:UserChoiceNativeType) {
+        throw "Could not load generated native helper type '$nativeTypeName'."
+    }
+
+    return $script:UserChoiceNativeType
 }
 
 function Assert-DefaultAssociationEnvironment {
@@ -452,8 +527,8 @@ function Test-ProgId {
         [string]$ProgId
     )
 
-    Initialize-UserChoiceNativeTypes
-    return [UserChoiceNative]::ProgIdExists($ProgId)
+    $native = Initialize-UserChoiceNativeTypes
+    return $native::ProgIdExists($ProgId)
 }
 
 function Get-PowerShellOpenCommand {
@@ -557,14 +632,17 @@ function Set-UserChoiceAssociation {
         [switch]$RegRename
     )
 
-    Initialize-UserChoiceNativeTypes
+    $native = Initialize-UserChoiceNativeTypes
     Wait-UserChoiceHashWriteWindow
 
-    $hash = [UserChoiceNative]::GenerateHash($Extension, $UserSid, $ProgId, [DateTime]::UtcNow)
-    [UserChoiceNative]::SetUserChoice($Extension, $ProgId, $hash, [bool]$RegRename)
-    [UserChoiceNative]::NotifyAssociationChanged()
+    $hash = $native::GenerateHash($Extension, $UserSid, $ProgId, [DateTime]::UtcNow)
+    $native::SetUserChoice($Extension, $ProgId, $hash, [bool]$RegRename)
+    $native::NotifyAssociationChanged()
 
-    return [UserChoiceNative]::ValidateUserChoiceHash($Extension, $UserSid)
+    return @(
+        $native::ValidateUserChoiceHash($Extension, $UserSid)
+        $native::ValidateUserChoiceLatest($Extension, $ProgId)
+    )
 }
 
 function New-DefaultAssociationPlan {
@@ -622,7 +700,7 @@ function Invoke-Ps1DefaultPowerShellConfiguration {
     $ErrorActionPreference = "Stop"
 
     Assert-DefaultAssociationEnvironment
-    Initialize-UserChoiceNativeTypes
+    $null = Initialize-UserChoiceNativeTypes
 
     $normalizedExtension = Normalize-FileExtension -Extension $Extension
     $openCommand = Get-PowerShellOpenCommand -PowerShellPath $PowerShellPath
@@ -662,7 +740,7 @@ function Invoke-Ps1DefaultPowerShellConfiguration {
             -UserSid $plan.UserSid `
             -RegRename:$RegRename
 
-        Write-Host $validation
+        $validation | ForEach-Object { Write-Host $_ }
     }
 }
 
