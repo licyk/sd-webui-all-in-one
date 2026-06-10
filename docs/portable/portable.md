@@ -1,11 +1,11 @@
 # 整合包下载与使用
 
 ## 简介
-基于 [sd-webui-all-in-one/Installer](../installer/index.md) 全自动构建的整合包。可以使用 [AI 整合包下载器](../tools/portable-downloader.md) 下载并自动解压；解压后默认通过 Installer 生成的脚本启动和维护，也可以用 [Windows GUI Launcher](../tools/launcher-gui.md) 将安装路径指向整合包目录来接管管理。
+基于 [sd-webui-all-in-one/Installer](../installer/index.md) 全自动构建的整合包，下载解压后即可使用 Installer 生成的脚本启动和维护。首次使用前请先进入整合包目录，双击运行 `configure_env.bat` 完成环境配置，之后再运行启动、更新、模型下载等 PowerShell 管理脚本。
 
-整合包使用 7z 格式进行打包，若 Windows 系统不支持解压该格式，请使用 [7-Zip](https://7-zip.org/) / [Bandizip](https://www.bandisoft.com/bandizip/) 或者其他支持解压 7z 格式的工具进行解压，解压完成后，首次使用需要双击运行`configure_env.bat`进行环境配置，保证 PowerShell 脚本能够正常运行。
+可以使用 [AI 整合包下载器](../tools/portable-downloader.md) 下载并自动解压整合包；如果手动下载，整合包使用 7z 格式打包，若 Windows 系统不支持解压该格式，请使用 [7-Zip](https://7-zip.org/) / [Bandizip](https://www.bandisoft.com/bandizip/) 或者其他支持 7z 格式的工具进行解压。解压完成后务必先运行 `configure_env.bat`，否则 PowerShell 脚本可能无法正常启动。
 
-PowerShell 脚本需要右键该脚本，选择`使用 PowerShell 运行`才可以运行。目录中包含多个 PowerShell 脚本用于启动和管理文件，根据需求运行脚本。
+PowerShell 脚本需要右键该脚本，选择 `使用 PowerShell 运行` 才可以运行。目录中包含多个 PowerShell 脚本用于启动和管理文件，根据需求运行脚本。
 
 部分 WebUI 支持使用绘世启动器进行启动和管理，运行`hanamizuki.bat`即可启动绘世启动器，如果没有这个文件说明绘世启动器不支持启动和管理该 WebUI。
 
