@@ -13,7 +13,7 @@ class TupleWrapper:
 
     主要用于修改 ``code.co_consts`` 这类不可变元组字段。
 
-    属性:
+    Attributes:
         tup (tuple[Any, ...]):
             原始元组
         field_name (str | None):
@@ -54,7 +54,7 @@ class TupleWrapper:
         """
         替换与原始值相等的元素
 
-        参数:
+        Args:
             original (Any):
                 要匹配的原始值
             replacement (Any):
@@ -77,7 +77,7 @@ class TupleWrapper:
 
         嵌套 tuple 和 code object 会先包装成可变代理, 再传入 ``replacement``。
 
-        参数:
+        Args:
             predicate (Callable[[Any], bool]):
                 判断元素是否需要替换的函数
             replacement (Callable[[Any], Any]):
@@ -108,7 +108,7 @@ class TupleWrapper:
         """
         把指定名称的嵌套函数替换为空函数
 
-        参数:
+        Args:
             method_name (str):
                 需要替换的函数名
             only_first (bool):
@@ -130,7 +130,7 @@ class TupleWrapper:
         """
         遍历匹配的嵌套可变对象
 
-        参数:
+        Args:
             predicate (Callable[[Any], bool]):
                 判断元素是否需要暴露为可变代理的函数
             only_first (bool):
@@ -163,7 +163,7 @@ class TupleWrapper:
         """
         生成最终 tuple
 
-        返回:
+        Returns:
             tuple[Any, ...]:
                 应用所有覆盖值后的 tuple
         """
@@ -180,7 +180,7 @@ class CodeWrapper:
     基于 ``types.CodeType.replace`` 暂存字段修改, 最终通过 ``conclude`` 生成新的
     code object。
 
-    属性:
+    Attributes:
         _code (types.CodeType):
             原始 code object
         _overrides (dict[str, Any]):
@@ -210,7 +210,7 @@ class CodeWrapper:
         """
         生成最终 code object
 
-        返回:
+        Returns:
             types.CodeType:
                 应用所有覆盖字段后的 code object
         """

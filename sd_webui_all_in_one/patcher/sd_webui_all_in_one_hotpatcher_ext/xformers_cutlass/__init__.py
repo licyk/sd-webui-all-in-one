@@ -33,7 +33,7 @@ def should_patch_xformers_cutlass() -> bool:
     """
     检查当前安装的 torch 和 xformers 版本是否满足补丁条件。
 
-    返回:
+    Returns:
         bool:
             torch >= 2.9.0 且 xformers >= 0.0.33 时返回 True。
     """
@@ -61,7 +61,7 @@ def patch_xformers_cutlass_cuda_capability() -> bool:
     """
     注册并立即应用 xFormers CUTLASS capability 热补丁。
 
-    返回:
+    Returns:
         bool:
             版本条件满足且补丁已注册时返回 True。
     """
@@ -83,7 +83,7 @@ def apply_cutlass_cuda_capability_patch(module: ModuleType) -> None:
     """
     设置 xFormers CUTLASS forward/backward op 的 CUDA capability 上限。
 
-    参数:
+    Args:
         module (ModuleType):
             已导入的 ``xformers.ops.fmha.cutlass`` 模块。
     """
@@ -100,7 +100,7 @@ def is_xformers_cutlass_patch_active() -> bool:
 
     这个函数不会主动导入 xformers。
 
-    返回:
+    Returns:
         bool:
             FwOp 以及存在时的 BwOp 已经暴露 ``(12, 1)`` 时返回 True。
     """
@@ -124,11 +124,11 @@ def apply_from_config(config: dict[str, Any] | None) -> bool:
     """
     根据扩展配置应用 xFormers CUTLASS CUDA capability 热补丁。
 
-    参数:
+    Args:
         config (dict[str, Any] | None):
             扩展配置。
 
-    返回:
+    Returns:
         bool:
             补丁已注册时返回 True；禁用或跳过时返回 False。
     """

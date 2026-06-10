@@ -30,7 +30,7 @@ class Monkey:
     保存源码、AST、字节码、模块对象和函数级补丁, 在目标模块第一次导入时由
     ``MonkeySourceFileLoader`` 按固定顺序执行。
 
-    属性:
+    Attributes:
         premodule_patches (list[tuple[Callable[[ModuleType], Any], int]]):
             模块代码执行前调用的补丁
         module_patches (list[tuple[Callable[[ModuleType], Any], int]]):
@@ -64,7 +64,7 @@ class Monkey:
         """
         是否存在有效补丁
 
-        返回:
+        Returns:
             bool:
                 任意补丁列表非空时返回 True
         """
@@ -87,7 +87,7 @@ class Monkey:
         """
         是否存在会影响 loader 缓存的补丁
 
-        返回:
+        Returns:
             bool:
                 存在源码或 AST 补丁时返回 True
         """
@@ -104,7 +104,7 @@ class Monkey:
         """
         注册函数替换补丁
 
-        参数:
+        Args:
             function_name (str):
                 目标函数名
             hooker (Callable[[Any, ModuleType], Any]):
@@ -121,7 +121,7 @@ class Monkey:
         """
         注册模块代码执行前补丁
 
-        参数:
+        Args:
             hooker (Callable[[ModuleType], Any]):
                 接收模块对象的补丁函数
             priority (int):
@@ -134,7 +134,7 @@ class Monkey:
         """
         注册模块代码执行后补丁
 
-        参数:
+        Args:
             hooker (Callable[[ModuleType], Any]):
                 接收模块对象的补丁函数
             priority (int):
@@ -151,7 +151,7 @@ class Monkey:
         """
         注册源码补丁
 
-        参数:
+        Args:
             hooker (Callable[[str, str], str | tuple[str] | tuple[str, str]]):
                 接收源码和文件名, 返回新源码或新源码加新文件名的函数
             priority (int):
@@ -168,7 +168,7 @@ class Monkey:
         """
         注册 AST 补丁
 
-        参数:
+        Args:
             hooker (ast.NodeTransformer | ast.NodeVisitor | Callable[[ast.AST], ast.AST]):
                 AST visitor、transformer 或接收 AST 并返回 AST 的函数
             priority (int):
@@ -181,7 +181,7 @@ class Monkey:
         """
         注册字节码补丁
 
-        参数:
+        Args:
             hooker (Callable[[CodeWrapper], Any]):
                 接收 code object 可变代理的补丁函数
             priority (int):
@@ -194,7 +194,7 @@ class Monkey:
         """
         注册 stdout 输出抑制
 
-        参数:
+        Args:
             method (str | None):
                 需要抑制输出的方法名。为 None 时抑制整个模块执行阶段输出。
         """
@@ -211,7 +211,7 @@ class Monkey:
         """
         注册 import 注入
 
-        参数:
+        Args:
             package (str):
                 需要导入的包或模块名
             content (str | None):
@@ -228,17 +228,17 @@ class Monkey:
         """
         执行源码补丁链
 
-        参数:
+        Args:
             source (str):
                 原始源码
             filename (str):
                 原始文件名
 
-        返回:
+        Returns:
             tuple[str, str]:
                 补丁后的源码和文件名
 
-        抛出:
+        Raises:
             TypeError:
                 源码补丁返回值类型不受支持时抛出。
             ValueError:
@@ -267,11 +267,11 @@ class Monkey:
         """
         执行 AST 补丁链
 
-        参数:
+        Args:
             tree (ast.AST):
                 原始 AST
 
-        返回:
+        Returns:
             ast.AST:
                 补丁后的 AST
         """
@@ -292,11 +292,11 @@ class Monkey:
         """
         执行字节码补丁链
 
-        参数:
+        Args:
             code_object (CodeType):
                 原始 code object
 
-        返回:
+        Returns:
             CodeType:
                 补丁后的 code object
         """
@@ -313,7 +313,7 @@ class Monkey:
         """
         执行模块代码前补丁链
 
-        参数:
+        Args:
             module (ModuleType):
                 正在导入的模块对象
         """
@@ -328,7 +328,7 @@ class Monkey:
         """
         执行模块代码后补丁链
 
-        参数:
+        Args:
             module (ModuleType):
                 已执行代码的模块对象
         """
@@ -343,7 +343,7 @@ class Monkey:
         """
         执行函数替换补丁链
 
-        参数:
+        Args:
             module (ModuleType):
                 已执行代码的模块对象
         """
@@ -362,7 +362,7 @@ class Monkey:
         """
         执行方法级输出抑制补丁
 
-        参数:
+        Args:
             module (ModuleType):
                 已执行代码的模块对象
         """
@@ -383,7 +383,7 @@ class Monkey:
         """
         执行 import 注入补丁链
 
-        参数:
+        Args:
             module (ModuleType):
                 正在导入的模块对象
         """
@@ -418,7 +418,7 @@ class MonkeyZoo:
     ``MonkeyZoo`` 通过上下文管理器暴露单个模块的 ``Monkey``。退出上下文时,
     只有包含有效补丁的计划会保留。
 
-    属性:
+    Attributes:
         monkeys (dict[str, Monkey]):
             按小写模块名索引的补丁计划
         aliases_fallback (dict[str, str]):
@@ -451,7 +451,7 @@ class MonkeyZoo:
         """
         注册模块不存在时使用的别名
 
-        参数:
+        Args:
             module (str):
                 原模块名
             alias (str):
@@ -507,11 +507,11 @@ class AliasLoader(Loader):
         """
         创建别名模块对象
 
-        参数:
+        Args:
             spec (ModuleSpec):
                 目标模块 spec
 
-        返回:
+        Returns:
             ModuleType:
                 别名模块导入结果
         """
@@ -522,7 +522,7 @@ class AliasLoader(Loader):
         """
         执行别名模块
 
-        参数:
+        Args:
             module (ModuleType):
                 已创建的模块对象
         """
@@ -547,7 +547,7 @@ class HookedMetaPathFinder(MetaPathFinder):
         """
         查找并按需包装目标模块 spec
 
-        参数:
+        Args:
             fullname (str):
                 完整模块名
             path (Sequence[bytes | str] | None):
@@ -555,7 +555,7 @@ class HookedMetaPathFinder(MetaPathFinder):
             target (ModuleType | None):
                 reload 目标模块
 
-        返回:
+        Returns:
             ModuleSpec | None:
                 已包装的模块 spec, 或不处理时返回 None
         """
@@ -645,11 +645,11 @@ class MonkeySourceFileLoader(Loader):
         """
         使用默认模块创建逻辑
 
-        参数:
+        Args:
             spec (ModuleSpec):
                 目标模块 spec
 
-        返回:
+        Returns:
             ModuleType | None:
                 返回 None 表示交给 import 系统默认创建
         """
@@ -660,15 +660,15 @@ class MonkeySourceFileLoader(Loader):
         """
         读取、补丁并编译模块代码
 
-        参数:
+        Args:
             fullname (str | None):
                 完整模块名
 
-        返回:
+        Returns:
             CodeType:
                 补丁后的 code object
 
-        抛出:
+        Raises:
             ImportError:
                 缺少模块名或无法加载 code object 时抛出。
         """
@@ -697,7 +697,7 @@ class MonkeySourceFileLoader(Loader):
         """
         执行补丁后的模块代码
 
-        参数:
+        Args:
             module (ModuleType):
                 目标模块对象
         """
@@ -722,11 +722,11 @@ def install_import_hook(*, state: HotpatcherState | None = None) -> HookedMetaPa
     重复调用是安全的。进程中只会安装一个 ``HookedMetaPathFinder``,
     并且只会包装一次 ``importlib.util.spec_from_file_location``。
 
-    参数:
+    Args:
         state (HotpatcherState | None):
             可选状态对象。为 None 时使用默认状态。
 
-    返回:
+    Returns:
         HookedMetaPathFinder:
             已安装的 finder 实例
     """
@@ -754,7 +754,7 @@ def uninstall_import_hook(*, state: HotpatcherState | None = None) -> None:
     会从 ``sys.meta_path`` 中移除 finder, 清理 finder 缓存,
     并恢复 ``importlib.util.spec_from_file_location``。
 
-    参数:
+    Args:
         state (HotpatcherState | None):
             可选状态对象。为 None 时使用默认状态。
     """
@@ -775,11 +775,11 @@ def is_import_hook_installed(*, state: HotpatcherState | None = None) -> bool:
     """
     检查 import hook 是否已安装
 
-    参数:
+    Args:
         state (HotpatcherState | None):
             可选状态对象。为 None 时使用默认状态。
 
-    返回:
+    Returns:
         bool:
             finder 当前位于 ``sys.meta_path`` 中时返回 True
     """
@@ -799,7 +799,7 @@ def register_hook(
     """
     注册函数级补丁
 
-    参数:
+    Args:
         module (str):
             目标模块名
         function (str):
@@ -825,7 +825,7 @@ def register_customize_hook(
     """
     注册模块级补丁
 
-    参数:
+    Args:
         module (str):
             目标模块名
         hooker (Callable[[ModuleType], Any]):

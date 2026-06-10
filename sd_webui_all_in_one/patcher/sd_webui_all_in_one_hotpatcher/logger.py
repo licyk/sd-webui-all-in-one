@@ -15,11 +15,11 @@ def get_hotpatcher_logger(name: str | None = None) -> logging.Logger:
     如果主包在当前启动阶段不可用，则回退到标准库日志器，避免日志接入影响
     hotpatcher bootstrap。
 
-    参数:
+    Args:
         name (str | None):
             回退到标准库日志器时使用的日志器名称。
 
-    返回:
+    Returns:
         logging.Logger:
             日志器对象。
     """
