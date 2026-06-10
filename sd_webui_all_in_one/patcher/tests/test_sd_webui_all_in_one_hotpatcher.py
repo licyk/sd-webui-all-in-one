@@ -160,7 +160,7 @@ def test_install_and_uninstall_are_idempotent():
 
     finder = install_import_hook()
     assert install_import_hook() is finder
-    assert sys.meta_path.count(finder) == 1  # ty: ignore[invalid-argument-type]
+    assert sys.meta_path.count(finder) == 1
     assert importlib.util.spec_from_file_location is not original_spec_from_file_location
 
     uninstall_import_hook()

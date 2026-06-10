@@ -7,7 +7,7 @@ import importlib
 import importlib.util
 import os
 import sys
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager, nullcontext, redirect_stdout
 from importlib.abc import Loader, MetaPathFinder
 from importlib.machinery import ModuleSpec, SourceFileLoader
@@ -538,10 +538,10 @@ class HookedMetaPathFinder(MetaPathFinder):
         self.currently_loading = LoadingSkipper()
         self.zoo = zoo
 
-    def find_spec(  # ty: ignore[invalid-method-override]
+    def find_spec(
         self,
         fullname: str,
-        path: list[str] | None,
+        path: Sequence[bytes | str] | None,
         target: ModuleType | None = None,
     ) -> ModuleSpec | None:
         """
@@ -550,7 +550,7 @@ class HookedMetaPathFinder(MetaPathFinder):
         参数:
             fullname (str):
                 完整模块名
-            path (list[str] | None):
+            path (Sequence[bytes | str] | None):
                 包路径
             target (ModuleType | None):
                 reload 目标模块
@@ -738,7 +738,7 @@ def install_import_hook(*, state: HotpatcherState | None = None) -> HookedMetaPa
 
     finder = active_state.import_hook_finder
     if finder not in sys.meta_path:
-        sys.meta_path.insert(0, finder)  # ty: ignore[invalid-argument-type]
+        sys.meta_path.insert(0, finder)
 
     if importlib.util.spec_from_file_location is not _spec_from_file_location_wrapper:
         active_state.import_hook_wrapped_spec_from_file_location = importlib.util.spec_from_file_location

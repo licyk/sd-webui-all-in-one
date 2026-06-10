@@ -5,11 +5,12 @@ from __future__ import annotations
 import sys
 import traceback
 from collections.abc import Callable
+from types import TracebackType
 from typing import Any
 
 from .state import HotpatcherState, get_default_state
 
-ExceptionReporter = Callable[[type[BaseException], BaseException, Any], None]
+ExceptionReporter = Callable[[type[BaseException], BaseException, TracebackType | None], None]
 
 
 def set_exception_reporter(reporter: ExceptionReporter | None, *, state: HotpatcherState | None = None) -> None:
@@ -66,7 +67,7 @@ def _report_exception(
     state: HotpatcherState,
     exc_type: type[BaseException],
     exc_value: BaseException,
-    exc_tb: Any,
+    exc_tb: TracebackType | None,
 ) -> None:
     if state.exception_reporter is None:
         return

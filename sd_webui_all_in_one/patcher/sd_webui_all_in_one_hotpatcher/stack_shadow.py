@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib.util
 import os
 import sys
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Sequence
 from contextlib import contextmanager
 from importlib.abc import Loader, MetaPathFinder
 from importlib.machinery import ModuleSpec, SourceFileLoader
@@ -92,10 +92,10 @@ class StackShadowFinder(MetaPathFinder):
         self.include_source_loaders = include_source_loaders
         self.invalidate_caches()
 
-    def find_spec(  # ty: ignore[invalid-method-override]
+    def find_spec(
         self,
         fullname: str,
-        path: list[str] | None,
+        path: Sequence[bytes | str] | None,
         target: ModuleType | None = None,
     ) -> ModuleSpec | None:
         """
@@ -104,7 +104,7 @@ class StackShadowFinder(MetaPathFinder):
         参数:
             fullname (str):
                 完整模块名
-            path (list[str] | None):
+            path (Sequence[bytes | str] | None):
                 包路径
             target (ModuleType | None):
                 reload 目标模块
@@ -257,7 +257,7 @@ def install_stack_shadower(
 
     finder = active_state.stack_shadow_finder
     if finder not in sys.meta_path:
-        sys.meta_path.insert(0, finder)  # ty: ignore[invalid-argument-type]
+        sys.meta_path.insert(0, finder)
 
     return finder
 
