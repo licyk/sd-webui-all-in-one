@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 import sys
 from importlib import metadata
 from types import ModuleType
@@ -10,6 +9,7 @@ from typing import Any
 
 from sd_webui_all_in_one.package_analyzer import PyWhlVersionComparison
 from sd_webui_all_in_one_hotpatcher import install_import_hook, monkey_zoo
+from sd_webui_all_in_one_hotpatcher.logger import get_hotpatcher_logger
 
 __all__ = [
     "TARGET_CAPABILITY",
@@ -26,7 +26,7 @@ _MIN_TORCH_VERSION = "2.9.0"
 _MIN_XFORMERS_VERSION = "0.0.33"
 _PATCH_MARKER_ATTR = "_sd_webui_all_in_one_hotpatcher_xformers_cutlass_patch"
 
-logger = logging.getLogger(__name__)
+logger = get_hotpatcher_logger(__name__)
 
 
 def should_patch_xformers_cutlass() -> bool:

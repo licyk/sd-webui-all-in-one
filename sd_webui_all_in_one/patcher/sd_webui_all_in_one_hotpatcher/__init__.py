@@ -10,6 +10,7 @@ from .hook import (
     register_hook,
     uninstall_import_hook,
 )
+from .logger import get_hotpatcher_logger
 from .mutable import CodeWrapper, TupleWrapper
 from .state import HotpatcherState, get_default_state
 from .stack_shadow import (
@@ -27,6 +28,7 @@ __all__ = [
     "TupleWrapper",
     "configure_stack_shadower_from_env",
     "get_default_state",
+    "get_hotpatcher_logger",
     "install_import_hook",
     "install_stack_shadower",
     "is_import_hook_installed",

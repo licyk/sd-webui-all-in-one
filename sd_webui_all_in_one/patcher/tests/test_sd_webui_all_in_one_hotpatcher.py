@@ -166,3 +166,15 @@ def test_install_and_uninstall_are_idempotent():
     uninstall_import_hook()
     assert finder not in sys.meta_path
     assert importlib.util.spec_from_file_location is original_spec_from_file_location
+
+
+def test_hotpatcher_logger_uses_main_package_logger_config():
+    from sd_webui_all_in_one.config import LOGGER_NAME
+    from sd_webui_all_in_one_hotpatcher import get_hotpatcher_logger
+
+    logger = get_hotpatcher_logger(__name__)
+
+    if LOGGER_NAME is not None:
+        assert logger.name == LOGGER_NAME
+    else:
+        assert logger.name == "sd_webui_all_in_one_hotpatcher.logger"

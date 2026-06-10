@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-import logging
 import shlex
 import subprocess
 import sys
 from collections.abc import Sequence
 from functools import wraps
 from typing import Any
+
+from sd_webui_all_in_one_hotpatcher.logger import get_hotpatcher_logger
 
 __all__ = [
     "apply_from_config",
@@ -23,7 +24,7 @@ _WRAPPER_ATTR = "_sd_webui_all_in_one_hotpatcher_uv_wrapper"
 _MARKER_ATTR = "_sd_webui_all_in_one_hotpatcher_uv_patch"
 _BAD_PIP_FLAGS = ("--prefer-binary", "--ignore-installed", "-I")
 
-logger = logging.getLogger(__name__)
+logger = get_hotpatcher_logger(__name__)
 
 
 def preprocess_command(command: list[str] | str, shell: bool) -> list[str] | str:
