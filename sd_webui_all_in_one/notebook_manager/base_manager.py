@@ -61,10 +61,14 @@ ModelListItem: TypeAlias = list[str | int] | tuple[str | int, ...]
 
 
 class ModelDownloadDictRequired(TypedDict):
+    """模型下载字典的必填字段。"""
+
     url: str
 
 
 class ModelDownloadDict(ModelDownloadDictRequired, total=False):
+    """模型下载字典的可选字段。"""
+
     status: str | int
     filename: str
 
