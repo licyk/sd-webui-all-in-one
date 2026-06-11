@@ -6,7 +6,7 @@ from pathlib import Path
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
+from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager, ModelDownloadList
 from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.git_warpper import set_git_config
 from sd_webui_all_in_one.env_check import (
@@ -225,7 +225,7 @@ class SDScriptsManager(BaseManager):
         git_branch: str | None = None,
         git_commit: str | None = None,
         model_path: str | Path | None = None,
-        model_list: list[list[str | int]] | None = None,
+        model_list: ModelDownloadList | None = None,
         use_uv: bool = True,
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
@@ -271,7 +271,7 @@ class SDScriptsManager(BaseManager):
             git_branch (str | None): 指定要切换 sd-scripts 的分支
             git_commit (str | None): 指定要切换到 sd-scripts 的提交记录
             model_path (str | Path | None): 指定模型下载的路径
-            model_list (list[list[str | int]] | None): 模型下载列表
+            model_list (ModelDownloadList | None): 模型下载列表
             use_uv (bool): 使用 uv 替代 Pip 进行 Python 软件包的安装
             pypi_index_mirror (str | None): PyPI Index 镜像源链接
             pypi_extra_index_mirror (str | None): PyPI Extra Index 镜像源链接

@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
+from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager, ModelDownloadList
 from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.file_manager import get_file_list
 from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceTypeCategory
@@ -148,7 +148,7 @@ class InvokeAIManager(BaseManager):
         pypi_find_links_mirror: str | None = None,
         github_mirror: str | list[str] | None = None,
         huggingface_mirror: str | None = None,
-        model_list: list[dict[str, str]] | None = None,
+        model_list: ModelDownloadList | None = None,
         check_avaliable_gpu: bool = False,
         enable_tcmalloc: bool = True,
         enable_cuda_malloc: bool = True,
@@ -190,7 +190,7 @@ class InvokeAIManager(BaseManager):
                 是否启用 HuggingFace 镜像源
             use_github_mirror (bool):
                 是否使用 Github 镜像源
-            model_list (list[dict[str, str]] | None):
+            model_list (ModelDownloadList | None):
                 模型下载列表
             check_avaliable_gpu (bool):
                 是否检查可用的 GPU, 当检查时没有可用 GPU 将引发`Exception`

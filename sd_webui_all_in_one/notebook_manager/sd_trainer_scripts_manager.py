@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
+from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager, ModelDownloadList
 from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.git_warpper import set_git_config
 from sd_webui_all_in_one.env_check import check_numpy
@@ -85,7 +85,7 @@ class SDTrainerScriptsManager(BaseManager):
         # legecy
         use_hf_mirror: bool = False,
         model_path: str | Path | None = None,
-        model_list: list[list[str | int]] | None = None,
+        model_list: ModelDownloadList | None = None,
         pypi_index_mirror: str | None = None,
         pypi_extra_index_mirror: str | None = None,
         pypi_find_links_mirror: str | None = None,
@@ -131,7 +131,7 @@ class SDTrainerScriptsManager(BaseManager):
                 是否启用 HuggingFace 镜像源
             model_path (str | Path | None):
                 指定模型下载的路径
-            model_list (list[list[str | int]] | None):
+            model_list (ModelDownloadList | None):
                 模型下载列表
             pypi_index_mirror (str | None):
                 PyPI Index 镜像源链接

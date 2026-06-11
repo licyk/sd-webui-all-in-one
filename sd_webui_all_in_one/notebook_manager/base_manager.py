@@ -5,7 +5,7 @@ import subprocess
 import shlex
 import traceback
 from pathlib import Path
-from typing import Literal
+from typing import Literal, TypeAlias, TypedDict
 
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pytorch_manager import (
@@ -57,6 +57,19 @@ from sd_webui_all_in_one.kaggle_tools import (
 from sd_webui_all_in_one.cmd import run_cmd
 
 SecretType = Literal["colab", "kaggle"]
+ModelListItem: TypeAlias = list[str | int] | tuple[str | int, ...]
+
+
+class ModelDownloadDictRequired(TypedDict):
+    url: str
+
+
+class ModelDownloadDict(ModelDownloadDictRequired, total=False):
+    status: str | int
+    filename: str
+
+
+ModelDownloadList: TypeAlias = list[ModelListItem | ModelDownloadDict]
 
 
 logger = get_logger(
@@ -194,17 +207,18 @@ class BaseManager:
     def get_model_from_list(
         self,
         path: str | Path,
-        model_list: list[list[str | int]] | list[dict[str, str]],
+        model_list: ModelDownloadList,
     ) -> None:
         """从模型列表下载模型
 
-        `model_list`需要指定模型下载的链接和下载状态, 例如
+        `model_list`需要指定模型下载的链接和下载状态, 支持使用 list 或 tuple 描述单个模型, 例如
         ```python
         model_list = [
             ["url1", 0],
-            ["url2", 1],
+            ("url2", 1),
             ["url3", 0],
-            ["url4", 1, "file.safetensors"]
+            ("url4", 1, "file.safetensors"),
+            {"url": "url5", "status": 1, "filename": "file.safetensors"},
         ]
         ```
 
@@ -216,18 +230,18 @@ class BaseManager:
 
         Args:
             path (str | Path): 将模型下载到的本地路径
-            model_list (list[list[str | int]] | list[dict[str, str]]): 模型列表
+            model_list (ModelDownloadList): 模型列表
         """
         for model in model_list:
             try:
-                if isinstance(model, dict):
-                    url = model.get("url")
-                    status = int(model.get("status", "1"))
-                    filename = model.get("filename")
-                else:
+                if isinstance(model, (list, tuple)):
                     url = str(model[0])
                     status = int(model[1])
                     filename = str(model[2]) if len(model) > 2 else None
+                else:
+                    url = model.get("url")
+                    status = int(model.get("status", "1"))
+                    filename = model.get("filename")
             except Exception as e:
                 logger.error("模型下载列表长度不合法: %s\n出现异常的列表:%s", e, model)
                 continue
