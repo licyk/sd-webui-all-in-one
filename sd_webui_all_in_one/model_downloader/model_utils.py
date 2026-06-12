@@ -1,5 +1,6 @@
 """模型库管理工具"""
 
+import copy
 import re
 from pathlib import Path
 
@@ -49,7 +50,7 @@ def export_model_list(
     if dtype not in SUPPORTED_WEBUI_LIST:
         raise ValueError(f"不支持的 WebUI 类型: '{dtype}'")
 
-    new_model_list = [m for m in MODEL_DOWNLOAD_DICT if dtype in m["supported_webui"]]
+    new_model_list = [copy.deepcopy(m) for m in MODEL_DOWNLOAD_DICT if dtype in m["supported_webui"]]
 
     return new_model_list
 

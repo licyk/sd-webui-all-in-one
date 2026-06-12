@@ -1,5 +1,6 @@
 """版本管理"""
 
+import copy
 import sys
 
 from sd_webui_all_in_one.ansi_color import ANSIColor
@@ -33,7 +34,7 @@ def export_pytorch_list() -> PyTorchVersionInfoList:
     current_platform = sys.platform
 
     for i in PYTORCH_DOWNLOAD_DICT:
-        item: PyTorchVersionInfo = {**i}
+        item: PyTorchVersionInfo = copy.deepcopy(i)
         supported = False
         if current_platform in item["platform"]:
             if SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY:
@@ -147,17 +148,17 @@ def query_pytorch_info_from_library(
     def _get_pytorch_with_name(name: str) -> PyTorchVersionInfo:
         for m in pytorch_list:
             if m["name"] == name:
-                return m
+                return copy.deepcopy(m)
 
         raise FileNotFoundError(f"未找到指定的 PyTorch 版本组合名称: {name}")
 
-    pytorch_list = PYTORCH_DOWNLOAD_DICT.copy()
+    pytorch_list = PYTORCH_DOWNLOAD_DICT
     if pytorch_name is None and pytorch_index is None:
         raise ValueError("`pytorch_name` 和 `pytorch_index` 缺失, 需要提供其中一项才能进行 PyTorch 下载信息查找")
 
     if pytorch_index is not None:
         _validate_index(pytorch_index)
-        return pytorch_list[pytorch_index - 1]
+        return copy.deepcopy(pytorch_list[pytorch_index - 1])
     elif pytorch_name is not None:
         return _get_pytorch_with_name(pytorch_name)
 

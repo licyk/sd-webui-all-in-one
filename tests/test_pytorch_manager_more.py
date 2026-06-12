@@ -120,6 +120,8 @@ def test_export_and_find_latest_pytorch_info(monkeypatch):
     exported = version_manager.export_pytorch_list()
     assert [item["supported"] for item in exported] == [False, False, False, False, True]
     assert all("supported" not in item for item in data)
+    exported[0]["platform"].append("darwin")
+    assert data[0]["platform"] == ["linux"]
     assert version_manager.find_latest_pytorch_info("cu128")["name"] == "CUDA linux"
     with pytest.raises(ValueError, match="当前平台不支持 PyTorch 类型"):
         version_manager.find_latest_pytorch_info("cpu")
@@ -189,8 +191,14 @@ def test_query_pytorch_info_index_boundaries(monkeypatch):
     ]
     monkeypatch.setattr(version_manager, "PYTORCH_DOWNLOAD_DICT", data)
 
-    assert version_manager.query_pytorch_info_from_library(pytorch_index=1) is data[0]
-    assert version_manager.query_pytorch_info_from_library(pytorch_name="two") is data[1]
+    first = version_manager.query_pytorch_info_from_library(pytorch_index=1)
+    second = version_manager.query_pytorch_info_from_library(pytorch_name="two")
+    assert first == data[0]
+    assert first is not data[0]
+    first["platform"].append("win32")
+    assert data[0]["platform"] == ["linux"]
+    assert second == data[1]
+    assert second is not data[1]
     with pytest.raises(ValueError, match="超出范围"):
         version_manager.query_pytorch_info_from_library(pytorch_index=3)
     with pytest.raises(FileNotFoundError):

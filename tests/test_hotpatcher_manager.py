@@ -5,6 +5,7 @@ import socket
 import subprocess
 import sys
 import threading
+import types
 
 import pytest
 
@@ -666,3 +667,53 @@ def test_hotpatcher_gui_schema_helpers():
     assert _metadata_field_kind({"type": "list[str]"}, []) == "list"
     assert _metadata_field_kind({"type": "object"}, False) == "object"
     assert _value_to_text({"enabled": True}, "object") == '{"enabled":true}'
+
+
+def test_hotpatcher_gui_apply_form_does_not_mutate_input_config():
+    from sd_webui_all_in_one.base_manager.gui import hotpatcher_manager_gui
+
+    class Variable:
+        def __init__(self, value):
+            self.value = value
+
+        def get(self):
+            return self.value
+
+    original = {
+        "core": {
+            "import_hook": {
+                "enabled": False,
+                "metadata": {"tags": ["existing"]},
+            }
+        }
+    }
+    app = types.SimpleNamespace(
+        _schema_field_vars={
+            ("core.import_hook", "enabled"): (Variable(True), "bool", False, {}),
+        }
+    )
+
+    result = hotpatcher_manager_gui.HotpatcherManagerApp._apply_form_to_config(app, original)
+
+    assert result["core"]["import_hook"]["enabled"] is True
+    assert original["core"]["import_hook"]["enabled"] is False
+    result["core"]["import_hook"]["metadata"]["tags"].append("changed")
+    assert original["core"]["import_hook"]["metadata"]["tags"] == ["existing"]
+
+
+def test_hotpatcher_get_runtime_config_returns_deepcopy():
+    from sd_webui_all_in_one.patcher.sd_webui_all_in_one_hotpatcher.bootstrap import get_runtime_config
+    from sd_webui_all_in_one.patcher.sd_webui_all_in_one_hotpatcher.state import HotpatcherState
+
+    state = HotpatcherState()
+    state.bootstrap_runtime_config = {
+        "core": {"import_hook": {"enabled": True}},
+        "items": ["existing"],
+    }
+
+    snapshot = get_runtime_config(state=state)
+    snapshot["core"]["import_hook"]["enabled"] = False
+    snapshot["items"].append("changed")
+
+    assert state.bootstrap_runtime_config["core"]["import_hook"]["enabled"] is True
+    assert state.bootstrap_runtime_config["items"] == ["existing"]

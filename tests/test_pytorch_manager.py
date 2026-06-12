@@ -177,8 +177,12 @@ def test_get_pytorch_mirror_and_query_library(monkeypatch):
     ]
     monkeypatch.setattr(torch_versions, "PYTORCH_DOWNLOAD_DICT", data)
 
-    assert torch_versions.query_pytorch_info_from_library(pytorch_name="Torch CPU") is data[0]
-    assert torch_versions.query_pytorch_info_from_library(pytorch_index=2) is data[1]
+    cpu_info = torch_versions.query_pytorch_info_from_library(pytorch_name="Torch CPU")
+    cuda_info = torch_versions.query_pytorch_info_from_library(pytorch_index=2)
+    assert cpu_info == data[0]
+    assert cpu_info is not data[0]
+    assert cuda_info == data[1]
+    assert cuda_info is not data[1]
     with pytest.raises(ValueError):
         torch_versions.query_pytorch_info_from_library()
     with pytest.raises(FileNotFoundError):

@@ -39,14 +39,29 @@ def _sha256(value: str) -> str:
 def test_model_library_export_query_search_and_download(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(model_utils, "MODEL_DOWNLOAD_DICT", MODEL_FIXTURES)
 
-    assert [m["name"] for m in model_utils.export_model_list("sd_webui")] == ["alpha", "beta"]
+    exported_models = model_utils.export_model_list("sd_webui")
+    assert [m["name"] for m in exported_models] == ["alpha", "beta"]
+    assert exported_models[0] == MODEL_FIXTURES[0]
+    assert exported_models[0] is not MODEL_FIXTURES[0]
+    assert exported_models[0]["url"] is not MODEL_FIXTURES[0]["url"]
+    exported_models[0]["url"]["huggingface"] = "changed"
+    exported_models[0]["supported_webui"].append("invokeai")
+    assert MODEL_FIXTURES[0]["url"]["huggingface"] == "https://hf.example/alpha"
+    assert MODEL_FIXTURES[0]["supported_webui"] == ["sd_webui", "comfyui"]
+
     assert [m["name"] for m in model_utils.export_model_list("comfyui")] == ["alpha"]
     with pytest.raises(ValueError):
         model_utils.export_model_list("unknown")
 
-    assert model_utils.query_model_info("sd_webui", model_name="alpha") == [MODEL_FIXTURES[0]]
+    queried_alpha = model_utils.query_model_info("sd_webui", model_name="alpha")
+    assert queried_alpha == [MODEL_FIXTURES[0]]
+    assert queried_alpha[0] is not MODEL_FIXTURES[0]
+    queried_alpha[0]["save_dir"]["sd_webui"] = "changed"
+    assert MODEL_FIXTURES[0]["save_dir"]["sd_webui"] == "models/Stable-diffusion"
     assert model_utils.query_model_info("sd_webui", model_name="alpha", model_index=2) == [MODEL_FIXTURES[1]]
-    assert model_utils.query_model_info("sd_webui", model_index=[1, 2]) == MODEL_FIXTURES
+    queried_all = model_utils.query_model_info("sd_webui", model_index=[1, 2])
+    assert queried_all == MODEL_FIXTURES
+    assert queried_all[0] is not MODEL_FIXTURES[0]
     with pytest.raises(FileNotFoundError):
         model_utils.query_model_info("sd_webui", model_name="missing")
     with pytest.raises(ValueError):

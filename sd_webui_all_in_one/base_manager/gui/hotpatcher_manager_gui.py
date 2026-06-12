@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import queue
 import tkinter as tk
@@ -702,7 +703,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
             self._updating_form = False
 
     def _apply_form_to_config(self, config: dict[str, Any]) -> dict[str, Any]:
-        config = dict(config)
+        config = copy.deepcopy(config)
         for (feature_name, setting_name), (variable, kind, default_value, _metadata) in self._schema_field_vars.items():
             feature_config = _ensure_section_by_path(config, feature_name)
             _set_value_by_path(

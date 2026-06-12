@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import os
 from dataclasses import dataclass
 from typing import Any
@@ -189,7 +190,7 @@ def get_runtime_config(*, state: HotpatcherState | None = None) -> dict[str, Any
             配置对象副本
     """
 
-    return dict((state or get_default_state()).bootstrap_runtime_config)
+    return copy.deepcopy((state or get_default_state()).bootstrap_runtime_config)
 
 
 def get_log_capture(*, state: HotpatcherState | None = None) -> Any:
