@@ -101,6 +101,12 @@ def test_get_pytorch_mirror_prefers_requested_source_and_rocm_fallback(monkeypat
 
 def test_export_and_find_latest_pytorch_info(monkeypatch):
     data = [
+        {
+            "name": "CPU unpinned",
+            "dtype": "cpu",
+            "platform": ["linux"],
+            "torch_ver": "torch torchvision torchaudio",
+        },
         {"name": "CPU old", "dtype": "cpu", "platform": ["linux"], "torch_ver": "torch==2.0.0"},
         {"name": "CPU new unsupported device", "dtype": "cpu", "platform": ["linux"], "torch_ver": "torch==2.9.0"},
         {"name": "CUDA win", "dtype": "cu128", "platform": ["win32"], "torch_ver": "torch==2.0.0"},
@@ -112,17 +118,68 @@ def test_export_and_find_latest_pytorch_info(monkeypatch):
     monkeypatch.setattr(version_manager, "SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY", False)
 
     exported = version_manager.export_pytorch_list()
-    assert [item["supported"] for item in exported] == [False, False, False, True]
+    assert [item["supported"] for item in exported] == [False, False, False, False, True]
+    assert all("supported" not in item for item in data)
     assert version_manager.find_latest_pytorch_info("cu128")["name"] == "CUDA linux"
+    with pytest.raises(ValueError, match="当前平台不支持 PyTorch 类型"):
+        version_manager.find_latest_pytorch_info("cpu")
 
     monkeypatch.setattr(version_manager, "get_avaliable_pytorch_device_type", lambda: ["cpu"])
     assert version_manager.find_latest_pytorch_info("cpu")["name"] == "CPU new unsupported device"
 
     monkeypatch.setattr(version_manager, "SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY", True)
-    assert [item["supported"] for item in version_manager.export_pytorch_list()] == [True, True, False, True]
+    assert [item["supported"] for item in version_manager.export_pytorch_list()] == [True, True, True, False, True]
 
     with pytest.raises(ValueError, match="PyTorch 类型不存在"):
         version_manager.find_latest_pytorch_info("missing")
+
+
+@pytest.mark.parametrize(
+    ("dtype", "expected"),
+    [
+        ("ipex_legacy_arc", "Torch 2.1.0 post"),
+        ("cu132", "Torch 2.12.0 CUDA"),
+    ],
+)
+def test_find_latest_pytorch_info_parses_pep440_torch_versions(monkeypatch, dtype, expected):
+    data = [
+        {
+            "name": "Torch 2.0.0 alpha",
+            "dtype": "ipex_legacy_arc",
+            "platform": ["linux"],
+            "torch_ver": "torch==2.0.0a0+gite9ebda2 torchvision==0.15.2a0",
+        },
+        {
+            "name": "Torch 2.0.1 alpha",
+            "dtype": "ipex_legacy_arc",
+            "platform": ["linux"],
+            "torch_ver": "torch==2.0.1a0 torchvision==0.15.2a0",
+        },
+        {
+            "name": "Torch 2.1.0 post",
+            "dtype": "ipex_legacy_arc",
+            "platform": ["linux"],
+            "torch_ver": "torch==2.1.0.post0 torchvision==0.16.0.post0",
+        },
+        {
+            "name": "Torch 2.11.0 CUDA",
+            "dtype": "cu132",
+            "platform": ["linux"],
+            "torch_ver": "torch==2.11.0+cu132 torchvision==0.26.0+cu132",
+        },
+        {
+            "name": "Torch 2.12.0 CUDA",
+            "dtype": "cu132",
+            "platform": ["linux"],
+            "torch_ver": "torch==2.12.0+cu132 torchvision==0.27.0+cu132",
+        },
+    ]
+    monkeypatch.setattr(version_manager, "PYTORCH_DOWNLOAD_DICT", data)
+    monkeypatch.setattr(version_manager.sys, "platform", "linux")
+    monkeypatch.setattr(version_manager, "get_avaliable_pytorch_device_type", lambda: [dtype])
+    monkeypatch.setattr(version_manager, "SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY", False)
+
+    assert version_manager.find_latest_pytorch_info(dtype)["name"] == expected
 
 
 def test_query_pytorch_info_index_boundaries(monkeypatch):

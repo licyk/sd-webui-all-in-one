@@ -1,12 +1,12 @@
 """版本管理"""
 
 import sys
-import re
 
 from sd_webui_all_in_one.ansi_color import ANSIColor
 from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY
 from sd_webui_all_in_one.package_analyzer import (
     PyWhlVersionComparison,
+    get_package_name,
     get_package_version,
     is_package_has_version,
 )
@@ -28,21 +28,21 @@ def export_pytorch_list() -> PyTorchVersionInfoList:
         PyTorchVersionInfoList:
             PyTorch 版本列表
     """
-    pytorch_list = PYTORCH_DOWNLOAD_DICT.copy()
     device_list = set(get_avaliable_pytorch_device_type())
     new_pytorch_list: PyTorchVersionInfoList = []
     current_platform = sys.platform
 
-    for i in pytorch_list:
+    for i in PYTORCH_DOWNLOAD_DICT:
+        item: PyTorchVersionInfo = {**i}
         supported = False
-        if current_platform in i["platform"]:
+        if current_platform in item["platform"]:
             if SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY:
                 supported = True
-            elif i["dtype"] in device_list:
+            elif item["dtype"] in device_list:
                 supported = True
 
-        i["supported"] = supported
-        new_pytorch_list.append(i)
+        item["supported"] = supported
+        new_pytorch_list.append(item)
 
     return new_pytorch_list
 
@@ -65,25 +65,30 @@ def find_latest_pytorch_info(
             PyTorch 支持的设备类型无效时
     """
 
-    def _extract_torch(text: str) -> str | None:
-        pattern = r"\btorch(?:==[0-9.]+)?\b"
-        match = re.search(pattern, text)
-        return match.group(0) if match else None
+    def _extract_torch_version(text: str) -> str:
+        for package in text.split():
+            if get_package_name(package) != "torch":
+                continue
+            if is_package_has_version(package):
+                return get_package_version(package)
+            return "0.0"
+
+        return "0.0"
 
     pytorch_list = export_pytorch_list()
     pytorch_info_list = [x for x in pytorch_list if x["dtype"] == dtype]
     if not pytorch_info_list:
         raise ValueError(f"PyTorch 类型不存在: '{dtype}'")
 
-    latest_info = pytorch_info_list[0]
+    supported_pytorch_info_list = [x for x in pytorch_info_list if x["supported"]]
+    if not supported_pytorch_info_list:
+        raise ValueError(f"当前平台不支持 PyTorch 类型: '{dtype}'")
 
-    for info in pytorch_info_list:
-        if not info["supported"]:
-            continue
-        current_torch = _extract_torch(info.get("torch_ver") or "")
-        history_torch = _extract_torch(latest_info.get("torch_ver") or "")
-        current_ver = get_package_version(current_torch) if current_torch is not None and is_package_has_version(current_torch) else "0.0"
-        history_ver = get_package_version(history_torch) if history_torch is not None and is_package_has_version(history_torch) else "0.0"
+    latest_info = supported_pytorch_info_list[0]
+
+    for info in supported_pytorch_info_list[1:]:
+        current_ver = _extract_torch_version(info.get("torch_ver") or "")
+        history_ver = _extract_torch_version(latest_info.get("torch_ver") or "")
         if PyWhlVersionComparison(current_ver) > PyWhlVersionComparison(history_ver):
             latest_info = info
 
