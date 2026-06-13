@@ -51,6 +51,8 @@ def pip_install(
 
     if custom_env is None:
         custom_env = os.environ.copy()
+    else:
+        custom_env = custom_env.copy()
 
     check_and_update_pip(custom_env=custom_env)
 

@@ -149,6 +149,7 @@ def test_check_onnxruntime_gpu_installs_with_cleaned_env(monkeypatch):
         "PIP_FIND_LINKS": "links",
         "UV_FIND_LINKS": "links",
     }
+    original_env = env.copy()
     calls = []
 
     monkeypatch.setattr(onnxruntime_gpu_check, "need_install_ort_ver", lambda _skip: onnxruntime_gpu_check.OrtType.CU118)
@@ -157,12 +158,16 @@ def test_check_onnxruntime_gpu_installs_with_cleaned_env(monkeypatch):
 
     onnxruntime_gpu_check.check_onnxruntime_gpu(use_uv=False, skip_if_missing=False, custom_env=env)
 
-    assert "PIP_EXTRA_INDEX_URL" not in env
-    assert "UV_INDEX" not in env
-    assert "PIP_FIND_LINKS" not in env
-    assert "UV_FIND_LINKS" not in env
-    assert env["PIP_INDEX_URL"].endswith("/onnxruntime-cuda-11/pypi/simple/")
+    assert env == original_env
     assert calls[0][0] == "cmd"
-    assert calls[1] == ("pip", ("onnxruntime-gpu>=1.18.1", "--no-cache-dir", "--no-deps"), {"use_uv": False, "custom_env": env})
+    assert calls[1][0] == "pip"
+    assert calls[1][1] == ("onnxruntime-gpu>=1.18.1", "--no-cache-dir", "--no-deps")
+    assert calls[1][2]["use_uv"] is False
+    assert calls[1][2]["custom_env"] is not env
+    assert calls[1][2]["custom_env"]["PIP_INDEX_URL"].endswith("/onnxruntime-cuda-11/pypi/simple/")
+    assert "PIP_EXTRA_INDEX_URL" not in calls[1][2]["custom_env"]
+    assert "UV_INDEX" not in calls[1][2]["custom_env"]
+    assert "PIP_FIND_LINKS" not in calls[1][2]["custom_env"]
+    assert "UV_FIND_LINKS" not in calls[1][2]["custom_env"]
     assert calls[2][0] == "pip"
     assert calls[2][2]["custom_env"]["PIP_EXTRA_INDEX_URL"] == "extra"

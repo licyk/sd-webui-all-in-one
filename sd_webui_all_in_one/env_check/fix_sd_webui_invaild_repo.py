@@ -43,6 +43,8 @@ def fix_stable_diffusion_invaild_repo_url(
 
     if custom_env is None:
         custom_env = os.environ.copy()
+    else:
+        custom_env = custom_env.copy()
 
     custom_env.pop("GIT_CONFIG_GLOBAL", None)
     git_command_prefix = ["git", "-C", stable_diffusion_path.as_posix()]

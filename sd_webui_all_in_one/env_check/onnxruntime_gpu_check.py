@@ -357,6 +357,8 @@ def check_onnxruntime_gpu(
 
     if custom_env is None:
         custom_env = os.environ.copy()
+    else:
+        custom_env = custom_env.copy()
 
     origin_env = custom_env.copy()
 

@@ -77,6 +77,7 @@ def test_check_onnxruntime_gpu_installs_expected_package_and_env(monkeypatch, or
         "UV_FIND_LINKS": "old-uv-links",
         "KEEP": "1",
     }
+    original_env = custom_env.copy()
     calls = []
 
     monkeypatch.setattr(onnx_check, "need_install_ort_ver", lambda skip_if_missing: ort_type)
@@ -90,22 +91,25 @@ def test_check_onnxruntime_gpu_installs_expected_package_and_env(monkeypatch, or
     assert calls[1][1] == (expected_spec, "--no-cache-dir", "--no-deps")
     assert calls[1][2]["use_uv"] is False
     assert calls[1][2]["custom_env"]["KEEP"] == "1"
+    assert calls[1][2]["custom_env"] is not custom_env
     assert calls[2] == (
         "pip",
         (expected_spec,),
         {"use_uv": False, "custom_env": {"PIP_EXTRA_INDEX_URL": "old-extra", "UV_INDEX": "old-uv-index", "PIP_FIND_LINKS": "old-links", "UV_FIND_LINKS": "old-uv-links", "KEEP": "1"}},
     )
+    assert calls[2][2]["custom_env"] is not custom_env
+    assert custom_env == original_env
 
     if expected_index is None:
-        assert "PIP_INDEX_URL" not in custom_env
-        assert custom_env["PIP_EXTRA_INDEX_URL"] == "old-extra"
+        assert "PIP_INDEX_URL" not in calls[1][2]["custom_env"]
+        assert calls[1][2]["custom_env"]["PIP_EXTRA_INDEX_URL"] == "old-extra"
     else:
-        assert expected_index in custom_env["PIP_INDEX_URL"]
-        assert expected_index in custom_env["UV_DEFAULT_INDEX"]
-        assert "PIP_EXTRA_INDEX_URL" not in custom_env
-        assert "UV_INDEX" not in custom_env
-        assert "PIP_FIND_LINKS" not in custom_env
-        assert "UV_FIND_LINKS" not in custom_env
+        assert expected_index in calls[1][2]["custom_env"]["PIP_INDEX_URL"]
+        assert expected_index in calls[1][2]["custom_env"]["UV_DEFAULT_INDEX"]
+        assert "PIP_EXTRA_INDEX_URL" not in calls[1][2]["custom_env"]
+        assert "UV_INDEX" not in calls[1][2]["custom_env"]
+        assert "PIP_FIND_LINKS" not in calls[1][2]["custom_env"]
+        assert "UV_FIND_LINKS" not in calls[1][2]["custom_env"]
 
 
 def test_check_onnxruntime_gpu_skips_and_wraps_install_errors(monkeypatch):
@@ -125,10 +129,12 @@ def test_fix_stable_diffusion_invalid_repo_url(monkeypatch, tmp_path):
     stable_repo.mkdir(parents=True)
     calls = []
     env = {"GIT_CONFIG_GLOBAL": "/tmp/global", "KEEP": "1"}
+    original_env = env.copy()
 
     monkeypatch.setattr(fix_repo.git_warpper, "is_git_repo", lambda path: False)
-    fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env.copy())
+    fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env)
     assert calls == []
+    assert env == original_env
 
     monkeypatch.setattr(fix_repo.git_warpper, "is_git_repo", lambda path: path == stable_repo)
 
@@ -140,25 +146,29 @@ def test_fix_stable_diffusion_invalid_repo_url(monkeypatch, tmp_path):
         return ""
 
     monkeypatch.setattr(fix_repo, "run_cmd", fake_run_cmd)
-    fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env.copy())
+    fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env)
+    assert env == original_env
 
     assert calls[0][0] == ["git", "-C", stable_repo.as_posix(), "remote", "get-url", "origin"]
     assert calls[1][0] == ["git", "-C", stable_repo.as_posix(), "remote", "set-url", "origin", "https://github.com/licyk/stablediffusion"]
 
     calls.clear()
     monkeypatch.setattr(fix_repo, "run_cmd", lambda command, custom_env=None, live=True: calls.append(command) or "https://github.com/licyk/stablediffusion")
-    fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env.copy())
+    fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env)
     assert calls == [["git", "-C", stable_repo.as_posix(), "remote", "get-url", "origin"]]
+    assert env == original_env
 
     monkeypatch.setattr(fix_repo, "run_cmd", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("git bad")))
     with pytest.raises(RuntimeError, match="无效的组件仓库源"):
-        fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env.copy())
+        fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env)
+    assert env == original_env
 
 
 def test_fix_stable_diffusion_invalid_repo_url_adds_missing_origin(monkeypatch, tmp_path):
     stable_repo = tmp_path / "repositories" / "stable-diffusion-stability-ai"
     stable_repo.mkdir(parents=True)
     env = {"GIT_CONFIG_GLOBAL": "/tmp/global", "KEEP": "1"}
+    original_env = env.copy()
     calls = []
 
     monkeypatch.setattr(fix_repo.git_warpper, "is_git_repo", lambda path: path == stable_repo)
@@ -173,8 +183,9 @@ def test_fix_stable_diffusion_invalid_repo_url_adds_missing_origin(monkeypatch, 
         return ""
 
     monkeypatch.setattr(fix_repo, "run_cmd", fake_run_cmd)
-    fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env.copy())
+    fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env)
 
     assert calls[0][0] == ["git", "-C", stable_repo.as_posix(), "remote", "get-url", "origin"]
     assert calls[1][0] == ["git", "-C", stable_repo.as_posix(), "remote"]
     assert calls[2][0] == ["git", "-C", stable_repo.as_posix(), "remote", "add", "origin", "https://github.com/licyk/stablediffusion"]
+    assert env == original_env
