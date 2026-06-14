@@ -265,7 +265,7 @@ $script:HotpatcherPortProvided = $PSBoundParameters.ContainsKey("HotpatcherPort"
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # SD WebUI Installer 版本和检查更新间隔
-$script:SD_WEBUI_INSTALLER_VERSION = 462
+$script:SD_WEBUI_INSTALLER_VERSION = 463
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.46"
@@ -2337,7 +2337,7 @@ function Add-Shortcut {
         } elseif ((`$branch -eq `"Panchovix/stable-diffusion-webui-reForge`") -or (`$branch -eq `"Panchovix/stable-diffusion-webui-reForge.git`")) {
             `$filename = `"SD-WebUI-reForge`"
         } elseif ((`$branch -eq `"Haoming02/sd-webui-forge-classic`") -or (`$branch -eq `"Haoming02/sd-webui-forge-classic.git`")) {
-            `$filename = `"SD-WebUI-Forge-Classic`"
+            `$filename = `"SD-WebUI-Forge-Neo`"
         } elseif ((`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu`") -or (`$branch -eq `"lshqqytiger/stable-diffusion-webui-amdgpu.git`")) {
             `$filename = `"SD-WebUI-AMDGPU`"
         } elseif ((`$branch -eq `"vladmandic/automatic`") -or (`$branch -eq `"vladmandic/automatic.git`") -or (`$branch -eq `"vladmandic/sdnext`") -or (`$branch -eq `"vladmandic/sdnext.git`")) {
