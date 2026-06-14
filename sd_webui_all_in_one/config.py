@@ -32,7 +32,7 @@ DEFAULT_ENV_VARS = [
     ["PYTHONFAULTHANDLER", "1"],
     [
         "PYTHONWARNINGS",
-        "ignore:::torchvision.transforms.functional_tensor,ignore::UserWarning,ignore::FutureWarning,ignore::DeprecationWarning",
+        "ignore:::torchvision.transforms.functional_tensor,ignore::UserWarning,ignore::FutureWarning,ignore::DeprecationWarning,ignore::SyntaxWarning",
     ],
     ["UV_HTTP_TIMEOUT", "30"],
     ["UV_CONCURRENT_DOWNLOADS", "50"],

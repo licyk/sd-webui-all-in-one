@@ -333,6 +333,8 @@ SD_WEBUI_EXTENSION_INFO_DICT: SDWebUiExtensionInfoList = [
             "sd_webui_forge",
             "sd_webui_reforge_main",
             "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
             "sd_webui_amdgpu",
         ],
     },
