@@ -246,7 +246,7 @@ $script:HotpatcherPortProvided = $PSBoundParameters.ContainsKey("HotpatcherPort"
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # SD Trainer Script Installer 版本和检查更新间隔
-$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 384
+$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 385
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.47"
@@ -2401,7 +2401,7 @@ if (`$script:Help) { `$pass_args += `"-Help`" }
 if (`$Arguments) { `$pass_args += `$Arguments }
 `$init_path = Join-Path `$PSScriptRoot `"init.ps1`"
 # 初始化基础环境变量, 以正确识别到运行环境
-if (Test-Path `"`$init_path`") {
+if (Test-Path `$init_path) {
     & `"`$init_path`" @pass_args
 } else {
     Write-Error `"初始化脚本未找到, 无法初始化环境`"
@@ -2424,7 +2424,7 @@ Set-Location `$PSScriptRoot
 # `${PYTHON_EXEC}             Python 解释器路径
 #
 # 下方可编写训练代码
-# 编写训练命令可参考: https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer-script/advanced/#%E7%BC%96%E5%86%99%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC
+# 编写训练命令可参考: https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer-script/advanced/#_2
 # 编写结束后, 该文件必须使用 UTF-8 with BOM 编码保存
 #################################################
 
