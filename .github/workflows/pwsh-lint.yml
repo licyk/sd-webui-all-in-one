@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - '**.ps1'
+      - '.github/check_installer_param_config.py'
+      - '.github/workflows/pwsh-lint.yml'
   delete:
   create:
   workflow_dispatch:
@@ -51,6 +53,10 @@ jobs:
       - name: Check UTF-8 BOM encoding
         run: |
           python3 ${{ github.workspace }}/.github/check_ps1_encoding.py
+
+      - name: Check installer template parameter forwarding
+        run: |
+          python3 ${{ github.workspace }}/.github/check_installer_param_config.py
 
       - name: Lint with PSScriptAnalyzer
         shell: pwsh

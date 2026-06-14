@@ -989,6 +989,14 @@ param (
     [switch]`$DisableUV,
     [switch]`$DisableCUDAMalloc,
     [switch]`$DisableModelMirror,
+    [switch]`$DisableHotpatcher,
+    [string]`$HotpatcherConfig,
+    [int]`$HotpatcherPort,
+    [switch]`$HotpatcherPortSpecified,
+    [switch]`$EnableHotpatcherRuntime,
+    [string]`$LaunchArg,
+    [switch]`$EnableShortcut,
+    [switch]`$DisableEnvCheck,
     [switch]`$NoPause
 )
 # InvokeAI Installer 版本和检查更新间隔
@@ -2434,6 +2442,9 @@ try {
         HotpatcherPortSpecified = `$PSBoundParameters.ContainsKey(`"HotpatcherPort`")
         EnableHotpatcherRuntime = `$script:EnableHotpatcherRuntime
         BuildMode = `$script:BuildMode
+        LaunchArg = `$script:LaunchArg
+        EnableShortcut = `$script:EnableShortcut
+        DisableEnvCheck = `$script:DisableEnvCheck
         NoPause = `$script:NoPause
     }
     (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Invoke-WindowsLongPathsStartupCheck`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-GithubMirror`", `"Set-HuggingFaceMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Get-WebUILaunchArgs`", `"Add-Shortcut`", `"Test-MSVCPPRedistributable`", `"Test-WebUIEnv`", `"Set-Hotpatcher`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
@@ -2459,6 +2470,9 @@ try {
         `$script:HotpatcherPortSpecified = `$cfg.HotpatcherPortSpecified
         `$script:EnableHotpatcherRuntime = `$cfg.EnableHotpatcherRuntime
         `$script:BuildMode = `$cfg.BuildMode
+        `$script:LaunchArg = `$cfg.LaunchArg
+        `$script:EnableShortcut = `$cfg.EnableShortcut
+        `$script:DisableEnvCheck = `$cfg.DisableEnvCheck
         `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
@@ -4072,11 +4086,15 @@ try {
     `$config = @{
         OriginalScriptPath = `$script:PSCommandPath
         LaunchCommandLine = if (`$script:MyInvocation.Line) { `$script:MyInvocation.Line } else { `$([Environment]::CommandLine) }
+        Help = `$script:Help
+        NoPause = `$script:NoPause
     }
     (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Write-Log`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:Help = `$cfg.Help
+        `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
 catch {
