@@ -466,9 +466,7 @@ def _probe_remote_file(
                 etag = _get_header(headers, "ETag")
                 last_modified = _get_header(headers, "Last-Modified")
                 digest_sha256 = _sha256_from_digest_header(_get_header(headers, "Digest"))
-                content_disposition_filename = _filename_from_content_disposition(
-                    _get_header(headers, "Content-Disposition")
-                )
+                content_disposition_filename = _filename_from_content_disposition(_get_header(headers, "Content-Disposition"))
                 content_encoding = _get_header(headers, "Content-Encoding")
                 supports_range = (_get_header(headers, "Accept-Ranges") or "").lower() == "bytes"
         finally:
@@ -491,9 +489,7 @@ def _probe_remote_file(
                             etag = etag or _get_header(headers, "ETag")
                             last_modified = last_modified or _get_header(headers, "Last-Modified")
                             digest_sha256 = digest_sha256 or _sha256_from_digest_header(_get_header(headers, "Digest"))
-                            content_disposition_filename = content_disposition_filename or _filename_from_content_disposition(
-                                _get_header(headers, "Content-Disposition")
-                            )
+                            content_disposition_filename = content_disposition_filename or _filename_from_content_disposition(_get_header(headers, "Content-Disposition"))
                             content_encoding = content_encoding or _get_header(headers, "Content-Encoding")
                             supports_range = True
             finally:
@@ -538,6 +534,7 @@ def _cached_file_not_modified(
     timeout: int = 60,
 ) -> bool:
     import requests
+
     modified_since = formatdate(cached_file.stat().st_mtime, usegmt=True)
     headers = _request_headers({"If-Modified-Since": modified_since})
     for url in urls:
@@ -696,9 +693,7 @@ def _bitfield_from_hex(
 
     expected_bytes = math.ceil(piece_count / 8)
     if len(data) != expected_bytes:
-        raise _ResumeStateError(
-            f"断点续传状态 bitfield 长度不匹配: 期望 {expected_bytes} 字节, 实际 {len(data)} 字节"
-        )
+        raise _ResumeStateError(f"断点续传状态 bitfield 长度不匹配: 期望 {expected_bytes} 字节, 实际 {len(data)} 字节")
 
     completed: list[bool] = []
     for index in range(piece_count):
@@ -739,9 +734,7 @@ def _validate_in_flight_bitfield(
     block_count = max(1, math.ceil(piece_size / IN_FLIGHT_BLOCK_LENGTH))
     expected_bytes = math.ceil(block_count / 8)
     if len(data) != expected_bytes:
-        raise _ResumeStateError(
-            f"in-flight piece bitfield 长度不匹配: 期望 {expected_bytes} 字节, 实际 {len(data)} 字节"
-        )
+        raise _ResumeStateError(f"in-flight piece bitfield 长度不匹配: 期望 {expected_bytes} 字节, 实际 {len(data)} 字节")
     expected = _in_flight_bitfield_to_hex(piece_size=piece_size, completed_length=completed_length)
     if bitfield.lower() != expected:
         raise _ResumeStateError("in-flight piece bitfield 与 completed_length 不匹配")
@@ -814,9 +807,7 @@ def _parse_resume_state(
     saved_piece_count = _require_state_int(state, "piece_count")
     expected_saved_piece_count = _piece_count_for(remote_info.total_size, saved_piece_length)
     if saved_piece_count != expected_saved_piece_count:
-        raise _ResumeStateError(
-            f"断点续传状态 piece_count 不匹配: 期望 {expected_saved_piece_count}, 实际 {saved_piece_count}"
-        )
+        raise _ResumeStateError(f"断点续传状态 piece_count 不匹配: 期望 {expected_saved_piece_count}, 实际 {saved_piece_count}")
 
     completed = _bitfield_from_hex(state.get("completed_bitfield"), saved_piece_count)
     in_flight_lengths = _in_flight_lengths_from_state(
@@ -828,9 +819,7 @@ def _parse_resume_state(
     )
     if saved_piece_length != piece_length:
         if (any(completed) or any(in_flight_lengths)) and not allow_piece_length_change:
-            raise _PieceLengthChangedError(
-                f"检测到 piece_length 变化: 状态文件 {saved_piece_length}, 当前配置 {piece_length}"
-            )
+            raise _PieceLengthChangedError(f"检测到 piece_length 变化: 状态文件 {saved_piece_length}, 当前配置 {piece_length}")
         converted_completed = _convert_completed_bitfield(
             completed,
             total_size=remote_info.total_size,
@@ -897,6 +886,7 @@ class _ThreadLocalSessionPool:
             return session
 
         import requests
+
         session_factory = getattr(requests, "Session", None)
         if callable(session_factory):
             session = session_factory()
@@ -920,6 +910,7 @@ class _ThreadLocalSessionPool:
         session: Any,
     ) -> None:
         import requests
+
         if not hasattr(requests, "adapters") or not hasattr(session, "mount"):
             return
         for prefix in ("http://", "https://"):
@@ -1041,10 +1032,7 @@ class _PieceStorage:
 
     def completed_size(self) -> int:
         with self.lock:
-            return sum(
-                self._piece_size_unlocked(index) if done else self.in_flight_lengths[index]
-                for index, done in enumerate(self.completed)
-            )
+            return sum(self._piece_size_unlocked(index) if done else self.in_flight_lengths[index] for index, done in enumerate(self.completed))
 
     def is_complete(self) -> bool:
         with self.lock:
@@ -1078,13 +1066,7 @@ class _PieceStorage:
         owner_id: int = 0,
     ) -> _Segment | None:
         with self.lock:
-            if (
-                index < 0
-                or index >= self.piece_count
-                or self.completed[index]
-                or self.in_use[index]
-                or self.in_flight_lengths[index] > 0
-            ):
+            if index < 0 or index >= self.piece_count or self.completed[index] or self.in_use[index] or self.in_flight_lengths[index] > 0:
                 return None
             return self._check_out_piece_unlocked(index, owner_id)
 
@@ -1130,12 +1112,7 @@ class _PieceStorage:
     ) -> None:
         with self.lock:
             index = segment.start_piece
-            if (
-                index < 0
-                or index >= self.piece_count
-                or self.completed[index]
-                or self.in_use_owner[index] != segment.owner_id
-            ):
+            if index < 0 or index >= self.piece_count or self.completed[index] or self.in_use_owner[index] != segment.owner_id:
                 return
             self.owner_idle[segment.owner_id] = False
             piece_start = self._piece_start_unlocked(index)
@@ -1172,10 +1149,7 @@ class _PieceStorage:
         segment: _Segment,
     ) -> bool:
         with self.lock:
-            return all(
-                0 <= index < self.piece_count and self.in_use_owner[index] == segment.owner_id
-                for index in range(segment.start_piece, segment.end_piece + 1)
-            )
+            return all(0 <= index < self.piece_count and self.in_use_owner[index] == segment.owner_id for index in range(segment.start_piece, segment.end_piece + 1))
 
     def _piece_start_unlocked(
         self,
@@ -1376,9 +1350,7 @@ def _validate_range_response(
 
     if _get_header(headers, "Transfer-Encoding") is not None:
         if status_code == 200 and segment.start > 0:
-            raise _RangeRequestIgnored(
-                "服务器返回 HTTP 200 (含 Transfer-Encoding), 疑似忽略 Range 请求"
-            )
+            raise _RangeRequestIgnored("服务器返回 HTTP 200 (含 Transfer-Encoding), 疑似忽略 Range 请求")
         return
 
     parsed_range = _response_range_from_headers(headers)
@@ -1387,16 +1359,9 @@ def _validate_range_response(
 
     start, end, content_total = parsed_range
     expected_end = 0
-    range_satisfied = (
-        start == segment.start
-        and (expected_end == 0 or expected_end == end)
-        and (total_size == 0 or content_total == total_size)
-    )
+    range_satisfied = start == segment.start and (expected_end == 0 or expected_end == end) and (total_size == 0 or content_total == total_size)
     if not range_satisfied:
-        message = (
-            f"Range 响应不匹配: 期望 bytes {segment.start}-/{total_size}, "
-            f"实际 {_get_header(headers, 'Content-Range') or _get_header(headers, 'Content-Length')}"
-        )
+        message = f"Range 响应不匹配: 期望 bytes {segment.start}-/{total_size}, 实际 {_get_header(headers, 'Content-Range') or _get_header(headers, 'Content-Length')}"
         if status_code == 200 and segment.start > 0:
             raise _RangeRequestIgnored(message)
         raise _RangeDownloadNotSupported(message)
@@ -1581,9 +1546,7 @@ def _download_file_with_ranges(
 
     if state_exists and temp_exists:
         if temp_size != remote_info.total_size:
-            raise _ResumeStateError(
-                f"临时文件大小与断点续传状态不匹配: 期望 {remote_info.total_size}, 实际 {temp_size}"
-            )
+            raise _ResumeStateError(f"临时文件大小与断点续传状态不匹配: 期望 {remote_info.total_size}, 实际 {temp_size}")
         parsed_state = _parse_resume_state(
             state or {},
             remote_info=remote_info,
@@ -1653,10 +1616,7 @@ def _download_file_with_ranges(
         newly_completed = segment_manager.mark_complete(segment)
         with state_lock:
             completed_since_state_save += newly_completed
-            if (
-                completed_since_state_save >= STATE_SAVE_COMPLETED_PIECE_INTERVAL
-                or piece_storage.is_complete()
-            ):
+            if completed_since_state_save >= STATE_SAVE_COMPLETED_PIECE_INTERVAL or piece_storage.is_complete():
                 _flush_state()
                 completed_since_state_save = 0
 
@@ -1733,6 +1693,7 @@ def _download_file_single_stream_once(
     progress: bool,
 ) -> int:
     import requests
+
     try:
         from tqdm import tqdm
     except ImportError:
@@ -1741,9 +1702,7 @@ def _download_file_single_stream_once(
     response = requests.get(url, stream=True, timeout=60, headers=_request_headers())
     try:
         response.raise_for_status()
-        if _get_header(response.headers, "Transfer-Encoding") is not None or _content_encoding_requires_single_stream(
-            _get_header(response.headers, "Content-Encoding")
-        ):
+        if _get_header(response.headers, "Transfer-Encoding") is not None or _content_encoding_requires_single_stream(_get_header(response.headers, "Content-Encoding")):
             total_size = 0
         else:
             total_size = _parse_int_header(response.headers, "Content-Length")

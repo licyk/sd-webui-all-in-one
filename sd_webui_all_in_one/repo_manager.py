@@ -90,11 +90,7 @@ def _file_sha256(file_path: Path) -> str:
 
 
 def _repo_file_metadata_by_path(repo_files_metadata: list[RepoFileMetadata]) -> dict[str, RepoFileMetadata]:
-    return {
-        metadata["path"]: metadata
-        for metadata in repo_files_metadata
-        if metadata.get("type") == "file" and metadata.get("path")
-    }
+    return {metadata["path"]: metadata for metadata in repo_files_metadata if metadata.get("type") == "file" and metadata.get("path")}
 
 
 def _normalize_sha256(value: Any) -> str | None:

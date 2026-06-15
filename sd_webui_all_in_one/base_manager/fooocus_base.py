@@ -608,11 +608,7 @@ def launch_fooocus(
             custom_hf_mirror=(HUGGINGFACE_MIRROR_LIST if custom_hf_mirror is None else custom_hf_mirror) if use_hf_mirror else None,
             origin_env=custom_env,
         )
-        if (
-            custom_env.get("HF_ENDPOINT") is not None
-            and not _launch_args_has_option(launch_args, "--hf-mirror")
-            and check_fooocus_hf_mirror_arg(fooocus_path)
-        ):
+        if custom_env.get("HF_ENDPOINT") is not None and not _launch_args_has_option(launch_args, "--hf-mirror") and check_fooocus_hf_mirror_arg(fooocus_path):
             hf_mirror_args.extend(["--hf-mirror", custom_env["HF_ENDPOINT"]])
 
     custom_env = get_pypi_mirror_config(
