@@ -152,7 +152,8 @@ def download_executer(
             remote_time=remote_time,
         )
     elif tool == "urllib":
-        return download_file_from_url_urllib(url=url, save_path=path, file_name=save_name, progress=progress)
+        urllib_url = url if isinstance(url, str) else url[0]
+        return download_file_from_url_urllib(url=urllib_url, save_path=path, file_name=save_name, progress=progress)
     return None
 
 

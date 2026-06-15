@@ -17,6 +17,7 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 from typing import TYPE_CHECKING
+from typing import cast
 from urllib.parse import unquote
 from urllib.parse import unquote_to_bytes
 from urllib.parse import urlparse
@@ -445,7 +446,7 @@ def _url_host_key(
 
 
 def _probe_remote_file(
-    requests_module: "requests",
+    requests_module: "requests",  # ty: ignore[invalid-type-form]
     url: str,
     timeout: int = 60,
 ) -> _RemoteFileInfo:
@@ -536,7 +537,7 @@ def _probe_remote_file(
 
 
 def _probe_remote_files(
-    requests_module: "requests",
+    requests_module: "requests",  # ty: ignore[invalid-type-form]
     urls: list[str],
     timeout: int = 60,
 ) -> tuple[str, _RemoteFileInfo]:
@@ -553,7 +554,7 @@ def _probe_remote_files(
 
 
 def _cached_file_not_modified(
-    requests_module: "requests",
+    requests_module: "requests",  # ty: ignore[invalid-type-form]
     urls: list[str],
     cached_file: Path,
     timeout: int = 60,
@@ -785,9 +786,10 @@ def _in_flight_lengths_from_state(
         raise _ResumeStateError("断点续传状态字段 'in_flight_pieces' 必须是数组")
 
     lengths = [0] * piece_count
-    for item in in_flight_pieces:
-        if not isinstance(item, dict):
+    for raw_item in in_flight_pieces:
+        if not isinstance(raw_item, dict):
             raise _ResumeStateError("in-flight piece 必须是对象")
+        item = cast("dict[str, Any]", raw_item)
         index = item.get("index")
         length = item.get("length")
         completed_length = item.get("completed_length")
@@ -907,7 +909,7 @@ class _ThreadLocalSessionPool:
 
     def __init__(
         self,
-        requests_module: "requests",
+        requests_module: "requests",  # ty: ignore[invalid-type-form]
         pool_size: int,
     ) -> None:
         self.requests_module = requests_module
@@ -1580,7 +1582,7 @@ def _download_stream_with_retries(
 
 
 def _download_file_with_ranges(
-    requests_module: "requests",
+    requests_module: "requests",  # ty: ignore[invalid-type-form]
     *,
     urls: list[str],
     temp_file: Path,
@@ -1751,7 +1753,7 @@ def _download_file_with_ranges(
 
 
 def _download_file_single_stream_once(
-    requests_module: "requests",
+    requests_module: "requests",  # ty: ignore[invalid-type-form]
     *,
     url: str,
     temp_file: Path,
@@ -1786,7 +1788,7 @@ def _download_file_single_stream_once(
 
 
 def _download_file_single_stream(
-    requests_module: "requests",
+    requests_module: "requests",  # ty: ignore[invalid-type-form]
     *,
     urls: list[str],
     temp_file: Path,
