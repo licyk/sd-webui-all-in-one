@@ -83,6 +83,24 @@ _STATE_FILE_DIGEST_LOCK = threading.Lock()
 
 if TYPE_CHECKING:
     import requests
+    from typing import Protocol
+
+    class _TqdmProgressBar(Protocol):
+        def update(self, n: int = 1) -> None: ...
+        def __enter__(self) -> "_TqdmProgressBar": ...
+        def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None: ...
+
+    class _TqdmClass(Protocol):
+        def __call__(
+            self,
+            *,
+            total: int | None = None,
+            initial: int = 0,
+            unit: str = "it",
+            unit_scale: bool = False,
+            desc: str = "",
+            disable: bool = False,
+        ) -> _TqdmProgressBar: ...
 
 
 class _RangeDownloadNotSupported(RuntimeError):
@@ -459,49 +477,32 @@ def _probe_remote_file(
     content_encoding: str | None = None
     supports_range = False
 
-    head_func = getattr(requests_module, "head", None)
-    if callable(head_func):
+    try:
+        response = requests_module.head(url, allow_redirects=True, timeout=timeout, headers=_request_headers())
         try:
-            response = head_func(url, allow_redirects=True, timeout=timeout, headers=_request_headers())
-            try:
-                status_code = int(getattr(response, "status_code", 0) or 0)
-                if 200 <= status_code < 400:
-                    headers = getattr(response, "headers", {})
-                    total_size = _parse_int_header(headers, "Content-Length")
-                    etag = _get_header(headers, "ETag")
-                    last_modified = _get_header(headers, "Last-Modified")
-                    digest_sha256 = _sha256_from_digest_header(_get_header(headers, "Digest"))
-                    content_disposition_filename = _filename_from_content_disposition(
-                        _get_header(headers, "Content-Disposition")
-                    )
-                    content_encoding = _get_header(headers, "Content-Encoding")
-                    supports_range = (_get_header(headers, "Accept-Ranges") or "").lower() == "bytes"
-            finally:
-                _close_response(response)
-        except Exception as e:
-            logger.debug("HEAD 探测失败, 尝试使用 Range 请求探测: %s", e)
-
-    get_func = getattr(requests_module, "get", None)
-    if not callable(get_func):
-        if _content_encoding_requires_single_stream(content_encoding):
-            total_size = 0
-            supports_range = False
-        return _RemoteFileInfo(
-            total_size=total_size,
-            supports_range=supports_range and total_size > 0,
-            etag=etag,
-            last_modified=last_modified,
-            digest_sha256=digest_sha256,
-            content_disposition_filename=content_disposition_filename,
-            content_encoding=content_encoding,
-        )
+            status_code = int(response.status_code or 0)
+            if 200 <= status_code < 400:
+                headers = response.headers
+                total_size = _parse_int_header(headers, "Content-Length")
+                etag = _get_header(headers, "ETag")
+                last_modified = _get_header(headers, "Last-Modified")
+                digest_sha256 = _sha256_from_digest_header(_get_header(headers, "Digest"))
+                content_disposition_filename = _filename_from_content_disposition(
+                    _get_header(headers, "Content-Disposition")
+                )
+                content_encoding = _get_header(headers, "Content-Encoding")
+                supports_range = (_get_header(headers, "Accept-Ranges") or "").lower() == "bytes"
+        finally:
+            _close_response(response)
+    except Exception as e:
+        logger.debug("HEAD 探测失败, 尝试使用 Range 请求探测: %s", e)
 
     if not supports_range or total_size <= 0:
         try:
-            response = get_func(url, stream=True, timeout=timeout, headers=_request_headers({"Range": "bytes=0-0"}))
+            response = requests_module.get(url, stream=True, timeout=timeout, headers=_request_headers({"Range": "bytes=0-0"}))
             try:
-                status_code = int(getattr(response, "status_code", 0) or 0)
-                headers = getattr(response, "headers", {})
+                status_code = int(response.status_code or 0)
+                headers = response.headers
                 if status_code == 206:
                     parsed = _parse_content_range(_get_header(headers, "Content-Range"))
                     if parsed is not None:
@@ -559,17 +560,13 @@ def _cached_file_not_modified(
     cached_file: Path,
     timeout: int = 60,
 ) -> bool:
-    head_func = getattr(requests_module, "head", None)
-    if not callable(head_func):
-        return False
-
     modified_since = formatdate(cached_file.stat().st_mtime, usegmt=True)
     headers = _request_headers({"If-Modified-Since": modified_since})
     for url in urls:
         try:
-            response = head_func(url, allow_redirects=True, timeout=timeout, headers=headers)
+            response = requests_module.head(url, allow_redirects=True, timeout=timeout, headers=headers)
             try:
-                status_code = int(getattr(response, "status_code", 0) or 0)
+                status_code = int(response.status_code or 0)
                 if status_code == 304:
                     return True
                 if 200 <= status_code < 300:
@@ -924,11 +921,13 @@ class _ThreadLocalSessionPool:
             return session
 
         session_factory = getattr(self.requests_module, "Session", None)
-        session = session_factory() if callable(session_factory) else self.requests_module
-        if session is not self.requests_module:
+        if callable(session_factory):
+            session = session_factory()
             self._configure_session(session)
             with self.lock:
                 self.sessions.append(session)
+        else:
+            session = self.requests_module
         self.local.session = session
         return session
 
@@ -937,21 +936,16 @@ class _ThreadLocalSessionPool:
             sessions = list(self.sessions)
             self.sessions.clear()
         for session in sessions:
-            closer = getattr(session, "close", None)
-            if callable(closer):
-                closer()
+            session.close()
 
     def _configure_session(
         self,
         session: Any,
     ) -> None:
-        adapters_module = getattr(self.requests_module, "adapters", None)
-        adapter_factory = getattr(adapters_module, "HTTPAdapter", None)
-        mount = getattr(session, "mount", None)
-        if not callable(adapter_factory) or not callable(mount):
+        if not hasattr(self.requests_module, "adapters") or not hasattr(session, "mount"):
             return
         for prefix in ("http://", "https://"):
-            mount(prefix, adapter_factory(pool_connections=self.pool_size, pool_maxsize=self.pool_size))
+            session.mount(prefix, self.requests_module.adapters.HTTPAdapter(pool_connections=self.pool_size, pool_maxsize=self.pool_size))
 
 
 class _UriPool:
@@ -1389,8 +1383,8 @@ def _validate_range_response(
     attempt: int,
     retry_wait: int,
 ) -> None:
-    status_code = int(getattr(response, "status_code", 0) or 0)
-    headers = getattr(response, "headers", {})
+    status_code = int(response.status_code or 0)
+    headers = response.headers
 
     if status_code == 416:
         raise _RangeDownloadNotSupported("远端拒绝 Range 请求: HTTP 416")
@@ -1589,7 +1583,7 @@ def _download_file_with_ranges(
     state_file: Path,
     remote_info: _RemoteFileInfo,
     progress: bool,
-    tqdm_class: Any,
+    tqdm_class: "_TqdmClass",
     options: _DownloadOptions,
     timeout: int = 60,
 ) -> None:
@@ -1759,7 +1753,7 @@ def _download_file_single_stream_once(
     temp_file: Path,
     file_name: str,
     progress: bool,
-    tqdm_class: Any,
+    tqdm_class: "_TqdmClass",
 ) -> int:
     response = requests_module.get(url, stream=True, timeout=60, headers=_request_headers())
     try:
@@ -1794,7 +1788,7 @@ def _download_file_single_stream(
     temp_file: Path,
     file_name: str,
     progress: bool,
-    tqdm_class: Any,
+    tqdm_class: "_TqdmClass",
     max_tries: int,
     retry_wait: int,
 ) -> int:
