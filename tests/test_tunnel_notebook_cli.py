@@ -421,6 +421,8 @@ def test_self_manager_download_file_cli_parse_smoke(monkeypatch, tmp_path):
             "3",
             "--retry-wait",
             "9",
+            "--conditional-get",
+            "--no-remote-time",
         ]
     )
     args.func(args)
@@ -440,6 +442,8 @@ def test_self_manager_download_file_cli_parse_smoke(monkeypatch, tmp_path):
             "continue_download": True,
             "max_tries": 3,
             "retry_wait": 9,
+            "conditional_get": True,
+            "remote_time": False,
         }
     ]
 

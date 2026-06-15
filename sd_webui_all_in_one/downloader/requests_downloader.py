@@ -1,15 +1,23 @@
 """Requests 下载器"""
 
+import base64
+import binascii
 import hashlib
 import json
 import math
 import re
 import threading
 import time
+from collections import Counter
+from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from email.utils import formatdate
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import unquote
+from urllib.parse import unquote_to_bytes
 from urllib.parse import urlparse
 
 from sd_webui_all_in_one.downloader.hash_utils import compare_sha256
@@ -117,6 +125,9 @@ class _SegmentOwnershipLost(RuntimeError):
     """Segment 已被另一个 idle worker 接管"""
 
 
+_UrlInput = str | Sequence[str]
+
+
 @dataclass(frozen=True)
 class _RemoteFileInfo:
     """远端文件元数据"""
@@ -125,6 +136,9 @@ class _RemoteFileInfo:
     supports_range: bool
     etag: str | None = None
     last_modified: str | None = None
+    digest_sha256: str | None = None
+    content_disposition_filename: str | None = None
+    content_encoding: str | None = None
 
 
 @dataclass(frozen=True)
@@ -139,6 +153,8 @@ class _DownloadOptions:
     max_tries: int
     retry_wait: int
     continue_download: bool
+    conditional_get: bool
+    remote_time: bool
 
 
 @dataclass(frozen=True)
@@ -204,6 +220,130 @@ def _parse_int_header(
         return 0
 
 
+def _sha256_from_digest_header(
+    digest_header: str | None,
+) -> str | None:
+    if not digest_header:
+        return None
+
+    for item in digest_header.split(","):
+        name, separator, digest = item.strip().partition("=")
+        if not separator or name.strip().lower() not in {"sha-256", "sha256"}:
+            continue
+        digest = digest.strip()
+        if digest.startswith(":") and digest.endswith(":") and len(digest) >= 2:
+            digest = digest[1:-1]
+        try:
+            raw_digest = base64.b64decode(digest, validate=True)
+        except (binascii.Error, ValueError):
+            continue
+        if len(raw_digest) == hashlib.sha256().digest_size:
+            return raw_digest.hex()
+    return None
+
+
+def _split_content_disposition_parts(
+    header: str,
+) -> list[str]:
+    parts: list[str] = []
+    current: list[str] = []
+    in_quote = False
+    escaped = False
+    for char in header:
+        if escaped:
+            current.append(char)
+            escaped = False
+            continue
+        if in_quote and char == "\\":
+            escaped = True
+            continue
+        if char == '"':
+            in_quote = not in_quote
+            current.append(char)
+            continue
+        if char == ";" and not in_quote:
+            parts.append("".join(current).strip())
+            current = []
+            continue
+        current.append(char)
+    parts.append("".join(current).strip())
+    return parts
+
+
+def _unquote_header_value(
+    value: str,
+) -> str:
+    value = value.strip()
+    if len(value) >= 2 and value[0] == '"' and value[-1] == '"':
+        value = value[1:-1]
+        result: list[str] = []
+        escaped = False
+        for char in value:
+            if escaped:
+                result.append(char)
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            else:
+                result.append(char)
+        value = "".join(result)
+    return value
+
+
+def _decode_rfc5987_value(
+    value: str,
+) -> str | None:
+    charset, separator, rest = value.partition("'")
+    if not separator:
+        return None
+    _language, separator, encoded = rest.partition("'")
+    if not separator:
+        return None
+    try:
+        return unquote_to_bytes(encoded).decode(charset or "utf-8")
+    except (LookupError, UnicodeDecodeError, ValueError):
+        return None
+
+
+def _safe_content_disposition_filename(
+    value: str | None,
+) -> str | None:
+    if value is None:
+        return None
+    filename = value.strip()
+    if not filename or "\x00" in filename or "/" in filename or "\\" in filename:
+        return None
+    if filename in {".", ".."}:
+        return None
+    return filename
+
+
+def _filename_from_content_disposition(
+    content_disposition: str | None,
+) -> str | None:
+    if not content_disposition:
+        return None
+    parts = _split_content_disposition_parts(content_disposition)
+    params: dict[str, str] = {}
+    for part in parts[1:]:
+        name, separator, value = part.partition("=")
+        if not separator:
+            continue
+        params[name.strip().lower()] = _unquote_header_value(value)
+
+    extended = _decode_rfc5987_value(params["filename*"]) if "filename*" in params else None
+    filename = extended if extended is not None else params.get("filename")
+    return _safe_content_disposition_filename(filename)
+
+
+def _filename_from_url(
+    url: str,
+) -> str:
+    parts = urlparse(url)
+    filename = unquote(Path(parts.path).name)
+    return _safe_content_disposition_filename(filename) or "download"
+
+
 def _parse_content_range(
     content_range: str | None,
 ) -> tuple[int, int, int | None] | None:
@@ -250,11 +390,54 @@ def _request_headers(
 ) -> dict[str, str]:
     headers = {
         "User-Agent": DEFAULT_USER_AGENT,
+        "Accept": "*/*",
         "Accept-Encoding": "identity",
+        "Pragma": "no-cache",
+        "Cache-Control": "no-cache",
+        "Want-Digest": "SHA-512;q=1, SHA-256;q=1, SHA-1;q=1",
     }
     if extra_headers:
         headers.update(extra_headers)
     return headers
+
+
+def _content_encoding_requires_single_stream(
+    content_encoding: str | None,
+) -> bool:
+    if not content_encoding:
+        return False
+    return any(item.strip().lower() not in {"", "identity"} for item in content_encoding.split(","))
+
+
+def _normalize_urls(
+    url: _UrlInput,
+) -> list[str]:
+    if isinstance(url, str):
+        urls = [url]
+    elif isinstance(url, Sequence):
+        urls = list(url)
+    else:
+        raise ValueError("url 必须是字符串或字符串序列")
+
+    normalized: list[str] = []
+    for item in urls:
+        if not isinstance(item, str):
+            raise ValueError("url 序列中只能包含字符串")
+        stripped = item.strip()
+        if not stripped:
+            raise ValueError("url 不能为空")
+        normalized.append(stripped)
+
+    if not normalized:
+        raise ValueError("url 序列不能为空")
+    return normalized
+
+
+def _url_host_key(
+    url: str,
+) -> tuple[str, str, int | None]:
+    parts = urlparse(url)
+    return (parts.scheme.lower(), (parts.hostname or "").lower(), parts.port)
 
 
 def _probe_remote_file(
@@ -266,6 +449,9 @@ def _probe_remote_file(
     total_size = 0
     etag: str | None = None
     last_modified: str | None = None
+    digest_sha256: str | None = None
+    content_disposition_filename: str | None = None
+    content_encoding: str | None = None
     supports_range = False
 
     head_func = getattr(requests_module, "head", None)
@@ -279,6 +465,11 @@ def _probe_remote_file(
                     total_size = _parse_int_header(headers, "Content-Length")
                     etag = _get_header(headers, "ETag")
                     last_modified = _get_header(headers, "Last-Modified")
+                    digest_sha256 = _sha256_from_digest_header(_get_header(headers, "Digest"))
+                    content_disposition_filename = _filename_from_content_disposition(
+                        _get_header(headers, "Content-Disposition")
+                    )
+                    content_encoding = _get_header(headers, "Content-Encoding")
                     supports_range = (_get_header(headers, "Accept-Ranges") or "").lower() == "bytes"
             finally:
                 _close_response(response)
@@ -287,7 +478,18 @@ def _probe_remote_file(
 
     get_func = getattr(requests_module, "get", None)
     if not callable(get_func):
-        return _RemoteFileInfo(total_size=total_size, supports_range=supports_range and total_size > 0, etag=etag, last_modified=last_modified)
+        if _content_encoding_requires_single_stream(content_encoding):
+            total_size = 0
+            supports_range = False
+        return _RemoteFileInfo(
+            total_size=total_size,
+            supports_range=supports_range and total_size > 0,
+            etag=etag,
+            last_modified=last_modified,
+            digest_sha256=digest_sha256,
+            content_disposition_filename=content_disposition_filename,
+            content_encoding=content_encoding,
+        )
 
     if not supports_range or total_size <= 0:
         try:
@@ -303,13 +505,76 @@ def _probe_remote_file(
                             total_size = content_total
                             etag = etag or _get_header(headers, "ETag")
                             last_modified = last_modified or _get_header(headers, "Last-Modified")
+                            digest_sha256 = digest_sha256 or _sha256_from_digest_header(_get_header(headers, "Digest"))
+                            content_disposition_filename = content_disposition_filename or _filename_from_content_disposition(
+                                _get_header(headers, "Content-Disposition")
+                            )
+                            content_encoding = content_encoding or _get_header(headers, "Content-Encoding")
                             supports_range = True
             finally:
                 _close_response(response)
         except Exception as e:
             logger.debug("Range 探测失败, 将使用单连接下载: %s", e)
 
-    return _RemoteFileInfo(total_size=total_size, supports_range=supports_range and total_size > 0, etag=etag, last_modified=last_modified)
+    if _content_encoding_requires_single_stream(content_encoding):
+        total_size = 0
+        supports_range = False
+
+    return _RemoteFileInfo(
+        total_size=total_size,
+        supports_range=supports_range and total_size > 0,
+        etag=etag,
+        last_modified=last_modified,
+        digest_sha256=digest_sha256,
+        content_disposition_filename=content_disposition_filename,
+        content_encoding=content_encoding,
+    )
+
+
+def _probe_remote_files(
+    requests_module: object,
+    urls: list[str],
+    timeout: int = 60,
+) -> tuple[str, _RemoteFileInfo]:
+    first_result: tuple[str, _RemoteFileInfo] | None = None
+    for url in urls:
+        remote_info = _probe_remote_file(requests_module, url, timeout=timeout)
+        if first_result is None:
+            first_result = (url, remote_info)
+        if remote_info.total_size > 0:
+            return url, remote_info
+    if first_result is None:
+        raise ValueError("url 序列不能为空")
+    return first_result
+
+
+def _cached_file_not_modified(
+    requests_module: object,
+    urls: list[str],
+    cached_file: Path,
+    timeout: int = 60,
+) -> bool:
+    head_func = getattr(requests_module, "head", None)
+    if not callable(head_func):
+        return False
+
+    modified_since = formatdate(cached_file.stat().st_mtime, usegmt=True)
+    headers = _request_headers({"If-Modified-Since": modified_since})
+    for url in urls:
+        try:
+            response = head_func(url, allow_redirects=True, timeout=timeout, headers=headers)
+            try:
+                status_code = int(getattr(response, "status_code", 0) or 0)
+                if status_code == 304:
+                    return True
+                if 200 <= status_code < 300:
+                    return False
+            finally:
+                _close_response(response)
+        except Exception as e:
+            logger.debug("conditional-get HEAD 请求失败, 将重新下载: %s", e)
+            return False
+    return False
 
 
 def _state_path_for(
@@ -598,7 +863,7 @@ def _parse_resume_state(
 def _save_resume_state(
     state_file: Path,
     *,
-    url: str,
+    urls: list[str],
     remote_info: _RemoteFileInfo,
     options: _DownloadOptions,
     piece_storage: "_PieceStorage",
@@ -607,10 +872,14 @@ def _save_resume_state(
     in_flight_pieces = piece_storage.snapshot_in_flight_pieces()
     state = {
         "version": STATE_VERSION,
-        "url": url,
+        "url": urls[0],
+        "uris": urls,
         "total_size": remote_info.total_size,
         "etag": remote_info.etag,
         "last_modified": remote_info.last_modified,
+        "digest_sha256": remote_info.digest_sha256,
+        "content_disposition_filename": remote_info.content_disposition_filename,
+        "content_encoding": remote_info.content_encoding,
         "piece_length": options.piece_length,
         "piece_count": len(completed),
         "completed_bitfield": _bitfield_to_hex(completed),
@@ -677,6 +946,59 @@ class _ThreadLocalSessionPool:
             return
         for prefix in ("http://", "https://"):
             mount(prefix, adapter_factory(pool_connections=self.pool_size, pool_maxsize=self.pool_size))
+
+
+class _UriPool:
+    """aria2 FileEntry URI 池的简化实现"""
+
+    def __init__(
+        self,
+        urls: list[str],
+        max_connection_per_server: int,
+    ) -> None:
+        self.urls = list(urls)
+        self.max_connection_per_server = max(1, max_connection_per_server)
+        self.keys = [_url_host_key(url) for url in self.urls]
+        self.in_flight: Counter[tuple[str, str, int | None]] = Counter()
+        self.next_index = 0
+        self.condition = threading.Condition()
+
+    @property
+    def capacity(self) -> int:
+        return max(1, len(set(self.keys)) * self.max_connection_per_server)
+
+    def acquire(
+        self,
+        stop_event: threading.Event | None = None,
+    ) -> str | None:
+        with self.condition:
+            while True:
+                for offset in range(len(self.urls)):
+                    index = (self.next_index + offset) % len(self.urls)
+                    key = self.keys[index]
+                    if self.in_flight[key] >= self.max_connection_per_server:
+                        continue
+                    self.in_flight[key] += 1
+                    self.next_index = (index + 1) % len(self.urls)
+                    return self.urls[index]
+
+                if stop_event is not None and stop_event.is_set():
+                    return None
+                self.condition.wait(timeout=0.1)
+
+    def release(
+        self,
+        url: str | None,
+    ) -> None:
+        if url is None:
+            return
+        key = _url_host_key(url)
+        with self.condition:
+            if self.in_flight[key] > 0:
+                self.in_flight[key] -= 1
+                if self.in_flight[key] <= 0:
+                    del self.in_flight[key]
+            self.condition.notify_all()
 
 
 class _PieceStorage:
@@ -1075,6 +1397,10 @@ def _validate_range_response(
         raise RuntimeError(f"Range 请求返回非预期状态码: HTTP {status_code}")
 
     if _get_header(headers, "Transfer-Encoding") is not None:
+        if status_code == 200 and segment.start > 0:
+            raise _RangeRequestIgnored(
+                "服务器返回 HTTP 200 (含 Transfer-Encoding), 疑似忽略 Range 请求"
+            )
         return
 
     parsed_range = _response_range_from_headers(headers)
@@ -1101,8 +1427,6 @@ def _validate_range_response(
 def _stream_request_headers(
     segment: _Segment,
 ) -> dict[str, str]:
-    if segment.start == 0:
-        return _request_headers()
     return _request_headers({"Range": f"bytes={segment.start}-"})
 
 
@@ -1120,11 +1444,12 @@ def _download_stream_once(
     mark_complete_callback: Any,
     progress_callback: Any | None = None,
 ) -> None:
-    response = request_client.get(url, stream=True, timeout=timeout, headers=_stream_request_headers(segment))
+    response = None
     current_segment: _Segment | None = segment
     last_complete_segment: _Segment | None = None
     partial_reported_size = 0
     try:
+        response = request_client.get(url, stream=True, timeout=timeout, headers=_stream_request_headers(segment))
         if not segment_manager.owns_segment(segment):
             raise _SegmentOwnershipLost()
         _validate_range_response(response, segment=segment, total_size=total_size, attempt=attempt, retry_wait=retry_wait)
@@ -1185,13 +1510,14 @@ def _download_stream_once(
 def _download_stream_with_retries(
     session_pool: _ThreadLocalSessionPool,
     *,
-    url: str,
+    uri_pool: _UriPool,
     temp_file: Path,
     segment: _Segment,
     total_size: int,
     timeout: int,
     max_tries: int,
     retry_wait: int,
+    stop_event: threading.Event,
     segment_manager: _SegmentManager,
     mark_complete_callback: Any,
     progress_callback: Any | None = None,
@@ -1200,6 +1526,10 @@ def _download_stream_with_retries(
     attempt = 0
     while max_tries == 0 or attempt < max_tries:
         attempt += 1
+        url = uri_pool.acquire(stop_event)
+        if url is None:
+            segment_manager.release(segment)
+            return
         try:
             return _download_stream_once(
                 session_pool.get(),
@@ -1219,23 +1549,28 @@ def _download_stream_with_retries(
         except _SegmentOwnershipLost:
             return
         except _SegmentDownloadError as e:
-            refreshed_segment = segment_manager.refresh_segment(e.segment)
-            if refreshed_segment is None:
+            failed_range = e.segment.byte_range
+            segment_manager.release(e.segment)
+            new_segment = segment_manager.get_segment(e.segment.owner_id)
+            if new_segment is None:
                 return
-            segment = refreshed_segment
+            segment = new_segment
             last_error = e.error
             if max_tries != 0 and attempt >= max_tries:
                 break
             delay = e.error.retry_delay if isinstance(e.error, _RangeDownloadTemporaryError) and e.error.retry_delay is not None else min(0.5 * attempt, 5.0)
-            logger.warning("分片 %s 下载失败 [%s/%s]: %s, %.1fs 后重试", segment.byte_range, attempt, max_tries, e.error, delay)
+            logger.warning(
+                "分片 %s 从 %s 下载失败 [%s/%s]: %s, %.1fs 后重试",
+                failed_range,
+                url,
+                attempt,
+                max_tries,
+                e.error,
+                delay,
+            )
             time.sleep(delay)
-        except Exception as e:
-            last_error = e
-            if max_tries != 0 and attempt >= max_tries:
-                break
-            delay = e.retry_delay if isinstance(e, _RangeDownloadTemporaryError) and e.retry_delay is not None else min(0.5 * attempt, 5.0)
-            logger.warning("分片 %s 下载失败 [%s/%s]: %s, %.1fs 后重试", segment.byte_range, attempt, max_tries, e, delay)
-            time.sleep(delay)
+        finally:
+            uri_pool.release(url)
     segment_manager.release(segment)
     raise IOError(f"分片 {segment.byte_range} 下载失败: {last_error}") from last_error
 
@@ -1243,7 +1578,7 @@ def _download_stream_with_retries(
 def _download_file_with_ranges(
     requests_module: Any,
     *,
-    url: str,
+    urls: list[str],
     temp_file: Path,
     state_file: Path,
     remote_info: _RemoteFileInfo,
@@ -1316,7 +1651,8 @@ def _download_file_with_ranges(
     stop_event = threading.Event()
     range_ignored_event = threading.Event()
     completed_since_state_save = 0
-    worker_count = max(1, min(options.split, options.max_connection_per_server, piece_storage.piece_count))
+    uri_pool = _UriPool(urls, options.max_connection_per_server)
+    worker_count = max(1, min(options.split, piece_storage.piece_count, uri_pool.capacity))
     session_pool = _ThreadLocalSessionPool(requests_module, pool_size=worker_count)
 
     def _update_progress(delta: int) -> None:
@@ -1326,7 +1662,7 @@ def _download_file_with_ranges(
     def _flush_state() -> None:
         _save_resume_state(
             state_file,
-            url=url,
+            urls=urls,
             remote_info=remote_info,
             options=options,
             piece_storage=piece_storage,
@@ -1353,13 +1689,14 @@ def _download_file_with_ranges(
             try:
                 _download_stream_with_retries(
                     session_pool,
-                    url=url,
+                    uri_pool=uri_pool,
                     temp_file=temp_file,
                     segment=segment,
                     total_size=remote_info.total_size,
                     timeout=timeout,
                     max_tries=options.max_tries,
                     retry_wait=options.retry_wait,
+                    stop_event=stop_event,
                     segment_manager=segment_manager,
                     mark_complete_callback=_mark_segment_complete,
                     progress_callback=_update_progress,
@@ -1409,7 +1746,7 @@ def _download_file_with_ranges(
         raise IOError(f"下载文件大小不匹配: 期望 {remote_info.total_size}, 实际 {temp_file.stat().st_size}")
 
 
-def _download_file_single_stream(
+def _download_file_single_stream_once(
     requests_module: Any,
     *,
     url: str,
@@ -1421,7 +1758,12 @@ def _download_file_single_stream(
     response = requests_module.get(url, stream=True, timeout=60, headers=_request_headers())
     try:
         response.raise_for_status()
-        total_size = _parse_int_header(response.headers, "Content-Length")
+        if _get_header(response.headers, "Transfer-Encoding") is not None or _content_encoding_requires_single_stream(
+            _get_header(response.headers, "Content-Encoding")
+        ):
+            total_size = 0
+        else:
+            total_size = _parse_int_header(response.headers, "Content-Length")
         with tqdm_class(
             total=total_size,
             unit="B",
@@ -1439,6 +1781,62 @@ def _download_file_single_stream(
         _close_response(response)
 
 
+def _download_file_single_stream(
+    requests_module: Any,
+    *,
+    urls: list[str],
+    temp_file: Path,
+    file_name: str,
+    progress: bool,
+    tqdm_class: Any,
+    max_tries: int,
+    retry_wait: int,
+) -> int:
+    attempt = 0
+    last_error: Exception | None = None
+    while max_tries == 0 or attempt < max_tries:
+        url = urls[attempt % len(urls)]
+        attempt += 1
+        try:
+            return _download_file_single_stream_once(
+                requests_module,
+                url=url,
+                temp_file=temp_file,
+                file_name=file_name,
+                progress=progress,
+                tqdm_class=tqdm_class,
+            )
+        except Exception as e:
+            last_error = e
+            if max_tries != 0 and attempt >= max_tries:
+                break
+            delay = float(retry_wait) if retry_wait > 0 else min(0.5 * attempt, 5.0)
+            logger.warning("从 %s 单流下载失败 [%s/%s]: %s, %.1fs 后重试", url, attempt, max_tries, e, delay)
+            time.sleep(delay)
+
+    raise IOError(f"单流下载失败: {last_error}") from last_error
+
+
+def _apply_remote_time(
+    cached_file: Path,
+    last_modified: str | None,
+) -> None:
+    if not last_modified:
+        return
+    try:
+        remote_time = parsedate_to_datetime(last_modified).timestamp()
+    except (TypeError, ValueError, OverflowError) as e:
+        logger.debug("无法解析 Last-Modified 时间 '%s': %s", last_modified, e)
+        return
+    try:
+        current_atime = cached_file.stat().st_atime
+        import os
+
+        os.utime(cached_file, (current_atime, remote_time))
+    except OSError as e:
+        logger.debug("无法应用远端 Last-Modified 时间到 '%s': %s", cached_file, e)
+
+
 def _finalize_download(
     *,
     temp_file: Path,
@@ -1446,6 +1844,8 @@ def _finalize_download(
     cached_file: Path,
     file_name: str,
     hash_prefix: str | None,
+    remote_time: bool,
+    last_modified: str | None,
     expected_size: int = 0,
 ) -> None:
     if expected_size > 0:
@@ -1465,6 +1865,8 @@ def _finalize_download(
         raise ValueError(f"文件哈希值与预期的哈希前缀不匹配: {hash_prefix}")
 
     temp_file.replace(cached_file)
+    if remote_time:
+        _apply_remote_time(cached_file, last_modified)
     state_file.unlink(missing_ok=True)
     logger.info("'%s' 下载完成", file_name)
 
@@ -1479,6 +1881,8 @@ def _normalize_options(
     max_tries: int,
     retry_wait: int,
     continue_download: bool,
+    conditional_get: bool,
+    remote_time: bool,
 ) -> _DownloadOptions:
     def _normalize_int_option(
         name: str,
@@ -1521,11 +1925,13 @@ def _normalize_options(
         max_tries=_normalize_int_option("max_tries", max_tries, minimum=0),
         retry_wait=_normalize_int_option("retry_wait", retry_wait, minimum=0, maximum=600),
         continue_download=bool(continue_download),
+        conditional_get=bool(conditional_get),
+        remote_time=bool(remote_time),
     )
 
 
 def download_file_from_url(
-    url: str,
+    url: _UrlInput,
     save_path: Path | None = None,
     file_name: str | None = None,
     progress: bool = True,
@@ -1539,12 +1945,14 @@ def download_file_from_url(
     continue_download: bool = False,
     max_tries: int = 5,
     retry_wait: int = 0,
+    conditional_get: bool = False,
+    remote_time: bool = True,
 ) -> Path:
     """使用 requests 库下载文件
 
     Args:
-        url (str):
-            下载链接
+        url (str | Sequence[str]):
+            下载链接或同一文件的镜像链接列表
         save_path (Path | None):
             下载路径
         file_name (str | None):
@@ -1571,6 +1979,10 @@ def download_file_from_url(
             单个分片的最大尝试次数
         retry_wait (int):
             HTTP 503 重试前等待秒数, 取值范围 0..600
+        conditional_get (bool):
+            已有本地文件时是否发送 If-Modified-Since, 远端返回 304 时复用本地文件
+        remote_time (bool):
+            下载完成后是否把本地文件 mtime 设置为远端 Last-Modified
 
     Returns:
         Path: 下载的文件路径
@@ -1588,20 +2000,23 @@ def download_file_from_url(
     if save_path is None:
         save_path = Path.cwd()
 
-    if not file_name:
-        parts = urlparse(url)
-        file_name = Path(parts.path).name or "download"
-
+    urls = _normalize_urls(url)
+    explicit_file_name = file_name is not None
+    if file_name is None:
+        file_name = _filename_from_url(urls[0])
     cached_file = save_path.resolve() / file_name
+    cached_file_exists = cached_file.exists()
 
-    if re_download or not cached_file.exists():
+    if cached_file_exists and not re_download and not conditional_get:
+        logger.info("'%s' 已存在于 '%s' 中", file_name, cached_file)
+        return cached_file
+
+    if cached_file_exists and not re_download and conditional_get and _cached_file_not_modified(requests, urls, cached_file):
+        logger.info("'%s' 未修改, 复用 '%s'", file_name, cached_file)
+        return cached_file
+
+    if re_download or not cached_file_exists or conditional_get:
         save_path.mkdir(parents=True, exist_ok=True)
-        temp_file = save_path / f"{file_name}.tmp"
-        state_file = _state_path_for(temp_file)
-        if re_download:
-            _cleanup_resume_files(temp_file, state_file)
-
-        logger.info("下载 '%s' 到 '%s' 中", file_name, cached_file)
 
         options = _normalize_options(
             split=split,
@@ -1612,15 +2027,31 @@ def download_file_from_url(
             max_tries=max_tries,
             retry_wait=retry_wait,
             continue_download=continue_download,
+            conditional_get=conditional_get,
+            remote_time=remote_time,
         )
-        remote_info = _probe_remote_file(requests, url)
+        primary_url, remote_info = _probe_remote_files(requests, urls)
+        ordered_urls = [primary_url] + [candidate for candidate in urls if candidate != primary_url]
+        if not explicit_file_name and remote_info.content_disposition_filename:
+            file_name = remote_info.content_disposition_filename
+            cached_file = save_path.resolve() / file_name
+            if not re_download and not conditional_get and cached_file.exists():
+                logger.info("'%s' 已存在于 '%s' 中", file_name, cached_file)
+                return cached_file
+
+        temp_file = save_path / f"{file_name}.tmp"
+        state_file = _state_path_for(temp_file)
+        if re_download:
+            _cleanup_resume_files(temp_file, state_file)
+
+        logger.info("下载 '%s' 到 '%s' 中", file_name, cached_file)
         expected_size = remote_info.total_size
 
         if remote_info.total_size > 0:
             try:
                 _download_file_with_ranges(
                     requests,
-                    url=url,
+                    urls=ordered_urls,
                     temp_file=temp_file,
                     state_file=state_file,
                     remote_info=remote_info,
@@ -1635,11 +2066,13 @@ def download_file_from_url(
             _cleanup_resume_files(temp_file, state_file)
             expected_size = _download_file_single_stream(
                 requests,
-                url=url,
+                urls=ordered_urls,
                 temp_file=temp_file,
                 file_name=file_name,
                 progress=bool(progress),
                 tqdm_class=tqdm,
+                max_tries=options.max_tries,
+                retry_wait=options.retry_wait,
             )
 
         _finalize_download(
@@ -1647,9 +2080,9 @@ def download_file_from_url(
             state_file=state_file,
             cached_file=cached_file,
             file_name=file_name,
-            hash_prefix=hash_prefix,
+            hash_prefix=hash_prefix or remote_info.digest_sha256,
+            remote_time=options.remote_time,
+            last_modified=remote_info.last_modified,
             expected_size=expected_size,
         )
-    else:
-        logger.info("'%s' 已存在于 '%s' 中", file_name, cached_file)
     return cached_file

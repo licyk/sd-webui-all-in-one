@@ -7,6 +7,7 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Sequence
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import (
@@ -15,6 +16,8 @@ from typing import (
 )
 from urllib.parse import urlparse
 
+from sd_webui_all_in_one.downloader.requests_downloader import _filename_from_url
+from sd_webui_all_in_one.downloader.requests_downloader import _normalize_urls
 from sd_webui_all_in_one.utils import (
     find_port,
     is_port_in_use,
@@ -476,7 +479,7 @@ class Aria2RpcServer:
 
     def download(
         self,
-        url: str,
+        url: str | Sequence[str],
         save_path: Path | None = None,
         save_name: str | None = None,
         options: dict[str, Any] | None = None,
@@ -487,8 +490,8 @@ class Aria2RpcServer:
         下载单个文件
 
         Args:
-            url (str):
-                下载链接
+            url (str | Sequence[str]):
+                下载链接或同一文件的镜像链接列表
             save_path (Path | None):
                 保存路径, 为 None 时使用默认下载目录
             save_name (str | None):
@@ -509,24 +512,24 @@ class Aria2RpcServer:
         if save_path is None:
             save_path = self.download_dir
 
+        urls = _normalize_urls(url)
+        explicit_save_name = save_name is not None
         if save_name is None:
-            parts = urlparse(url)
-            save_name = os.path.basename(parts.path)
-            if not save_name:
-                save_name = "download"
+            save_name = _filename_from_url(urls[0])
 
         # 构建下载选项
         download_options: dict[str, Any] = {
             "dir": save_path.as_posix(),
-            "out": save_name,
         }
+        if explicit_save_name:
+            download_options["out"] = save_name
 
         if options:
             download_options.update(options)
 
         # 添加下载任务
         try:
-            gid: str = self._rpc_call("aria2.addUri", [[url], download_options])
+            gid: str = self._rpc_call("aria2.addUri", [urls, download_options])
             logger.debug("下载任务已创建, GID: %s, 文件: %s", gid, save_name)
         except Exception as e:
             raise RuntimeError(f"添加下载任务失败: {e}") from e

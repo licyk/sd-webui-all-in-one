@@ -1,6 +1,7 @@
 """下载器"""
 
 import shutil
+from collections.abc import Sequence
 from pathlib import Path
 
 from sd_webui_all_in_one.downloader.aria2_downloader import aria2
@@ -62,7 +63,7 @@ def _install_requests() -> bool:
     retry_on_none=False,
 )
 def download_executer(
-    url: str,
+    url: str | Sequence[str],
     path: Path,
     save_name: str | None,
     tool: DownloadToolType,
@@ -75,12 +76,14 @@ def download_executer(
     continue_download: bool = False,
     max_tries: int = 5,
     retry_wait: int = 0,
+    conditional_get: bool = False,
+    remote_time: bool = True,
 ) -> Path:
     """底层下载执行器
 
     Args:
-        url (str):
-            下载链接
+        url (str | Sequence[str]):
+            下载链接或同一文件的镜像链接列表
         path (Path):
             保存路径
         save_name (str | None):
@@ -105,6 +108,10 @@ def download_executer(
             requests 下载器单个分片的最大尝试次数
         retry_wait (int):
             HTTP 503 重试前等待秒数
+        conditional_get (bool):
+            已有本地文件时是否发送 If-Modified-Since, 远端返回 304 时复用本地文件
+        remote_time (bool):
+            下载完成后是否把本地文件 mtime 设置为远端 Last-Modified
 
     Returns:
         Path:
@@ -124,6 +131,8 @@ def download_executer(
             continue_download=continue_download,
             max_tries=max_tries,
             retry_wait=retry_wait,
+            conditional_get=conditional_get,
+            remote_time=remote_time,
         )
     elif tool == "requests":
         return download_file_from_url(
@@ -139,6 +148,8 @@ def download_executer(
             continue_download=continue_download,
             max_tries=max_tries,
             retry_wait=retry_wait,
+            conditional_get=conditional_get,
+            remote_time=remote_time,
         )
     elif tool == "urllib":
         return download_file_from_url_urllib(url=url, save_path=path, file_name=save_name, progress=progress)
@@ -146,7 +157,7 @@ def download_executer(
 
 
 def download_file(
-    url: str,
+    url: str | Sequence[str],
     path: Path | None = None,
     save_name: str | None = None,
     tool: DownloadToolType | None = "requests",
@@ -159,12 +170,14 @@ def download_file(
     continue_download: bool = False,
     max_tries: int = 5,
     retry_wait: int = 0,
+    conditional_get: bool = False,
+    remote_time: bool = True,
 ) -> Path:
     """下载文件工具
 
     Args:
-        url (str):
-            文件下载链接
+        url (str | Sequence[str]):
+            文件下载链接或同一文件的镜像链接列表
         path (Path | None):
             文件下载路径
         save_name (str | None):
@@ -189,6 +202,10 @@ def download_file(
             requests 下载器单个分片的最大尝试次数
         retry_wait (int):
             HTTP 503 重试前等待秒数
+        conditional_get (bool):
+            已有本地文件时是否发送 If-Modified-Since, 远端返回 304 时复用本地文件
+        remote_time (bool):
+            下载完成后是否把本地文件 mtime 设置为远端 Last-Modified
 
     Returns:
         Path: 保存的文件路径
@@ -222,4 +239,6 @@ def download_file(
         continue_download=continue_download,
         max_tries=max_tries,
         retry_wait=retry_wait,
+        conditional_get=conditional_get,
+        remote_time=remote_time,
     )

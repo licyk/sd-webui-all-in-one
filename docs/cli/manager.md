@@ -138,6 +138,8 @@ sd-webui-all-in-one self-manager download-file <下载链接> [选项]
 - `--continue`：没有匹配控制文件时，从已有文件继续下载；匹配的控制文件会自动恢复。
 - `--max-tries <次数>`：单个分片最大尝试次数，默认 `5`。
 - `--retry-wait <秒>`：HTTP 503 重试前等待秒数，默认 `0`。
+- `--conditional-get`：已有本地文件时发送 `If-Modified-Since`，远端返回 `304` 时复用本地文件。
+- `--no-remote-time`：禁用按远端 `Last-Modified` 设置本地文件时间；默认启用。
 
 ### 压缩包解压和压缩
 调用 Python 内核中的压缩包工具解压或创建压缩包。

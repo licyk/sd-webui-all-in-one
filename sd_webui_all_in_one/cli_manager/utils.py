@@ -182,6 +182,8 @@ def download_file_cli(
     continue_download: bool = False,
     max_tries: int = 5,
     retry_wait: int = 0,
+    conditional_get: bool = False,
+    remote_time: bool = True,
 ) -> None:
     """下载文件并输出保存路径
 
@@ -212,6 +214,10 @@ def download_file_cli(
             单个分片的最大尝试次数
         retry_wait (int):
             HTTP 503 重试前等待秒数
+        conditional_get (bool):
+            已有本地文件时是否发送 If-Modified-Since, 远端返回 304 时复用本地文件
+        remote_time (bool):
+            下载完成后是否把本地文件 mtime 设置为远端 Last-Modified
     """
     download_file(
         url=url,
@@ -227,6 +233,8 @@ def download_file_cli(
         continue_download=continue_download,
         max_tries=max_tries,
         retry_wait=retry_wait,
+        conditional_get=conditional_get,
+        remote_time=remote_time,
     )
 
 
@@ -557,6 +565,8 @@ def register_manager(
     download_file_p.add_argument("--continue", action="store_true", dest="continue_download", default=False, help="没有匹配控制文件时从已有文件继续下载")
     download_file_p.add_argument("--max-tries", type=int, default=5, help="单个分片最大尝试次数")
     download_file_p.add_argument("--retry-wait", type=int, default=0, help="HTTP 503 重试前等待秒数")
+    download_file_p.add_argument("--conditional-get", action="store_true", default=False, help="已有本地文件时发送 If-Modified-Since, 远端返回 304 时复用本地文件")
+    download_file_p.add_argument("--no-remote-time", action="store_false", dest="remote_time", default=True, help="禁用按远端 Last-Modified 设置本地文件时间")
     download_file_p.set_defaults(
         func=lambda args: download_file_cli(
             url=args.url,
@@ -571,6 +581,8 @@ def register_manager(
             continue_download=args.continue_download,
             max_tries=args.max_tries,
             retry_wait=args.retry_wait,
+            conditional_get=args.conditional_get,
+            remote_time=args.remote_time,
             tool=args.tool,
         )
     )

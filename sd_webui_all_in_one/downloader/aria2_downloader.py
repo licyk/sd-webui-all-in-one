@@ -1,10 +1,9 @@
 """Aria2 下载工具"""
 
-import os
 import threading
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
 
 from sd_webui_all_in_one.downloader.aria2_server import Aria2RpcServer
 from sd_webui_all_in_one.downloader.requests_downloader import (
@@ -12,7 +11,9 @@ from sd_webui_all_in_one.downloader.requests_downloader import (
     DEFAULT_MIN_SPLIT_SIZE,
     DEFAULT_PIECE_LENGTH,
     DEFAULT_SPLIT,
+    _filename_from_url,
     _normalize_options,
+    _normalize_urls,
 )
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
@@ -94,7 +95,7 @@ _server_pool: _Aria2ServerPool = _Aria2ServerPool()
 
 
 def aria2(
-    url: str,
+    url: str | Sequence[str],
     path: Path | None = None,
     save_name: str | None = None,
     progress: bool = True,
@@ -106,14 +107,16 @@ def aria2(
     continue_download: bool = False,
     max_tries: int = 5,
     retry_wait: int = 0,
+    conditional_get: bool = False,
+    remote_time: bool = True,
 ) -> Path:
     """Aria2 下载工具
 
     多次并发调用时共享同一个 Aria2RpcServer 实例, 所有下载任务完成后自动关闭服务器
 
     Args:
-        url (str):
-            文件下载链接
+        url (str | Sequence[str]):
+            文件下载链接或同一文件的镜像链接列表
         path (Path | None):
             下载文件的路径, 为`None`时使用当前路径
         save_name (str | None):
@@ -136,6 +139,10 @@ def aria2(
             最大尝试次数
         retry_wait (int):
             HTTP 503 重试前等待秒数
+        conditional_get (bool):
+            已有本地文件时是否启用 aria2 conditional-get
+        remote_time (bool):
+            是否启用 aria2 remote-time
 
     Returns:
         Path: 下载成功时返回文件路径
@@ -147,11 +154,9 @@ def aria2(
         path = Path().cwd()
 
     path = Path(path) if not isinstance(path, Path) and path is not None else path
-    if save_name is None:
-        parts = urlparse(url)
-        save_name = os.path.basename(parts.path)
-
-    save_path = path / save_name
+    urls = _normalize_urls(url)
+    display_name = save_name if save_name is not None else _filename_from_url(urls[0])
+    save_path = path / display_name
     normalized_options = _normalize_options(
         split=split,
         max_connection_per_server=max_connection_per_server,
@@ -161,10 +166,12 @@ def aria2(
         continue_download=continue_download,
         max_tries=max_tries,
         retry_wait=retry_wait,
+        conditional_get=conditional_get,
+        remote_time=remote_time,
     )
     server = _server_pool.acquire()
     try:
-        logger.info("下载 %s 到 %s 中", save_name, save_path)
+        logger.info("下载 %s 到 %s 中", display_name, save_path)
         options: dict[str, Any] = {
             "split": str(normalized_options.split),
             "max-connection-per-server": str(normalized_options.max_connection_per_server),
@@ -174,9 +181,11 @@ def aria2(
             "continue": "true" if normalized_options.continue_download else "false",
             "max-tries": str(normalized_options.max_tries),
             "retry-wait": str(normalized_options.retry_wait),
+            "conditional-get": "true" if normalized_options.conditional_get else "false",
+            "remote-time": "true" if normalized_options.remote_time else "false",
         }
         return server.download(
-            url=url,
+            url=urls,
             save_path=path,
             save_name=save_name,
             options=options,
