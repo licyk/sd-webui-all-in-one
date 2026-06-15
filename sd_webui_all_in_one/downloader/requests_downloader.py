@@ -1,5 +1,6 @@
 """Requests 下载器"""
 
+import hashlib
 import json
 import math
 import re
@@ -33,6 +34,15 @@ DEFAULT_MIN_SPLIT_SIZE = 20 * 1024 * 1024
 DEFAULT_PIECE_LENGTH = 1024 * 1024
 """aria2 风格的 piece 大小"""
 
+MAX_CONNECTION_PER_SERVER_MAX = 16
+"""aria2 max-connection-per-server 上限"""
+
+ARIA2_SIZE_OPTION_MIN = 1024 * 1024
+"""aria2 min-split-size/piece-length 下限"""
+
+ARIA2_SIZE_OPTION_MAX = 1024 * 1024 * 1024
+"""aria2 min-split-size/piece-length 上限"""
+
 STREAM_CHUNK_SIZE = 1024 * 1024
 """HTTP 响应读取块大小"""
 
@@ -40,7 +50,7 @@ STATE_SAVE_COMPLETED_PIECE_INTERVAL = 8
 """断点续传状态写入间隔"""
 
 STATE_VERSION = 4
-"""HTTP Range 断点续传状态版本"""
+"""HTTP Range 断点续传 JSON 状态版本"""
 
 IN_FLIGHT_BLOCK_LENGTH = 16 * 1024
 """aria2 Piece 默认 block 大小"""
@@ -56,6 +66,10 @@ logger = get_logger(
 )
 
 _CONTENT_RANGE_RE = re.compile(r"(?:bytes\s+|bytes=)?(\d+)-(\d+)/(\d+|\*)", flags=re.IGNORECASE)
+_UNSATISFIED_CONTENT_RANGE_RE = re.compile(r"(?:bytes\s+|bytes=)?\*/(\d+|\*)", flags=re.IGNORECASE)
+
+_STATE_FILE_DIGESTS: dict[Path, str] = {}
+_STATE_FILE_DIGEST_LOCK = threading.Lock()
 
 
 class _RangeDownloadNotSupported(RuntimeError):
@@ -99,6 +113,10 @@ class _SegmentDownloadError(RuntimeError):
         self.error = error
 
 
+class _SegmentOwnershipLost(RuntimeError):
+    """Segment 已被另一个 idle worker 接管"""
+
+
 @dataclass(frozen=True)
 class _RemoteFileInfo:
     """远端文件元数据"""
@@ -117,7 +135,9 @@ class _DownloadOptions:
     max_connection_per_server: int
     min_split_size: int
     piece_length: int
+    allow_piece_length_change: bool
     max_tries: int
+    retry_wait: int
     continue_download: bool
 
 
@@ -130,6 +150,7 @@ class _Segment:
     start: int
     end: int
     piece_start: int
+    owner_id: int = 0
 
     @property
     def piece_count(self) -> int:
@@ -189,7 +210,11 @@ def _parse_content_range(
     if not content_range:
         return None
 
-    match = _CONTENT_RANGE_RE.match(content_range.strip())
+    normalized = content_range.strip()
+    if _UNSATISFIED_CONTENT_RANGE_RE.match(normalized):
+        return None
+
+    match = _CONTENT_RANGE_RE.match(normalized)
     if not match:
         return None
 
@@ -197,6 +222,19 @@ def _parse_content_range(
     end = int(match.group(2))
     total = None if match.group(3) == "*" else int(match.group(3))
     return start, end, total
+
+
+def _response_range_from_headers(
+    headers: Any,
+) -> tuple[int, int, int | None] | None:
+    parsed_range = _parse_content_range(_get_header(headers, "Content-Range"))
+    if parsed_range is not None:
+        return parsed_range
+
+    content_length = _parse_int_header(headers, "Content-Length")
+    if content_length <= 0:
+        return None
+    return 0, content_length - 1, content_length
 
 
 def _close_response(
@@ -280,25 +318,38 @@ def _state_path_for(
     return temp_file.with_name(f"{temp_file.name}.state.json")
 
 
+def _state_temp_path_for(
+    state_file: Path,
+) -> Path:
+    return state_file.with_name(f"{state_file.name}__temp")
+
+
 def _cleanup_resume_files(
     temp_file: Path,
     state_file: Path,
 ) -> None:
     temp_file.unlink(missing_ok=True)
     state_file.unlink(missing_ok=True)
+    _state_temp_path_for(state_file).unlink(missing_ok=True)
+    state_file.with_name(f"{state_file.name}.tmp").unlink(missing_ok=True)
+    with _STATE_FILE_DIGEST_LOCK:
+        _STATE_FILE_DIGESTS.pop(state_file, None)
 
 
 def _load_resume_state(
     state_file: Path,
 ) -> dict[str, object]:
     try:
-        state = json.loads(state_file.read_text(encoding="utf-8"))
+        raw_state = state_file.read_text(encoding="utf-8")
+        state = json.loads(raw_state)
     except OSError as e:
         raise _ResumeStateError(f"无法读取断点续传状态文件: {state_file}") from e
     except json.JSONDecodeError as e:
         raise _ResumeStateError(f"断点续传状态文件不是有效 JSON: {state_file}") from e
     if not isinstance(state, dict):
         raise _ResumeStateError("断点续传状态文件根节点必须是对象")
+    with _STATE_FILE_DIGEST_LOCK:
+        _STATE_FILE_DIGESTS[state_file] = hashlib.sha1(raw_state.encode("utf-8")).hexdigest()
     return state
 
 
@@ -336,6 +387,44 @@ def _piece_size_for(
     index: int,
 ) -> int:
     return min((index + 1) * piece_length, total_size) - index * piece_length
+
+
+def _range_is_complete_in_bitfield(
+    completed: list[bool],
+    *,
+    total_size: int,
+    piece_length: int,
+    offset: int,
+    length: int,
+) -> bool:
+    if length <= 0 or offset >= total_size:
+        return False
+    end_offset = min(offset + length, total_size) - 1
+    start_piece = offset // piece_length
+    end_piece = end_offset // piece_length
+    return all(completed[index] for index in range(start_piece, end_piece + 1))
+
+
+def _convert_completed_bitfield(
+    completed: list[bool],
+    *,
+    total_size: int,
+    source_piece_length: int,
+    target_piece_length: int,
+) -> list[bool]:
+    target_piece_count = _piece_count_for(total_size, target_piece_length)
+    converted: list[bool] = []
+    for index in range(target_piece_count):
+        converted.append(
+            _range_is_complete_in_bitfield(
+                completed,
+                total_size=total_size,
+                piece_length=source_piece_length,
+                offset=index * target_piece_length,
+                length=target_piece_length,
+            )
+        )
+    return converted
 
 
 def _bitfield_to_hex(
@@ -462,22 +551,16 @@ def _in_flight_lengths_from_state(
 def _parse_resume_state(
     state: dict[str, object],
     *,
-    url: str,
     remote_info: _RemoteFileInfo,
     piece_length: int,
+    allow_piece_length_change: bool,
 ) -> tuple[list[bool], list[int]] | None:
     version = _require_state_int(state, "version")
     if version != STATE_VERSION:
         raise _ResumeStateError(f"断点续传状态版本不匹配: 期望 {STATE_VERSION}, 实际 {version}")
-    if state.get("url") != url:
-        raise _ResumeStateError("断点续传状态 URL 与当前下载不匹配")
     total_size = _require_state_int(state, "total_size")
     if total_size != remote_info.total_size:
         raise _ResumeStateError(f"断点续传状态文件大小不匹配: 期望 {remote_info.total_size}, 实际 {total_size}")
-    if _require_state_optional_str(state, "etag") != remote_info.etag:
-        raise _ResumeStateError("断点续传状态 ETag 与当前下载不匹配")
-    if _require_state_optional_str(state, "last_modified") != remote_info.last_modified:
-        raise _ResumeStateError("断点续传状态 Last-Modified 与当前下载不匹配")
 
     saved_piece_length = _require_state_int(state, "piece_length")
     if saved_piece_length <= 0:
@@ -498,11 +581,17 @@ def _parse_resume_state(
         completed=completed,
     )
     if saved_piece_length != piece_length:
-        if any(completed) or any(in_flight_lengths):
+        if (any(completed) or any(in_flight_lengths)) and not allow_piece_length_change:
             raise _PieceLengthChangedError(
                 f"检测到 piece_length 变化: 状态文件 {saved_piece_length}, 当前配置 {piece_length}"
             )
-        return None
+        converted_completed = _convert_completed_bitfield(
+            completed,
+            total_size=remote_info.total_size,
+            source_piece_length=saved_piece_length,
+            target_piece_length=piece_length,
+        )
+        return converted_completed, [0] * len(converted_completed)
     return completed, in_flight_lengths
 
 
@@ -527,9 +616,17 @@ def _save_resume_state(
         "completed_bitfield": _bitfield_to_hex(completed),
         "in_flight_pieces": in_flight_pieces,
     }
-    tmp_state_file = state_file.with_name(f"{state_file.name}.tmp")
-    tmp_state_file.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+    payload = json.dumps(state, ensure_ascii=False, indent=2, sort_keys=True)
+    digest = hashlib.sha1(payload.encode("utf-8")).hexdigest()
+    with _STATE_FILE_DIGEST_LOCK:
+        if state_file.exists() and _STATE_FILE_DIGESTS.get(state_file) == digest:
+            return
+
+    tmp_state_file = _state_temp_path_for(state_file)
+    tmp_state_file.write_text(payload, encoding="utf-8")
     tmp_state_file.replace(state_file)
+    with _STATE_FILE_DIGEST_LOCK:
+        _STATE_FILE_DIGESTS[state_file] = digest
 
 
 class _ThreadLocalSessionPool:
@@ -611,6 +708,8 @@ class _PieceStorage:
             self.completed.append(is_complete)
             self.in_flight_lengths.append(0 if is_complete else in_flight_length)
         self.in_use = [False] * self.piece_count
+        self.in_use_owner: list[int | None] = [None] * self.piece_count
+        self.owner_idle: dict[int, bool] = {}
 
     def snapshot_completed(self) -> list[bool]:
         with self.lock:
@@ -654,22 +753,59 @@ class _PieceStorage:
     def check_out_segment(
         self,
         min_split_size: int,
+        owner_id: int = 0,
     ) -> _Segment | None:
         with self.lock:
             index = self._select_sparse_missing_unused_piece_unlocked(min_split_size)
             if index is None:
                 return None
 
-            return self._check_out_piece_unlocked(index)
+            return self._check_out_piece_unlocked(index, owner_id)
 
     def check_out_piece(
         self,
         index: int,
+        owner_id: int = 0,
     ) -> _Segment | None:
         with self.lock:
             if index < 0 or index >= self.piece_count or self.completed[index] or self.in_use[index]:
                 return None
-            return self._check_out_piece_unlocked(index)
+            return self._check_out_piece_unlocked(index, owner_id)
+
+    def check_out_clean_piece(
+        self,
+        index: int,
+        owner_id: int = 0,
+    ) -> _Segment | None:
+        with self.lock:
+            if (
+                index < 0
+                or index >= self.piece_count
+                or self.completed[index]
+                or self.in_use[index]
+                or self.in_flight_lengths[index] > 0
+            ):
+                return None
+            return self._check_out_piece_unlocked(index, owner_id)
+
+    def check_out_clean_idle_piece(
+        self,
+        index: int,
+        owner_id: int = 0,
+    ) -> _Segment | None:
+        with self.lock:
+            if index < 0 or index >= self.piece_count or self.completed[index] or self.in_flight_lengths[index] > 0:
+                return None
+            current_owner = self.in_use_owner[index]
+            if current_owner is None:
+                return self._check_out_piece_unlocked(index, owner_id)
+            if current_owner == owner_id:
+                return self._segment_for_piece_unlocked(index, owner_id)
+            if not self.owner_idle.get(current_owner, False):
+                return None
+            self.in_use_owner[index] = owner_id
+            self.owner_idle[owner_id] = True
+            return self._segment_for_piece_unlocked(index, owner_id)
 
     def mark_complete(
         self,
@@ -682,7 +818,9 @@ class _PieceStorage:
                     self.completed[index] = True
                     self.in_flight_lengths[index] = 0
                     newly_completed += 1
-                self.in_use[index] = False
+                if self.in_use_owner[index] == segment.owner_id:
+                    self.in_use[index] = False
+                    self.in_use_owner[index] = None
             return newly_completed
 
     def record_progress(
@@ -692,8 +830,14 @@ class _PieceStorage:
     ) -> None:
         with self.lock:
             index = segment.start_piece
-            if index < 0 or index >= self.piece_count or self.completed[index]:
+            if (
+                index < 0
+                or index >= self.piece_count
+                or self.completed[index]
+                or self.in_use_owner[index] != segment.owner_id
+            ):
                 return
+            self.owner_idle[segment.owner_id] = False
             piece_start = self._piece_start_unlocked(index)
             piece_size = self._piece_size_unlocked(index)
             in_flight_length = max(0, min(next_offset - piece_start, piece_size))
@@ -709,7 +853,9 @@ class _PieceStorage:
             if index < 0 or index >= self.piece_count or self.completed[index]:
                 return None
             self.in_use[index] = True
-            return self._segment_for_piece_unlocked(index)
+            self.in_use_owner[index] = segment.owner_id
+            self.owner_idle[segment.owner_id] = True
+            return self._segment_for_piece_unlocked(index, segment.owner_id)
 
     def release(
         self,
@@ -717,7 +863,19 @@ class _PieceStorage:
     ) -> None:
         with self.lock:
             for index in range(segment.start_piece, segment.end_piece + 1):
-                self.in_use[index] = False
+                if self.in_use_owner[index] == segment.owner_id:
+                    self.in_use[index] = False
+                    self.in_use_owner[index] = None
+
+    def owns_segment(
+        self,
+        segment: _Segment,
+    ) -> bool:
+        with self.lock:
+            return all(
+                0 <= index < self.piece_count and self.in_use_owner[index] == segment.owner_id
+                for index in range(segment.start_piece, segment.end_piece + 1)
+            )
 
     def _piece_start_unlocked(
         self,
@@ -740,13 +898,17 @@ class _PieceStorage:
     def _check_out_piece_unlocked(
         self,
         index: int,
+        owner_id: int,
     ) -> _Segment:
         self.in_use[index] = True
-        return self._segment_for_piece_unlocked(index)
+        self.in_use_owner[index] = owner_id
+        self.owner_idle[owner_id] = True
+        return self._segment_for_piece_unlocked(index, owner_id)
 
     def _segment_for_piece_unlocked(
         self,
         index: int,
+        owner_id: int,
     ) -> _Segment:
         piece_start = self._piece_start_unlocked(index)
         start = min(piece_start + self.in_flight_lengths[index], self._piece_end_unlocked(index))
@@ -756,6 +918,7 @@ class _PieceStorage:
             start=start,
             end=self._piece_end_unlocked(index),
             piece_start=piece_start,
+            owner_id=owner_id,
         )
 
     def _select_sparse_missing_unused_piece_unlocked(
@@ -824,14 +987,21 @@ class _SegmentManager:
         self.piece_storage = piece_storage
         self.min_split_size = min_split_size
 
-    def get_segment(self) -> _Segment | None:
-        return self.piece_storage.check_out_segment(self.min_split_size)
+    def get_segment(
+        self,
+        owner_id: int = 0,
+    ) -> _Segment | None:
+        return self.piece_storage.check_out_segment(self.min_split_size, owner_id)
 
     def get_next_segment(
         self,
         segment: _Segment,
     ) -> _Segment | None:
-        return self.piece_storage.check_out_piece(segment.end_piece + 1)
+        next_index = segment.end_piece + 1
+        next_segment = self.piece_storage.check_out_clean_piece(next_index, segment.owner_id)
+        if next_segment is not None:
+            return next_segment
+        return self.piece_storage.check_out_clean_idle_piece(next_index, segment.owner_id)
 
     def mark_complete(
         self,
@@ -858,11 +1028,22 @@ class _SegmentManager:
     ) -> None:
         self.piece_storage.release(segment)
 
+    def owns_segment(
+        self,
+        segment: _Segment,
+    ) -> bool:
+        return self.piece_storage.owns_segment(segment)
+
 
 def _retry_delay_for(
     headers: Any,
     attempt: int,
+    *,
+    status_code: int,
+    retry_wait: int,
 ) -> float:
+    if status_code == 503:
+        return float(retry_wait)
     retry_after = _get_header(headers, "Retry-After")
     if retry_after:
         try:
@@ -878,33 +1059,43 @@ def _validate_range_response(
     segment: _Segment,
     total_size: int,
     attempt: int,
+    retry_wait: int,
 ) -> None:
     status_code = int(getattr(response, "status_code", 0) or 0)
     headers = getattr(response, "headers", {})
 
-    if status_code == 200 and segment.start > 0:
-        raise _RangeRequestIgnored("远端忽略 Range 请求")
     if status_code == 416:
         raise _RangeDownloadNotSupported("远端拒绝 Range 请求: HTTP 416")
     if status_code in RETRYABLE_STATUS_CODES:
-        raise _RangeDownloadTemporaryError(f"HTTP {status_code}", retry_delay=_retry_delay_for(headers, attempt))
+        raise _RangeDownloadTemporaryError(
+            f"HTTP {status_code}",
+            retry_delay=_retry_delay_for(headers, attempt, status_code=status_code, retry_wait=retry_wait),
+        )
     if status_code not in {200, 206}:
         raise RuntimeError(f"Range 请求返回非预期状态码: HTTP {status_code}")
 
-    parsed_range = _parse_content_range(_get_header(headers, "Content-Range"))
-    if parsed_range is None and status_code == 206:
-        raise _RangeDownloadNotSupported("Range 响应缺少有效 Content-Range")
-    if parsed_range is None:
-        content_length = _parse_int_header(headers, "Content-Length")
-        if content_length and content_length != total_size:
-            raise _RangeDownloadNotSupported(f"Content-Length 不匹配: 期望 {total_size}, 实际 {content_length}")
+    if _get_header(headers, "Transfer-Encoding") is not None:
         return
 
+    parsed_range = _response_range_from_headers(headers)
+    if parsed_range is None:
+        raise _RangeDownloadNotSupported("响应缺少可验证的 Content-Range 或 Content-Length")
+
     start, end, content_total = parsed_range
-    if start != segment.start or end < segment.end or content_total != total_size:
-        raise _RangeDownloadNotSupported(
-            f"Range 响应不匹配: 期望 bytes {segment.start}-/{total_size}, 实际 {_get_header(headers, 'Content-Range')}"
+    expected_end = 0
+    range_satisfied = (
+        start == segment.start
+        and (expected_end == 0 or expected_end == end)
+        and (total_size == 0 or content_total == total_size)
+    )
+    if not range_satisfied:
+        message = (
+            f"Range 响应不匹配: 期望 bytes {segment.start}-/{total_size}, "
+            f"实际 {_get_header(headers, 'Content-Range') or _get_header(headers, 'Content-Length')}"
         )
+        if status_code == 200 and segment.start > 0:
+            raise _RangeRequestIgnored(message)
+        raise _RangeDownloadNotSupported(message)
 
 
 def _stream_request_headers(
@@ -924,6 +1115,7 @@ def _download_stream_once(
     total_size: int,
     timeout: int,
     attempt: int,
+    retry_wait: int,
     segment_manager: _SegmentManager,
     mark_complete_callback: Any,
     progress_callback: Any | None = None,
@@ -933,7 +1125,9 @@ def _download_stream_once(
     last_complete_segment: _Segment | None = None
     partial_reported_size = 0
     try:
-        _validate_range_response(response, segment=segment, total_size=total_size, attempt=attempt)
+        if not segment_manager.owns_segment(segment):
+            raise _SegmentOwnershipLost()
+        _validate_range_response(response, segment=segment, total_size=total_size, attempt=attempt, retry_wait=retry_wait)
 
         offset = segment.start
         with temp_file.open("r+b") as file:
@@ -959,6 +1153,8 @@ def _download_stream_once(
                         partial_reported_size = 0
                         continue
 
+                    if not segment_manager.owns_segment(current_segment):
+                        raise _SegmentOwnershipLost()
                     file.seek(offset)
                     file.write(chunk[chunk_offset : chunk_offset + writable_size])
                     offset += writable_size
@@ -978,6 +1174,8 @@ def _download_stream_once(
             raise IOError(f"分片大小不匹配: 期望 {current_segment.size}, 实际 {partial_reported_size}")
     except _RangeDownloadNotSupported:
         raise
+    except _SegmentOwnershipLost:
+        raise
     except Exception as e:
         raise _SegmentDownloadError(current_segment or segment, e) from e
     finally:
@@ -993,12 +1191,15 @@ def _download_stream_with_retries(
     total_size: int,
     timeout: int,
     max_tries: int,
+    retry_wait: int,
     segment_manager: _SegmentManager,
     mark_complete_callback: Any,
     progress_callback: Any | None = None,
 ) -> None:
     last_error: Exception | None = None
-    for attempt in range(1, max_tries + 1):
+    attempt = 0
+    while max_tries == 0 or attempt < max_tries:
+        attempt += 1
         try:
             return _download_stream_once(
                 session_pool.get(),
@@ -1008,26 +1209,29 @@ def _download_stream_with_retries(
                 total_size=total_size,
                 timeout=timeout,
                 attempt=attempt,
+                retry_wait=retry_wait,
                 segment_manager=segment_manager,
                 mark_complete_callback=mark_complete_callback,
                 progress_callback=progress_callback,
             )
         except _RangeDownloadNotSupported:
             raise
+        except _SegmentOwnershipLost:
+            return
         except _SegmentDownloadError as e:
             refreshed_segment = segment_manager.refresh_segment(e.segment)
             if refreshed_segment is None:
                 return
             segment = refreshed_segment
             last_error = e.error
-            if attempt >= max_tries:
+            if max_tries != 0 and attempt >= max_tries:
                 break
             delay = e.error.retry_delay if isinstance(e.error, _RangeDownloadTemporaryError) and e.error.retry_delay is not None else min(0.5 * attempt, 5.0)
             logger.warning("分片 %s 下载失败 [%s/%s]: %s, %.1fs 后重试", segment.byte_range, attempt, max_tries, e.error, delay)
             time.sleep(delay)
         except Exception as e:
             last_error = e
-            if attempt >= max_tries:
+            if max_tries != 0 and attempt >= max_tries:
                 break
             delay = e.retry_delay if isinstance(e, _RangeDownloadTemporaryError) and e.retry_delay is not None else min(0.5 * attempt, 5.0)
             logger.warning("分片 %s 下载失败 [%s/%s]: %s, %.1fs 后重试", segment.byte_range, attempt, max_tries, e, delay)
@@ -1048,8 +1252,8 @@ def _download_file_with_ranges(
     options: _DownloadOptions,
     timeout: int = 60,
 ) -> None:
-    if remote_info.total_size <= 0 or not remote_info.supports_range:
-        raise _RangeDownloadNotSupported("远端未提供可分片下载的文件大小或 Range 支持")
+    if remote_info.total_size <= 0:
+        raise _RangeDownloadNotSupported("远端未提供可分片下载的文件大小")
 
     seed_storage = _PieceStorage(total_size=remote_info.total_size, piece_length=options.piece_length)
     state_exists = state_file.exists()
@@ -1067,9 +1271,9 @@ def _download_file_with_ranges(
             )
         parsed_state = _parse_resume_state(
             state or {},
-            url=url,
             remote_info=remote_info,
             piece_length=options.piece_length,
+            allow_piece_length_change=options.allow_piece_length_change,
         )
         if parsed_state is None:
             _cleanup_resume_files(temp_file, state_file)
@@ -1141,8 +1345,9 @@ def _download_file_with_ranges(
                 completed_since_state_save = 0
 
     def _worker() -> None:
+        owner_id = threading.get_ident()
         while not stop_event.is_set():
-            segment = segment_manager.get_segment()
+            segment = segment_manager.get_segment(owner_id)
             if segment is None:
                 return
             try:
@@ -1154,6 +1359,7 @@ def _download_file_with_ranges(
                     total_size=remote_info.total_size,
                     timeout=timeout,
                     max_tries=options.max_tries,
+                    retry_wait=options.retry_wait,
                     segment_manager=segment_manager,
                     mark_complete_callback=_mark_segment_complete,
                     progress_callback=_update_progress,
@@ -1211,7 +1417,7 @@ def _download_file_single_stream(
     file_name: str,
     progress: bool,
     tqdm_class: Any,
-) -> None:
+) -> int:
     response = requests_module.get(url, stream=True, timeout=60, headers=_request_headers())
     try:
         response.raise_for_status()
@@ -1228,6 +1434,7 @@ def _download_file_single_stream(
                     if chunk:
                         file.write(chunk)
                         progress_bar.update(len(chunk))
+        return total_size
     finally:
         _close_response(response)
 
@@ -1239,7 +1446,19 @@ def _finalize_download(
     cached_file: Path,
     file_name: str,
     hash_prefix: str | None,
+    expected_size: int = 0,
 ) -> None:
+    if expected_size > 0:
+        actual_size = temp_file.stat().st_size
+        if actual_size < expected_size:
+            logger.error("'%s' 下载大小不足, 正在删除临时文件", temp_file)
+            _cleanup_resume_files(temp_file, state_file)
+            raise IOError(f"下载文件大小不足: 期望 {expected_size}, 实际 {actual_size}")
+        if actual_size > expected_size:
+            logger.warning("'%s' 包含多余尾部数据, 将截断到 %s 字节", temp_file, expected_size)
+            with temp_file.open("r+b") as file:
+                file.truncate(expected_size)
+
     if hash_prefix and not compare_sha256(temp_file, hash_prefix):
         logger.error("'%s' 的哈希值不匹配, 正在删除临时文件", temp_file)
         _cleanup_resume_files(temp_file, state_file)
@@ -1256,15 +1475,51 @@ def _normalize_options(
     max_connection_per_server: int,
     min_split_size: int,
     piece_length: int,
+    allow_piece_length_change: bool,
     max_tries: int,
+    retry_wait: int,
     continue_download: bool,
 ) -> _DownloadOptions:
+    def _normalize_int_option(
+        name: str,
+        value: int,
+        *,
+        minimum: int,
+        maximum: int | None = None,
+    ) -> int:
+        try:
+            normalized = int(value)
+        except (TypeError, ValueError) as e:
+            raise ValueError(f"{name} 必须是整数") from e
+        if normalized < minimum:
+            raise ValueError(f"{name} 必须大于等于 {minimum}")
+        if maximum is not None and normalized > maximum:
+            raise ValueError(f"{name} 必须小于等于 {maximum}")
+        return normalized
+
     return _DownloadOptions(
-        split=max(1, int(split)),
-        max_connection_per_server=max(1, int(max_connection_per_server)),
-        min_split_size=max(1, int(min_split_size)),
-        piece_length=max(1, int(piece_length)),
-        max_tries=max(1, int(max_tries)),
+        split=_normalize_int_option("split", split, minimum=1),
+        max_connection_per_server=_normalize_int_option(
+            "max_connection_per_server",
+            max_connection_per_server,
+            minimum=1,
+            maximum=MAX_CONNECTION_PER_SERVER_MAX,
+        ),
+        min_split_size=_normalize_int_option(
+            "min_split_size",
+            min_split_size,
+            minimum=ARIA2_SIZE_OPTION_MIN,
+            maximum=ARIA2_SIZE_OPTION_MAX,
+        ),
+        piece_length=_normalize_int_option(
+            "piece_length",
+            piece_length,
+            minimum=ARIA2_SIZE_OPTION_MIN,
+            maximum=ARIA2_SIZE_OPTION_MAX,
+        ),
+        allow_piece_length_change=bool(allow_piece_length_change),
+        max_tries=_normalize_int_option("max_tries", max_tries, minimum=0),
+        retry_wait=_normalize_int_option("retry_wait", retry_wait, minimum=0, maximum=600),
         continue_download=bool(continue_download),
     )
 
@@ -1280,8 +1535,10 @@ def download_file_from_url(
     max_connection_per_server: int = DEFAULT_MAX_CONNECTION_PER_SERVER,
     min_split_size: int = DEFAULT_MIN_SPLIT_SIZE,
     piece_length: int = DEFAULT_PIECE_LENGTH,
+    allow_piece_length_change: bool = False,
     continue_download: bool = False,
     max_tries: int = 5,
+    retry_wait: int = 0,
 ) -> Path:
     """使用 requests 库下载文件
 
@@ -1306,10 +1563,14 @@ def download_file_from_url(
             aria2 风格的最小切分大小
         piece_length (int):
             aria2 风格的 piece 大小
+        allow_piece_length_change (bool):
+            piece_length 与已有控制文件不一致时, 是否允许转换已完成 bitfield 并丢弃 in-flight 进度
         continue_download (bool):
             没有匹配 state 文件时, 是否从已有临时文件推断断点续传进度
         max_tries (int):
             单个分片的最大尝试次数
+        retry_wait (int):
+            HTTP 503 重试前等待秒数, 取值范围 0..600
 
     Returns:
         Path: 下载的文件路径
@@ -1347,12 +1608,15 @@ def download_file_from_url(
             max_connection_per_server=max_connection_per_server,
             min_split_size=min_split_size,
             piece_length=piece_length,
+            allow_piece_length_change=allow_piece_length_change,
             max_tries=max_tries,
+            retry_wait=retry_wait,
             continue_download=continue_download,
         )
         remote_info = _probe_remote_file(requests, url)
+        expected_size = remote_info.total_size
 
-        if remote_info.supports_range:
+        if remote_info.total_size > 0:
             try:
                 _download_file_with_ranges(
                     requests,
@@ -1369,7 +1633,7 @@ def download_file_from_url(
                 raise IOError(f"无法使用 HTTP Range 继续下载 '{file_name}': {e}") from e
         else:
             _cleanup_resume_files(temp_file, state_file)
-            _download_file_single_stream(
+            expected_size = _download_file_single_stream(
                 requests,
                 url=url,
                 temp_file=temp_file,
@@ -1384,6 +1648,7 @@ def download_file_from_url(
             cached_file=cached_file,
             file_name=file_name,
             hash_prefix=hash_prefix,
+            expected_size=expected_size,
         )
     else:
         logger.info("'%s' 已存在于 '%s' 中", file_name, cached_file)

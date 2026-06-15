@@ -415,9 +415,12 @@ def test_self_manager_download_file_cli_parse_smoke(monkeypatch, tmp_path):
             "4096",
             "--piece-length",
             "4096",
+            "--allow-piece-length-change",
             "--continue",
             "--max-tries",
             "3",
+            "--retry-wait",
+            "9",
         ]
     )
     args.func(args)
@@ -433,8 +436,10 @@ def test_self_manager_download_file_cli_parse_smoke(monkeypatch, tmp_path):
             "max_connection_per_server": 2,
             "min_split_size": 4096,
             "piece_length": 4096,
+            "allow_piece_length_change": True,
             "continue_download": True,
             "max_tries": 3,
+            "retry_wait": 9,
         }
     ]
 

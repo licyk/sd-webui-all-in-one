@@ -178,8 +178,10 @@ def download_file_cli(
     max_connection_per_server: int = DEFAULT_MAX_CONNECTION_PER_SERVER,
     min_split_size: int = DEFAULT_MIN_SPLIT_SIZE,
     piece_length: int = DEFAULT_PIECE_LENGTH,
+    allow_piece_length_change: bool = False,
     continue_download: bool = False,
     max_tries: int = 5,
+    retry_wait: int = 0,
 ) -> None:
     """下载文件并输出保存路径
 
@@ -202,10 +204,14 @@ def download_file_cli(
             aria2 风格的最小切分大小
         piece_length (int):
             aria2 风格的 piece 大小
+        allow_piece_length_change (bool):
+            piece_length 与已有控制文件不一致时, 是否允许转换已完成 bitfield
         continue_download (bool):
             没有匹配控制文件时, 是否从已有文件推断断点续传进度
         max_tries (int):
             单个分片的最大尝试次数
+        retry_wait (int):
+            HTTP 503 重试前等待秒数
     """
     download_file(
         url=url,
@@ -217,8 +223,10 @@ def download_file_cli(
         max_connection_per_server=max_connection_per_server,
         min_split_size=min_split_size,
         piece_length=piece_length,
+        allow_piece_length_change=allow_piece_length_change,
         continue_download=continue_download,
         max_tries=max_tries,
+        retry_wait=retry_wait,
     )
 
 
@@ -545,8 +553,10 @@ def register_manager(
     download_file_p.add_argument("--max-connection-per-server", type=int, default=DEFAULT_MAX_CONNECTION_PER_SERVER, help="aria2 风格的单服务器最大连接数")
     download_file_p.add_argument("--min-split-size", type=int, default=DEFAULT_MIN_SPLIT_SIZE, help="aria2 风格的最小切分大小, 单位为字节")
     download_file_p.add_argument("--piece-length", type=int, default=DEFAULT_PIECE_LENGTH, help="aria2 风格的 piece 大小, 单位为字节")
+    download_file_p.add_argument("--allow-piece-length-change", action="store_true", default=False, help="piece-length 与控制文件不一致时转换已完成 bitfield")
     download_file_p.add_argument("--continue", action="store_true", dest="continue_download", default=False, help="没有匹配控制文件时从已有文件继续下载")
     download_file_p.add_argument("--max-tries", type=int, default=5, help="单个分片最大尝试次数")
+    download_file_p.add_argument("--retry-wait", type=int, default=0, help="HTTP 503 重试前等待秒数")
     download_file_p.set_defaults(
         func=lambda args: download_file_cli(
             url=args.url,
@@ -557,8 +567,10 @@ def register_manager(
             max_connection_per_server=args.max_connection_per_server,
             min_split_size=args.min_split_size,
             piece_length=args.piece_length,
+            allow_piece_length_change=args.allow_piece_length_change,
             continue_download=args.continue_download,
             max_tries=args.max_tries,
+            retry_wait=args.retry_wait,
             tool=args.tool,
         )
     )

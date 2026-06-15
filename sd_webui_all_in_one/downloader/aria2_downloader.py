@@ -12,6 +12,7 @@ from sd_webui_all_in_one.downloader.requests_downloader import (
     DEFAULT_MIN_SPLIT_SIZE,
     DEFAULT_PIECE_LENGTH,
     DEFAULT_SPLIT,
+    _normalize_options,
 )
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
@@ -101,8 +102,10 @@ def aria2(
     max_connection_per_server: int = DEFAULT_MAX_CONNECTION_PER_SERVER,
     min_split_size: int = DEFAULT_MIN_SPLIT_SIZE,
     piece_length: int = DEFAULT_PIECE_LENGTH,
+    allow_piece_length_change: bool = False,
     continue_download: bool = False,
     max_tries: int = 5,
+    retry_wait: int = 0,
 ) -> Path:
     """Aria2 下载工具
 
@@ -125,10 +128,14 @@ def aria2(
             aria2 最小切分大小
         piece_length (int):
             aria2 piece 大小
+        allow_piece_length_change (bool):
+            piece length 与已有控制文件不一致时, 是否允许 aria2 转换已完成 bitfield
         continue_download (bool):
             是否启用断点续传
         max_tries (int):
             最大尝试次数
+        retry_wait (int):
+            HTTP 503 重试前等待秒数
 
     Returns:
         Path: 下载成功时返回文件路径
@@ -145,16 +152,28 @@ def aria2(
         save_name = os.path.basename(parts.path)
 
     save_path = path / save_name
+    normalized_options = _normalize_options(
+        split=split,
+        max_connection_per_server=max_connection_per_server,
+        min_split_size=min_split_size,
+        piece_length=piece_length,
+        allow_piece_length_change=allow_piece_length_change,
+        continue_download=continue_download,
+        max_tries=max_tries,
+        retry_wait=retry_wait,
+    )
     server = _server_pool.acquire()
     try:
         logger.info("下载 %s 到 %s 中", save_name, save_path)
         options: dict[str, Any] = {
-            "split": str(max(1, int(split))),
-            "max-connection-per-server": str(max(1, int(max_connection_per_server))),
-            "min-split-size": str(max(1, int(min_split_size))),
-            "piece-length": str(max(1, int(piece_length))),
-            "continue": "true" if continue_download else "false",
-            "max-tries": str(max(1, int(max_tries))),
+            "split": str(normalized_options.split),
+            "max-connection-per-server": str(normalized_options.max_connection_per_server),
+            "min-split-size": str(normalized_options.min_split_size),
+            "piece-length": str(normalized_options.piece_length),
+            "allow-piece-length-change": "true" if normalized_options.allow_piece_length_change else "false",
+            "continue": "true" if normalized_options.continue_download else "false",
+            "max-tries": str(normalized_options.max_tries),
+            "retry-wait": str(normalized_options.retry_wait),
         }
         return server.download(
             url=url,

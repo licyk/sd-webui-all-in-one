@@ -71,8 +71,10 @@ def download_executer(
     max_connection_per_server: int = DEFAULT_MAX_CONNECTION_PER_SERVER,
     min_split_size: int = DEFAULT_MIN_SPLIT_SIZE,
     piece_length: int = DEFAULT_PIECE_LENGTH,
+    allow_piece_length_change: bool = False,
     continue_download: bool = False,
     max_tries: int = 5,
+    retry_wait: int = 0,
 ) -> Path:
     """底层下载执行器
 
@@ -95,10 +97,14 @@ def download_executer(
             aria2 风格的最小切分大小
         piece_length (int):
             aria2 风格的 piece 大小
+        allow_piece_length_change (bool):
+            piece_length 与已有控制文件不一致时, 是否允许转换已完成 bitfield
         continue_download (bool):
             没有匹配控制文件时, 是否从已有文件推断断点续传进度
         max_tries (int):
             requests 下载器单个分片的最大尝试次数
+        retry_wait (int):
+            HTTP 503 重试前等待秒数
 
     Returns:
         Path:
@@ -114,8 +120,10 @@ def download_executer(
             max_connection_per_server=max_connection_per_server,
             min_split_size=min_split_size,
             piece_length=piece_length,
+            allow_piece_length_change=allow_piece_length_change,
             continue_download=continue_download,
             max_tries=max_tries,
+            retry_wait=retry_wait,
         )
     elif tool == "requests":
         return download_file_from_url(
@@ -127,8 +135,10 @@ def download_executer(
             max_connection_per_server=max_connection_per_server,
             min_split_size=min_split_size,
             piece_length=piece_length,
+            allow_piece_length_change=allow_piece_length_change,
             continue_download=continue_download,
             max_tries=max_tries,
+            retry_wait=retry_wait,
         )
     elif tool == "urllib":
         return download_file_from_url_urllib(url=url, save_path=path, file_name=save_name, progress=progress)
@@ -145,8 +155,10 @@ def download_file(
     max_connection_per_server: int = DEFAULT_MAX_CONNECTION_PER_SERVER,
     min_split_size: int = DEFAULT_MIN_SPLIT_SIZE,
     piece_length: int = DEFAULT_PIECE_LENGTH,
+    allow_piece_length_change: bool = False,
     continue_download: bool = False,
     max_tries: int = 5,
+    retry_wait: int = 0,
 ) -> Path:
     """下载文件工具
 
@@ -169,10 +181,14 @@ def download_file(
             aria2 风格的最小切分大小
         piece_length (int):
             aria2 风格的 piece 大小
+        allow_piece_length_change (bool):
+            piece_length 与已有控制文件不一致时, 是否允许转换已完成 bitfield
         continue_download (bool):
             没有匹配控制文件时, 是否从已有文件推断断点续传进度
         max_tries (int):
             requests 下载器单个分片的最大尝试次数
+        retry_wait (int):
+            HTTP 503 重试前等待秒数
 
     Returns:
         Path: 保存的文件路径
@@ -202,6 +218,8 @@ def download_file(
         max_connection_per_server=max_connection_per_server,
         min_split_size=min_split_size,
         piece_length=piece_length,
+        allow_piece_length_change=allow_piece_length_change,
         continue_download=continue_download,
         max_tries=max_tries,
+        retry_wait=retry_wait,
     )
