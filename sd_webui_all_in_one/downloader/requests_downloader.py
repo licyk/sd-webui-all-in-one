@@ -16,6 +16,7 @@ from email.utils import formatdate
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
+from typing import TYPE_CHECKING
 from urllib.parse import unquote
 from urllib.parse import unquote_to_bytes
 from urllib.parse import urlparse
@@ -78,6 +79,9 @@ _UNSATISFIED_CONTENT_RANGE_RE = re.compile(r"(?:bytes\s+|bytes=)?\*/(\d+|\*)", f
 
 _STATE_FILE_DIGESTS: dict[Path, str] = {}
 _STATE_FILE_DIGEST_LOCK = threading.Lock()
+
+if TYPE_CHECKING:
+    import requests
 
 
 class _RangeDownloadNotSupported(RuntimeError):
@@ -441,7 +445,7 @@ def _url_host_key(
 
 
 def _probe_remote_file(
-    requests_module: object,
+    requests_module: "requests",
     url: str,
     timeout: int = 60,
 ) -> _RemoteFileInfo:
@@ -532,7 +536,7 @@ def _probe_remote_file(
 
 
 def _probe_remote_files(
-    requests_module: object,
+    requests_module: "requests",
     urls: list[str],
     timeout: int = 60,
 ) -> tuple[str, _RemoteFileInfo]:
@@ -549,7 +553,7 @@ def _probe_remote_files(
 
 
 def _cached_file_not_modified(
-    requests_module: object,
+    requests_module: "requests",
     urls: list[str],
     cached_file: Path,
     timeout: int = 60,
@@ -903,7 +907,7 @@ class _ThreadLocalSessionPool:
 
     def __init__(
         self,
-        requests_module: Any,
+        requests_module: "requests",
         pool_size: int,
     ) -> None:
         self.requests_module = requests_module
@@ -1576,7 +1580,7 @@ def _download_stream_with_retries(
 
 
 def _download_file_with_ranges(
-    requests_module: Any,
+    requests_module: "requests",
     *,
     urls: list[str],
     temp_file: Path,
@@ -1747,7 +1751,7 @@ def _download_file_with_ranges(
 
 
 def _download_file_single_stream_once(
-    requests_module: Any,
+    requests_module: "requests",
     *,
     url: str,
     temp_file: Path,
@@ -1782,7 +1786,7 @@ def _download_file_single_stream_once(
 
 
 def _download_file_single_stream(
-    requests_module: Any,
+    requests_module: "requests",
     *,
     urls: list[str],
     temp_file: Path,
