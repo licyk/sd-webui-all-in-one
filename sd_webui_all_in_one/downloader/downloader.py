@@ -168,7 +168,7 @@ def download_file(
     min_split_size: int = DEFAULT_MIN_SPLIT_SIZE,
     piece_length: int = DEFAULT_PIECE_LENGTH,
     allow_piece_length_change: bool = False,
-    continue_download: bool = False,
+    continue_download: bool = True,
     max_tries: int = 5,
     retry_wait: int = 0,
     conditional_get: bool = False,
