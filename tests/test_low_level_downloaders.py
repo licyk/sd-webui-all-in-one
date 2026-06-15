@@ -714,7 +714,6 @@ def test_requests_downloader_http_range_download_uses_piece_segments(monkeypatch
     monkeypatch.setitem(sys.modules, "requests", types.SimpleNamespace(head=fake_head, get=fake_get))
     monkeypatch.setitem(sys.modules, "tqdm", types.SimpleNamespace(tqdm=FakeTqdm))
 
-    sleep_calls = []
     result = requests_downloader.download_file_from_url(
         "https://example.test/model.bin",
         save_path=tmp_path,

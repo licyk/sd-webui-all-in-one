@@ -16,7 +16,6 @@ from email.utils import formatdate
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
-from typing import TYPE_CHECKING
 from typing import cast
 from urllib.parse import unquote
 from urllib.parse import unquote_to_bytes
@@ -80,27 +79,6 @@ _UNSATISFIED_CONTENT_RANGE_RE = re.compile(r"(?:bytes\s+|bytes=)?\*/(\d+|\*)", f
 
 _STATE_FILE_DIGESTS: dict[Path, str] = {}
 _STATE_FILE_DIGEST_LOCK = threading.Lock()
-
-if TYPE_CHECKING:
-    import requests
-    from typing import Protocol
-
-    class _TqdmProgressBar(Protocol):
-        def update(self, n: int = 1) -> None: ...
-        def __enter__(self) -> "_TqdmProgressBar": ...
-        def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None: ...
-
-    class _TqdmClass(Protocol):
-        def __call__(
-            self,
-            *,
-            total: int | None = None,
-            initial: int = 0,
-            unit: str = "it",
-            unit_scale: bool = False,
-            desc: str = "",
-            disable: bool = False,
-        ) -> _TqdmProgressBar: ...
 
 
 class _RangeDownloadNotSupported(RuntimeError):
@@ -464,11 +442,12 @@ def _url_host_key(
 
 
 def _probe_remote_file(
-    requests_module: "requests",  # ty: ignore[invalid-type-form]
     url: str,
     timeout: int = 60,
 ) -> _RemoteFileInfo:
     """探测远端是否支持可靠的 HTTP Range 下载"""
+    import requests
+
     total_size = 0
     etag: str | None = None
     last_modified: str | None = None
@@ -478,7 +457,7 @@ def _probe_remote_file(
     supports_range = False
 
     try:
-        response = requests_module.head(url, allow_redirects=True, timeout=timeout, headers=_request_headers())
+        response = requests.head(url, allow_redirects=True, timeout=timeout, headers=_request_headers())
         try:
             status_code = int(response.status_code or 0)
             if 200 <= status_code < 400:
@@ -499,7 +478,7 @@ def _probe_remote_file(
 
     if not supports_range or total_size <= 0:
         try:
-            response = requests_module.get(url, stream=True, timeout=timeout, headers=_request_headers({"Range": "bytes=0-0"}))
+            response = requests.get(url, stream=True, timeout=timeout, headers=_request_headers({"Range": "bytes=0-0"}))
             try:
                 status_code = int(response.status_code or 0)
                 headers = response.headers
@@ -538,13 +517,12 @@ def _probe_remote_file(
 
 
 def _probe_remote_files(
-    requests_module: "requests",  # ty: ignore[invalid-type-form]
     urls: list[str],
     timeout: int = 60,
 ) -> tuple[str, _RemoteFileInfo]:
     first_result: tuple[str, _RemoteFileInfo] | None = None
     for url in urls:
-        remote_info = _probe_remote_file(requests_module, url, timeout=timeout)
+        remote_info = _probe_remote_file(url, timeout=timeout)
         if first_result is None:
             first_result = (url, remote_info)
         if remote_info.total_size > 0:
@@ -555,16 +533,16 @@ def _probe_remote_files(
 
 
 def _cached_file_not_modified(
-    requests_module: "requests",  # ty: ignore[invalid-type-form]
     urls: list[str],
     cached_file: Path,
     timeout: int = 60,
 ) -> bool:
+    import requests
     modified_since = formatdate(cached_file.stat().st_mtime, usegmt=True)
     headers = _request_headers({"If-Modified-Since": modified_since})
     for url in urls:
         try:
-            response = requests_module.head(url, allow_redirects=True, timeout=timeout, headers=headers)
+            response = requests.head(url, allow_redirects=True, timeout=timeout, headers=headers)
             try:
                 status_code = int(response.status_code or 0)
                 if status_code == 304:
@@ -906,10 +884,8 @@ class _ThreadLocalSessionPool:
 
     def __init__(
         self,
-        requests_module: "requests",  # ty: ignore[invalid-type-form]
         pool_size: int,
     ) -> None:
-        self.requests_module = requests_module
         self.pool_size = max(1, pool_size)
         self.local = threading.local()
         self.lock = threading.Lock()
@@ -920,14 +896,15 @@ class _ThreadLocalSessionPool:
         if session is not None:
             return session
 
-        session_factory = getattr(self.requests_module, "Session", None)
+        import requests
+        session_factory = getattr(requests, "Session", None)
         if callable(session_factory):
             session = session_factory()
             self._configure_session(session)
             with self.lock:
                 self.sessions.append(session)
         else:
-            session = self.requests_module
+            session = requests
         self.local.session = session
         return session
 
@@ -942,10 +919,11 @@ class _ThreadLocalSessionPool:
         self,
         session: Any,
     ) -> None:
-        if not hasattr(self.requests_module, "adapters") or not hasattr(session, "mount"):
+        import requests
+        if not hasattr(requests, "adapters") or not hasattr(session, "mount"):
             return
         for prefix in ("http://", "https://"):
-            session.mount(prefix, self.requests_module.adapters.HTTPAdapter(pool_connections=self.pool_size, pool_maxsize=self.pool_size))
+            session.mount(prefix, requests.adapters.HTTPAdapter(pool_connections=self.pool_size, pool_maxsize=self.pool_size))
 
 
 class _UriPool:
@@ -1576,17 +1554,19 @@ def _download_stream_with_retries(
 
 
 def _download_file_with_ranges(
-    requests_module: "requests",  # ty: ignore[invalid-type-form]
-    *,
     urls: list[str],
     temp_file: Path,
     state_file: Path,
     remote_info: _RemoteFileInfo,
     progress: bool,
-    tqdm_class: "_TqdmClass",
     options: _DownloadOptions,
     timeout: int = 60,
 ) -> None:
+    try:
+        from tqdm import tqdm
+    except ImportError:
+        from sd_webui_all_in_one.simple_tqdm import SimpleTqdm as tqdm
+
     if remote_info.total_size <= 0:
         raise _RangeDownloadNotSupported("远端未提供可分片下载的文件大小")
 
@@ -1653,7 +1633,7 @@ def _download_file_with_ranges(
     completed_since_state_save = 0
     uri_pool = _UriPool(urls, options.max_connection_per_server)
     worker_count = max(1, min(options.split, piece_storage.piece_count, uri_pool.capacity))
-    session_pool = _ThreadLocalSessionPool(requests_module, pool_size=worker_count)
+    session_pool = _ThreadLocalSessionPool(pool_size=worker_count)
 
     def _update_progress(delta: int) -> None:
         with progress_lock:
@@ -1709,7 +1689,7 @@ def _download_file_with_ranges(
                 segment_manager.release(segment)
                 raise
 
-    with tqdm_class(
+    with tqdm(
         total=remote_info.total_size,
         initial=completed_size,
         unit="B",
@@ -1747,15 +1727,18 @@ def _download_file_with_ranges(
 
 
 def _download_file_single_stream_once(
-    requests_module: "requests",  # ty: ignore[invalid-type-form]
-    *,
     url: str,
     temp_file: Path,
     file_name: str,
     progress: bool,
-    tqdm_class: "_TqdmClass",
 ) -> int:
-    response = requests_module.get(url, stream=True, timeout=60, headers=_request_headers())
+    import requests
+    try:
+        from tqdm import tqdm
+    except ImportError:
+        from sd_webui_all_in_one.simple_tqdm import SimpleTqdm as tqdm
+
+    response = requests.get(url, stream=True, timeout=60, headers=_request_headers())
     try:
         response.raise_for_status()
         if _get_header(response.headers, "Transfer-Encoding") is not None or _content_encoding_requires_single_stream(
@@ -1764,7 +1747,7 @@ def _download_file_single_stream_once(
             total_size = 0
         else:
             total_size = _parse_int_header(response.headers, "Content-Length")
-        with tqdm_class(
+        with tqdm(
             total=total_size,
             unit="B",
             unit_scale=True,
@@ -1782,13 +1765,10 @@ def _download_file_single_stream_once(
 
 
 def _download_file_single_stream(
-    requests_module: "requests",  # ty: ignore[invalid-type-form]
-    *,
     urls: list[str],
     temp_file: Path,
     file_name: str,
     progress: bool,
-    tqdm_class: "_TqdmClass",
     max_tries: int,
     retry_wait: int,
 ) -> int:
@@ -1799,12 +1779,10 @@ def _download_file_single_stream(
         attempt += 1
         try:
             return _download_file_single_stream_once(
-                requests_module,
                 url=url,
                 temp_file=temp_file,
                 file_name=file_name,
                 progress=progress,
-                tqdm_class=tqdm_class,
             )
         except Exception as e:
             last_error = e
@@ -1991,12 +1969,6 @@ def download_file_from_url(
         ValueError: 当提供了 hash_prefix 但文件哈希值不匹配时
         IOError: 下载过程中发生 IO 异常
     """
-    import requests
-
-    try:
-        from tqdm import tqdm
-    except ImportError:
-        from sd_webui_all_in_one.simple_tqdm import SimpleTqdm as tqdm
 
     if save_path is None:
         save_path = Path.cwd()
@@ -2012,7 +1984,7 @@ def download_file_from_url(
         logger.info("'%s' 已存在于 '%s' 中", file_name, cached_file)
         return cached_file
 
-    if cached_file_exists and not re_download and conditional_get and _cached_file_not_modified(requests, urls, cached_file):
+    if cached_file_exists and not re_download and conditional_get and _cached_file_not_modified(urls, cached_file):
         logger.info("'%s' 未修改, 复用 '%s'", file_name, cached_file)
         return cached_file
 
@@ -2031,7 +2003,7 @@ def download_file_from_url(
             conditional_get=conditional_get,
             remote_time=remote_time,
         )
-        primary_url, remote_info = _probe_remote_files(requests, urls)
+        primary_url, remote_info = _probe_remote_files(urls)
         ordered_urls = [primary_url] + [candidate for candidate in urls if candidate != primary_url]
         if not explicit_file_name and remote_info.content_disposition_filename:
             file_name = remote_info.content_disposition_filename
@@ -2051,13 +2023,11 @@ def download_file_from_url(
         if remote_info.total_size > 0:
             try:
                 _download_file_with_ranges(
-                    requests,
                     urls=ordered_urls,
                     temp_file=temp_file,
                     state_file=state_file,
                     remote_info=remote_info,
                     progress=bool(progress),
-                    tqdm_class=tqdm,
                     options=options,
                 )
             except _RangeDownloadNotSupported as e:
@@ -2066,12 +2036,10 @@ def download_file_from_url(
         else:
             _cleanup_resume_files(temp_file, state_file)
             expected_size = _download_file_single_stream(
-                requests,
                 urls=ordered_urls,
                 temp_file=temp_file,
                 file_name=file_name,
                 progress=bool(progress),
-                tqdm_class=tqdm,
                 max_tries=options.max_tries,
                 retry_wait=options.retry_wait,
             )
