@@ -32,10 +32,10 @@ from sd_webui_all_in_one.config import (
 )
 
 
-DEFAULT_SPLIT = 5
+DEFAULT_SPLIT = 32
 """aria2 风格的单文件最大分割数"""
 
-DEFAULT_MAX_CONNECTION_PER_SERVER = 1
+DEFAULT_MAX_CONNECTION_PER_SERVER = 16
 """aria2 风格的单服务器最大连接数"""
 
 DEFAULT_MIN_SPLIT_SIZE = 20 * 1024 * 1024
