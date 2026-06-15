@@ -134,7 +134,7 @@ sd-webui-all-in-one self-manager download-file <下载链接> [选项]
 - `--max-connection-per-server <数量>`：aria2 风格的单服务器最大连接数，默认 `1`；单 URL 默认不会并发多连接。
 - `--min-split-size <字节>`：aria2 风格的最小切分大小，默认 `20971520`。
 - `--piece-length <字节>`：aria2 风格的 piece 大小，默认 `1048576`。
-- `--continue`：启用断点续传。
+- `--continue`：没有匹配控制文件时，从已有文件继续下载；匹配的控制文件会自动恢复。
 - `--max-tries <次数>`：单个分片最大尝试次数，默认 `5`。
 
 ### 压缩包解压和压缩

@@ -96,7 +96,7 @@ def download_executer(
         piece_length (int):
             aria2 风格的 piece 大小
         continue_download (bool):
-            是否启用断点续传
+            没有匹配控制文件时, 是否从已有文件推断断点续传进度
         max_tries (int):
             requests 下载器单个分片的最大尝试次数
 
@@ -170,7 +170,7 @@ def download_file(
         piece_length (int):
             aria2 风格的 piece 大小
         continue_download (bool):
-            是否启用断点续传
+            没有匹配控制文件时, 是否从已有文件推断断点续传进度
         max_tries (int):
             requests 下载器单个分片的最大尝试次数
 

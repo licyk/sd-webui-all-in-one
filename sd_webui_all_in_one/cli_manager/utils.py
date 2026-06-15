@@ -203,7 +203,7 @@ def download_file_cli(
         piece_length (int):
             aria2 风格的 piece 大小
         continue_download (bool):
-            是否启用断点续传
+            没有匹配控制文件时, 是否从已有文件推断断点续传进度
         max_tries (int):
             单个分片的最大尝试次数
     """
@@ -545,7 +545,7 @@ def register_manager(
     download_file_p.add_argument("--max-connection-per-server", type=int, default=DEFAULT_MAX_CONNECTION_PER_SERVER, help="aria2 风格的单服务器最大连接数")
     download_file_p.add_argument("--min-split-size", type=int, default=DEFAULT_MIN_SPLIT_SIZE, help="aria2 风格的最小切分大小, 单位为字节")
     download_file_p.add_argument("--piece-length", type=int, default=DEFAULT_PIECE_LENGTH, help="aria2 风格的 piece 大小, 单位为字节")
-    download_file_p.add_argument("--continue", action="store_true", dest="continue_download", default=False, help="启用断点续传")
+    download_file_p.add_argument("--continue", action="store_true", dest="continue_download", default=False, help="没有匹配控制文件时从已有文件继续下载")
     download_file_p.add_argument("--max-tries", type=int, default=5, help="单个分片最大尝试次数")
     download_file_p.set_defaults(
         func=lambda args: download_file_cli(

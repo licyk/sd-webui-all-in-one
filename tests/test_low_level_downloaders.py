@@ -92,31 +92,41 @@ def _request_state(
     url,
     total_size,
     completed,
+    in_flight_lengths=None,
     etag=None,
     last_modified=None,
-    split=2,
-    max_connection_per_server=1,
-    min_split_size=4,
     piece_length=4,
 ):
-    options = requests_downloader._normalize_options(
-        split=split,
-        max_connection_per_server=max_connection_per_server,
-        min_split_size=min_split_size,
-        piece_length=piece_length,
-        max_tries=5,
-        continue_download=True,
-    )
-    return {
+    if in_flight_lengths is None:
+        in_flight_lengths = [0] * len(completed)
+    in_flight_pieces = []
+    for index, completed_length in enumerate(in_flight_lengths):
+        if completed_length <= 0:
+            continue
+        piece_size = min((index + 1) * piece_length, total_size) - index * piece_length
+        in_flight_pieces.append(
+            {
+                "index": index,
+                "length": piece_size,
+                "completed_length": completed_length,
+                "bitfield": requests_downloader._in_flight_bitfield_to_hex(
+                    piece_size=piece_size,
+                    completed_length=completed_length,
+                ),
+            }
+        )
+    state = {
         "version": requests_downloader.STATE_VERSION,
         "url": url,
         "total_size": total_size,
         "etag": etag,
         "last_modified": last_modified,
+        "piece_length": piece_length,
         "piece_count": len(completed),
         "completed_bitfield": requests_downloader._bitfield_to_hex(completed),
-        "options": requests_downloader._options_to_state(options),
+        "in_flight_pieces": in_flight_pieces,
     }
+    return state
 
 
 def test_requests_downloader_cache_redownload_and_hash(monkeypatch, tmp_path):
@@ -254,7 +264,7 @@ def test_requests_downloader_default_min_split_size_avoids_small_file_oversplitt
     assert range_calls == [None]
 
 
-def test_requests_downloader_resumes_completed_pieces_from_json_v2(monkeypatch, tmp_path):
+def test_requests_downloader_resumes_completed_pieces_from_state(monkeypatch, tmp_path):
     payload = b"abcdefghijkl"
     temp_file = tmp_path / "model.bin.tmp"
     state_file = tmp_path / "model.bin.tmp.state.json"
@@ -307,37 +317,26 @@ def test_requests_downloader_resumes_completed_pieces_from_json_v2(monkeypatch, 
     assert result.read_bytes() == payload
 
 
-def test_requests_downloader_discards_v1_resume_state(monkeypatch, tmp_path):
-    payload = b"abcdefghijklmnop"
+def test_requests_downloader_loads_matching_partial_state_without_continue_flag(monkeypatch, tmp_path):
+    payload = b"abcdefghijkl"
     temp_file = tmp_path / "model.bin.tmp"
     state_file = tmp_path / "model.bin.tmp.state.json"
-    temp_file.write_bytes(payload)
+    temp_file.write_bytes(payload[:6] + b"\0" * 6)
     state_file.write_text(
         json.dumps(
-            {
-                "version": 1,
-                "url": "https://example.test/model.bin",
-                "total_size": len(payload),
-                "etag": "v1",
-                "last_modified": "Wed, 27 May 2026 00:00:00 GMT",
-                "range_plan": {"mode": "fixed", "chunk_size": 4, "num_threads": 4},
-                "completed_ranges": [[0, len(payload) - 1]],
-            }
+            _request_state(
+                url="https://example.test/model.bin",
+                total_size=len(payload),
+                completed=[True, False, False],
+                in_flight_lengths=[0, 2, 0],
+            )
         ),
         encoding="utf-8",
     )
     range_calls = []
 
     def fake_head(url, allow_redirects=True, timeout=60, headers=None):
-        return FakeRangeResponse(
-            status_code=200,
-            headers={
-                "Content-Length": str(len(payload)),
-                "Accept-Ranges": "bytes",
-                "ETag": "v1",
-                "Last-Modified": "Wed, 27 May 2026 00:00:00 GMT",
-            },
-        )
+        return FakeRangeResponse(status_code=200, headers={"Content-Length": str(len(payload)), "Accept-Ranges": "bytes"})
 
     def fake_get(url, stream=True, timeout=60, headers=None):
         range_header, response = _range_response(payload, headers)
@@ -351,100 +350,24 @@ def test_requests_downloader_discards_v1_resume_state(monkeypatch, tmp_path):
         "https://example.test/model.bin",
         save_path=tmp_path,
         progress=False,
-        split=4,
+        split=2,
         max_connection_per_server=1,
         min_split_size=4,
         piece_length=4,
-        continue_download=True,
     )
 
+    assert range_calls == ["bytes=6-"]
     assert result.read_bytes() == payload
-    assert range_calls == [None]
 
 
-def test_requests_downloader_discards_resume_state_when_options_change(monkeypatch, tmp_path):
-    payload = b"abcdefghijklmnop"
+def test_requests_downloader_continues_partial_temp_file_without_state(monkeypatch, tmp_path):
+    payload = b"abcdefghijkl"
     temp_file = tmp_path / "model.bin.tmp"
-    state_file = tmp_path / "model.bin.tmp.state.json"
-    temp_file.write_bytes(payload)
-    state_file.write_text(
-        json.dumps(
-            _request_state(
-                url="https://example.test/model.bin",
-                total_size=len(payload),
-                etag="v1",
-                last_modified="Wed, 27 May 2026 00:00:00 GMT",
-                completed=[True, True, True, True],
-                min_split_size=8,
-            )
-        ),
-        encoding="utf-8",
-    )
+    temp_file.write_bytes(payload[:6])
     range_calls = []
 
     def fake_head(url, allow_redirects=True, timeout=60, headers=None):
-        return FakeRangeResponse(
-            status_code=200,
-            headers={
-                "Content-Length": str(len(payload)),
-                "Accept-Ranges": "bytes",
-                "ETag": "v1",
-                "Last-Modified": "Wed, 27 May 2026 00:00:00 GMT",
-            },
-        )
-
-    def fake_get(url, stream=True, timeout=60, headers=None):
-        range_header, response = _range_response(payload, headers)
-        range_calls.append(range_header)
-        return response
-
-    monkeypatch.setitem(sys.modules, "requests", types.SimpleNamespace(head=fake_head, get=fake_get))
-    monkeypatch.setitem(sys.modules, "tqdm", types.SimpleNamespace(tqdm=FakeTqdm))
-
-    result = requests_downloader.download_file_from_url(
-        "https://example.test/model.bin",
-        save_path=tmp_path,
-        progress=False,
-        split=4,
-        max_connection_per_server=1,
-        min_split_size=4,
-        piece_length=4,
-        continue_download=True,
-    )
-
-    assert result.read_bytes() == payload
-    assert range_calls == [None]
-
-
-def test_requests_downloader_discards_resume_state_when_remote_changes(monkeypatch, tmp_path):
-    payload = b"new-content!"
-    temp_file = tmp_path / "model.bin.tmp"
-    state_file = tmp_path / "model.bin.tmp.state.json"
-    temp_file.write_bytes(b"old-content!")
-    state_file.write_text(
-        json.dumps(
-            _request_state(
-                url="https://example.test/model.bin",
-                total_size=len(payload),
-                etag="old",
-                last_modified="old-date",
-                completed=[True, True, False],
-            )
-        ),
-        encoding="utf-8",
-    )
-    range_calls = []
-
-    def fake_head(url, allow_redirects=True, timeout=60, headers=None):
-        return FakeRangeResponse(
-            status_code=200,
-            headers={
-                "Content-Length": str(len(payload)),
-                "Accept-Ranges": "bytes",
-                "ETag": "new",
-                "Last-Modified": "new-date",
-            },
-        )
+        return FakeRangeResponse(status_code=200, headers={"Content-Length": str(len(payload)), "Accept-Ranges": "bytes"})
 
     def fake_get(url, stream=True, timeout=60, headers=None):
         range_header, response = _range_response(payload, headers)
@@ -465,8 +388,244 @@ def test_requests_downloader_discards_resume_state_when_remote_changes(monkeypat
         continue_download=True,
     )
 
+    assert range_calls == ["bytes=6-"]
     assert result.read_bytes() == payload
-    assert range_calls == [None]
+
+
+def test_requests_downloader_rejects_unsupported_resume_state_version(monkeypatch, tmp_path):
+    payload = b"abcdefghijklmnop"
+    temp_file = tmp_path / "model.bin.tmp"
+    state_file = tmp_path / "model.bin.tmp.state.json"
+    temp_file.write_bytes(payload)
+    state_file.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "url": "https://example.test/model.bin",
+                "total_size": len(payload),
+                "etag": "v1",
+                "last_modified": "Wed, 27 May 2026 00:00:00 GMT",
+                "range_plan": {"mode": "fixed", "chunk_size": 4, "num_threads": 4},
+                "completed_ranges": [[0, len(payload) - 1]],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_head(url, allow_redirects=True, timeout=60, headers=None):
+        return FakeRangeResponse(
+            status_code=200,
+            headers={
+                "Content-Length": str(len(payload)),
+                "Accept-Ranges": "bytes",
+                "ETag": "v1",
+                "Last-Modified": "Wed, 27 May 2026 00:00:00 GMT",
+            },
+        )
+
+    monkeypatch.setitem(sys.modules, "requests", types.SimpleNamespace(head=fake_head))
+    monkeypatch.setitem(sys.modules, "tqdm", types.SimpleNamespace(tqdm=FakeTqdm))
+
+    with pytest.raises(RuntimeError, match="状态版本不匹配"):
+        requests_downloader.download_file_from_url(
+            "https://example.test/model.bin",
+            save_path=tmp_path,
+            progress=False,
+            split=4,
+            max_connection_per_server=1,
+            min_split_size=4,
+            piece_length=4,
+            continue_download=True,
+        )
+
+
+def test_requests_downloader_rejects_malformed_resume_state(monkeypatch, tmp_path):
+    payload = b"abcdefghijkl"
+    temp_file = tmp_path / "model.bin.tmp"
+    state_file = tmp_path / "model.bin.tmp.state.json"
+    temp_file.write_bytes(payload)
+    state_file.write_text("{", encoding="utf-8")
+
+    def fake_head(url, allow_redirects=True, timeout=60, headers=None):
+        return FakeRangeResponse(status_code=200, headers={"Content-Length": str(len(payload)), "Accept-Ranges": "bytes"})
+
+    monkeypatch.setitem(sys.modules, "requests", types.SimpleNamespace(head=fake_head))
+    monkeypatch.setitem(sys.modules, "tqdm", types.SimpleNamespace(tqdm=FakeTqdm))
+
+    with pytest.raises(RuntimeError, match="有效 JSON"):
+        requests_downloader.download_file_from_url(
+            "https://example.test/model.bin",
+            save_path=tmp_path,
+            progress=False,
+            split=2,
+            max_connection_per_server=1,
+            min_split_size=4,
+            piece_length=4,
+        )
+
+
+def test_requests_downloader_resumes_state_when_scheduling_options_change(monkeypatch, tmp_path):
+    payload = b"abcdefghijklmnop"
+    temp_file = tmp_path / "model.bin.tmp"
+    state_file = tmp_path / "model.bin.tmp.state.json"
+    temp_file.write_bytes(payload[:4] + b"\0" * 12)
+    state_file.write_text(
+        json.dumps(
+            _request_state(
+                url="https://example.test/model.bin",
+                total_size=len(payload),
+                etag="v1",
+                last_modified="Wed, 27 May 2026 00:00:00 GMT",
+                completed=[True, False, False, False],
+            )
+        ),
+        encoding="utf-8",
+    )
+    range_calls = []
+
+    def fake_head(url, allow_redirects=True, timeout=60, headers=None):
+        return FakeRangeResponse(
+            status_code=200,
+            headers={
+                "Content-Length": str(len(payload)),
+                "Accept-Ranges": "bytes",
+                "ETag": "v1",
+                "Last-Modified": "Wed, 27 May 2026 00:00:00 GMT",
+            },
+        )
+
+    def fake_get(url, stream=True, timeout=60, headers=None):
+        range_header, response = _range_response(payload, headers)
+        range_calls.append(range_header)
+        return response
+
+    monkeypatch.setitem(sys.modules, "requests", types.SimpleNamespace(head=fake_head, get=fake_get))
+    monkeypatch.setitem(sys.modules, "tqdm", types.SimpleNamespace(tqdm=FakeTqdm))
+
+    result = requests_downloader.download_file_from_url(
+        "https://example.test/model.bin",
+        save_path=tmp_path,
+        progress=False,
+        split=8,
+        max_connection_per_server=4,
+        min_split_size=8,
+        piece_length=4,
+        continue_download=True,
+    )
+
+    assert result.read_bytes() == payload
+    assert "bytes=4-" in range_calls
+
+
+def test_requests_downloader_rejects_piece_length_change_with_progress(monkeypatch, tmp_path):
+    payload = b"abcdefghijklmnop"
+    temp_file = tmp_path / "model.bin.tmp"
+    state_file = tmp_path / "model.bin.tmp.state.json"
+    temp_file.write_bytes(payload[:4] + b"\0" * 12)
+    state_file.write_text(
+        json.dumps(
+            _request_state(
+                url="https://example.test/model.bin",
+                total_size=len(payload),
+                completed=[True, False, False, False],
+                piece_length=4,
+            )
+        ),
+        encoding="utf-8",
+    )
+
+    def fake_head(url, allow_redirects=True, timeout=60, headers=None):
+        return FakeRangeResponse(status_code=200, headers={"Content-Length": str(len(payload)), "Accept-Ranges": "bytes"})
+
+    monkeypatch.setitem(sys.modules, "requests", types.SimpleNamespace(head=fake_head))
+    monkeypatch.setitem(sys.modules, "tqdm", types.SimpleNamespace(tqdm=FakeTqdm))
+
+    with pytest.raises(RuntimeError, match="piece_length"):
+        requests_downloader.download_file_from_url(
+            "https://example.test/model.bin",
+            save_path=tmp_path,
+            progress=False,
+            split=2,
+            max_connection_per_server=1,
+            min_split_size=4,
+            piece_length=8,
+        )
+
+
+def test_requests_downloader_rejects_resume_state_when_remote_changes(monkeypatch, tmp_path):
+    payload = b"new-content!"
+    temp_file = tmp_path / "model.bin.tmp"
+    state_file = tmp_path / "model.bin.tmp.state.json"
+    temp_file.write_bytes(b"old-content!")
+    state_file.write_text(
+        json.dumps(
+            _request_state(
+                url="https://example.test/model.bin",
+                total_size=len(payload),
+                etag="old",
+                last_modified="old-date",
+                completed=[True, True, False],
+            )
+        ),
+        encoding="utf-8",
+    )
+    def fake_head(url, allow_redirects=True, timeout=60, headers=None):
+        return FakeRangeResponse(
+            status_code=200,
+            headers={
+                "Content-Length": str(len(payload)),
+                "Accept-Ranges": "bytes",
+                "ETag": "new",
+                "Last-Modified": "new-date",
+            },
+        )
+
+    monkeypatch.setitem(sys.modules, "requests", types.SimpleNamespace(head=fake_head))
+    monkeypatch.setitem(sys.modules, "tqdm", types.SimpleNamespace(tqdm=FakeTqdm))
+
+    with pytest.raises(RuntimeError, match="ETag"):
+        requests_downloader.download_file_from_url(
+            "https://example.test/model.bin",
+            save_path=tmp_path,
+            progress=False,
+            split=2,
+            max_connection_per_server=1,
+            min_split_size=4,
+            piece_length=4,
+            continue_download=True,
+        )
+
+
+def test_requests_downloader_rejects_malformed_in_flight_piece(monkeypatch, tmp_path):
+    payload = b"abcdefghijkl"
+    temp_file = tmp_path / "model.bin.tmp"
+    state_file = tmp_path / "model.bin.tmp.state.json"
+    temp_file.write_bytes(payload[:6] + b"\0" * 6)
+    state = _request_state(
+        url="https://example.test/model.bin",
+        total_size=len(payload),
+        completed=[True, False, False],
+        in_flight_lengths=[0, 2, 0],
+    )
+    state["in_flight_pieces"][0]["bitfield"] = "ff"
+    state_file.write_text(json.dumps(state), encoding="utf-8")
+
+    def fake_head(url, allow_redirects=True, timeout=60, headers=None):
+        return FakeRangeResponse(status_code=200, headers={"Content-Length": str(len(payload)), "Accept-Ranges": "bytes"})
+
+    monkeypatch.setitem(sys.modules, "requests", types.SimpleNamespace(head=fake_head))
+    monkeypatch.setitem(sys.modules, "tqdm", types.SimpleNamespace(tqdm=FakeTqdm))
+
+    with pytest.raises(RuntimeError, match="bitfield"):
+        requests_downloader.download_file_from_url(
+            "https://example.test/model.bin",
+            save_path=tmp_path,
+            progress=False,
+            split=2,
+            max_connection_per_server=1,
+            min_split_size=4,
+            piece_length=4,
+        )
 
 
 def test_requests_downloader_falls_back_when_range_unsupported(monkeypatch, tmp_path):
@@ -499,7 +658,7 @@ def test_requests_downloader_falls_back_when_range_unsupported(monkeypatch, tmp_
     assert calls == ["bytes=0-0", None]
 
 
-def test_requests_downloader_falls_back_when_content_range_is_invalid(monkeypatch, tmp_path):
+def test_requests_downloader_preserves_state_when_content_range_is_invalid(monkeypatch, tmp_path):
     payload = b"abcdefghijklmnop"
     calls = []
     range_failed = False
@@ -518,17 +677,62 @@ def test_requests_downloader_falls_back_when_content_range_is_invalid(monkeypatc
     monkeypatch.setitem(sys.modules, "requests", types.SimpleNamespace(head=fake_head, get=fake_get))
     monkeypatch.setitem(sys.modules, "tqdm", types.SimpleNamespace(tqdm=FakeTqdm))
 
-    result = requests_downloader.download_file_from_url(
-        "https://example.test/model.bin",
-        save_path=tmp_path,
-        progress=False,
-        split=1,
-        min_split_size=4,
-        piece_length=4,
-    )
+    with pytest.raises(IOError, match="HTTP Range"):
+        requests_downloader.download_file_from_url(
+            "https://example.test/model.bin",
+            save_path=tmp_path,
+            progress=False,
+            split=1,
+            min_split_size=4,
+            piece_length=4,
+        )
 
-    assert result.read_bytes() == payload
-    assert calls == [None, None]
+    assert calls == [None]
+    assert (tmp_path / "model.bin.tmp").exists()
+    assert (tmp_path / "model.bin.tmp.state.json").exists()
+
+
+def test_requests_downloader_preserves_state_when_resume_range_is_ignored(monkeypatch, tmp_path):
+    payload = b"abcdefghijkl"
+    temp_file = tmp_path / "model.bin.tmp"
+    state_file = tmp_path / "model.bin.tmp.state.json"
+    temp_file.write_bytes(payload[:4] + b"\0" * 8)
+    state_file.write_text(
+        json.dumps(
+            _request_state(
+                url="https://example.test/model.bin",
+                total_size=len(payload),
+                completed=[True, False, False],
+            )
+        ),
+        encoding="utf-8",
+    )
+    calls = []
+
+    def fake_head(url, allow_redirects=True, timeout=60, headers=None):
+        return FakeRangeResponse(status_code=200, headers={"Content-Length": str(len(payload)), "Accept-Ranges": "bytes"})
+
+    def fake_get(url, stream=True, timeout=60, headers=None):
+        calls.append(headers.get("Range") if headers else None)
+        return FakeRangeResponse(payload, status_code=200, headers={"Content-Length": str(len(payload))})
+
+    monkeypatch.setitem(sys.modules, "requests", types.SimpleNamespace(head=fake_head, get=fake_get))
+    monkeypatch.setitem(sys.modules, "tqdm", types.SimpleNamespace(tqdm=FakeTqdm))
+
+    with pytest.raises(IOError, match="HTTP Range"):
+        requests_downloader.download_file_from_url(
+            "https://example.test/model.bin",
+            save_path=tmp_path,
+            progress=False,
+            split=2,
+            max_connection_per_server=1,
+            min_split_size=4,
+            piece_length=4,
+        )
+
+    assert calls == ["bytes=4-"]
+    assert temp_file.exists()
+    assert state_file.exists()
 
 
 def test_requests_downloader_retries_failed_ranges(monkeypatch, tmp_path):
@@ -577,6 +781,40 @@ def test_requests_downloader_retries_failed_ranges(monkeypatch, tmp_path):
 
     assert result.read_bytes() == payload
     assert attempts["bytes=4-"] == 2
+
+
+def test_requests_downloader_retries_from_partial_piece_offset(monkeypatch, tmp_path):
+    payload = b"abcdefghijkl"
+    calls = []
+
+    def fake_head(url, allow_redirects=True, timeout=60, headers=None):
+        return FakeRangeResponse(status_code=200, headers={"Content-Length": str(len(payload)), "Accept-Ranges": "bytes"})
+
+    def fake_get(url, stream=True, timeout=60, headers=None):
+        range_header = headers.get("Range") if headers else None
+        calls.append(range_header)
+        if len(calls) == 1:
+            return FakeRangeResponse(payload[:6], status_code=200, headers={"Content-Length": str(len(payload))})
+        _, response = _range_response(payload, headers)
+        return response
+
+    monkeypatch.setattr(requests_downloader.time, "sleep", lambda _seconds: None)
+    monkeypatch.setitem(sys.modules, "requests", types.SimpleNamespace(head=fake_head, get=fake_get))
+    monkeypatch.setitem(sys.modules, "tqdm", types.SimpleNamespace(tqdm=FakeTqdm))
+
+    result = requests_downloader.download_file_from_url(
+        "https://example.test/model.bin",
+        save_path=tmp_path,
+        progress=False,
+        split=1,
+        max_connection_per_server=1,
+        min_split_size=4,
+        piece_length=4,
+        max_tries=2,
+    )
+
+    assert calls == [None, "bytes=6-"]
+    assert result.read_bytes() == payload
 
 
 def test_requests_downloader_uses_and_closes_thread_sessions(monkeypatch, tmp_path):

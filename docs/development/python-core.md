@@ -56,6 +56,6 @@ Python 包入口定义在 `pyproject.toml`：
 - 日志使用 `sd_webui_all_in_one.logger.get_logger()`，不要随意混用临时 logger。
 - 外部命令执行优先走 `sd_webui_all_in_one.cmd.run_cmd()`，方便统一日志、错误和命令预处理。
 - 文件下载优先走 `downloader.download_file()` 或 `download_archive_and_unpack()`，避免每个模块自己实现下载。
-- 下载后端中 `aria2` 仍是功能最完整的首选；`requests` 使用 aria2-like 的 `split`、`max_connection_per_server`、`min_split_size`、`piece_length` 模型支持 HTTP Range 分片下载、断点续传和分片级重试；`urllib` 作为无第三方依赖时的单连接兼容 fallback。
+- 下载后端中 `aria2` 仍是功能最完整的首选；`requests` 使用 aria2-like 的 `split`、`max_connection_per_server`、`min_split_size`、`piece_length` 模型支持 HTTP Range 分片下载、控制文件优先恢复、断点续传和分片级重试；`urllib` 作为无第三方依赖时的单连接兼容 fallback。
 - 镜像配置优先使用 `mirror_manager`、`env_manager`、`pytorch_manager` 中的公共函数。
 - 能独立测试的解析、版本比较、依赖判断和路径处理逻辑，应优先补到 `tests/`。

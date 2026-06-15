@@ -39,8 +39,11 @@ STREAM_CHUNK_SIZE = 1024 * 1024
 STATE_SAVE_COMPLETED_PIECE_INTERVAL = 8
 """断点续传状态写入间隔"""
 
-STATE_VERSION = 2
+STATE_VERSION = 4
 """HTTP Range 断点续传状态版本"""
+
+IN_FLIGHT_BLOCK_LENGTH = 16 * 1024
+"""aria2 Piece 默认 block 大小"""
 
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 """分片下载时可重试的 HTTP 状态码"""
@@ -57,6 +60,18 @@ _CONTENT_RANGE_RE = re.compile(r"(?:bytes\s+|bytes=)?(\d+)-(\d+)/(\d+|\*)", flag
 
 class _RangeDownloadNotSupported(RuntimeError):
     """远端不支持可靠的 HTTP Range 下载"""
+
+
+class _ResumeStateError(RuntimeError):
+    """断点续传状态文件不可恢复"""
+
+
+class _PieceLengthChangedError(_ResumeStateError):
+    """控制文件中的 piece length 与当前配置不同"""
+
+
+class _RangeRequestIgnored(_RangeDownloadNotSupported):
+    """远端忽略了非零起点的 Range 请求"""
 
 
 class _RangeDownloadTemporaryError(RuntimeError):
@@ -114,6 +129,7 @@ class _Segment:
     end_piece: int
     start: int
     end: int
+    piece_start: int
 
     @property
     def piece_count(self) -> int:
@@ -274,44 +290,52 @@ def _cleanup_resume_files(
 
 def _load_resume_state(
     state_file: Path,
-) -> dict[str, object] | None:
-    try:
-        return json.loads(state_file.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-
-
-def _options_to_state(
-    options: _DownloadOptions,
 ) -> dict[str, object]:
-    return {
-        "split": options.split,
-        "max_connection_per_server": options.max_connection_per_server,
-        "min_split_size": options.min_split_size,
-        "piece_length": options.piece_length,
-    }
+    try:
+        state = json.loads(state_file.read_text(encoding="utf-8"))
+    except OSError as e:
+        raise _ResumeStateError(f"无法读取断点续传状态文件: {state_file}") from e
+    except json.JSONDecodeError as e:
+        raise _ResumeStateError(f"断点续传状态文件不是有效 JSON: {state_file}") from e
+    if not isinstance(state, dict):
+        raise _ResumeStateError("断点续传状态文件根节点必须是对象")
+    return state
 
 
-def _state_matches_remote(
-    state: dict[str, object] | None,
+def _require_state_int(
+    state: dict[str, object],
+    key: str,
+) -> int:
+    value = state.get(key)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise _ResumeStateError(f"断点续传状态字段 {key!r} 必须是整数")
+    return value
+
+
+def _require_state_optional_str(
+    state: dict[str, object],
+    key: str,
+) -> str | None:
+    value = state.get(key)
+    if value is not None and not isinstance(value, str):
+        raise _ResumeStateError(f"断点续传状态字段 {key!r} 必须是字符串或 null")
+    return value
+
+
+def _piece_count_for(
+    total_size: int,
+    piece_length: int,
+) -> int:
+    return max(1, math.ceil(total_size / piece_length))
+
+
+def _piece_size_for(
     *,
-    url: str,
-    remote_info: _RemoteFileInfo,
-    options: _DownloadOptions,
-    piece_count: int,
-) -> bool:
-    if not state:
-        return False
-
-    return (
-        state.get("version") == STATE_VERSION
-        and state.get("url") == url
-        and state.get("total_size") == remote_info.total_size
-        and state.get("etag") == remote_info.etag
-        and state.get("last_modified") == remote_info.last_modified
-        and state.get("piece_count") == piece_count
-        and state.get("options") == _options_to_state(options)
-    )
+    total_size: int,
+    piece_length: int,
+    index: int,
+) -> int:
+    return min((index + 1) * piece_length, total_size) - index * piece_length
 
 
 def _bitfield_to_hex(
@@ -329,21 +353,157 @@ def _bitfield_from_hex(
     piece_count: int,
 ) -> list[bool]:
     if not isinstance(bitfield, str):
-        return [False] * piece_count
+        raise _ResumeStateError("断点续传状态字段 'completed_bitfield' 必须是十六进制字符串")
 
     try:
         data = bytes.fromhex(bitfield)
     except ValueError:
-        return [False] * piece_count
+        raise _ResumeStateError("断点续传状态字段 'completed_bitfield' 不是有效十六进制")
 
     expected_bytes = math.ceil(piece_count / 8)
     if len(data) != expected_bytes:
-        return [False] * piece_count
+        raise _ResumeStateError(
+            f"断点续传状态 bitfield 长度不匹配: 期望 {expected_bytes} 字节, 实际 {len(data)} 字节"
+        )
 
     completed: list[bool] = []
     for index in range(piece_count):
         completed.append(bool(data[index // 8] & (1 << (7 - index % 8))))
+    for index in range(piece_count, len(data) * 8):
+        if data[index // 8] & (1 << (7 - index % 8)):
+            raise _ResumeStateError("断点续传状态 bitfield padding 位必须为 0")
     return completed
+
+
+def _in_flight_bitfield_to_hex(
+    *,
+    piece_size: int,
+    completed_length: int,
+) -> str:
+    block_count = max(1, math.ceil(piece_size / IN_FLIGHT_BLOCK_LENGTH))
+    data = bytearray(math.ceil(block_count / 8))
+    completed_blocks = min(block_count, completed_length // IN_FLIGHT_BLOCK_LENGTH)
+    if completed_length == piece_size:
+        completed_blocks = block_count
+    for index in range(completed_blocks):
+        data[index // 8] |= 1 << (7 - index % 8)
+    return data.hex()
+
+
+def _validate_in_flight_bitfield(
+    *,
+    bitfield: object,
+    piece_size: int,
+    completed_length: int,
+) -> None:
+    if not isinstance(bitfield, str):
+        raise _ResumeStateError("in-flight piece bitfield 必须是十六进制字符串")
+    try:
+        data = bytes.fromhex(bitfield)
+    except ValueError:
+        raise _ResumeStateError("in-flight piece bitfield 不是有效十六进制")
+    block_count = max(1, math.ceil(piece_size / IN_FLIGHT_BLOCK_LENGTH))
+    expected_bytes = math.ceil(block_count / 8)
+    if len(data) != expected_bytes:
+        raise _ResumeStateError(
+            f"in-flight piece bitfield 长度不匹配: 期望 {expected_bytes} 字节, 实际 {len(data)} 字节"
+        )
+    expected = _in_flight_bitfield_to_hex(piece_size=piece_size, completed_length=completed_length)
+    if bitfield.lower() != expected:
+        raise _ResumeStateError("in-flight piece bitfield 与 completed_length 不匹配")
+
+
+def _in_flight_lengths_from_state(
+    in_flight_pieces: object,
+    *,
+    piece_count: int,
+    piece_length: int,
+    total_size: int,
+    completed: list[bool],
+) -> list[int]:
+    if in_flight_pieces is None:
+        return [0] * piece_count
+    if not isinstance(in_flight_pieces, list):
+        raise _ResumeStateError("断点续传状态字段 'in_flight_pieces' 必须是数组")
+
+    lengths = [0] * piece_count
+    for item in in_flight_pieces:
+        if not isinstance(item, dict):
+            raise _ResumeStateError("in-flight piece 必须是对象")
+        index = item.get("index")
+        length = item.get("length")
+        completed_length = item.get("completed_length")
+        if isinstance(index, bool) or not isinstance(index, int):
+            raise _ResumeStateError("in-flight piece index 必须是整数")
+        if isinstance(length, bool) or not isinstance(length, int):
+            raise _ResumeStateError("in-flight piece length 必须是整数")
+        if isinstance(completed_length, bool) or not isinstance(completed_length, int):
+            raise _ResumeStateError("in-flight piece completed_length 必须是整数")
+        if index < 0 or index >= piece_count:
+            raise _ResumeStateError(f"in-flight piece index 越界: {index}")
+        if completed[index]:
+            raise _ResumeStateError(f"in-flight piece {index} 已在 completed bitfield 中标记完成")
+        piece_size = _piece_size_for(total_size=total_size, piece_length=piece_length, index=index)
+        if length != piece_size:
+            raise _ResumeStateError(f"in-flight piece {index} length 不匹配: 期望 {piece_size}, 实际 {length}")
+        if not 0 < completed_length < piece_size:
+            raise _ResumeStateError(f"in-flight piece {index} completed_length 越界: {completed_length}")
+        if lengths[index] != 0:
+            raise _ResumeStateError(f"in-flight piece {index} 重复")
+        _validate_in_flight_bitfield(
+            bitfield=item.get("bitfield"),
+            piece_size=piece_size,
+            completed_length=completed_length,
+        )
+        lengths[index] = completed_length
+    return lengths
+
+
+def _parse_resume_state(
+    state: dict[str, object],
+    *,
+    url: str,
+    remote_info: _RemoteFileInfo,
+    piece_length: int,
+) -> tuple[list[bool], list[int]] | None:
+    version = _require_state_int(state, "version")
+    if version != STATE_VERSION:
+        raise _ResumeStateError(f"断点续传状态版本不匹配: 期望 {STATE_VERSION}, 实际 {version}")
+    if state.get("url") != url:
+        raise _ResumeStateError("断点续传状态 URL 与当前下载不匹配")
+    total_size = _require_state_int(state, "total_size")
+    if total_size != remote_info.total_size:
+        raise _ResumeStateError(f"断点续传状态文件大小不匹配: 期望 {remote_info.total_size}, 实际 {total_size}")
+    if _require_state_optional_str(state, "etag") != remote_info.etag:
+        raise _ResumeStateError("断点续传状态 ETag 与当前下载不匹配")
+    if _require_state_optional_str(state, "last_modified") != remote_info.last_modified:
+        raise _ResumeStateError("断点续传状态 Last-Modified 与当前下载不匹配")
+
+    saved_piece_length = _require_state_int(state, "piece_length")
+    if saved_piece_length <= 0:
+        raise _ResumeStateError("断点续传状态 piece_length 必须大于 0")
+    saved_piece_count = _require_state_int(state, "piece_count")
+    expected_saved_piece_count = _piece_count_for(remote_info.total_size, saved_piece_length)
+    if saved_piece_count != expected_saved_piece_count:
+        raise _ResumeStateError(
+            f"断点续传状态 piece_count 不匹配: 期望 {expected_saved_piece_count}, 实际 {saved_piece_count}"
+        )
+
+    completed = _bitfield_from_hex(state.get("completed_bitfield"), saved_piece_count)
+    in_flight_lengths = _in_flight_lengths_from_state(
+        state.get("in_flight_pieces"),
+        piece_count=saved_piece_count,
+        piece_length=saved_piece_length,
+        total_size=remote_info.total_size,
+        completed=completed,
+    )
+    if saved_piece_length != piece_length:
+        if any(completed) or any(in_flight_lengths):
+            raise _PieceLengthChangedError(
+                f"检测到 piece_length 变化: 状态文件 {saved_piece_length}, 当前配置 {piece_length}"
+            )
+        return None
+    return completed, in_flight_lengths
 
 
 def _save_resume_state(
@@ -355,15 +515,17 @@ def _save_resume_state(
     piece_storage: "_PieceStorage",
 ) -> None:
     completed = piece_storage.snapshot_completed()
+    in_flight_pieces = piece_storage.snapshot_in_flight_pieces()
     state = {
         "version": STATE_VERSION,
         "url": url,
         "total_size": remote_info.total_size,
         "etag": remote_info.etag,
         "last_modified": remote_info.last_modified,
+        "piece_length": options.piece_length,
         "piece_count": len(completed),
         "completed_bitfield": _bitfield_to_hex(completed),
-        "options": _options_to_state(options),
+        "in_flight_pieces": in_flight_pieces,
     }
     tmp_state_file = state_file.with_name(f"{state_file.name}.tmp")
     tmp_state_file.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -429,17 +591,50 @@ class _PieceStorage:
         total_size: int,
         piece_length: int,
         completed: list[bool] | None = None,
+        in_flight_lengths: list[int] | None = None,
     ) -> None:
         self.total_size = total_size
         self.piece_length = max(1, piece_length)
         self.piece_count = max(1, math.ceil(total_size / self.piece_length))
         self.lock = threading.Lock()
-        self.completed = completed if completed and len(completed) == self.piece_count else [False] * self.piece_count
+        raw_completed = completed if completed and len(completed) == self.piece_count else [False] * self.piece_count
+        raw_in_flight_lengths = in_flight_lengths if in_flight_lengths and len(in_flight_lengths) == self.piece_count else [0] * self.piece_count
+        self.completed: list[bool] = []
+        self.in_flight_lengths: list[int] = []
+        for index in range(self.piece_count):
+            piece_size = self._piece_size_unlocked(index)
+            is_complete = bool(raw_completed[index])
+            in_flight_length = 0 if is_complete else max(0, min(int(raw_in_flight_lengths[index]), piece_size))
+            if in_flight_length >= piece_size:
+                is_complete = True
+                in_flight_length = 0
+            self.completed.append(is_complete)
+            self.in_flight_lengths.append(0 if is_complete else in_flight_length)
         self.in_use = [False] * self.piece_count
 
     def snapshot_completed(self) -> list[bool]:
         with self.lock:
             return list(self.completed)
+
+    def snapshot_in_flight_pieces(self) -> list[dict[str, object]]:
+        with self.lock:
+            pieces: list[dict[str, object]] = []
+            for index, completed_length in enumerate(self.in_flight_lengths):
+                if completed_length <= 0 or self.completed[index]:
+                    continue
+                piece_size = self._piece_size_unlocked(index)
+                pieces.append(
+                    {
+                        "index": index,
+                        "length": piece_size,
+                        "completed_length": completed_length,
+                        "bitfield": _in_flight_bitfield_to_hex(
+                            piece_size=piece_size,
+                            completed_length=completed_length,
+                        ),
+                    }
+                )
+            return pieces
 
     def completed_piece_count(self) -> int:
         with self.lock:
@@ -447,7 +642,10 @@ class _PieceStorage:
 
     def completed_size(self) -> int:
         with self.lock:
-            return sum(self._piece_size_unlocked(index) for index, done in enumerate(self.completed) if done)
+            return sum(
+                self._piece_size_unlocked(index) if done else self.in_flight_lengths[index]
+                for index, done in enumerate(self.completed)
+            )
 
     def is_complete(self) -> bool:
         with self.lock:
@@ -482,9 +680,36 @@ class _PieceStorage:
             for index in range(segment.start_piece, segment.end_piece + 1):
                 if not self.completed[index]:
                     self.completed[index] = True
+                    self.in_flight_lengths[index] = 0
                     newly_completed += 1
                 self.in_use[index] = False
             return newly_completed
+
+    def record_progress(
+        self,
+        segment: _Segment,
+        next_offset: int,
+    ) -> None:
+        with self.lock:
+            index = segment.start_piece
+            if index < 0 or index >= self.piece_count or self.completed[index]:
+                return
+            piece_start = self._piece_start_unlocked(index)
+            piece_size = self._piece_size_unlocked(index)
+            in_flight_length = max(0, min(next_offset - piece_start, piece_size))
+            if in_flight_length > self.in_flight_lengths[index]:
+                self.in_flight_lengths[index] = in_flight_length
+
+    def refresh_segment(
+        self,
+        segment: _Segment,
+    ) -> _Segment | None:
+        with self.lock:
+            index = segment.start_piece
+            if index < 0 or index >= self.piece_count or self.completed[index]:
+                return None
+            self.in_use[index] = True
+            return self._segment_for_piece_unlocked(index)
 
     def release(
         self,
@@ -517,11 +742,20 @@ class _PieceStorage:
         index: int,
     ) -> _Segment:
         self.in_use[index] = True
+        return self._segment_for_piece_unlocked(index)
+
+    def _segment_for_piece_unlocked(
+        self,
+        index: int,
+    ) -> _Segment:
+        piece_start = self._piece_start_unlocked(index)
+        start = min(piece_start + self.in_flight_lengths[index], self._piece_end_unlocked(index))
         return _Segment(
             start_piece=index,
             end_piece=index,
-            start=self._piece_start_unlocked(index),
+            start=start,
             end=self._piece_end_unlocked(index),
+            piece_start=piece_start,
         )
 
     def _select_sparse_missing_unused_piece_unlocked(
@@ -605,6 +839,19 @@ class _SegmentManager:
     ) -> int:
         return self.piece_storage.mark_complete(segment)
 
+    def record_progress(
+        self,
+        segment: _Segment,
+        next_offset: int,
+    ) -> None:
+        self.piece_storage.record_progress(segment, next_offset)
+
+    def refresh_segment(
+        self,
+        segment: _Segment,
+    ) -> _Segment | None:
+        return self.piece_storage.refresh_segment(segment)
+
     def release(
         self,
         segment: _Segment,
@@ -636,7 +883,7 @@ def _validate_range_response(
     headers = getattr(response, "headers", {})
 
     if status_code == 200 and segment.start > 0:
-        raise _RangeDownloadNotSupported("远端忽略 Range 请求")
+        raise _RangeRequestIgnored("远端忽略 Range 请求")
     if status_code == 416:
         raise _RangeDownloadNotSupported("远端拒绝 Range 请求: HTTP 416")
     if status_code in RETRYABLE_STATUS_CODES:
@@ -658,6 +905,7 @@ def _validate_range_response(
         raise _RangeDownloadNotSupported(
             f"Range 响应不匹配: 期望 bytes {segment.start}-/{total_size}, 实际 {_get_header(headers, 'Content-Range')}"
         )
+
 
 def _stream_request_headers(
     segment: _Segment,
@@ -716,6 +964,7 @@ def _download_stream_once(
                     offset += writable_size
                     chunk_offset += writable_size
                     partial_reported_size += writable_size
+                    segment_manager.record_progress(current_segment, offset)
                     if progress_callback is not None:
                         progress_callback(writable_size)
 
@@ -728,12 +977,8 @@ def _download_stream_once(
         if current_segment is not None:
             raise IOError(f"分片大小不匹配: 期望 {current_segment.size}, 实际 {partial_reported_size}")
     except _RangeDownloadNotSupported:
-        if partial_reported_size and progress_callback is not None:
-            progress_callback(-partial_reported_size)
         raise
     except Exception as e:
-        if partial_reported_size and progress_callback is not None:
-            progress_callback(-partial_reported_size)
         raise _SegmentDownloadError(current_segment or segment, e) from e
     finally:
         _close_response(response)
@@ -770,7 +1015,10 @@ def _download_stream_with_retries(
         except _RangeDownloadNotSupported:
             raise
         except _SegmentDownloadError as e:
-            segment = e.segment
+            refreshed_segment = segment_manager.refresh_segment(e.segment)
+            if refreshed_segment is None:
+                return
+            segment = refreshed_segment
             last_error = e.error
             if attempt >= max_tries:
                 break
@@ -804,21 +1052,53 @@ def _download_file_with_ranges(
         raise _RangeDownloadNotSupported("远端未提供可分片下载的文件大小或 Range 支持")
 
     seed_storage = _PieceStorage(total_size=remote_info.total_size, piece_length=options.piece_length)
-    state = _load_resume_state(state_file) if options.continue_download else None
-    if (
-        options.continue_download
-        and temp_file.exists()
-        and temp_file.stat().st_size == remote_info.total_size
-        and _state_matches_remote(state, url=url, remote_info=remote_info, options=options, piece_count=seed_storage.piece_count)
-    ):
-        completed = _bitfield_from_hex(state.get("completed_bitfield") if state else None, seed_storage.piece_count)
-        piece_storage = _PieceStorage(total_size=remote_info.total_size, piece_length=options.piece_length, completed=completed)
-    elif options.continue_download and temp_file.exists() and 0 < temp_file.stat().st_size < remote_info.total_size:
-        completed_piece_count = temp_file.stat().st_size // options.piece_length
+    state_exists = state_file.exists()
+    temp_exists = temp_file.exists()
+    temp_size = temp_file.stat().st_size if temp_exists else 0
+    if state_exists and not temp_exists:
+        state_file.unlink(missing_ok=True)
+        state_exists = False
+    state = _load_resume_state(state_file) if state_exists else None
+
+    if state_exists and temp_exists:
+        if temp_size != remote_info.total_size:
+            raise _ResumeStateError(
+                f"临时文件大小与断点续传状态不匹配: 期望 {remote_info.total_size}, 实际 {temp_size}"
+            )
+        parsed_state = _parse_resume_state(
+            state or {},
+            url=url,
+            remote_info=remote_info,
+            piece_length=options.piece_length,
+        )
+        if parsed_state is None:
+            _cleanup_resume_files(temp_file, state_file)
+            with temp_file.open("wb") as file:
+                file.truncate(remote_info.total_size)
+            piece_storage = seed_storage
+        else:
+            completed, in_flight_lengths = parsed_state
+            piece_storage = _PieceStorage(
+                total_size=remote_info.total_size,
+                piece_length=options.piece_length,
+                completed=completed,
+                in_flight_lengths=in_flight_lengths,
+            )
+    elif options.continue_download and not state_exists and temp_exists and 0 < temp_size <= remote_info.total_size:
+        completed_piece_count = temp_size // options.piece_length
+        partial_piece_length = temp_size % options.piece_length
         completed = [index < completed_piece_count for index in range(seed_storage.piece_count)]
+        in_flight_lengths = [0] * seed_storage.piece_count
+        if completed_piece_count < seed_storage.piece_count:
+            in_flight_lengths[completed_piece_count] = partial_piece_length
         with temp_file.open("r+b") as file:
             file.truncate(remote_info.total_size)
-        piece_storage = _PieceStorage(total_size=remote_info.total_size, piece_length=options.piece_length, completed=completed)
+        piece_storage = _PieceStorage(
+            total_size=remote_info.total_size,
+            piece_length=options.piece_length,
+            completed=completed,
+            in_flight_lengths=in_flight_lengths,
+        )
     else:
         _cleanup_resume_files(temp_file, state_file)
         with temp_file.open("wb") as file:
@@ -830,6 +1110,7 @@ def _download_file_with_ranges(
     progress_lock = threading.Lock()
     state_lock = threading.Lock()
     stop_event = threading.Event()
+    range_ignored_event = threading.Event()
     completed_since_state_save = 0
     worker_count = max(1, min(options.split, options.max_connection_per_server, piece_storage.piece_count))
     session_pool = _ThreadLocalSessionPool(requests_module, pool_size=worker_count)
@@ -877,6 +1158,10 @@ def _download_file_with_ranges(
                     mark_complete_callback=_mark_segment_complete,
                     progress_callback=_update_progress,
                 )
+            except _RangeRequestIgnored:
+                range_ignored_event.set()
+                segment_manager.release(segment)
+                return
             except Exception:
                 segment_manager.release(segment)
                 raise
@@ -909,6 +1194,10 @@ def _download_file_with_ranges(
             session_pool.close_all()
 
     if not piece_storage.is_complete():
+        with state_lock:
+            _flush_state()
+        if range_ignored_event.is_set():
+            raise _RangeDownloadNotSupported("远端忽略 Range 请求")
         raise IOError("分片下载未完成")
     if temp_file.stat().st_size != remote_info.total_size:
         raise IOError(f"下载文件大小不匹配: 期望 {remote_info.total_size}, 实际 {temp_file.stat().st_size}")
@@ -1018,7 +1307,7 @@ def download_file_from_url(
         piece_length (int):
             aria2 风格的 piece 大小
         continue_download (bool):
-            是否启用断点续传
+            没有匹配 state 文件时, 是否从已有临时文件推断断点续传进度
         max_tries (int):
             单个分片的最大尝试次数
 
@@ -1076,16 +1365,8 @@ def download_file_from_url(
                     options=options,
                 )
             except _RangeDownloadNotSupported as e:
-                logger.warning("无法使用 HTTP Range 下载 '%s': %s, 切换到单连接下载", file_name, e)
-                _cleanup_resume_files(temp_file, state_file)
-                _download_file_single_stream(
-                    requests,
-                    url=url,
-                    temp_file=temp_file,
-                    file_name=file_name,
-                    progress=bool(progress),
-                    tqdm_class=tqdm,
-                )
+                logger.error("无法使用 HTTP Range 继续下载 '%s': %s, 已保留临时文件和断点状态", file_name, e)
+                raise IOError(f"无法使用 HTTP Range 继续下载 '{file_name}': {e}") from e
         else:
             _cleanup_resume_files(temp_file, state_file)
             _download_file_single_stream(
