@@ -1951,7 +1951,7 @@ def download_file_from_url(
     """使用 requests 库下载文件
 
     Args:
-        url (str | Sequence[str]):
+        url (_UrlInput):
             下载链接或同一文件的镜像链接列表
         save_path (Path | None):
             下载路径
@@ -1989,6 +1989,7 @@ def download_file_from_url(
 
     Raises:
         ValueError: 当提供了 hash_prefix 但文件哈希值不匹配时
+        IOError: 下载过程中发生 IO 异常
     """
     import requests
 
