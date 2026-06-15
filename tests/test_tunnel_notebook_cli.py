@@ -294,7 +294,7 @@ def test_notebook_gpu_check_and_delegates(monkeypatch, notebook_manager, tmp_pat
         retry_times=2,
         use_fast_download=True,
         download_tool="aria2",
-        download_num_threads=16,
+        download_split=16,
         download_progress=False,
     )
     assert notebook_manager.repo_manager.calls[4] == (
@@ -310,7 +310,7 @@ def test_notebook_gpu_check_and_delegates(monkeypatch, notebook_manager, tmp_pat
             "num_threads": 4,
             "use_fast_download": True,
             "download_tool": "aria2",
-            "download_num_threads": 16,
+            "download_split": 16,
             "download_progress": False,
             "revision": "mirror-rev",
             "retry_times": 2,
@@ -407,13 +407,17 @@ def test_self_manager_download_file_cli_parse_smoke(monkeypatch, tmp_path):
             "--downloader",
             "requests",
             "--no-progress",
-            "--num-threads",
+            "--split",
             "8",
-            "--no-resume",
-            "--max-retries",
+            "--max-connection-per-server",
             "2",
-            "--chunk-size",
+            "--min-split-size",
             "4096",
+            "--piece-length",
+            "4096",
+            "--continue",
+            "--max-tries",
+            "3",
         ]
     )
     args.func(args)
@@ -425,10 +429,12 @@ def test_self_manager_download_file_cli_parse_smoke(monkeypatch, tmp_path):
             "save_name": "asset.bin",
             "tool": "requests",
             "progress": False,
-            "num_threads": 8,
-            "resume": False,
-            "max_retries": 2,
-            "chunk_size": 4096,
+            "split": 8,
+            "max_connection_per_server": 2,
+            "min_split_size": 4096,
+            "piece_length": 4096,
+            "continue_download": True,
+            "max_tries": 3,
         }
     ]
 

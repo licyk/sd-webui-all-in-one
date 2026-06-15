@@ -36,6 +36,12 @@ from sd_webui_all_in_one.downloader.types import (
     DOWNLOAD_TOOL_TYPE_LIST,
     DownloadToolType,
 )
+from sd_webui_all_in_one.downloader.requests_downloader import (
+    DEFAULT_MAX_CONNECTION_PER_SERVER,
+    DEFAULT_MIN_SPLIT_SIZE,
+    DEFAULT_PIECE_LENGTH,
+    DEFAULT_SPLIT,
+)
 from sd_webui_all_in_one.archive_manager import (
     create_archive,
     extract_archive,
@@ -168,10 +174,12 @@ def download_file_cli(
     save_name: str | None = None,
     tool: DownloadToolType | None = None,
     progress: bool = True,
-    num_threads: int = 8,
-    resume: bool = True,
-    max_retries: int = 5,
-    chunk_size: int | None = None,
+    split: int = DEFAULT_SPLIT,
+    max_connection_per_server: int = DEFAULT_MAX_CONNECTION_PER_SERVER,
+    min_split_size: int = DEFAULT_MIN_SPLIT_SIZE,
+    piece_length: int = DEFAULT_PIECE_LENGTH,
+    continue_download: bool = False,
+    max_tries: int = 5,
 ) -> None:
     """下载文件并输出保存路径
 
@@ -186,14 +194,18 @@ def download_file_cli(
             下载工具
         progress (bool):
             是否启用下载进度条
-        num_threads (int):
-            requests 下载器的单文件 HTTP Range 下载线程数
-        resume (bool):
-            requests 下载器是否启用断点续传
-        max_retries (int):
-            requests 下载器单个分片的最大重试次数
-        chunk_size (int | None):
-            requests 下载器的 HTTP Range 分片大小, 为 None 或 0 时启用自适应分片
+        split (int):
+            aria2 风格的单文件最大分割数
+        max_connection_per_server (int):
+            aria2 风格的单服务器最大连接数
+        min_split_size (int):
+            aria2 风格的最小切分大小
+        piece_length (int):
+            aria2 风格的 piece 大小
+        continue_download (bool):
+            是否启用断点续传
+        max_tries (int):
+            单个分片的最大尝试次数
     """
     download_file(
         url=url,
@@ -201,10 +213,12 @@ def download_file_cli(
         save_name=save_name,
         tool=tool,
         progress=progress,
-        num_threads=num_threads,
-        resume=resume,
-        max_retries=max_retries,
-        chunk_size=chunk_size,
+        split=split,
+        max_connection_per_server=max_connection_per_server,
+        min_split_size=min_split_size,
+        piece_length=piece_length,
+        continue_download=continue_download,
+        max_tries=max_tries,
     )
 
 
@@ -527,20 +541,24 @@ def register_manager(
     download_file_p.add_argument("--save-name", type=str, default=None, help="文件保存名称")
     download_file_p.add_argument("--downloader", dest="tool", default=None, choices=DOWNLOAD_TOOL_TYPE_LIST, help="下载工具")
     download_file_p.add_argument("--no-progress", action="store_false", dest="progress", default=True, help="禁用下载进度条")
-    download_file_p.add_argument("--num-threads", type=int, default=8, help="requests 下载器的单文件 HTTP Range 下载线程数")
-    download_file_p.add_argument("--no-resume", action="store_false", dest="resume", default=True, help="禁用 requests 下载器断点续传")
-    download_file_p.add_argument("--max-retries", type=int, default=5, help="requests 下载器单个分片的最大重试次数")
-    download_file_p.add_argument("--chunk-size", type=int, default=None, help="requests 下载器 HTTP Range 分片大小, 单位为字节; 默认自适应分片")
+    download_file_p.add_argument("--split", type=int, default=DEFAULT_SPLIT, help="aria2 风格的单文件最大分割数")
+    download_file_p.add_argument("--max-connection-per-server", type=int, default=DEFAULT_MAX_CONNECTION_PER_SERVER, help="aria2 风格的单服务器最大连接数")
+    download_file_p.add_argument("--min-split-size", type=int, default=DEFAULT_MIN_SPLIT_SIZE, help="aria2 风格的最小切分大小, 单位为字节")
+    download_file_p.add_argument("--piece-length", type=int, default=DEFAULT_PIECE_LENGTH, help="aria2 风格的 piece 大小, 单位为字节")
+    download_file_p.add_argument("--continue", action="store_true", dest="continue_download", default=False, help="启用断点续传")
+    download_file_p.add_argument("--max-tries", type=int, default=5, help="单个分片最大尝试次数")
     download_file_p.set_defaults(
         func=lambda args: download_file_cli(
             url=args.url,
             path=args.path,
             save_name=args.save_name,
             progress=args.progress,
-            num_threads=args.num_threads,
-            resume=args.resume,
-            max_retries=args.max_retries,
-            chunk_size=args.chunk_size,
+            split=args.split,
+            max_connection_per_server=args.max_connection_per_server,
+            min_split_size=args.min_split_size,
+            piece_length=args.piece_length,
+            continue_download=args.continue_download,
+            max_tries=args.max_tries,
             tool=args.tool,
         )
     )

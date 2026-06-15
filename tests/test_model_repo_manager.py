@@ -890,7 +890,7 @@ def test_repo_manager_mirror_repo_files_can_use_fast_download(monkeypatch):
         revision="fast-rev",
         use_fast_download=True,
         download_tool="aria2",
-        download_num_threads=16,
+        download_split=16,
         download_progress=False,
         num_threads=1,
         retry_times=1,
@@ -910,7 +910,7 @@ def test_repo_manager_mirror_repo_files_can_use_fast_download(monkeypatch):
     assert download_calls[0]["path"].name == "nested"
     assert download_calls[0]["save_name"] == "file.bin"
     assert download_calls[0]["tool"] == "aria2"
-    assert download_calls[0]["num_threads"] == 16
+    assert download_calls[0]["split"] == 16
     assert download_calls[0]["progress"] is False
     assert uploaded[0]["path_in_repo"] == "nested/file.bin"
     assert uploaded[0]["revision"] == "fast-rev"

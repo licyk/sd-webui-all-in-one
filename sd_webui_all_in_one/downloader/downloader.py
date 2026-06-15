@@ -4,7 +4,13 @@ import shutil
 from pathlib import Path
 
 from sd_webui_all_in_one.downloader.aria2_downloader import aria2
-from sd_webui_all_in_one.downloader.requests_downloader import download_file_from_url
+from sd_webui_all_in_one.downloader.requests_downloader import (
+    DEFAULT_MAX_CONNECTION_PER_SERVER,
+    DEFAULT_MIN_SPLIT_SIZE,
+    DEFAULT_PIECE_LENGTH,
+    DEFAULT_SPLIT,
+    download_file_from_url,
+)
 from sd_webui_all_in_one.downloader.urllib_downloader import download_file_from_url_urllib
 from sd_webui_all_in_one.retry_decorator import retryable
 from sd_webui_all_in_one.downloader.types import DownloadToolType
@@ -61,10 +67,12 @@ def download_executer(
     save_name: str | None,
     tool: DownloadToolType,
     progress: bool,
-    num_threads: int = 8,
-    resume: bool = True,
-    max_retries: int = 5,
-    chunk_size: int | None = None,
+    split: int = DEFAULT_SPLIT,
+    max_connection_per_server: int = DEFAULT_MAX_CONNECTION_PER_SERVER,
+    min_split_size: int = DEFAULT_MIN_SPLIT_SIZE,
+    piece_length: int = DEFAULT_PIECE_LENGTH,
+    continue_download: bool = False,
+    max_tries: int = 5,
 ) -> Path:
     """底层下载执行器
 
@@ -79,31 +87,48 @@ def download_executer(
             工具名称
         progress (bool):
             是否显示进度
-        num_threads (int):
-            requests 下载器的单文件 HTTP Range 下载线程数
-        resume (bool):
-            requests 下载器是否启用断点续传
-        max_retries (int):
-            requests 下载器单个分片的最大重试次数
-        chunk_size (int | None):
-            requests 下载器的 HTTP Range 分片大小, 为 None 或 0 时启用自适应分片
+        split (int):
+            aria2 风格的单文件最大分割数
+        max_connection_per_server (int):
+            aria2 风格的单服务器最大连接数
+        min_split_size (int):
+            aria2 风格的最小切分大小
+        piece_length (int):
+            aria2 风格的 piece 大小
+        continue_download (bool):
+            是否启用断点续传
+        max_tries (int):
+            requests 下载器单个分片的最大尝试次数
 
     Returns:
         Path:
             成功返回路径
     """
     if tool == "aria2":
-        return aria2(url=url, path=path, save_name=save_name, progress=progress)
+        return aria2(
+            url=url,
+            path=path,
+            save_name=save_name,
+            progress=progress,
+            split=split,
+            max_connection_per_server=max_connection_per_server,
+            min_split_size=min_split_size,
+            piece_length=piece_length,
+            continue_download=continue_download,
+            max_tries=max_tries,
+        )
     elif tool == "requests":
         return download_file_from_url(
             url=url,
             save_path=path,
             file_name=save_name,
             progress=progress,
-            num_threads=num_threads,
-            resume=resume,
-            max_retries=max_retries,
-            chunk_size=chunk_size,
+            split=split,
+            max_connection_per_server=max_connection_per_server,
+            min_split_size=min_split_size,
+            piece_length=piece_length,
+            continue_download=continue_download,
+            max_tries=max_tries,
         )
     elif tool == "urllib":
         return download_file_from_url_urllib(url=url, save_path=path, file_name=save_name, progress=progress)
@@ -116,10 +141,12 @@ def download_file(
     save_name: str | None = None,
     tool: DownloadToolType | None = "requests",
     progress: bool = True,
-    num_threads: int = 8,
-    resume: bool = True,
-    max_retries: int = 5,
-    chunk_size: int | None = None,
+    split: int = DEFAULT_SPLIT,
+    max_connection_per_server: int = DEFAULT_MAX_CONNECTION_PER_SERVER,
+    min_split_size: int = DEFAULT_MIN_SPLIT_SIZE,
+    piece_length: int = DEFAULT_PIECE_LENGTH,
+    continue_download: bool = False,
+    max_tries: int = 5,
 ) -> Path:
     """下载文件工具
 
@@ -134,14 +161,18 @@ def download_file(
             下载工具
         progress (bool):
             是否启用下载进度条
-        num_threads (int):
-            requests 下载器的单文件 HTTP Range 下载线程数
-        resume (bool):
-            requests 下载器是否启用断点续传
-        max_retries (int):
-            requests 下载器单个分片的最大重试次数
-        chunk_size (int | None):
-            requests 下载器的 HTTP Range 分片大小, 为 None 或 0 时启用自适应分片
+        split (int):
+            aria2 风格的单文件最大分割数
+        max_connection_per_server (int):
+            aria2 风格的单服务器最大连接数
+        min_split_size (int):
+            aria2 风格的最小切分大小
+        piece_length (int):
+            aria2 风格的 piece 大小
+        continue_download (bool):
+            是否启用断点续传
+        max_tries (int):
+            requests 下载器单个分片的最大尝试次数
 
     Returns:
         Path: 保存的文件路径
@@ -167,8 +198,10 @@ def download_file(
         save_name=save_name,
         tool=selected_tool,
         progress=bool(progress),
-        num_threads=num_threads,
-        resume=resume,
-        max_retries=max_retries,
-        chunk_size=chunk_size,
+        split=split,
+        max_connection_per_server=max_connection_per_server,
+        min_split_size=min_split_size,
+        piece_length=piece_length,
+        continue_download=continue_download,
+        max_tries=max_tries,
     )

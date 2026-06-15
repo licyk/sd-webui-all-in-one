@@ -1,6 +1,7 @@
 """Requests 下载器"""
 
 import json
+import math
 import re
 import threading
 import time
@@ -14,28 +15,31 @@ from sd_webui_all_in_one.downloader.hash_utils import compare_sha256
 from sd_webui_all_in_one.downloader.types import DEFAULT_USER_AGENT
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
-    LOGGER_LEVEL,
     LOGGER_COLOR,
+    LOGGER_LEVEL,
     LOGGER_NAME,
 )
 
 
-DEFAULT_RANGE_CHUNK_SIZE: int | None = None
-"""HTTP Range 默认分片大小, 为 None 时启用自适应分片"""
+DEFAULT_SPLIT = 5
+"""aria2 风格的单文件最大分割数"""
 
-ADAPTIVE_RANGES_PER_THREAD = 4
-"""自适应 HTTP Range 每个线程对应的目标分片数"""
+DEFAULT_MAX_CONNECTION_PER_SERVER = 1
+"""aria2 风格的单服务器最大连接数"""
 
-ADAPTIVE_MIN_RANGE_SIZE = 32 * 1024 * 1024
-"""自适应 HTTP Range 分片的最小目标大小"""
+DEFAULT_MIN_SPLIT_SIZE = 20 * 1024 * 1024
+"""aria2 风格的最小切分大小"""
+
+DEFAULT_PIECE_LENGTH = 1024 * 1024
+"""aria2 风格的 piece 大小"""
 
 STREAM_CHUNK_SIZE = 1024 * 1024
 """HTTP 响应读取块大小"""
 
-STATE_SAVE_COMPLETED_RANGE_INTERVAL = 8
+STATE_SAVE_COMPLETED_PIECE_INTERVAL = 8
 """断点续传状态写入间隔"""
 
-STATE_VERSION = 1
+STATE_VERSION = 2
 """HTTP Range 断点续传状态版本"""
 
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
@@ -47,6 +51,8 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+_CONTENT_RANGE_RE = re.compile(r"(?:bytes\s+|bytes=)?(\d+)-(\d+)/(\d+|\*)", flags=re.IGNORECASE)
 
 
 class _RangeDownloadNotSupported(RuntimeError):
@@ -65,6 +71,19 @@ class _RangeDownloadTemporaryError(RuntimeError):
         self.retry_delay = retry_delay
 
 
+class _SegmentDownloadError(RuntimeError):
+    """下载流在某个 segment 上失败"""
+
+    def __init__(
+        self,
+        segment: "_Segment",
+        error: Exception,
+    ) -> None:
+        super().__init__(str(error))
+        self.segment = segment
+        self.error = error
+
+
 @dataclass(frozen=True)
 class _RemoteFileInfo:
     """远端文件元数据"""
@@ -76,13 +95,37 @@ class _RemoteFileInfo:
 
 
 @dataclass(frozen=True)
-class _RangePlan:
-    """HTTP Range 下载计划"""
+class _DownloadOptions:
+    """aria2 风格下载选项"""
 
-    mode: str
-    chunk_size: int | None
-    num_threads: int
-    ranges: list[tuple[int, int]]
+    split: int
+    max_connection_per_server: int
+    min_split_size: int
+    piece_length: int
+    max_tries: int
+    continue_download: bool
+
+
+@dataclass(frozen=True)
+class _Segment:
+    """连续 piece 组成的下载段"""
+
+    start_piece: int
+    end_piece: int
+    start: int
+    end: int
+
+    @property
+    def piece_count(self) -> int:
+        return self.end_piece - self.start_piece + 1
+
+    @property
+    def size(self) -> int:
+        return self.end - self.start + 1
+
+    @property
+    def byte_range(self) -> tuple[int, int]:
+        return self.start, self.end
 
 
 def _get_header(
@@ -124,19 +167,20 @@ def _parse_int_header(
         return 0
 
 
-def _parse_content_range_total(
+def _parse_content_range(
     content_range: str | None,
-) -> int:
+) -> tuple[int, int, int | None] | None:
     if not content_range:
-        return 0
+        return None
 
-    match = re.match(r"bytes\s+\d+-\d+/(\d+|\*)", content_range.strip(), flags=re.IGNORECASE)
-    if not match or match.group(1) == "*":
-        return 0
-    try:
-        return int(match.group(1))
-    except ValueError:
-        return 0
+    match = _CONTENT_RANGE_RE.match(content_range.strip())
+    if not match:
+        return None
+
+    start = int(match.group(1))
+    end = int(match.group(2))
+    total = None if match.group(3) == "*" else int(match.group(3))
+    return start, end, total
 
 
 def _close_response(
@@ -164,30 +208,28 @@ def _probe_remote_file(
     url: str,
     timeout: int = 60,
 ) -> _RemoteFileInfo:
-    """探测远端是否支持 HTTP Range 下载"""
-    head_func = getattr(requests_module, "head", None)
-    if not callable(head_func):
-        return _RemoteFileInfo(total_size=0, supports_range=False)
-
+    """探测远端是否支持可靠的 HTTP Range 下载"""
     total_size = 0
     etag: str | None = None
     last_modified: str | None = None
     supports_range = False
 
-    try:
-        response = head_func(url, allow_redirects=True, timeout=timeout, headers=_request_headers())
+    head_func = getattr(requests_module, "head", None)
+    if callable(head_func):
         try:
-            status_code = int(getattr(response, "status_code", 0) or 0)
-            if 200 <= status_code < 400:
-                headers = getattr(response, "headers", {})
-                total_size = _parse_int_header(headers, "Content-Length")
-                etag = _get_header(headers, "ETag")
-                last_modified = _get_header(headers, "Last-Modified")
-                supports_range = (_get_header(headers, "Accept-Ranges") or "").lower() == "bytes"
-        finally:
-            _close_response(response)
-    except Exception as e:
-        logger.debug("HEAD 探测失败, 尝试使用 Range 请求探测: %s", e)
+            response = head_func(url, allow_redirects=True, timeout=timeout, headers=_request_headers())
+            try:
+                status_code = int(getattr(response, "status_code", 0) or 0)
+                if 200 <= status_code < 400:
+                    headers = getattr(response, "headers", {})
+                    total_size = _parse_int_header(headers, "Content-Length")
+                    etag = _get_header(headers, "ETag")
+                    last_modified = _get_header(headers, "Last-Modified")
+                    supports_range = (_get_header(headers, "Accept-Ranges") or "").lower() == "bytes"
+            finally:
+                _close_response(response)
+        except Exception as e:
+            logger.debug("HEAD 探测失败, 尝试使用 Range 请求探测: %s", e)
 
     get_func = getattr(requests_module, "get", None)
     if not callable(get_func):
@@ -198,13 +240,16 @@ def _probe_remote_file(
             response = get_func(url, stream=True, timeout=timeout, headers=_request_headers({"Range": "bytes=0-0"}))
             try:
                 status_code = int(getattr(response, "status_code", 0) or 0)
+                headers = getattr(response, "headers", {})
                 if status_code == 206:
-                    headers = getattr(response, "headers", {})
-                    content_range_total = _parse_content_range_total(_get_header(headers, "Content-Range"))
-                    total_size = content_range_total or total_size
-                    etag = etag or _get_header(headers, "ETag")
-                    last_modified = last_modified or _get_header(headers, "Last-Modified")
-                    supports_range = total_size > 0
+                    parsed = _parse_content_range(_get_header(headers, "Content-Range"))
+                    if parsed is not None:
+                        start, end, content_total = parsed
+                        if start == 0 and end == 0 and content_total:
+                            total_size = content_total
+                            etag = etag or _get_header(headers, "ETag")
+                            last_modified = last_modified or _get_header(headers, "Last-Modified")
+                            supports_range = True
             finally:
                 _close_response(response)
         except Exception as e:
@@ -236,12 +281,24 @@ def _load_resume_state(
         return None
 
 
+def _options_to_state(
+    options: _DownloadOptions,
+) -> dict[str, object]:
+    return {
+        "split": options.split,
+        "max_connection_per_server": options.max_connection_per_server,
+        "min_split_size": options.min_split_size,
+        "piece_length": options.piece_length,
+    }
+
+
 def _state_matches_remote(
     state: dict[str, object] | None,
     *,
     url: str,
     remote_info: _RemoteFileInfo,
-    range_plan: _RangePlan,
+    options: _DownloadOptions,
+    piece_count: int,
 ) -> bool:
     if not state:
         return False
@@ -252,28 +309,41 @@ def _state_matches_remote(
         and state.get("total_size") == remote_info.total_size
         and state.get("etag") == remote_info.etag
         and state.get("last_modified") == remote_info.last_modified
-        and state.get("range_plan") == _range_plan_to_state(range_plan)
+        and state.get("piece_count") == piece_count
+        and state.get("options") == _options_to_state(options)
     )
 
 
-def _normalize_completed_ranges(
-    state: dict[str, object] | None,
-    total_size: int,
-) -> set[tuple[int, int]]:
-    raw_ranges = state.get("completed_ranges", []) if state else []
-    completed_ranges: set[tuple[int, int]] = set()
-    if not isinstance(raw_ranges, list):
-        return completed_ranges
+def _bitfield_to_hex(
+    completed: list[bool],
+) -> str:
+    data = bytearray(math.ceil(len(completed) / 8))
+    for index, done in enumerate(completed):
+        if done:
+            data[index // 8] |= 1 << (7 - index % 8)
+    return data.hex()
 
-    for raw_range in raw_ranges:
-        if not isinstance(raw_range, list | tuple) or len(raw_range) != 2:
-            continue
-        start, end = raw_range
-        if not isinstance(start, int) or not isinstance(end, int):
-            continue
-        if 0 <= start <= end < total_size:
-            completed_ranges.add((start, end))
-    return completed_ranges
+
+def _bitfield_from_hex(
+    bitfield: object,
+    piece_count: int,
+) -> list[bool]:
+    if not isinstance(bitfield, str):
+        return [False] * piece_count
+
+    try:
+        data = bytes.fromhex(bitfield)
+    except ValueError:
+        return [False] * piece_count
+
+    expected_bytes = math.ceil(piece_count / 8)
+    if len(data) != expected_bytes:
+        return [False] * piece_count
+
+    completed: list[bool] = []
+    for index in range(piece_count):
+        completed.append(bool(data[index // 8] & (1 << (7 - index % 8))))
+    return completed
 
 
 def _save_resume_state(
@@ -281,79 +351,23 @@ def _save_resume_state(
     *,
     url: str,
     remote_info: _RemoteFileInfo,
-    range_plan: _RangePlan,
-    completed_ranges: set[tuple[int, int]],
+    options: _DownloadOptions,
+    piece_storage: "_PieceStorage",
 ) -> None:
+    completed = piece_storage.snapshot_completed()
     state = {
         "version": STATE_VERSION,
         "url": url,
         "total_size": remote_info.total_size,
         "etag": remote_info.etag,
         "last_modified": remote_info.last_modified,
-        "range_plan": _range_plan_to_state(range_plan),
-        "completed_ranges": [list(item) for item in sorted(completed_ranges)],
+        "piece_count": len(completed),
+        "completed_bitfield": _bitfield_to_hex(completed),
+        "options": _options_to_state(options),
     }
     tmp_state_file = state_file.with_name(f"{state_file.name}.tmp")
     tmp_state_file.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
     tmp_state_file.replace(state_file)
-
-
-def _range_plan_to_state(
-    range_plan: _RangePlan,
-) -> dict[str, object]:
-    if range_plan.mode == "adaptive":
-        return {
-            "mode": range_plan.mode,
-            "chunk_size": range_plan.chunk_size,
-            "num_threads": range_plan.num_threads,
-            "ranges_per_thread": ADAPTIVE_RANGES_PER_THREAD,
-            "adaptive_min_range_size": ADAPTIVE_MIN_RANGE_SIZE,
-        }
-
-    return {
-        "mode": range_plan.mode,
-        "chunk_size": range_plan.chunk_size,
-        "num_threads": range_plan.num_threads,
-        "min_range_split_size": None,
-    }
-
-
-def _build_ranges(
-    total_size: int,
-    chunk_size: int,
-) -> list[tuple[int, int]]:
-    return [(start, min(start + chunk_size - 1, total_size - 1)) for start in range(0, total_size, chunk_size)]
-
-
-def _build_range_plan(
-    total_size: int,
-    chunk_size: int | None,
-    num_threads: int,
-) -> _RangePlan:
-    safe_num_threads = max(1, num_threads)
-    if chunk_size is not None and chunk_size > 0:
-        return _RangePlan(
-            mode="fixed",
-            chunk_size=chunk_size,
-            num_threads=safe_num_threads,
-            ranges=_build_ranges(total_size, chunk_size),
-        )
-
-    if total_size <= 0:
-        ranges: list[tuple[int, int]] = []
-    else:
-        max_ranges_by_size = max(1, total_size // ADAPTIVE_MIN_RANGE_SIZE)
-        target_range_count = safe_num_threads * ADAPTIVE_RANGES_PER_THREAD
-        range_count = max(1, min(target_range_count, max_ranges_by_size))
-        range_size = max(1, (total_size + range_count - 1) // range_count)
-        ranges = _build_ranges(total_size, range_size)
-
-    return _RangePlan(
-        mode="adaptive",
-        chunk_size=None,
-        num_threads=safe_num_threads,
-        ranges=ranges,
-    )
 
 
 class _ThreadLocalSessionPool:
@@ -406,6 +420,198 @@ class _ThreadLocalSessionPool:
             mount(prefix, adapter_factory(pool_connections=self.pool_size, pool_maxsize=self.pool_size))
 
 
+class _PieceStorage:
+    """aria2 PieceStorage 的轻量 Python 实现"""
+
+    def __init__(
+        self,
+        *,
+        total_size: int,
+        piece_length: int,
+        completed: list[bool] | None = None,
+    ) -> None:
+        self.total_size = total_size
+        self.piece_length = max(1, piece_length)
+        self.piece_count = max(1, math.ceil(total_size / self.piece_length))
+        self.lock = threading.Lock()
+        self.completed = completed if completed and len(completed) == self.piece_count else [False] * self.piece_count
+        self.in_use = [False] * self.piece_count
+
+    def snapshot_completed(self) -> list[bool]:
+        with self.lock:
+            return list(self.completed)
+
+    def completed_piece_count(self) -> int:
+        with self.lock:
+            return sum(1 for done in self.completed if done)
+
+    def completed_size(self) -> int:
+        with self.lock:
+            return sum(self._piece_size_unlocked(index) for index, done in enumerate(self.completed) if done)
+
+    def is_complete(self) -> bool:
+        with self.lock:
+            return all(self.completed)
+
+    def check_out_segment(
+        self,
+        min_split_size: int,
+    ) -> _Segment | None:
+        with self.lock:
+            index = self._select_sparse_missing_unused_piece_unlocked(min_split_size)
+            if index is None:
+                return None
+
+            return self._check_out_piece_unlocked(index)
+
+    def check_out_piece(
+        self,
+        index: int,
+    ) -> _Segment | None:
+        with self.lock:
+            if index < 0 or index >= self.piece_count or self.completed[index] or self.in_use[index]:
+                return None
+            return self._check_out_piece_unlocked(index)
+
+    def mark_complete(
+        self,
+        segment: _Segment,
+    ) -> int:
+        with self.lock:
+            newly_completed = 0
+            for index in range(segment.start_piece, segment.end_piece + 1):
+                if not self.completed[index]:
+                    self.completed[index] = True
+                    newly_completed += 1
+                self.in_use[index] = False
+            return newly_completed
+
+    def release(
+        self,
+        segment: _Segment,
+    ) -> None:
+        with self.lock:
+            for index in range(segment.start_piece, segment.end_piece + 1):
+                self.in_use[index] = False
+
+    def _piece_start_unlocked(
+        self,
+        index: int,
+    ) -> int:
+        return index * self.piece_length
+
+    def _piece_end_unlocked(
+        self,
+        index: int,
+    ) -> int:
+        return min((index + 1) * self.piece_length, self.total_size) - 1
+
+    def _piece_size_unlocked(
+        self,
+        index: int,
+    ) -> int:
+        return self._piece_end_unlocked(index) - self._piece_start_unlocked(index) + 1
+
+    def _check_out_piece_unlocked(
+        self,
+        index: int,
+    ) -> _Segment:
+        self.in_use[index] = True
+        return _Segment(
+            start_piece=index,
+            end_piece=index,
+            start=self._piece_start_unlocked(index),
+            end=self._piece_end_unlocked(index),
+        )
+
+    def _select_sparse_missing_unused_piece_unlocked(
+        self,
+        min_split_size: int,
+    ) -> int | None:
+        ranges: list[tuple[int, int]] = []
+        index = 0
+        while index < self.piece_count:
+            while index < self.piece_count and (self.completed[index] or self.in_use[index]):
+                index += 1
+            if index >= self.piece_count:
+                break
+            start = index
+            while index < self.piece_count and not self.completed[index] and not self.in_use[index]:
+                index += 1
+            end = index
+            if start > 0 and self.in_use[start - 1]:
+                start = (start + end) // 2
+            if start < end:
+                ranges.append((start, end))
+
+        if not ranges:
+            return None
+
+        max_range = ranges[0]
+        for current in ranges[1:]:
+            if self._range_is_better_unlocked(current, max_range):
+                max_range = current
+
+        start, end = max_range
+        if start == 0:
+            return 0
+
+        previous_completed = self.completed[start - 1] and not self.in_use[start - 1]
+        range_size = (end - start) * self.piece_length
+        if previous_completed or range_size >= min_split_size:
+            return start
+        return None
+
+    def _range_is_better_unlocked(
+        self,
+        current: tuple[int, int],
+        best: tuple[int, int],
+    ) -> bool:
+        current_size = current[1] - current[0]
+        best_size = best[1] - best[0]
+        if current_size != best_size:
+            return current_size > best_size
+        if best[0] <= 0 or current[0] <= 0:
+            return False
+
+        best_previous_completed = self.completed[best[0] - 1] and not self.in_use[best[0] - 1]
+        current_previous_completed = self.completed[current[0] - 1] and not self.in_use[current[0] - 1]
+        return current_previous_completed and not best_previous_completed
+
+
+class _SegmentManager:
+    """aria2 SegmentMan 的轻量 Python 实现"""
+
+    def __init__(
+        self,
+        piece_storage: _PieceStorage,
+        min_split_size: int,
+    ) -> None:
+        self.piece_storage = piece_storage
+        self.min_split_size = min_split_size
+
+    def get_segment(self) -> _Segment | None:
+        return self.piece_storage.check_out_segment(self.min_split_size)
+
+    def get_next_segment(
+        self,
+        segment: _Segment,
+    ) -> _Segment | None:
+        return self.piece_storage.check_out_piece(segment.end_piece + 1)
+
+    def mark_complete(
+        self,
+        segment: _Segment,
+    ) -> int:
+        return self.piece_storage.mark_complete(segment)
+
+    def release(
+        self,
+        segment: _Segment,
+    ) -> None:
+        self.piece_storage.release(segment)
+
+
 def _retry_delay_for(
     headers: Any,
     attempt: int,
@@ -419,90 +625,167 @@ def _retry_delay_for(
     return min(0.5 * attempt, 5.0)
 
 
-def _download_range_once(
+def _validate_range_response(
+    response: Any,
+    *,
+    segment: _Segment,
+    total_size: int,
+    attempt: int,
+) -> None:
+    status_code = int(getattr(response, "status_code", 0) or 0)
+    headers = getattr(response, "headers", {})
+
+    if status_code == 200 and segment.start > 0:
+        raise _RangeDownloadNotSupported("远端忽略 Range 请求")
+    if status_code == 416:
+        raise _RangeDownloadNotSupported("远端拒绝 Range 请求: HTTP 416")
+    if status_code in RETRYABLE_STATUS_CODES:
+        raise _RangeDownloadTemporaryError(f"HTTP {status_code}", retry_delay=_retry_delay_for(headers, attempt))
+    if status_code not in {200, 206}:
+        raise RuntimeError(f"Range 请求返回非预期状态码: HTTP {status_code}")
+
+    parsed_range = _parse_content_range(_get_header(headers, "Content-Range"))
+    if parsed_range is None and status_code == 206:
+        raise _RangeDownloadNotSupported("Range 响应缺少有效 Content-Range")
+    if parsed_range is None:
+        content_length = _parse_int_header(headers, "Content-Length")
+        if content_length and content_length != total_size:
+            raise _RangeDownloadNotSupported(f"Content-Length 不匹配: 期望 {total_size}, 实际 {content_length}")
+        return
+
+    start, end, content_total = parsed_range
+    if start != segment.start or end < segment.end or content_total != total_size:
+        raise _RangeDownloadNotSupported(
+            f"Range 响应不匹配: 期望 bytes {segment.start}-/{total_size}, 实际 {_get_header(headers, 'Content-Range')}"
+        )
+
+def _stream_request_headers(
+    segment: _Segment,
+) -> dict[str, str]:
+    if segment.start == 0:
+        return _request_headers()
+    return _request_headers({"Range": f"bytes={segment.start}-"})
+
+
+def _download_stream_once(
     request_client: Any,
     *,
     url: str,
     temp_file: Path,
-    byte_range: tuple[int, int],
+    segment: _Segment,
+    total_size: int,
     timeout: int,
+    attempt: int,
+    segment_manager: _SegmentManager,
+    mark_complete_callback: Any,
     progress_callback: Any | None = None,
-) -> int:
-    start, end = byte_range
-    response = request_client.get(url, stream=True, timeout=timeout, headers=_request_headers({"Range": f"bytes={start}-{end}"}))
-    reported_size = 0
+) -> None:
+    response = request_client.get(url, stream=True, timeout=timeout, headers=_stream_request_headers(segment))
+    current_segment: _Segment | None = segment
+    last_complete_segment: _Segment | None = None
+    partial_reported_size = 0
     try:
-        status_code = int(getattr(response, "status_code", 0) or 0)
-        headers = getattr(response, "headers", {})
+        _validate_range_response(response, segment=segment, total_size=total_size, attempt=attempt)
 
-        if status_code == 200:
-            raise _RangeDownloadNotSupported("远端忽略 Range 请求")
-        if status_code in {416}:
-            raise _RangeDownloadNotSupported(f"远端拒绝 Range 请求: HTTP {status_code}")
-        if status_code in RETRYABLE_STATUS_CODES:
-            raise _RangeDownloadTemporaryError(f"HTTP {status_code}", retry_delay=_retry_delay_for(headers, 1))
-        if status_code != 206:
-            raise RuntimeError(f"Range 请求返回非预期状态码: HTTP {status_code}")
-
-        expected_size = end - start + 1
-        downloaded_size = 0
-        offset = start
+        offset = segment.start
         with temp_file.open("r+b") as file:
             for chunk in response.iter_content(chunk_size=STREAM_CHUNK_SIZE):
                 if not chunk:
                     continue
-                if downloaded_size + len(chunk) > expected_size:
-                    chunk = chunk[: expected_size - downloaded_size]
-                file.seek(offset)
-                file.write(chunk)
-                offset += len(chunk)
-                downloaded_size += len(chunk)
-                reported_size += len(chunk)
-                if progress_callback is not None:
-                    progress_callback(len(chunk))
+                chunk_offset = 0
+                while chunk_offset < len(chunk):
+                    if current_segment is None:
+                        if last_complete_segment is None:
+                            return
+                        current_segment = segment_manager.get_next_segment(last_complete_segment)
+                        if current_segment is None:
+                            return
+                        offset = current_segment.start
+                        partial_reported_size = 0
 
-        if downloaded_size != expected_size:
-            raise IOError(f"分片大小不匹配: 期望 {expected_size}, 实际 {downloaded_size}")
-        return downloaded_size
-    except Exception:
-        if reported_size and progress_callback is not None:
-            progress_callback(-reported_size)
+                    writable_size = min(len(chunk) - chunk_offset, current_segment.end - offset + 1)
+                    if writable_size <= 0:
+                        mark_complete_callback(current_segment)
+                        last_complete_segment = current_segment
+                        current_segment = None
+                        partial_reported_size = 0
+                        continue
+
+                    file.seek(offset)
+                    file.write(chunk[chunk_offset : chunk_offset + writable_size])
+                    offset += writable_size
+                    chunk_offset += writable_size
+                    partial_reported_size += writable_size
+                    if progress_callback is not None:
+                        progress_callback(writable_size)
+
+                    if offset > current_segment.end:
+                        mark_complete_callback(current_segment)
+                        last_complete_segment = current_segment
+                        current_segment = None
+                        partial_reported_size = 0
+
+        if current_segment is not None:
+            raise IOError(f"分片大小不匹配: 期望 {current_segment.size}, 实际 {partial_reported_size}")
+    except _RangeDownloadNotSupported:
+        if partial_reported_size and progress_callback is not None:
+            progress_callback(-partial_reported_size)
         raise
+    except Exception as e:
+        if partial_reported_size and progress_callback is not None:
+            progress_callback(-partial_reported_size)
+        raise _SegmentDownloadError(current_segment or segment, e) from e
     finally:
         _close_response(response)
 
 
-def _download_range_with_retries(
+def _download_stream_with_retries(
     session_pool: _ThreadLocalSessionPool,
     *,
     url: str,
     temp_file: Path,
-    byte_range: tuple[int, int],
+    segment: _Segment,
+    total_size: int,
     timeout: int,
-    max_retries: int,
+    max_tries: int,
+    segment_manager: _SegmentManager,
+    mark_complete_callback: Any,
     progress_callback: Any | None = None,
-) -> int:
+) -> None:
     last_error: Exception | None = None
-    for attempt in range(1, max_retries + 1):
+    for attempt in range(1, max_tries + 1):
         try:
-            return _download_range_once(
+            return _download_stream_once(
                 session_pool.get(),
                 url=url,
                 temp_file=temp_file,
-                byte_range=byte_range,
+                segment=segment,
+                total_size=total_size,
                 timeout=timeout,
+                attempt=attempt,
+                segment_manager=segment_manager,
+                mark_complete_callback=mark_complete_callback,
                 progress_callback=progress_callback,
             )
         except _RangeDownloadNotSupported:
             raise
+        except _SegmentDownloadError as e:
+            segment = e.segment
+            last_error = e.error
+            if attempt >= max_tries:
+                break
+            delay = e.error.retry_delay if isinstance(e.error, _RangeDownloadTemporaryError) and e.error.retry_delay is not None else min(0.5 * attempt, 5.0)
+            logger.warning("分片 %s 下载失败 [%s/%s]: %s, %.1fs 后重试", segment.byte_range, attempt, max_tries, e.error, delay)
+            time.sleep(delay)
         except Exception as e:
             last_error = e
-            if attempt >= max_retries:
+            if attempt >= max_tries:
                 break
             delay = e.retry_delay if isinstance(e, _RangeDownloadTemporaryError) and e.retry_delay is not None else min(0.5 * attempt, 5.0)
-            logger.warning("分片 %s 下载失败 [%s/%s]: %s, %.1fs 后重试", byte_range, attempt, max_retries, e, delay)
+            logger.warning("分片 %s 下载失败 [%s/%s]: %s, %.1fs 后重试", segment.byte_range, attempt, max_tries, e, delay)
             time.sleep(delay)
-    raise IOError(f"分片 {byte_range} 下载失败: {last_error}") from last_error
+    segment_manager.release(segment)
+    raise IOError(f"分片 {segment.byte_range} 下载失败: {last_error}") from last_error
 
 
 def _download_file_with_ranges(
@@ -514,36 +797,42 @@ def _download_file_with_ranges(
     remote_info: _RemoteFileInfo,
     progress: bool,
     tqdm_class: Any,
-    resume: bool,
-    max_retries: int,
-    num_threads: int,
-    chunk_size: int | None,
+    options: _DownloadOptions,
     timeout: int = 60,
 ) -> None:
     if remote_info.total_size <= 0 or not remote_info.supports_range:
         raise _RangeDownloadNotSupported("远端未提供可分片下载的文件大小或 Range 支持")
 
-    range_plan = _build_range_plan(remote_info.total_size, chunk_size, num_threads)
-    if not range_plan.ranges:
-        raise _RangeDownloadNotSupported("无法生成 HTTP Range 下载计划")
-
-    state = _load_resume_state(state_file) if resume else None
-    if resume and temp_file.exists() and _state_matches_remote(state, url=url, remote_info=remote_info, range_plan=range_plan) and temp_file.stat().st_size == remote_info.total_size:
-        completed_ranges = _normalize_completed_ranges(state, remote_info.total_size)
+    seed_storage = _PieceStorage(total_size=remote_info.total_size, piece_length=options.piece_length)
+    state = _load_resume_state(state_file) if options.continue_download else None
+    if (
+        options.continue_download
+        and temp_file.exists()
+        and temp_file.stat().st_size == remote_info.total_size
+        and _state_matches_remote(state, url=url, remote_info=remote_info, options=options, piece_count=seed_storage.piece_count)
+    ):
+        completed = _bitfield_from_hex(state.get("completed_bitfield") if state else None, seed_storage.piece_count)
+        piece_storage = _PieceStorage(total_size=remote_info.total_size, piece_length=options.piece_length, completed=completed)
+    elif options.continue_download and temp_file.exists() and 0 < temp_file.stat().st_size < remote_info.total_size:
+        completed_piece_count = temp_file.stat().st_size // options.piece_length
+        completed = [index < completed_piece_count for index in range(seed_storage.piece_count)]
+        with temp_file.open("r+b") as file:
+            file.truncate(remote_info.total_size)
+        piece_storage = _PieceStorage(total_size=remote_info.total_size, piece_length=options.piece_length, completed=completed)
     else:
         _cleanup_resume_files(temp_file, state_file)
-        completed_ranges = set()
         with temp_file.open("wb") as file:
             file.truncate(remote_info.total_size)
+        piece_storage = seed_storage
 
-    all_ranges = range_plan.ranges
-    completed_ranges &= set(all_ranges)
-    pending_ranges = [item for item in all_ranges if item not in completed_ranges]
-    completed_size = sum(end - start + 1 for start, end in completed_ranges)
+    segment_manager = _SegmentManager(piece_storage, options.min_split_size)
+    completed_size = piece_storage.completed_size()
     progress_lock = threading.Lock()
     state_lock = threading.Lock()
-    session_pool = _ThreadLocalSessionPool(requests_module, pool_size=max(1, min(num_threads, len(pending_ranges) or 1)))
+    stop_event = threading.Event()
     completed_since_state_save = 0
+    worker_count = max(1, min(options.split, options.max_connection_per_server, piece_storage.piece_count))
+    session_pool = _ThreadLocalSessionPool(requests_module, pool_size=worker_count)
 
     def _update_progress(delta: int) -> None:
         with progress_lock:
@@ -554,9 +843,43 @@ def _download_file_with_ranges(
             state_file,
             url=url,
             remote_info=remote_info,
-            range_plan=range_plan,
-            completed_ranges=completed_ranges,
+            options=options,
+            piece_storage=piece_storage,
         )
+
+    def _mark_segment_complete(segment: _Segment) -> None:
+        nonlocal completed_since_state_save
+        newly_completed = segment_manager.mark_complete(segment)
+        with state_lock:
+            completed_since_state_save += newly_completed
+            if (
+                completed_since_state_save >= STATE_SAVE_COMPLETED_PIECE_INTERVAL
+                or piece_storage.is_complete()
+            ):
+                _flush_state()
+                completed_since_state_save = 0
+
+    def _worker() -> None:
+        while not stop_event.is_set():
+            segment = segment_manager.get_segment()
+            if segment is None:
+                return
+            try:
+                _download_stream_with_retries(
+                    session_pool,
+                    url=url,
+                    temp_file=temp_file,
+                    segment=segment,
+                    total_size=remote_info.total_size,
+                    timeout=timeout,
+                    max_tries=options.max_tries,
+                    segment_manager=segment_manager,
+                    mark_complete_callback=_mark_segment_complete,
+                    progress_callback=_update_progress,
+                )
+            except Exception:
+                segment_manager.release(segment)
+                raise
 
     with tqdm_class(
         total=remote_info.total_size,
@@ -567,34 +890,17 @@ def _download_file_with_ranges(
         disable=not progress,
     ) as progress_bar:
         try:
-            if not pending_ranges:
-                return
-
-            worker_count = max(1, min(num_threads, len(pending_ranges)))
-            with ThreadPoolExecutor(max_workers=worker_count) as executor:
-                future_to_range = {
-                    executor.submit(
-                        _download_range_with_retries,
-                        session_pool,
-                        url=url,
-                        temp_file=temp_file,
-                        byte_range=byte_range,
-                        timeout=timeout,
-                        max_retries=max_retries,
-                        progress_callback=_update_progress,
-                    ): byte_range
-                    for byte_range in pending_ranges
-                }
-
-                for future in as_completed(future_to_range):
-                    byte_range = future_to_range[future]
-                    future.result()
-                    with state_lock:
-                        completed_ranges.add(byte_range)
-                        completed_since_state_save += 1
-                        if completed_since_state_save >= STATE_SAVE_COMPLETED_RANGE_INTERVAL or len(completed_ranges) == len(all_ranges):
-                            _flush_state()
-                            completed_since_state_save = 0
+            if not piece_storage.is_complete():
+                with ThreadPoolExecutor(max_workers=worker_count) as executor:
+                    futures = [executor.submit(_worker) for _ in range(worker_count)]
+                    for future in as_completed(futures):
+                        try:
+                            future.result()
+                        except Exception:
+                            stop_event.set()
+                            for pending in futures:
+                                pending.cancel()
+                            raise
         except Exception:
             with state_lock:
                 _flush_state()
@@ -602,6 +908,8 @@ def _download_file_with_ranges(
         finally:
             session_pool.close_all()
 
+    if not piece_storage.is_complete():
+        raise IOError("分片下载未完成")
     if temp_file.stat().st_size != remote_info.total_size:
         raise IOError(f"下载文件大小不匹配: 期望 {remote_info.total_size}, 实际 {temp_file.stat().st_size}")
 
@@ -615,7 +923,7 @@ def _download_file_single_stream(
     progress: bool,
     tqdm_class: Any,
 ) -> None:
-    response = requests_module.get(url, stream=True, timeout=60)
+    response = requests_module.get(url, stream=True, timeout=60, headers=_request_headers())
     try:
         response.raise_for_status()
         total_size = _parse_int_header(response.headers, "Content-Length")
@@ -653,6 +961,25 @@ def _finalize_download(
     logger.info("'%s' 下载完成", file_name)
 
 
+def _normalize_options(
+    *,
+    split: int,
+    max_connection_per_server: int,
+    min_split_size: int,
+    piece_length: int,
+    max_tries: int,
+    continue_download: bool,
+) -> _DownloadOptions:
+    return _DownloadOptions(
+        split=max(1, int(split)),
+        max_connection_per_server=max(1, int(max_connection_per_server)),
+        min_split_size=max(1, int(min_split_size)),
+        piece_length=max(1, int(piece_length)),
+        max_tries=max(1, int(max_tries)),
+        continue_download=bool(continue_download),
+    )
+
+
 def download_file_from_url(
     url: str,
     save_path: Path | None = None,
@@ -660,10 +987,12 @@ def download_file_from_url(
     progress: bool = True,
     hash_prefix: str | None = None,
     re_download: bool = False,
-    num_threads: int = 8,
-    resume: bool = True,
-    max_retries: int = 5,
-    chunk_size: int | None = DEFAULT_RANGE_CHUNK_SIZE,
+    split: int = DEFAULT_SPLIT,
+    max_connection_per_server: int = DEFAULT_MAX_CONNECTION_PER_SERVER,
+    min_split_size: int = DEFAULT_MIN_SPLIT_SIZE,
+    piece_length: int = DEFAULT_PIECE_LENGTH,
+    continue_download: bool = False,
+    max_tries: int = 5,
 ) -> Path:
     """使用 requests 库下载文件
 
@@ -680,14 +1009,18 @@ def download_file_from_url(
             sha256 十六进制字符串, 如果提供, 将检查下载文件的哈希值是否与此前缀匹配, 当不匹配时引发`ValueError`
         re_download (bool):
             强制重新下载文件
-        num_threads (int):
-            单文件 HTTP Range 下载线程数
-        resume (bool):
+        split (int):
+            aria2 风格的单文件最大分割数
+        max_connection_per_server (int):
+            aria2 风格的单服务器最大连接数
+        min_split_size (int):
+            aria2 风格的最小切分大小
+        piece_length (int):
+            aria2 风格的 piece 大小
+        continue_download (bool):
             是否启用断点续传
-        max_retries (int):
-            单个分片的最大重试次数
-        chunk_size (int | None):
-            HTTP Range 分片大小, 为 None 或 0 时启用自适应分片
+        max_tries (int):
+            单个分片的最大尝试次数
 
     Returns:
         Path: 下载的文件路径
@@ -707,7 +1040,7 @@ def download_file_from_url(
 
     if not file_name:
         parts = urlparse(url)
-        file_name = Path(parts.path).name
+        file_name = Path(parts.path).name or "download"
 
     cached_file = save_path.resolve() / file_name
 
@@ -720,10 +1053,15 @@ def download_file_from_url(
 
         logger.info("下载 '%s' 到 '%s' 中", file_name, cached_file)
 
-        safe_num_threads = max(1, int(num_threads))
-        safe_max_retries = max(1, int(max_retries))
-        safe_chunk_size = int(chunk_size) if chunk_size else None
-        remote_info = _probe_remote_file(requests, url) if safe_num_threads > 1 else _RemoteFileInfo(total_size=0, supports_range=False)
+        options = _normalize_options(
+            split=split,
+            max_connection_per_server=max_connection_per_server,
+            min_split_size=min_split_size,
+            piece_length=piece_length,
+            max_tries=max_tries,
+            continue_download=continue_download,
+        )
+        remote_info = _probe_remote_file(requests, url)
 
         if remote_info.supports_range:
             try:
@@ -735,10 +1073,7 @@ def download_file_from_url(
                     remote_info=remote_info,
                     progress=bool(progress),
                     tqdm_class=tqdm,
-                    resume=bool(resume),
-                    max_retries=safe_max_retries,
-                    num_threads=safe_num_threads,
-                    chunk_size=safe_chunk_size,
+                    options=options,
                 )
             except _RangeDownloadNotSupported as e:
                 logger.warning("无法使用 HTTP Range 下载 '%s': %s, 切换到单连接下载", file_name, e)
@@ -752,6 +1087,7 @@ def download_file_from_url(
                     tqdm_class=tqdm,
                 )
         else:
+            _cleanup_resume_files(temp_file, state_file)
             _download_file_single_stream(
                 requests,
                 url=url,

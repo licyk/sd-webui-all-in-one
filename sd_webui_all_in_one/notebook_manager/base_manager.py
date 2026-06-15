@@ -703,7 +703,7 @@ class BaseManager:
         retry_times: int = RETRY_TIMES,
         use_fast_download: bool = False,
         download_tool: DownloadToolType | None = "requests",
-        download_num_threads: int = 8,
+        download_split: int = 5,
         download_progress: bool = True,
     ) -> None:
         """镜像 HuggingFace / ModelScope 仓库文件
@@ -733,8 +733,8 @@ class BaseManager:
                 是否使用项目内`download_file()`下载器进行下载
             download_tool (DownloadToolType | None):
                 `use_fast_download`启用时使用的下载器
-            download_num_threads (int):
-                `use_fast_download`启用时传给`download_file()`的下载线程数
+            download_split (int):
+                `use_fast_download`启用时传给`download_file()`的下载 split
             download_progress (bool):
                 `use_fast_download`启用时是否显示下载进度
         """
@@ -751,7 +751,7 @@ class BaseManager:
             retry_times=retry_times,
             use_fast_download=use_fast_download,
             download_tool=download_tool,
-            download_num_threads=download_num_threads,
+            download_split=download_split,
             download_progress=download_progress,
         )
 

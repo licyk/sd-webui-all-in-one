@@ -3,9 +3,16 @@
 import os
 import threading
 from pathlib import Path
+from typing import Any
 from urllib.parse import urlparse
 
 from sd_webui_all_in_one.downloader.aria2_server import Aria2RpcServer
+from sd_webui_all_in_one.downloader.requests_downloader import (
+    DEFAULT_MAX_CONNECTION_PER_SERVER,
+    DEFAULT_MIN_SPLIT_SIZE,
+    DEFAULT_PIECE_LENGTH,
+    DEFAULT_SPLIT,
+)
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
@@ -90,6 +97,12 @@ def aria2(
     path: Path | None = None,
     save_name: str | None = None,
     progress: bool = True,
+    split: int = DEFAULT_SPLIT,
+    max_connection_per_server: int = DEFAULT_MAX_CONNECTION_PER_SERVER,
+    min_split_size: int = DEFAULT_MIN_SPLIT_SIZE,
+    piece_length: int = DEFAULT_PIECE_LENGTH,
+    continue_download: bool = False,
+    max_tries: int = 5,
 ) -> Path:
     """Aria2 下载工具
 
@@ -104,6 +117,18 @@ def aria2(
             保存的文件名, 为`None`时使用`url`提取保存的文件名
         progress (bool):
             是否启用下载进度条
+        split (int):
+            aria2 单文件最大分割数
+        max_connection_per_server (int):
+            aria2 单服务器最大连接数
+        min_split_size (int):
+            aria2 最小切分大小
+        piece_length (int):
+            aria2 piece 大小
+        continue_download (bool):
+            是否启用断点续传
+        max_tries (int):
+            最大尝试次数
 
     Returns:
         Path: 下载成功时返回文件路径
@@ -123,10 +148,19 @@ def aria2(
     server = _server_pool.acquire()
     try:
         logger.info("下载 %s 到 %s 中", save_name, save_path)
+        options: dict[str, Any] = {
+            "split": str(max(1, int(split))),
+            "max-connection-per-server": str(max(1, int(max_connection_per_server))),
+            "min-split-size": str(max(1, int(min_split_size))),
+            "piece-length": str(max(1, int(piece_length))),
+            "continue": "true" if continue_download else "false",
+            "max-tries": str(max(1, int(max_tries))),
+        }
         return server.download(
             url=url,
             save_path=path,
             save_name=save_name,
+            options=options,
             show_progress=bool(progress),
         )
     except RuntimeError as e:

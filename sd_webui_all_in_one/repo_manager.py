@@ -1293,7 +1293,7 @@ class RepoManager:
         retry_times: int = RETRY_TIMES,
         use_fast_download: bool = False,
         download_tool: DownloadToolType | None = "requests",
-        download_num_threads: int = 8,
+        download_split: int = 5,
         download_progress: bool = True,
     ) -> None:
         """镜像 HuggingFace / ModelScope 仓库文件
@@ -1323,8 +1323,8 @@ class RepoManager:
                 是否使用项目内`download_file()`下载器进行下载
             download_tool (DownloadToolType | None):
                 `use_fast_download`启用时使用的下载器
-            download_num_threads (int):
-                `use_fast_download`启用时传给`download_file()`的下载线程数
+            download_split (int):
+                `use_fast_download`启用时传给`download_file()`的下载 split
             download_progress (bool):
                 `use_fast_download`启用时是否显示下载进度
 
@@ -1433,7 +1433,7 @@ class RepoManager:
                         save_name=file_path.name,
                         tool=download_tool,
                         progress=download_progress,
-                        num_threads=download_num_threads,
+                        split=download_split,
                     )
                 elif src_api_type == "huggingface":
                     self.hf_api.hf_hub_download(

@@ -130,10 +130,12 @@ sd-webui-all-in-one self-manager download-file <下载链接> [选项]
 - `--save-name <文件名>`：文件保存名称，默认从 URL 中提取。
 - `--downloader <工具>`：下载工具，可选 `aria2`、`requests`、`urllib`，默认 `requests`。
 - `--no-progress`：禁用下载进度条。
-- `--num-threads <数量>`：`requests` 下载器的 HTTP Range 下载线程数，默认 `8`。
-- `--no-resume`：禁用 `requests` 下载器断点续传。
-- `--max-retries <次数>`：`requests` 下载器单个分片最大重试次数，默认 `5`。
-- `--chunk-size <字节>`：`requests` 下载器 HTTP Range 固定分片大小；默认自适应，按线程数生成多段较大 Range（约每线程 4 段，单段目标不小于 32MiB）。传入 `0` 也表示自适应分片。
+- `--split <数量>`：aria2 风格的单文件最大分割数，默认 `5`。
+- `--max-connection-per-server <数量>`：aria2 风格的单服务器最大连接数，默认 `1`；单 URL 默认不会并发多连接。
+- `--min-split-size <字节>`：aria2 风格的最小切分大小，默认 `20971520`。
+- `--piece-length <字节>`：aria2 风格的 piece 大小，默认 `1048576`。
+- `--continue`：启用断点续传。
+- `--max-tries <次数>`：单个分片最大尝试次数，默认 `5`。
 
 ### 压缩包解压和压缩
 调用 Python 内核中的压缩包工具解压或创建压缩包。
