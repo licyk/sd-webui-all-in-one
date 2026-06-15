@@ -635,6 +635,7 @@ def test_uri_pool_limits_connections_per_host():
 
 def test_requests_downloader_uses_mirror_urls_for_range_workers(monkeypatch, tmp_path):
     payload = b"abcdefgh"
+    piece_length = 4
     data_urls = []
 
     def fake_head(url, allow_redirects=True, timeout=60, headers=None):
@@ -651,11 +652,14 @@ def test_requests_downloader_uses_mirror_urls_for_range_workers(monkeypatch, tmp
         range_header = headers.get("Range") if headers else None
         if range_header is None:
             start = 0
-            end = 3
+            end = piece_length - 1
         else:
             start_text, end_text = range_header.removeprefix("bytes=").split("-", maxsplit=1)
             start = int(start_text)
-            end = len(payload) - 1 if end_text == "" else int(end_text)
+            # Cap at one piece so each response never spills into a neighbouring
+            # piece — otherwise a fast Worker 1 can claim piece 1 via stream
+            # continuation before Worker 2 starts (timing-dependent race).
+            end = min(start + piece_length - 1, len(payload) - 1) if end_text == "" else int(end_text)
         response_headers = {
             "Content-Length": str(end - start + 1),
             "Content-Range": f"bytes {start}-{end}/{len(payload)}",
