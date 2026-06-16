@@ -73,7 +73,7 @@
 param (
     [string]$ScriptRootPath
 )
-$script:SD_PORTABLE_DOWNLOADER_VERSION = 111
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 112
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -506,8 +506,20 @@ function Format-Portable-UpdateTime {
     }
 }
 
-# 将同步逻辑封装为自包含的脚本块（PS5.1 兼容性最佳方案）
-$script:SyncDataGridLogic = {
+function Export-PortableDownloaderEventFunctions {
+    $names = @(
+        "Find-Visual-Element", "Format-Portable-UpdateTime", "Get-Aria2-Executable", "Get-7za-Executable",
+        "Invoke-DownloadAction", "Invoke-DownloadTask", "Invoke-Refresh", "Invoke-Update-Async", "Invoke-WebRequest-Async",
+        "Open-Url", "Set-Proxy", "Show-Async-MsgBox", "Show-Update-Popup", "Start-ExtractionTask",
+        "Sync-PortableDataGrid", "Update-PortableDiskInfo", "Update-PortableQueueUi", "Update-PortableStatistics"
+    )
+    foreach ($name in $names) {
+        $command = Get-Command -Name $name -CommandType Function -ErrorAction Stop
+        Set-Item -Path "Function:\Global:$name" -Value $command.ScriptBlock -Force
+    }
+}
+
+function Sync-PortableDataGrid {
     param($UI, $State)
     if ($null -eq $State.Metadata) {
         Write-Host "[数据] 无法同步：元数据为空" -ForegroundColor Red
@@ -578,11 +590,77 @@ $script:SyncDataGridLogic = {
     $UI.MainGrid.ItemsSource = $gridSource
 }
 
-function Invoke-Refresh {
+function Update-PortableStatistics {
     param($UI, $State)
 
-    # 显式引用脚本块，确保它在当前函数的局部作用域内，以便闭包捕获
-    $SyncLogic = $script:SyncDataGridLogic
+    $queue = $State.TaskQueue
+    if ($null -eq $queue) {
+        $total = 0
+        $running = 0
+        $completed = 0
+    } else {
+        $total = $queue.Count
+        $running = (@($queue | Where-Object { $_.Status -eq "下载中" -or $_.Status -eq "解压中" })).Count
+        $completed = (@($queue | Where-Object { $_.Status -eq "已完成" })).Count
+    }
+
+    $text = "队列统计: 总计 $total | 运行中 $running | 已完成 $completed"
+    $UI.Window.Dispatcher.Invoke([Action]{
+        $UI.StatText.Text = $text
+        $UI.StatTextBottom.Text = $text
+    })
+}
+
+function Update-PortableQueueUi {
+    param($UI, $State)
+    $UI.Window.Dispatcher.Invoke([Action]{
+        $UI.QueueGrid.ItemsSource = $null
+        $UI.QueueGrid.ItemsSource = $State.TaskQueue
+    })
+    Update-PortableStatistics -UI $UI -State $State
+}
+
+function Update-PortableDiskInfo {
+    param($UI)
+    try {
+        $path = $UI.PathInput.Text
+        if (Test-Path $path) {
+            # 路径合法：恢复正常颜色
+            $UI.PathInput.BorderBrush = [System.Windows.Media.Brushes]::DodgerBlue
+            $UI.PathInput.Background = [System.Windows.Media.Brushes]::White
+
+            $drive = Get-PSDrive -PSProvider FileSystem | Where-Object { $path.StartsWith($_.Root) } | Select-Object -First 1
+            if ($null -ne $drive) {
+                $total = $drive.Used + $drive.Free
+                $usedPercent = ($drive.Used / $total) * 100
+                $freeGB = [Math]::Round($drive.Free / 1GB, 2)
+                $totalGB = [Math]::Round($total / 1GB, 2)
+
+                $UI.DiskLabel.Text = "可用空间: $freeGB GB / 总量: $totalGB GB"
+                $UI.DiskBar.Value = $usedPercent
+                $UI.DiskPercent.Text = "$([Math]::Round($usedPercent, 0))%"
+
+                if ($freeGB -lt 10) {
+                    $UI.DiskBar.Foreground = [System.Windows.Media.Brushes]::Red
+                    Write-Host "[状态] 磁盘空间严重不足: $freeGB GB" -ForegroundColor Red
+                }
+                else { $UI.DiskBar.Foreground = [System.Windows.Media.Brushes]::DodgerBlue }
+            }
+        } else {
+            # 路径非法：变红提示
+            Write-Host "[状态] 当前路径无效: $path" -ForegroundColor Red
+            $UI.PathInput.BorderBrush = [System.Windows.Media.Red]
+            $UI.PathInput.Background = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(30, 255, 0, 0)) # 浅红背景
+            $UI.DiskLabel.Text = "磁盘空间: 路径无效"
+            $UI.DiskBar.Value = 0
+            $UI.DiskPercent.Text = "ERR"
+            $UI.DiskBar.Foreground = [System.Windows.Media.Brushes]::Gray
+        }
+    } catch {}
+}
+
+function Invoke-Refresh {
+    param($UI, $State)
 
     # 显示加载状态
     $UI.LoadingOverlay.Visibility = "Visible"
@@ -636,8 +714,7 @@ function Invoke-Refresh {
                     Write-Host "[数据] 解析成功，更新时间: $displayUpdateTime" -ForegroundColor Gray
                     $State.Metadata = $result
                     $UI.UpdateTimeText.Text = "更新时间: $displayUpdateTime"
-                    # 调用捕获到的脚本块
-                    & $SyncLogic -UI $UI -State $State
+                    Sync-PortableDataGrid -UI $UI -State $State
                     $UI.UpdateTimeText.Foreground = [System.Windows.Media.Brushes]::Gray
                 } elseif ($result -is [string] -and $result.StartsWith("ERROR:")) {
                     Write-Host "[数据] 同步异常: $result" -ForegroundColor Red
@@ -689,7 +766,7 @@ function Invoke-DownloadAction {
     }
 
     $State.TaskQueue += $newTask
-    & $script:UpdateQueueUI -UI $UI -State $State
+    Update-PortableQueueUi -UI $UI -State $State
     Show-Async-MsgBox -Message "任务已加入队列：`n$($selected.Name)`n`n队列任务将按顺序自动执行。" -Title "任务已添加"
 }
 
@@ -1480,77 +1557,7 @@ function Start-App {
         MainBorder = $window.FindName("MainBorder")
     }
 
-    # 统计更新逻辑
-    $script:UpdateStatistics = {
-        param($UI, $State)
-
-        $queue = $State.TaskQueue
-        if ($null -eq $queue) {
-            $total = 0
-            $running = 0
-            $completed = 0
-        } else {
-            $total = $queue.Count
-            $running = (@($queue | Where-Object { $_.Status -eq "下载中" -or $_.Status -eq "解压中" })).Count
-            $completed = (@($queue | Where-Object { $_.Status -eq "已完成" })).Count
-        }
-
-        $text = "队列统计: 总计 $total | 运行中 $running | 已完成 $completed"
-        $UI.Window.Dispatcher.Invoke([Action]{
-            $UI.StatText.Text = $text
-            $UI.StatTextBottom.Text = $text
-        })
-    }
-
-    # 队列刷新逻辑
-    $script:UpdateQueueUI = {
-        param($UI, $State)
-        $UI.Window.Dispatcher.Invoke([Action]{
-            $UI.QueueGrid.ItemsSource = $null
-            $UI.QueueGrid.ItemsSource = $State.TaskQueue
-        })
-        & $script:UpdateStatistics -UI $UI -State $State
-    }
-
-    # 磁盘空间更新逻辑
-    $script:UpdateDiskInfo = {
-        param($UI)
-        try {
-            $path = $UI.PathInput.Text
-            if (Test-Path $path) {
-                # 路径合法：恢复正常颜色
-                $UI.PathInput.BorderBrush = [System.Windows.Media.Brushes]::DodgerBlue
-                $UI.PathInput.Background = [System.Windows.Media.Brushes]::White
-
-                $drive = Get-PSDrive -PSProvider FileSystem | Where-Object { $path.StartsWith($_.Root) } | Select-Object -First 1
-                if ($null -ne $drive) {
-                    $total = $drive.Used + $drive.Free
-                    $usedPercent = ($drive.Used / $total) * 100
-                    $freeGB = [Math]::Round($drive.Free / 1GB, 2)
-                    $totalGB = [Math]::Round($total / 1GB, 2)
-
-                    $UI.DiskLabel.Text = "可用空间: $freeGB GB / 总量: $totalGB GB"
-                    $UI.DiskBar.Value = $usedPercent
-                    $UI.DiskPercent.Text = "$([Math]::Round($usedPercent, 0))%"
-
-                    if ($freeGB -lt 10) {
-                        $UI.DiskBar.Foreground = [System.Windows.Media.Brushes]::Red
-                        Write-Host "[状态] 磁盘空间严重不足: $freeGB GB" -ForegroundColor Red
-                    }
-                    else { $UI.DiskBar.Foreground = [System.Windows.Media.Brushes]::DodgerBlue }
-                }
-            } else {
-                # 路径非法：变红提示
-                Write-Host "[状态] 当前路径无效: $path" -ForegroundColor Red
-                $UI.PathInput.BorderBrush = [System.Windows.Media.Red]
-                $UI.PathInput.Background = [System.Windows.Media.SolidColorBrush]::new([System.Windows.Media.Color]::FromArgb(30, 255, 0, 0)) # 浅红背景
-                $UI.DiskLabel.Text = "磁盘空间: 路径无效"
-                $UI.DiskBar.Value = 0
-                $UI.DiskPercent.Text = "ERR"
-                $UI.DiskBar.Foreground = [System.Windows.Media.Brushes]::Gray
-            }
-        } catch {}
-    }
+    Export-PortableDownloaderEventFunctions
 
     # 处理无边框窗口逻辑 (手动模拟最大化以解决毛玻璃遮挡任务栏)
     $script:RestoreBounds = $null
@@ -1611,11 +1618,11 @@ function Start-App {
     $State = [PSCustomObject]@{ Metadata = $null; TaskQueue = @(); CurrentTask = $null; CurrentExtractionTask = $null; IsCancelled = $false }
 
     $UI.RefreshBtn.Add_Click({ Invoke-Refresh -UI $UI -State $State })
-    $onStateChanged = { & $script:SyncDataGridLogic -UI $UI -State $State }
+    $onStateChanged = { Sync-PortableDataGrid -UI $UI -State $State }.GetNewClosure()
     $UI.StableRadio.Add_Checked($onStateChanged); $UI.NightlyRadio.Add_Checked($onStateChanged); $UI.HFRadio.Add_Checked($onStateChanged); $UI.MSRadio.Add_Checked($onStateChanged)
 
     # 实时验证路径
-    $UI.PathInput.Add_TextChanged({ & $script:UpdateDiskInfo -UI $UI })
+    $UI.PathInput.Add_TextChanged({ Update-PortableDiskInfo -UI $UI })
 
     $UI.BrowseBtn.Add_Click({
         $dialog = New-Object System.Windows.Forms.FolderBrowserDialog;
@@ -1785,7 +1792,7 @@ function Start-App {
             else {
                 $task.Status = "已取消"
             }
-            & $script:UpdateQueueUI -UI $UI -State $State
+            Update-PortableQueueUi -UI $UI -State $State
         }
     })
 
@@ -1798,7 +1805,7 @@ function Start-App {
         $script:tickCounter++
         if ($script:tickCounter -ge 10) {
             $script:tickCounter = 0
-            & $script:UpdateDiskInfo -UI $UI
+            Update-PortableDiskInfo -UI $UI
         }
 
         # 2. 任务调度逻辑
@@ -1808,7 +1815,7 @@ function Start-App {
             $nextTask = $State.TaskQueue | Where-Object { $_.Status -eq "等待中" } | Select-Object -First 1
             if ($null -ne $nextTask) {
                 $nextTask.Status = "下载中"
-                & $script:UpdateQueueUI -UI $UI -State $State
+                Update-PortableQueueUi -UI $UI -State $State
                 Invoke-DownloadTask -Url $nextTask.Url -OutDir $nextTask.OutDir -SaveName $nextTask.Name -State $State -QueueTask $nextTask | Out-Null
             }
         }
@@ -1840,7 +1847,7 @@ function Start-App {
                     }
                 }
                 $State.CurrentTask = $null
-                & $script:UpdateQueueUI -UI $UI -State $State
+                Update-PortableQueueUi -UI $UI -State $State
             }
         }
 
@@ -1870,7 +1877,7 @@ function Start-App {
                     }
                 }
                 $State.CurrentExtractionTask = $null
-                & $script:UpdateQueueUI -UI $UI -State $State
+                Update-PortableQueueUi -UI $UI -State $State
             }
         }
     })
@@ -1898,7 +1905,7 @@ function Start-App {
         # 设置 DWM 沉浸式深色模式
         [BlurHelper]::SetDarkMode($handle, $isDarkMode)
 
-        & $script:UpdateDiskInfo -UI $UI
+        Update-PortableDiskInfo -UI $UI
         Invoke-Refresh -UI $UI -State $State
         Invoke-Update-Async -IsDarkMode $isDarkMode
     })
