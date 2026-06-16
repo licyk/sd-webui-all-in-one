@@ -73,7 +73,7 @@
 param (
     [string]$ScriptRootPath
 )
-$script:SD_PORTABLE_DOWNLOADER_VERSION = 107
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 108
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -472,31 +472,62 @@ $script:SyncDataGridLogic = {
         Write-Host "[数据] 无法同步：元数据为空" -ForegroundColor Red
         return
     }
+    if ($null -eq $State.Metadata.resources) {
+        Write-Host "[数据] 无法同步：缺少 resources 字段" -ForegroundColor Red
+        $UI.MainGrid.ItemsSource = $null
+        return
+    }
 
     $versionType = if ($UI.StableRadio.IsChecked) { "stable" } else { "nightly" }
     $sourceName  = if ($UI.HFRadio.IsChecked) { "huggingface" } else { "modelscope" }
 
     Write-Host "[数据] 正在切换视图: $sourceName -> $versionType" -ForegroundColor Magenta
     $gridSource = @()
-    $sourceNode = $State.Metadata."$sourceName"
+    $sourceNode = $State.Metadata.resources."$sourceName"
     if ($null -ne $sourceNode) {
-        $vNode = $sourceNode."$versionType"
-        if ($null -ne $vNode) {
-            foreach ($comp in $vNode.PSObject.Properties) {
-                $versions = @()
-                if ($null -ne $comp.Value -and $comp.Value -is [System.Array]) {
-                    foreach ($vEntry in $comp.Value) {
-                        if ($vEntry.Count -ge 2) {
-                            $versions += [PSCustomObject]@{ Name = $vEntry[0]; Url = $vEntry[1] }
-                        }
+        foreach ($resource in $sourceNode.PSObject.Properties) {
+            $resourceKey = $resource.Name
+            $resourceNode = $resource.Value
+            if ($null -eq $resourceNode) { continue }
+
+            $displayName = [string]$resourceNode.display_name
+            if ([string]::IsNullOrWhiteSpace($displayName)) {
+                $displayName = $resourceKey
+            }
+            $description = [string]$resourceNode.description
+
+            $versions = @()
+            $vNode = $resourceNode."$versionType"
+            if ($null -ne $vNode) {
+                foreach ($vEntry in @($vNode)) {
+                    if ($null -eq $vEntry) { continue }
+
+                    $entryName = [string]$vEntry.filename
+                    $entryUrl = [string]$vEntry.url
+                    if ([string]::IsNullOrWhiteSpace($entryName) -or [string]::IsNullOrWhiteSpace($entryUrl)) {
+                        continue
+                    }
+
+                    $versions += [PSCustomObject]@{
+                        Name      = $entryName
+                        Url       = $entryUrl
+                        Path      = [string]$vEntry.path
+                        Version   = [string]$vEntry.version
+                        BuildDate = [string]$vEntry.build_date
+                        Channel   = [string]$vEntry.channel
+                        Signature = [string]$vEntry.signature
+                        Extension = [string]$vEntry.extension
                     }
                 }
-                if ($versions.Count -gt 0) {
-                    $gridSource += [PSCustomObject]@{
-                        Type            = $comp.Name
-                        Versions        = $versions
-                        SelectedVersion = $versions[0]
-                    }
+            }
+
+            if ($versions.Count -gt 0) {
+                $gridSource += [PSCustomObject]@{
+                    Type            = $displayName
+                    ResourceKey     = $resourceKey
+                    Description     = $description
+                    Versions        = $versions
+                    SelectedVersion = $versions[0]
                 }
             }
         }
@@ -559,7 +590,7 @@ function Invoke-Refresh {
             try {
                 $result = $ps.EndInvoke($asyncResult)
 
-                if ($null -ne $result -and $null -ne $result.update_time) {
+                if ($null -ne $result -and $null -ne $result.update_time -and $null -ne $result.resources) {
                     Write-Host "[数据] 解析成功，更新时间: $($result.update_time)" -ForegroundColor Gray
                     $State.Metadata = $result
                     $UI.UpdateTimeText.Text = "更新时间: $($result.update_time)"
@@ -571,7 +602,7 @@ function Invoke-Refresh {
                     $UI.UpdateTimeText.Text = "同步失败: " + $result.Substring(6)
                     $UI.UpdateTimeText.Foreground = [System.Windows.Media.Brushes]::Red
                 } else {
-                    Write-Host "[数据] 获取到的数据格式不匹配" -ForegroundColor Red
+                    Write-Host "[数据] 获取到的数据格式不匹配：缺少 update_time 或 resources" -ForegroundColor Red
                     $UI.UpdateTimeText.Text = "同步失败: 获取到的数据格式不正确"
                     $UI.UpdateTimeText.Foreground = [System.Windows.Media.Brushes]::Red
                 }
