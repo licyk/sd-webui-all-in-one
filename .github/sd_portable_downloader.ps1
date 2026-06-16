@@ -1137,7 +1137,7 @@ function Start-App {
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
 
                     <Border Grid.Row="0" Grid.ColumnSpan="2" Background="#EAF5FF" BorderBrush="#B7D9FF" BorderThickness="1" CornerRadius="6" Padding="12,9" Margin="0,0,0,12">
-                        <TextBlock Text="整合包的使用方法可以点击「整合包使用说明」查看。" Foreground="#005A9E" FontSize="13" TextWrapping="Wrap"/>
+                        <TextBlock Text="整合包的使用方法可以点击「整合包使用说明」查看；将鼠标放到整合包名称上可查看说明。" Foreground="#005A9E" FontSize="13" TextWrapping="Wrap"/>
                     </Border>
 
                     <TextBlock Name="UpdateTime" Grid.Row="1" Grid.Column="0" Text="状态: 正在初始化..." FontSize="11" Foreground="{DynamicResource TextSecBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
@@ -1217,7 +1217,7 @@ function Start-App {
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding Type}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
-                                                           ToolTipService.InitialShowDelay="800" ToolTipService.ShowDuration="30000">
+                                                           ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="30000">
                                                     <TextBlock.ToolTip>
                                                         <ToolTip DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}" MaxWidth="420">
                                                             <TextBlock Text="{Binding Description}" TextWrapping="Wrap" MaxWidth="380"/>
