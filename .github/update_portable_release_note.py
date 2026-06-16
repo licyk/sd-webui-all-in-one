@@ -7,6 +7,7 @@
 import subprocess
 import os
 import sys
+from collections.abc import Mapping
 from tempfile import TemporaryDirectory
 from pathlib import Path
 from typing import Any
@@ -35,8 +36,84 @@ def fetch_portable_list(
     return response.json()
 
 
+def get_portable_resources(
+    data: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    """获取新版整合包资源节点"""
+    resources = data.get("resources")
+    if not isinstance(resources, Mapping):
+        raise ValueError("整合包列表格式不正确：缺少 resources 字段")
+    return resources
+
+
+def get_update_time(
+    data: Mapping[str, Any],
+) -> str:
+    """获取整合包列表更新时间"""
+    update_time = data.get("update_time")
+    if not isinstance(update_time, str) or not update_time:
+        raise ValueError("整合包列表格式不正确：缺少 update_time 字段")
+    return update_time
+
+
+def get_source_resources(
+    data: Mapping[str, Any],
+    source: str,
+) -> Mapping[str, Any]:
+    """获取指定下载源的资源节点"""
+    resources = get_portable_resources(data)
+    source_resources = resources.get(source, {})
+    if not isinstance(source_resources, Mapping):
+        return {}
+    return source_resources
+
+
+def get_resource_node(
+    data: Mapping[str, Any],
+    source: str,
+    project: str,
+) -> Mapping[str, Any]:
+    """获取指定下载源下的整合包资源节点"""
+    project_data = get_source_resources(data, source).get(project, {})
+    if not isinstance(project_data, Mapping):
+        return {}
+    return project_data
+
+
+def get_project_display_name(
+    data: Mapping[str, Any],
+    project: str,
+) -> str:
+    """获取整合包显示名称"""
+    for source in ("modelscope", "huggingface"):
+        display_name = get_resource_node(data, source, project).get("display_name")
+        if isinstance(display_name, str) and display_name:
+            return display_name
+    return project
+
+
+def get_projects(
+    data: Mapping[str, Any],
+    version_type: str,
+) -> list[str]:
+    """获取指定版本类型下所有整合包资源键"""
+    projects: set[str] = set()
+
+    for source_resources in get_portable_resources(data).values():
+        if not isinstance(source_resources, Mapping):
+            continue
+        for project, project_data in source_resources.items():
+            if not isinstance(project, str) or not isinstance(project_data, Mapping):
+                continue
+            version_data = project_data.get(version_type)
+            if isinstance(version_data, list) and version_data:
+                projects.add(project)
+
+    return sorted(projects, key=lambda name: get_project_display_name(data, name).casefold())
+
+
 def get_download_link(
-    data: dict[str, Any],
+    data: Mapping[str, Any],
     source: str,
     version_type: str,
     project: str,
@@ -62,19 +139,24 @@ def get_download_link(
         >>> get_download_link(data, "modelscope", "stable", "ComfyUI")
         '[comfyui-licyk-v2.2.7z](https://modelscope.cn/...)'
     """
-    try:
-        project_data = data.get(source, {}).get(version_type, {}).get(project, [])
-        if project_data and len(project_data) > 0:
-            filename = project_data[0][0]
-            url = project_data[0][1]
-            return f"[{filename}]({url})"
+    project_data = get_resource_node(data, source, project)
+    version_data = project_data.get(version_type)
+    if not isinstance(version_data, list) or not version_data:
         return "暂无"
-    except (KeyError, IndexError, TypeError):
+
+    latest = version_data[0]
+    if not isinstance(latest, Mapping):
         return "暂无"
+
+    filename = latest.get("filename")
+    url = latest.get("url")
+    if not isinstance(filename, str) or not isinstance(url, str) or not filename or not url:
+        return "暂无"
+    return f"[{filename}]({url})"
 
 
 def generate_markdown_table(
-    data: dict[str, Any],
+    data: Mapping[str, Any],
     version_type: str,
     title: str,
 ) -> list[str]:
@@ -101,8 +183,7 @@ def generate_markdown_table(
     """
     lines: list[str] = []
 
-    # 获取所有项目名称（从 modelscope 获取，然后排序）
-    projects: list[str] = sorted(data.get("modelscope", {}).get(version_type, {}).keys())
+    projects = get_projects(data, version_type)
 
     if not projects:
         return lines
@@ -113,9 +194,10 @@ def generate_markdown_table(
 
     # 遍历所有项目
     for project in projects:
+        project_name = get_project_display_name(data, project)
         ms_link = get_download_link(data, "modelscope", version_type, project)
         hf_link = get_download_link(data, "huggingface", version_type, project)
-        lines.append(f"|{project}|{ms_link}|{hf_link}|")
+        lines.append(f"|{project_name}|{ms_link}|{hf_link}|")
 
     return lines
 
@@ -136,7 +218,7 @@ def main() -> None:
     data: dict[str, Any] = fetch_portable_list(portable_list_url)
 
     # 获取更新时间
-    update_time: str = data.get("update_time", "未知")
+    update_time: str = get_update_time(data)
     print(f"更新时间：{update_time}")
 
     # 构建 Markdown 内容
