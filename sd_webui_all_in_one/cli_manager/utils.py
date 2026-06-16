@@ -6,6 +6,7 @@ import sys
 import os
 import time
 from pathlib import Path
+from typing import cast
 
 from sd_webui_all_in_one.proxy import (
     get_system_proxy_address,
@@ -51,6 +52,11 @@ from sd_webui_all_in_one.repo_manager import (
     ApiType,
     RepoManager,
     RepoType,
+)
+from sd_webui_all_in_one.portable_manager import (
+    PortableRepoSourceConfig,
+    build_portable_list_from_repositories,
+    save_portable_list,
 )
 from sd_webui_all_in_one.config import (
     LOGGER_NAME,
@@ -421,6 +427,82 @@ def _print_repo_metadata(
     print("\t".join(REPO_METADATA_TEXT_FIELDS))
     for item in metadata:
         print("\t".join(_repo_metadata_text_value(item.get(field)) for field in REPO_METADATA_TEXT_FIELDS))
+
+
+def _default_portable_list_output() -> Path:
+    """获取默认整合包资源列表输出路径"""
+    return SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / "portable_list.json"
+
+
+def _validate_repo_type(
+    value: str,
+) -> RepoType:
+    """校验仓库类型并转换为 RepoType"""
+    if value not in REPO_TYPE_LIST:
+        raise ValueError(f"未知的仓库类型: {value}")
+    return cast(RepoType, value)
+
+
+def _add_portable_source_config(
+    sources: list[PortableRepoSourceConfig],
+    source: ApiType,
+    repo_id: str | None,
+    repo_type: str,
+) -> None:
+    """添加整合包下载源配置"""
+    if not repo_id:
+        return
+    sources.append(
+        {
+            "source": source,
+            "repo_id": repo_id,
+            "repo_type": _validate_repo_type(repo_type),
+        }
+    )
+
+
+def portable_list_cli(
+    output: Path,
+    hf_repo_id: str | None = None,
+    hf_repo_type: str = "model",
+    ms_repo_id: str | None = None,
+    ms_repo_type: str = "model",
+    revision: str | None = None,
+    hf_token: str | None = None,
+    ms_token: str | None = None,
+) -> None:
+    """生成整合包资源列表
+
+    Args:
+        output (Path):
+            输出文件路径
+        hf_repo_id (str | None):
+            HuggingFace 仓库 ID
+        hf_repo_type (str):
+            HuggingFace 仓库类型
+        ms_repo_id (str | None):
+            ModelScope 仓库 ID
+        ms_repo_type (str):
+            ModelScope 仓库类型
+        revision (str | None):
+            仓库分支、标签或提交哈希
+        hf_token (str | None):
+            HuggingFace Token
+        ms_token (str | None):
+            ModelScope Token
+    """
+    sources: list[PortableRepoSourceConfig] = []
+    _add_portable_source_config(sources, "huggingface", hf_repo_id, hf_repo_type)
+    _add_portable_source_config(sources, "modelscope", ms_repo_id, ms_repo_type)
+
+    manager = _create_repo_manager(hf_token=hf_token, ms_token=ms_token)
+    portable_list = build_portable_list_from_repositories(
+        manager=manager,
+        sources=sources,
+        revision=revision,
+    )
+    save_portable_list(portable_list, output)
+    logger.info("整合包资源列表已保存: %s", output)
 
 
 def repo_list_cli(
@@ -943,6 +1025,30 @@ def register_manager(
     # get env-config
     get_env_config_p = get_sub.add_parser("env-config", help="获取 SD WebUI All In One 使用的环境变量配置")
     get_env_config_p.set_defaults(func=lambda args: get_env_config())
+
+    portable_p = sd_webui_all_in_one_sub.add_parser("portable", help="整合包资源管理")
+    portable_sub = portable_p.add_subparsers(dest="portable_action", required=True)
+
+    portable_list_p = portable_sub.add_parser("list", help="生成整合包资源列表")
+    portable_list_p.add_argument("--output", type=normalized_filepath, default=_default_portable_list_output(), help="输出 JSON 文件路径")
+    portable_list_p.add_argument("--hf-repo-id", type=str, default=None, help="HuggingFace 仓库 ID")
+    portable_list_p.add_argument("--hf-repo-type", choices=REPO_TYPE_LIST, default="model", help="HuggingFace 仓库类型")
+    portable_list_p.add_argument("--ms-repo-id", type=str, default=None, help="ModelScope 仓库 ID")
+    portable_list_p.add_argument("--ms-repo-type", choices=REPO_TYPE_LIST, default="model", help="ModelScope 仓库类型")
+    portable_list_p.add_argument("--revision", type=str, default=None, help="仓库分支、标签或提交哈希")
+    _add_repo_auth_arguments(portable_list_p)
+    portable_list_p.set_defaults(
+        func=lambda args: portable_list_cli(
+            output=args.output,
+            hf_repo_id=args.hf_repo_id,
+            hf_repo_type=args.hf_repo_type,
+            ms_repo_id=args.ms_repo_id,
+            ms_repo_type=args.ms_repo_type,
+            revision=args.revision,
+            hf_token=args.hf_token,
+            ms_token=args.ms_token,
+        )
+    )
 
     repo_p = sd_webui_all_in_one_sub.add_parser("repo", help="HuggingFace / ModelScope 仓库管理")
     repo_sub = repo_p.add_subparsers(dest="repo_action", required=True)

@@ -118,6 +118,54 @@ sd-webui-all-in-one self-manager get tcmalloc --path
 sd-webui-all-in-one self-manager get env-config
 ```
 
+### 整合包资源管理
+生成 AI 整合包下载器使用的远程资源列表。
+
+#### 生成整合包资源列表
+```bash
+sd-webui-all-in-one self-manager portable list [选项]
+```
+
+高级选项：
+
+- `--output <路径>`：输出 JSON 文件路径，默认输出到当前启动路径下的 `portable_list.json`。
+- `--hf-repo-id <仓库>`：HuggingFace 仓库 ID。
+- `--hf-repo-type <类型>`：HuggingFace 仓库类型，可选 `model`、`dataset`、`space`，默认 `model`。
+- `--ms-repo-id <仓库>`：ModelScope 仓库 ID。
+- `--ms-repo-type <类型>`：ModelScope 仓库类型，可选 `model`、`dataset`、`space`，默认 `model`。
+- `--revision <版本>`：仓库分支、标签或提交哈希。
+- `--hf-token <令牌>`：HuggingFace Token；未传时读取 `HF_TOKEN`。
+- `--ms-token <令牌>`：ModelScope Token；未传时读取 `MODELSCOPE_API_TOKEN`。
+
+至少需要配置 HuggingFace 或 ModelScope 中的一个下载源。输出结构为新版 `resources/update_time` 格式：
+
+```json
+{
+  "update_time": "2026-06-16T00:00:00Z",
+  "resources": {
+    "modelscope": {
+      "sd_webui": {
+        "display_name": "Stable Diffusion WebUI",
+        "description": "上手简单，操作方便，适合入门使用。",
+        "stable": [
+          {
+            "filename": "sd_webui-licyk-v1.0.0.7z",
+            "path": "portable/sd_webui-licyk-v1.0.0.7z",
+            "url": "https://...",
+            "signature": "licyk",
+            "channel": "stable",
+            "version": "1.0.0",
+            "build_date": null,
+            "extension": "7z"
+          }
+        ],
+        "nightly": []
+      }
+    }
+  }
+}
+```
+
 ### HuggingFace / ModelScope 仓库管理
 调用 Python 内核中的 `RepoManager` 管理 HuggingFace / ModelScope 仓库文件。
 
