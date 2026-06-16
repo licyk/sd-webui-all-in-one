@@ -475,7 +475,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 
 ## 所有版本
-整合包存储在 [HuggingFace](https://huggingface.co/licyk/sdnote/tree/main/portable) / [ModelScope](https://modelscope.cn/models/licyks/sdnote/files) 中。
+整合包存储在 [HuggingFace](https://huggingface.co/licyk/sd-webui-all-in-one/tree/main/portable) / [ModelScope](https://modelscope.cn/models/licyks/sd-webui-all-in-one/files) 中。
 
 **整合包合集链接：[AI 整合包下载 - licyk在线工具集](https://licyk.github.io/t/#/sd_portable)**
 

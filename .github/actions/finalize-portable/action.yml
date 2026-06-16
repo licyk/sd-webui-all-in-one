@@ -69,7 +69,7 @@ runs:
           -SoftwareName "${{ inputs.software-name }}" `
           -Workspace "${{ github.workspace }}" `
           -Source "${{ inputs.install-path }}" `
-          -SaveDst "${{ github.workspace }}/sdnote/portable/nightly" `
+          -SaveDst "${{ github.workspace }}/sd-webui-all-in-one/portable/nightly" `
           -Author "licyk"
 
     - name: Install HuggingFace and ModelScope library
@@ -87,7 +87,7 @@ runs:
       run: |
         $uploadPath = "${{ inputs.upload-path }}"
         if ([string]::IsNullOrWhiteSpace($uploadPath)) {
-          $uploadPath = "${{ github.workspace }}/sdnote"
+          $uploadPath = "${{ github.workspace }}/sd-webui-all-in-one"
         }
 
         $uploadArgs = @(

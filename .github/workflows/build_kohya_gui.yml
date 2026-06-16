@@ -41,6 +41,6 @@ jobs:
         with:
           install-path: ${{ github.workspace }}/kohya_gui
           software-name: kohya_gui
-          upload-path: ${{ github.workspace }}/sdnote
-          hf-repo-id: licyk/sdnote
-          ms-repo-id: licyks/sdnote
+          upload-path: ${{ github.workspace }}/sd-webui-all-in-one
+          hf-repo-id: licyk/sd-webui-all-in-one
+          ms-repo-id: licyks/sd-webui-all-in-one
