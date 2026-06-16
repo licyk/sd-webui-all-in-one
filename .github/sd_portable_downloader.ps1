@@ -73,7 +73,7 @@
 param (
     [string]$ScriptRootPath
 )
-$script:SD_PORTABLE_DOWNLOADER_VERSION = 109
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 110
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -494,7 +494,7 @@ $script:SyncDataGridLogic = {
             if ([string]::IsNullOrWhiteSpace($displayName)) {
                 $displayName = $resourceKey
             }
-            $description = [string]$resourceNode.description
+            $description = ([string]$resourceNode.description).Trim()
 
             $versions = @()
             $vNode = $resourceNode."$versionType"
@@ -1213,7 +1213,20 @@ function Start-App {
                                     </Style>
                                 </DataGrid.Resources>
                                 <DataGrid.Columns>
-                                    <DataGridTextColumn Header="资源类型" Binding="{Binding Type}" Width="250"/>
+                                    <DataGridTemplateColumn Header="资源类型" Width="250">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Type}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                                           ToolTipService.InitialShowDelay="800" ToolTipService.ShowDuration="30000">
+                                                    <TextBlock.ToolTip>
+                                                        <ToolTip DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}" MaxWidth="420">
+                                                            <TextBlock Text="{Binding Description}" TextWrapping="Wrap" MaxWidth="380"/>
+                                                        </ToolTip>
+                                                    </TextBlock.ToolTip>
+                                                </TextBlock>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
                                     <DataGridTemplateColumn Header="版本选择" Width="*">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
