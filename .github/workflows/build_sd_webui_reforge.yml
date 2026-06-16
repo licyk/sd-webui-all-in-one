@@ -86,7 +86,9 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
-          WORKSPACE: ${{ github.workspace }}
         with:
           install-path: ${{ github.workspace }}/sd_webui_reforge
           software-name: sd_webui_reforge
+          upload-path: ${{ github.workspace }}/sdnote
+          hf-repo-id: licyk/sdnote
+          ms-repo-id: licyks/sdnote

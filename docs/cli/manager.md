@@ -166,6 +166,30 @@ sd-webui-all-in-one self-manager portable list [选项]
 }
 ```
 
+#### 上传整合包目录
+```bash
+sd-webui-all-in-one self-manager portable upload <upload_path> [选项]
+```
+
+位置参数：
+
+- `<upload_path>`：要上传的本地目录；目录内相对路径会原样作为仓库内路径。
+
+高级选项：
+
+- `--hf-repo-id <仓库>`：HuggingFace 目标仓库 ID。
+- `--hf-repo-type <类型>`：HuggingFace 仓库类型，可选 `model`、`dataset`、`space`，默认 `model`。
+- `--ms-repo-id <仓库>`：ModelScope 目标仓库 ID。
+- `--ms-repo-type <类型>`：ModelScope 仓库类型，可选 `model`、`dataset`、`space`，默认 `model`。
+- `--revision <版本>`：上传目标分支、标签或提交哈希。
+- `--public`：仓库不存在并需要创建时设为公开仓库；默认创建私有仓库。
+- `--threads <数量>`：单个目标仓库内部的上传线程数，默认 `1`。
+- `--target-workers <数量>`：多个目标仓库之间的并发数，默认按已配置目标数量并发。
+- `--hf-token <令牌>`：HuggingFace Token；未传时读取 `HF_TOKEN`。
+- `--ms-token <令牌>`：ModelScope Token；未传时读取 `MODELSCOPE_API_TOKEN`。
+
+至少需要配置 HuggingFace 或 ModelScope 中的一个目标。命令内部复用 `RepoManager` 的上传能力，会跳过远端已存在且 hash 相同的文件。
+
 ### HuggingFace / ModelScope 仓库管理
 调用 Python 内核中的 `RepoManager` 管理 HuggingFace / ModelScope 仓库文件。
 

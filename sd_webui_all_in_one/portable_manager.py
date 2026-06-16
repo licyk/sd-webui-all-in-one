@@ -2,6 +2,7 @@
 
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from functools import cmp_to_key
 from pathlib import Path
@@ -13,6 +14,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_NAME,
 )
 from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.package_analyzer.ver_cmp import CommonVersionComparison
 from sd_webui_all_in_one.repo_manager import (
     ApiType,
@@ -195,6 +197,10 @@ class PortableRepoSourceConfig(TypedDict):
 
     repo_type: RepoType
     """仓库类型"""
+
+
+PortableUploadTargetConfig: TypeAlias = PortableRepoSourceConfig
+"""整合包上传目标配置"""
 
 
 def utc_update_time() -> str:
@@ -462,6 +468,94 @@ def build_portable_list_from_repositories(
             revision=revision,
         )
     return build_portable_list_data(resources=resources, update_time=update_time)
+
+
+def _portable_target_name(target: PortableUploadTargetConfig) -> str:
+    """获取上传目标的日志展示名称"""
+    return f"{target['source']}:{target['repo_id']} ({target['repo_type']})"
+
+
+def upload_portable_package_to_repositories(
+    manager: RepoManager,
+    upload_path: Path,
+    targets: list[PortableUploadTargetConfig],
+    revision: str | None = None,
+    visibility: bool = False,
+    num_threads: int = 1,
+    target_workers: int | None = None,
+) -> None:
+    """上传整合包目录到多个 HuggingFace / ModelScope 仓库
+
+    Args:
+        manager (RepoManager):
+            仓库管理器
+        upload_path (Path):
+            要上传的本地目录
+        targets (list[PortableUploadTargetConfig]):
+            上传目标配置列表
+        revision (str | None):
+            上传目标分支、标签或提交哈希
+        visibility (bool):
+            创建仓库时是否设为公开
+        num_threads (int):
+            单个目标仓库内部的上传线程数
+        target_workers (int | None):
+            上传目标之间的并发数, 未指定时按目标数量并发
+
+    Raises:
+        FileNotFoundError: 上传路径不是目录时抛出
+        ValueError: 上传目标配置为空时抛出
+        AggregateError: 任一上传目标最终失败时抛出
+    """
+    if not upload_path.is_dir():
+        raise FileNotFoundError(f"整合包上传目录不存在: {upload_path}")
+    if not targets:
+        raise ValueError("至少需要配置一个整合包上传目标")
+
+    upload_targets = list(targets)
+    upload_threads = max(1, num_threads)
+    max_workers = max(1, target_workers if target_workers is not None else len(upload_targets))
+    errors: list[Exception] = []
+
+    def _upload_target(target: PortableUploadTargetConfig) -> None:
+        target_name = _portable_target_name(target)
+        logger.info("开始上传整合包到 %s", target_name)
+        manager.upload_files_to_repo(
+            api_type=target["source"],
+            repo_id=target["repo_id"],
+            upload_path=upload_path,
+            repo_type=target["repo_type"],
+            visibility=visibility,
+            num_threads=upload_threads,
+            revision=revision,
+        )
+        logger.info("整合包上传到 %s 完成", target_name)
+
+    def _record_error(target: PortableUploadTargetConfig, exc: Exception) -> None:
+        target_name = _portable_target_name(target)
+        logger.error("整合包上传到 %s 失败: %s", target_name, exc)
+        target_error = RuntimeError(f"{target_name} 上传失败: {exc}")
+        target_error.__cause__ = exc
+        errors.append(target_error)
+
+    if max_workers == 1:
+        for target in upload_targets:
+            try:
+                _upload_target(target)
+            except Exception as exc:
+                _record_error(target, exc)
+    else:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_target = {executor.submit(_upload_target, target): target for target in upload_targets}
+            for future in as_completed(future_to_target):
+                target = future_to_target[future]
+                try:
+                    future.result()
+                except Exception as exc:
+                    _record_error(target, exc)
+
+    if errors:
+        raise AggregateError("上传整合包时发生错误", errors)
 
 
 def save_portable_list(

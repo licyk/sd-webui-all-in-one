@@ -8,6 +8,42 @@ inputs:
   software-name:
     description: Portable package archive software name.
     required: true
+  upload-path:
+    description: Portable package upload root directory.
+    required: false
+    default: ""
+  hf-repo-id:
+    description: HuggingFace repository ID for portable upload.
+    required: false
+    default: ""
+  hf-repo-type:
+    description: HuggingFace repository type for portable upload.
+    required: false
+    default: model
+  ms-repo-id:
+    description: ModelScope repository ID for portable upload.
+    required: false
+    default: ""
+  ms-repo-type:
+    description: ModelScope repository type for portable upload.
+    required: false
+    default: model
+  revision:
+    description: Repository branch, tag, or commit for portable upload.
+    required: false
+    default: ""
+  public:
+    description: Create missing repositories as public.
+    required: false
+    default: "false"
+  upload-threads:
+    description: Upload threads per target repository.
+    required: false
+    default: "1"
+  target-workers:
+    description: Concurrent target repository upload workers.
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -42,5 +78,40 @@ runs:
 
     - name: Upload to HuggingFace and ModelScope repos
       shell: pwsh
+      env:
+        PYTHONPATH: ${{ github.workspace }}
       run: |
-        python -u "${{ github.workspace }}/.github/upload_portable_release.py"
+        $uploadPath = "${{ inputs.upload-path }}"
+        if ([string]::IsNullOrWhiteSpace($uploadPath)) {
+          $uploadPath = "${{ github.workspace }}/sdnote"
+        }
+
+        $uploadArgs = @(
+          "self-manager",
+          "portable",
+          "upload",
+          $uploadPath
+        )
+
+        if (-not [string]::IsNullOrWhiteSpace("${{ inputs.hf-repo-id }}")) {
+          $uploadArgs += @("--hf-repo-id", "${{ inputs.hf-repo-id }}")
+          $uploadArgs += @("--hf-repo-type", "${{ inputs.hf-repo-type }}")
+        }
+        if (-not [string]::IsNullOrWhiteSpace("${{ inputs.ms-repo-id }}")) {
+          $uploadArgs += @("--ms-repo-id", "${{ inputs.ms-repo-id }}")
+          $uploadArgs += @("--ms-repo-type", "${{ inputs.ms-repo-type }}")
+        }
+        if (-not [string]::IsNullOrWhiteSpace("${{ inputs.revision }}")) {
+          $uploadArgs += @("--revision", "${{ inputs.revision }}")
+        }
+        if ("${{ inputs.public }}" -eq "true") {
+          $uploadArgs += "--public"
+        }
+        if (-not [string]::IsNullOrWhiteSpace("${{ inputs.upload-threads }}")) {
+          $uploadArgs += @("--threads", "${{ inputs.upload-threads }}")
+        }
+        if (-not [string]::IsNullOrWhiteSpace("${{ inputs.target-workers }}")) {
+          $uploadArgs += @("--target-workers", "${{ inputs.target-workers }}")
+        }
+
+        python -m sd_webui_all_in_one @uploadArgs

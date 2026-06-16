@@ -55,8 +55,10 @@ from sd_webui_all_in_one.repo_manager import (
 )
 from sd_webui_all_in_one.portable_manager import (
     PortableRepoSourceConfig,
+    PortableUploadTargetConfig,
     build_portable_list_from_repositories,
     save_portable_list,
+    upload_portable_package_to_repositories,
 )
 from sd_webui_all_in_one.config import (
     LOGGER_NAME,
@@ -503,6 +505,61 @@ def portable_list_cli(
     )
     save_portable_list(portable_list, output)
     logger.info("整合包资源列表已保存: %s", output)
+
+
+def portable_upload_cli(
+    upload_path: Path,
+    hf_repo_id: str | None = None,
+    hf_repo_type: str = "model",
+    ms_repo_id: str | None = None,
+    ms_repo_type: str = "model",
+    revision: str | None = None,
+    visibility: bool = False,
+    num_threads: int = 1,
+    target_workers: int | None = None,
+    hf_token: str | None = None,
+    ms_token: str | None = None,
+) -> None:
+    """上传整合包目录到 HuggingFace / ModelScope 仓库
+
+    Args:
+        upload_path (Path):
+            要上传的本地目录
+        hf_repo_id (str | None):
+            HuggingFace 仓库 ID
+        hf_repo_type (str):
+            HuggingFace 仓库类型
+        ms_repo_id (str | None):
+            ModelScope 仓库 ID
+        ms_repo_type (str):
+            ModelScope 仓库类型
+        revision (str | None):
+            仓库分支、标签或提交哈希
+        visibility (bool):
+            创建仓库时是否设为公开
+        num_threads (int):
+            单个目标仓库内部的上传线程数
+        target_workers (int | None):
+            上传目标之间的并发数
+        hf_token (str | None):
+            HuggingFace Token
+        ms_token (str | None):
+            ModelScope Token
+    """
+    targets: list[PortableUploadTargetConfig] = []
+    _add_portable_source_config(targets, "huggingface", hf_repo_id, hf_repo_type)
+    _add_portable_source_config(targets, "modelscope", ms_repo_id, ms_repo_type)
+
+    manager = _create_repo_manager(hf_token=hf_token, ms_token=ms_token)
+    upload_portable_package_to_repositories(
+        manager=manager,
+        upload_path=upload_path,
+        targets=targets,
+        revision=revision,
+        visibility=visibility,
+        num_threads=num_threads,
+        target_workers=target_workers,
+    )
 
 
 def repo_list_cli(
@@ -1045,6 +1102,33 @@ def register_manager(
             ms_repo_id=args.ms_repo_id,
             ms_repo_type=args.ms_repo_type,
             revision=args.revision,
+            hf_token=args.hf_token,
+            ms_token=args.ms_token,
+        )
+    )
+
+    portable_upload_p = portable_sub.add_parser("upload", help="上传整合包目录到仓库")
+    portable_upload_p.add_argument("upload_path", type=normalized_filepath, help="要上传的本地目录")
+    portable_upload_p.add_argument("--hf-repo-id", type=str, default=None, help="HuggingFace 仓库 ID")
+    portable_upload_p.add_argument("--hf-repo-type", choices=REPO_TYPE_LIST, default="model", help="HuggingFace 仓库类型")
+    portable_upload_p.add_argument("--ms-repo-id", type=str, default=None, help="ModelScope 仓库 ID")
+    portable_upload_p.add_argument("--ms-repo-type", choices=REPO_TYPE_LIST, default="model", help="ModelScope 仓库类型")
+    portable_upload_p.add_argument("--revision", type=str, default=None, help="上传目标分支、标签或提交哈希")
+    portable_upload_p.add_argument("--public", action="store_true", help="仓库不存在并需要创建时设为公开仓库")
+    portable_upload_p.add_argument("--threads", type=int, default=1, dest="num_threads", help="单个目标仓库内部的上传线程数")
+    portable_upload_p.add_argument("--target-workers", type=int, default=None, help="上传目标之间的并发数，默认按目标数量并发")
+    _add_repo_auth_arguments(portable_upload_p)
+    portable_upload_p.set_defaults(
+        func=lambda args: portable_upload_cli(
+            upload_path=args.upload_path,
+            hf_repo_id=args.hf_repo_id,
+            hf_repo_type=args.hf_repo_type,
+            ms_repo_id=args.ms_repo_id,
+            ms_repo_type=args.ms_repo_type,
+            revision=args.revision,
+            visibility=args.public,
+            num_threads=args.num_threads,
+            target_workers=args.target_workers,
             hf_token=args.hf_token,
             ms_token=args.ms_token,
         )

@@ -151,3 +151,91 @@ def test_build_portable_list_from_repositories_requires_source():
             manager=object(),  # type: ignore[arg-type]
             sources=[],
         )
+
+
+def test_upload_portable_package_requires_directory_and_target(tmp_path):
+    upload_root = tmp_path / "upload"
+    target = {"source": "huggingface", "repo_id": "owner/repo", "repo_type": "model"}
+
+    with pytest.raises(FileNotFoundError, match="整合包上传目录不存在"):
+        portable_manager.upload_portable_package_to_repositories(
+            manager=object(),  # type: ignore[arg-type]
+            upload_path=upload_root,
+            targets=[target],
+        )
+
+    upload_root.mkdir()
+    with pytest.raises(ValueError, match="至少需要配置"):
+        portable_manager.upload_portable_package_to_repositories(
+            manager=object(),  # type: ignore[arg-type]
+            upload_path=upload_root,
+            targets=[],
+        )
+
+
+def test_upload_portable_package_uploads_targets_with_config(tmp_path):
+    upload_root = tmp_path / "sdnote"
+    upload_root.mkdir()
+    calls = []
+
+    class FakeRepoManager:
+        def upload_files_to_repo(self, **kwargs):
+            calls.append(kwargs)
+
+    portable_manager.upload_portable_package_to_repositories(
+        manager=FakeRepoManager(),  # type: ignore[arg-type]
+        upload_path=upload_root,
+        targets=[
+            {"source": "huggingface", "repo_id": "hf/repo", "repo_type": "model"},
+            {"source": "modelscope", "repo_id": "ms/repo", "repo_type": "dataset"},
+        ],
+        revision="main",
+        visibility=True,
+        num_threads=3,
+        target_workers=1,
+    )
+
+    assert calls == [
+        {
+            "api_type": "huggingface",
+            "repo_id": "hf/repo",
+            "upload_path": upload_root,
+            "repo_type": "model",
+            "visibility": True,
+            "num_threads": 3,
+            "revision": "main",
+        },
+        {
+            "api_type": "modelscope",
+            "repo_id": "ms/repo",
+            "upload_path": upload_root,
+            "repo_type": "dataset",
+            "visibility": True,
+            "num_threads": 3,
+            "revision": "main",
+        },
+    ]
+
+
+def test_upload_portable_package_aggregates_target_failures(tmp_path):
+    upload_root = tmp_path / "sdnote"
+    upload_root.mkdir()
+
+    class FakeRepoManager:
+        def upload_files_to_repo(self, **kwargs):
+            if kwargs["api_type"] == "modelscope":
+                raise RuntimeError("boom")
+
+    with pytest.raises(portable_manager.AggregateError) as exc:
+        portable_manager.upload_portable_package_to_repositories(
+            manager=FakeRepoManager(),  # type: ignore[arg-type]
+            upload_path=upload_root,
+            targets=[
+                {"source": "huggingface", "repo_id": "hf/repo", "repo_type": "model"},
+                {"source": "modelscope", "repo_id": "ms/repo", "repo_type": "model"},
+            ],
+            target_workers=1,
+        )
+
+    assert len(exc.value.exceptions) == 1
+    assert "modelscope:ms/repo (model) 上传失败: boom" == str(exc.value.exceptions[0])

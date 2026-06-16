@@ -38,7 +38,9 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
-          WORKSPACE: ${{ github.workspace }}
         with:
           install-path: ${{ github.workspace }}/kohya_gui
           software-name: kohya_gui
+          upload-path: ${{ github.workspace }}/sdnote
+          hf-repo-id: licyk/sdnote
+          ms-repo-id: licyks/sdnote
