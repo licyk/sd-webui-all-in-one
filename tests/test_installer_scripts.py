@@ -19,6 +19,21 @@ INIT_INSTALLER_SCRIPTS = [
 
 LONG_PATH_INSTALLER_SCRIPTS = LAUNCH_INSTALLER_SCRIPTS + INIT_INSTALLER_SCRIPTS
 
+MSVCPP_RUNTIME_CORE_DLLS = [
+    "concrt140.dll",
+    "msvcp140.dll",
+    "msvcp140_1.dll",
+    "msvcp140_2.dll",
+    "msvcp140_atomic_wait.dll",
+    "msvcp140_codecvt_ids.dll",
+    "vcamp140.dll",
+    "vccorlib140.dll",
+    "vcomp140.dll",
+    "vcruntime140.dll",
+    "vcruntime140_1.dll",
+    "vcruntime140_threads.dll",
+]
+
 
 def _read_installer(path: str) -> str:
     return (REPO_ROOT / path).read_text(encoding="utf-8-sig")
@@ -198,6 +213,17 @@ def test_msvc_check_is_skipped_in_build_mode():
     for script_path in INIT_INSTALLER_SCRIPTS:
         init_template = _extract_init_template(_read_installer(script_path))
         assert msvc_guard_pattern.search(init_template), script_path
+
+
+def test_msvc_check_uses_core_runtime_dlls():
+    for script_path in LAUNCH_INSTALLER_SCRIPTS + INIT_INSTALLER_SCRIPTS:
+        modules_template = _extract_modules_template(_read_installer(script_path))
+        for dll_name in MSVCPP_RUNTIME_CORE_DLLS:
+            assert f'`"{dll_name}`"' in modules_template, script_path
+
+        assert '`"Sysnative`"' in modules_template, script_path
+        assert "Test-Path -LiteralPath `$vc_runtime_dll_path -PathType Leaf" in modules_template, script_path
+        assert "`$missing_vc_runtime_dll_names.Count -eq 0" in modules_template, script_path
 
 
 def test_installer_scripts_use_refactored_self_manager_paths():

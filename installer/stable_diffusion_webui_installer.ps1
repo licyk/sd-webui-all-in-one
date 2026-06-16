@@ -265,7 +265,7 @@ $script:HotpatcherPortProvided = $PSBoundParameters.ContainsKey("HotpatcherPort"
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # SD WebUI Installer 版本和检查更新间隔
-$script:SD_WEBUI_INSTALLER_VERSION = 468
+$script:SD_WEBUI_INSTALLER_VERSION = 469
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.51"
@@ -2379,17 +2379,48 @@ function Test-MSVCPPRedistributable {
 
     Write-Log `"检测 Microsoft Visual C++ Redistributable 是否缺失`"
 
+    `$vc_runtime_dll_names = @(
+        `"concrt140.dll`",
+        `"msvcp140.dll`",
+        `"msvcp140_1.dll`",
+        `"msvcp140_2.dll`",
+        `"msvcp140_atomic_wait.dll`",
+        `"msvcp140_codecvt_ids.dll`",
+        `"vcamp140.dll`",
+        `"vccorlib140.dll`",
+        `"vcomp140.dll`",
+        `"vcruntime140.dll`",
+        `"vcruntime140_1.dll`",
+        `"vcruntime140_threads.dll`"
+    )
+
     if ([string]::IsNullOrEmpty(`$env:SYSTEMROOT)) {
-        `$vc_runtime_dll_path = Join-NormalizedPath Join-NormalizedPath `"C:/`" `"Windows`" `"System32`" `"vcruntime140_1.dll`"
+        `$windows_dir = Join-NormalizedPath `"C:/`" `"Windows`"
     } else {
-        `$vc_runtime_dll_path = Join-NormalizedPath `$env:SYSTEMROOT `"System32`" `"vcruntime140_1.dll`"
+        `$windows_dir = `$env:SYSTEMROOT
     }
 
-    if (Test-Path `$vc_runtime_dll_path) {
+    if ([Environment]::Is64BitOperatingSystem -and (-not [Environment]::Is64BitProcess)) {
+        `$vc_runtime_dir = Join-NormalizedPath `$windows_dir `"Sysnative`"
+    } else {
+        `$vc_runtime_dir = Join-NormalizedPath `$windows_dir `"System32`"
+    }
+
+    `$missing_vc_runtime_dll_names = @()
+    foreach (`$vc_runtime_dll_name in `$vc_runtime_dll_names) {
+        `$vc_runtime_dll_path = Join-NormalizedPath `$vc_runtime_dir `$vc_runtime_dll_name
+        if (-not (Test-Path -LiteralPath `$vc_runtime_dll_path -PathType Leaf)) {
+            `$missing_vc_runtime_dll_names += `$vc_runtime_dll_name
+        }
+    }
+
+    if (`$missing_vc_runtime_dll_names.Count -eq 0) {
         Write-Log `"Microsoft Visual C++ Redistributable 未缺失`"
         return
     }
 
+    `$missing_vc_runtime_dll_list = `$missing_vc_runtime_dll_names -join `", `"
+    Write-Log `"检测到 Microsoft Visual C++ Redistributable 缺失的核心 DLL: `$missing_vc_runtime_dll_list`" -Level WARNING
     Write-Log `"检测到 Microsoft Visual C++ Redistributable 缺失, 这可能导致 PyTorch 无法正常识别 GPU 导致报错`" -Level WARNING
     Write-Log `"请下载并安装 Microsoft Visual C++ Redistributable 后重新启动`"
 
