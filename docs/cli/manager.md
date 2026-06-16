@@ -118,6 +118,102 @@ sd-webui-all-in-one self-manager get tcmalloc --path
 sd-webui-all-in-one self-manager get env-config
 ```
 
+### HuggingFace / ModelScope 仓库管理
+调用 Python 内核中的 `RepoManager` 管理 HuggingFace / ModelScope 仓库文件。
+
+通用选项：
+
+- `<api>`：仓库 API 类型，可选 `huggingface`、`modelscope`。
+- `--repo-type <类型>`：仓库类型，可选 `model`、`dataset`、`space`，默认 `model`。
+- `--revision <版本>`：仓库分支、标签或提交哈希。
+- `--hf-token <令牌>`：HuggingFace Token；未传时读取 `HF_TOKEN`。
+- `--ms-token <令牌>`：ModelScope Token；未传时读取 `MODELSCOPE_API_TOKEN`。
+
+ModelScope 对 `space` 的支持受 `RepoManager` 当前实现限制；不支持的仓库类型会按现有逻辑报错。
+
+#### 获取仓库文件列表
+```bash
+sd-webui-all-in-one self-manager repo list <api> <repo_id> [选项]
+```
+
+高级选项：
+
+- `--format <格式>`：输出格式，可选 `json`、`text`，默认 `json`。`text` 模式每行输出一个仓库文件路径。
+
+#### 获取仓库文件元数据
+```bash
+sd-webui-all-in-one self-manager repo metadata <api> <repo_id> [选项]
+```
+
+高级选项：
+
+- `--format <格式>`：输出格式，可选 `json`、`text`，默认 `json`。
+- `--include-dirs`：包含目录条目。
+- `--include-raw`：包含第三方库原始返回。
+
+#### 获取仓库文件下载地址
+```bash
+sd-webui-all-in-one self-manager repo url <api> <repo_id> <file_path> [选项]
+```
+
+位置参数：
+
+- `<file_path>`：仓库中的文件路径。
+
+#### 检查或创建仓库
+```bash
+sd-webui-all-in-one self-manager repo check <api> <repo_id> [选项]
+```
+
+高级选项：
+
+- `--public`：仓库不存在并需要创建时设为公开仓库；默认创建私有仓库。
+
+#### 上传本地目录到仓库
+```bash
+sd-webui-all-in-one self-manager repo upload <api> <repo_id> <upload_path> [选项]
+```
+
+位置参数：
+
+- `<upload_path>`：要上传的本地目录。
+
+高级选项：
+
+- `--public`：仓库不存在并需要创建时设为公开仓库；默认创建私有仓库。
+- `--threads <数量>`：上传线程数，默认 `1`。
+
+#### 从仓库下载文件
+```bash
+sd-webui-all-in-one self-manager repo download <api> <repo_id> <local_dir> [选项]
+```
+
+位置参数：
+
+- `<local_dir>`：本地下载目录。
+
+高级选项：
+
+- `--folder <路径>`：只下载指定路径前缀或单个文件。
+- `--threads <数量>`：下载线程数，默认 `8`。
+
+#### 镜像仓库文件
+```bash
+sd-webui-all-in-one self-manager repo mirror <src_api> <dst_api> <src_repo_id> <dst_repo_id> [选项]
+```
+
+高级选项：
+
+- `--src-repo-type <类型>`：源仓库类型，默认 `model`。
+- `--dst-repo-type <类型>`：目标仓库类型，默认 `model`。
+- `--public`：目标仓库不存在并需要创建时设为公开仓库；默认创建私有仓库。
+- `--threads <数量>`：镜像线程数，默认 `1`。
+- `--retry-times <次数>`：单个文件镜像失败后的重试次数。
+- `--fast-download`：使用内置 downloader 先获取源文件下载地址再下载。
+- `--download-tool <工具>`：启用 `--fast-download` 时使用的下载工具，可选 `aria2`、`requests`、`urllib`，默认 `requests`。
+- `--download-split <数量>`：启用 `--fast-download` 时传给下载器的分片数，默认 `5`。
+- `--no-download-progress`：禁用 `--fast-download` 的下载进度条。
+
 ### 下载文件
 调用 Python 内核中的 `downloader.download_file()` 下载任意文件。
 ```bash

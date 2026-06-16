@@ -47,6 +47,11 @@ from sd_webui_all_in_one.archive_manager import (
     extract_archive,
 )
 from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
+from sd_webui_all_in_one.repo_manager import (
+    ApiType,
+    RepoManager,
+    RepoType,
+)
 from sd_webui_all_in_one.config import (
     LOGGER_NAME,
     LOGGER_COLOR,
@@ -70,6 +75,18 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+REPO_API_TYPE_LIST = ["huggingface", "modelscope"]
+"""支持的仓库 API 类型"""
+
+REPO_TYPE_LIST = ["model", "dataset", "space"]
+"""支持的仓库类型"""
+
+REPO_OUTPUT_FORMAT_LIST = ["json", "text"]
+"""仓库信息输出格式"""
+
+REPO_METADATA_TEXT_FIELDS = ["path", "type", "size", "sha256", "revision"]
+"""仓库元数据文本输出字段"""
 
 
 def check_pip(
@@ -365,6 +382,383 @@ def _print_json(data: dict | list) -> None:
     print(json.dumps(data, ensure_ascii=False, indent=2))
 
 
+def _create_repo_manager(
+    hf_token: str | None = None,
+    ms_token: str | None = None,
+) -> RepoManager:
+    """创建仓库管理器, 命令参数未传 token 时回退到环境变量"""
+    return RepoManager(
+        hf_token=hf_token if hf_token is not None else os.environ.get("HF_TOKEN"),
+        ms_token=ms_token if ms_token is not None else os.environ.get("MODELSCOPE_API_TOKEN"),
+    )
+
+
+def _print_repo_files(files: list[str], output_format: str) -> None:
+    """输出仓库文件列表"""
+    if output_format == "json":
+        _print_json(files)
+        return
+
+    for file in files:
+        print(file)
+
+
+def _repo_metadata_text_value(value: object) -> str:
+    if value is None:
+        return ""
+    return str(value)
+
+
+def _print_repo_metadata(
+    metadata: list[dict[str, object]],
+    output_format: str,
+) -> None:
+    """输出仓库文件元数据"""
+    if output_format == "json":
+        _print_json(metadata)
+        return
+
+    print("\t".join(REPO_METADATA_TEXT_FIELDS))
+    for item in metadata:
+        print("\t".join(_repo_metadata_text_value(item.get(field)) for field in REPO_METADATA_TEXT_FIELDS))
+
+
+def repo_list_cli(
+    api_type: ApiType,
+    repo_id: str,
+    repo_type: RepoType = "model",
+    revision: str | None = None,
+    output_format: str = "json",
+    hf_token: str | None = None,
+    ms_token: str | None = None,
+) -> None:
+    """输出 HuggingFace / ModelScope 仓库文件列表
+
+    Args:
+        api_type (ApiType):
+            仓库 API 类型
+        repo_id (str):
+            仓库 ID
+        repo_type (RepoType):
+            仓库类型
+        revision (str | None):
+            仓库分支、标签或提交哈希
+        output_format (str):
+            输出格式
+        hf_token (str | None):
+            HuggingFace Token
+        ms_token (str | None):
+            ModelScope Token
+    """
+    manager = _create_repo_manager(hf_token=hf_token, ms_token=ms_token)
+    files = manager.get_repo_file(
+        api_type=api_type,
+        repo_id=repo_id,
+        repo_type=repo_type,
+        revision=revision,
+    )
+    _print_repo_files(files, output_format)
+
+
+def repo_metadata_cli(
+    api_type: ApiType,
+    repo_id: str,
+    repo_type: RepoType = "model",
+    revision: str | None = None,
+    include_dirs: bool = False,
+    include_raw: bool = False,
+    output_format: str = "json",
+    hf_token: str | None = None,
+    ms_token: str | None = None,
+) -> None:
+    """输出 HuggingFace / ModelScope 仓库文件元数据
+
+    Args:
+        api_type (ApiType):
+            仓库 API 类型
+        repo_id (str):
+            仓库 ID
+        repo_type (RepoType):
+            仓库类型
+        revision (str | None):
+            仓库分支、标签或提交哈希
+        include_dirs (bool):
+            是否包含目录条目
+        include_raw (bool):
+            是否包含第三方库原始返回
+        output_format (str):
+            输出格式
+        hf_token (str | None):
+            HuggingFace Token
+        ms_token (str | None):
+            ModelScope Token
+    """
+    manager = _create_repo_manager(hf_token=hf_token, ms_token=ms_token)
+    metadata = manager.get_repo_files_metadata(
+        api_type=api_type,
+        repo_id=repo_id,
+        repo_type=repo_type,
+        revision=revision,
+        include_dirs=include_dirs,
+        include_raw=include_raw,
+    )
+    _print_repo_metadata(metadata, output_format)
+
+
+def repo_url_cli(
+    api_type: ApiType,
+    repo_id: str,
+    file_path: str,
+    repo_type: RepoType = "model",
+    revision: str | None = None,
+    hf_token: str | None = None,
+    ms_token: str | None = None,
+) -> None:
+    """输出 HuggingFace / ModelScope 仓库文件下载地址
+
+    Args:
+        api_type (ApiType):
+            仓库 API 类型
+        repo_id (str):
+            仓库 ID
+        file_path (str):
+            仓库中的文件路径
+        repo_type (RepoType):
+            仓库类型
+        revision (str | None):
+            仓库分支、标签或提交哈希
+        hf_token (str | None):
+            HuggingFace Token
+        ms_token (str | None):
+            ModelScope Token
+    """
+    manager = _create_repo_manager(hf_token=hf_token, ms_token=ms_token)
+    url = manager.get_repo_file_download_url(
+        api_type=api_type,
+        repo_id=repo_id,
+        file_path=file_path,
+        repo_type=repo_type,
+        revision=revision,
+    )
+    print(url)
+
+
+def repo_check_cli(
+    api_type: ApiType,
+    repo_id: str,
+    repo_type: RepoType = "model",
+    visibility: bool = False,
+    hf_token: str | None = None,
+    ms_token: str | None = None,
+) -> None:
+    """检查 HuggingFace / ModelScope 仓库是否存在, 不存在时创建
+
+    Args:
+        api_type (ApiType):
+            仓库 API 类型
+        repo_id (str):
+            仓库 ID
+        repo_type (RepoType):
+            仓库类型
+        visibility (bool):
+            创建仓库时是否设为公开
+        hf_token (str | None):
+            HuggingFace Token
+        ms_token (str | None):
+            ModelScope Token
+    """
+    manager = _create_repo_manager(hf_token=hf_token, ms_token=ms_token)
+    manager.check_repo(
+        api_type=api_type,
+        repo_id=repo_id,
+        repo_type=repo_type,
+        visibility=visibility,
+    )
+
+
+def repo_upload_cli(
+    api_type: ApiType,
+    repo_id: str,
+    upload_path: Path,
+    repo_type: RepoType = "model",
+    visibility: bool = False,
+    num_threads: int = 1,
+    revision: str | None = None,
+    hf_token: str | None = None,
+    ms_token: str | None = None,
+) -> None:
+    """上传本地目录到 HuggingFace / ModelScope 仓库
+
+    Args:
+        api_type (ApiType):
+            仓库 API 类型
+        repo_id (str):
+            仓库 ID
+        upload_path (Path):
+            要上传的本地目录
+        repo_type (RepoType):
+            仓库类型
+        visibility (bool):
+            创建仓库时是否设为公开
+        num_threads (int):
+            上传线程数
+        revision (str | None):
+            上传目标分支、标签或提交哈希
+        hf_token (str | None):
+            HuggingFace Token
+        ms_token (str | None):
+            ModelScope Token
+    """
+    manager = _create_repo_manager(hf_token=hf_token, ms_token=ms_token)
+    manager.upload_files_to_repo(
+        api_type=api_type,
+        repo_id=repo_id,
+        upload_path=upload_path,
+        repo_type=repo_type,
+        visibility=visibility,
+        num_threads=num_threads,
+        revision=revision,
+    )
+
+
+def repo_download_cli(
+    api_type: ApiType,
+    repo_id: str,
+    local_dir: Path,
+    repo_type: RepoType = "model",
+    folder: str | None = None,
+    num_threads: int = 8,
+    revision: str | None = None,
+    hf_token: str | None = None,
+    ms_token: str | None = None,
+) -> None:
+    """从 HuggingFace / ModelScope 仓库下载文件
+
+    Args:
+        api_type (ApiType):
+            仓库 API 类型
+        repo_id (str):
+            仓库 ID
+        local_dir (Path):
+            本地下载目录
+        repo_type (RepoType):
+            仓库类型
+        folder (str | None):
+            指定下载路径前缀或文件
+        num_threads (int):
+            下载线程数
+        revision (str | None):
+            下载来源分支、标签或提交哈希
+        hf_token (str | None):
+            HuggingFace Token
+        ms_token (str | None):
+            ModelScope Token
+    """
+    manager = _create_repo_manager(hf_token=hf_token, ms_token=ms_token)
+    manager.download_files_from_repo(
+        api_type=api_type,
+        repo_id=repo_id,
+        local_dir=local_dir,
+        repo_type=repo_type,
+        folder=folder,
+        num_threads=num_threads,
+        revision=revision,
+    )
+
+
+def repo_mirror_cli(
+    src_api_type: ApiType,
+    dst_api_type: ApiType,
+    src_repo_id: str,
+    dst_repo_id: str,
+    src_repo_type: RepoType = "model",
+    dst_repo_type: RepoType = "model",
+    visibility: bool = False,
+    revision: str | None = None,
+    num_threads: int = 1,
+    retry_times: int = app_config.RETRY_TIMES,
+    use_fast_download: bool = False,
+    download_tool: DownloadToolType | None = "requests",
+    download_split: int = 5,
+    download_progress: bool = True,
+    hf_token: str | None = None,
+    ms_token: str | None = None,
+) -> None:
+    """镜像 HuggingFace / ModelScope 仓库文件
+
+    Args:
+        src_api_type (ApiType):
+            源仓库 API 类型
+        dst_api_type (ApiType):
+            目标仓库 API 类型
+        src_repo_id (str):
+            源仓库 ID
+        dst_repo_id (str):
+            目标仓库 ID
+        src_repo_type (RepoType):
+            源仓库类型
+        dst_repo_type (RepoType):
+            目标仓库类型
+        visibility (bool):
+            创建目标仓库时是否设为公开
+        revision (str | None):
+            源仓库读取和目标仓库上传的分支、标签或提交哈希
+        num_threads (int):
+            镜像线程数
+        retry_times (int):
+            单个文件镜像重试次数
+        use_fast_download (bool):
+            是否使用内置 downloader 下载源文件
+        download_tool (DownloadToolType | None):
+            启用快速下载时使用的下载工具
+        download_split (int):
+            启用快速下载时的下载分片数
+        download_progress (bool):
+            启用快速下载时是否显示下载进度
+        hf_token (str | None):
+            HuggingFace Token
+        ms_token (str | None):
+            ModelScope Token
+    """
+    manager = _create_repo_manager(hf_token=hf_token, ms_token=ms_token)
+    manager.mirror_repo_files(
+        src_api_type=src_api_type,
+        dst_api_type=dst_api_type,
+        src_repo_id=src_repo_id,
+        dst_repo_id=dst_repo_id,
+        src_repo_type=src_repo_type,
+        dst_repo_type=dst_repo_type,
+        visibility=visibility,
+        revision=revision,
+        num_threads=num_threads,
+        retry_times=retry_times,
+        use_fast_download=use_fast_download,
+        download_tool=download_tool,
+        download_split=download_split,
+        download_progress=download_progress,
+    )
+
+
+def _add_repo_auth_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--hf-token", type=str, default=None, help="HuggingFace Token, 默认读取 HF_TOKEN")
+    parser.add_argument("--ms-token", type=str, default=None, help="ModelScope Token, 默认读取 MODELSCOPE_API_TOKEN")
+
+
+def _add_repo_type_argument(
+    parser: argparse.ArgumentParser,
+    default: str = "model",
+) -> None:
+    parser.add_argument("--repo-type", choices=REPO_TYPE_LIST, default=default, help="仓库类型")
+
+
+def _add_repo_revision_argument(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--revision", type=str, default=None, help="仓库分支、标签或提交哈希")
+
+
+def _add_repo_output_format_argument(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--format", dest="output_format", choices=REPO_OUTPUT_FORMAT_LIST, default="json", help="输出格式")
+
+
 def export_hotpatcher_config_cli(output: Path | None = None, force: bool = False) -> None:
     """导出 hotpatcher 默认配置
 
@@ -549,6 +943,170 @@ def register_manager(
     # get env-config
     get_env_config_p = get_sub.add_parser("env-config", help="获取 SD WebUI All In One 使用的环境变量配置")
     get_env_config_p.set_defaults(func=lambda args: get_env_config())
+
+    repo_p = sd_webui_all_in_one_sub.add_parser("repo", help="HuggingFace / ModelScope 仓库管理")
+    repo_sub = repo_p.add_subparsers(dest="repo_action", required=True)
+
+    repo_list_p = repo_sub.add_parser("list", help="获取仓库文件列表")
+    repo_list_p.add_argument("api_type", choices=REPO_API_TYPE_LIST, help="仓库 API 类型")
+    repo_list_p.add_argument("repo_id", type=str, help="仓库 ID")
+    _add_repo_type_argument(repo_list_p)
+    _add_repo_revision_argument(repo_list_p)
+    _add_repo_output_format_argument(repo_list_p)
+    _add_repo_auth_arguments(repo_list_p)
+    repo_list_p.set_defaults(
+        func=lambda args: repo_list_cli(
+            api_type=args.api_type,
+            repo_id=args.repo_id,
+            repo_type=args.repo_type,
+            revision=args.revision,
+            output_format=args.output_format,
+            hf_token=args.hf_token,
+            ms_token=args.ms_token,
+        )
+    )
+
+    repo_metadata_p = repo_sub.add_parser("metadata", help="获取仓库文件元数据")
+    repo_metadata_p.add_argument("api_type", choices=REPO_API_TYPE_LIST, help="仓库 API 类型")
+    repo_metadata_p.add_argument("repo_id", type=str, help="仓库 ID")
+    _add_repo_type_argument(repo_metadata_p)
+    _add_repo_revision_argument(repo_metadata_p)
+    _add_repo_output_format_argument(repo_metadata_p)
+    repo_metadata_p.add_argument("--include-dirs", action="store_true", help="包含目录条目")
+    repo_metadata_p.add_argument("--include-raw", action="store_true", help="包含第三方库原始返回")
+    _add_repo_auth_arguments(repo_metadata_p)
+    repo_metadata_p.set_defaults(
+        func=lambda args: repo_metadata_cli(
+            api_type=args.api_type,
+            repo_id=args.repo_id,
+            repo_type=args.repo_type,
+            revision=args.revision,
+            include_dirs=args.include_dirs,
+            include_raw=args.include_raw,
+            output_format=args.output_format,
+            hf_token=args.hf_token,
+            ms_token=args.ms_token,
+        )
+    )
+
+    repo_url_p = repo_sub.add_parser("url", help="获取仓库文件下载地址")
+    repo_url_p.add_argument("api_type", choices=REPO_API_TYPE_LIST, help="仓库 API 类型")
+    repo_url_p.add_argument("repo_id", type=str, help="仓库 ID")
+    repo_url_p.add_argument("file_path", type=str, help="仓库中的文件路径")
+    _add_repo_type_argument(repo_url_p)
+    _add_repo_revision_argument(repo_url_p)
+    _add_repo_auth_arguments(repo_url_p)
+    repo_url_p.set_defaults(
+        func=lambda args: repo_url_cli(
+            api_type=args.api_type,
+            repo_id=args.repo_id,
+            file_path=args.file_path,
+            repo_type=args.repo_type,
+            revision=args.revision,
+            hf_token=args.hf_token,
+            ms_token=args.ms_token,
+        )
+    )
+
+    repo_check_p = repo_sub.add_parser("check", help="检查仓库是否存在, 不存在时创建")
+    repo_check_p.add_argument("api_type", choices=REPO_API_TYPE_LIST, help="仓库 API 类型")
+    repo_check_p.add_argument("repo_id", type=str, help="仓库 ID")
+    _add_repo_type_argument(repo_check_p)
+    repo_check_p.add_argument("--public", action="store_true", help="创建仓库时设为公开仓库")
+    _add_repo_auth_arguments(repo_check_p)
+    repo_check_p.set_defaults(
+        func=lambda args: repo_check_cli(
+            api_type=args.api_type,
+            repo_id=args.repo_id,
+            repo_type=args.repo_type,
+            visibility=args.public,
+            hf_token=args.hf_token,
+            ms_token=args.ms_token,
+        )
+    )
+
+    repo_upload_p = repo_sub.add_parser("upload", help="上传本地目录到仓库")
+    repo_upload_p.add_argument("api_type", choices=REPO_API_TYPE_LIST, help="仓库 API 类型")
+    repo_upload_p.add_argument("repo_id", type=str, help="仓库 ID")
+    repo_upload_p.add_argument("upload_path", type=normalized_filepath, help="要上传的本地目录")
+    _add_repo_type_argument(repo_upload_p)
+    _add_repo_revision_argument(repo_upload_p)
+    repo_upload_p.add_argument("--public", action="store_true", help="创建仓库时设为公开仓库")
+    repo_upload_p.add_argument("--threads", type=int, default=1, dest="num_threads", help="上传线程数")
+    _add_repo_auth_arguments(repo_upload_p)
+    repo_upload_p.set_defaults(
+        func=lambda args: repo_upload_cli(
+            api_type=args.api_type,
+            repo_id=args.repo_id,
+            upload_path=args.upload_path,
+            repo_type=args.repo_type,
+            visibility=args.public,
+            num_threads=args.num_threads,
+            revision=args.revision,
+            hf_token=args.hf_token,
+            ms_token=args.ms_token,
+        )
+    )
+
+    repo_download_p = repo_sub.add_parser("download", help="从仓库下载文件")
+    repo_download_p.add_argument("api_type", choices=REPO_API_TYPE_LIST, help="仓库 API 类型")
+    repo_download_p.add_argument("repo_id", type=str, help="仓库 ID")
+    repo_download_p.add_argument("local_dir", type=normalized_filepath, help="本地下载目录")
+    _add_repo_type_argument(repo_download_p)
+    _add_repo_revision_argument(repo_download_p)
+    repo_download_p.add_argument("--folder", type=str, default=None, help="只下载指定路径前缀或文件")
+    repo_download_p.add_argument("--threads", type=int, default=8, dest="num_threads", help="下载线程数")
+    _add_repo_auth_arguments(repo_download_p)
+    repo_download_p.set_defaults(
+        func=lambda args: repo_download_cli(
+            api_type=args.api_type,
+            repo_id=args.repo_id,
+            local_dir=args.local_dir,
+            repo_type=args.repo_type,
+            folder=args.folder,
+            num_threads=args.num_threads,
+            revision=args.revision,
+            hf_token=args.hf_token,
+            ms_token=args.ms_token,
+        )
+    )
+
+    repo_mirror_p = repo_sub.add_parser("mirror", help="镜像仓库文件")
+    repo_mirror_p.add_argument("src_api_type", choices=REPO_API_TYPE_LIST, help="源仓库 API 类型")
+    repo_mirror_p.add_argument("dst_api_type", choices=REPO_API_TYPE_LIST, help="目标仓库 API 类型")
+    repo_mirror_p.add_argument("src_repo_id", type=str, help="源仓库 ID")
+    repo_mirror_p.add_argument("dst_repo_id", type=str, help="目标仓库 ID")
+    repo_mirror_p.add_argument("--src-repo-type", choices=REPO_TYPE_LIST, default="model", help="源仓库类型")
+    repo_mirror_p.add_argument("--dst-repo-type", choices=REPO_TYPE_LIST, default="model", help="目标仓库类型")
+    _add_repo_revision_argument(repo_mirror_p)
+    repo_mirror_p.add_argument("--public", action="store_true", help="创建目标仓库时设为公开仓库")
+    repo_mirror_p.add_argument("--threads", type=int, default=1, dest="num_threads", help="镜像线程数")
+    repo_mirror_p.add_argument("--retry-times", type=int, default=app_config.RETRY_TIMES, help="单个文件镜像重试次数")
+    repo_mirror_p.add_argument("--fast-download", action="store_true", dest="use_fast_download", help="使用内置 downloader 下载源文件")
+    repo_mirror_p.add_argument("--download-tool", choices=DOWNLOAD_TOOL_TYPE_LIST, default="requests", help="启用 fast-download 时使用的下载工具")
+    repo_mirror_p.add_argument("--download-split", type=int, default=5, help="启用 fast-download 时的分片数")
+    repo_mirror_p.add_argument("--no-download-progress", action="store_false", dest="download_progress", default=True, help="禁用 fast-download 进度条")
+    _add_repo_auth_arguments(repo_mirror_p)
+    repo_mirror_p.set_defaults(
+        func=lambda args: repo_mirror_cli(
+            src_api_type=args.src_api_type,
+            dst_api_type=args.dst_api_type,
+            src_repo_id=args.src_repo_id,
+            dst_repo_id=args.dst_repo_id,
+            src_repo_type=args.src_repo_type,
+            dst_repo_type=args.dst_repo_type,
+            visibility=args.public,
+            revision=args.revision,
+            num_threads=args.num_threads,
+            retry_times=args.retry_times,
+            use_fast_download=args.use_fast_download,
+            download_tool=args.download_tool,
+            download_split=args.download_split,
+            download_progress=args.download_progress,
+            hf_token=args.hf_token,
+            ms_token=args.ms_token,
+        )
+    )
 
     # download-file
     download_file_p = sd_webui_all_in_one_sub.add_parser("download-file", help="下载文件")
