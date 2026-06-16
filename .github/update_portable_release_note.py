@@ -8,6 +8,7 @@ import subprocess
 import os
 import sys
 from collections.abc import Mapping
+from datetime import datetime, timezone
 from tempfile import TemporaryDirectory
 from pathlib import Path
 from typing import Any
@@ -54,6 +55,29 @@ def get_update_time(
     if not isinstance(update_time, str) or not update_time:
         raise ValueError("整合包列表格式不正确：缺少 update_time 字段")
     return update_time
+
+
+def format_update_time(
+    update_time: str,
+) -> str:
+    """将 ISO 更新时间格式化为本地时区时间"""
+    try:
+        normalized_update_time = update_time.removesuffix("Z") + "+00:00" if update_time.endswith("Z") else update_time
+        parsed_update_time = datetime.fromisoformat(normalized_update_time)
+        if parsed_update_time.tzinfo is None:
+            parsed_update_time = parsed_update_time.replace(tzinfo=timezone.utc)
+
+        local_update_time = parsed_update_time.astimezone()
+        offset = local_update_time.utcoffset()
+        timezone_text = "UTC"
+        if offset is not None and offset.total_seconds() != 0:
+            total_minutes = int(offset.total_seconds() / 60)
+            sign = "+" if total_minutes >= 0 else "-"
+            abs_minutes = abs(total_minutes)
+            timezone_text = f"UTC{sign}{abs_minutes // 60:02d}:{abs_minutes % 60:02d}"
+        return f"{local_update_time:%Y-%m-%d %H:%M:%S} ({timezone_text})"
+    except ValueError:
+        return update_time
 
 
 def get_source_resources(
@@ -218,7 +242,7 @@ def main() -> None:
     data: dict[str, Any] = fetch_portable_list(portable_list_url)
 
     # 获取更新时间
-    update_time: str = get_update_time(data)
+    update_time: str = format_update_time(get_update_time(data))
     print(f"更新时间：{update_time}")
 
     # 构建 Markdown 内容

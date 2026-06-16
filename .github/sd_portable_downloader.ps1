@@ -73,7 +73,7 @@
 param (
     [string]$ScriptRootPath
 )
-$script:SD_PORTABLE_DOWNLOADER_VERSION = 110
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 111
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -465,6 +465,47 @@ function Find-Visual-Element {
     return $null
 }
 
+function Format-Portable-UpdateTime {
+    param($UpdateTime)
+
+    $rawUpdateTime = [string]$UpdateTime
+    if ([string]::IsNullOrWhiteSpace($rawUpdateTime)) {
+        return ""
+    }
+
+    try {
+        if ($UpdateTime -is [DateTimeOffset]) {
+            $dateTimeOffset = $UpdateTime
+        } elseif ($UpdateTime -is [DateTime]) {
+            $dateTime = $UpdateTime
+            if ($dateTime.Kind -eq [DateTimeKind]::Unspecified) {
+                $dateTime = [DateTime]::SpecifyKind($dateTime, [DateTimeKind]::Utc)
+            }
+            $dateTimeOffset = [DateTimeOffset]::new($dateTime.ToUniversalTime())
+        } else {
+            $dateTimeOffset = [DateTimeOffset]::Parse(
+                $rawUpdateTime,
+                [System.Globalization.CultureInfo]::InvariantCulture,
+                [System.Globalization.DateTimeStyles]::AssumeUniversal -bor [System.Globalization.DateTimeStyles]::AdjustToUniversal
+            )
+        }
+
+        $localTime = $dateTimeOffset.ToLocalTime()
+        $offset = $localTime.Offset
+        if ($offset -eq [TimeSpan]::Zero) {
+            $timeZoneText = "UTC"
+        } else {
+            $sign = if ($offset.Ticks -lt 0) { "-" } else { "+" }
+            $absOffset = $offset.Duration()
+            $offsetHours = [Math]::Floor($absOffset.TotalHours)
+            $timeZoneText = "UTC{0}{1:00}:{2:00}" -f $sign, $offsetHours, $absOffset.Minutes
+        }
+        return "{0} ({1})" -f $localTime.ToString("yyyy-MM-dd HH:mm:ss"), $timeZoneText
+    } catch {
+        return $rawUpdateTime
+    }
+}
+
 # 将同步逻辑封装为自包含的脚本块（PS5.1 兼容性最佳方案）
 $script:SyncDataGridLogic = {
     param($UI, $State)
@@ -591,9 +632,10 @@ function Invoke-Refresh {
                 $result = $ps.EndInvoke($asyncResult)
 
                 if ($null -ne $result -and $null -ne $result.update_time -and $null -ne $result.resources) {
-                    Write-Host "[数据] 解析成功，更新时间: $($result.update_time)" -ForegroundColor Gray
+                    $displayUpdateTime = Format-Portable-UpdateTime -UpdateTime $result.update_time
+                    Write-Host "[数据] 解析成功，更新时间: $displayUpdateTime" -ForegroundColor Gray
                     $State.Metadata = $result
-                    $UI.UpdateTimeText.Text = "更新时间: $($result.update_time)"
+                    $UI.UpdateTimeText.Text = "更新时间: $displayUpdateTime"
                     # 调用捕获到的脚本块
                     & $SyncLogic -UI $UI -State $State
                     $UI.UpdateTimeText.Foreground = [System.Windows.Media.Brushes]::Gray
