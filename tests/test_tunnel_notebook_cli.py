@@ -419,6 +419,8 @@ def test_self_manager_portable_list_cli_parse_smoke(monkeypatch, tmp_path):
             "dataset",
             "--revision",
             "main",
+            "--path-in-repo",
+            "release/nightly",
             "--hf-token",
             "hf",
             "--ms-token",
@@ -435,6 +437,7 @@ def test_self_manager_portable_list_cli_parse_smoke(monkeypatch, tmp_path):
             "ms_repo_id": None,
             "ms_repo_type": "model",
             "revision": None,
+            "path_in_repo": "portable",
             "hf_token": None,
             "ms_token": None,
         },
@@ -445,6 +448,7 @@ def test_self_manager_portable_list_cli_parse_smoke(monkeypatch, tmp_path):
             "ms_repo_id": "arg-ms/repo",
             "ms_repo_type": "dataset",
             "revision": "main",
+            "path_in_repo": "release/nightly",
             "hf_token": "hf",
             "ms_token": "ms",
         },
@@ -554,6 +558,7 @@ def test_self_manager_portable_list_cli_handler(monkeypatch, tmp_path):
         ms_repo_id=None,
         ms_repo_type="model",
         revision="main",
+        path_in_repo="release/nightly",
     )
 
     assert instances[-1].hf_token == "env-hf"
@@ -563,6 +568,7 @@ def test_self_manager_portable_list_cli_handler(monkeypatch, tmp_path):
             "manager": instances[-1],
             "sources": [{"source": "huggingface", "repo_id": "hf/repo", "repo_type": "dataset"}],
             "revision": "main",
+            "path_in_repo": "release/nightly",
         }
     ]
     assert save_calls == [

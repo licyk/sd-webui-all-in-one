@@ -40,6 +40,9 @@ PORTABLE_SOURCE_TYPE_LIST: list[PortableSourceType] = list(get_args(PortableSour
 PORTABLE_CHANNEL_TYPE_LIST: list[PortableChannelType] = list(get_args(PortableChannelType))
 """整合包发行通道类型列表"""
 
+DEFAULT_PORTABLE_PATH_IN_REPO = "portable"
+"""默认整合包仓库目录"""
+
 PORTABLE_NAME_PATTERN = r"""
     ^
     (?P<software>[\w_]+?)
@@ -275,19 +278,54 @@ def build_portable_file_resource(
     }
 
 
-def filter_portable_paths(paths: list[str]) -> list[str]:
+def normalize_portable_path_in_repo(
+    path_in_repo: str | None = DEFAULT_PORTABLE_PATH_IN_REPO,
+) -> str:
+    """规范化整合包仓库目录
+
+    Args:
+        path_in_repo (str | None):
+            仓库中的整合包目录, 为空字符串时不限制目录
+
+    Returns:
+        str: 规范化后的仓库目录
+
+    Raises:
+        ValueError: 路径包含父目录引用时抛出
+    """
+    if path_in_repo is None:
+        return ""
+
+    parts = []
+    for part in path_in_repo.replace("\\", "/").strip("/").split("/"):
+        if part in ["", "."]:
+            continue
+        if part == "..":
+            raise ValueError("整合包仓库目录不能包含 '..'")
+        parts.append(part)
+    return "/".join(parts)
+
+
+def filter_portable_paths(
+    paths: list[str],
+    path_in_repo: str | None = DEFAULT_PORTABLE_PATH_IN_REPO,
+) -> list[str]:
     """筛选有效整合包路径
 
     Args:
         paths (list[str]):
             仓库文件路径列表
+        path_in_repo (str | None):
+            仓库中的整合包目录, 为空字符串时不限制目录
 
     Returns:
         list[str]: 有效整合包路径列表
     """
+    normalized_path_in_repo = normalize_portable_path_in_repo(path_in_repo)
+    path_prefix = f"{normalized_path_in_repo}/" if normalized_path_in_repo else ""
     portable_paths = []
     for path in paths:
-        if not path.startswith("portable/"):
+        if path_prefix and not path.startswith(path_prefix):
             continue
         try:
             parse_portable_filename(Path(path).name)
@@ -304,6 +342,7 @@ def collect_portable_files_from_repo(
     repo_id: str,
     repo_type: RepoType = "model",
     revision: str | None = None,
+    path_in_repo: str | None = DEFAULT_PORTABLE_PATH_IN_REPO,
 ) -> list[PortableFileResource]:
     """从仓库收集整合包文件资源
 
@@ -318,6 +357,8 @@ def collect_portable_files_from_repo(
             仓库类型
         revision (str | None):
             仓库分支、标签或提交哈希
+        path_in_repo (str | None):
+            仓库中的整合包目录, 为空字符串时不限制目录
 
     Returns:
         list[PortableFileResource]: 整合包文件资源列表
@@ -329,7 +370,7 @@ def collect_portable_files_from_repo(
         revision=revision,
     )
     portable_files = []
-    for path in filter_portable_paths(repo_files):
+    for path in filter_portable_paths(repo_files, path_in_repo=path_in_repo):
         url = manager.get_repo_file_download_url(
             api_type=source,
             repo_id=repo_id,
@@ -436,6 +477,7 @@ def build_portable_list_from_repositories(
     sources: list[PortableRepoSourceConfig],
     revision: str | None = None,
     update_time: str | None = None,
+    path_in_repo: str | None = DEFAULT_PORTABLE_PATH_IN_REPO,
 ) -> PortableListData:
     """从仓库构建整合包资源列表数据
 
@@ -448,6 +490,8 @@ def build_portable_list_from_repositories(
             仓库分支、标签或提交哈希
         update_time (str | None):
             更新时间, 未指定时使用当前 UTC 时间
+        path_in_repo (str | None):
+            仓库中的整合包目录, 为空字符串时不限制目录
 
     Returns:
         PortableListData: 整合包资源列表数据
@@ -466,6 +510,7 @@ def build_portable_list_from_repositories(
             repo_id=source["repo_id"],
             repo_type=source["repo_type"],
             revision=revision,
+            path_in_repo=path_in_repo,
         )
     return build_portable_list_data(resources=resources, update_time=update_time)
 

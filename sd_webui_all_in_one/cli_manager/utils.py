@@ -54,6 +54,7 @@ from sd_webui_all_in_one.repo_manager import (
     RepoType,
 )
 from sd_webui_all_in_one.portable_manager import (
+    DEFAULT_PORTABLE_PATH_IN_REPO,
     PortableRepoSourceConfig,
     PortableUploadTargetConfig,
     build_portable_list_from_repositories,
@@ -470,6 +471,7 @@ def portable_list_cli(
     ms_repo_id: str | None = None,
     ms_repo_type: str = "model",
     revision: str | None = None,
+    path_in_repo: str | None = DEFAULT_PORTABLE_PATH_IN_REPO,
     hf_token: str | None = None,
     ms_token: str | None = None,
 ) -> None:
@@ -488,6 +490,8 @@ def portable_list_cli(
             ModelScope 仓库类型
         revision (str | None):
             仓库分支、标签或提交哈希
+        path_in_repo (str | None):
+            仓库中的整合包目录, 为空字符串时不限制目录
         hf_token (str | None):
             HuggingFace Token
         ms_token (str | None):
@@ -502,6 +506,7 @@ def portable_list_cli(
         manager=manager,
         sources=sources,
         revision=revision,
+        path_in_repo=path_in_repo,
     )
     save_portable_list(portable_list, output)
     logger.info("整合包资源列表已保存: %s", output)
@@ -1101,6 +1106,7 @@ def register_manager(
     portable_list_p.add_argument("--ms-repo-id", type=str, default=None, help="ModelScope 仓库 ID")
     portable_list_p.add_argument("--ms-repo-type", choices=REPO_TYPE_LIST, default="model", help="ModelScope 仓库类型")
     portable_list_p.add_argument("--revision", type=str, default=None, help="仓库分支、标签或提交哈希")
+    portable_list_p.add_argument("--path-in-repo", type=str, default=DEFAULT_PORTABLE_PATH_IN_REPO, help="仓库中扫描整合包的目录，空字符串表示扫描整个仓库")
     _add_repo_auth_arguments(portable_list_p)
     portable_list_p.set_defaults(
         func=lambda args: portable_list_cli(
@@ -1110,6 +1116,7 @@ def register_manager(
             ms_repo_id=args.ms_repo_id,
             ms_repo_type=args.ms_repo_type,
             revision=args.revision,
+            path_in_repo=args.path_in_repo,
             hf_token=args.hf_token,
             ms_token=args.ms_token,
         )

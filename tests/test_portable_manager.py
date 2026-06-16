@@ -40,6 +40,23 @@ def test_filter_portable_paths_skips_non_portable_and_invalid_files():
     ) == ["portable/sd_webui-licyk-v1.0.0.7z"]
 
 
+def test_filter_portable_paths_supports_custom_repo_path():
+    paths = [
+        "portable/sd_webui-licyk-v1.0.0.7z",
+        "release/nightly/comfyui-licyk-20250616-nightly.7z",
+        "release/nightly/not-a-portable.7z",
+    ]
+
+    assert portable_manager.filter_portable_paths(paths, path_in_repo="/release\\nightly/") == ["release/nightly/comfyui-licyk-20250616-nightly.7z"]
+    assert portable_manager.filter_portable_paths(paths, path_in_repo="") == [
+        "portable/sd_webui-licyk-v1.0.0.7z",
+        "release/nightly/comfyui-licyk-20250616-nightly.7z",
+    ]
+
+    with pytest.raises(ValueError, match="不能包含"):
+        portable_manager.filter_portable_paths(paths, path_in_repo="../portable")
+
+
 def test_build_portable_source_resources_groups_and_sorts_versions():
     files = [
         portable_manager.build_portable_file_resource("portable/sd_webui-licyk-v1.2.0.7z", "https://example.test/v1.2")[1],
@@ -143,6 +160,40 @@ def test_build_portable_list_from_repositories_collects_only_valid_portables():
         }
     ]
     assert data["resources"]["huggingface"]["sd_webui"]["stable"][0]["url"] == "https://example.test/sd_webui-licyk-v1.0.0.7z"
+
+
+def test_build_portable_list_from_repositories_uses_custom_repo_path():
+    class FakeRepoManager:
+        def __init__(self):
+            self.url_calls = []
+
+        def get_repo_file(self, **_kwargs):
+            return [
+                "portable/sd_webui-licyk-v1.0.0.7z",
+                "release/nightly/comfyui-licyk-20250616-nightly.7z",
+            ]
+
+        def get_repo_file_download_url(self, **kwargs):
+            self.url_calls.append(kwargs)
+            return f"https://example.test/{kwargs['file_path']}"
+
+    manager = FakeRepoManager()
+    data = portable_manager.build_portable_list_from_repositories(
+        manager=manager,  # type: ignore[arg-type]
+        sources=[{"source": "modelscope", "repo_id": "owner/repo", "repo_type": "model"}],
+        path_in_repo="release/nightly",
+    )
+
+    assert manager.url_calls == [
+        {
+            "api_type": "modelscope",
+            "repo_id": "owner/repo",
+            "file_path": "release/nightly/comfyui-licyk-20250616-nightly.7z",
+            "repo_type": "model",
+            "revision": None,
+        }
+    ]
+    assert list(data["resources"]["modelscope"]) == ["comfyui"]
 
 
 def test_build_portable_list_from_repositories_requires_source():
