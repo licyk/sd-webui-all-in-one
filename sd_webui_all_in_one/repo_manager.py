@@ -764,7 +764,7 @@ class RepoManager:
         repo_type: RepoType = "model",
         revision: str | None = None,
     ) -> str:
-        """获取 HuggingFace 仓库中文件的实际下载地址
+        """获取 HuggingFace 仓库中文件的长期下载入口地址
 
         Args:
             repo_id (str):
@@ -797,10 +797,10 @@ class RepoManager:
         url = hf_hub_url(**url_kwargs)
 
         if hasattr(hf_api, "get_hf_file_metadata"):
-            metadata = hf_api.get_hf_file_metadata(url=url, token=self.hf_token)
+            hf_api.get_hf_file_metadata(url=url, token=self.hf_token)
         else:
-            metadata = get_hf_file_metadata(url=url, token=self.hf_token)
-        return metadata.location or url
+            get_hf_file_metadata(url=url, token=self.hf_token)
+        return url
 
     def get_ms_repo_file_download_url(
         self,

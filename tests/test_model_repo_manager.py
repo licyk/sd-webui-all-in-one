@@ -549,7 +549,7 @@ def test_repo_manager_file_download_urls(monkeypatch):
 
     assert (
         manager.get_hf_repo_file_download_url("owner/repo", "weights/a.bin", revision="main")
-        == "https://cdn.example/a.bin"
+        == "https://hf.example/owner/repo/resolve/main/weights/a.bin"
     )
     assert hf_calls == [
         (
