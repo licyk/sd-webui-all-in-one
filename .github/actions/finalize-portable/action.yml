@@ -32,6 +32,10 @@ inputs:
     description: Repository branch, tag, or commit for portable upload.
     required: false
     default: ""
+  path-in-repo:
+    description: Repository path prefix for portable upload.
+    required: false
+    default: ""
   public:
     description: Create missing repositories as public.
     required: false
@@ -103,6 +107,9 @@ runs:
         }
         if (-not [string]::IsNullOrWhiteSpace("${{ inputs.revision }}")) {
           $uploadArgs += @("--revision", "${{ inputs.revision }}")
+        }
+        if (-not [string]::IsNullOrWhiteSpace("${{ inputs.path-in-repo }}")) {
+          $uploadArgs += @("--path-in-repo", "${{ inputs.path-in-repo }}")
         }
         if ("${{ inputs.public }}" -eq "true") {
           $uploadArgs += "--public"

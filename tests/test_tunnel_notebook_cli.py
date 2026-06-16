@@ -232,6 +232,7 @@ def test_notebook_gpu_check_and_delegates(monkeypatch, notebook_manager, tmp_pat
         "huggingface",
         "owner/repo",
         tmp_path / "upload",
+        path_in_repo="outputs",
         visibility=True,
         num_threads=2,
         revision="hf-rev",
@@ -247,6 +248,7 @@ def test_notebook_gpu_check_and_delegates(monkeypatch, notebook_manager, tmp_pat
     assert notebook_manager.repo_manager.calls[0][0] == "upload"
     assert notebook_manager.repo_manager.calls[1][0] == "download"
     assert notebook_manager.repo_manager.calls[0][1]["revision"] == "hf-rev"
+    assert notebook_manager.repo_manager.calls[0][1]["path_in_repo"] == "outputs"
     assert notebook_manager.repo_manager.calls[1][1]["revision"] == "ms-rev"
     url = notebook_manager.get_repo_file_download_url(
         "huggingface",
@@ -474,6 +476,8 @@ def test_self_manager_portable_upload_cli_parse_smoke(monkeypatch, tmp_path):
             "model",
             "--revision",
             "main",
+            "--path-in-repo",
+            "portable/nightly",
             "--public",
             "--threads",
             "4",
@@ -490,6 +494,7 @@ def test_self_manager_portable_upload_cli_parse_smoke(monkeypatch, tmp_path):
     assert calls == [
         {
             "upload_path": tmp_path / "sdnote",
+            "path_in_repo": None,
             "hf_repo_id": None,
             "hf_repo_type": "model",
             "ms_repo_id": None,
@@ -503,6 +508,7 @@ def test_self_manager_portable_upload_cli_parse_smoke(monkeypatch, tmp_path):
         },
         {
             "upload_path": tmp_path / "custom-upload",
+            "path_in_repo": "portable/nightly",
             "hf_repo_id": "arg-hf/repo",
             "hf_repo_type": "dataset",
             "ms_repo_id": "arg-ms/repo",
@@ -587,6 +593,7 @@ def test_self_manager_portable_upload_cli_handler(monkeypatch, tmp_path):
 
     cli_utils.portable_upload_cli(
         upload_path=tmp_path / "sdnote",
+        path_in_repo="portable/nightly",
         hf_repo_id=None,
         hf_repo_type="model",
         ms_repo_id="ms/repo",
@@ -605,6 +612,7 @@ def test_self_manager_portable_upload_cli_handler(monkeypatch, tmp_path):
             "manager": instances[-1],
             "upload_path": tmp_path / "sdnote",
             "targets": [{"source": "modelscope", "repo_id": "ms/repo", "repo_type": "dataset"}],
+            "path_in_repo": "portable/nightly",
             "revision": "main",
             "visibility": True,
             "num_threads": 4,
@@ -675,6 +683,8 @@ def test_self_manager_repo_cli_parse_smoke(monkeypatch, tmp_path):
             str(tmp_path / "upload"),
             "--threads",
             "4",
+            "--path-in-repo",
+            "artifacts/nightly",
             "--public",
             "--revision",
             "upload-rev",
@@ -790,6 +800,7 @@ def test_self_manager_repo_cli_parse_smoke(monkeypatch, tmp_path):
                 "api_type": "huggingface",
                 "repo_id": "owner/repo",
                 "upload_path": tmp_path / "upload",
+                "path_in_repo": "artifacts/nightly",
                 "repo_type": "model",
                 "visibility": True,
                 "num_threads": 4,
@@ -935,7 +946,7 @@ def test_self_manager_repo_cli_handlers_delegate_and_print(monkeypatch, capsys, 
     ]
 
     cli_utils.repo_check_cli("huggingface", "owner/repo", visibility=True, hf_token="hf", ms_token="ms")
-    cli_utils.repo_upload_cli("huggingface", "owner/repo", tmp_path / "upload", num_threads=2, revision="upload-rev")
+    cli_utils.repo_upload_cli("huggingface", "owner/repo", tmp_path / "upload", path_in_repo="artifacts", num_threads=2, revision="upload-rev")
     cli_utils.repo_download_cli("modelscope", "owner/repo", tmp_path / "download", folder="weights", num_threads=3, revision="download-rev")
     cli_utils.repo_mirror_cli(
         "huggingface",
@@ -973,6 +984,7 @@ def test_self_manager_repo_cli_handlers_delegate_and_print(monkeypatch, capsys, 
                 "api_type": "huggingface",
                 "repo_id": "owner/repo",
                 "upload_path": tmp_path / "upload",
+                "path_in_repo": "artifacts",
                 "repo_type": "model",
                 "visibility": False,
                 "num_threads": 2,

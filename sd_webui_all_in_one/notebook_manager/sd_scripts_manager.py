@@ -109,6 +109,7 @@ class SDScriptsManager(BaseManager):
                 repo_id: str,
                 upload_path: Path | str,
                 repo_type: RepoType = "model",
+                path_in_repo: str | None = None,
                 visibility: bool = False,
                 retry: int | None = None,  # pylint: disable=unused-argument
                 revision: str | None = None,
@@ -123,6 +124,7 @@ class SDScriptsManager(BaseManager):
                         api_type=api_type,
                         repo_id=repo_id,
                         upload_path=Path(upload_path),
+                        path_in_repo=path_in_repo,
                         repo_type=repo_type,
                         visibility=visibility,
                     )
@@ -132,6 +134,7 @@ class SDScriptsManager(BaseManager):
                     api_type=api_type,
                     repo_id=repo_id,
                     upload_path=Path(upload_path),
+                    path_in_repo=path_in_repo,
                     repo_type=repo_type,
                     visibility=visibility,
                     revision=revision,

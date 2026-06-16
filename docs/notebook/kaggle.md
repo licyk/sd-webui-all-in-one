@@ -51,6 +51,7 @@ sd_scripts.import_kaggle_input(INPUT_DATASET_PATH)
 - `repo_id`：目标仓库 ID。
 - `repo_type`：仓库类型，常用 `model`。
 - `upload_path`：要上传的本地目录。
+- `path_in_repo`：仓库中的上传路径前缀，未设置时上传到仓库根目录。
 - `visibility`：仓库不存在时创建仓库的可见性。
 
 使用前需要配置 `HF_TOKEN` 或 `MS_TOKEN`。训练类 Notebook 的参数单元中也包含 `USE_HF_TO_SAVE_MODEL` 和 `USE_MS_TO_SAVE_MODEL` 开关。

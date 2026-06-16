@@ -480,6 +480,7 @@ def upload_portable_package_to_repositories(
     upload_path: Path,
     targets: list[PortableUploadTargetConfig],
     revision: str | None = None,
+    path_in_repo: str | None = None,
     visibility: bool = False,
     num_threads: int = 1,
     target_workers: int | None = None,
@@ -495,6 +496,8 @@ def upload_portable_package_to_repositories(
             上传目标配置列表
         revision (str | None):
             上传目标分支、标签或提交哈希
+        path_in_repo (str | None):
+            仓库中的上传路径前缀, 为`None`时上传到仓库根目录
         visibility (bool):
             创建仓库时是否设为公开
         num_threads (int):
@@ -524,6 +527,7 @@ def upload_portable_package_to_repositories(
             api_type=target["source"],
             repo_id=target["repo_id"],
             upload_path=upload_path,
+            path_in_repo=path_in_repo,
             repo_type=target["repo_type"],
             visibility=visibility,
             num_threads=upload_threads,

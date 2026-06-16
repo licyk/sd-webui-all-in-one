@@ -65,6 +65,26 @@ def _repo_path_name(path: str) -> str:
     return path.rstrip("/").rsplit("/", 1)[-1]
 
 
+def _normalize_path_in_repo(path_in_repo: str | None) -> str:
+    if path_in_repo is None:
+        return ""
+
+    parts = []
+    for part in path_in_repo.replace("\\", "/").strip("/").split("/"):
+        if part in ["", "."]:
+            continue
+        if part == "..":
+            raise ValueError("仓库路径不能包含 '..'")
+        parts.append(part)
+    return "/".join(parts)
+
+
+def _join_repo_path(path_in_repo: str, relative_path: str) -> str:
+    if not path_in_repo:
+        return relative_path
+    return f"{path_in_repo}/{relative_path}"
+
+
 def _get_mapping_or_attr(
     value: Any,
     key: str,
@@ -957,6 +977,7 @@ class RepoManager:
         repo_id: str,
         upload_path: Path,
         repo_type: RepoType = "model",
+        path_in_repo: str | None = None,
         visibility: bool = False,
         num_threads: int = 1,
         revision: str | None = None,
@@ -968,10 +989,12 @@ class RepoManager:
                 Api 类型
             repo_id (str):
                 仓库 ID
-            repo_type (RepoType):
-                仓库类型
             upload_path (Path):
                 要上传的文件夹
+            repo_type (RepoType):
+                仓库类型
+            path_in_repo (str | None):
+                仓库中的上传路径前缀, 为`None`时上传到仓库根目录
             visibility (bool):
                 当仓库不存在时自动创建的仓库的可见性
             num_threads (int):
@@ -985,6 +1008,8 @@ class RepoManager:
         """
         if api_type not in ["huggingface", "modelscope"]:
             raise ValueError(f"未知的 API 类型: {api_type}")
+
+        normalized_path_in_repo = _normalize_path_in_repo(path_in_repo)
 
         self.check_repo(
             api_type=api_type,
@@ -1000,6 +1025,7 @@ class RepoManager:
                         "repo_id": repo_id,
                         "repo_type": repo_type,
                         "upload_path": upload_path,
+                        "path_in_repo": normalized_path_in_repo,
                         "num_threads": num_threads,
                     },
                     revision,
@@ -1012,6 +1038,7 @@ class RepoManager:
                         "repo_id": repo_id,
                         "repo_type": repo_type,
                         "upload_path": upload_path,
+                        "path_in_repo": normalized_path_in_repo,
                         "num_threads": num_threads,
                     },
                     revision,
@@ -1023,6 +1050,7 @@ class RepoManager:
         repo_id: str,
         upload_path: Path,
         repo_type: RepoType = "model",
+        path_in_repo: str | None = None,
         num_threads: int = 1,
         revision: str | None = None,
     ) -> None:
@@ -1035,6 +1063,8 @@ class RepoManager:
                 HuggingFace 仓库类型
             upload_path (Path):
                 要上传到 HuggingFace 仓库的文件夹
+            path_in_repo (str | None):
+                仓库中的上传路径前缀, 为`None`时上传到仓库根目录
             num_threads (int):
                 上传线程数
             revision (str | None):
@@ -1044,6 +1074,7 @@ class RepoManager:
             AggregateError:
                 上传任务出现错误时
         """
+        normalized_path_in_repo = _normalize_path_in_repo(path_in_repo)
         upload_files = get_file_list(upload_path)
         repo_files = _repo_file_metadata_by_path(
             self.get_repo_files_metadata(
@@ -1059,7 +1090,7 @@ class RepoManager:
         upload_tasks: list[Path] = []
 
         for index, upload_file in enumerate(upload_files, start=1):
-            upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
+            upload_file_rel_path = _join_repo_path(normalized_path_in_repo, upload_file.relative_to(upload_path).as_posix())
             repo_file_metadata = repo_files.get(upload_file_rel_path)
             if repo_file_metadata is None:
                 upload_tasks.append(upload_file)
@@ -1094,14 +1125,14 @@ class RepoManager:
         def _upload_file(
             repo_id: str,
             repo_type: str,
-            path_in_repo: str,
+            file_path_in_repo: str,
             path_or_fileobj: Path,
         ) -> None:
             upload_kwargs = _add_revision(
                 {
                     "repo_id": repo_id,
                     "repo_type": repo_type,
-                    "path_in_repo": path_in_repo,
+                    "path_in_repo": file_path_in_repo,
                     "path_or_fileobj": path_or_fileobj,
                     "commit_message": f"Upload {path_or_fileobj.name}",
                 },
@@ -1119,13 +1150,13 @@ class RepoManager:
             task: tuple[int, Path],
         ) -> None:
             index, upload_file = task
-            upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
+            upload_file_rel_path = _join_repo_path(normalized_path_in_repo, upload_file.relative_to(upload_path).as_posix())
             logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中", index, upload_count, upload_file, repo_id, repo_type)
             try:
                 _upload_file(
                     repo_id=repo_id,
                     repo_type=repo_type,
-                    path_in_repo=upload_file_rel_path,
+                    file_path_in_repo=upload_file_rel_path,
                     path_or_fileobj=upload_file,
                 )
             except RuntimeError as e:
@@ -1151,6 +1182,7 @@ class RepoManager:
         repo_id: str,
         upload_path: Path,
         repo_type: RepoType = "model",
+        path_in_repo: str | None = None,
         num_threads: int = 1,
         revision: str | None = None,
     ) -> None:
@@ -1163,6 +1195,8 @@ class RepoManager:
                 ModelScope 仓库类型
             upload_path (Path):
                 要上传到 ModelScope 仓库的文件夹
+            path_in_repo (str | None):
+                仓库中的上传路径前缀, 为`None`时上传到仓库根目录
             num_threads (int):
                 上传线程数
             revision (str | None):
@@ -1172,6 +1206,7 @@ class RepoManager:
             AggregateError:
                 上传任务出现错误时
         """
+        normalized_path_in_repo = _normalize_path_in_repo(path_in_repo)
         upload_files = get_file_list(upload_path)
         repo_files = _repo_file_metadata_by_path(
             self.get_repo_files_metadata(
@@ -1187,7 +1222,7 @@ class RepoManager:
         upload_tasks: list[Path] = []
 
         for index, upload_file in enumerate(upload_files, start=1):
-            upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
+            upload_file_rel_path = _join_repo_path(normalized_path_in_repo, upload_file.relative_to(upload_path).as_posix())
             repo_file_metadata = repo_files.get(upload_file_rel_path)
             if repo_file_metadata is None:
                 upload_tasks.append(upload_file)
@@ -1222,14 +1257,14 @@ class RepoManager:
         def _upload_file(
             repo_id: str,
             repo_type: str,
-            path_in_repo: str,
+            file_path_in_repo: str,
             path_or_fileobj: Path,
         ) -> None:
             upload_kwargs = _add_revision(
                 {
                     "repo_id": repo_id,
                     "repo_type": repo_type,
-                    "path_in_repo": path_in_repo,
+                    "path_in_repo": file_path_in_repo,
                     "path_or_fileobj": path_or_fileobj,
                     "commit_message": f"Upload {path_or_fileobj.name}",
                     "token": self.ms_token,
@@ -1248,13 +1283,13 @@ class RepoManager:
             task: tuple[int, Path],
         ) -> None:
             index, upload_file = task
-            upload_file_rel_path = upload_file.relative_to(upload_path).as_posix()
+            upload_file_rel_path = _join_repo_path(normalized_path_in_repo, upload_file.relative_to(upload_path).as_posix())
             logger.info("[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中", index, upload_count, upload_file, repo_id, repo_type)
             try:
                 _upload_file(
                     repo_id=repo_id,
                     repo_type=repo_type,
-                    path_in_repo=upload_file_rel_path,
+                    file_path_in_repo=upload_file_rel_path,
                     path_or_fileobj=upload_file,
                 )
             except RuntimeError as e:

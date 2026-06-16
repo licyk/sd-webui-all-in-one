@@ -624,6 +624,9 @@ def test_repo_manager_upload_skips_matching_hash_and_aggregates_failures(monkeyp
     (upload_root / "existing.txt").write_text("old", encoding="utf-8")
     (upload_root / "changed.txt").write_text("changed-local", encoding="utf-8")
     (upload_root / "new.txt").write_text("new", encoding="utf-8")
+    nested_dir = upload_root / "nested"
+    nested_dir.mkdir()
+    (nested_dir / "keep.txt").write_text("nested", encoding="utf-8")
 
     manager = _repo_manager_with_apis()
     uploaded = []
@@ -642,14 +645,15 @@ def test_repo_manager_upload_skips_matching_hash_and_aggregates_failures(monkeyp
 
     manager.hf_api = FakeHfApi()
     manager.get_repo_files_metadata = lambda **kwargs: list_calls.append(kwargs) or [
-        {"path": "existing.txt", "type": "file", "sha256": _sha256("old")},
-        {"path": "changed.txt", "type": "file", "sha256": _sha256("changed-remote")},
+        {"path": "remote/existing.txt", "type": "file", "sha256": _sha256("old")},
+        {"path": "remote/changed.txt", "type": "file", "sha256": _sha256("changed-remote")},
+        {"path": "remote/nested/keep.txt", "type": "file", "sha256": _sha256("nested")},
     ]
 
-    manager.upload_files_to_huggingface("owner/repo", upload_root, num_threads=1, revision="upload-branch")
+    manager.upload_files_to_huggingface("owner/repo", upload_root, path_in_repo="/remote/", num_threads=1, revision="upload-branch")
 
     assert list_calls[0]["revision"] == "upload-branch"
-    assert {kwargs["path_in_repo"] for kwargs in uploaded} == {"changed.txt", "new.txt"}
+    assert {kwargs["path_in_repo"] for kwargs in uploaded} == {"remote/changed.txt", "remote/new.txt"}
     assert {kwargs["revision"] for kwargs in uploaded} == {"upload-branch"}
     assert upload_log_indexes == [(1, 2), (2, 2)]
 
@@ -662,13 +666,14 @@ def test_repo_manager_upload_skips_matching_hash_and_aggregates_failures(monkeyp
 
     manager.ms_api = FakeMsApi()
     manager.get_repo_files_metadata = lambda **_kwargs: [
-        {"path": "existing.txt", "type": "file", "sha256": _sha256("old")},
-        {"path": "changed.txt", "type": "file", "sha256": _sha256("changed-remote")},
+        {"path": "ms-root/existing.txt", "type": "file", "sha256": _sha256("old")},
+        {"path": "ms-root/changed.txt", "type": "file", "sha256": _sha256("changed-remote")},
+        {"path": "ms-root/nested/keep.txt", "type": "file", "sha256": _sha256("nested")},
     ]
 
-    manager.upload_files_to_modelscope("owner/repo", upload_root, num_threads=1, revision="ms-branch")
+    manager.upload_files_to_modelscope("owner/repo", upload_root, path_in_repo="ms-root", num_threads=1, revision="ms-branch")
 
-    assert {kwargs["path_in_repo"] for kwargs in ms_uploaded} == {"changed.txt", "new.txt"}
+    assert {kwargs["path_in_repo"] for kwargs in ms_uploaded} == {"ms-root/changed.txt", "ms-root/new.txt"}
     assert {kwargs["revision"] for kwargs in ms_uploaded} == {"ms-branch"}
     assert upload_log_indexes == [(1, 2), (2, 2)]
 
@@ -683,8 +688,23 @@ def test_repo_manager_upload_skips_matching_hash_and_aggregates_failures(monkeyp
     with pytest.raises(AggregateError) as exc:
         manager.upload_files_to_huggingface("owner/repo", upload_root, num_threads=1)
 
-    assert len(exc.value.exceptions) == 3
-    assert upload_log_indexes == [(1, 3), (2, 3), (3, 3)]
+    assert len(exc.value.exceptions) == 4
+    assert upload_log_indexes == [(1, 4), (2, 4), (3, 4), (4, 4)]
+
+
+def test_repo_manager_upload_rejects_parent_path_in_repo(tmp_path):
+    upload_root = tmp_path / "upload"
+    upload_root.mkdir()
+
+    manager = _repo_manager_with_apis()
+
+    with pytest.raises(ValueError, match="仓库路径不能包含"):
+        manager.upload_files_to_repo(
+            api_type="huggingface",
+            repo_id="owner/repo",
+            upload_path=upload_root,
+            path_in_repo="../bad",
+        )
 
 
 def test_repo_manager_download_filters_huggingface_and_modelscope(monkeypatch, tmp_path):

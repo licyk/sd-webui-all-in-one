@@ -162,6 +162,7 @@ manager.upload_files_to_repo(
     api_type="modelscope",
     repo_id="owner/repo",
     upload_path="/kaggle/output",
+    path_in_repo="training-output",
     repo_type="model",
     visibility=False,
 )

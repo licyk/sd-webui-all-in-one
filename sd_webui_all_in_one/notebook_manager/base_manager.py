@@ -498,6 +498,7 @@ class BaseManager:
         repo_id: str,
         upload_path: Path | str,
         repo_type: RepoType = "model",
+        path_in_repo: str | None = None,
         visibility: bool = False,
         num_threads: int = 1,
         revision: str | None = None,
@@ -509,10 +510,12 @@ class BaseManager:
                 Api 类型
             repo_id (str):
                 仓库 ID
-            repo_type (RepoType):
-                仓库类型
             upload_path (Path | str):
                 要上传的文件夹
+            repo_type (RepoType):
+                仓库类型
+            path_in_repo (str | None):
+                仓库中的上传路径前缀, 为`None`时上传到仓库根目录
             visibility (bool):
                 当仓库不存在时自动创建的仓库的可见性
             num_threads (int):
@@ -524,6 +527,7 @@ class BaseManager:
             api_type=api_type,
             repo_id=repo_id,
             upload_path=Path(upload_path),
+            path_in_repo=path_in_repo,
             repo_type=repo_type,
             visibility=visibility,
             num_threads=num_threads,

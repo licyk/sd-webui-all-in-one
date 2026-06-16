@@ -513,6 +513,7 @@ def portable_upload_cli(
     hf_repo_type: str = "model",
     ms_repo_id: str | None = None,
     ms_repo_type: str = "model",
+    path_in_repo: str | None = None,
     revision: str | None = None,
     visibility: bool = False,
     num_threads: int = 1,
@@ -533,6 +534,8 @@ def portable_upload_cli(
             ModelScope 仓库 ID
         ms_repo_type (str):
             ModelScope 仓库类型
+        path_in_repo (str | None):
+            仓库中的上传路径前缀
         revision (str | None):
             仓库分支、标签或提交哈希
         visibility (bool):
@@ -555,6 +558,7 @@ def portable_upload_cli(
         manager=manager,
         upload_path=upload_path,
         targets=targets,
+        path_in_repo=path_in_repo,
         revision=revision,
         visibility=visibility,
         num_threads=num_threads,
@@ -720,6 +724,7 @@ def repo_upload_cli(
     repo_id: str,
     upload_path: Path,
     repo_type: RepoType = "model",
+    path_in_repo: str | None = None,
     visibility: bool = False,
     num_threads: int = 1,
     revision: str | None = None,
@@ -737,6 +742,8 @@ def repo_upload_cli(
             要上传的本地目录
         repo_type (RepoType):
             仓库类型
+        path_in_repo (str | None):
+            仓库中的上传路径前缀
         visibility (bool):
             创建仓库时是否设为公开
         num_threads (int):
@@ -753,6 +760,7 @@ def repo_upload_cli(
         api_type=api_type,
         repo_id=repo_id,
         upload_path=upload_path,
+        path_in_repo=path_in_repo,
         repo_type=repo_type,
         visibility=visibility,
         num_threads=num_threads,
@@ -1114,6 +1122,7 @@ def register_manager(
     portable_upload_p.add_argument("--ms-repo-id", type=str, default=None, help="ModelScope 仓库 ID")
     portable_upload_p.add_argument("--ms-repo-type", choices=REPO_TYPE_LIST, default="model", help="ModelScope 仓库类型")
     portable_upload_p.add_argument("--revision", type=str, default=None, help="上传目标分支、标签或提交哈希")
+    portable_upload_p.add_argument("--path-in-repo", type=str, default=None, help="仓库中的上传路径前缀，默认上传到仓库根目录")
     portable_upload_p.add_argument("--public", action="store_true", help="仓库不存在并需要创建时设为公开仓库")
     portable_upload_p.add_argument("--threads", type=int, default=1, dest="num_threads", help="单个目标仓库内部的上传线程数")
     portable_upload_p.add_argument("--target-workers", type=int, default=None, help="上传目标之间的并发数，默认按目标数量并发")
@@ -1121,6 +1130,7 @@ def register_manager(
     portable_upload_p.set_defaults(
         func=lambda args: portable_upload_cli(
             upload_path=args.upload_path,
+            path_in_repo=args.path_in_repo,
             hf_repo_id=args.hf_repo_id,
             hf_repo_type=args.hf_repo_type,
             ms_repo_id=args.ms_repo_id,
@@ -1221,6 +1231,7 @@ def register_manager(
     repo_upload_p.add_argument("upload_path", type=normalized_filepath, help="要上传的本地目录")
     _add_repo_type_argument(repo_upload_p)
     _add_repo_revision_argument(repo_upload_p)
+    repo_upload_p.add_argument("--path-in-repo", type=str, default=None, help="仓库中的上传路径前缀，默认上传到仓库根目录")
     repo_upload_p.add_argument("--public", action="store_true", help="创建仓库时设为公开仓库")
     repo_upload_p.add_argument("--threads", type=int, default=1, dest="num_threads", help="上传线程数")
     _add_repo_auth_arguments(repo_upload_p)
@@ -1229,6 +1240,7 @@ def register_manager(
             api_type=args.api_type,
             repo_id=args.repo_id,
             upload_path=args.upload_path,
+            path_in_repo=args.path_in_repo,
             repo_type=args.repo_type,
             visibility=args.public,
             num_threads=args.num_threads,
