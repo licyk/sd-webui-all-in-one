@@ -4394,6 +4394,14 @@ function Main {
     Set-GithubMirrorLegecy
     Get-PyPIMirrorStatus
 
+    if (Get-Command Set-PSReadLineKeyHandler -ErrorAction SilentlyContinue) {
+        Set-PSReadLineKeyHandler -Chord Ctrl+d -ScriptBlock {
+            [Microsoft.PowerShell.PSConsoleReadLine]::RevertLine()
+            [Microsoft.PowerShell.PSConsoleReadLine]::Insert(`"exit`")
+            [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
+        }
+    }
+
     `$python_cmd = Get-Command python -ErrorAction SilentlyContinue
     if (`$python_cmd) {
         `$python_path_prefix = Join-NormalizedPath `$PSScriptRoot `"python`"

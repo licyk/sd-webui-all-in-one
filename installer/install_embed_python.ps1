@@ -244,6 +244,13 @@ function Main {
     Write-Log `"初始化中`"
     Set-Proxy
     Set-HuggingFace-Mirror
+    if (Get-Command Set-PSReadLineKeyHandler -ErrorAction SilentlyContinue) {
+        Set-PSReadLineKeyHandler -Chord Ctrl+d -ScriptBlock {
+            [Microsoft.PowerShell.PSConsoleReadLine]::RevertLine()
+            [Microsoft.PowerShell.PSConsoleReadLine]::Insert(`"exit`")
+            [Microsoft.PowerShell.PSConsoleReadLine]::AcceptLine()
+        }
+    }
     Write-Log `"激活 Env`"
 }
 
