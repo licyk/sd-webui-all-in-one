@@ -3845,6 +3845,331 @@ function Update-Hotpatcher-Port {
 }
 
 
+# 多行文本编辑器
+function Read-MultiLineEditor {
+    param (
+        [string]`$Prompt,
+        [string]`$InitialText = `"`"
+    )
+
+    if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) {
+        Write-Host `$Prompt -NoNewline
+        return (Read-Host).Trim()
+    }
+
+    function Get-CharacterDisplayWidth {
+        param ([char]`$Character)
+
+        `$code = [int][char]`$Character
+        if ([char]::IsControl(`$Character)) { return 0 }
+        if ((`$code -ge 0x1100 -and `$code -le 0x115F) -or
+            (`$code -ge 0x2329 -and `$code -le 0x232A) -or
+            (`$code -ge 0x2E80 -and `$code -le 0xA4CF) -or
+            (`$code -ge 0xAC00 -and `$code -le 0xD7A3) -or
+            (`$code -ge 0xF900 -and `$code -le 0xFAFF) -or
+            (`$code -ge 0xFE10 -and `$code -le 0xFE19) -or
+            (`$code -ge 0xFE30 -and `$code -le 0xFE6F) -or
+            (`$code -ge 0xFF00 -and `$code -le 0xFF60) -or
+            (`$code -ge 0xFFE0 -and `$code -le 0xFFE6)) {
+            return 2
+        }
+        return 1
+    }
+
+    function Get-TextDisplayWidth {
+        param (
+            [string]`$Text,
+            [int]`$EndIndex = -1
+        )
+
+        if ([string]::IsNullOrEmpty(`$Text)) { return 0 }
+        if (`$EndIndex -lt 0 -or `$EndIndex -gt `$Text.Length) { `$EndIndex = `$Text.Length }
+        `$width = 0
+        for (`$i = 0; `$i -lt `$EndIndex; `$i++) {
+            `$width += Get-CharacterDisplayWidth `$Text[`$i]
+        }
+        return `$width
+    }
+
+    function Get-VisibleTextByDisplayColumn {
+        param (
+            [string]`$Text,
+            [int]`$StartColumn,
+            [int]`$MaxWidth
+        )
+
+        if ([string]::IsNullOrEmpty(`$Text) -or `$MaxWidth -le 0) { return `"`" }
+        `$column = 0
+        `$visible_width = 0
+        `$result = [System.Text.StringBuilder]::new()
+        for (`$i = 0; `$i -lt `$Text.Length; `$i++) {
+            `$char_width = Get-CharacterDisplayWidth `$Text[`$i]
+            `$next_column = `$column + `$char_width
+            if (`$next_column -le `$StartColumn) {
+                `$column = `$next_column
+                continue
+            }
+            if (`$column -lt `$StartColumn) {
+                `$column = `$next_column
+                continue
+            }
+            if (`$visible_width + `$char_width -gt `$MaxWidth) {
+                break
+            }
+            [void]`$result.Append(`$Text[`$i])
+            `$visible_width += `$char_width
+            `$column = `$next_column
+        }
+        return `$result.ToString()
+    }
+
+    function Get-DisplayColumnBoundary {
+        param (
+            [string]`$Text,
+            [int]`$Column
+        )
+
+        if ([string]::IsNullOrEmpty(`$Text) -or `$Column -le 0) { return 0 }
+        `$current_column = 0
+        for (`$i = 0; `$i -lt `$Text.Length; `$i++) {
+            `$next_column = `$current_column + (Get-CharacterDisplayWidth `$Text[`$i])
+            if (`$Column -le `$next_column) {
+                if (`$Column -le `$current_column) { return `$current_column }
+                return `$next_column
+            }
+            `$current_column = `$next_column
+        }
+        return `$current_column
+    }
+
+    function Get-DisplayPaddedText {
+        param (
+            [string]`$Text,
+            [int]`$Width
+        )
+
+        if (`$Width -le 0) { return `"`" }
+        `$display_width = Get-TextDisplayWidth `$Text
+        if (`$display_width -gt `$Width) {
+            `$Text = Get-VisibleTextByDisplayColumn `$Text 0 `$Width
+            `$display_width = Get-TextDisplayWidth `$Text
+        }
+        if (`$display_width -lt `$Width) {
+            return `$Text + (`" `" * (`$Width - `$display_width))
+        }
+        return `$Text
+    }
+
+    `$normalized_text = `$InitialText.Replace([string][char]13 + [string][char]10, [string][char]10).Replace([string][char]13, [string][char]10)
+    `$lines = [System.Collections.Generic.List[string]]::new()
+    foreach (`$line in [regex]::Split(`$normalized_text, [string][char]10)) {
+        [void]`$lines.Add(`$line)
+    }
+    if (`$lines.Count -eq 0) { [void]`$lines.Add(`"`") }
+
+    `$cursor_row = `$lines.Count - 1
+    `$cursor_col = `$lines[`$cursor_row].Length
+    `$view_row = 0
+    `$view_col = 0
+    `$editor_height = [Math]::Max(3, [Math]::Min(10, [Console]::WindowHeight - 4))
+
+    [Console]::WriteLine(`$Prompt)
+    for (`$i = 0; `$i -lt (`$editor_height + 2); `$i++) {
+        [Console]::WriteLine()
+    }
+    `$top_separator_row = [Math]::Max(0, [Console]::CursorTop - `$editor_height - 2)
+    `$editor_top = `$top_separator_row + 1
+    `$previous_frame_rows = `$null
+
+    while (`$true) {
+        `$window_width = [Math]::Max(20, [Console]::WindowWidth)
+        `$render_height = [Math]::Max(1, [Math]::Min(`$editor_height, [Console]::WindowHeight - `$editor_top - 2))
+        `$text_width = [Math]::Max(1, `$window_width - 3)
+        `$separator = `"-`" * (`$window_width - 1)
+
+        `$cursor_display_col = Get-TextDisplayWidth `$lines[`$cursor_row] `$cursor_col
+        if (`$cursor_row -lt `$view_row) { `$view_row = `$cursor_row }
+        if (`$cursor_row -ge (`$view_row + `$render_height)) { `$view_row = `$cursor_row - `$render_height + 1 }
+        if (`$cursor_display_col -lt `$view_col) { `$view_col = `$cursor_display_col }
+        if (`$cursor_display_col -gt (`$view_col + `$text_width)) { `$view_col = `$cursor_display_col - `$text_width }
+        `$view_col = Get-DisplayColumnBoundary `$lines[`$cursor_row] `$view_col
+
+        `$frame_rows = [System.Collections.Generic.List[string]]::new()
+        [void]`$frame_rows.Add(`$separator)
+        for (`$i = 0; `$i -lt `$render_height; `$i++) {
+            `$line_index = `$view_row + `$i
+            if (`$line_index -lt `$lines.Count) {
+                `$marker = if (`$line_index -eq `$cursor_row) { `"> `" } else { `"  `" }
+                `$line_text = `$lines[`$line_index]
+                `$visible_text = Get-VisibleTextByDisplayColumn `$line_text `$view_col `$text_width
+                `$row_text = `$marker + `$visible_text
+            } else {
+                `$row_text = `"`"
+            }
+            [void]`$frame_rows.Add((Get-DisplayPaddedText `$row_text (`$window_width - 1)))
+        }
+
+        `$status_row = `$editor_top + `$render_height
+        `$help_row = `$status_row + 1
+        `$cursor_status = `"行 `$(`$cursor_row + 1)/`$(`$lines.Count) | 字符 `$(`$cursor_col + 1)`"
+        `$status_text = `"`$cursor_status | F10/Ctrl+O 保存 | Esc 取消 | Enter 换行 | Ctrl+U 清空 | Home/End/方向键移动`"
+        `$status_text = Get-VisibleTextByDisplayColumn `$status_text 0 (`$window_width - 1)
+        [void]`$frame_rows.Add(`$separator)
+        [void]`$frame_rows.Add((Get-DisplayPaddedText `$status_text (`$window_width - 1)))
+
+        `$cursor_screen_col = [Math]::Min(`$window_width - 1, 2 + (`$cursor_display_col - `$view_col))
+        `$cursor_screen_row = `$editor_top + (`$cursor_row - `$view_row)
+        try { [Console]::CursorVisible = `$false } catch {}
+        for (`$i = 0; `$i -lt `$frame_rows.Count; `$i++) {
+            if ((`$null -eq `$previous_frame_rows) -or (`$previous_frame_rows.Count -le `$i) -or (`$previous_frame_rows[`$i] -ne `$frame_rows[`$i])) {
+                [Console]::SetCursorPosition(0, `$top_separator_row + `$i)
+                [Console]::Write(`$frame_rows[`$i])
+            }
+        }
+        if ((`$null -ne `$previous_frame_rows) -and (`$previous_frame_rows.Count -gt `$frame_rows.Count)) {
+            for (`$i = `$frame_rows.Count; `$i -lt `$previous_frame_rows.Count; `$i++) {
+                [Console]::SetCursorPosition(0, `$top_separator_row + `$i)
+                [Console]::Write(`" `" * (`$window_width - 1))
+            }
+        }
+        `$previous_frame_rows = [System.Collections.Generic.List[string]]::new()
+        foreach (`$frame_row in `$frame_rows) {
+            [void]`$previous_frame_rows.Add(`$frame_row)
+        }
+        [Console]::SetCursorPosition(`$cursor_screen_col, `$cursor_screen_row)
+        try { [Console]::CursorVisible = `$true } catch {}
+
+        `$key = [Console]::ReadKey(`$true)
+        if (`$key.Key -eq [ConsoleKey]::F10) {
+            try { [Console]::CursorVisible = `$true } catch {}
+            [Console]::SetCursorPosition(0, `$help_row)
+            [Console]::WriteLine()
+            return ([string]::Join([Environment]::NewLine, `$lines)).Trim()
+        }
+        if (((`$key.Modifiers -band [ConsoleModifiers]::Control) -ne 0) -and (`$key.Key -eq [ConsoleKey]::O)) {
+            try { [Console]::CursorVisible = `$true } catch {}
+            [Console]::SetCursorPosition(0, `$help_row)
+            [Console]::WriteLine()
+            return ([string]::Join([Environment]::NewLine, `$lines)).Trim()
+        }
+        if (((`$key.Modifiers -band [ConsoleModifiers]::Control) -ne 0) -and (`$key.Key -eq [ConsoleKey]::U)) {
+            `$lines.Clear()
+            [void]`$lines.Add(`"`")
+            `$cursor_row = 0
+            `$cursor_col = 0
+            `$view_row = 0
+            `$view_col = 0
+            continue
+        }
+        if (((`$key.Modifiers -band [ConsoleModifiers]::Control) -ne 0) -and (`$key.Key -eq [ConsoleKey]::A)) {
+            `$cursor_col = 0
+            continue
+        }
+        if (((`$key.Modifiers -band [ConsoleModifiers]::Control) -ne 0) -and (`$key.Key -eq [ConsoleKey]::E)) {
+            `$cursor_col = `$lines[`$cursor_row].Length
+            continue
+        }
+
+        switch (`$key.Key) {
+            ([ConsoleKey]::Enter) {
+                `$line = `$lines[`$cursor_row]
+                `$before = `$line.Substring(0, `$cursor_col)
+                `$after = `$line.Substring(`$cursor_col)
+                `$lines[`$cursor_row] = `$before
+                `$lines.Insert(`$cursor_row + 1, `$after)
+                `$cursor_row++
+                `$cursor_col = 0
+            }
+            ([ConsoleKey]::Escape) {
+                try { [Console]::CursorVisible = `$true } catch {}
+                [Console]::SetCursorPosition(0, `$help_row)
+                [Console]::WriteLine()
+                return `$null
+            }
+            ([ConsoleKey]::LeftArrow) {
+                if (`$cursor_col -gt 0) {
+                    `$cursor_col--
+                } elseif (`$cursor_row -gt 0) {
+                    `$cursor_row--
+                    `$cursor_col = `$lines[`$cursor_row].Length
+                }
+            }
+            ([ConsoleKey]::RightArrow) {
+                if (`$cursor_col -lt `$lines[`$cursor_row].Length) {
+                    `$cursor_col++
+                } elseif (`$cursor_row -lt (`$lines.Count - 1)) {
+                    `$cursor_row++
+                    `$cursor_col = 0
+                }
+            }
+            ([ConsoleKey]::UpArrow) {
+                if (`$cursor_row -gt 0) {
+                    `$cursor_row--
+                    `$cursor_col = [Math]::Min(`$cursor_col, `$lines[`$cursor_row].Length)
+                }
+            }
+            ([ConsoleKey]::DownArrow) {
+                if (`$cursor_row -lt (`$lines.Count - 1)) {
+                    `$cursor_row++
+                    `$cursor_col = [Math]::Min(`$cursor_col, `$lines[`$cursor_row].Length)
+                }
+            }
+            ([ConsoleKey]::Home) { `$cursor_col = 0 }
+            ([ConsoleKey]::End) { `$cursor_col = `$lines[`$cursor_row].Length }
+            ([ConsoleKey]::Backspace) {
+                if (`$cursor_col -gt 0) {
+                    `$line = `$lines[`$cursor_row]
+                    `$lines[`$cursor_row] = `$line.Remove(`$cursor_col - 1, 1)
+                    `$cursor_col--
+                } elseif (`$cursor_row -gt 0) {
+                    `$previous_length = `$lines[`$cursor_row - 1].Length
+                    `$lines[`$cursor_row - 1] = `$lines[`$cursor_row - 1] + `$lines[`$cursor_row]
+                    `$lines.RemoveAt(`$cursor_row)
+                    `$cursor_row--
+                    `$cursor_col = `$previous_length
+                }
+            }
+            ([ConsoleKey]::Delete) {
+                if (`$cursor_col -lt `$lines[`$cursor_row].Length) {
+                    `$line = `$lines[`$cursor_row]
+                    `$lines[`$cursor_row] = `$line.Remove(`$cursor_col, 1)
+                } elseif (`$cursor_row -lt (`$lines.Count - 1)) {
+                    `$lines[`$cursor_row] = `$lines[`$cursor_row] + `$lines[`$cursor_row + 1]
+                    `$lines.RemoveAt(`$cursor_row + 1)
+                }
+            }
+            default {
+                if (-not [char]::IsControl(`$key.KeyChar)) {
+                    `$line = `$lines[`$cursor_row]
+                    `$lines[`$cursor_row] = `$line.Insert(`$cursor_col, `$key.KeyChar)
+                    `$cursor_col++
+                }
+            }
+        }
+    }
+}
+
+
+# 更新启动参数
+function Update-LaunchArgs {
+    `$path = Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`"
+    `$current_args = Get-TrimmedTextFile `$path -Encoding UTF8
+    Write-Log `"编辑启动参数: F10/Ctrl+O 保存, Esc 取消, Enter 换行, Ctrl+U 清空, Home/End/方向键移动`"
+    `$launch_args = Read-MultiLineEditor -Prompt `"启动参数:`" -InitialText `$current_args
+    if (`$null -eq `$launch_args) {
+        Write-Log `"已取消修改启动参数`"
+        return
+    }
+    if (-not [string]::IsNullOrWhiteSpace(`$launch_args)) {
+        Write-FileWithStreamWriter -Path `$path -Value `$launch_args -Encoding UTF8
+        Write-Log `"启动参数已保存`"
+    } else {
+        Remove-Item `$path -Force -ErrorAction SilentlyContinue
+        Write-Log `"启动参数已清空`"
+    }
+}
+
+
 # 打开 Hotpatcher 配置管理 GUI
 function Open-Hotpatcher-Gui {
     `$config_path = Join-NormalizedPath `$PSScriptRoot `"patcher_config.json`"
@@ -3937,12 +4262,7 @@ function Main {
             `"4`"  { Update-Mirror-Setting `"gh_mirror.txt`" `"Github`" @(`"https://ghfast.top/https://github.com`", `"https://mirror.ghproxy.com/https://github.com`") }
             `"5`"  { Set-ToggleSetting `"disable_update.txt`" `"自动检查更新`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_update.txt`")) }
             `"6`"  { Set-ToggleSetting `"disable_model_mirror.txt`" `"模型下载源`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_model_mirror.txt`")) }
-            `"7`"  {
-                Write-Log `"请输入启动参数 (直接回车删除):`"
-                `$args = Get-UserInput
-                if (`$args) { Write-FileWithStreamWriter -Path (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Value `$args -Encoding UTF8 }
-                else { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`") -Force -ErrorAction SilentlyContinue }
-            }
+            `"7`"  { Update-LaunchArgs }
             `"8`"  { Set-ToggleSetting `"enable_shortcut.txt`" `"快捷方式`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_shortcut.txt`"))) }
             `"9`"  { Set-ToggleSetting `"disable_pypi_mirror.txt`" `"PyPI 镜像`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`")) }
             `"10`" { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`")) }
