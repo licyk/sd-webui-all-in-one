@@ -24,11 +24,11 @@
 "@)][switch]$UseUpdateMode,
 
     [Parameter(HelpMessage=@"
-禁用 SD Trainer Script Installer 使用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
+禁用 SD Trainer Script Installer 使用 PyPI 软件包镜像源, 使用 PyPI 官方源下载 Python 软件包
 "@)][switch]$DisablePyPIMirror,
 
     [Parameter(HelpMessage=@"
-禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
+禁用 CLI 自动选择下载镜像源; 禁用后才会遵守 PyPI / GitHub / Hugging Face / 模型下载来源等手动镜像设置
 "@)][switch]$DisableAutoMirror,
 
     [Parameter(HelpMessage=@"
@@ -44,11 +44,11 @@
 "@)][switch]$DisableUV,
 
     [Parameter(HelpMessage=@"
-禁用 SD Trainer Script Installer 自动设置 Github 镜像源
+禁用 SD Trainer Script Installer 自动设置 GitHub 镜像源
 "@)][switch]$DisableGithubMirror,
 
     [Parameter(HelpMessage=@"
-使用自定义的 Github 镜像站地址
+使用自定义的 GitHub 镜像站地址
 "@)][string]$UseCustomGithubMirror,
 
     [Parameter(HelpMessage=@"
@@ -118,7 +118,7 @@ SD Trainer Script 分支编号可运行 switch_branch.ps1 脚本进行查看
 "@)][switch]$NoCleanCache,
 
     [Parameter(HelpMessage=@"
-不使用 ModelScope 下载模型, 使用 HuggingFace 下载模型
+不使用 ModelScope 下载模型, 使用 Hugging Face 下载模型
 "@)][switch]$DisableModelMirror,
 
     [Parameter(HelpMessage=@"
@@ -132,11 +132,11 @@ SD Trainer Script 分支编号可运行 switch_branch.ps1 脚本进行查看
 "@)][switch]$DisableUpdate,
 
     [Parameter(HelpMessage=@"
-(仅在 SD Trainer Script Installer 构建模式下生效, 并且只作用于 SD Trainer Script Installer 管理脚本) 禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+(仅在 SD Trainer Script Installer 构建模式下生效, 并且只作用于 SD Trainer Script Installer 管理脚本) 禁用 Hugging Face 镜像源, 不使用 Hugging Face 镜像源下载文件
 "@)][switch]$DisableHuggingFaceMirror,
 
     [Parameter(HelpMessage=@"
-(仅在 SD Trainer Script Installer 构建模式下生效, 并且只作用于 SD Trainer Script Installer 管理脚本) 使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror "https://hf-mirror.com" 设置 HuggingFace 镜像源地址
+(仅在 SD Trainer Script Installer 构建模式下生效, 并且只作用于 SD Trainer Script Installer 管理脚本) 使用自定义 Hugging Face 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror "https://hf-mirror.com" 设置 Hugging Face 镜像源地址
 "@)][string]$UseCustomHuggingFaceMirror,
 
     [Parameter(HelpMessage=@"
@@ -419,7 +419,7 @@ function Write-FileWithStreamWriter {
 }
 
 
-# 获取内核路径前缀状态
+# 获取 Installer 内核路径前缀状态
 function Get-CorePrefixStatus {
     $core_prefix_file = Join-NormalizedPath $PSScriptRoot "core_prefix.txt"
     $origin_core_prefix = if ($script:CorePrefix) {
@@ -428,12 +428,12 @@ function Get-CorePrefixStatus {
         Get-TrimmedTextFile $core_prefix_file -Encoding UTF8
     }
     if (-not [string]::IsNullOrWhiteSpace($origin_core_prefix)) {
-        Write-Log "检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀"
+        Write-Log "检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义 Installer 内核路径前缀"
         if ([System.IO.Path]::IsPathRooted($origin_core_prefix.Trim('/').Trim('\'))) {
-            Write-Log "转换绝对路径为内核路径前缀: $origin_core_prefix -> $env:CORE_PREFIX"
+            Write-Log "转换绝对路径为 Installer 内核路径前缀: $origin_core_prefix -> $env:CORE_PREFIX"
         }
     }
-    Write-Log "当前内核路径前缀: $env:CORE_PREFIX"
+    Write-Log "当前 Installer 内核路径前缀: $env:CORE_PREFIX"
     Write-Log "完整内核路径: $(Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX)"
 }
 
@@ -448,7 +448,7 @@ function Get-Version {
 }
 
 
-# 设置 CLI 自动镜像源选择状态
+# 设置 CLI 自动选择下载镜像源状态
 function Set-AutoMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]$ArrayList)
@@ -458,27 +458,27 @@ function Set-AutoMirror {
             $ArrayList.Add("--no-auto-mirror") | Out-Null
         }
         if (-not $script:AutoMirrorStatusLogged) {
-            Write-Log "检测到 disable_auto_mirror.txt 配置文件 / -DisableAutoMirror 命令行参数, 已禁用 CLI 自动镜像源选择, 将遵守手动镜像源设置"
+            Write-Log "检测到 disable_auto_mirror.txt 配置文件 / -DisableAutoMirror 命令行参数, 已禁用 CLI 自动选择下载镜像源, 将遵守手动镜像源设置"
             $script:AutoMirrorStatusLogged = $true
         }
         return $true
     }
 
     if (-not $script:AutoMirrorStatusLogged) {
-        Write-Log "CLI 自动镜像源选择已启用, 将由 Python CLI 根据网络检测结果强制覆盖镜像源相关参数"
+        Write-Log "CLI 自动选择下载镜像源已启用, 将由 Python CLI 根据网络检测结果强制覆盖镜像源相关参数"
         $script:AutoMirrorStatusLogged = $true
     }
     return $false
 }
 
 
-# PyPI 镜像源状态
+# PyPI 软件包镜像源状态
 function Set-PyPIMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]$ArrayList)
     if (!(Set-AutoMirror $ArrayList)) { return }
     if ((!(Test-Path (Join-NormalizedPath $PSScriptRoot "disable_pypi_mirror.txt"))) -and (!($script:DisablePyPIMirror))) {
-        Write-Log "使用 PyPI 镜像源"
+        Write-Log "使用 PyPI 软件包镜像源"
     } else {
         Write-Log "检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源"
         $ArrayList.Add("--no-pypi-mirror") | Out-Null
@@ -486,17 +486,17 @@ function Set-PyPIMirror {
 }
 
 
-# 设置模型下载源
+# 设置模型下载来源
 function Set-ModelMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]$ArrayList)
     if (!(Set-AutoMirror $ArrayList)) { return }
     $ArrayList.Add("--model-resource") | Out-Null
     if ((!(Test-Path (Join-NormalizedPath $PSScriptRoot "disable_model_mirror.txt"))) -and (!($script:DisableModelMirror))) {
-        Write-Log "使用 ModelScope 模型下载源"
+        Write-Log "使用 ModelScope 模型下载来源"
         $ArrayList.Add("modelscope") | Out-Null
     } else {
-        Write-Log "检测到 disable_model_mirror.txt 配置文件 / -DisableModelMirror 命令行参数, 已将模型下载源切换至 HuggingFace 源"
+        Write-Log "检测到 disable_model_mirror.txt 配置文件 / -DisableModelMirror 命令行参数, 已将模型下载来源切换至 Hugging Face 源"
         $ArrayList.Add("huggingface") | Out-Null
     }
 }
@@ -540,7 +540,7 @@ function Set-uv {
     }
 }
 
-# 设置 Github 镜像源
+# 设置 GitHub 镜像源
 function Set-GithubMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]$ArrayList)
@@ -549,7 +549,7 @@ function Set-GithubMirror {
     }
     if (!(Set-AutoMirror $ArrayList)) { return }
     if (($script:DisableGithubMirror) -or (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_gh_mirror.txt"))) {
-        Write-Log "检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源"
+        Write-Log "检测到本地存在 disable_gh_mirror.txt GitHub 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 GitHub 镜像源"
         $ArrayList.Add("--no-github-mirror") | Out-Null
         return
     }
@@ -560,7 +560,7 @@ function Set-GithubMirror {
             $github_mirror = Get-TrimmedTextFile (Join-NormalizedPath $PSScriptRoot "gh_mirror.txt") -Encoding UTF8
         }
         if (-not [string]::IsNullOrWhiteSpace($github_mirror)) {
-            Write-Log "检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源"
+            Write-Log "检测到本地存在 gh_mirror.txt GitHub 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 GitHub 镜像源配置文件并设置 GitHub 镜像源"
             $ArrayList.Add("--custom-github-mirror") | Out-Null
             $ArrayList.Add($github_mirror) | Out-Null
             return
@@ -958,7 +958,7 @@ function Install-Git {
             if (Get-Command pacman -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "pacman" -Arguments $("-S", "git", "--noconfirm"); return }
             if (Get-Command zypper -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "zypper" -Arguments $("install", "git", "-y"); return }
             if (Get-Command nix-env -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "nix-channel" -Arguments $("--update"); Invoke-SmartCommand -Command "nix-env" -Arguments $("-iA", "git"); return }
-            Write-Log "无可用的包管理器安装 Git, 终止安装进程, 请手动安装 Git" -Level ERROR
+            Write-Log "无可用的 Python 包管理器安装 Git, 终止安装进程, 请手动安装 Git" -Level ERROR
             if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
             exit 1
         }
@@ -978,7 +978,7 @@ function Install-Git {
             if (Get-Command brew -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "brew" -Arguments $("install", "git"); return }
             if (Get-Command port -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "port" -Arguments $("install", "git", "-y"); return }
             if (Get-Command xcode-select -ErrorAction SilentlyContinue) { Invoke-SmartCommand -Command "xcode-select" -Arguments $("--install"); return }
-            Write-Log "无可用的包管理器安装 Git, 终止安装进程, 请手动安装 Git" -Level ERROR
+            Write-Log "无可用的 Python 包管理器安装 Git, 终止安装进程, 请手动安装 Git" -Level ERROR
             if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
             exit 1
         }
@@ -1382,7 +1382,7 @@ function Update-Installer {
     New-Item -ItemType Directory -Path `$env:CACHE_HOME -Force | Out-Null
 
     if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_update.txt`")) -or (`$script:DisableUpdate)) {
-        Write-Log `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD Trainer Script Installer 的自动检查更新功能`"
+        Write-Log `"检测到 disable_update.txt 更新配置文件 / -DisableUpdate 命令行参数, 已禁用 SD Trainer Script Installer 的自动检查 Installer 更新功能`"
         return
     }
 
@@ -1764,7 +1764,7 @@ function Get-HelpMessage {
 }
 
 
-# 设置内核路径前缀
+# 设置 Installer 内核路径前缀
 function Set-CorePrefix {
     `$prefix_list = @(`"core`", `"sd-scripts*`")
     `$core_prefix_file = Join-NormalizedPath `$PSScriptRoot `"core_prefix.txt`"
@@ -1774,19 +1774,19 @@ function Set-CorePrefix {
         Get-TrimmedTextFile `$core_prefix_file -Encoding UTF8
     }
     if (-not [string]::IsNullOrWhiteSpace(`$origin_core_prefix)) {
-        Write-Log `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义内核路径前缀`"
+        Write-Log `"检测到 core_prefix.txt 配置文件 / -CorePrefix 命令行参数, 使用自定义 Installer 内核路径前缀`"
         `$normalized_core_prefix = `$origin_core_prefix.TrimEnd('\', '/')
         if ([System.IO.Path]::IsPathRooted(`$normalized_core_prefix)) {
             `$from_uri = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
             `$to_uri = New-Object System.Uri(`$normalized_core_prefix.Replace('\', '/'))
             `$target_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
-            Write-Log `"转换绝对路径为内核路径前缀: `$origin_core_prefix -> `$target_prefix`"
+            Write-Log `"转换绝对路径为 Installer 内核路径前缀: `$origin_core_prefix -> `$target_prefix`"
         }
     }
     `$target_prefix = Resolve-CorePrefix -BasePath `$PSScriptRoot -PrefixList `$prefix_list -ConfiguredPrefix `$origin_core_prefix
     `$env:CORE_PREFIX = `$target_prefix
     `$full_core_path = Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX
-    Write-Log `"当前内核路径前缀: `$env:CORE_PREFIX`"
+    Write-Log `"当前 Installer 内核路径前缀: `$env:CORE_PREFIX`"
     Write-Log `"完整内核路径: `$full_core_path`"
 }
 
@@ -1827,7 +1827,7 @@ function Set-Proxy {
 }
 
 
-# 设置 CLI 自动镜像源选择状态
+# 设置 CLI 自动选择下载镜像源状态
 function Set-AutoMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]`$ArrayList)
@@ -1837,21 +1837,21 @@ function Set-AutoMirror {
             `$ArrayList.Add(`"--no-auto-mirror`") | Out-Null
         }
         if (-not `$script:AutoMirrorStatusLogged) {
-            Write-Log `"检测到 disable_auto_mirror.txt 配置文件 / -DisableAutoMirror 命令行参数, 已禁用 CLI 自动镜像源选择, 将遵守手动镜像源设置`"
+            Write-Log `"检测到 disable_auto_mirror.txt 配置文件 / -DisableAutoMirror 命令行参数, 已禁用 CLI 自动选择下载镜像源, 将遵守手动镜像源设置`"
             `$script:AutoMirrorStatusLogged = `$true
         }
         return `$true
     }
 
     if (-not `$script:AutoMirrorStatusLogged) {
-        Write-Log `"CLI 自动镜像源选择已启用, 将由 Python CLI 根据网络检测结果强制覆盖镜像源相关参数`"
+        Write-Log `"CLI 自动选择下载镜像源已启用, 将由 Python CLI 根据网络检测结果强制覆盖镜像源相关参数`"
         `$script:AutoMirrorStatusLogged = `$true
     }
     return `$false
 }
 
 
-# 配置 PyPI 镜像源
+# 配置 PyPI 软件包镜像源
 function Set-PyPIMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]`$ArrayList)
@@ -1861,33 +1861,33 @@ function Set-PyPIMirror {
         `$ArrayList.Add(`"--no-pypi-mirror`") | Out-Null
         return
     }
-    Write-Log `"使用 PyPI 镜像源`"
+    Write-Log `"使用 PyPI 软件包镜像源`"
 }
 
 
-# 设置模型下载源
+# 设置模型下载来源
 function Set-ModelMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]`$ArrayList)
     if (!(Set-AutoMirror `$ArrayList)) { return }
     `$ArrayList.Add(`"--source`") | Out-Null
     if ((!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_model_mirror.txt`"))) -and (!(`$script:DisableModelMirror))) {
-        Write-Log `"使用 ModelScope 模型下载源`"
+        Write-Log `"使用 ModelScope 模型下载来源`"
         `$ArrayList.Add(`"modelscope`") | Out-Null
     } else {
-        Write-Log `"检测到 disable_model_mirror.txt 配置文件 / -DisableModelMirror 命令行参数, 已将模型下载源切换至 HuggingFace 源`"
+        Write-Log `"检测到 disable_model_mirror.txt 配置文件 / -DisableModelMirror 命令行参数, 已将模型下载来源切换至 Hugging Face 源`"
         `$ArrayList.Add(`"huggingface`") | Out-Null
     }
 }
 
 
-# HuggingFace 镜像源
+# Hugging Face 镜像源
 function Set-HuggingFaceMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]`$ArrayList)
     if (!(Set-AutoMirror `$ArrayList)) { return }
     if (`$script:DisableHuggingFaceMirror -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_hf_mirror.txt`"))) {
-        Write-Log `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件 / -DisableHuggingFaceMirror 命令行参数, 禁用自动设置 HuggingFace 镜像源`"
+        Write-Log `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件 / -DisableHuggingFaceMirror 命令行参数, 禁用自动设置 Hugging Face 镜像源`"
         `$ArrayList.Add(`"--no-hf-mirror`") | Out-Null
         return
     }
@@ -1900,15 +1900,15 @@ function Set-HuggingFaceMirror {
         if (-not [string]::IsNullOrWhiteSpace(`$hf_mirror_value)) {
             `$ArrayList.Add(`"--custom-hf-mirror`") | Out-Null
             `$ArrayList.Add(`$hf_mirror_value) | Out-Null
-            Write-Log `"检测到本地存在 hf_mirror.txt 配置文件 / -UseCustomHuggingFaceMirror 命令行参数, 已读取该配置并设置 HuggingFace 镜像源`"
+            Write-Log `"检测到本地存在 hf_mirror.txt 配置文件 / -UseCustomHuggingFaceMirror 命令行参数, 已读取该配置并设置 Hugging Face 镜像源`"
             return
         }
     }
-    Write-Log `"使用默认 HuggingFace 镜像源`"
+    Write-Log `"使用默认 Hugging Face 镜像源`"
 }
 
 
-# 设置 Github 镜像源
+# 设置 GitHub 镜像源
 function Set-GithubMirror {
     [CmdletBinding()]
     param ([System.Collections.ArrayList]`$ArrayList)
@@ -1917,7 +1917,7 @@ function Set-GithubMirror {
     }
     if (!(Set-AutoMirror `$ArrayList)) { return }
     if (`$script:DisableGithubMirror -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_gh_mirror.txt`"))) {
-        Write-Log `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
+        Write-Log `"检测到本地存在 disable_gh_mirror.txt GitHub 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 GitHub 镜像源`"
         `$ArrayList.Add(`"--no-github-mirror`") | Out-Null
         return
     }
@@ -1928,7 +1928,7 @@ function Set-GithubMirror {
             `$github_mirror = Get-TrimmedTextFile (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`") -Encoding UTF8
         }
         if (-not [string]::IsNullOrWhiteSpace(`$github_mirror)) {
-            Write-Log `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+            Write-Log `"检测到本地存在 gh_mirror.txt GitHub 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 GitHub 镜像源配置文件并设置 GitHub 镜像源`"
             `$ArrayList.Add(`"--custom-github-mirror`") | Out-Null
             `$ArrayList.Add(`$github_mirror) | Out-Null
         }
@@ -1961,7 +1961,7 @@ function Set-PyTorchCUDAMemoryAlloc {
 }
 
 
-# 创建 Windows 快捷方式
+# 创建 Windows 创建启动快捷方式
 function Add-WindowsShortcut {
     [CmdletBinding()]
     param (
@@ -1981,7 +1981,7 @@ function Add-WindowsShortcut {
 }
 
 
-# 创建 Linux 快捷方式
+# 创建 Linux 创建启动快捷方式
 function Add-LinuxShortcut {
     [CmdletBinding()]
     param (
@@ -2014,7 +2014,7 @@ Type=Application
 }
 
 
-# 创建 MacOS 快捷方式
+# 创建 MacOS 创建启动快捷方式
 function Add-MacOSShortcut {
     [CmdletBinding()]
     param (
@@ -2131,7 +2131,7 @@ function Get-AppIcon {
 }
 
 
-# 创建快捷方式
+# 创建创建启动快捷方式
 function New-AppShortcut {
     [CmdletBinding()]
     param (
@@ -2140,7 +2140,7 @@ function New-AppShortcut {
     )
     `$finalIconPath = Get-AppIcon -IconMap `$IconMap
     if (-not `$finalIconPath) {
-        Write-Log `"图标获取失败，跳过创建快捷方式`" -Level ERROR
+        Write-Log `"图标获取失败，跳过创建创建启动快捷方式`" -Level ERROR
         return
     }
     `$platform = Get-CurrentPlatform
@@ -2492,11 +2492,11 @@ param (
 `"@)][switch]`$BuildMode,
 
     [Parameter(HelpMessage=@`"
-禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
+禁用 PyPI 软件包镜像源, 使用 PyPI 官方源下载 Python 软件包
 `"@)][switch]`$DisablePyPIMirror,
 
     [Parameter(HelpMessage=@`"
-禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
+禁用 CLI 自动选择下载镜像源; 禁用后才会遵守 PyPI / GitHub / Hugging Face / 模型下载来源等手动镜像设置
 `"@)][switch]`$DisableAutoMirror,
 
     [Parameter(HelpMessage=@`"
@@ -2512,19 +2512,19 @@ param (
 `"@)][string]`$UseCustomProxy,
 
     [Parameter(HelpMessage=@`"
-禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+禁用 Hugging Face 镜像源, 不使用 Hugging Face 镜像源下载文件
 `"@)][switch]`$DisableHuggingFaceMirror,
 
     [Parameter(HelpMessage=@`"
-使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+使用自定义 Hugging Face 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 Hugging Face 镜像源地址
 `"@)][string]`$UseCustomHuggingFaceMirror,
 
     [Parameter(HelpMessage=@`"
-禁用 SD Trainer Script Installer 自动设置 Github 镜像源
+禁用 SD Trainer Script Installer 自动设置 GitHub 镜像源
 `"@)][switch]`$DisableGithubMirror,
 
     [Parameter(HelpMessage=@`"
-使用自定义的 Github 镜像站地址
+使用自定义的 GitHub 镜像站地址
 `"@)][string]`$UseCustomGithubMirror,
 
     [Parameter(HelpMessage=@`"
@@ -2656,7 +2656,7 @@ function Main {
     `$launch_args = Get-LaunchCoreArgs
     Set-PyTorch-CUDA-Memory-Alloc
     if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) -or (`$script:DisableEnvCheck)) {
-        Write-Log `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 SD Trainer Script 运行环境检测, 这可能会导致 SD Trainer Script 运行环境中存在的问题无法被发现并解决`" -Level WARNING
+        Write-Log `"检测到 disable_check_env.txt 配置文件 / -DisableEnvCheck 命令行参数, 已禁用 SD Trainer Script 启动前环境检测, 这可能会导致 SD Trainer Script 运行环境中存在的问题无法被发现并解决`" -Level WARNING
     } else {
         `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `"sd-scripts`", `"check-env`")
         & python -m sd_webui_all_in_one sd-scripts check-env `$launch_args
@@ -2727,15 +2727,15 @@ param (
 `"@)][string]`$UseCustomProxy,
 
     [Parameter(HelpMessage=@`"
-禁用 SD Trainer Script Installer 自动设置 Github 镜像源
+禁用 SD Trainer Script Installer 自动设置 GitHub 镜像源
 `"@)][switch]`$DisableGithubMirror,
 
     [Parameter(HelpMessage=@`"
-禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
+禁用 CLI 自动选择下载镜像源; 禁用后才会遵守 PyPI / GitHub / Hugging Face / 模型下载来源等手动镜像设置
 `"@)][switch]`$DisableAutoMirror,
 
     [Parameter(HelpMessage=@`"
-使用自定义的 Github 镜像站地址
+使用自定义的 GitHub 镜像站地址
 `"@)][string]`$UseCustomGithubMirror,
 
     [Parameter(HelpMessage=@`"
@@ -2860,15 +2860,15 @@ SD Trainer Script 分支编号可运行 switch_branch.ps1 脚本进行查看
 `"@)][string]`$UseCustomProxy,
 
     [Parameter(HelpMessage=@`"
-禁用 SD Trainer Script Installer 自动设置 Github 镜像源
+禁用 SD Trainer Script Installer 自动设置 GitHub 镜像源
 `"@)][switch]`$DisableGithubMirror,
 
     [Parameter(HelpMessage=@`"
-禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
+禁用 CLI 自动选择下载镜像源; 禁用后才会遵守 PyPI / GitHub / Hugging Face / 模型下载来源等手动镜像设置
 `"@)][switch]`$DisableAutoMirror,
 
     [Parameter(HelpMessage=@`"
-使用自定义的 Github 镜像站地址
+使用自定义的 GitHub 镜像站地址
 `"@)][string]`$UseCustomGithubMirror,
 
     [Parameter(HelpMessage=@`"
@@ -3299,11 +3299,11 @@ PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 `"@)][switch]`$BuildWithTorchReinstall,
 
     [Parameter(HelpMessage=@`"
-禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
+禁用 PyPI 软件包镜像源, 使用 PyPI 官方源下载 Python 软件包
 `"@)][switch]`$DisablePyPIMirror,
 
     [Parameter(HelpMessage=@`"
-禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
+禁用 CLI 自动选择下载镜像源; 禁用后才会遵守 PyPI / GitHub / Hugging Face / 模型下载来源等手动镜像设置
 `"@)][switch]`$DisableAutoMirror,
 
     [Parameter(HelpMessage=@`"
@@ -3450,11 +3450,11 @@ param (
 `"@)][switch]`$DisableUpdate,
 
     [Parameter(HelpMessage=@`"
-不使用 ModelScope 下载模型, 使用 HuggingFace 下载模型
+不使用 ModelScope 下载模型, 使用 Hugging Face 下载模型
 `"@)][switch]`$DisableModelMirror,
 
     [Parameter(HelpMessage=@`"
-禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
+禁用 CLI 自动选择下载镜像源; 禁用后才会遵守 PyPI / GitHub / Hugging Face / 模型下载来源等手动镜像设置
 `"@)][switch]`$DisableAutoMirror,
 
     [Parameter(HelpMessage=@`"
@@ -3575,15 +3575,15 @@ param (
 `"@)][string]`$UseCustomProxy,
 
     [Parameter(HelpMessage=@`"
-禁用 SD Trainer Script Installer 自动设置 Github 镜像源
+禁用 SD Trainer Script Installer 自动设置 GitHub 镜像源
 `"@)][switch]`$DisableGithubMirror,
 
     [Parameter(HelpMessage=@`"
-禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
+禁用 CLI 自动选择下载镜像源; 禁用后才会遵守 PyPI / GitHub / Hugging Face / 模型下载来源等手动镜像设置
 `"@)][switch]`$DisableAutoMirror,
 
     [Parameter(HelpMessage=@`"
-使用自定义的 Github 镜像站地址
+使用自定义的 GitHub 镜像站地址
 `"@)][string]`$UseCustomGithubMirror,
 
     [Parameter(HelpMessage=@`"
@@ -3767,13 +3767,13 @@ function Set-ToggleSetting ([string]`$file, [string]`$name, [bool]`$enable) {
 }
 
 
-# 更新代理设置
+# 更新网络代理设置
 function Update-ProxySetting {
     while (`$true) {
         `$proxy_status = Get-TextStatus `"proxy.txt`" `$null
         `$current = if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`")) { `"禁用`" } elseif (-not [string]::IsNullOrWhiteSpace(`$proxy_status)) { `"自定义: `$proxy_status`" } else { `"系统代理`" }
-        Write-Log `"当前代理设置: `$current`"
-        Write-Log `"1. 启用 (系统代理) | 2. 启用 (手动设置) | 3. 禁用 | 4. 返回`"
+        Write-Log `"当前网络代理设置: `$current`"
+        Write-Log `"1. 使用系统代理 | 2. 手动输入代理地址 | 3. 禁用代理 | 4. 返回上一级`"
         `$choice = Get-UserInput
         if (`$choice -eq `"1`") { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`"), (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Force -ErrorAction SilentlyContinue; break }
         elseif (`$choice -eq `"2`") {
@@ -3801,7 +3801,7 @@ function Update-Mirror-Setting ([string]`$file, [string]`$name, [string[]]`$exam
         `$mirror_status = Get-TextStatus `$file `$null
         `$current = if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_`$file`")) { `"禁用`" } elseif (-not [string]::IsNullOrWhiteSpace(`$mirror_status)) { `"自定义: `$mirror_status`" } else { `"默认`" }
         Write-Log `"当前 `$name 设置: `$current`"
-        Write-Log `"1. 默认/自动 | 2. 自定义地址 | 3. 禁用 | 4. 返回`"
+        Write-Log `"1. 使用默认或自动镜像 | 2. 手动输入镜像地址 | 3. 禁用该镜像 | 4. 返回上一级`"
         `$choice = Get-UserInput
         if (`$choice -eq `"1`") { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_`$file`"), (Join-NormalizedPath `$PSScriptRoot `$file) -Force -ErrorAction SilentlyContinue; break }
         elseif (`$choice -eq `"2`") {
@@ -3826,11 +3826,11 @@ function Update-Mirror-Setting ([string]`$file, [string]`$name, [string[]]`$exam
 
 # 更新内核前缀设置
 function Update-Core-Prefix {
-    Write-Log `"当前内核路径前缀: `$(Get-TextStatus `"core_prefix.txt`" `"自动选择`")`"
-    Write-Log `"1. 配置自定义 | 2. 自动选择 | 3. 返回`"
+    Write-Log `"当前 Installer 内核路径前缀: `$(Get-TextStatus `"core_prefix.txt`" `"自动选择`")`"
+    Write-Log `"1. 使用自定义路径前缀 | 2. 自动选择路径前缀 | 3. 返回上一级`"
     `$choice = Get-UserInput
     if (`$choice -eq `"1`") {
-        Write-Log `"请输入前缀或绝对路径:`"
+        Write-Log `"请输入 Installer 内核路径前缀或绝对路径:`"
         `$path = Get-UserInput
         if (`$path) {
             if ([System.IO.Path]::IsPathRooted(`$path)) {
@@ -3847,7 +3847,7 @@ function Update-Core-Prefix {
 # 更新 Hotpatcher 端口设置
 function Update-Hotpatcher-Port {
     Write-Log `"当前 Hotpatcher runtime 通信端口: `$(Get-TextStatus `"hotpatcher_port.txt`" `"默认`")`"
-    Write-Log `"请输入 Hotpatcher runtime 通信端口 (1 ~ 65535, 直接回车恢复默认):`"
+    Write-Log `"请输入 Hotpatcher 运行时通信端口 (1 ~ 65535, 直接回车恢复默认):`"
     `$port_text = Get-UserInput
     if ([string]::IsNullOrWhiteSpace(`$port_text)) {
         Remove-Item (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`") -Force -ErrorAction SilentlyContinue
@@ -4175,18 +4175,18 @@ function Read-MultiLineEditor {
 function Update-LaunchArgs {
     `$path = Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`"
     `$current_args = Get-TrimmedTextFile `$path -Encoding UTF8
-    Write-Log `"编辑启动参数: F10/Ctrl+O 保存, Esc 取消, Enter 换行, Ctrl+U 清空, Home/End/方向键移动`"
+    Write-Log `"编辑应用启动参数: F10/Ctrl+O 保存, Esc 取消, Enter 换行, Ctrl+U 清空, Home/End/方向键移动`"
     `$launch_args = Read-MultiLineEditor -Prompt `"启动参数:`" -InitialText `$current_args
     if (`$null -eq `$launch_args) {
-        Write-Log `"已取消修改启动参数`"
+        Write-Log `"已取消修改应用启动参数`"
         return
     }
     if (-not [string]::IsNullOrWhiteSpace(`$launch_args)) {
         Write-FileWithStreamWriter -Path `$path -Value `$launch_args -Encoding UTF8
-        Write-Log `"启动参数已保存`"
+        Write-Log `"应用启动参数已保存`"
     } else {
         Remove-Item `$path -Force -ErrorAction SilentlyContinue
-        Write-Log `"启动参数已清空`"
+        Write-Log `"应用启动参数已清空`"
     }
 }
 
@@ -4228,51 +4228,57 @@ function Main {
     Set-Proxy -Legacy
 
     while (`$true) {
-        Write-Log `"=== SD Trainer Script 管理设置 ===`"
+        Write-Log `"=== SD Trainer Script 本地设置菜单 ===`"
         `$menu = @(
-            @{ id=0;  n=`"自动镜像源选择`"; v=`$(Get-ToggleStatus `"disable_auto_mirror.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=1;  n=`"代理设置`"; v=`$(if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`")) { `"禁用`" } else { `$proxy_status = Get-TextStatus `"proxy.txt`" `$null; if (-not [string]::IsNullOrWhiteSpace(`$proxy_status)) { `"自定义 (地址: `$proxy_status)`" } else { `"系统`" } }) },
-            @{ id=2;  n=`"包管理器`"; v=`$(Get-ToggleStatus `"disable_uv.txt`" `"Pip`" `"uv`") },
-            @{ id=3;  n=`"HuggingFace 镜像源`"; v=`$(Get-ToggleStatus `"disable_hf_mirror.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=4;  n=`"Github 镜像源`"; v=`$(Get-ToggleStatus `"disable_gh_mirror.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=5;  n=`"自动检查更新`"; v=`$(Get-ToggleStatus `"disable_update.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=6;  n=`"模型下载源`"; v=`$(Get-ToggleStatus `"disable_model_mirror.txt`" `"ModelScope`" `"HuggingFace`" `$true) },
-            @{ id=7;  n=`"启动参数`"; v=`$(Get-TextStatus `"launch_args.txt`") },
-            @{ id=8;  n=`"PyPI 镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=9;  n=`"CUDA 内存优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=10; n=`"环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=11; n=`"内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") },
-            @{ id=12; n=`"补丁系统`"; v=`$(Get-ToggleStatus `"disable_hotpatcher.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=13; n=`"补丁系统 Runtime`"; v=`$(Get-ToggleStatus `"enable_hotpatcher_runtime.txt`" `"启用`" `"禁用`") },
-            @{ id=14; n=`"补丁系统端口`"; v=`$(Get-TextStatus `"hotpatcher_port.txt`" `"默认`") },
-            @{ id=15; n=`"补丁系统 GUI`"; v=`"打开`" }
+            @{ id=0;  n=`"自动选择下载镜像源`"; v=`$(Get-ToggleStatus `"disable_auto_mirror.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=1;  n=`"网络代理设置`"; v=`$(if (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`")) { `"禁用`" } else { `$proxy_status = Get-TextStatus `"proxy.txt`" `$null; if (-not [string]::IsNullOrWhiteSpace(`$proxy_status)) { `"手动设置 (地址: `$proxy_status)`" } else { `"使用系统代理`" } }) },
+            @{ id=2;  n=`"Python 包管理器`"; v=`$(Get-ToggleStatus `"disable_uv.txt`" `"Pip`" `"uv`") },
+            @{ id=3;  n=`"Hugging Face 下载镜像源`"; v=`$(Get-ToggleStatus `"disable_hf_mirror.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=4;  n=`"GitHub 下载镜像源`"; v=`$(Get-ToggleStatus `"disable_gh_mirror.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=5;  n=`"自动检查 Installer 更新`"; v=`$(Get-ToggleStatus `"disable_update.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=6;  n=`"模型下载来源`"; v=`$(Get-ToggleStatus `"disable_model_mirror.txt`" `"ModelScope`" `"Hugging Face`" `$true) },
+            @{ id=7;  n=`"应用启动参数`"; v=`$(Get-TextStatus `"launch_args.txt`") },
+            @{ id=8;  n=`"PyPI 软件包镜像`"; v=`$(Get-ToggleStatus `"disable_pypi_mirror.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=9;  n=`"PyTorch CUDA 内存分配优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=10; n=`"启动前环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=11; n=`"Installer 内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") },
+            @{ id=12; n=`"Hotpatcher 补丁系统`"; v=`$(Get-ToggleStatus `"disable_hotpatcher.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=13; n=`"Hotpatcher 运行时服务`"; v=`$(Get-ToggleStatus `"enable_hotpatcher_runtime.txt`" `"启用`" `"禁用`") },
+            @{ id=14; n=`"Hotpatcher 运行时端口`"; v=`$(Get-TextStatus `"hotpatcher_port.txt`" `"默认`") },
+            @{ id=15; n=`"打开 Hotpatcher 补丁系统 GUI`" }
         )
 
-        `$menu | ForEach-Object { Write-Log `"`$(`$_.id). `$(`$_.n): `$(`$_.v)`" }
-        Write-Log `"16. 检查更新 | 17. 文档 | 18. 退出`"
-        Write-Log `"提示: 输入数字后回车`"
+        `$menu | ForEach-Object {
+            if (`$_.ContainsKey(`"v`")) {
+                Write-Log `"`$(`$_.id). `$(`$_.n): `$(`$_.v)`"
+            } else {
+                Write-Log `"`$(`$_.id). `$(`$_.n)`"
+            }
+        }
+        Write-Log `"16. 立即检查 Installer 更新 | 17. 打开在线文档 | 18. 退出设置`"
+        Write-Log `"提示: 输入菜单编号后回车`"
 
         `$choice = Get-UserInput
         switch (`$choice) {
-            `"0`"  { Write-Log `"提示: 自动镜像源选择启用时, PyPI / Github / HuggingFace / 模型下载源等手动镜像设置会被 Python CLI 强制覆盖; 如需手动调整这些设置请禁用本项`"; Set-ToggleSetting `"disable_auto_mirror.txt`" `"自动镜像源选择`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_auto_mirror.txt`")) }
+            `"0`"  { Write-Log `"提示: 启用「自动选择下载镜像源」时, PyPI、GitHub、Hugging Face、模型下载来源等手动镜像设置会被 Python CLI 自动覆盖; 如需手动调整这些设置, 请先禁用本项`"; Set-ToggleSetting `"disable_auto_mirror.txt`" `"自动选择下载镜像源`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_auto_mirror.txt`")) }
             `"1`"  { Update-ProxySetting }
-            `"2`"  { Set-ToggleSetting `"disable_uv.txt`" `"包管理器`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_uv.txt`")) }
-            `"3`"  { Update-Mirror-Setting `"hf_mirror.txt`" `"HuggingFace`" @(`"https://hf-mirror.com`", `"https://huggingface.sukaka.top`") }
-            `"4`"  { Update-Mirror-Setting `"gh_mirror.txt`" `"Github`" @(`"https://ghfast.top/https://github.com`", `"https://mirror.ghproxy.com/https://github.com`") }
-            `"5`"  { Set-ToggleSetting `"disable_update.txt`" `"自动检查更新`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_update.txt`")) }
-            `"6`"  { Set-ToggleSetting `"disable_model_mirror.txt`" `"模型下载源`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_model_mirror.txt`")) }
+            `"2`"  { Set-ToggleSetting `"disable_uv.txt`" `"Python 包管理器`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_uv.txt`")) }
+            `"3`"  { Update-Mirror-Setting `"hf_mirror.txt`" `"Hugging Face 下载镜像源`" @(`"https://hf-mirror.com`", `"https://huggingface.sukaka.top`") }
+            `"4`"  { Update-Mirror-Setting `"gh_mirror.txt`" `"GitHub 下载镜像源`" @(`"https://ghfast.top/https://github.com`", `"https://mirror.ghproxy.com/https://github.com`") }
+            `"5`"  { Set-ToggleSetting `"disable_update.txt`" `"自动检查 Installer 更新`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_update.txt`")) }
+            `"6`"  { Set-ToggleSetting `"disable_model_mirror.txt`" `"模型下载来源`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_model_mirror.txt`")) }
             `"7`"  { Update-LaunchArgs }
-            `"8`"  { Set-ToggleSetting `"disable_pypi_mirror.txt`" `"PyPI 镜像`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`")) }
-            `"9`"  { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"CUDA 优化`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`")) }
-            `"10`" { Set-ToggleSetting `"disable_check_env.txt`" `"环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
+            `"8`"  { Set-ToggleSetting `"disable_pypi_mirror.txt`" `"PyPI 软件包镜像`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`")) }
+            `"9`"  { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"PyTorch CUDA 内存分配优化`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`")) }
+            `"10`" { Set-ToggleSetting `"disable_check_env.txt`" `"启动前环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
             `"11`" { Update-Core-Prefix }
-            `"12`" { Set-ToggleSetting `"disable_hotpatcher.txt`" `"补丁系统`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_hotpatcher.txt`")) }
-            `"13`" { Set-ToggleSetting `"enable_hotpatcher_runtime.txt`" `"补丁系统 Runtime`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher_runtime.txt`"))) }
+            `"12`" { Set-ToggleSetting `"disable_hotpatcher.txt`" `"Hotpatcher 补丁系统`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_hotpatcher.txt`")) }
+            `"13`" { Set-ToggleSetting `"enable_hotpatcher_runtime.txt`" `"Hotpatcher 运行时服务`" (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher_runtime.txt`"))) }
             `"14`" { Update-Hotpatcher-Port }
             `"15`" { Open-Hotpatcher-Gui }
             `"16`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
             `"17`" { Start-Process `"https://licyk.github.io/sd-webui-all-in-one/installer/sd-trainer-script/`" }
-            `"18`" { Write-Log `"退出设置`"; return }
+            `"18`" { Write-Log `"退出设置菜单`"; return }
         }
     }
     if (!(`$script:NoPause)) { Read-Host | Out-Null }
@@ -4300,19 +4306,19 @@ param (
 `"@)][string]`$CorePrefix,
 
     [Parameter(HelpMessage=@`"
-禁用 PyPI 镜像源, 使用 PyPI 官方源下载 Python 软件包
+禁用 PyPI 软件包镜像源, 使用 PyPI 官方源下载 Python 软件包
 `"@)][switch]`$DisablePyPIMirror,
 
     [Parameter(HelpMessage=@`"
-禁用 CLI 自动镜像源选择; 禁用后才会遵守 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置
+禁用 CLI 自动选择下载镜像源; 禁用后才会遵守 PyPI / GitHub / Hugging Face / 模型下载来源等手动镜像设置
 `"@)][switch]`$DisableAutoMirror,
 
     [Parameter(HelpMessage=@`"
-禁用 SD Trainer Script Installer 自动设置 Github 镜像源
+禁用 SD Trainer Script Installer 自动设置 GitHub 镜像源
 `"@)][switch]`$DisableGithubMirror,
 
     [Parameter(HelpMessage=@`"
-使用自定义的 Github 镜像站地址
+使用自定义的 GitHub 镜像站地址
 `"@)][string]`$UseCustomGithubMirror,
 
     [Parameter(HelpMessage=@`"
@@ -4324,11 +4330,11 @@ param (
 `"@)][string]`$UseCustomProxy,
 
     [Parameter(HelpMessage=@`"
-禁用 HuggingFace 镜像源, 不使用 HuggingFace 镜像源下载文件
+禁用 Hugging Face 镜像源, 不使用 Hugging Face 镜像源下载文件
 `"@)][switch]`$DisableHuggingFaceMirror,
 
     [Parameter(HelpMessage=@`"
-使用自定义 HuggingFace 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 HuggingFace 镜像源地址
+使用自定义 Hugging Face 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 Hugging Face 镜像源地址
 `"@)][string]`$UseCustomHuggingFaceMirror,
 
     [Parameter(HelpMessage=@`"
@@ -4378,7 +4384,7 @@ catch {
 }
 
 
-# PyPI 镜像源
+# PyPI 软件包镜像源
 `$PIP_INDEX_ADDR = `"https://mirrors.cloud.tencent.com/pypi/simple`"
 `$PIP_INDEX_ADDR_ORI = `"https://pypi.python.org/simple`"
 `$PIP_EXTRA_INDEX_ADDR = `"https://mirrors.cernet.edu.cn/pypi/web/simple`"
@@ -4476,24 +4482,24 @@ Github：https://github.com/licyk
 }
 
 
-# PyPI 镜像源状态
+# PyPI 软件包镜像源状态
 function Get-PyPIMirrorStatus {
     if (`$USE_PIP_MIRROR) {
-        Write-Log `"使用 PyPI 镜像源`"
+        Write-Log `"使用 PyPI 软件包镜像源`"
     } else {
         Write-Log `"检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror, 命令行参数 已将 PyPI 源切换至官方源`"
     }
 }
 
 
-# HuggingFace 镜像源
+# Hugging Face 镜像源
 function Set-HuggingFaceMirror {
-    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_hf_mirror.txt`")) -or (`$script:DisableHuggingFaceMirror)) { # 检测是否禁用了自动设置 HuggingFace 镜像源
-        Write-Log `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件 / -DisableHuggingFaceMirror 命令行参数, 禁用自动设置 HuggingFace 镜像源`"
+    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_hf_mirror.txt`")) -or (`$script:DisableHuggingFaceMirror)) { # 检测是否禁用了自动设置 Hugging Face 镜像源
+        Write-Log `"检测到本地存在 disable_hf_mirror.txt 镜像源配置文件 / -DisableHuggingFaceMirror 命令行参数, 禁用自动设置 Hugging Face 镜像源`"
         return
     }
 
-    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"hf_mirror.txt`")) -or (`$script:UseCustomHuggingFaceMirror)) { # 本地存在 HuggingFace 镜像源配置
+    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"hf_mirror.txt`")) -or (`$script:UseCustomHuggingFaceMirror)) { # 本地存在 Hugging Face 镜像源配置
         if (`$script:UseCustomHuggingFaceMirror) {
             `$hf_mirror_value = `$script:UseCustomHuggingFaceMirror
         } else {
@@ -4501,19 +4507,19 @@ function Set-HuggingFaceMirror {
         }
         if (-not [string]::IsNullOrWhiteSpace(`$hf_mirror_value)) {
             `$env:HF_ENDPOINT = `$hf_mirror_value
-            Write-Log `"检测到本地存在 hf_mirror.txt 配置文件 / -UseCustomHuggingFaceMirror 命令行参数, 已读取该配置并设置 HuggingFace 镜像源`"
+            Write-Log `"检测到本地存在 hf_mirror.txt 配置文件 / -UseCustomHuggingFaceMirror 命令行参数, 已读取该配置并设置 Hugging Face 镜像源`"
         } else {
             `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
-            Write-Log `"使用默认 HuggingFace 镜像源`"
+            Write-Log `"使用默认 Hugging Face 镜像源`"
         }
     } else { # 使用默认设置
         `$env:HF_ENDPOINT = `"https://hf-mirror.com`"
-        Write-Log `"使用默认 HuggingFace 镜像源`"
+        Write-Log `"使用默认 Hugging Face 镜像源`"
     }
 }
 
 
-# Github 镜像源
+# GitHub 镜像源
 function Set-GithubMirrorLegecy {
     `$env:GIT_CONFIG_GLOBAL = Join-NormalizedPath `$PSScriptRoot `".gitconfig`" # 设置 Git 配置文件路径
     if (Test-Path (Join-NormalizedPath `$PSScriptRoot `".gitconfig`")) {
@@ -4523,12 +4529,12 @@ function Set-GithubMirrorLegecy {
     git config --global --add safe.directory '*'
     git config --global core.longpaths true
 
-    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_gh_mirror.txt`")) -or (`$script:DisableGithubMirror)) { # 禁用 Github 镜像源
-        Write-Log `"检测到本地存在 disable_gh_mirror.txt Github 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 Github 镜像源`"
+    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_gh_mirror.txt`")) -or (`$script:DisableGithubMirror)) { # 禁用 GitHub 镜像源
+        Write-Log `"检测到本地存在 disable_gh_mirror.txt GitHub 镜像源配置文件 / -DisableGithubMirror 命令行参数, 禁用 GitHub 镜像源`"
         return
     }
 
-    # 使用自定义 Github 镜像源
+    # 使用自定义 GitHub 镜像源
     if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"gh_mirror.txt`")) -or (`$script:UseCustomGithubMirror)) {
         if (`$script:UseCustomGithubMirror) {
             `$github_mirror = `$script:UseCustomGithubMirror
@@ -4537,7 +4543,7 @@ function Set-GithubMirrorLegecy {
         }
         if (-not [string]::IsNullOrWhiteSpace(`$github_mirror)) {
             git config --global url.`"`$github_mirror`".insteadOf `"https://github.com`"
-            Write-Log `"检测到本地存在 gh_mirror.txt Github 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 Github 镜像源配置文件并设置 Github 镜像源`"
+            Write-Log `"检测到本地存在 gh_mirror.txt GitHub 镜像源配置文件 / -UseCustomGithubMirror 命令行参数, 已读取 GitHub 镜像源配置文件并设置 GitHub 镜像源`"
         }
     }
 }
@@ -4663,14 +4669,14 @@ SD Trainer Script Installer 文档：https://licyk.github.io/sd-webui-all-in-one
 - reinstall_pytorch.ps1：PyTorch 损坏、版本不匹配或需要切换 CUDA / ROCm / XPU 版本时使用。
 - switch_branch.ps1：切换 sd-scripts、ai-toolkit、finetrainers、diffusion-pipe、musubi-tuner 等训练后端。
 - version_manager.ps1：管理 SD Trainer Script 版本。
-- settings.ps1：调整代理、镜像、uv、启动参数、内核路径前缀等本地设置。
+- settings.ps1：调整网络代理、下载镜像、Python 包管理器、应用启动参数、Installer 内核路径前缀等本地设置。
 - terminal.ps1：打开已配置好的 PowerShell 终端。
 - activate.ps1：在当前终端激活安装器环境。
 - launch_sd_trainer_script_installer.ps1：重新获取并运行最新 SD Trainer Script Installer。
 - configure_env.bat：修复 Windows 运行 .ps1 后立刻闪退、PowerShell 脚本运行限制和长路径支持问题。
 
 三、目录说明
-- cache：Pip / HuggingFace 等缓存目录。
+- cache：Pip / Hugging Face 等缓存目录。
 - python：安装器自带 Python。请勿添加到系统环境变量。
 - git：安装器自带 Git。
 - core：训练脚本程序和主要数据目录。
@@ -4692,7 +4698,7 @@ SD Trainer Script Installer 文档：https://licyk.github.io/sd-webui-all-in-one
 - Bash TUI / CLI Launcher：https://licyk.github.io/sd-webui-all-in-one/tools/launcher-tui/
 
 ====================================================================
-########## Github 项目 ##########
+########## GitHub 项目 ##########
 
 sd-webui-all-in-one 项目地址：https://github.com/licyk/sd-webui-all-in-one
 sd-scripts 项目地址：https://github.com/kohya-ss/sd-scripts
