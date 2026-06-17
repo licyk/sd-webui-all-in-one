@@ -220,7 +220,7 @@ $script:HotpatcherPortSet = $PSBoundParameters.ContainsKey("HotpatcherPort")
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # Qwen TTS WebUI Installer 版本和检查更新间隔
-$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 286
+$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 287
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.51"
@@ -3595,7 +3595,7 @@ function Read-MultiLineEditor {
         `$status_row = `$editor_top + `$render_height
         `$help_row = `$status_row + 1
         `$cursor_status = `"行 `$(`$cursor_row + 1)/`$(`$lines.Count) | 字符 `$(`$cursor_col + 1)`"
-        `$status_text = `"`$cursor_status | F10/Ctrl+O 保存 | Esc 取消 | Enter 换行 | Ctrl+U 清空 | Home/End/方向键移动`"
+        `$status_text = `"`$cursor_status | F10/Ctrl+O 保存 | Esc 取消 | Enter 换行 | Ctrl+U 清空 | PageUp/PageDown 翻页 | Home/End/方向键移动`"
         `$status_text = Get-VisibleTextByDisplayColumn `$status_text 0 (`$window_width - 1)
         [void]`$frame_rows.Add(`$separator)
         [void]`$frame_rows.Add((Get-DisplayPaddedText `$status_text (`$window_width - 1)))
@@ -3697,6 +3697,19 @@ function Read-MultiLineEditor {
                     `$cursor_col = [Math]::Min(`$cursor_col, `$lines[`$cursor_row].Length)
                 }
             }
+            ([ConsoleKey]::PageUp) {
+                `$page_size = [Math]::Max(1, `$render_height)
+                `$cursor_row = [Math]::Max(0, `$cursor_row - `$page_size)
+                `$cursor_col = [Math]::Min(`$cursor_col, `$lines[`$cursor_row].Length)
+                `$view_row = [Math]::Max(0, `$view_row - `$page_size)
+            }
+            ([ConsoleKey]::PageDown) {
+                `$page_size = [Math]::Max(1, `$render_height)
+                `$cursor_row = [Math]::Min(`$lines.Count - 1, `$cursor_row + `$page_size)
+                `$cursor_col = [Math]::Min(`$cursor_col, `$lines[`$cursor_row].Length)
+                `$max_view_row = [Math]::Max(0, `$lines.Count - `$render_height)
+                `$view_row = [Math]::Min(`$max_view_row, `$view_row + `$page_size)
+            }
             ([ConsoleKey]::Home) { `$cursor_col = 0 }
             ([ConsoleKey]::End) { `$cursor_col = `$lines[`$cursor_row].Length }
             ([ConsoleKey]::Backspace) {
@@ -3737,7 +3750,7 @@ function Read-MultiLineEditor {
 function Update-LaunchArgs {
     `$path = Join-NormalizedPath `$PSScriptRoot `"launch_args.txt`"
     `$current_args = Get-TrimmedTextFile `$path -Encoding UTF8
-    Write-Log `"编辑应用启动参数: F10/Ctrl+O 保存, Esc 取消, Enter 换行, Ctrl+U 清空, Home/End/方向键移动`"
+    Write-Log `"编辑应用启动参数: F10/Ctrl+O 保存, Esc 取消, Enter 换行, Ctrl+U 清空, PageUp/PageDown 翻页, Home/End/方向键移动`"
     `$launch_args = Read-MultiLineEditor -Prompt `"启动参数:`" -InitialText `$current_args
     if (`$null -eq `$launch_args) {
         Write-Log `"已取消修改应用启动参数`"
