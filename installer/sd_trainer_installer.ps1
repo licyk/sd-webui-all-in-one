@@ -249,7 +249,7 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # SD Trainer Installer 版本和检查更新间隔
-$script:SD_TRAINER_INSTALLER_VERSION = 506
+$script:SD_TRAINER_INSTALLER_VERSION = 507
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.51"
@@ -3971,19 +3971,19 @@ function Read-MultiLineEditor {
     `$cursor_col = `$lines[`$cursor_row].Length
     `$view_row = 0
     `$view_col = 0
-    `$editor_height = [Math]::Max(3, [Math]::Min(10, [Console]::WindowHeight - 4))
+    `$editor_height = [Math]::Max(3, [Math]::Min(10, [Console]::WindowHeight - 5))
 
     [Console]::WriteLine(`$Prompt)
-    for (`$i = 0; `$i -lt (`$editor_height + 2); `$i++) {
+    for (`$i = 0; `$i -lt (`$editor_height + 3); `$i++) {
         [Console]::WriteLine()
     }
-    `$top_separator_row = [Math]::Max(0, [Console]::CursorTop - `$editor_height - 2)
+    `$top_separator_row = [Math]::Max(0, [Console]::CursorTop - `$editor_height - 3)
     `$editor_top = `$top_separator_row + 1
     `$previous_frame_rows = `$null
 
     while (`$true) {
         `$window_width = [Math]::Max(20, [Console]::WindowWidth)
-        `$render_height = [Math]::Max(1, [Math]::Min(`$editor_height, [Console]::WindowHeight - `$editor_top - 2))
+        `$render_height = [Math]::Max(1, [Math]::Min(`$editor_height, [Console]::WindowHeight - `$editor_top - 3))
         `$text_width = [Math]::Max(1, `$window_width - 3)
         `$separator = `"-`" * (`$window_width - 1)
 
@@ -4010,12 +4010,14 @@ function Read-MultiLineEditor {
         }
 
         `$status_row = `$editor_top + `$render_height
-        `$help_row = `$status_row + 1
+        `$help_row = `$status_row + 2
         `$cursor_status = `"行 `$(`$cursor_row + 1)/`$(`$lines.Count) | 字符 `$(`$cursor_col + 1)`"
-        `$status_text = `"`$cursor_status | F10/Ctrl+O 保存 | Esc 取消 | Enter 换行 | Ctrl+U 清空 | PageUp/PageDown 翻页 | Home/End/方向键移动`"
-        `$status_text = Get-VisibleTextByDisplayColumn `$status_text 0 (`$window_width - 1)
+        `$shortcut_help = `"F10/Ctrl+O 保存 | Esc 取消 | Enter 换行 | Ctrl+U 清空 | PageUp/PageDown 翻页 | Home/End/方向键移动`"
+        `$cursor_status = Get-VisibleTextByDisplayColumn `$cursor_status 0 (`$window_width - 1)
+        `$shortcut_help = Get-VisibleTextByDisplayColumn `$shortcut_help 0 (`$window_width - 1)
         [void]`$frame_rows.Add(`$separator)
-        [void]`$frame_rows.Add((Get-DisplayPaddedText `$status_text (`$window_width - 1)))
+        [void]`$frame_rows.Add((Get-DisplayPaddedText `$cursor_status (`$window_width - 1)))
+        [void]`$frame_rows.Add((Get-DisplayPaddedText `$shortcut_help (`$window_width - 1)))
 
         `$cursor_screen_col = [Math]::Min(`$window_width - 1, 2 + (`$cursor_display_col - `$view_col))
         `$cursor_screen_row = `$editor_top + (`$cursor_row - `$view_row)
