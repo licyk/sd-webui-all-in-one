@@ -3765,8 +3765,8 @@ function Update-ProxySetting {
         `$choice = Get-UserInput
         if (`$choice -eq `"1`") { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`"), (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Force -ErrorAction SilentlyContinue; break }
         elseif (`$choice -eq `"2`") {
-            Write-Log `"请输入代理地址 (如 http://127.0.0.1:10809):`"
-            `$addr = Get-UserInput
+            `$addr = Read-SingleLineSettingEditor -Prompt `"代理地址 (如 http://127.0.0.1:10809):`" -InitialText `$proxy_status
+            if (`$null -eq `$addr) { Write-Log `"已取消修改代理地址`"; return }
             if (`$addr) {
                 Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_proxy.txt`") -Force -ErrorAction SilentlyContinue
                 Set-Content -Path (Join-NormalizedPath `$PSScriptRoot `"proxy.txt`") -Value `$addr -Encoding UTF8
@@ -3793,9 +3793,10 @@ function Update-Mirror-Setting ([string]`$file, [string]`$name, [string[]]`$exam
         `$choice = Get-UserInput
         if (`$choice -eq `"1`") { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_`$file`"), (Join-NormalizedPath `$PSScriptRoot `$file) -Force -ErrorAction SilentlyContinue; break }
         elseif (`$choice -eq `"2`") {
-            Write-Log `"请输入 `$name 地址, 示例:`"
+            Write-Log `"`$name 地址示例:`"
             `$examples | ForEach-Object { Write-Log `"  `$_`" -Level INFO }
-            `$addr = Get-UserInput
+            `$addr = Read-SingleLineSettingEditor -Prompt `"`$name 地址:`" -InitialText `$mirror_status
+            if (`$null -eq `$addr) { Write-Log `"已取消修改`$name 地址`"; return }
             if (`$addr) {
                 Remove-Item (Join-NormalizedPath `$PSScriptRoot `"disable_`$file`") -Force -ErrorAction SilentlyContinue
                 Set-Content -Path (Join-NormalizedPath `$PSScriptRoot `$file) -Value `$addr -Encoding UTF8
@@ -3818,8 +3819,9 @@ function Update-Core-Prefix {
     Write-Log `"1. 使用自定义路径前缀 | 2. 自动选择路径前缀 | 3. 返回上一级`"
     `$choice = Get-UserInput
     if (`$choice -eq `"1`") {
-        Write-Log `"请输入 Installer 内核路径前缀或绝对路径:`"
-        `$path = Get-UserInput
+        `$current_path = Get-TextStatus `"core_prefix.txt`" `$null
+        `$path = Read-SingleLineSettingEditor -Prompt `"Installer 内核路径前缀或绝对路径:`" -InitialText `$current_path
+        if (`$null -eq `$path) { Write-Log `"已取消修改 Installer 内核路径前缀`"; return }
         if (`$path) {
             if ([System.IO.Path]::IsPathRooted(`$path)) {
                 `$from = New-Object System.Uri(`$PSScriptRoot.Replace('\', '/') + '/')
@@ -3835,8 +3837,9 @@ function Update-Core-Prefix {
 # 更新 Hotpatcher 端口设置
 function Update-Hotpatcher-Port {
     Write-Log `"当前 Hotpatcher 运行时通信端口: `$(Get-TextStatus `"hotpatcher_port.txt`" `"默认`")`"
-    Write-Log `"请输入 Hotpatcher 运行时通信端口 (1-65535, 直接回车使用默认):`"
-    `$port_text = Get-UserInput
+    `$current_port = Get-TextStatus `"hotpatcher_port.txt`" `$null
+    `$port_text = Read-SingleLineSettingEditor -Prompt `"Hotpatcher 运行时通信端口 (1-65535, 清空后保存可恢复默认):`" -InitialText `$current_port
+    if (`$null -eq `$port_text) { Write-Log `"已取消修改 Hotpatcher 运行时通信端口`"; return }
     if ([string]::IsNullOrWhiteSpace(`$port_text)) {
         Remove-Item (Join-NormalizedPath `$PSScriptRoot `"hotpatcher_port.txt`") -Force -ErrorAction SilentlyContinue
         Write-Log `"Hotpatcher 端口已恢复默认`"
@@ -4170,6 +4173,31 @@ function Read-MultiLineEditor {
             }
         }
     }
+}
+
+
+# 单行文本设置编辑器
+function Read-SingleLineSettingEditor {
+    param (
+        [string]`$Prompt,
+        [string]`$InitialText = `"`"
+    )
+
+    `$value = Read-MultiLineEditor -Prompt `$Prompt -InitialText `$InitialText
+    if (`$null -eq `$value) { return `$null }
+
+    `$normalized_value = `$value.Replace([string][char]13 + [string][char]10, [string][char]10).Replace([string][char]13, [string][char]10)
+    `$line_values = @(
+        [regex]::Split(`$normalized_value, [string][char]10) |
+            ForEach-Object { `$_.Trim() } |
+            Where-Object { -not [string]::IsNullOrWhiteSpace(`$_) }
+    )
+
+    if (`$line_values.Count -gt 1) {
+        Write-Log `"该设置只支持单行文本, 已使用第一行内容`" -Level WARNING
+    }
+    if (`$line_values.Count -eq 0) { return `"`" }
+    return `$line_values[0]
 }
 
 
