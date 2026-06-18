@@ -415,6 +415,7 @@ def test_installer_auto_snapshot_disable_is_wired():
             "sd-webui update",
             "sd-webui extension update",
             "sd-webui reinstall-pytorch",
+            "sd-webui switch",
             "sd-webui gui version-manager",
         ],
         "installer/comfyui_installer.ps1": [
@@ -426,6 +427,7 @@ def test_installer_auto_snapshot_disable_is_wired():
         "installer/fooocus_installer.ps1": [
             "fooocus update",
             "fooocus reinstall-pytorch",
+            "fooocus switch",
             "fooocus gui version-manager",
         ],
         "installer/invokeai_installer.ps1": [
@@ -442,11 +444,13 @@ def test_installer_auto_snapshot_disable_is_wired():
         "installer/sd_trainer_installer.ps1": [
             "sd-trainer update",
             "sd-trainer reinstall-pytorch",
+            "sd-trainer switch",
             "sd-trainer gui version-manager",
         ],
         "installer/sd_trainer_script_installer.ps1": [
             "sd-scripts update",
             "sd-scripts reinstall-pytorch",
+            "sd-scripts switch",
             "sd-scripts gui version-manager",
         ],
     }

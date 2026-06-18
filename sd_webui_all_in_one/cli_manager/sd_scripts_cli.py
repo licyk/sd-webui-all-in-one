@@ -223,6 +223,8 @@ def switch(
     custom_github_mirror: str | list[str] | None = None,
     interactive_mode: bool = False,
     list_only: bool = False,
+    snapshot_enabled: bool = True,
+    snapshot_dir: Path | None = None,
 ) -> None:
     """切换 SD Scripts 分支
 
@@ -240,6 +242,13 @@ def switch(
         list_only (bool):
             是否仅列出分支列表并退出
     """
+    if not list_only and (interactive_mode or branch is not None):
+        _create_pre_operation_snapshot(
+            sd_scripts_path=sd_scripts_path,
+            operation_name="切换 SD Scripts 分支",
+            snapshot_enabled=snapshot_enabled,
+            snapshot_dir=snapshot_dir,
+        )
     switch_sd_scripts_branch(
         sd_scripts_path=sd_scripts_path,
         branch=branch,
@@ -587,6 +596,7 @@ def register_sd_scripts(
     switch_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     switch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
     switch_p.add_argument("--list-only", action="store_true", dest="list_only", help="列出分支列表并退出")
+    add_pre_operation_snapshot_arguments(switch_p)
     add_auto_mirror_argument(switch_p)
     switch_p.set_defaults(
         func=with_auto_mirror(
@@ -597,6 +607,8 @@ def register_sd_scripts(
                 custom_github_mirror=args.custom_github_mirror,
                 interactive_mode=args.interactive_mode,
                 list_only=args.list_only,
+                snapshot_enabled=args.snapshot_enabled,
+                snapshot_dir=args.snapshot_dir,
             )
         )
     )

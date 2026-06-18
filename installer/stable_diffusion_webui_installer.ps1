@@ -3451,6 +3451,7 @@ function Main {
 
     `$launch_args = Get-LaunchCoreArgs
     `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `"sd-webui`", `"switch`")
+    Set-SnapshotCliArgs `$launch_args
     & python -m sd_webui_all_in_one sd-webui switch `$launch_args
     `$exit_code = Get-NativeCommandExitCode -Success `$?
     if (`$exit_code -ne 0) { Write-CoreCliFailureCommand -CommandPrefix `$core_cli_command -Arguments `$launch_args -ExitCode `$exit_code }
