@@ -28,6 +28,10 @@
 "@)][string]$SnapshotPath,
 
     [Parameter(HelpMessage=@"
+禁用自动快照, 包括安装结束后的结果快照以及管理脚本执行前的自动快照
+"@)][switch]$DisableSnapshot,
+
+    [Parameter(HelpMessage=@"
 指定 Qwen TTS WebUI Installer 使用更新模式, 只对 Qwen TTS WebUI Installer 的管理脚本进行更新
 "@)][switch]$UseUpdateMode,
 
@@ -1151,6 +1155,46 @@ function Install-Git {
 }
 
 
+# 自动快照开关状态
+function Test-SnapshotDisabled {
+    if ((Test-Path (Join-NormalizedPath $script:InstallPath "disable_snapshot.txt")) -or ($script:DisableSnapshot)) {
+        return $true
+    }
+    return $false
+}
+
+
+# 保存安装结果快照
+function Save-InstallResultSnapshot {
+    param (
+        [Parameter(Mandatory = $true)][string]$CliName,
+        [Parameter(Mandatory = $true)][string]$PathArgument,
+        [Parameter(Mandatory = $true)][string]$WebUIPath
+    )
+
+    if (Test-SnapshotDisabled) {
+        Write-Log "检测到 disable_snapshot.txt 配置文件 / -DisableSnapshot 命令行参数, 已跳过安装结果自动快照"
+        return
+    }
+
+    if (!(Test-Path -LiteralPath $WebUIPath)) {
+        Write-Log "快照目标路径不存在, 已跳过安装结果自动快照: $WebUIPath" -Level WARNING
+        return
+    }
+
+    Write-Log "保存安装结果快照中"
+    $core_cli_command = @("python", "-m", "sd_webui_all_in_one", $CliName, "snapshot", $PathArgument, $WebUIPath)
+    & python -m sd_webui_all_in_one $CliName snapshot $PathArgument $WebUIPath
+    $exit_code = Get-NativeCommandExitCode -Success $?
+    if ($exit_code -ne 0) {
+        $command_line = Format-CoreCliCommandForLog -CommandPrefix $core_cli_command -Arguments @()
+        Write-Log "安装结果自动快照保存失败, 退出码: $exit_code" -Level WARNING
+        Write-Log "失败命令: $command_line" -Level WARNING
+        return
+    }
+    Write-Log "安装结果快照保存完成"
+}
+
 # 安装
 function Invoke-Installation {
     New-Item -ItemType Directory -Path $script:InstallPath -Force > $null
@@ -1226,6 +1270,7 @@ param (
     [switch]`$DisableUV,
     [switch]`$DisableCUDAMalloc,
     [switch]`$DisableHotpatcher,
+    [switch]`$DisableSnapshot,
     [int]`$HotpatcherPort,
     [switch]`$HotpatcherPortSet,
     [switch]`$EnableHotpatcherRuntime,
@@ -2366,6 +2411,60 @@ function Get-WebUILaunchArgs {
 }
 
 
+# 自动快照开关状态
+function Test-SnapshotDisabled {
+    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_snapshot.txt`")) -or (`$script:DisableSnapshot)) {
+        return `$true
+    }
+    return `$false
+}
+
+
+# 为会触发自动快照的 CLI 命令配置快照参数
+function Set-SnapshotCliArgs {
+    [CmdletBinding()]
+    param ([System.Collections.ArrayList]`$ArrayList)
+    if (Test-SnapshotDisabled) {
+        if (-not `$ArrayList.Contains(`"--no-snapshot`")) {
+            `$ArrayList.Add(`"--no-snapshot`") | Out-Null
+        }
+        Write-Log `"检测到 disable_snapshot.txt 配置文件 / -DisableSnapshot 命令行参数, 已禁用自动快照`"
+    }
+}
+
+
+# 保存安装结果快照
+function Save-InstallResultSnapshot {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = `$true)][string]`$CliName,
+        [Parameter(Mandatory = `$true)][string]`$PathArgument,
+        [Parameter(Mandatory = `$true)][string]`$WebUIPath
+    )
+
+    if (Test-SnapshotDisabled) {
+        Write-Log `"检测到 disable_snapshot.txt 配置文件 / -DisableSnapshot 命令行参数, 已跳过安装结果自动快照`"
+        return
+    }
+
+    if (!(Test-Path -LiteralPath `$WebUIPath)) {
+        Write-Log `"快照目标路径不存在, 已跳过安装结果自动快照: `$WebUIPath`" -Level WARNING
+        return
+    }
+
+    Write-Log `"保存安装结果快照中`"
+    `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `$CliName, `"snapshot`", `$PathArgument, `$WebUIPath)
+    & python -m sd_webui_all_in_one `$CliName snapshot `$PathArgument `$WebUIPath
+    `$exit_code = Get-NativeCommandExitCode -Success `$?
+    if (`$exit_code -ne 0) {
+        `$command_line = Format-CoreCliCommandForLog -CommandPrefix `$core_cli_command -Arguments @()
+        Write-Log `"安装结果自动快照保存失败, 退出码: `$exit_code`" -Level WARNING
+        Write-Log `"失败命令: `$command_line`" -Level WARNING
+        return
+    }
+    Write-Log `"安装结果快照保存完成`"
+}
+
 # 设置 Hotpatcher 补丁系统
 function Set-Hotpatcher {
     param ([System.Collections.ArrayList]`$ArrayList)
@@ -2546,6 +2645,9 @@ Export-ModuleMember -Function ``
     Add-Shortcut, ``
     Test-MSVCPPRedistributable, ``
     Test-WebUIEnv, ``
+    Test-SnapshotDisabled, ``
+    Set-SnapshotCliArgs, ``
+    Save-InstallResultSnapshot, ``
     Set-Hotpatcher, ``
     Join-NormalizedPath, ``
     Get-NormalizedFilePath, ``
@@ -2647,6 +2749,12 @@ param (
 禁用 Qwen TTS WebUI Installer 检查 Qwen TTS WebUI 运行环境中存在的问题, 禁用后可能会导致 Qwen TTS WebUI 环境中存在的问题无法被发现并修复
 `"@)][switch]`$DisableEnvCheck,
 
+
+
+    [Parameter(HelpMessage=@`"
+禁用自动快照, 包括安装结束后的结果快照以及管理脚本执行前的自动快照
+`"@)][switch]`$DisableSnapshot,
+
     [Parameter(HelpMessage=@`"
 脚本执行完成后不暂停, 直接退出
 `"@)][switch]`$NoPause
@@ -2676,9 +2784,10 @@ try {
         LaunchArg = `$script:LaunchArg
         EnableShortcut = `$script:EnableShortcut
         DisableEnvCheck = `$script:DisableEnvCheck
+        DisableSnapshot = `$script:DisableSnapshot
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Invoke-WindowsLongPathsStartupCheck`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Get-WebUILaunchArgs`", `"Add-Shortcut`", `"Test-MSVCPPRedistributable`", `"Test-WebUIEnv`", `"Set-Hotpatcher`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Invoke-WindowsLongPathsStartupCheck`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-HuggingFaceMirror`", `"Set-GithubMirror`", `"Set-uv`", `"Set-PyTorchCUDAMemoryAlloc`", `"Get-WebUILaunchArgs`", `"Add-Shortcut`", `"Test-MSVCPPRedistributable`", `"Test-WebUIEnv`", `"Set-Hotpatcher`", `"Update-SDWebUiAllInOne`", `"Get-CurrentPlatform`", `"New-AppShortcut`", `"Set-SnapshotCliArgs`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2703,6 +2812,7 @@ try {
         `$script:LaunchArg = `$cfg.LaunchArg
         `$script:EnableShortcut = `$cfg.EnableShortcut
         `$script:DisableEnvCheck = `$cfg.DisableEnvCheck
+        `$script:DisableSnapshot = `$cfg.DisableSnapshot
         `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
@@ -2835,6 +2945,12 @@ param (
 使用自定义的 GitHub 镜像站地址
 `"@)][string]`$UseCustomGithubMirror,
 
+
+
+    [Parameter(HelpMessage=@`"
+禁用自动快照, 包括安装结束后的结果快照以及管理脚本执行前的自动快照
+`"@)][switch]`$DisableSnapshot,
+
     [Parameter(HelpMessage=@`"
 脚本执行完成后不暂停, 直接退出
 `"@)][switch]`$NoPause
@@ -2852,9 +2968,10 @@ try {
         UseCustomGithubMirror = `$script:UseCustomGithubMirror
         DisableUpdate = `$script:DisableUpdate
         BuildMode = `$script:BuildMode
+        DisableSnapshot = `$script:DisableSnapshot
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Set-SnapshotCliArgs`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -2867,6 +2984,7 @@ try {
         `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
         `$script:DisableUpdate = `$cfg.DisableUpdate
         `$script:BuildMode = `$cfg.BuildMode
+        `$script:DisableSnapshot = `$cfg.DisableSnapshot
         `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
@@ -2905,6 +3023,7 @@ function Main {
 
     `$launch_args = Get-LaunchCoreArgs
     `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `"qwen-tts-webui`", `"update`")
+    Set-SnapshotCliArgs `$launch_args
     & python -m sd_webui_all_in_one qwen-tts-webui update `$launch_args
     `$exit_code = Get-NativeCommandExitCode -Success `$?
     if (`$exit_code -ne 0) { Write-CoreCliFailureCommand -CommandPrefix `$core_cli_command -Arguments `$launch_args -ExitCode `$exit_code }
@@ -2937,6 +3056,8 @@ param (
     [string]`$CorePrefix,
     [switch]`$RestoreFromSnapshot,
     [string]`$SnapshotPath,
+
+    [switch]`$DisableSnapshot,
     [switch]`$NoPause,
     [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
 )
@@ -3138,6 +3259,9 @@ function Get-LocalSetting {
     if (-not [string]::IsNullOrWhiteSpace(`$script:SnapshotPath)) {
         `$arg.Add(`"-SnapshotPath`", `$script:SnapshotPath)
     }
+    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_snapshot.txt`")) -or (`$script:DisableSnapshot)) {
+        `$arg.Add(`"-DisableSnapshot`", `$true)
+    }
 
     return `$arg
 }
@@ -3241,6 +3365,12 @@ PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 `"@)][string]`$UseCustomProxy,
 
+
+
+    [Parameter(HelpMessage=@`"
+禁用自动快照, 包括安装结束后的结果快照以及管理脚本执行前的自动快照
+`"@)][switch]`$DisableSnapshot,
+
     [Parameter(HelpMessage=@`"
 脚本执行完成后不暂停, 直接退出
 `"@)][switch]`$NoPause
@@ -3258,9 +3388,10 @@ try {
         DisableAutoMirror = `$script:DisableAutoMirror
         BuildMode = `$script:BuildMode
         DisableUpdate = `$script:DisableUpdate
+        DisableSnapshot = `$script:DisableSnapshot
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-uv`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Set-SnapshotCliArgs`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3273,6 +3404,7 @@ try {
         `$script:DisableAutoMirror = `$cfg.DisableAutoMirror
         `$script:BuildMode = `$cfg.BuildMode
         `$script:DisableUpdate = `$cfg.DisableUpdate
+        `$script:DisableSnapshot = `$cfg.DisableSnapshot
         `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
@@ -3317,6 +3449,7 @@ function Main {
 
     `$launch_args = Get-LaunchCoreArgs
     `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `"qwen-tts-webui`", `"reinstall-pytorch`")
+    Set-SnapshotCliArgs `$launch_args
     & python -m sd_webui_all_in_one qwen-tts-webui reinstall-pytorch `$launch_args
     `$exit_code = Get-NativeCommandExitCode -Success `$?
     if (`$exit_code -ne 0) { Write-CoreCliFailureCommand -CommandPrefix `$core_cli_command -Arguments `$launch_args -ExitCode `$exit_code }
@@ -3371,6 +3504,12 @@ param (
 使用自定义的 GitHub 镜像站地址
 `"@)][string]`$UseCustomGithubMirror,
 
+
+
+    [Parameter(HelpMessage=@`"
+禁用自动快照, 包括安装结束后的结果快照以及管理脚本执行前的自动快照
+`"@)][switch]`$DisableSnapshot,
+
     [Parameter(HelpMessage=@`"
 脚本执行完成后不暂停, 直接退出
 `"@)][switch]`$NoPause
@@ -3387,9 +3526,10 @@ try {
         DisableAutoMirror = `$script:DisableAutoMirror
         UseCustomGithubMirror = `$script:UseCustomGithubMirror
         DisableUpdate = `$script:DisableUpdate
+        DisableSnapshot = `$script:DisableSnapshot
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Set-SnapshotCliArgs`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3401,6 +3541,7 @@ try {
         `$script:DisableAutoMirror = `$cfg.DisableAutoMirror
         `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
         `$script:DisableUpdate = `$cfg.DisableUpdate
+        `$script:DisableSnapshot = `$cfg.DisableSnapshot
         `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
@@ -3439,6 +3580,7 @@ function Main {
 
     `$launch_args = Get-LaunchCoreArgs
     `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `"qwen-tts-webui`", `"gui`", `"version-manager`")
+    Set-SnapshotCliArgs `$launch_args
     & python -m sd_webui_all_in_one qwen-tts-webui gui version-manager `$launch_args
     `$exit_code = Get-NativeCommandExitCode -Success `$?
     if (`$exit_code -ne 0) { Write-CoreCliFailureCommand -CommandPrefix `$core_cli_command -Arguments `$launch_args -ExitCode `$exit_code }
@@ -3494,6 +3636,12 @@ param (
 使用自定义的 GitHub 镜像站地址
 `"@)][string]`$UseCustomGithubMirror,
 
+
+
+    [Parameter(HelpMessage=@`"
+禁用自动快照, 包括安装结束后的结果快照以及管理脚本执行前的自动快照
+`"@)][switch]`$DisableSnapshot,
+
     [Parameter(HelpMessage=@`"
 脚本执行完成后不暂停, 直接退出
 `"@)][switch]`$NoPause
@@ -3510,9 +3658,10 @@ try {
         DisableAutoMirror = `$script:DisableAutoMirror
         UseCustomGithubMirror = `$script:UseCustomGithubMirror
         DisableUpdate = `$script:DisableUpdate
+        DisableSnapshot = `$script:DisableSnapshot
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-uv`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-uv`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Set-SnapshotCliArgs`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3524,6 +3673,7 @@ try {
         `$script:DisableAutoMirror = `$cfg.DisableAutoMirror
         `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
         `$script:DisableUpdate = `$cfg.DisableUpdate
+        `$script:DisableSnapshot = `$cfg.DisableSnapshot
         `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
@@ -3603,6 +3753,12 @@ param (
 使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 `"@)][string]`$UseCustomProxy,
 
+
+
+    [Parameter(HelpMessage=@`"
+禁用自动快照, 包括安装结束后的结果快照以及管理脚本执行前的自动快照
+`"@)][switch]`$DisableSnapshot,
+
     [Parameter(HelpMessage=@`"
 脚本执行完成后不暂停, 直接退出
 `"@)][switch]`$NoPause
@@ -3615,9 +3771,10 @@ try {
         CorePrefix = `$script:CorePrefix
         DisableProxy = `$script:DisableProxy
         UseCustomProxy = `$script:UseCustomProxy
+        DisableSnapshot = `$script:DisableSnapshot
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Write-FileWithStreamWriter`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Write-FileWithStreamWriter`", `"Set-SnapshotCliArgs`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -3625,6 +3782,7 @@ try {
         `$script:CorePrefix = `$cfg.CorePrefix
         `$script:DisableProxy = `$cfg.DisableProxy
         `$script:UseCustomProxy = `$cfg.UseCustomProxy
+        `$script:DisableSnapshot = `$cfg.DisableSnapshot
         `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
@@ -4217,7 +4375,8 @@ function Main {
             @{ id=12; n=`"PyTorch CUDA 内存分配优化`"; v=`$(Get-ToggleStatus `"disable_set_pytorch_cuda_memory_alloc.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=13; n=`"启动前环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=14; n=`"Installer 内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") },
-            @{ id=15; n=`"打开 Hotpatcher 补丁系统 GUI`" }
+            @{ id=15; n=`"自动快照`"; v=`$(Get-ToggleStatus `"disable_snapshot.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=16; n=`"打开 Hotpatcher 补丁系统 GUI`" }
         )
 
         `$menu | ForEach-Object {
@@ -4227,7 +4386,7 @@ function Main {
                 Write-Log `"`$(`$_.id). `$(`$_.n)`"
             }
         }
-        Write-Log `"16. 立即检查 Installer 更新 | 17. 打开在线文档 | 18. 退出设置`"
+        Write-Log `"17. 立即检查 Installer 更新 | 18. 打开在线文档 | 19. 退出设置`"
         Write-Log `"提示: 输入菜单编号后回车`"
 
         `$choice = Get-UserInput
@@ -4247,10 +4406,11 @@ function Main {
             `"12`" { Set-ToggleSetting `"disable_set_pytorch_cuda_memory_alloc.txt`" `"PyTorch CUDA 内存分配优化`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_set_pytorch_cuda_memory_alloc.txt`")) }
             `"13`" { Set-ToggleSetting `"disable_check_env.txt`" `"启动前环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
             `"14`" { Update-Core-Prefix }
-            `"15`" { Open-Hotpatcher-Gui }
-            `"16`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
-            `"17`" { Start-Process `"https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/`" }
-            `"18`" { Write-Log `"退出设置菜单`"; return }
+            `"15`" { Set-ToggleSetting `"disable_snapshot.txt`" `"自动快照`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_snapshot.txt`")) }
+            `"16`" { Open-Hotpatcher-Gui }
+            `"17`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
+            `"18`" { Start-Process `"https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/`" }
+            `"19`" { Write-Log `"退出设置菜单`"; return }
         }
     }
     if (!(`$script:NoPause)) { Read-Host | Out-Null }
@@ -4309,6 +4469,12 @@ param (
 使用自定义 Hugging Face 镜像源地址, 例如代理服务器地址为 https://hf-mirror.com, 则使用 -UseCustomHuggingFaceMirror ```"https://hf-mirror.com```" 设置 Hugging Face 镜像源地址
 `"@)][string]`$UseCustomHuggingFaceMirror,
 
+
+
+    [Parameter(HelpMessage=@`"
+禁用自动快照, 包括安装结束后的结果快照以及管理脚本执行前的自动快照
+`"@)][switch]`$DisableSnapshot,
+
     [Parameter(HelpMessage=@`"
 脚本执行完成后不暂停, 直接退出
 `"@)][switch]`$NoPause
@@ -4327,9 +4493,10 @@ try {
         UseCustomProxy = `$script:UseCustomProxy
         DisableHuggingFaceMirror = `$script:DisableHuggingFaceMirror
         UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
+        DisableSnapshot = `$script:DisableSnapshot
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-NormalizedFilePath`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-NormalizedFilePath`", `"Set-SnapshotCliArgs`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -4343,6 +4510,7 @@ try {
         `$script:UseCustomProxy = `$cfg.UseCustomProxy
         `$script:DisableHuggingFaceMirror = `$cfg.DisableHuggingFaceMirror
         `$script:UseCustomHuggingFaceMirror = `$cfg.UseCustomHuggingFaceMirror
+        `$script:DisableSnapshot = `$cfg.DisableSnapshot
         `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
@@ -4577,6 +4745,7 @@ try {
         OriginalScriptPath = `$script:PSCommandPath
         LaunchCommandLine = if (`$script:MyInvocation.Line) { `$script:MyInvocation.Line } else { `$([Environment]::CommandLine) }
         Help = `$script:Help
+        DisableSnapshot = `$script:DisableSnapshot
         NoPause = `$script:NoPause
     }
     (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Write-Log`" -PassThru -Force -ErrorAction Stop).Invoke({
@@ -4584,6 +4753,7 @@ try {
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
         `$script:Help = `$cfg.Help
+        `$script:DisableSnapshot = `$cfg.DisableSnapshot
         `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
@@ -4766,6 +4936,12 @@ function Copy-InstallerConfig {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt") -Destination $script:InstallPath -Force
         Write-Log "$(Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt") -> $(Join-NormalizedPath $script:InstallPath "hotpatcher_port.txt")"
     }
+
+
+    if ((!($script:DisableSnapshot)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_snapshot.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_snapshot.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_snapshot.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_snapshot.txt")"
+    }
     $hotpatcher_config_source = Join-NormalizedPath $PSScriptRoot "patcher_config.json"
     if (Test-Path $hotpatcher_config_source) {
         Copy-Item -Path $hotpatcher_config_source -Destination (Join-NormalizedPath $script:InstallPath "patcher_config.json") -Force
@@ -4793,6 +4969,8 @@ function Use-InstallMode {
         Write-Log "Qwen TTS WebUI 安装结束, 安装路径为: $script:InstallPath"
     }
 
+    Save-InstallResultSnapshot -CliName $script:SnapshotRestoreCliName -PathArgument $script:SnapshotRestorePathArgument -WebUIPath (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX)
+
     Write-Log "帮助文档可在 Qwen TTS WebUI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 Qwen TTS WebUI Installer 使用文档"
     if (!($script:BuildMode)) { Invoke-Item (Join-NormalizedPath $script:InstallPath "help.txt") }
     Write-Log "Qwen TTS WebUI Installer 使用文档: https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/"
@@ -4817,6 +4995,7 @@ function Use-BuildMode {
     if ($script:BuildWithTorch) {
         $launch_args = @{}
         $launch_args.Add("-BuildMode", $true)
+        $launch_args.Add("-DisableSnapshot", $true)
         if ($script:DisableAutoMirror) { $launch_args.Add("-DisableAutoMirror", $true) }
         $launch_args.Add("-BuildWithTorch", $script:BuildWithTorch)
         if ($script:BuildWithTorchReinstall) { $launch_args.Add("-BuildWithTorchReinstall", $true) }
@@ -4833,6 +5012,7 @@ function Use-BuildMode {
     if ($script:BuildWithUpdate) {
         $launch_args = @{}
         $launch_args.Add("-BuildMode", $true)
+        $launch_args.Add("-DisableSnapshot", $true)
         if ($script:DisableAutoMirror) { $launch_args.Add("-DisableAutoMirror", $true) }
         if ($script:DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($script:DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }
@@ -4848,6 +5028,7 @@ function Use-BuildMode {
     if ($script:BuildWithLaunch) {
         $launch_args = @{}
         $launch_args.Add("-BuildMode", $true)
+        $launch_args.Add("-DisableSnapshot", $true)
         if ($script:DisableAutoMirror) { $launch_args.Add("-DisableAutoMirror", $true) }
         if ($script:DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }
         if ($script:DisableUpdate) { $launch_args.Add("-DisableUpdate", $true) }

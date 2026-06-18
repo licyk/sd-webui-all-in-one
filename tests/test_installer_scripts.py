@@ -381,8 +381,92 @@ def test_launch_installer_templates_forward_snapshot_rebuild_args():
         launch_installer_template = _extract_launch_installer_template(_read_installer(script_path))
         assert "[switch]`$RestoreFromSnapshot" in launch_installer_template, script_path
         assert "[string]`$SnapshotPath" in launch_installer_template, script_path
+        assert "[switch]`$DisableSnapshot" in launch_installer_template, script_path
         assert '`$arg.Add(`"-RestoreFromSnapshot`", `$true)' in launch_installer_template, script_path
         assert '`$arg.Add(`"-SnapshotPath`", `$script:SnapshotPath)' in launch_installer_template, script_path
+        assert '`$arg.Add(`"-DisableSnapshot`", `$true)' in launch_installer_template, script_path
+
+
+def test_installer_auto_snapshot_disable_is_wired():
+    expected_snapshot_commands = {
+        "installer/stable_diffusion_webui_installer.ps1": [
+            "sd-webui update",
+            "sd-webui extension update",
+            "sd-webui reinstall-pytorch",
+            "sd-webui gui version-manager",
+        ],
+        "installer/comfyui_installer.ps1": [
+            "comfyui update",
+            "comfyui custom-node update",
+            "comfyui reinstall-pytorch",
+            "comfyui gui version-manager",
+        ],
+        "installer/fooocus_installer.ps1": [
+            "fooocus update",
+            "fooocus reinstall-pytorch",
+            "fooocus gui version-manager",
+        ],
+        "installer/invokeai_installer.ps1": [
+            "invokeai update",
+            "invokeai custom-node update",
+            "invokeai reinstall-pytorch",
+            "invokeai gui version-manager",
+        ],
+        "installer/qwen_tts_webui_installer.ps1": [
+            "qwen-tts-webui update",
+            "qwen-tts-webui reinstall-pytorch",
+            "qwen-tts-webui gui version-manager",
+        ],
+        "installer/sd_trainer_installer.ps1": [
+            "sd-trainer update",
+            "sd-trainer reinstall-pytorch",
+            "sd-trainer gui version-manager",
+        ],
+        "installer/sd_trainer_script_installer.ps1": [
+            "sd-scripts update",
+            "sd-scripts reinstall-pytorch",
+            "sd-scripts gui version-manager",
+        ],
+    }
+
+    for script_path, commands in expected_snapshot_commands.items():
+        installer = _read_installer(script_path)
+        modules_template = _extract_modules_template(installer)
+
+        assert "[switch]$DisableSnapshot" in installer, script_path
+        assert "disable_snapshot.txt" in installer, script_path
+        assert "function Test-SnapshotDisabled" in modules_template, script_path
+        assert "function Set-SnapshotCliArgs" in modules_template, script_path
+        assert "function Save-InstallResultSnapshot" in modules_template, script_path
+        assert 'Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_snapshot.txt")' in installer, script_path
+        assert "Test-SnapshotDisabled, ``" in modules_template, script_path
+        assert "Set-SnapshotCliArgs, ``" in modules_template, script_path
+        assert "Save-InstallResultSnapshot, ``" in modules_template, script_path
+        assert (
+            "Save-InstallResultSnapshot -CliName $script:SnapshotRestoreCliName "
+            "-PathArgument $script:SnapshotRestorePathArgument "
+            "-WebUIPath (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX)"
+        ) in installer, script_path
+        assert '$launch_args.Add("-DisableSnapshot", $true)' in installer, script_path
+        assert 'if ($script:DisableSnapshot) { $launch_args.Add("-DisableSnapshot", $true) }' not in installer, script_path
+
+        for command in commands:
+            command_line = f"& python -m sd_webui_all_in_one {command} `$launch_args"
+            command_index = installer.index(command_line)
+            command_prefix = installer[max(0, command_index - 120) : command_index]
+            assert "Set-SnapshotCliArgs `$launch_args" in command_prefix, (script_path, command)
+
+
+def test_installer_settings_include_auto_snapshot_toggle():
+    for script_path in SNAPSHOT_REBUILD_INSTALLERS:
+        installer = _read_installer(script_path)
+        settings_start = installer.index("function Write-SettingsScript")
+        settings_end = installer.index("# 虚拟环境激活脚本", settings_start)
+        settings_template = installer[settings_start:settings_end]
+
+        assert 'n=`"自动快照`"' in settings_template, script_path
+        assert 'Set-ToggleSetting `"disable_snapshot.txt`" `"自动快照`"' in settings_template, script_path
+        assert 'Get-ToggleStatus `"disable_snapshot.txt`" `"启用`" `"禁用`" `$true' in settings_template, script_path
 
 
 def test_msvc_check_is_skipped_in_build_mode():
