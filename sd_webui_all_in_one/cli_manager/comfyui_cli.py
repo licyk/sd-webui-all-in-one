@@ -17,6 +17,7 @@ from sd_webui_all_in_one.base_manager import (
     update_comfyui_custom_nodes,
     uninstall_comfyui_custom_node,
     launch_comfyui_version_gui,
+    launch_comfyui_snapshot_gui,
     install_comfyui_model_from_library,
     install_comfyui_model_from_url,
     list_comfyui_models,
@@ -49,6 +50,7 @@ from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     add_restore_arguments,
     restore_snapshot,
 )
+from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
@@ -455,6 +457,23 @@ def launch_version_gui(
     )
 
 
+def launch_snapshot_gui(
+    comfyui_path: Path,
+    use_uv: bool = True,
+    use_pypi_mirror: bool = True,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 ComfyUI 快照管理 GUI"""
+    launch_comfyui_snapshot_gui(
+        comfyui_path=comfyui_path,
+        use_uv=use_uv,
+        use_pypi_mirror=use_pypi_mirror,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
 def install_model_from_library(
     comfyui_path: Path,
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
@@ -752,6 +771,20 @@ def register_comfyui(
         func=with_auto_mirror(
             lambda args: launch_version_gui(
                 comfyui_path=args.comfyui_path,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
+    )
+
+    snapshot_gui_p = gui_sub.add_parser("snapshot-manager", help="启动 ComfyUI 快照管理 GUI")
+    add_snapshot_gui_arguments(snapshot_gui_p, "--comfyui-path", "comfyui_path", COMFYUI_ROOT_PATH)
+    snapshot_gui_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: launch_snapshot_gui(
+                comfyui_path=args.comfyui_path,
+                use_uv=args.use_uv,
+                use_pypi_mirror=args.use_pypi_mirror,
                 use_github_mirror=args.use_github_mirror,
                 custom_github_mirror=args.custom_github_mirror,
             )

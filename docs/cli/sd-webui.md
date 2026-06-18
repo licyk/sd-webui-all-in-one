@@ -112,6 +112,18 @@ sd-webui-all-in-one sd-webui gui version-manager [选项]
   - `--no-github-mirror`: 不使用 Github 镜像源。
   - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
 
+### 快照管理 GUI
+```bash
+sd-webui-all-in-one sd-webui gui snapshot-manager [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--no-uv`: 不使用 uv 安装 Python 软件包。
+  - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+
 ### 扩展管理
 
 #### 安装扩展

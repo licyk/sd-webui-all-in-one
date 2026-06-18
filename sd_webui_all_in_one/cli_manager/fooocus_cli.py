@@ -19,6 +19,7 @@ from sd_webui_all_in_one.base_manager import (
     list_fooocus_models,
     uninstall_fooocus_model,
     launch_fooocus_version_gui,
+    launch_fooocus_snapshot_gui,
     reinstall_pytorch,
     get_fooocus_snapshot,
 )
@@ -47,6 +48,7 @@ from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     add_restore_arguments,
     restore_snapshot,
 )
+from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
@@ -466,6 +468,23 @@ def launch_version_gui(
     )
 
 
+def launch_snapshot_gui(
+    fooocus_path: Path,
+    use_uv: bool = True,
+    use_pypi_mirror: bool = True,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 Fooocus 快照管理 GUI"""
+    launch_fooocus_snapshot_gui(
+        fooocus_path=fooocus_path,
+        use_uv=use_uv,
+        use_pypi_mirror=use_pypi_mirror,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
 def register_fooocus(
     subparsers: "argparse._SubParsersAction",
 ) -> None:
@@ -673,6 +692,20 @@ def register_fooocus(
         func=with_auto_mirror(
             lambda args: launch_version_gui(
                 fooocus_path=args.fooocus_path,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
+    )
+
+    snapshot_gui_p = gui_sub.add_parser("snapshot-manager", help="启动 Fooocus 快照管理 GUI")
+    add_snapshot_gui_arguments(snapshot_gui_p, "--fooocus-path", "fooocus_path", FOOOCUS_ROOT_PATH)
+    snapshot_gui_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: launch_snapshot_gui(
+                fooocus_path=args.fooocus_path,
+                use_uv=args.use_uv,
+                use_pypi_mirror=args.use_pypi_mirror,
                 use_github_mirror=args.use_github_mirror,
                 custom_github_mirror=args.custom_github_mirror,
             )

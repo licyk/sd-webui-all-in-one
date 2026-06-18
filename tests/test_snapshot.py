@@ -304,6 +304,142 @@ def test_restore_webui_snapshot_rejects_mismatched_webui_type(monkeypatch, tmp_p
         )
 
 
+def test_preview_restore_plan_reports_package_actions_and_pytorch_source(monkeypatch, tmp_path):
+    missing_local = tmp_path / "missing-local"
+    snapshot = _webui_snapshot(tmp_path / "demo")
+    snapshot.packages = [
+        _package_snapshot("sd-webui-all-in-one", "99.0.0"),
+        _package_snapshot("Torch", "2.7.0+cu128"),
+        _package_snapshot("demo-pkg", "2.0.0"),
+        _package_snapshot(
+            "editable-local",
+            "1.0.0",
+            direct_url=snapshot_utils.DirectUrlSnapshot(
+                url=missing_local.as_uri(),
+                dir_info=snapshot_utils.DirectUrlDirInfo(editable=True),
+            ),
+            editable=True,
+        ),
+        _package_snapshot("already", "1.0.0"),
+    ]
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+
+    monkeypatch.setattr(
+        restore_utils,
+        "collect_installed_packages",
+        lambda: [
+            _package_snapshot("demo_pkg", "1.0.0"),
+            _package_snapshot("already", "1.0.0"),
+            _package_snapshot("old-pkg", "0.1.0"),
+            _package_snapshot("pip", "25.0"),
+        ],
+    )
+    monkeypatch.setattr(restore_utils, "get_pytorch_mirror", lambda dtype, use_cn_mirror: ("https://torch.example/cu128", "index_url"))
+
+    plan = restore_utils.preview_webui_snapshot_restore(
+        snapshot_path=output,
+        webui_path=tmp_path / "demo",
+        expected_webui_type="demo",
+        options=restore_utils.SnapshotRestoreOptions(prune_packages=True, use_pypi_mirror=True),
+    )
+
+    actions = {(item.name, item.action) for item in plan.package_changes}
+    assert ("sd-webui-all-in-one", "skip_protected") in actions
+    assert ("Torch", "install_pytorch_special") in actions
+    assert ("demo-pkg", "update") in actions
+    assert ("editable-local", "skip_missing_local_path") in actions
+    assert ("already", "skip_same_version") in actions
+    assert ("old-pkg", "uninstall") in actions
+    assert ("pip", "uninstall") not in actions
+    assert plan.pytorch_device_type == "cu128"
+    assert plan.pytorch_mirror_url == "https://torch.example/cu128"
+    assert plan.pytorch_mirror_kind == "index_url"
+    assert plan.errors == []
+
+
+def test_preview_restore_plan_blocks_dirty_kernel_without_force(monkeypatch, tmp_path):
+    snapshot = _webui_snapshot(tmp_path / "demo")
+    snapshot.kernel = snapshot_utils.RepositorySnapshot(
+        path=tmp_path / "demo",
+        name="demo",
+        is_git_repo=True,
+        url="https://example.test/demo.git",
+        commit="abcdef",
+    )
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+    (tmp_path / "demo").mkdir()
+
+    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_utils.git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(restore_utils, "repository_dirty", lambda _path, _include_untracked: True)
+    monkeypatch.setattr(restore_utils.git_warpper, "get_current_commit", lambda _path: "123456")
+
+    blocked = restore_utils.preview_webui_snapshot_restore(
+        snapshot_path=output,
+        webui_path=tmp_path / "demo",
+        expected_webui_type="demo",
+    )
+
+    assert blocked.kernel_change is not None
+    assert blocked.kernel_change.action == "blocked_dirty"
+    assert blocked.errors == ["内核仓库存在未提交变更"]
+
+    forced = restore_utils.preview_webui_snapshot_restore(
+        snapshot_path=output,
+        webui_path=tmp_path / "demo",
+        expected_webui_type="demo",
+        options=restore_utils.SnapshotRestoreOptions(force_git_reset=True),
+    )
+
+    assert forced.kernel_change is not None
+    assert forced.kernel_change.action == "switch_commit"
+    assert forced.errors == []
+
+
+def test_preview_restore_plan_prunes_comfyui_extensions_with_disabled_name(monkeypatch, tmp_path):
+    webui_path = tmp_path / "ComfyUI"
+    custom_nodes = webui_path / "custom_nodes"
+    (custom_nodes / "KeepNode.disabled").mkdir(parents=True)
+    (custom_nodes / "ExtraNode.disabled").mkdir()
+    snapshot = _webui_snapshot(webui_path)
+    snapshot.webui.type = "comfyui"
+    snapshot.extensions = [
+        snapshot_utils.ExtensionSnapshot(
+            name="KeepNode.disabled",
+            path=custom_nodes / "KeepNode.disabled",
+            enabled=False,
+            is_git_repo=True,
+            url="https://example.test/keep",
+            commit="abcdef",
+        )
+    ]
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+
+    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_utils.git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(restore_utils, "repository_dirty", lambda _path, _include_untracked: False)
+    monkeypatch.setattr(restore_utils.git_warpper, "get_current_commit", lambda _path: "123456")
+
+    plan = restore_utils.preview_webui_snapshot_restore(
+        snapshot_path=output,
+        webui_path=webui_path,
+        expected_webui_type="comfyui",
+        options=restore_utils.SnapshotRestoreOptions(prune_extensions=True),
+    )
+
+    keep = next(item for item in plan.extension_changes if item.name == "KeepNode.disabled")
+    extra = next(item for item in plan.extension_changes if item.name == "ExtraNode.disabled")
+    assert keep.normalized_name == "keepnode"
+    assert keep.current_enabled is False
+    assert keep.target_enabled is False
+    assert keep.git is not None
+    assert keep.git.action == "switch_commit"
+    assert extra.cleanup_action == "uninstall"
+
+
 def test_restore_python_packages_prioritizes_pytorch_skips_missing_local_and_prunes(monkeypatch, tmp_path):
     missing_local = tmp_path / "missing-local"
     snapshot = _webui_snapshot(tmp_path / "demo")
@@ -545,6 +681,35 @@ def test_product_snapshot_cli_parse_smoke(monkeypatch, tmp_path):
                 "prune_packages": True,
                 "prune_extensions": True,
                 "force_git_reset": True,
+                "use_uv": False,
+                "use_pypi_mirror": False,
+                "use_github_mirror": False,
+                "custom_github_mirror": "https://mirror.example",
+            }
+        ]
+
+        gui_calls = []
+        monkeypatch.setattr(module, "launch_snapshot_gui", lambda **kwargs: gui_calls.append(kwargs))
+        args = parser.parse_args(
+            [
+                command,
+                "gui",
+                "snapshot-manager",
+                path_arg,
+                str(tmp_path / command),
+                "--no-uv",
+                "--no-pypi-mirror",
+                "--no-github-mirror",
+                "--custom-github-mirror",
+                "https://mirror.example",
+                "--no-auto-mirror",
+            ]
+        )
+        args.func(args)
+
+        assert gui_calls == [
+            {
+                path_key: tmp_path / command,
                 "use_uv": False,
                 "use_pypi_mirror": False,
                 "use_github_mirror": False,

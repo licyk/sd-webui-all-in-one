@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import os
+import json
+import platform
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, cast
+from typing import Callable, Literal, cast
 from urllib.parse import unquote, urlparse
 from urllib.request import url2pathname
 
@@ -57,6 +59,27 @@ PROTECTED_PACKAGE_NAMES = {
     "uv",
 }
 
+PackageRestoreAction = Literal[
+    "install",
+    "update",
+    "skip_same_version",
+    "skip_protected",
+    "skip_missing_local_path",
+    "uninstall",
+    "install_pytorch_special",
+]
+GitRestoreAction = Literal[
+    "clone",
+    "switch_commit",
+    "skip_same_commit",
+    "skip_non_git_snapshot",
+    "skip_non_git_target",
+    "skip_missing_url",
+    "skip_missing_commit",
+    "blocked_dirty",
+]
+ExtensionCleanupAction = Literal["keep", "uninstall"]
+
 
 @dataclass(slots=True)
 class SnapshotRestoreOptions:
@@ -79,6 +102,71 @@ class ExtensionRestoreTools:
     set_status: Callable[[Path, str, bool], None]
     uninstall: Callable[[Path, str], None]
     strip_disabled_suffix: bool = False
+
+
+@dataclass(slots=True)
+class PackageRestorePlanItem:
+    """Python 包恢复预检查项"""
+
+    name: str
+    normalized_name: str
+    action: PackageRestoreAction
+    reason: str
+    target_version: str | None = None
+    current_version: str | None = None
+    source_type: str | None = None
+    editable: bool = False
+    local_path: Path | None = None
+    pytorch_device_type: str | None = None
+
+
+@dataclass(slots=True)
+class GitRestorePlanItem:
+    """Git 仓库恢复预检查项"""
+
+    name: str
+    path: Path
+    action: GitRestoreAction
+    reason: str
+    target_commit: str | None = None
+    current_commit: str | None = None
+    dirty: bool | None = None
+    url: str | None = None
+
+
+@dataclass(slots=True)
+class ExtensionRestorePlanItem:
+    """WebUI 扩展恢复预检查项"""
+
+    name: str
+    normalized_name: str
+    path: Path
+    git: GitRestorePlanItem | None = None
+    cleanup_action: ExtensionCleanupAction = "keep"
+    current_enabled: bool | None = None
+    target_enabled: bool | None = None
+    reason: str = ""
+
+
+@dataclass(slots=True)
+class SnapshotRestorePlan:
+    """WebUI 快照恢复预检查结果"""
+
+    webui_type_match: bool
+    expected_webui_type: str
+    snapshot_webui_type: str
+    snapshot_webui_name: str
+    snapshot_path: Path
+    webui_path: Path
+    python_version_note: str | None = None
+    package_changes: list[PackageRestorePlanItem] = field(default_factory=list)
+    kernel_change: GitRestorePlanItem | None = None
+    extension_changes: list[ExtensionRestorePlanItem] = field(default_factory=list)
+    pytorch_device_type: str | None = None
+    pytorch_mirror_url: str | None = None
+    pytorch_mirror_kind: str | None = None
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 def normalize_extension_name(
@@ -147,6 +235,13 @@ def _install_args_from_direct_url(package: PackageSnapshot) -> list[str] | None:
     return [_package_version_spec(package)]
 
 
+def _local_path_from_package(package: PackageSnapshot) -> Path | None:
+    direct_url = package.direct_url
+    if direct_url is None or direct_url.url is None:
+        return None
+    return _local_path_from_url(direct_url.url)
+
+
 def _install_package(package: PackageSnapshot, custom_env: dict[str, str], use_uv: bool) -> None:
     args = _install_args_from_direct_url(package)
     if args is None:
@@ -194,6 +289,21 @@ def _pytorch_env(packages: list[PackageSnapshot], use_pypi_mirror: bool) -> dict
     )
 
 
+def _pytorch_mirror_plan(
+    packages: list[PackageSnapshot],
+    use_pypi_mirror: bool,
+) -> tuple[str | None, str | None, str | None, str | None]:
+    dtype = _infer_pytorch_device_type(packages)
+    if dtype is None:
+        return None, None, None, "未从 PyTorch 包版本推断出特殊源, 将使用普通 PyPI 源"
+
+    try:
+        url, kind = get_pytorch_mirror(dtype=dtype, use_cn_mirror=use_pypi_mirror)
+    except ValueError as e:
+        return dtype, None, None, f"未找到 PyTorch 特殊源 '{dtype}', 将使用普通 PyPI 源: {e}"
+    return dtype, url, kind, None
+
+
 def _install_pytorch_packages(packages: list[PackageSnapshot], options: SnapshotRestoreOptions) -> None:
     if not packages:
         return
@@ -228,6 +338,114 @@ def _target_package_map(snapshot: WebUiSnapshot) -> dict[str, PackageSnapshot]:
             continue
         packages[normalized] = package
     return packages
+
+
+def _build_package_restore_plan(
+    snapshot: WebUiSnapshot,
+    options: SnapshotRestoreOptions,
+    warnings: list[str],
+) -> tuple[list[PackageRestorePlanItem], str | None, str | None, str | None]:
+    target_packages: dict[str, PackageSnapshot] = {}
+    current_packages = _current_package_map()
+    items: list[PackageRestorePlanItem] = []
+    pytorch_to_install: list[PackageSnapshot] = []
+
+    for package in snapshot.packages:
+        normalized = _normalized_package_name(package.name)
+        current = current_packages.get(normalized)
+        local_path = _local_path_from_package(package)
+        base = {
+            "name": package.name,
+            "normalized_name": normalized,
+            "target_version": package.version,
+            "current_version": current.version if current is not None else None,
+            "source_type": package.source_type,
+            "editable": package.editable,
+            "local_path": local_path,
+        }
+
+        if normalized in PROTECTED_PACKAGE_NAMES:
+            items.append(
+                PackageRestorePlanItem(
+                    **base,
+                    action="skip_protected",
+                    reason="受保护的管理器或基础安装工具不会通过快照恢复修改",
+                )
+            )
+            continue
+
+        target_packages[normalized] = package
+        if current is not None and current.version == package.version:
+            items.append(
+                PackageRestorePlanItem(
+                    **base,
+                    action="skip_same_version",
+                    reason="当前版本与快照一致",
+                )
+            )
+            continue
+
+        if local_path is not None and not local_path.exists():
+            items.append(
+                PackageRestorePlanItem(
+                    **base,
+                    action="skip_missing_local_path",
+                    reason=f"本地安装来源路径不存在: {local_path}",
+                )
+            )
+            continue
+
+        if normalized in PYTORCH_PACKAGE_NAMES:
+            pytorch_to_install.append(package)
+            items.append(
+                PackageRestorePlanItem(
+                    **base,
+                    action="install_pytorch_special",
+                    reason="PyTorch 相关包会优先恢复并尝试按版本后缀选择特殊安装源",
+                )
+            )
+        elif current is None:
+            items.append(
+                PackageRestorePlanItem(
+                    **base,
+                    action="install",
+                    reason="当前环境未安装该包",
+                )
+            )
+        else:
+            items.append(
+                PackageRestorePlanItem(
+                    **base,
+                    action="update",
+                    reason="当前版本与快照不一致",
+                )
+            )
+
+    dtype, mirror_url, mirror_kind, warning = _pytorch_mirror_plan(pytorch_to_install, options.use_pypi_mirror) if pytorch_to_install else (None, None, None, None)
+    if warning is not None:
+        warnings.append(warning)
+    for item in items:
+        if item.action == "install_pytorch_special":
+            item.pytorch_device_type = dtype
+
+    if options.prune_packages:
+        for normalized, package in current_packages.items():
+            if normalized in target_packages or _is_protected_package(package.name):
+                continue
+            items.append(
+                PackageRestorePlanItem(
+                    name=package.name,
+                    normalized_name=normalized,
+                    action="uninstall",
+                    reason="启用了清理快照外 Python 包",
+                    current_version=package.version,
+                    source_type=package.source_type,
+                    editable=package.editable,
+                    local_path=_local_path_from_package(package),
+                )
+            )
+
+    return items, dtype, mirror_url, mirror_kind
 
 
 def restore_python_packages(snapshot: WebUiSnapshot, options: SnapshotRestoreOptions) -> None:
@@ -303,6 +521,217 @@ def _extension_tools(webui_type: str) -> ExtensionRestoreTools | None:
             uninstall=uninstall_invokeai_custom_node,
         )
     return None
+
+
+def _repo_target_name(repo: RepositorySnapshot | ExtensionSnapshot) -> str:
+    return getattr(repo, "name", None) or repo.path.name
+
+
+def _same_commit(current_commit: str | None, target_commit: str | None) -> bool:
+    if current_commit is None or target_commit is None:
+        return False
+    return current_commit.startswith(target_commit) or target_commit.startswith(current_commit)
+
+
+def _current_git_commit(path: Path) -> str | None:
+    try:
+        return git_warpper.get_current_commit(path)
+    except Exception:
+        return None
+
+
+def _build_git_restore_plan(
+    repo: RepositorySnapshot | ExtensionSnapshot,
+    target_path: Path,
+    options: SnapshotRestoreOptions,
+) -> GitRestorePlanItem:
+    name = _repo_target_name(repo)
+    if not repo.is_git_repo:
+        return GitRestorePlanItem(
+            name=name,
+            path=target_path,
+            action="skip_non_git_snapshot",
+            reason="快照目标不是 Git 仓库",
+            target_commit=repo.commit,
+            url=repo.url,
+        )
+
+    if repo.commit is None:
+        return GitRestorePlanItem(
+            name=name,
+            path=target_path,
+            action="skip_missing_commit",
+            reason="快照目标缺少 commit",
+            url=repo.url,
+        )
+
+    if target_path.exists() and not git_warpper.is_git_repo(target_path):
+        if target_path.is_dir() and is_folder_empty(target_path) and repo.url:
+            return GitRestorePlanItem(
+                name=name,
+                path=target_path,
+                action="clone",
+                reason="目标路径为空目录, 将 clone 后恢复到快照 commit",
+                target_commit=repo.commit,
+                url=repo.url,
+            )
+        return GitRestorePlanItem(
+            name=name,
+            path=target_path,
+            action="skip_non_git_target",
+            reason="目标路径已存在且不是 Git 仓库",
+            target_commit=repo.commit,
+            url=repo.url,
+        )
+
+    if not target_path.exists():
+        if repo.url is None:
+            return GitRestorePlanItem(
+                name=name,
+                path=target_path,
+                action="skip_missing_url",
+                reason="目标路径不存在且快照缺少远程地址",
+                target_commit=repo.commit,
+            )
+        return GitRestorePlanItem(
+            name=name,
+            path=target_path,
+            action="clone",
+            reason="目标路径不存在, 将 clone 后恢复到快照 commit",
+            target_commit=repo.commit,
+            url=repo.url,
+        )
+
+    dirty = repository_dirty(target_path, True)
+    current_commit = _current_git_commit(target_path)
+    if dirty and not options.force_git_reset:
+        return GitRestorePlanItem(
+            name=name,
+            path=target_path,
+            action="blocked_dirty",
+            reason="目标仓库存在未提交变更, 需要先处理或启用强制恢复",
+            target_commit=repo.commit,
+            current_commit=current_commit,
+            dirty=dirty,
+            url=repo.url,
+        )
+
+    if _same_commit(current_commit, repo.commit):
+        return GitRestorePlanItem(
+            name=name,
+            path=target_path,
+            action="skip_same_commit",
+            reason="当前 commit 与快照一致",
+            target_commit=repo.commit,
+            current_commit=current_commit,
+            dirty=dirty,
+            url=repo.url,
+        )
+
+    reason = "将切换到快照 commit"
+    if dirty and options.force_git_reset:
+        reason = "启用了强制恢复, 将覆盖未提交变更并切换到快照 commit"
+    return GitRestorePlanItem(
+        name=name,
+        path=target_path,
+        action="switch_commit",
+        reason=reason,
+        target_commit=repo.commit,
+        current_commit=current_commit,
+        dirty=dirty,
+        url=repo.url,
+    )
+
+
+def _sd_webui_extension_enabled(webui_path: Path, name: str) -> bool | None:
+    config_path = webui_path / "config.json"
+    try:
+        data = json.loads(config_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+
+    disable_all_extensions = data.get("disable_all_extensions", "none")
+    if disable_all_extensions == "all":
+        return False
+    if disable_all_extensions == "extra":
+        return True
+    disabled_extensions = data.get("disabled_extensions", [])
+    if not isinstance(disabled_extensions, list):
+        return None
+    return name not in disabled_extensions
+
+
+def _extension_current_enabled(
+    webui_path: Path,
+    webui_type: str,
+    extension_name: str,
+    tools: ExtensionRestoreTools,
+) -> bool | None:
+    target_path = webui_path / tools.directory_name / extension_name
+    if webui_type == "sd_webui":
+        return _sd_webui_extension_enabled(webui_path, extension_name)
+    if webui_type == "comfyui":
+        return not extension_name.endswith(".disabled")
+    if webui_type == "invokeai":
+        return (target_path / "__init__.py").is_file()
+    return None
+
+
+def _build_extension_restore_plan(
+    snapshot: WebUiSnapshot,
+    webui_path: Path,
+    options: SnapshotRestoreOptions,
+    warnings: list[str],
+    errors: list[str],
+) -> list[ExtensionRestorePlanItem]:
+    tools = _extension_tools(snapshot.webui.type)
+    if tools is None:
+        if snapshot.extensions:
+            warnings.append(f"当前 WebUI 类型不支持扩展恢复: {snapshot.webui.type}")
+        return []
+
+    items: list[ExtensionRestorePlanItem] = []
+    target_names = _target_extension_names(snapshot, tools)
+    for extension in snapshot.extensions:
+        normalized = normalize_extension_name(extension.name, strip_disabled_suffix=tools.strip_disabled_suffix)
+        target_path = _extension_target_path(webui_path, extension, tools)
+        git_plan = _build_git_restore_plan(extension, target_path, options)
+        current_enabled = _extension_current_enabled(webui_path, snapshot.webui.type, extension.name, tools)
+        item = ExtensionRestorePlanItem(
+            name=extension.name,
+            normalized_name=normalized,
+            path=target_path,
+            git=git_plan,
+            current_enabled=current_enabled,
+            target_enabled=extension.enabled,
+            reason=git_plan.reason,
+        )
+        items.append(item)
+        if git_plan.action == "blocked_dirty":
+            errors.append(f"扩展 '{extension.name}' 存在未提交变更")
+
+    if options.prune_extensions:
+        extension_root = webui_path / tools.directory_name
+        if extension_root.is_dir():
+            for path in sorted(extension_root.iterdir(), key=lambda item: item.name.casefold()):
+                if not path.is_dir() or path.name == "__pycache__":
+                    continue
+                normalized = normalize_extension_name(path.name, strip_disabled_suffix=tools.strip_disabled_suffix)
+                if normalized in target_names:
+                    continue
+                items.append(
+                    ExtensionRestorePlanItem(
+                        name=path.name,
+                        normalized_name=normalized,
+                        path=path,
+                        cleanup_action="uninstall",
+                        current_enabled=_extension_current_enabled(webui_path, snapshot.webui.type, path.name, tools),
+                        reason="启用了清理快照外扩展",
+                    )
+                )
+    return items
 
 
 def _ensure_git_target(repo: RepositorySnapshot | ExtensionSnapshot, target_path: Path) -> bool:
@@ -400,6 +829,56 @@ def restore_extensions(snapshot: WebUiSnapshot, webui_path: Path, options: Snaps
 
     if options.prune_extensions:
         _prune_extensions(webui_path=webui_path, snapshot=snapshot, tools=tools)
+
+
+def preview_webui_snapshot_restore(
+    snapshot_path: Path,
+    webui_path: Path,
+    expected_webui_type: str,
+    options: SnapshotRestoreOptions | None = None,
+) -> SnapshotRestorePlan:
+    """预检查 WebUI 快照恢复将执行的变更"""
+    if options is None:
+        options = SnapshotRestoreOptions()
+
+    snapshot = load_snapshot(snapshot_path)
+    webui_type_match = snapshot.webui.type == expected_webui_type
+    plan = SnapshotRestorePlan(
+        webui_type_match=webui_type_match,
+        expected_webui_type=expected_webui_type,
+        snapshot_webui_type=snapshot.webui.type,
+        snapshot_webui_name=snapshot.webui.name,
+        snapshot_path=snapshot_path,
+        webui_path=webui_path,
+    )
+
+    if not webui_type_match:
+        plan.errors.append(f"快照 WebUI 类型不匹配: 期望 '{expected_webui_type}', 实际 '{snapshot.webui.type}'")
+        return plan
+
+    current_python_version = platform.python_version()
+    if snapshot.python.version != current_python_version:
+        plan.python_version_note = f"快照 Python 版本为 {snapshot.python.version}, 当前 Python 版本为 {current_python_version}; 恢复时不会修改 Python 版本"
+
+    package_changes, dtype, mirror_url, mirror_kind = _build_package_restore_plan(snapshot, options, plan.warnings)
+    plan.package_changes = package_changes
+    plan.pytorch_device_type = dtype
+    plan.pytorch_mirror_url = mirror_url
+    plan.pytorch_mirror_kind = mirror_kind
+
+    if snapshot.kernel is not None:
+        plan.kernel_change = _build_git_restore_plan(snapshot.kernel, webui_path, options)
+        if plan.kernel_change.action == "blocked_dirty":
+            plan.errors.append("内核仓库存在未提交变更")
+
+    plan.extension_changes = _build_extension_restore_plan(
+        snapshot=snapshot,
+        webui_path=webui_path,
+        options=options,
+        warnings=plan.warnings,
+        errors=plan.errors,
+    )
+    return plan
 
 
 def restore_webui_snapshot(

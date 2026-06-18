@@ -20,6 +20,7 @@ from sd_webui_all_in_one.base_manager import (
     update_sd_webui_extensions,
     uninstall_sd_webui_extension,
     launch_sd_webui_version_gui,
+    launch_sd_webui_snapshot_gui,
     install_sd_webui_model_from_library,
     install_sd_webui_model_from_url,
     list_sd_webui_models,
@@ -52,6 +53,7 @@ from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     add_restore_arguments,
     restore_snapshot,
 )
+from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
@@ -480,6 +482,23 @@ def launch_version_gui(
     )
 
 
+def launch_snapshot_gui(
+    sd_webui_path: Path,
+    use_uv: bool = True,
+    use_pypi_mirror: bool = True,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 Stable Diffusion WebUI 快照管理 GUI"""
+    launch_sd_webui_snapshot_gui(
+        sd_webui_path=sd_webui_path,
+        use_uv=use_uv,
+        use_pypi_mirror=use_pypi_mirror,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
 def install_model_from_library(
     sd_webui_path: Path,
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
@@ -755,6 +774,20 @@ def register_sd_webui(
         func=with_auto_mirror(
             lambda args: launch_version_gui(
                 sd_webui_path=args.sd_webui_path,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
+    )
+
+    snapshot_gui_p = gui_sub.add_parser("snapshot-manager", help="启动 Stable Diffusion WebUI 快照管理 GUI")
+    add_snapshot_gui_arguments(snapshot_gui_p, "--sd-webui-path", "sd_webui_path", SD_WEBUI_ROOT_PATH)
+    snapshot_gui_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: launch_snapshot_gui(
+                sd_webui_path=args.sd_webui_path,
+                use_uv=args.use_uv,
+                use_pypi_mirror=args.use_pypi_mirror,
                 use_github_mirror=args.use_github_mirror,
                 custom_github_mirror=args.custom_github_mirror,
             )

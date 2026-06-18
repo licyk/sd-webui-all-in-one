@@ -15,6 +15,7 @@ from sd_webui_all_in_one.base_manager import (
     list_sd_scripts_models,
     uninstall_sd_scripts_model,
     launch_sd_scripts_version_gui,
+    launch_sd_scripts_snapshot_gui,
     reinstall_pytorch,
     get_sd_scripts_snapshot,
 )
@@ -36,6 +37,7 @@ from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     add_restore_arguments,
     restore_snapshot,
 )
+from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
@@ -350,6 +352,23 @@ def launch_version_gui(
     )
 
 
+def launch_snapshot_gui(
+    sd_scripts_path: Path,
+    use_uv: bool = True,
+    use_pypi_mirror: bool = True,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 SD Scripts 快照管理 GUI"""
+    launch_sd_scripts_snapshot_gui(
+        sd_scripts_path=sd_scripts_path,
+        use_uv=use_uv,
+        use_pypi_mirror=use_pypi_mirror,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
 def register_sd_scripts(
     subparsers: "argparse._SubParsersAction",
 ) -> None:
@@ -521,6 +540,20 @@ def register_sd_scripts(
         func=with_auto_mirror(
             lambda args: launch_version_gui(
                 sd_scripts_path=args.sd_scripts_path,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
+    )
+
+    snapshot_gui_p = gui_sub.add_parser("snapshot-manager", help="启动 SD Scripts 快照管理 GUI")
+    add_snapshot_gui_arguments(snapshot_gui_p, "--sd-scripts-path", "sd_scripts_path", SD_SCRIPTS_ROOT_PATH)
+    snapshot_gui_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: launch_snapshot_gui(
+                sd_scripts_path=args.sd_scripts_path,
+                use_uv=args.use_uv,
+                use_pypi_mirror=args.use_pypi_mirror,
                 use_github_mirror=args.use_github_mirror,
                 custom_github_mirror=args.custom_github_mirror,
             )

@@ -61,8 +61,16 @@ from sd_webui_all_in_one.base_manager.snapshot import (
     snapshot_to_dict,
 )
 from sd_webui_all_in_one.base_manager.snapshot_restore import (
+    ExtensionCleanupAction,
+    ExtensionRestorePlanItem,
+    GitRestoreAction,
+    GitRestorePlanItem,
+    PackageRestoreAction,
+    PackageRestorePlanItem,
+    SnapshotRestorePlan,
     SnapshotRestoreOptions,
     normalize_extension_name,
+    preview_webui_snapshot_restore,
     restore_extensions,
     restore_git_repository,
     restore_python_packages,
@@ -89,6 +97,7 @@ from sd_webui_all_in_one.base_manager.comfyui_base import (
     list_comfyui_models,
     uninstall_comfyui_model,
     launch_comfyui_version_gui,
+    launch_comfyui_snapshot_gui,
     get_comfyui_snapshot,
 )
 
@@ -111,6 +120,7 @@ from sd_webui_all_in_one.base_manager.fooocus_base import (
     list_fooocus_models,
     uninstall_fooocus_model,
     launch_fooocus_version_gui,
+    launch_fooocus_snapshot_gui,
     get_fooocus_snapshot,
 )
 
@@ -143,6 +153,7 @@ from sd_webui_all_in_one.base_manager.invokeai_base import (
     uninstall_invokeai_model,
     reinstall_invokeai_pytorch,
     launch_invokeai_version_gui,
+    launch_invokeai_snapshot_gui,
     get_invokeai_snapshot,
 )
 
@@ -156,6 +167,7 @@ from sd_webui_all_in_one.base_manager.qwen_tts_webui_base import (
     check_qwen_tts_webui_env,
     launch_qwen_tts_webui,
     launch_qwen_tts_webui_version_gui,
+    launch_qwen_tts_webui_snapshot_gui,
     get_qwen_tts_webui_snapshot,
 )
 
@@ -174,6 +186,7 @@ from sd_webui_all_in_one.base_manager.sd_scripts_base import (
     list_sd_scripts_models,
     uninstall_sd_scripts_model,
     launch_sd_scripts_version_gui,
+    launch_sd_scripts_snapshot_gui,
     get_sd_scripts_snapshot,
 )
 
@@ -192,6 +205,7 @@ from sd_webui_all_in_one.base_manager.sd_trainer_base import (
     list_sd_trainer_models,
     uninstall_sd_trainer_model,
     launch_sd_trainer_version_gui,
+    launch_sd_trainer_snapshot_gui,
     get_sd_trainer_snapshot,
 )
 
@@ -218,6 +232,7 @@ from sd_webui_all_in_one.base_manager.sd_webui_base import (
     uninstall_sd_webui_extension,
     fetch_sd_webui_extension_index,
     launch_sd_webui_version_gui,
+    launch_sd_webui_snapshot_gui,
     install_sd_webui_model_from_library,
     install_sd_webui_model_from_url,
     list_sd_webui_models,
@@ -282,8 +297,17 @@ __all__ = [
     "save_snapshot",
     "snapshot_from_dict",
     "snapshot_to_dict",
+    # snapshot_restore.py - 环境快照恢复
+    "ExtensionCleanupAction",
+    "ExtensionRestorePlanItem",
+    "GitRestoreAction",
+    "GitRestorePlanItem",
+    "PackageRestoreAction",
+    "PackageRestorePlanItem",
+    "SnapshotRestorePlan",
     "SnapshotRestoreOptions",
     "normalize_extension_name",
+    "preview_webui_snapshot_restore",
     "restore_extensions",
     "restore_git_repository",
     "restore_python_packages",
@@ -311,6 +335,7 @@ __all__ = [
     "list_comfyui_models",
     "uninstall_comfyui_model",
     "launch_comfyui_version_gui",
+    "launch_comfyui_snapshot_gui",
     "get_comfyui_snapshot",
     # fooocus_base.py - Fooocus 管理模块
     # 类型定义
@@ -334,6 +359,7 @@ __all__ = [
     "list_fooocus_models",
     "uninstall_fooocus_model",
     "launch_fooocus_version_gui",
+    "launch_fooocus_snapshot_gui",
     "get_fooocus_snapshot",
     # invokeai_base.py - InvokeAI 管理模块
     # 类型定义
@@ -366,6 +392,7 @@ __all__ = [
     "uninstall_invokeai_model",
     "reinstall_invokeai_pytorch",
     "launch_invokeai_version_gui",
+    "launch_invokeai_snapshot_gui",
     "get_invokeai_snapshot",
     # qwen_tts_webui_base.py - Qwen TTS WebUI 管理模块
     # 常量
@@ -379,6 +406,7 @@ __all__ = [
     "check_qwen_tts_webui_env",
     "launch_qwen_tts_webui",
     "launch_qwen_tts_webui_version_gui",
+    "launch_qwen_tts_webui_snapshot_gui",
     "get_qwen_tts_webui_snapshot",
     # sd_scripts_base.py - SD Scripts 管理模块
     # 类型定义
@@ -398,6 +426,7 @@ __all__ = [
     "list_sd_scripts_models",
     "uninstall_sd_scripts_model",
     "launch_sd_scripts_version_gui",
+    "launch_sd_scripts_snapshot_gui",
     "get_sd_scripts_snapshot",
     # sd_trainer_base.py - SD Trainer 管理模块
     # 类型定义
@@ -417,6 +446,7 @@ __all__ = [
     "list_sd_trainer_models",
     "uninstall_sd_trainer_model",
     "launch_sd_trainer_version_gui",
+    "launch_sd_trainer_snapshot_gui",
     "get_sd_trainer_snapshot",
     # sd_webui_base.py - SD WebUI 管理模块
     # 类型定义
@@ -444,6 +474,7 @@ __all__ = [
     "uninstall_sd_webui_extension",
     "fetch_sd_webui_extension_index",
     "launch_sd_webui_version_gui",
+    "launch_sd_webui_snapshot_gui",
     "install_sd_webui_model_from_library",
     "install_sd_webui_model_from_url",
     "list_sd_webui_models",
