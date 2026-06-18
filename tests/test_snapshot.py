@@ -1,5 +1,6 @@
 import argparse
 import json
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -25,7 +26,12 @@ from sd_webui_all_in_one.cli_manager import (
     sd_trainer_cli,
     sd_webui_cli,
 )
-from sd_webui_all_in_one.base_manager.gui.snapshot_gui import build_restore_blocking_guidance, format_restore_blocking_message, list_snapshot_files
+from sd_webui_all_in_one.base_manager.gui.snapshot_gui import (
+    build_restore_blocking_guidance,
+    format_restore_blocking_message,
+    format_snapshot_timestamp,
+    list_snapshot_files,
+)
 from sd_webui_all_in_one.cli_manager.snapshot import create_pre_operation_snapshot, output_snapshot
 
 
@@ -69,6 +75,10 @@ def _webui_snapshot(path: Path) -> snapshot_utils.WebUiSnapshot:
             implementation="CPython",
             executable=Path("/usr/bin/python"),
             platform="linux",
+        ),
+        system=snapshot_utils.SystemSnapshot(
+            system="Linux",
+            architecture="x86_64",
         ),
         kernel=snapshot_utils.RepositorySnapshot(
             path=path,
@@ -145,6 +155,16 @@ def test_collect_installed_packages_reads_standard_source_metadata(monkeypatch):
     assert packages[1].editable is False
 
 
+def test_collect_system_info_records_system_and_architecture(monkeypatch):
+    monkeypatch.setattr(snapshot_utils.platform, "system", lambda: "TestOS")
+    monkeypatch.setattr(snapshot_utils.platform, "machine", lambda: "arm64")
+
+    system = snapshot_utils.collect_system_info()
+
+    assert system.system == "TestOS"
+    assert system.architecture == "arm64"
+
+
 def test_collect_repository_snapshot_includes_dirty_flag(monkeypatch, tmp_path):
     state = RepositoryState(
         path=tmp_path,
@@ -210,6 +230,9 @@ def test_product_snapshots_include_webui_identity_and_extension_state(monkeypatc
         "type": "sd_webui",
         "path": (tmp_path / "sd-webui").as_posix(),
     }
+    assert snapshot_utils.snapshot_to_dict(sd_snapshot)["system"] == snapshot_utils.snapshot_to_dict(
+        snapshot_utils.collect_system_info()
+    )
     assert [item.enabled for item in sd_snapshot.extensions] == [True, False]
 
     monkeypatch.setattr(
@@ -282,6 +305,15 @@ def test_create_pre_operation_snapshot_failure_or_disabled_does_not_raise(tmp_pa
     assert create_pre_operation_snapshot(failing_factory, "failing demo", snapshot_dir=tmp_path) is None
 
 
+def test_format_snapshot_timestamp_uses_local_time_and_keeps_invalid_values():
+    local_timestamp = datetime.fromisoformat("2026-06-18T00:00:00+00:00").astimezone()
+    suffix = local_timestamp.strftime("%Z") or local_timestamp.strftime("%z")
+    expected = f"{local_timestamp:%Y-%m-%d %H:%M:%S}{f' {suffix}' if suffix else ''}"
+
+    assert format_snapshot_timestamp("2026-06-18T00:00:00Z") == expected
+    assert format_snapshot_timestamp("not-a-timestamp") == "not-a-timestamp"
+
+
 def test_list_snapshot_files_reads_valid_snapshots_sorted_by_created_at(tmp_path):
     old_snapshot = _webui_snapshot(tmp_path / "old")
     old_snapshot.created_at = "2026-06-17T00:00:00Z"
@@ -300,11 +332,25 @@ def test_list_snapshot_files_reads_valid_snapshots_sorted_by_created_at(tmp_path
     assert [item.path for item in items] == [new_path, old_path]
     assert items[0].filename == "new.json"
     assert items[0].created_at == "2026-06-18T00:00:00Z"
+    assert items[0].created_at_display == format_snapshot_timestamp("2026-06-18T00:00:00Z")
     assert items[0].webui_name == "Demo"
     assert items[0].webui_type == "demo"
     assert items[0].package_count == 0
     assert items[0].extension_count == 1
     assert items[1].package_count == 1
+
+
+def test_list_snapshot_files_keeps_invalid_timestamp_display(tmp_path):
+    snapshot = _webui_snapshot(tmp_path / "invalid-time")
+    snapshot.created_at = "invalid-time"
+    path = snapshot_utils.save_snapshot(snapshot, tmp_path / "invalid-time.json")
+
+    items = list_snapshot_files(tmp_path)
+
+    assert len(items) == 1
+    assert items[0].path == path
+    assert items[0].created_at == "invalid-time"
+    assert items[0].created_at_display == "invalid-time"
 
 
 def test_list_snapshot_files_returns_empty_for_missing_directory(tmp_path):
@@ -343,6 +389,20 @@ def test_load_snapshot_roundtrip_and_rejects_unsupported_schema(tmp_path):
     unsupported.write_text(json.dumps({"schema_version": 999}), encoding="utf-8")
     with pytest.raises(ValueError, match="不支持的快照结构版本"):
         snapshot_utils.load_snapshot(unsupported)
+
+
+def test_load_legacy_snapshot_without_system_field_uses_current_system(monkeypatch, tmp_path):
+    snapshot = _webui_snapshot(tmp_path / "demo")
+    snapshot_data = snapshot_utils.snapshot_to_dict(snapshot)
+    assert isinstance(snapshot_data, dict)
+    snapshot_data.pop("system")
+    output = tmp_path / "legacy.json"
+    output.write_text(json.dumps(snapshot_data), encoding="utf-8")
+    monkeypatch.setattr(snapshot_utils, "collect_system_info", lambda: snapshot_utils.SystemSnapshot(system="CurrentOS", architecture="riscv64"))
+
+    loaded = snapshot_utils.load_snapshot(output)
+
+    assert loaded.system == snapshot_utils.SystemSnapshot(system="CurrentOS", architecture="riscv64")
 
 
 def test_restore_webui_snapshot_rejects_mismatched_webui_type(monkeypatch, tmp_path):

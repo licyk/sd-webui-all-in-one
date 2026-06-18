@@ -139,6 +139,14 @@ class PythonSnapshot:
 
 
 @dataclass(slots=True)
+class SystemSnapshot:
+    """当前系统环境快照"""
+
+    system: str
+    architecture: str
+
+
+@dataclass(slots=True)
 class RepositorySnapshot:
     """Git 仓库快照"""
 
@@ -191,6 +199,7 @@ class WebUiSnapshot:
     packages: list[PackageSnapshot] = field(default_factory=list)
     kernel: RepositorySnapshot | None = None
     extensions: list[ExtensionSnapshot] = field(default_factory=list)
+    system: SystemSnapshot = field(default_factory=lambda: collect_system_info())
 
     def to_dict(self) -> JsonObject:
         """转换为 JSON 可序列化结构"""
@@ -241,6 +250,14 @@ def collect_python_info() -> PythonSnapshot:
         implementation=platform.python_implementation(),
         executable=Path(sys.executable),
         platform=sys.platform,
+    )
+
+
+def collect_system_info() -> SystemSnapshot:
+    """采集当前系统和架构信息"""
+    return SystemSnapshot(
+        system=platform.system() or sys.platform,
+        architecture=platform.machine() or "unknown",
     )
 
 
@@ -425,6 +442,14 @@ def _python_from_json(value: JsonValue, field_name: str) -> PythonSnapshot:
     )
 
 
+def _system_from_json(value: JsonValue, field_name: str) -> SystemSnapshot:
+    system = _require_object(value, field_name)
+    return SystemSnapshot(
+        system=_require_str(_get_required(system, "system", f"{field_name}.system"), f"{field_name}.system"),
+        architecture=_require_str(_get_required(system, "architecture", f"{field_name}.architecture"), f"{field_name}.architecture"),
+    )
+
+
 def _repository_from_json(value: JsonValue, field_name: str) -> RepositorySnapshot | None:
     if value is None:
         return None
@@ -495,6 +520,7 @@ def snapshot_from_dict(data: JsonObject) -> WebUiSnapshot:
         packages=packages,
         kernel=_repository_from_json(_get_required(data, "kernel", "kernel"), "kernel"),
         extensions=extensions,
+        system=_system_from_json(data["system"], "system") if "system" in data else collect_system_info(),
     )
 
 
@@ -673,6 +699,7 @@ def build_webui_snapshot(
         packages=collect_installed_packages() if include_packages else [],
         kernel=collect_repository_snapshot(webui_path),
         extensions=extensions or [],
+        system=collect_system_info(),
     )
 
 

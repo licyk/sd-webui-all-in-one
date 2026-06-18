@@ -7,6 +7,7 @@ from __future__ import annotations
 import tkinter as tk
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from tkinter import (
     messagebox,
@@ -42,10 +43,26 @@ class SnapshotListItem:
     path: Path
     filename: str
     created_at: str
+    created_at_display: str
     webui_name: str
     webui_type: str
     package_count: int
     extension_count: int
+
+
+def format_snapshot_timestamp(value: str) -> str:
+    """将快照 ISO 时间戳转换为当前系统本地时间显示"""
+    try:
+        normalized = value.strip()
+        if normalized.endswith("Z"):
+            normalized = f"{normalized[:-1]}+00:00"
+        timestamp = datetime.fromisoformat(normalized)
+        if timestamp.tzinfo is not None:
+            timestamp = timestamp.astimezone()
+        suffix = (timestamp.strftime("%Z") or timestamp.strftime("%z")) if timestamp.tzinfo is not None else ""
+        return f"{timestamp:%Y-%m-%d %H:%M:%S}{f' {suffix}' if suffix else ''}"
+    except (AttributeError, TypeError, ValueError, OSError):
+        return value
 
 
 def list_snapshot_files(snapshot_dir: Path) -> list[SnapshotListItem]:
@@ -66,6 +83,7 @@ def list_snapshot_files(snapshot_dir: Path) -> list[SnapshotListItem]:
                 path=path,
                 filename=path.name,
                 created_at=snapshot.created_at,
+                created_at_display=format_snapshot_timestamp(snapshot.created_at),
                 webui_name=snapshot.webui.name,
                 webui_type=snapshot.webui.type,
                 package_count=len(snapshot.packages),
@@ -220,12 +238,12 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
             "filename": "文件名",
         }
         widths = {
-            "created_at": 170,
+            "created_at": 220,
             "webui": 190,
             "type": 130,
             "packages": 70,
             "extensions": 70,
-            "filename": 360,
+            "filename": 310,
         }
         for column, heading in headings.items():
             self.snapshot_tree.heading(column, text=heading)
@@ -296,7 +314,14 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
                 "",
                 tk.END,
                 iid=item_id,
-                values=(item.created_at, item.webui_name, item.webui_type, item.package_count, item.extension_count, item.filename),
+                values=(
+                    item.created_at_display,
+                    item.webui_name,
+                    item.webui_type,
+                    item.package_count,
+                    item.extension_count,
+                    item.filename,
+                ),
             )
 
         if current_selection and current_selection in self.snapshot_list_items:
