@@ -25,7 +25,7 @@
 
 Hotpatcher 补丁系统默认启用。运行 `launch.ps1 -DisableHotpatcher`，或在和 `launch.ps1` 同级的目录创建 `disable_hotpatcher.txt`，即可禁用 Hotpatcher 补丁系统。
 
-默认启用时，`launch.ps1` 会使用同级目录中的 `patcher_config.json` 作为默认配置路径。如果该文件不存在，并且未指定 `-HotpatcherConfig`，脚本会自动导出一份默认配置到该路径。使用 `-HotpatcherConfig <配置文件路径>` 时，脚本只会传入指定路径，不会自动创建配置文件。
+默认启用时，`launch.ps1` 会使用同级目录中的 `patcher_config.json` 作为默认配置文件。如果该文件不存在，脚本会自动导出一份默认配置到该路径。安装器和 `launch.ps1` 不提供自定义配置路径参数；需要调整配置时，请直接修改该文件。
 
 Hotpatcher 默认只做本地补丁注入。需要 runtime host 连接时，可使用 `launch.ps1 -EnableHotpatcherRuntime` 或创建 `enable_hotpatcher_runtime.txt`；`-HotpatcherPort 8765` / `hotpatcher_port.txt` 只在 runtime 模式下设置端口，有效端口范围为 `1..65535`。
 

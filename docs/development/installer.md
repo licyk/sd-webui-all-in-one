@@ -75,16 +75,16 @@
 
 ## Hotpatcher 启动封装
 
-已有 `launch` 子命令的产品安装器需要在 `launch.ps1` 中封装 Hotpatcher 启动参数，并把补丁配置路径固定到管理脚本同级目录：
+已有 `launch` 子命令的产品安装器需要在 `launch.ps1` 中封装 Hotpatcher 启动参数，并把补丁配置固定到管理脚本同级目录：
 
-- PowerShell 参数：`-DisableHotpatcher`、`-HotpatcherConfig`、`-EnableHotpatcherRuntime`、`-HotpatcherPort`。
+- PowerShell 参数：`-DisableHotpatcher`、`-EnableHotpatcherRuntime`、`-HotpatcherPort`。
 - 配置文件：`disable_hotpatcher.txt`、`enable_hotpatcher_runtime.txt`、`hotpatcher_port.txt`、`patcher_config.json`。
 - 默认配置路径：`Join-NormalizedPath $PSScriptRoot "patcher_config.json"`，不要依赖当前工作目录推断。
 - 参数优先级：命令行参数高于同级配置文件。
 
-维护这类参数时，需要同步 `launch.ps1` 的 Python CLI 参数拼接、`settings.ps1` 的本地配置菜单和 Hotpatcher GUI 入口、`Copy-InstallerConfig` 的配置复制、`BuildWithLaunch` 的构建模式转发和产品文档。没有 `launch` 子命令或不生成 `launch.ps1` 的安装器不应只在 PowerShell 层硬加 Hotpatcher 参数，应先补齐 Python CLI 的启动能力。
+维护这类参数时，需要同步 `launch.ps1` 的 Python CLI 参数拼接、`settings.ps1` 的本地配置菜单和 Hotpatcher GUI 入口、`Copy-InstallerConfig` 的配置复制、`BuildWithLaunch` 的构建模式转发和产品文档。安装器不再提供自定义 Hotpatcher 配置路径参数，只复制并使用同级 `patcher_config.json`。没有 `launch` 子命令或不生成 `launch.ps1` 的安装器不应只在 PowerShell 层硬加 Hotpatcher 参数，应先补齐 Python CLI 的启动能力。
 
-SD Trainer Script 是特殊启动方式：训练命令由用户脚本在 `init.ps1` 初始化后执行，不走 Python `launch` 函数。它通过 `sd-webui-all-in-one self-manager patcher get-pythonpath` 获取补丁路径优先的 `PYTHONPATH`，再由 `init.ps1` 默认只设置 Hotpatcher `PYTHONPATH` 和配置来源；启用 runtime 时才设置连接用的 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME/HOST/PORT/SERVICES` 环境变量；`-DisableHotpatcher`、`-HotpatcherConfig`、`-EnableHotpatcherRuntime`、`-HotpatcherPort` 和同级配置文件仍保持与其它安装器一致的语义。
+SD Trainer Script 是特殊启动方式：训练命令由用户脚本在 `init.ps1` 初始化后执行，不走 Python `launch` 函数。它通过 `sd-webui-all-in-one self-manager patcher get-pythonpath` 获取补丁路径优先的 `PYTHONPATH`，再由 `init.ps1` 默认只设置 Hotpatcher `PYTHONPATH` 和从同级 `patcher_config.json` 读取的配置内容；启用 runtime 时才设置连接用的 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME/HOST/PORT/SERVICES` 环境变量；`-DisableHotpatcher`、`-EnableHotpatcherRuntime`、`-HotpatcherPort` 和同级配置文件仍保持与其它安装器一致的语义。
 
 ## 版本与更新
 

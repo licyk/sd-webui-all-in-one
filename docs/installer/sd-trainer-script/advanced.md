@@ -56,7 +56,6 @@ SD Trainer Script Installer 支持使用命令参数设置安装 SD-Trainer-Scri
 - `-DisableCUDAMalloc`：(仅在构建模式生效且只作用于管理脚本) 禁用通过 `PYTORCH_CUDA_ALLOC_CONF` / `PYTORCH_ALLOC_CONF` 环境变量设置 CUDA 内存分配器。
 - `-DisableEnvCheck`：(仅在构建模式生效且只作用于管理脚本) 禁用检查 SD Trainer Script 运行环境问题。
 - `-DisableHotpatcher`：(仅在构建模式生效且只作用于管理脚本) 禁用 Hotpatcher 补丁系统。
-- `-HotpatcherConfig` `<配置文件路径>`：(仅在构建模式生效且只作用于管理脚本) 指定 Hotpatcher 配置文件路径。指定后不会自动创建默认配置。
 - `-EnableHotpatcherRuntime`：启用 Hotpatcher runtime host 连接。
 - `-HotpatcherPort` `<端口>`：(仅在构建模式生效且只作用于管理脚本) 指定 Hotpatcher runtime 模式通信端口，端口范围为 `1..65535`。
 

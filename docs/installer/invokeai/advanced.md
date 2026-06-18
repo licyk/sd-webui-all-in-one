@@ -63,7 +63,6 @@ InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支
 - `-UseCustomHuggingFaceMirror` `<HuggingFace 镜像源地址>`：(仅在构建模式生效且只作用于管理脚本) 使用自定义 HuggingFace 镜像源。例如：`-UseCustomHuggingFaceMirror "https://hf-mirror.com"`
 - `-LaunchArg` `<InvokeAI 启动参数>`：(仅在构建模式生效且只作用于管理脚本) 设置 InvokeAI 自定义启动参数。如启用 `--fast`，则使用`-LaunchArg "--fast"`进行启用。
 - `-DisableHotpatcher`：(仅在构建模式生效且只作用于管理脚本) 禁用 InvokeAI Hotpatcher 补丁系统。
-- `-HotpatcherConfig` `<配置文件路径>`：(仅在构建模式生效且只作用于管理脚本) 设置 InvokeAI Hotpatcher 配置文件路径。指定该参数时不会自动创建配置文件。
 - `-EnableHotpatcherRuntime`：启用 Hotpatcher runtime host 连接。
 - `-HotpatcherPort` `<端口>`：(仅在构建模式生效且只作用于管理脚本) 设置 InvokeAI Hotpatcher runtime 模式通信端口，有效范围为 `1..65535`。
 - `-EnableShortcut`：(仅在构建模式生效且只作用于管理脚本) 创建 InvokeAI 启动快捷方式。
@@ -71,7 +70,7 @@ InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支
 - `-DisableEnvCheck`：(仅在构建模式生效且只作用于管理脚本) 禁用检查 InvokeAI 运行环境问题。
 
 !!! note
-    Hotpatcher 参数会随 `-BuildMode -BuildWithLaunch` 转发到 `launch.ps1`。`launch.ps1` 在构建模式下只执行环境检查，不会把 Hotpatcher 参数传给 `check-env`；实际启动 InvokeAI 时默认会追加 `--hotpatcher-config` 和有效的 `--hotpatcher-port`，禁用时追加 `--no-hotpatcher`。
+    Hotpatcher 参数会随 `-BuildMode -BuildWithLaunch` 转发到 `launch.ps1`。`launch.ps1` 在构建模式下只执行环境检查，不会把 Hotpatcher 参数传给 `check-env`；实际启动 InvokeAI 时会使用同级 `patcher_config.json` 作为默认配置文件，并在启用 runtime 时追加有效的 `--hotpatcher-port`，禁用时追加 `--no-hotpatcher`。
 
 例如在 `D:/Download` 这个路径安装 InvokeAI，则在 InvokeAI Installer 所在路径打开 PowerShell，使用参数运行 InvokeAI Installer。
 

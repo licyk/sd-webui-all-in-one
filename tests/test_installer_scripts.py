@@ -168,7 +168,6 @@ def test_init_runtime_helpers_are_moved_to_modules_template():
         "Set-PyTorch-CUDA-Memory-Alloc",
         "Clear-Hotpatcher-Env",
         "Test-HotpatcherPort",
-        "Resolve-HotpatcherConfigPath",
         "Get-HotpatcherPort",
         "Set-Hotpatcher-Env",
     ]
@@ -196,6 +195,30 @@ def test_init_runtime_helpers_are_moved_to_modules_template():
 
         for helper_name in imported_helper_names:
             assert f'`"{helper_name}`"' in import_lines[0], script_path
+
+
+def test_installer_hotpatcher_config_path_is_not_parameterized():
+    forbidden_tokens = [
+        "HotpatcherConfig",
+        "--hotpatcher-config",
+        "self-manager patcher export-config --output",
+        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE",
+        "Resolve-HotpatcherConfigPath",
+    ]
+
+    for script_path in LAUNCH_INSTALLER_SCRIPTS + INIT_INSTALLER_SCRIPTS:
+        installer = _read_installer(script_path)
+        modules_template = _extract_modules_template(installer)
+
+        for token in forbidden_tokens:
+            assert token not in installer, script_path
+
+        assert 'Join-NormalizedPath `$PSScriptRoot `"patcher_config.json`"' in modules_template, script_path
+        assert '$hotpatcher_config_source = Join-NormalizedPath $PSScriptRoot "patcher_config.json"' in installer, script_path
+
+    init_modules_template = _extract_modules_template(_read_installer(INIT_INSTALLER_SCRIPTS[0]))
+    assert '`$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE = `"env`"' in init_modules_template
+    assert "`$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_JSON = Get-Content -Raw -Encoding UTF8 -Path `$config_path" in init_modules_template
 
 
 def test_msvc_check_is_skipped_in_build_mode():

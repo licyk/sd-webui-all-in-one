@@ -37,9 +37,9 @@ Hotpatcher 补丁系统默认启用。运行 `launch.ps1` 时添加 `-DisableHot
 ./launch.ps1 -DisableHotpatcher
 ```
 
-也可以在 `launch.ps1` 同级目录创建 `disable_hotpatcher.txt` 文件禁用。默认启用时，脚本会将 `--hotpatcher-config <路径>` 传给 Qwen TTS WebUI 启动命令。
+也可以在 `launch.ps1` 同级目录创建 `disable_hotpatcher.txt` 文件禁用。
 
-默认配置路径固定为 `launch.ps1` 同级目录下的 `patcher_config.json`。Hotpatcher 默认启用且该文件不存在时，`launch.ps1` 会自动导出默认配置。使用 `-HotpatcherConfig <路径>` 指定配置文件时，脚本只使用指定路径，不会自动创建配置文件。
+默认配置路径固定为 `launch.ps1` 同级目录下的 `patcher_config.json`。Hotpatcher 默认启用且该文件不存在时，`launch.ps1` 会自动导出默认配置。安装器和 `launch.ps1` 不提供自定义配置路径参数；需要调整配置时，请直接修改该文件。
 
 Hotpatcher 默认只做本地补丁注入。需要 runtime host 连接时，可使用 `-EnableHotpatcherRuntime`，或在 `launch.ps1` 同级目录创建 `enable_hotpatcher_runtime.txt`；`-HotpatcherPort <端口>` / `hotpatcher_port.txt` 只在 runtime 模式下设置端口。
 

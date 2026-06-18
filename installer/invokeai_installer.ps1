@@ -122,10 +122,6 @@ PyTorch 类型可运行 reinstall_pytorch.ps1 脚本进行查看
 "@)][switch]$DisableHotpatcher,
 
     [Parameter(HelpMessage=@"
-(仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 设置 InvokeAI Hotpatcher 配置文件路径
-"@)][string]$HotpatcherConfig,
-
-    [Parameter(HelpMessage=@"
 (仅在 InvokeAI Installer 构建模式下生效, 并且只作用于 InvokeAI Installer 管理脚本) 设置 InvokeAI Hotpatcher runtime 通信端口, 范围 1..65535
 "@)][int]$HotpatcherPort,
 
@@ -990,7 +986,6 @@ param (
     [switch]`$DisableCUDAMalloc,
     [switch]`$DisableModelMirror,
     [switch]`$DisableHotpatcher,
-    [string]`$HotpatcherConfig,
     [int]`$HotpatcherPort,
     [switch]`$HotpatcherPortSpecified,
     [switch]`$EnableHotpatcherRuntime,
@@ -2157,29 +2152,16 @@ function Set-Hotpatcher {
     }
 
     `$default_config_path = Join-NormalizedPath `$PSScriptRoot `"patcher_config.json`"
-    if (`$script:HotpatcherConfig) {
-        `$config_path = `$script:HotpatcherConfig
-        if (!(Test-Path `$config_path)) {
-            Write-Log `"指定的 Hotpatcher 配置文件不存在, 将按指定路径继续启动: `$config_path`" -Level WARNING
+    if (!(Test-Path `$default_config_path)) {
+        Write-Log `"未检测到默认 Hotpatcher 配置文件, 正在导出默认配置: `$default_config_path`"
+        & python -m sd_webui_all_in_one self-manager patcher export-config *> `$null
+        `$exit_code = Get-NativeCommandExitCode -Success `$?
+        if (`$exit_code -ne 0) {
+            Write-Log `"导出 Hotpatcher 默认配置失败`" -Level ERROR
+            Exit-ManagerScript -ExitCode `$exit_code
         }
-        Write-Log `"检测到 -HotpatcherConfig 命令行参数, 使用指定的 Hotpatcher 配置文件: `$config_path`"
-    } else {
-        `$config_path = `$default_config_path
-        if (!(Test-Path `$default_config_path)) {
-            Write-Log `"未检测到默认 Hotpatcher 配置文件, 正在导出默认配置: `$default_config_path`"
-            & python -m sd_webui_all_in_one self-manager patcher export-config --output `"`$default_config_path`" *> `$null
-            `$exit_code = Get-NativeCommandExitCode -Success `$?
-            if (`$exit_code -ne 0) {
-                Write-Log `"导出 Hotpatcher 默认配置失败`" -Level ERROR
-                Exit-ManagerScript -ExitCode `$exit_code
-            }
-        }
-        Write-Log `"使用默认 Hotpatcher 配置文件: `$config_path`"
     }
-
-    `$ArrayList.Add(`"--hotpatcher-config`") | Out-Null
-    `$ArrayList.Add(`$config_path) | Out-Null
-
+    Write-Log `"使用默认 Hotpatcher 配置文件: `$default_config_path`"
     `$hotpatcher_runtime_enabled = `$script:EnableHotpatcherRuntime -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher_runtime.txt`"))
     if (`$hotpatcher_runtime_enabled) {
         `$ArrayList.Add(`"--hotpatcher-runtime`") | Out-Null
@@ -2423,10 +2405,6 @@ param (
 `"@)][switch]`$DisableHotpatcher,
 
     [Parameter(HelpMessage=@`"
-设置 InvokeAI Hotpatcher 配置文件路径
-`"@)][string]`$HotpatcherConfig,
-
-    [Parameter(HelpMessage=@`"
 设置 InvokeAI Hotpatcher runtime 通信端口, 范围 1..65535
 `"@)][int]`$HotpatcherPort,
 
@@ -2468,7 +2446,6 @@ try {
         DisableCUDAMalloc = `$script:DisableCUDAMalloc
         DisableUpdate = `$script:DisableUpdate
         DisableHotpatcher = `$script:DisableHotpatcher
-        HotpatcherConfig = `$script:HotpatcherConfig
         HotpatcherPort = `$script:HotpatcherPort
         HotpatcherPortSpecified = `$PSBoundParameters.ContainsKey(`"HotpatcherPort`")
         EnableHotpatcherRuntime = `$script:EnableHotpatcherRuntime
@@ -2496,7 +2473,6 @@ try {
         `$script:DisableCUDAMalloc = `$cfg.DisableCUDAMalloc
         `$script:DisableUpdate = `$cfg.DisableUpdate
         `$script:DisableHotpatcher = `$cfg.DisableHotpatcher
-        `$script:HotpatcherConfig = `$cfg.HotpatcherConfig
         `$script:HotpatcherPort = `$cfg.HotpatcherPort
         `$script:HotpatcherPortSpecified = `$cfg.HotpatcherPortSpecified
         `$script:EnableHotpatcherRuntime = `$cfg.EnableHotpatcherRuntime
@@ -4189,7 +4165,7 @@ function Open-Hotpatcher-Gui {
     `$config_path = Join-NormalizedPath `$PSScriptRoot `"patcher_config.json`"
     if (!(Test-Path `$config_path)) {
         Write-Log `"未找到 Hotpatcher 默认配置文件, 正在导出默认配置到 `$config_path`"
-        & python -m sd_webui_all_in_one self-manager patcher export-config --output `"`$config_path`"
+        & python -m sd_webui_all_in_one self-manager patcher export-config
         `$exit_code = Get-NativeCommandExitCode -Success `$?
         if (`$exit_code -ne 0) {
             Write-Log `"导出 Hotpatcher 默认配置失败`" -Level ERROR
@@ -4821,13 +4797,10 @@ function Copy-InstallerConfig {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt") -Destination $script:InstallPath -Force
         Write-Log "$(Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt") -> $(Join-NormalizedPath $script:InstallPath "hotpatcher_port.txt")"
     }
-
-    $hotpatcher_config_source = if ($script:HotpatcherConfig) { $script:HotpatcherConfig.Trim() } else { Join-NormalizedPath $PSScriptRoot "patcher_config.json" }
+    $hotpatcher_config_source = Join-NormalizedPath $PSScriptRoot "patcher_config.json"
     if (Test-Path $hotpatcher_config_source) {
         Copy-Item -Path $hotpatcher_config_source -Destination (Join-NormalizedPath $script:InstallPath "patcher_config.json") -Force
         Write-Log "$hotpatcher_config_source -> $(Join-NormalizedPath $script:InstallPath "patcher_config.json")"
-    } elseif ($script:HotpatcherConfig) {
-        Write-Log "指定的 Hotpatcher 配置文件不存在, 已跳过复制: $hotpatcher_config_source" -Level WARNING
     }
 }
 
@@ -4947,7 +4920,6 @@ function Use-BuildMode {
         if ($script:LaunchArg) { $launch_args.Add("-LaunchArg", $script:LaunchArg) }
         if ($script:DisableHotpatcher) { $launch_args.Add("-DisableHotpatcher", $true) }
         if ($script:EnableHotpatcherRuntime) { $launch_args.Add("-EnableHotpatcherRuntime", $true) }
-        if ($script:HotpatcherConfig) { $launch_args.Add("-HotpatcherConfig", $script:HotpatcherConfig) }
         if ($script:HotpatcherPortSpecified) { $launch_args.Add("-HotpatcherPort", $script:HotpatcherPort) }
         if ($script:EnableShortcut) { $launch_args.Add("-EnableShortcut", $true) }
         if ($script:DisableCUDAMalloc) { $launch_args.Add("-DisableCUDAMalloc", $true) }

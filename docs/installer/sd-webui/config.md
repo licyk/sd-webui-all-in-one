@@ -85,7 +85,7 @@ SD WebUI Installer 默认启用了 PyPI镜像源加速下载 Python 软件包，
 
 Hotpatcher 补丁系统默认启用。如需在启动 Stable Diffusion WebUI 时禁用 Hotpatcher，可以在 `launch.ps1` 同级目录创建 `disable_hotpatcher.txt`，或启动时添加 `-DisableHotpatcher` 参数。
 
-Hotpatcher 默认配置路径固定为 `launch.ps1` 同级目录的 `patcher_config.json`。默认启用且未使用 `-HotpatcherConfig` 指定配置路径时，如果默认配置文件不存在，`launch.ps1` 会自动导出默认配置到该路径。使用 `-HotpatcherConfig` 指定配置文件时，脚本不会自动创建配置文件。
+Hotpatcher 默认配置路径固定为 `launch.ps1` 同级目录的 `patcher_config.json`。默认启用且该文件不存在时，`launch.ps1` 会自动导出默认配置到该路径。安装器和 `launch.ps1` 不提供自定义配置路径参数；需要调整配置时，请直接修改该文件。
 
 如需启用 Hotpatcher runtime host 连接，可以创建 `enable_hotpatcher_runtime.txt`，或启动时使用 `-EnableHotpatcherRuntime`。`hotpatcher_port.txt` / `-HotpatcherPort <端口>` 只在 runtime 模式下生效，端口范围为 `1` 到 `65535`，命令行参数优先于 `hotpatcher_port.txt`。
 

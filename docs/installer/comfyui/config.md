@@ -80,9 +80,7 @@ ComfyUI Installer 默认启用了 PyPI 镜像源加速下载 Python 软件包，
 !!! info
     该设置可通过 [管理 ComfyUI Installer 设置](#comfyui-installer_1) 中提到的 `settings.ps1` 进行修改。
 
-Hotpatcher 补丁系统默认启用。如需禁用 Hotpatcher，可以在 `launch.ps1` 同级目录创建 `disable_hotpatcher.txt`，或运行 `launch.ps1 -DisableHotpatcher`。默认启用时会使用 `patcher_config.json` 作为默认配置文件；如果该文件不存在，`launch.ps1` 会自动导出默认配置到该路径。
-
-如果需要使用其他配置文件路径，可以运行 `launch.ps1 -HotpatcherConfig "<配置文件路径>"`。指定 `-HotpatcherConfig` 时，脚本不会自动创建默认配置文件。
+Hotpatcher 补丁系统默认启用。如需禁用 Hotpatcher，可以在 `launch.ps1` 同级目录创建 `disable_hotpatcher.txt`，或运行 `launch.ps1 -DisableHotpatcher`。默认配置文件固定为 `launch.ps1` 同级目录下的 `patcher_config.json`；如果该文件不存在，`launch.ps1` 会自动导出默认配置到该路径。安装器和 `launch.ps1` 不提供自定义配置路径参数；需要调整配置时，请直接修改该文件。
 
 如需启用 Hotpatcher runtime host 连接，可以创建 `enable_hotpatcher_runtime.txt`，或运行 `launch.ps1 -EnableHotpatcherRuntime`。`hotpatcher_port.txt` / `-HotpatcherPort <端口>` 只在 runtime 模式下生效，端口范围为 `1..65535`，命令行参数优先于 `hotpatcher_port.txt`。
 

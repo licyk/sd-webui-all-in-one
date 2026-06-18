@@ -110,7 +110,7 @@ InvokeAI Installer 通过“内核路径前缀”找到要启动和管理的 Inv
 
 Hotpatcher 补丁系统默认启用。在和 `launch.ps1` 同级的目录创建 `disable_hotpatcher.txt` 后，再次运行 `launch.ps1` 时将禁用 Hotpatcher 补丁系统。也可以使用 `launch.ps1 -DisableHotpatcher` 临时禁用。
 
-默认配置文件固定为 `patcher_config.json`，路径位于 `launch.ps1` 同级目录。Hotpatcher 默认启用且该文件不存在时，脚本会自动导出默认配置；如果使用 `-HotpatcherConfig <配置文件路径>` 指定自定义配置，脚本不会自动创建该配置文件。
+默认配置文件固定为 `patcher_config.json`，路径位于 `launch.ps1` 同级目录。Hotpatcher 默认启用且该文件不存在时，脚本会自动导出默认配置。安装器和 `launch.ps1` 不提供自定义配置路径参数；需要调整配置时，请直接修改该文件。
 
 Hotpatcher 默认只做本地补丁注入。需要 runtime host 连接时，可使用 `-EnableHotpatcherRuntime` 或创建 `enable_hotpatcher_runtime.txt`；`hotpatcher_port.txt` / `-HotpatcherPort <端口>` 只在 runtime 模式下设置端口，端口必须在 `1..65535` 范围内。
 

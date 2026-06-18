@@ -156,10 +156,6 @@ SD Trainer Script 分支编号可运行 switch_branch.ps1 脚本进行查看
 "@)][switch]$DisableHotpatcher,
 
     [Parameter(HelpMessage=@"
-(仅在 SD Trainer Script Installer 构建模式下生效, 并且只作用于 SD Trainer Script Installer 管理脚本) 设置 Hotpatcher 补丁系统配置文件路径
-"@)][string]$HotpatcherConfig,
-
-    [Parameter(HelpMessage=@"
 (仅在 SD Trainer Script Installer 构建模式下生效, 并且只作用于 SD Trainer Script Installer 管理脚本) 设置 Hotpatcher runtime 通信端口, 范围为 1 到 65535
 "@)][int]$HotpatcherPort,
 
@@ -1049,7 +1045,6 @@ param (
     [switch]`$DisableCUDAMalloc,
     [switch]`$DisableModelMirror,
     [switch]`$DisableHotpatcher,
-    [string]`$HotpatcherConfig,
     [int]`$HotpatcherPort,
     [switch]`$HotpatcherPortProvided,
     [switch]`$EnableHotpatcherRuntime,
@@ -2287,19 +2282,6 @@ function Test-HotpatcherPort {
 }
 
 
-# 获取 Hotpatcher 配置文件路径
-function Resolve-HotpatcherConfigPath {
-    param ([string]`$ConfigPath)
-    if ([string]::IsNullOrWhiteSpace(`$ConfigPath)) {
-        return Join-NormalizedPath `$PSScriptRoot `"patcher_config.json`"
-    }
-    if ([System.IO.Path]::IsPathRooted(`$ConfigPath)) {
-        return Join-NormalizedPath `$ConfigPath
-    }
-    return Join-NormalizedPath `$PSScriptRoot `$ConfigPath
-}
-
-
 # 获取 Hotpatcher 端口
 function Get-HotpatcherPort {
     if (`$script:HotpatcherPortProvided) {
@@ -2342,10 +2324,10 @@ function Set-Hotpatcher-Env {
     }
     `$Env:PYTHONPATH = `$pythonpath
 
-    `$config_path = Resolve-HotpatcherConfigPath `$script:HotpatcherConfig
-    if (([string]::IsNullOrWhiteSpace(`$script:HotpatcherConfig)) -and (!(Test-Path `$config_path))) {
+    `$config_path = Join-NormalizedPath `$PSScriptRoot `"patcher_config.json`"
+    if (!(Test-Path `$config_path)) {
         Write-Log `"Hotpatcher 默认配置不存在, 正在导出默认配置: `$config_path`"
-        & python -m sd_webui_all_in_one self-manager patcher export-config --output `"`$config_path`" *> `$null
+        & python -m sd_webui_all_in_one self-manager patcher export-config *> `$null
         `$exit_code = Get-NativeCommandExitCode -Success `$?
         if (`$exit_code -ne 0) {
             Write-Log `"导出 Hotpatcher 默认配置失败, 终止 SD Trainer Script 环境初始化`" -Level ERROR
@@ -2353,8 +2335,8 @@ function Set-Hotpatcher-Env {
         }
     }
 
-    `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE = `"file`"
-    `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE = `$config_path
+    `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE = `"env`"
+    `$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_JSON = Get-Content -Raw -Encoding UTF8 -Path `$config_path
 
     `$hotpatcher_runtime_enabled = `$script:EnableHotpatcherRuntime -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher_runtime.txt`"))
     if (`$hotpatcher_runtime_enabled) {
@@ -2370,7 +2352,7 @@ function Set-Hotpatcher-Env {
     }
 
     Write-Log `"Hotpatcher 补丁系统默认启用`"
-    Write-Log `"Hotpatcher 配置文件: `$config_path`"
+    Write-Log `"Hotpatcher 使用默认配置文件内容: `$config_path`"
 }
 
 
@@ -2397,7 +2379,6 @@ Export-ModuleMember -Function ``
     Set-PyTorch-CUDA-Memory-Alloc, ``
     Clear-Hotpatcher-Env, ``
     Test-HotpatcherPort, ``
-    Resolve-HotpatcherConfigPath, ``
     Get-HotpatcherPort, ``
     Set-Hotpatcher-Env, ``
     Join-NormalizedPath, ``
@@ -2544,10 +2525,6 @@ param (
 `"@)][switch]`$DisableHotpatcher,
 
     [Parameter(HelpMessage=@`"
-设置 Hotpatcher 补丁系统配置文件路径
-`"@)][string]`$HotpatcherConfig,
-
-    [Parameter(HelpMessage=@`"
 设置 Hotpatcher runtime 通信端口, 范围为 1 到 65535
 `"@)][int]`$HotpatcherPort,
 
@@ -2576,7 +2553,6 @@ try {
         UseCustomGithubMirror = `$script:UseCustomGithubMirror
         DisableCUDAMalloc = `$script:DisableCUDAMalloc
         DisableHotpatcher = `$script:DisableHotpatcher
-        HotpatcherConfig = `$script:HotpatcherConfig
         HotpatcherPort = `$script:HotpatcherPort
         HotpatcherPortProvided = `$PSBoundParameters.ContainsKey(`"HotpatcherPort`")
         EnableHotpatcherRuntime = `$script:EnableHotpatcherRuntime
@@ -2602,7 +2578,6 @@ try {
         `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
         `$script:DisableCUDAMalloc = `$cfg.DisableCUDAMalloc
         `$script:DisableHotpatcher = `$cfg.DisableHotpatcher
-        `$script:HotpatcherConfig = `$cfg.HotpatcherConfig
         `$script:HotpatcherPort = `$cfg.HotpatcherPort
         `$script:HotpatcherPortProvided = `$cfg.HotpatcherPortProvided
         `$script:EnableHotpatcherRuntime = `$cfg.EnableHotpatcherRuntime
@@ -4364,7 +4339,7 @@ function Open-Hotpatcher-Gui {
     `$config_path = Join-NormalizedPath `$PSScriptRoot `"patcher_config.json`"
     if (!(Test-Path `$config_path)) {
         Write-Log `"未找到 Hotpatcher 默认配置文件, 正在导出默认配置到 `$config_path`"
-        & python -m sd_webui_all_in_one self-manager patcher export-config --output `"`$config_path`"
+        & python -m sd_webui_all_in_one self-manager patcher export-config
         `$exit_code = Get-NativeCommandExitCode -Success `$?
         if (`$exit_code -ne 0) {
             Write-Log `"导出 Hotpatcher 默认配置失败`" -Level ERROR
@@ -4978,13 +4953,10 @@ function Copy-InstallerConfig {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt") -Destination $script:InstallPath -Force
         Write-Log "$(Join-NormalizedPath $PSScriptRoot "hotpatcher_port.txt") -> $(Join-NormalizedPath $script:InstallPath "hotpatcher_port.txt")"
     }
-
-    $hotpatcher_config_source = if ($script:HotpatcherConfig) { $script:HotpatcherConfig.Trim() } else { Join-NormalizedPath $PSScriptRoot "patcher_config.json" }
+    $hotpatcher_config_source = Join-NormalizedPath $PSScriptRoot "patcher_config.json"
     if (Test-Path $hotpatcher_config_source) {
         Copy-Item -Path $hotpatcher_config_source -Destination (Join-NormalizedPath $script:InstallPath "patcher_config.json") -Force
         Write-Log "$hotpatcher_config_source -> $(Join-NormalizedPath $script:InstallPath "patcher_config.json")"
-    } elseif ($script:HotpatcherConfig) {
-        Write-Log "Hotpatcher 配置文件不存在, 已跳过复制: $hotpatcher_config_source" -Level WARNING
     }
 }
 
@@ -5109,7 +5081,6 @@ function Use-BuildMode {
         if ($script:DisableEnvCheck) { $launch_args.Add("-DisableEnvCheck", $true) }
         if ($script:DisableHotpatcher) { $launch_args.Add("-DisableHotpatcher", $true) }
         if ($script:EnableHotpatcherRuntime) { $launch_args.Add("-EnableHotpatcherRuntime", $true) }
-        if ($script:HotpatcherConfig) { $launch_args.Add("-HotpatcherConfig", $script:HotpatcherConfig) }
         if ($script:HotpatcherPortProvided) { $launch_args.Add("-HotpatcherPort", $script:HotpatcherPort) }
         if ($script:CorePrefix) { $launch_args.Add("-CorePrefix", $script:CorePrefix) }
         Write-Log "执行 SD Trainer Script 初始化脚本中"
