@@ -3695,11 +3695,6 @@ param (
 `"@)][switch]`$DisableAutoMirror,
 
 
-
-    [Parameter(HelpMessage=@`"
-禁用自动快照, 包括安装结束后的结果快照以及管理脚本执行前的自动快照
-`"@)][switch]`$DisableSnapshot,
-
     [Parameter(HelpMessage=@`"
 脚本执行完成后不暂停, 直接退出
 `"@)][switch]`$NoPause
@@ -3716,7 +3711,6 @@ try {
         BuildMode = `$script:BuildMode
         DisableModelMirror = `$script:DisableModelMirror
         DisableAutoMirror = `$script:DisableAutoMirror
-        DisableSnapshot = `$script:DisableSnapshot
         NoPause = `$script:NoPause
     }
     (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-PyPIMirror`", `"Update-Installer`", `"Set-Proxy`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Set-ModelMirror`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
@@ -3731,7 +3725,6 @@ try {
         `$script:BuildMode = `$cfg.BuildMode
         `$script:DisableModelMirror = `$cfg.DisableModelMirror
         `$script:DisableAutoMirror = `$cfg.DisableAutoMirror
-        `$script:DisableSnapshot = `$cfg.DisableSnapshot
         `$script:NoPause = `$cfg.NoPause
     }, `$config)
 }
@@ -5673,7 +5666,6 @@ function Use-BuildMode {
     if ($script:BuildWithModel) {
         $launch_args = @{}
         $launch_args.Add("-BuildMode", $true)
-        $launch_args.Add("-DisableSnapshot", $true)
         if ($script:DisableAutoMirror) { $launch_args.Add("-DisableAutoMirror", $true) }
         $launch_args.Add("-BuildWithModel", $script:BuildWithModel)
         if ($script:DisablePyPIMirror) { $launch_args.Add("-DisablePyPIMirror", $true) }

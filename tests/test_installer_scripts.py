@@ -118,6 +118,28 @@ def _extract_restore_args_function(text: str) -> str:
     return text[start:end]
 
 
+def _extract_download_model_template(text: str):
+    marker = "# 模型下载脚本\nfunction Write-DownloadModelScript"
+    start = text.find(marker)
+    if start == -1:
+        return None
+    end = text.index("# 版本管理脚本", start)
+    return text[start:end]
+
+
+def _extract_build_with_model_block(text: str):
+    match = re.search(
+        r'if \(\$script:BuildWithModel\) \{.*?'
+        r'\. \(Join-NormalizedPath \$script:InstallPath "download_models\.ps1"\) @launch_args\n'
+        r"    \}",
+        text,
+        re.S,
+    )
+    if not match:
+        return None
+    return match.group(0)
+
+
 def test_installer_templates_include_windows_long_path_helpers():
     helper_names = [
         "Test-WindowsLongPathsEnabled",
@@ -455,6 +477,29 @@ def test_installer_auto_snapshot_disable_is_wired():
             command_index = installer.index(command_line)
             command_prefix = installer[max(0, command_index - 120) : command_index]
             assert "Set-SnapshotCliArgs `$launch_args" in command_prefix, (script_path, command)
+
+
+def test_download_model_scripts_do_not_expose_snapshot_disable():
+    download_model_script_count = 0
+
+    for script_path in SNAPSHOT_REBUILD_INSTALLERS:
+        installer = _read_installer(script_path)
+        download_model_template = _extract_download_model_template(installer)
+        build_with_model_block = _extract_build_with_model_block(installer)
+
+        if download_model_template is None:
+            assert build_with_model_block is None, script_path
+            continue
+
+        download_model_script_count += 1
+        assert "[switch]`$DisableSnapshot" not in download_model_template, script_path
+        assert "DisableSnapshot = `$script:DisableSnapshot" not in download_model_template, script_path
+        assert "`$script:DisableSnapshot = `$cfg.DisableSnapshot" not in download_model_template, script_path
+        assert "Set-SnapshotCliArgs" not in download_model_template, script_path
+        assert build_with_model_block is not None, script_path
+        assert '$launch_args.Add("-DisableSnapshot", $true)' not in build_with_model_block, script_path
+
+    assert download_model_script_count == 6
 
 
 def test_installer_settings_include_auto_snapshot_toggle():
