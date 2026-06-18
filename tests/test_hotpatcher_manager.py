@@ -28,6 +28,7 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
 )
 from sd_webui_all_in_one.base_manager.base import launch_webui
 from sd_webui_all_in_one.cli_manager.utils import register_manager
+from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH
 
 
 def _send_json_line(file, message):
@@ -224,7 +225,31 @@ def test_launch_webui_keeps_hotpatcher_pythonpath_first(monkeypatch, tmp_path):
 
 
 def test_default_hotpatcher_config_path_uses_launch_path():
+    assert DEFAULT_HOTPATCHER_CONFIG_PATH == SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH
     assert DEFAULT_HOTPATCHER_CONFIG_PATH.name == "patcher_config.json"
+
+
+def test_hotpatcher_config_path_can_be_configured_with_env(tmp_path):
+    config_path = tmp_path / "custom-hotpatcher.json"
+    env = os.environ.copy()
+    env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH"] = config_path.as_posix()
+    code = """
+import json
+from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH
+from sd_webui_all_in_one.base_manager.hotpatcher_manager import DEFAULT_HOTPATCHER_CONFIG_PATH
+
+print(json.dumps({
+    "config": SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH.as_posix(),
+    "default": DEFAULT_HOTPATCHER_CONFIG_PATH.as_posix(),
+}, sort_keys=True))
+"""
+
+    output = subprocess.check_output([sys.executable, "-c", code], env=env, text=True, timeout=10)
+
+    assert json.loads(output) == {
+        "config": config_path.as_posix(),
+        "default": config_path.as_posix(),
+    }
 
 
 def test_runtime_host_serves_config_and_records_logs():

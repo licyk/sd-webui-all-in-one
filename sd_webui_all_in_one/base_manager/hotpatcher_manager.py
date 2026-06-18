@@ -15,10 +15,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from sd_webui_all_in_one.config import ROOT_PATH, SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH
+from sd_webui_all_in_one.config import ROOT_PATH, SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH
 
 HOTPATCHER_PATH = ROOT_PATH / "patcher"
-DEFAULT_HOTPATCHER_CONFIG_PATH = SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / "patcher_config.json"
+DEFAULT_HOTPATCHER_CONFIG_PATH = SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH
 DEFAULT_RUNTIME_HOST = "127.0.0.1"
 DEFAULT_RUNTIME_PORT = 8765
 HOTPATCHER_ENV_PREFIX = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_"

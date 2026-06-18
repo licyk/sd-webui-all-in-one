@@ -43,7 +43,7 @@ sd-webui-all-in-one self-manager patcher export-config --output <路径> [选项
 
 高级选项：
 
-- `--output <路径>`：输出配置文件路径，默认是 `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH/patcher_config.json`。
+- `--output <路径>`：输出配置文件路径，默认是 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH`；未设置环境变量时为 `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH/patcher_config.json`。
 - `--force`：覆盖已有配置文件。
 
 #### 规范化配置
@@ -55,7 +55,7 @@ sd-webui-all-in-one self-manager patcher normalize-config --config <路径> [选
 
 高级选项：
 
-- `--config <路径>`：配置文件路径，默认是 `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH/patcher_config.json`。
+- `--config <路径>`：配置文件路径，默认是 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH`；未设置环境变量时为 `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH/patcher_config.json`。
 - `--write-back`：将规范化后的配置写回文件；不加时输出 JSON 到终端。
 
 #### 应用配置
@@ -67,7 +67,7 @@ sd-webui-all-in-one self-manager patcher apply-config --config <路径>
 
 高级选项：
 
-- `--config <路径>`：配置文件路径，默认是 `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH/patcher_config.json`。
+- `--config <路径>`：配置文件路径，默认是 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH`；未设置环境变量时为 `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH/patcher_config.json`。
 
 #### 显示功能目录
 输出 Hotpatcher catalog，包括配置字段元数据、默认值和当前注册补丁状态。
@@ -92,7 +92,7 @@ sd-webui-all-in-one self-manager patcher gui [选项]
 
 高级选项：
 
-- `--config <路径>`：配置文件路径，默认是 `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH/patcher_config.json`。
+- `--config <路径>`：配置文件路径，默认是 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH`；未设置环境变量时为 `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH/patcher_config.json`。
 - `--host <地址>`：Runtime host 监听地址，默认 `127.0.0.1`。
 - `--port <端口>`：Runtime host 监听端口，默认 `8765`。
 - `--token <令牌>`：Runtime host 连接 token，默认空。
