@@ -424,9 +424,64 @@ def test_restore_webui_snapshot_rejects_mismatched_webui_type(monkeypatch, tmp_p
         )
 
 
+def test_restore_webui_snapshot_rejects_missing_kernel_before_package_restore(monkeypatch, tmp_path):
+    webui_path = tmp_path / "demo"
+    snapshot = _webui_snapshot(webui_path)
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+
+    def fail_restore(*_args, **_kwargs):
+        raise AssertionError("package restore should not run when kernel directory is missing")
+
+    monkeypatch.setattr(restore_utils, "restore_python_packages", fail_restore)
+
+    with pytest.raises(FileNotFoundError, match="内核目录不存在"):
+        restore_utils.restore_webui_snapshot(
+            snapshot_path=output,
+            webui_path=webui_path,
+            expected_webui_type="demo",
+        )
+
+
+def test_restore_webui_snapshot_allows_missing_path_for_package_kernel_webui(monkeypatch, tmp_path):
+    webui_path = tmp_path / "invokeai"
+    snapshot = _webui_snapshot(webui_path)
+    snapshot.webui.type = "invokeai"
+    snapshot.webui.name = "InvokeAI"
+    snapshot.kernel = snapshot_utils.RepositorySnapshot(
+        path=webui_path,
+        name="invokeai",
+        is_git_repo=True,
+        url="https://example.test/invokeai-root.git",
+        commit="abcdef",
+    )
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+
+    events = []
+    monkeypatch.setattr(restore_utils, "apply_git_base_config_and_github_mirror", lambda **kwargs: kwargs["origin_env"])
+    monkeypatch.setattr(restore_utils, "restore_python_packages", lambda snapshot, options: events.append(("packages", snapshot.webui.type)))
+    monkeypatch.setattr(
+        restore_utils,
+        "restore_git_repository",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("package-kernel WebUI should not restore Git kernel")),
+    )
+    monkeypatch.setattr(restore_utils, "restore_extensions", lambda snapshot, webui_path, options: events.append(("extensions", webui_path)))
+
+    restore_utils.restore_webui_snapshot(
+        snapshot_path=output,
+        webui_path=webui_path,
+        expected_webui_type="invokeai",
+    )
+
+    assert events == [("packages", "invokeai"), ("extensions", webui_path)]
+
+
 def test_preview_restore_plan_reports_package_actions_and_pytorch_source(monkeypatch, tmp_path):
     missing_local = tmp_path / "missing-local"
-    snapshot = _webui_snapshot(tmp_path / "demo")
+    webui_path = tmp_path / "demo"
+    webui_path.mkdir()
+    snapshot = _webui_snapshot(webui_path)
     snapshot.packages = [
         _package_snapshot("sd-webui-all-in-one", "99.0.0"),
         _package_snapshot("Torch", "2.7.0+cu128"),
@@ -459,7 +514,7 @@ def test_preview_restore_plan_reports_package_actions_and_pytorch_source(monkeyp
 
     plan = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
-        webui_path=tmp_path / "demo",
+        webui_path=webui_path,
         expected_webui_type="demo",
         options=restore_utils.SnapshotRestoreOptions(prune_packages=True, use_pypi_mirror=True),
     )
@@ -538,6 +593,73 @@ def test_restore_blocking_guidance_explains_webui_type_mismatch(tmp_path):
     assert plan.errors == ["快照 WebUI 类型不匹配: 期望 'other_webui', 实际 'demo'"]
     assert "对应的快照管理器" in guidance
     assert "跨 WebUI 类型恢复会被终止" in guidance
+
+
+def test_preview_restore_plan_blocks_missing_kernel_with_guidance(tmp_path):
+    webui_path = tmp_path / "demo"
+    snapshot = _webui_snapshot(webui_path)
+    snapshot.kernel = snapshot_utils.RepositorySnapshot(
+        path=webui_path,
+        name="demo",
+        is_git_repo=True,
+        url="https://example.test/demo.git",
+        commit="abcdef",
+    )
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+
+    plan = restore_utils.preview_webui_snapshot_restore(
+        snapshot_path=output,
+        webui_path=webui_path,
+        expected_webui_type="demo",
+    )
+    guidance = "\n".join(build_restore_blocking_guidance(plan))
+
+    assert plan.kernel_change is not None
+    assert plan.kernel_change.action == "blocked_missing_target"
+    assert plan.errors == [f"内核目录不存在: {webui_path}"]
+    assert "通过 installer 准备对应的 WebUI kernel" in guidance
+    assert "不能通过强制恢复开关绕过" in guidance
+
+
+def test_preview_restore_plan_allows_missing_path_for_package_kernel_webui(monkeypatch, tmp_path):
+    webui_path = tmp_path / "invokeai"
+    snapshot = _webui_snapshot(webui_path)
+    snapshot.webui.type = "invokeai"
+    snapshot.webui.name = "InvokeAI"
+    snapshot.kernel = snapshot_utils.RepositorySnapshot(
+        path=webui_path,
+        name="invokeai",
+        is_git_repo=True,
+        url="https://example.test/invokeai-root.git",
+        commit="abcdef",
+    )
+    snapshot.extensions = [
+        snapshot_utils.ExtensionSnapshot(
+            name="DemoNode",
+            path=webui_path / "nodes" / "DemoNode",
+            enabled=True,
+            is_git_repo=True,
+            url="https://example.test/demo-node.git",
+            commit="123456",
+        )
+    ]
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [])
+
+    plan = restore_utils.preview_webui_snapshot_restore(
+        snapshot_path=output,
+        webui_path=webui_path,
+        expected_webui_type="invokeai",
+    )
+
+    assert plan.errors == []
+    assert plan.kernel_change is None
+    assert len(plan.extension_changes) == 1
+    assert plan.extension_changes[0].git is not None
+    assert plan.extension_changes[0].git.action == "clone"
+    assert plan.extension_changes[0].git.path == webui_path / "nodes" / "DemoNode"
 
 
 def test_preview_restore_plan_prunes_comfyui_extensions_with_disabled_name(monkeypatch, tmp_path):

@@ -101,6 +101,11 @@ def build_restore_blocking_guidance(plan: SnapshotRestorePlan) -> list[str]:
             f"请使用 {plan.snapshot_webui_type} 对应的快照管理器恢复该快照, 或选择 {plan.expected_webui_type} 类型的快照。"
             "跨 WebUI 类型恢复会被终止, 避免写错内核和扩展目录。"
         )
+    if plan.kernel_change is not None and plan.kernel_change.action == "blocked_missing_target":
+        guidance.append(
+            f"请先通过 installer 准备对应的 WebUI kernel, 确认内核目录存在后再恢复: {plan.kernel_change.path}。"
+            "该问题不能通过强制恢复开关绕过, 因为扩展恢复依赖 kernel 目录。"
+        )
 
     dirty_targets: list[str] = []
     if plan.kernel_change is not None and plan.kernel_change.action == "blocked_dirty":

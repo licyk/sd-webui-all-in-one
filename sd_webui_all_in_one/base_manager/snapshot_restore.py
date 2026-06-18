@@ -58,6 +58,7 @@ PROTECTED_PACKAGE_NAMES = {
     "wheel",
     "uv",
 }
+PACKAGE_KERNEL_WEBUI_TYPES = {"invokeai"}
 
 PackageRestoreAction = Literal[
     "install",
@@ -77,6 +78,7 @@ GitRestoreAction = Literal[
     "skip_missing_url",
     "skip_missing_commit",
     "blocked_dirty",
+    "blocked_missing_target",
 ]
 ExtensionCleanupAction = Literal["keep", "uninstall"]
 
@@ -651,6 +653,31 @@ def _build_git_restore_plan(
     )
 
 
+def _build_missing_kernel_plan(snapshot: WebUiSnapshot, webui_path: Path) -> GitRestorePlanItem:
+    kernel = snapshot.kernel
+    return GitRestorePlanItem(
+        name=_repo_target_name(kernel) if kernel is not None else webui_path.name,
+        path=webui_path,
+        action="blocked_missing_target",
+        reason="内核目录不存在, 请先通过 installer 准备 WebUI kernel 后再恢复快照",
+        target_commit=kernel.commit if kernel is not None else None,
+        url=kernel.url if kernel is not None else None,
+    )
+
+
+def _ensure_kernel_target_exists(webui_path: Path) -> None:
+    if not webui_path.exists():
+        raise FileNotFoundError(f"内核目录不存在, 请先通过 installer 准备 WebUI kernel 后再恢复快照: {webui_path}")
+
+
+def _uses_package_kernel(snapshot: WebUiSnapshot) -> bool:
+    return snapshot.webui.type in PACKAGE_KERNEL_WEBUI_TYPES
+
+
+def _requires_existing_kernel_target(snapshot: WebUiSnapshot) -> bool:
+    return not _uses_package_kernel(snapshot)
+
+
 def _sd_webui_extension_enabled(webui_path: Path, name: str) -> bool | None:
     config_path = webui_path / "config.json"
     try:
@@ -868,13 +895,18 @@ def preview_webui_snapshot_restore(
     if snapshot.python.version != current_python_version:
         plan.python_version_note = f"快照 Python 版本为 {snapshot.python.version}, 当前 Python 版本为 {current_python_version}; 恢复时不会修改 Python 版本"
 
+    if _requires_existing_kernel_target(snapshot) and not webui_path.exists():
+        plan.kernel_change = _build_missing_kernel_plan(snapshot, webui_path)
+        plan.errors.append(f"内核目录不存在: {webui_path}")
+        return plan
+
     package_changes, dtype, mirror_url, mirror_kind = _build_package_restore_plan(snapshot, options, plan.warnings)
     plan.package_changes = package_changes
     plan.pytorch_device_type = dtype
     plan.pytorch_mirror_url = mirror_url
     plan.pytorch_mirror_kind = mirror_kind
 
-    if snapshot.kernel is not None:
+    if snapshot.kernel is not None and not _uses_package_kernel(snapshot):
         plan.kernel_change = _build_git_restore_plan(snapshot.kernel, webui_path, options)
         if plan.kernel_change.action == "blocked_dirty":
             plan.errors.append("内核仓库存在未提交变更")
@@ -902,6 +934,8 @@ def restore_webui_snapshot(
     snapshot = load_snapshot(snapshot_path)
     if snapshot.webui.type != expected_webui_type:
         raise ValueError(f"快照 WebUI 类型不匹配: 期望 '{expected_webui_type}', 实际 '{snapshot.webui.type}'")
+    if _requires_existing_kernel_target(snapshot):
+        _ensure_kernel_target_exists(webui_path)
 
     git_env = apply_git_base_config_and_github_mirror(
         use_github_mirror=options.use_github_mirror,
@@ -915,7 +949,7 @@ def restore_webui_snapshot(
 
     try:
         restore_python_packages(snapshot=snapshot, options=options)
-        if snapshot.kernel is not None:
+        if snapshot.kernel is not None and not _uses_package_kernel(snapshot):
             restore_git_repository(repo=snapshot.kernel, target_path=webui_path, options=options)
         restore_extensions(snapshot=snapshot, webui_path=webui_path, options=options)
     finally:
