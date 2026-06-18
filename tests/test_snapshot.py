@@ -26,7 +26,7 @@ from sd_webui_all_in_one.cli_manager import (
     sd_webui_cli,
 )
 from sd_webui_all_in_one.base_manager.gui.snapshot_gui import build_restore_blocking_guidance, format_restore_blocking_message, list_snapshot_files
-from sd_webui_all_in_one.cli_manager.snapshot import output_snapshot
+from sd_webui_all_in_one.cli_manager.snapshot import create_pre_operation_snapshot, output_snapshot
 
 
 class FakeDistribution:
@@ -255,6 +255,31 @@ def test_output_snapshot_writes_default_or_explicit_directory(monkeypatch, tmp_p
     output_file = output_dir / "demo-2026-06-18T000000Z.json"
     assert output_snapshot(lambda: snapshot, output=output_dir) == output_file
     assert json.loads(output_file.read_text(encoding="utf-8")) == snapshot_json
+
+
+def test_create_pre_operation_snapshot_writes_to_directory(tmp_path):
+    snapshot = _webui_snapshot(tmp_path / "demo")
+    output_dir = tmp_path / "pre-operation-snapshots"
+    output_file = output_dir / "demo-2026-06-18T000000Z.json"
+
+    assert create_pre_operation_snapshot(lambda: snapshot, "update demo", snapshot_dir=output_dir) == output_file
+    assert json.loads(output_file.read_text(encoding="utf-8")) == snapshot_utils.snapshot_to_dict(snapshot)
+
+
+def test_create_pre_operation_snapshot_failure_or_disabled_does_not_raise(tmp_path):
+    called = False
+
+    def disabled_factory():
+        nonlocal called
+        called = True
+        raise AssertionError("disabled snapshot should not call factory")
+
+    def failing_factory():
+        raise RuntimeError("boom")
+
+    assert create_pre_operation_snapshot(disabled_factory, "disabled demo", snapshot_enabled=False, snapshot_dir=tmp_path) is None
+    assert called is False
+    assert create_pre_operation_snapshot(failing_factory, "failing demo", snapshot_dir=tmp_path) is None
 
 
 def test_list_snapshot_files_reads_valid_snapshots_sorted_by_created_at(tmp_path):

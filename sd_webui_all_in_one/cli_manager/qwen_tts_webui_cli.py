@@ -13,7 +13,7 @@ from sd_webui_all_in_one.base_manager import (
     launch_qwen_tts_webui,
     launch_qwen_tts_webui_version_gui,
     launch_qwen_tts_webui_snapshot_gui,
-    reinstall_pytorch,
+    reinstall_pytorch as reinstall_base_pytorch,
     get_qwen_tts_webui_snapshot,
 )
 from sd_webui_all_in_one.config import (
@@ -32,7 +32,7 @@ from sd_webui_all_in_one.cli_manager.auto_mirror import (
     add_auto_mirror_argument,
     with_auto_mirror,
 )
-from sd_webui_all_in_one.cli_manager.snapshot import output_snapshot
+from sd_webui_all_in_one.cli_manager.snapshot import add_pre_operation_snapshot_arguments, create_pre_operation_snapshot, output_snapshot
 from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     add_restore_arguments,
     restore_snapshot,
@@ -103,6 +103,8 @@ def update(
     qwen_tts_webui_path: Path,
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
+    snapshot_enabled: bool = True,
+    snapshot_dir: Path | None = None,
 ) -> None:
     """更新 Qwen TTS WebUI
 
@@ -114,10 +116,32 @@ def update(
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
     """
+    _create_pre_operation_snapshot(
+        qwen_tts_webui_path=qwen_tts_webui_path,
+        operation_name="更新 Qwen TTS WebUI",
+        snapshot_enabled=snapshot_enabled,
+        snapshot_dir=snapshot_dir,
+    )
     update_qwen_tts_webui(
         qwen_tts_webui_path=qwen_tts_webui_path,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
+    )
+
+
+def _create_pre_operation_snapshot(
+    qwen_tts_webui_path: Path,
+    operation_name: str,
+    snapshot_enabled: bool = True,
+    snapshot_dir: Path | None = None,
+    show_gui_warning: bool = False,
+) -> None:
+    create_pre_operation_snapshot(
+        lambda: get_qwen_tts_webui_snapshot(qwen_tts_webui_path=qwen_tts_webui_path, include_packages=True),
+        operation_name=operation_name,
+        snapshot_enabled=snapshot_enabled,
+        snapshot_dir=snapshot_dir,
+        show_gui_warning=show_gui_warning,
     )
 
 
@@ -293,6 +317,8 @@ def launch_version_gui(
     qwen_tts_webui_path: Path,
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
+    snapshot_enabled: bool = True,
+    snapshot_dir: Path | None = None,
 ) -> None:
     """启动 Qwen TTS WebUI 版本管理 GUI
 
@@ -304,10 +330,48 @@ def launch_version_gui(
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
     """
+    _create_pre_operation_snapshot(
+        qwen_tts_webui_path=qwen_tts_webui_path,
+        operation_name="启动 Qwen TTS WebUI 版本管理 GUI",
+        snapshot_enabled=snapshot_enabled,
+        snapshot_dir=snapshot_dir,
+        show_gui_warning=True,
+    )
     launch_qwen_tts_webui_version_gui(
         qwen_tts_webui_path=qwen_tts_webui_path,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
+    )
+
+
+def reinstall_pytorch(
+    qwen_tts_webui_path: Path,
+    pytorch_name: str | None = None,
+    pytorch_index: int | None = None,
+    use_pypi_mirror: bool = True,
+    use_uv: bool | None = None,
+    interactive_mode: bool = False,
+    list_only: bool = False,
+    force_reinstall: bool = False,
+    snapshot_enabled: bool = True,
+    snapshot_dir: Path | None = None,
+) -> None:
+    """为 Qwen TTS WebUI 重装 PyTorch"""
+    if not list_only:
+        _create_pre_operation_snapshot(
+            qwen_tts_webui_path=qwen_tts_webui_path,
+            operation_name="重装 Qwen TTS WebUI PyTorch",
+            snapshot_enabled=snapshot_enabled,
+            snapshot_dir=snapshot_dir,
+        )
+    reinstall_base_pytorch(
+        pytorch_name=pytorch_name,
+        pytorch_index=pytorch_index,
+        use_pypi_mirror=use_pypi_mirror,
+        use_uv=use_uv,
+        interactive_mode=interactive_mode,
+        list_only=list_only,
+        force_reinstall=force_reinstall,
     )
 
 
@@ -344,6 +408,7 @@ def register_qwen_tts_webui(
 
     # reinstall-pytorch
     reinstall_pytorch_p = qwen_tts_webui_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
+    reinstall_pytorch_p.add_argument("--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录")
     reinstall_pytorch_p.add_argument("--name", type=str, dest="name", help="PyTorch 版本组合名称")
     reinstall_pytorch_p.add_argument("--index", type=int, dest="index", help="PyTorch 版本组合索引值")
     reinstall_pytorch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
@@ -351,10 +416,12 @@ def register_qwen_tts_webui(
     reinstall_pytorch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
     reinstall_pytorch_p.add_argument("--list-only", action="store_true", dest="list_only", help="列出 PyTorch 列表并退出")
     reinstall_pytorch_p.add_argument("--force-reinstall", action="store_true", dest="force_reinstall", help="强制重装 PyTorch")
+    add_pre_operation_snapshot_arguments(reinstall_pytorch_p)
     add_auto_mirror_argument(reinstall_pytorch_p)
     reinstall_pytorch_p.set_defaults(
         func=with_auto_mirror(
             lambda args: reinstall_pytorch(
+                qwen_tts_webui_path=args.qwen_tts_webui_path,
                 pytorch_name=args.name,
                 pytorch_index=args.index,
                 use_pypi_mirror=args.use_pypi_mirror,
@@ -362,6 +429,8 @@ def register_qwen_tts_webui(
                 interactive_mode=args.interactive_mode,
                 list_only=args.list_only,
                 force_reinstall=args.force_reinstall,
+                snapshot_enabled=args.snapshot_enabled,
+                snapshot_dir=args.snapshot_dir,
             )
         )
     )
@@ -399,6 +468,7 @@ def register_qwen_tts_webui(
     update_p.add_argument("--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录")
     update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    add_pre_operation_snapshot_arguments(update_p)
     add_auto_mirror_argument(update_p)
     update_p.set_defaults(
         func=with_auto_mirror(
@@ -406,6 +476,8 @@ def register_qwen_tts_webui(
                 qwen_tts_webui_path=args.qwen_tts_webui_path,
                 use_github_mirror=args.use_github_mirror,
                 custom_github_mirror=args.custom_github_mirror,
+                snapshot_enabled=args.snapshot_enabled,
+                snapshot_dir=args.snapshot_dir,
             )
         )
     )
@@ -506,6 +578,7 @@ def register_qwen_tts_webui(
     version_gui_p.add_argument("--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录")
     version_gui_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     version_gui_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    add_pre_operation_snapshot_arguments(version_gui_p)
     add_auto_mirror_argument(version_gui_p)
     version_gui_p.set_defaults(
         func=with_auto_mirror(
@@ -513,6 +586,8 @@ def register_qwen_tts_webui(
                 qwen_tts_webui_path=args.qwen_tts_webui_path,
                 use_github_mirror=args.use_github_mirror,
                 custom_github_mirror=args.custom_github_mirror,
+                snapshot_enabled=args.snapshot_enabled,
+                snapshot_dir=args.snapshot_dir,
             )
         )
     )

@@ -20,7 +20,7 @@ from sd_webui_all_in_one.base_manager import (
     uninstall_fooocus_model,
     launch_fooocus_version_gui,
     launch_fooocus_snapshot_gui,
-    reinstall_pytorch,
+    reinstall_pytorch as reinstall_base_pytorch,
     get_fooocus_snapshot,
 )
 from sd_webui_all_in_one.config import (
@@ -43,7 +43,7 @@ from sd_webui_all_in_one.cli_manager.auto_mirror import (
     add_auto_mirror_argument,
     with_auto_mirror,
 )
-from sd_webui_all_in_one.cli_manager.snapshot import output_snapshot
+from sd_webui_all_in_one.cli_manager.snapshot import add_pre_operation_snapshot_arguments, create_pre_operation_snapshot, output_snapshot
 from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     add_restore_arguments,
     restore_snapshot,
@@ -122,6 +122,8 @@ def update(
     fooocus_path: Path,
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
+    snapshot_enabled: bool = True,
+    snapshot_dir: Path | None = None,
 ) -> None:
     """更新 Fooocus
 
@@ -133,10 +135,32 @@ def update(
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
     """
+    _create_pre_operation_snapshot(
+        fooocus_path=fooocus_path,
+        operation_name="更新 Fooocus",
+        snapshot_enabled=snapshot_enabled,
+        snapshot_dir=snapshot_dir,
+    )
     update_fooocus(
         fooocus_path=fooocus_path,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
+    )
+
+
+def _create_pre_operation_snapshot(
+    fooocus_path: Path,
+    operation_name: str,
+    snapshot_enabled: bool = True,
+    snapshot_dir: Path | None = None,
+    show_gui_warning: bool = False,
+) -> None:
+    create_pre_operation_snapshot(
+        lambda: get_fooocus_snapshot(fooocus_path=fooocus_path, include_packages=True),
+        operation_name=operation_name,
+        snapshot_enabled=snapshot_enabled,
+        snapshot_dir=snapshot_dir,
+        show_gui_warning=show_gui_warning,
     )
 
 
@@ -450,6 +474,8 @@ def launch_version_gui(
     fooocus_path: Path,
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
+    snapshot_enabled: bool = True,
+    snapshot_dir: Path | None = None,
 ) -> None:
     """启动 Fooocus 版本管理 GUI
 
@@ -461,10 +487,48 @@ def launch_version_gui(
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
     """
+    _create_pre_operation_snapshot(
+        fooocus_path=fooocus_path,
+        operation_name="启动 Fooocus 版本管理 GUI",
+        snapshot_enabled=snapshot_enabled,
+        snapshot_dir=snapshot_dir,
+        show_gui_warning=True,
+    )
     launch_fooocus_version_gui(
         fooocus_path=fooocus_path,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
+    )
+
+
+def reinstall_pytorch(
+    fooocus_path: Path,
+    pytorch_name: str | None = None,
+    pytorch_index: int | None = None,
+    use_pypi_mirror: bool = True,
+    use_uv: bool | None = None,
+    interactive_mode: bool = False,
+    list_only: bool = False,
+    force_reinstall: bool = False,
+    snapshot_enabled: bool = True,
+    snapshot_dir: Path | None = None,
+) -> None:
+    """为 Fooocus 重装 PyTorch"""
+    if not list_only:
+        _create_pre_operation_snapshot(
+            fooocus_path=fooocus_path,
+            operation_name="重装 Fooocus PyTorch",
+            snapshot_enabled=snapshot_enabled,
+            snapshot_dir=snapshot_dir,
+        )
+    reinstall_base_pytorch(
+        pytorch_name=pytorch_name,
+        pytorch_index=pytorch_index,
+        use_pypi_mirror=use_pypi_mirror,
+        use_uv=use_uv,
+        interactive_mode=interactive_mode,
+        list_only=list_only,
+        force_reinstall=force_reinstall,
     )
 
 
@@ -501,6 +565,7 @@ def register_fooocus(
 
     # reinstall-pytorch
     reinstall_pytorch_p = fooocus_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
+    reinstall_pytorch_p.add_argument("--fooocus-path", type=normalized_filepath, required=False, default=FOOOCUS_ROOT_PATH, dest="fooocus_path", help="Fooocus 根目录")
     reinstall_pytorch_p.add_argument("--name", type=str, dest="name", help="PyTorch 版本组合名称")
     reinstall_pytorch_p.add_argument("--index", type=int, dest="index", help="PyTorch 版本组合索引值")
     reinstall_pytorch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
@@ -508,10 +573,12 @@ def register_fooocus(
     reinstall_pytorch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
     reinstall_pytorch_p.add_argument("--list-only", action="store_true", dest="list_only", help="列出 PyTorch 列表并退出")
     reinstall_pytorch_p.add_argument("--force-reinstall", action="store_true", dest="force_reinstall", help="强制重装 PyTorch")
+    add_pre_operation_snapshot_arguments(reinstall_pytorch_p)
     add_auto_mirror_argument(reinstall_pytorch_p)
     reinstall_pytorch_p.set_defaults(
         func=with_auto_mirror(
             lambda args: reinstall_pytorch(
+                fooocus_path=args.fooocus_path,
                 pytorch_name=args.name,
                 pytorch_index=args.index,
                 use_pypi_mirror=args.use_pypi_mirror,
@@ -519,6 +586,8 @@ def register_fooocus(
                 interactive_mode=args.interactive_mode,
                 list_only=args.list_only,
                 force_reinstall=args.force_reinstall,
+                snapshot_enabled=args.snapshot_enabled,
+                snapshot_dir=args.snapshot_dir,
             )
         )
     )
@@ -560,6 +629,7 @@ def register_fooocus(
     update_p.add_argument("--fooocus-path", type=normalized_filepath, required=False, default=FOOOCUS_ROOT_PATH, dest="fooocus_path", help="Fooocus 根目录")
     update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    add_pre_operation_snapshot_arguments(update_p)
     add_auto_mirror_argument(update_p)
     update_p.set_defaults(
         func=with_auto_mirror(
@@ -567,6 +637,8 @@ def register_fooocus(
                 fooocus_path=args.fooocus_path,
                 use_github_mirror=args.use_github_mirror,
                 custom_github_mirror=args.custom_github_mirror,
+                snapshot_enabled=args.snapshot_enabled,
+                snapshot_dir=args.snapshot_dir,
             )
         )
     )
@@ -689,6 +761,7 @@ def register_fooocus(
     version_gui_p.add_argument("--fooocus-path", type=normalized_filepath, required=False, default=FOOOCUS_ROOT_PATH, dest="fooocus_path", help="Fooocus 根目录")
     version_gui_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     version_gui_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    add_pre_operation_snapshot_arguments(version_gui_p)
     add_auto_mirror_argument(version_gui_p)
     version_gui_p.set_defaults(
         func=with_auto_mirror(
@@ -696,6 +769,8 @@ def register_fooocus(
                 fooocus_path=args.fooocus_path,
                 use_github_mirror=args.use_github_mirror,
                 custom_github_mirror=args.custom_github_mirror,
+                snapshot_enabled=args.snapshot_enabled,
+                snapshot_dir=args.snapshot_dir,
             )
         )
     )

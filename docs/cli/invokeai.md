@@ -26,8 +26,11 @@ sd-webui-all-in-one invokeai update [选项]
 ```
 
 - **高级选项**:
+  - `--invokeai-path <路径>`: InvokeAI 根目录。
   - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
   - `--no-uv`: 不使用 uv 安装 Python 软件包。
+  - `--no-snapshot`: 禁用操作前自动创建环境快照。
+  - `--snapshot-dir <路径>`: 操作前自动快照目录；未传时使用默认快照目录。
 
 ### 生成环境快照
 ```bash
@@ -93,6 +96,8 @@ sd-webui-all-in-one invokeai gui version-manager [选项]
   - `--no-uv`: 不使用 uv 安装 Python 软件包。
   - `--no-github-mirror`: 不使用 Github 镜像源。
   - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+  - `--no-snapshot`: 禁用启动前自动创建环境快照。
+  - `--snapshot-dir <路径>`: 启动前自动快照目录；未传时使用默认快照目录。
 
 ### 快照管理 GUI
 ```bash
@@ -148,6 +153,8 @@ sd-webui-all-in-one invokeai custom-node update [选项]
   - `--invokeai-path <路径>`: InvokeAI 根目录。
   - `--no-github-mirror`: 不使用 Github 镜像源。
   - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+  - `--no-snapshot`: 禁用操作前自动创建环境快照。
+  - `--snapshot-dir <路径>`: 操作前自动快照目录；未传时使用默认快照目录。
 
 #### 卸载扩展
 ```bash
@@ -205,8 +212,11 @@ sd-webui-all-in-one invokeai reinstall-pytorch [选项]
 ```
 
 - **高级选项**:
+  - `--invokeai-path <路径>`: InvokeAI 根目录。
   - `--device-type <类型>`: 设备类型 (`cuda`, `rocm`, `cpu`, `mps`)。
   - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
   - `--no-uv`: 不使用 uv 安装 PyTorch 软件包。
   - `--interactive`: 启用交互模式。
   - `--list-only`: 列出 PyTorch 列表并退出。
+  - `--no-snapshot`: 禁用操作前自动创建环境快照。
+  - `--snapshot-dir <路径>`: 操作前自动快照目录；未传时使用默认快照目录。

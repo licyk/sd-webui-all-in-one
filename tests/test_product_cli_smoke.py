@@ -117,22 +117,57 @@ def test_product_cli_install_update_check_reinstall_and_model_smoke(monkeypatch,
     assert calls[-1][1]["use_uv"] is False
     assert calls[-1][1]["use_pypi_mirror"] is False
 
-    args = parser.parse_args([root, "update", path_arg, str(tmp_path), "--no-auto-mirror", "--custom-github-mirror", "https://mirror.example"])
+    snapshot_dir = tmp_path / "pre-operation-snapshots"
+
+    args = parser.parse_args(
+        [
+            root,
+            "update",
+            path_arg,
+            str(tmp_path),
+            "--no-auto-mirror",
+            "--custom-github-mirror",
+            "https://mirror.example",
+            "--no-snapshot",
+            "--snapshot-dir",
+            str(snapshot_dir),
+        ]
+    )
     args.func(args)
     assert calls[-1][0] == "update"
     assert calls[-1][1][path_key] == tmp_path
     assert calls[-1][1]["custom_github_mirror"] == "https://mirror.example"
+    assert calls[-1][1]["snapshot_enabled"] is False
+    assert calls[-1][1]["snapshot_dir"] == snapshot_dir
 
     args = parser.parse_args([root, "check-env", path_arg, str(tmp_path), "--no-auto-mirror", "--no-uv"])
     args.func(args)
     assert calls[-1][0] == "check"
     assert calls[-1][1]["use_uv"] is False
 
-    args = parser.parse_args([root, "reinstall-pytorch", "--no-auto-mirror", "--name", "torch-demo", "--no-uv", "--force-reinstall"])
+    args = parser.parse_args(
+        [
+            root,
+            "reinstall-pytorch",
+            path_arg,
+            str(tmp_path),
+            "--no-auto-mirror",
+            "--name",
+            "torch-demo",
+            "--no-uv",
+            "--force-reinstall",
+            "--no-snapshot",
+            "--snapshot-dir",
+            str(snapshot_dir),
+        ]
+    )
     args.func(args)
     assert calls[-1][0] == "reinstall"
+    assert calls[-1][1][path_key] == tmp_path
     assert calls[-1][1]["pytorch_name"] == "torch-demo"
     assert calls[-1][1]["force_reinstall"] is True
+    assert calls[-1][1]["snapshot_enabled"] is False
+    assert calls[-1][1]["snapshot_dir"] == snapshot_dir
 
     args = parser.parse_args([root, "model", "install-library", path_arg, str(tmp_path), "--no-auto-mirror", "--name", "alpha", "--downloader", "urllib"])
     args.func(args)
@@ -220,6 +255,90 @@ def test_sd_trainer_cli_accepts_next_branch(monkeypatch, tmp_path):
 
 
 @pytest.mark.parametrize(
+    ("module", "register", "root", "path_arg", "path_key", "reinstall_func_name", "reinstall_args", "reinstall_expected"),
+    [
+        (
+            qwen_tts_webui_cli,
+            qwen_tts_webui_cli.register_qwen_tts_webui,
+            "qwen-tts-webui",
+            "--qwen-tts-webui-path",
+            "qwen_tts_webui_path",
+            "reinstall_pytorch",
+            ["--name", "torch-demo", "--force-reinstall"],
+            {"pytorch_name": "torch-demo", "force_reinstall": True},
+        ),
+        (
+            invokeai_cli,
+            invokeai_cli.register_invokeai,
+            "invokeai",
+            "--invokeai-path",
+            "invokeai_path",
+            "reinstall_invokeai_pytorch",
+            ["--device-type", "cuda"],
+            {"device_type": "cuda"},
+        ),
+    ],
+)
+def test_product_cli_update_and_reinstall_snapshot_smoke(
+    monkeypatch,
+    tmp_path,
+    module,
+    register,
+    root,
+    path_arg,
+    path_key,
+    reinstall_func_name,
+    reinstall_args,
+    reinstall_expected,
+):
+    parser = _parser(register)
+    calls = []
+    snapshot_dir = tmp_path / "pre-operation-snapshots"
+
+    monkeypatch.setattr(module, "update", lambda **kwargs: calls.append(("update", kwargs)))
+    monkeypatch.setattr(module, reinstall_func_name, lambda **kwargs: calls.append(("reinstall", kwargs)))
+
+    args = parser.parse_args(
+        [
+            root,
+            "update",
+            path_arg,
+            str(tmp_path),
+            "--no-auto-mirror",
+            "--no-snapshot",
+            "--snapshot-dir",
+            str(snapshot_dir),
+        ]
+    )
+    args.func(args)
+    assert calls[-1][0] == "update"
+    assert calls[-1][1][path_key] == tmp_path
+    assert calls[-1][1]["snapshot_enabled"] is False
+    assert calls[-1][1]["snapshot_dir"] == snapshot_dir
+
+    args = parser.parse_args(
+        [
+            root,
+            "reinstall-pytorch",
+            path_arg,
+            str(tmp_path),
+            "--no-auto-mirror",
+            *reinstall_args,
+            "--no-snapshot",
+            "--snapshot-dir",
+            str(snapshot_dir),
+        ]
+    )
+    args.func(args)
+    assert calls[-1][0] == "reinstall"
+    assert calls[-1][1][path_key] == tmp_path
+    assert calls[-1][1]["snapshot_enabled"] is False
+    assert calls[-1][1]["snapshot_dir"] == snapshot_dir
+    for key, value in reinstall_expected.items():
+        assert calls[-1][1][key] == value
+
+
+@pytest.mark.parametrize(
     ("module", "register", "root", "path_arg", "path_key"),
     [
         (comfyui_cli, comfyui_cli.register_comfyui, "comfyui", "--comfyui-path", "comfyui_path"),
@@ -244,10 +363,25 @@ def test_product_cli_launch_and_gui_smoke(monkeypatch, tmp_path, module, registe
     assert calls[-1][1]["check_launch_env"] is False
     assert calls[-1][1]["enable_hotpatcher"] is False
 
-    args = parser.parse_args([root, "gui", "version-manager", path_arg, str(tmp_path), "--no-auto-mirror"])
+    snapshot_dir = tmp_path / "version-gui-snapshots"
+    args = parser.parse_args(
+        [
+            root,
+            "gui",
+            "version-manager",
+            path_arg,
+            str(tmp_path),
+            "--no-auto-mirror",
+            "--no-snapshot",
+            "--snapshot-dir",
+            str(snapshot_dir),
+        ]
+    )
     args.func(args)
     assert calls[-1][0] == "gui"
     assert calls[-1][1][path_key] == tmp_path
+    assert calls[-1][1]["snapshot_enabled"] is False
+    assert calls[-1][1]["snapshot_dir"] == snapshot_dir
 
 
 @pytest.mark.parametrize(
@@ -285,9 +419,32 @@ def test_custom_node_cli_smoke(monkeypatch, tmp_path, module, register, root, pa
     args.func(args)
     assert calls[-1] == ("list", {path_key: tmp_path})
 
-    args = parser.parse_args([root, "custom-node", "update", path_arg, str(tmp_path), "--no-auto-mirror", "--no-github-mirror"])
+    snapshot_dir = tmp_path / "custom-node-snapshots"
+    args = parser.parse_args(
+        [
+            root,
+            "custom-node",
+            "update",
+            path_arg,
+            str(tmp_path),
+            "--no-auto-mirror",
+            "--no-github-mirror",
+            "--no-snapshot",
+            "--snapshot-dir",
+            str(snapshot_dir),
+        ]
+    )
     args.func(args)
-    assert calls[-1] == ("update", {path_key: tmp_path, "use_github_mirror": False, "custom_github_mirror": None})
+    assert calls[-1] == (
+        "update",
+        {
+            path_key: tmp_path,
+            "use_github_mirror": False,
+            "custom_github_mirror": None,
+            "snapshot_enabled": False,
+            "snapshot_dir": snapshot_dir,
+        },
+    )
 
     args = parser.parse_args([root, "custom-node", "uninstall", path_arg, str(tmp_path), "--name", "node"])
     args.func(args)
