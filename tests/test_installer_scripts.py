@@ -1,5 +1,9 @@
 import re
+import shutil
+import subprocess
 from pathlib import Path
+
+import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +22,51 @@ INIT_INSTALLER_SCRIPTS = [
 ]
 
 LONG_PATH_INSTALLER_SCRIPTS = LAUNCH_INSTALLER_SCRIPTS + INIT_INSTALLER_SCRIPTS
+
+SNAPSHOT_REBUILD_INSTALLERS = {
+    "installer/stable_diffusion_webui_installer.ps1": {
+        "cli": "sd-webui",
+        "type": "sd_webui",
+        "path_arg": "--sd-webui-path",
+        "git_kernel": True,
+    },
+    "installer/comfyui_installer.ps1": {
+        "cli": "comfyui",
+        "type": "comfyui",
+        "path_arg": "--comfyui-path",
+        "git_kernel": True,
+    },
+    "installer/fooocus_installer.ps1": {
+        "cli": "fooocus",
+        "type": "fooocus",
+        "path_arg": "--fooocus-path",
+        "git_kernel": True,
+    },
+    "installer/invokeai_installer.ps1": {
+        "cli": "invokeai",
+        "type": "invokeai",
+        "path_arg": "--invokeai-path",
+        "git_kernel": False,
+    },
+    "installer/qwen_tts_webui_installer.ps1": {
+        "cli": "qwen-tts-webui",
+        "type": "qwen_tts_webui",
+        "path_arg": "--qwen-tts-webui-path",
+        "git_kernel": True,
+    },
+    "installer/sd_trainer_installer.ps1": {
+        "cli": "sd-trainer",
+        "type": "sd_trainer",
+        "path_arg": "--sd-trainer-path",
+        "git_kernel": True,
+    },
+    "installer/sd_trainer_script_installer.ps1": {
+        "cli": "sd-scripts",
+        "type": "sd_scripts",
+        "path_arg": "--sd-scripts-path",
+        "git_kernel": True,
+    },
+}
 
 MSVCPP_RUNTIME_CORE_DLLS = [
     "concrt140.dll",
@@ -57,6 +106,18 @@ def _extract_modules_template(text: str) -> str:
     return text[start:end]
 
 
+def _extract_launch_installer_template(text: str) -> str:
+    start = text.index("# 获取安装脚本\nfunction Write-LaunchInstallerScript")
+    end = text.index("# 重装 PyTorch 脚本", start)
+    return text[start:end]
+
+
+def _extract_restore_args_function(text: str) -> str:
+    start = text.index("function Get-RestoreCoreArgs")
+    end = text.index("function Update-SDWebUiAllInOne", start)
+    return text[start:end]
+
+
 def test_installer_templates_include_windows_long_path_helpers():
     helper_names = [
         "Test-WindowsLongPathsEnabled",
@@ -79,6 +140,39 @@ def test_installer_templates_include_windows_long_path_helpers():
             "-Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force"
         ) in installer
         assert "configure_env.bat" in installer
+
+
+def test_installer_scripts_parse_as_powershell():
+    pwsh = shutil.which("pwsh")
+    if pwsh is None:
+        pytest.skip("PowerShell is not available")
+
+    quoted_paths = ", ".join(f"'{path}'" for path in LONG_PATH_INSTALLER_SCRIPTS)
+    command = f"""
+$failed = $false
+foreach ($path in @({quoted_paths})) {{
+    $tokens = $null
+    $errors = $null
+    [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $path), [ref]$tokens, [ref]$errors) > $null
+    if ($errors) {{
+        $failed = $true
+        Write-Output "== $path =="
+        foreach ($errorRecord in $errors) {{
+            Write-Output "$($errorRecord.Extent.StartLineNumber):$($errorRecord.Extent.StartColumnNumber) $($errorRecord.Message)"
+        }}
+    }}
+}}
+if ($failed) {{ exit 1 }}
+"""
+    result = subprocess.run(
+        [pwsh, "-NoProfile", "-Command", command],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_launch_templates_import_and_call_windows_long_path_check():
@@ -219,6 +313,76 @@ def test_installer_hotpatcher_config_path_is_not_parameterized():
     init_modules_template = _extract_modules_template(_read_installer(INIT_INSTALLER_SCRIPTS[0]))
     assert '`$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE = `"env`"' in init_modules_template
     assert "`$Env:SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_JSON = Get-Content -Raw -Encoding UTF8 -Path `$config_path" in init_modules_template
+
+
+def test_installer_snapshot_rebuild_mode_is_wired():
+    helper_names = [
+        "Stop-SnapshotRestore",
+        "Normalize-SnapshotPlatform",
+        "Normalize-SnapshotArchitecture",
+        "Get-PythonMajorMinor",
+        "Remove-ManagedPythonIfVersionMismatch",
+        "Test-InstallerGitKernelSnapshot",
+        "Resolve-SnapshotRebuildConfig",
+        "Initialize-SnapshotRestoreTarget",
+    ]
+
+    for script_path, config in SNAPSHOT_REBUILD_INSTALLERS.items():
+        installer = _read_installer(script_path)
+        for helper_name in helper_names:
+            assert f"function {helper_name}" in installer, script_path
+
+        assert "[switch]$RestoreFromSnapshot" in installer, script_path
+        assert "[string]$SnapshotPath" in installer, script_path
+        assert f'$script:SnapshotExpectedWebUIType = "{config["type"]}"' in installer, script_path
+        assert f'$script:SnapshotRestoreCliName = "{config["cli"]}"' in installer, script_path
+        assert f'$script:SnapshotRestorePathArgument = "{config["path_arg"]}"' in installer, script_path
+        git_kernel_value = "$true" if config["git_kernel"] else "$false"
+        assert f"$script:SnapshotRequiresGitKernel = {git_kernel_value}" in installer, script_path
+        assert "Normalize-SnapshotPlatform $snapshot.system.system" in installer, script_path
+        assert "Normalize-SnapshotArchitecture $snapshot.system.architecture" in installer, script_path
+        assert "ConvertFrom-Json -ErrorAction Stop" in installer, script_path
+        assert "Remove-ManagedPythonIfVersionMismatch -ExpectedVersion $py_ver" in installer, script_path
+        assert "Resolve-SnapshotRebuildConfig" in installer, script_path
+        assert "Initialize-SnapshotRestoreTarget" in installer, script_path
+        assert "$script:RestoreFromSnapshot -and $script:UseUpdateMode" in installer, script_path
+        assert (
+            "& python -m sd_webui_all_in_one $script:SnapshotRestoreCliName restore "
+            "$snapshot_path $script:SnapshotRestorePathArgument $core_path $launch_params"
+        ) in installer, script_path
+        assert f'& python -m sd_webui_all_in_one {config["cli"]} install $launch_params' in installer, script_path
+
+
+def test_installer_snapshot_restore_args_are_not_install_args():
+    forbidden_tokens = [
+        "Set-ModelMirror",
+        "--no-pre-download-model",
+        "--no-pre-download-extension",
+        "--pytorch-mirror-type",
+        "--custom-pytorch-package",
+        "--custom-xformers-package",
+        "--install-branch",
+    ]
+
+    for script_path in SNAPSHOT_REBUILD_INSTALLERS:
+        restore_args = _extract_restore_args_function(_read_installer(script_path))
+        assert "Set-uv $restore_params" in restore_args, script_path
+        assert "Set-PyPIMirror $restore_params" in restore_args, script_path
+        assert "Set-Proxy" in restore_args, script_path
+        assert "Set-GithubMirror $restore_params" in restore_args, script_path
+        assert '$restore_params.Add("--prune-packages")' in restore_args, script_path
+        assert '$restore_params.Add("--prune-extensions")' in restore_args, script_path
+        for token in forbidden_tokens:
+            assert token not in restore_args, script_path
+
+
+def test_launch_installer_templates_forward_snapshot_rebuild_args():
+    for script_path in SNAPSHOT_REBUILD_INSTALLERS:
+        launch_installer_template = _extract_launch_installer_template(_read_installer(script_path))
+        assert "[switch]`$RestoreFromSnapshot" in launch_installer_template, script_path
+        assert "[string]`$SnapshotPath" in launch_installer_template, script_path
+        assert '`$arg.Add(`"-RestoreFromSnapshot`", `$true)' in launch_installer_template, script_path
+        assert '`$arg.Add(`"-SnapshotPath`", `$script:SnapshotPath)' in launch_installer_template, script_path
 
 
 def test_msvc_check_is_skipped_in_build_mode():

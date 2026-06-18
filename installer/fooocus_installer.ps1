@@ -20,6 +20,14 @@
 "@)][string]$InstallPythonVersion,
 
     [Parameter(HelpMessage=@"
+启用 Fooocus Installer 快照重建模式, 将根据快照文件重新准备 Python 版本并恢复环境
+"@)][switch]$RestoreFromSnapshot,
+
+    [Parameter(HelpMessage=@"
+指定用于快照重建的环境快照 JSON 文件路径
+"@)][string]$SnapshotPath,
+
+    [Parameter(HelpMessage=@"
 指定 Fooocus Installer 使用更新模式, 只对 Fooocus Installer 的管理脚本进行更新
 "@)][switch]$UseUpdateMode,
 
@@ -251,6 +259,12 @@ $script:FOOOCUS_INSTALLER_VERSION = 401
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.51"
+# 快照重建模式
+$script:SnapshotExpectedWebUIType = "fooocus"
+$script:SnapshotRestoreCliName = "fooocus"
+$script:SnapshotRestorePathArgument = "--fooocus-path"
+$script:SnapshotDisplayName = "Fooocus"
+$script:SnapshotRequiresGitKernel = $true
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -623,6 +637,17 @@ function Get-LaunchCoreArgs {
 }
 
 # 检查 SD WebUI ALL In One 内核版本
+function Get-RestoreCoreArgs {
+    $restore_params = New-Object System.Collections.ArrayList
+    Set-uv $restore_params
+    Set-PyPIMirror $restore_params
+    Set-Proxy
+    Set-GithubMirror $restore_params
+    $restore_params.Add("--prune-packages") | Out-Null
+    $restore_params.Add("--prune-extensions") | Out-Null
+    return $restore_params
+}
+
 function Update-SDWebUiAllInOne {
     $content = "
 import re
@@ -861,6 +886,202 @@ function Get-NormalizedFilePath {
     return $null
 }
 
+function Stop-SnapshotRestore {
+    [CmdletBinding()]
+    param ([Parameter(Mandatory = $true)][string]$Message)
+    Write-Log $Message -Level ERROR
+    if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
+    exit 1
+}
+
+function Normalize-SnapshotPlatform {
+    param ([AllowNull()][string]$Value)
+    if ([string]::IsNullOrWhiteSpace($Value)) { return $null }
+    switch ($Value.Trim().ToLowerInvariant()) {
+        "windows" { return "windows" }
+        "win32" { return "windows" }
+        "linux" { return "linux" }
+        "darwin" { return "macos" }
+        "macos" { return "macos" }
+        "osx" { return "macos" }
+        default { return $Value.Trim().ToLowerInvariant() }
+    }
+}
+
+function Normalize-SnapshotArchitecture {
+    param ([AllowNull()][string]$Value)
+    if ([string]::IsNullOrWhiteSpace($Value)) { return $null }
+    switch ($Value.Trim().ToLowerInvariant()) {
+        "amd64" { return "amd64" }
+        "x64" { return "amd64" }
+        "x86_64" { return "amd64" }
+        "arm64" { return "aarch64" }
+        "aarch64" { return "aarch64" }
+        "x86" { return "x86" }
+        "i386" { return "x86" }
+        "i686" { return "x86" }
+        default { return $Value.Trim().ToLowerInvariant() }
+    }
+}
+
+function Get-PythonMajorMinor {
+    [CmdletBinding()]
+    param ([AllowNull()][string]$Version)
+    if ([string]::IsNullOrWhiteSpace($Version)) {
+        Stop-SnapshotRestore "快照中的 Python 版本字段为空, 无法进行快照重建"
+    }
+    $version_text = $Version.Trim()
+    if ($version_text -match '^(\d+)\.(\d+)') {
+        return "$($Matches[1]).$($Matches[2])"
+    }
+    Stop-SnapshotRestore "快照中的 Python 版本字段无法识别: $version_text"
+}
+
+function Get-ManagedPythonExecutable {
+    [CmdletBinding()]
+    param ([Parameter(Mandatory = $true)][string]$PythonPath)
+    $windows_python = Join-NormalizedPath $PythonPath "python.exe"
+    if (Test-Path -LiteralPath $windows_python -PathType Leaf) { return $windows_python }
+    $unix_python = Join-NormalizedPath $PythonPath "bin" "python"
+    if (Test-Path -LiteralPath $unix_python -PathType Leaf) { return $unix_python }
+    $portable_python = Join-NormalizedPath $PythonPath "python"
+    if (Test-Path -LiteralPath $portable_python -PathType Leaf) { return $portable_python }
+    return $null
+}
+
+function Get-ManagedPythonMajorMinor {
+    [CmdletBinding()]
+    param ([Parameter(Mandatory = $true)][string]$PythonPath)
+    $python_executable = Get-ManagedPythonExecutable -PythonPath $PythonPath
+    if (-not $python_executable) { return $null }
+    try {
+        $version = & $python_executable -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>$null
+        if ($LASTEXITCODE -ne 0) { return $null }
+        return ($version | Select-Object -First 1).Trim()
+    } catch {
+        return $null
+    }
+}
+
+function Remove-ManagedPythonIfVersionMismatch {
+    [CmdletBinding()]
+    param ([Parameter(Mandatory = $true)][string]$ExpectedVersion)
+    $managed_python_paths = @(
+        (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "python"),
+        (Join-NormalizedPath $script:InstallPath "python")
+    )
+    foreach ($python_path in $managed_python_paths) {
+        if (!(Test-Path -LiteralPath $python_path -PathType Container)) { continue }
+        $current_version = Get-ManagedPythonMajorMinor -PythonPath $python_path
+        if ($current_version -eq $ExpectedVersion) {
+            Write-Log "受 Installer 管理的 Python 版本已匹配快照: $current_version ($python_path)"
+            continue
+        }
+        if ($current_version) {
+            Write-Log "快照要求 Python $ExpectedVersion, 删除不匹配的受管 Python ${current_version}: $python_path" -Level WARNING
+        } else {
+            Write-Log "无法识别受管 Python 版本, 将按快照要求重建 Python ${ExpectedVersion}: $python_path" -Level WARNING
+        }
+        Remove-Item -LiteralPath $python_path -Force -Recurse
+    }
+}
+
+function Test-DirectoryEmpty {
+    [CmdletBinding()]
+    param ([Parameter(Mandatory = $true)][string]$Path)
+    if (!(Test-Path -LiteralPath $Path -PathType Container)) { return $true }
+    return $null -eq (Get-ChildItem -LiteralPath $Path -Force -ErrorAction SilentlyContinue | Select-Object -First 1)
+}
+
+function Test-InstallerGitKernelSnapshot {
+    [CmdletBinding()]
+    param ([Parameter(Mandatory = $true)]$Snapshot)
+    if (-not $script:SnapshotRequiresGitKernel) { return }
+    if ($null -eq $Snapshot.kernel) {
+        Stop-SnapshotRestore "快照缺少内核信息, 无法在 Installer 重建模式中恢复 $script:SnapshotDisplayName"
+    }
+    if (-not [System.Convert]::ToBoolean($Snapshot.kernel.is_git_repo)) {
+        Stop-SnapshotRestore "快照中的 $script:SnapshotDisplayName 内核不是 Git 仓库, Installer 重建模式无法恢复该内核"
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$Snapshot.kernel.url)) {
+        Stop-SnapshotRestore "快照中的 $script:SnapshotDisplayName 内核缺少 Git 远程地址, 无法从头重建环境"
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$Snapshot.kernel.commit)) {
+        Stop-SnapshotRestore "快照中的 $script:SnapshotDisplayName 内核缺少 Git commit, 无法恢复到快照版本"
+    }
+}
+
+function Resolve-SnapshotRebuildConfig {
+    $restore_enabled = [bool]$script:RestoreFromSnapshot
+    $snapshot_path_provided = -not [string]::IsNullOrWhiteSpace($script:SnapshotPath)
+    if ($restore_enabled -ne $snapshot_path_provided) {
+        Stop-SnapshotRestore "启用快照重建模式时必须同时传入 -RestoreFromSnapshot 和 -SnapshotPath"
+    }
+    if (-not $restore_enabled) { return }
+
+    $snapshot_path = Get-NormalizedFilePath $script:SnapshotPath
+    if (!(Test-Path -LiteralPath $snapshot_path -PathType Leaf)) {
+        Stop-SnapshotRestore "快照文件不存在: $snapshot_path"
+    }
+
+    try {
+        $snapshot = Get-Content -Raw -Encoding UTF8 -Path $snapshot_path | ConvertFrom-Json -ErrorAction Stop
+    } catch {
+        Stop-SnapshotRestore "读取快照文件失败: $snapshot_path, $($_.Exception.Message)"
+    }
+
+    $snapshot_webui_type = [string]$snapshot.webui.type
+    if ($snapshot_webui_type -ne $script:SnapshotExpectedWebUIType) {
+        Stop-SnapshotRestore "快照 WebUI 类型不匹配: 期望 '$script:SnapshotExpectedWebUIType', 实际 '$snapshot_webui_type'"
+    }
+
+    $snapshot_platform = Normalize-SnapshotPlatform $snapshot.system.system
+    $snapshot_arch = Normalize-SnapshotArchitecture $snapshot.system.architecture
+    $current_platform = Get-CurrentPlatform
+    $current_arch = Get-CurrentArchitecture
+    if ([string]::IsNullOrWhiteSpace($snapshot_platform) -or [string]::IsNullOrWhiteSpace($snapshot_arch)) {
+        Stop-SnapshotRestore "快照缺少系统或架构字段, 无法确认是否可在当前平台重建"
+    }
+    if (($snapshot_platform -ne $current_platform) -or ($snapshot_arch -ne $current_arch)) {
+        Stop-SnapshotRestore "快照平台不匹配: 快照为 $snapshot_platform/$snapshot_arch, 当前为 $current_platform/$current_arch"
+    }
+
+    $target_python_version = Get-PythonMajorMinor $snapshot.python.version
+    $python_info = Get-PythonDownloadUrl -Version $target_python_version -Platform $current_platform -Arch $current_arch
+    if (-not $python_info) {
+        Stop-SnapshotRestore "Installer 当前不支持安装快照要求的 Python $target_python_version ($current_platform/$current_arch)"
+    }
+    if ($script:InstallPythonVersion) {
+        $requested_python_version = Get-PythonMajorMinor $script:InstallPythonVersion
+        if ($requested_python_version -ne $target_python_version) {
+            Write-Log "快照重建模式将忽略 -InstallPythonVersion $requested_python_version, 使用快照中的 Python $target_python_version" -Level WARNING
+        }
+    }
+    $script:InstallPythonVersion = $target_python_version
+    $script:SnapshotPath = $snapshot_path
+
+    Test-InstallerGitKernelSnapshot -Snapshot $snapshot
+    Write-Log "快照重建模式已启用: $snapshot_path"
+    Write-Log "快照平台和架构已匹配: $current_platform/$current_arch"
+    Write-Log "将按快照要求安装 Python $target_python_version"
+}
+
+function Initialize-SnapshotRestoreTarget {
+    if (-not $script:RestoreFromSnapshot) { return }
+    $core_path = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX
+    if (Test-Path -LiteralPath $core_path -PathType Leaf) {
+        Stop-SnapshotRestore "快照恢复目标路径存在同名文件, 无法重建环境: $core_path"
+    }
+    if (!(Test-Path -LiteralPath $core_path -PathType Container)) {
+        New-Item -ItemType Directory -Path $core_path -Force > $null
+        Write-Log "已为快照恢复创建内核根目录: $core_path"
+    }
+    if (-not $script:SnapshotRequiresGitKernel) { return }
+    if (Test-Path -LiteralPath (Join-NormalizedPath $core_path ".git") -PathType Container) { return }
+    if (Test-DirectoryEmpty -Path $core_path) { return }
+    Stop-SnapshotRestore "快照恢复目标路径已存在且不是空目录或 Git 仓库, 为避免覆盖本地数据已终止: $core_path"
+}
+
 # 安装 Python
 function Install-Python {
     if ($script:InstallPythonVersion) {
@@ -868,6 +1089,9 @@ function Install-Python {
     }
     else {
         $py_ver = "3.11"
+    }
+    if ($script:RestoreFromSnapshot) {
+        Remove-ManagedPythonIfVersionMismatch -ExpectedVersion $py_ver
     }
     $platform = Get-CurrentPlatform
     $arch = Get-CurrentArchitecture
@@ -995,21 +1219,34 @@ function Invoke-Installation {
     Write-FileWithStreamWriter -Path (Join-NormalizedPath $env:CACHE_HOME "uv.toml") -Value "" -Encoding UTF8
     Write-FileWithStreamWriter -Path (Join-NormalizedPath $env:CACHE_HOME "pip.ini") -Value "" -Encoding UTF8
 
+    Resolve-SnapshotRebuildConfig
+
     Write-Log "检测是否安装 Python"
     Install-Python
 
     Write-Log "检测是否安装 Git"
     Install-Git
 
-    Update-SDWebUiAllInOne
-    $launch_params = Get-LaunchCoreArgs
+    Initialize-SnapshotRestoreTarget
 
-    $core_cli_command = @("python", "-m", "sd_webui_all_in_one", "fooocus", "install")
-    & python -m sd_webui_all_in_one fooocus install $launch_params
+    Update-SDWebUiAllInOne
+    $operation_label = "安装"
+    if ($script:RestoreFromSnapshot) {
+        $launch_params = Get-RestoreCoreArgs
+        $snapshot_path = Get-NormalizedFilePath $script:SnapshotPath
+        $core_path = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX
+        $core_cli_command = @("python", "-m", "sd_webui_all_in_one", $script:SnapshotRestoreCliName, "restore", $snapshot_path, $script:SnapshotRestorePathArgument, $core_path)
+        & python -m sd_webui_all_in_one $script:SnapshotRestoreCliName restore $snapshot_path $script:SnapshotRestorePathArgument $core_path $launch_params
+        $operation_label = "恢复"
+    } else {
+        $launch_params = Get-LaunchCoreArgs
+        $core_cli_command = @("python", "-m", "sd_webui_all_in_one", "fooocus", "install")
+        & python -m sd_webui_all_in_one fooocus install $launch_params
+    }
     $exit_code = Get-NativeCommandExitCode -Success $?
     if ($exit_code -ne 0) {
         Write-CoreCliFailureCommand -CommandPrefix $core_cli_command -Arguments $launch_params -ExitCode $exit_code
-        Write-Log "运行 SD WebUI All In One 安装 Fooocus 时发生了错误, 终止 Fooocus 安装进程, 可尝试重新运行 Fooocus Installer 重试失败的安装" -Level ERROR
+        Write-Log "运行 SD WebUI All In One ${operation_label} Fooocus 时发生了错误, 终止 Fooocus ${operation_label}进程, 可尝试重新运行 Fooocus Installer 重试失败的操作" -Level ERROR
         if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
         exit 1
     }
@@ -2951,6 +3188,8 @@ param (
     [string]`$UseCustomGithubMirror,
     [string]`$InstallBranch,
     [string]`$CorePrefix,
+    [switch]`$RestoreFromSnapshot,
+    [string]`$SnapshotPath,
     [switch]`$NoPause,
     [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
 )
@@ -3183,6 +3422,12 @@ function Get-LocalSetting {
 
     `$arg.Add(`"-InstallPath`", `$script:InstallPath)
     `$arg.Add(`"-CorePrefix`", `$script:CorePrefix)
+    if (`$script:RestoreFromSnapshot) {
+        `$arg.Add(`"-RestoreFromSnapshot`", `$true)
+    }
+    if (-not [string]::IsNullOrWhiteSpace(`$script:SnapshotPath)) {
+        `$arg.Add(`"-SnapshotPath`", `$script:SnapshotPath)
+    }
 
     return `$arg
 }
@@ -5553,6 +5798,12 @@ function Main {
     Get-HelpMessage
     Get-Version
     Get-CorePrefixStatus
+
+    if ($script:RestoreFromSnapshot -and $script:UseUpdateMode) {
+        Write-Log "-RestoreFromSnapshot 不能和 -UseUpdateMode 同时使用" -Level ERROR
+        if ((-not $script:BuildMode) -and (-not $script:NoPause)) { Read-Host | Out-Null }
+        exit 1
+    }
 
     if ($script:UseUpdateMode) {
         Write-Log "使用更新模式"
