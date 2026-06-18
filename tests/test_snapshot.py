@@ -2,6 +2,8 @@ import argparse
 import json
 from pathlib import Path
 
+import pytest
+
 from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryState
 from sd_webui_all_in_one.base_manager import (
     comfyui_base,
@@ -13,6 +15,7 @@ from sd_webui_all_in_one.base_manager import (
     sd_webui_base,
 )
 from sd_webui_all_in_one.base_manager import snapshot as snapshot_utils
+from sd_webui_all_in_one.base_manager import snapshot_restore as restore_utils
 from sd_webui_all_in_one.cli_manager import (
     comfyui_cli,
     fooocus_cli,
@@ -72,6 +75,20 @@ def _webui_snapshot(path: Path) -> snapshot_utils.WebUiSnapshot:
             is_git_repo=False,
             dirty=None,
         ),
+    )
+
+
+def _package_snapshot(
+    name: str,
+    version: str,
+    direct_url: snapshot_utils.DirectUrlSnapshot | None = None,
+    editable: bool = False,
+) -> snapshot_utils.PackageSnapshot:
+    return snapshot_utils.PackageSnapshot(
+        name=name,
+        version=version,
+        editable=editable,
+        direct_url=direct_url,
     )
 
 
@@ -234,6 +251,234 @@ def test_output_snapshot_prints_json_or_writes_file(tmp_path, capsys):
     assert json.loads(output.read_text(encoding="utf-8")) == snapshot_json
 
 
+def test_load_snapshot_roundtrip_and_rejects_unsupported_schema(tmp_path):
+    local_source = tmp_path / "local-package"
+    local_source.mkdir()
+    snapshot = _webui_snapshot(tmp_path / "demo")
+    snapshot.packages = [
+        snapshot_utils.PackageSnapshot(
+            name="demo-editable",
+            version="1.2.3",
+            installer="pip",
+            requested=True,
+            editable=True,
+            direct_url=snapshot_utils.DirectUrlSnapshot(
+                url=local_source.as_uri(),
+                dir_info=snapshot_utils.DirectUrlDirInfo(editable=True),
+            ),
+            source_type="local-directory",
+            wheel=snapshot_utils.WheelSnapshot(generator="bdist_wheel", root_is_purelib=True, tags=["py3-none-any"]),
+        )
+    ]
+    snapshot.extensions = [_extension_snapshot("ext", tmp_path / "demo" / "extensions" / "ext", True)]
+
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+
+    loaded = snapshot_utils.load_snapshot(output)
+
+    assert snapshot_utils.snapshot_to_dict(loaded) == snapshot_utils.snapshot_to_dict(snapshot)
+
+    unsupported = tmp_path / "unsupported.json"
+    unsupported.write_text(json.dumps({"schema_version": 999}), encoding="utf-8")
+    with pytest.raises(ValueError, match="不支持的快照结构版本"):
+        snapshot_utils.load_snapshot(unsupported)
+
+
+def test_restore_webui_snapshot_rejects_mismatched_webui_type(monkeypatch, tmp_path):
+    snapshot = _webui_snapshot(tmp_path / "demo")
+    snapshot.webui.type = "sd_webui"
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+
+    def fail_restore(*_args, **_kwargs):
+        raise AssertionError("restore should not run for mismatched snapshots")
+
+    monkeypatch.setattr(restore_utils, "restore_python_packages", fail_restore)
+
+    with pytest.raises(ValueError, match="快照 WebUI 类型不匹配"):
+        restore_utils.restore_webui_snapshot(
+            snapshot_path=output,
+            webui_path=tmp_path / "ComfyUI",
+            expected_webui_type="comfyui",
+        )
+
+
+def test_restore_python_packages_prioritizes_pytorch_skips_missing_local_and_prunes(monkeypatch, tmp_path):
+    missing_local = tmp_path / "missing-local"
+    snapshot = _webui_snapshot(tmp_path / "demo")
+    snapshot.packages = [
+        _package_snapshot("sd-webui-all-in-one", "99.0.0"),
+        _package_snapshot("Torch", "2.7.0+cu128"),
+        _package_snapshot("torchvision", "0.22.0+cu128"),
+        _package_snapshot("demo-pkg", "2.0.0"),
+        _package_snapshot(
+            "editable-local",
+            "1.0.0",
+            direct_url=snapshot_utils.DirectUrlSnapshot(
+                url=missing_local.as_uri(),
+                dir_info=snapshot_utils.DirectUrlDirInfo(editable=True),
+            ),
+            editable=True,
+        ),
+        _package_snapshot("already", "1.0.0"),
+    ]
+
+    monkeypatch.setattr(
+        restore_utils,
+        "collect_installed_packages",
+        lambda: [
+            _package_snapshot("demo_pkg", "1.0.0"),
+            _package_snapshot("already", "1.0.0"),
+            _package_snapshot("old_pkg", "0.1.0"),
+            _package_snapshot("pip", "25.0"),
+            _package_snapshot("sd-webui-all-in-one", "1.0.0"),
+        ],
+    )
+    monkeypatch.setattr(restore_utils, "get_pypi_mirror_config", lambda use_cn_mirror: {"PIP_INDEX_URL": "https://pypi.example"})
+
+    mirror_calls = []
+    env_calls = []
+    events = []
+
+    def fake_get_pytorch_mirror(dtype, use_cn_mirror):
+        mirror_calls.append((dtype, use_cn_mirror))
+        return "https://torch.example/cu128", "index_url"
+
+    def fake_generate_env(index_url=None, extra_index_url=None, find_links=None):
+        env_calls.append(
+            {
+                "index_url": index_url,
+                "extra_index_url": extra_index_url,
+                "find_links": find_links,
+            }
+        )
+        return {"TORCH_INDEX": str(index_url)}
+
+    def fake_install_pytorch_with_fallback(**kwargs):
+        events.append(("pytorch", kwargs))
+
+    def fake_pip_install(*args, **kwargs):
+        events.append(("pip", args, kwargs))
+
+    def fake_run_cmd(cmd, **_kwargs):
+        events.append(("uninstall", cmd))
+
+    monkeypatch.setattr(restore_utils, "get_pytorch_mirror", fake_get_pytorch_mirror)
+    monkeypatch.setattr(restore_utils, "generate_uv_and_pip_env_mirror_config", fake_generate_env)
+    monkeypatch.setattr(restore_utils, "install_pytorch_with_fallback", fake_install_pytorch_with_fallback)
+    monkeypatch.setattr(restore_utils, "pip_install", fake_pip_install)
+    monkeypatch.setattr(restore_utils, "run_cmd", fake_run_cmd)
+
+    restore_utils.restore_python_packages(
+        snapshot,
+        restore_utils.SnapshotRestoreOptions(prune_packages=True, use_uv=False, use_pypi_mirror=True),
+    )
+
+    assert mirror_calls == [("cu128", True)]
+    assert env_calls == [
+        {
+            "index_url": "https://torch.example/cu128",
+            "extra_index_url": [],
+            "find_links": [],
+        }
+    ]
+    assert events[0][0] == "pytorch"
+    assert events[0][1]["torch_package"] == ["Torch==2.7.0+cu128", "torchvision==0.22.0+cu128"]
+    assert events[0][1]["xformers_package"] is None
+    assert events[0][1]["use_uv"] is False
+    assert ("pip", ("demo-pkg==2.0.0",), {"use_uv": False, "custom_env": {"PIP_INDEX_URL": "https://pypi.example"}}) in events
+    assert not any(event[0] == "pip" and "editable-local" in event[1][0] for event in events)
+    assert not any(event[0] == "pip" and "sd-webui-all-in-one" in event[1][0] for event in events)
+    assert events[-1][0] == "uninstall"
+    uninstall_names = events[-1][1][4:-1]
+    assert uninstall_names == ["old_pkg"]
+
+
+def test_restore_git_repository_requires_clean_worktree_unless_forced(monkeypatch, tmp_path):
+    target = tmp_path / "repo"
+    target.mkdir()
+    repo = snapshot_utils.RepositorySnapshot(
+        path=target,
+        name="repo",
+        is_git_repo=True,
+        url="https://example.test/repo.git",
+        commit="abcdef",
+    )
+
+    monkeypatch.setattr(restore_utils.git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(restore_utils, "repository_dirty", lambda _path, _include_untracked: True)
+
+    with pytest.raises(RuntimeError, match="存在未提交变更"):
+        restore_utils.restore_git_repository(repo, target, restore_utils.SnapshotRestoreOptions())
+
+    calls = []
+    monkeypatch.setattr(restore_utils, "fetch_repository", lambda path: calls.append(("fetch", path)))
+    monkeypatch.setattr(restore_utils.git_warpper, "switch_commit", lambda path, commit: calls.append(("switch", path, commit)))
+
+    restored = restore_utils.restore_git_repository(
+        repo,
+        target,
+        restore_utils.SnapshotRestoreOptions(force_git_reset=True),
+    )
+
+    assert restored is True
+    assert calls == [("fetch", target), ("switch", target, "abcdef")]
+
+
+def test_restore_extensions_sets_status_and_prunes_with_comfyui_name_normalization(monkeypatch, tmp_path):
+    webui_path = tmp_path / "ComfyUI"
+    custom_nodes = webui_path / "custom_nodes"
+    (custom_nodes / "KeepNode.disabled").mkdir(parents=True)
+    (custom_nodes / "ExtraNode.disabled").mkdir()
+    (custom_nodes / "__pycache__").mkdir()
+    (custom_nodes / "README.md").write_text("", encoding="utf-8")
+
+    snapshot = _webui_snapshot(webui_path)
+    snapshot.webui.type = "comfyui"
+    snapshot.extensions = [
+        snapshot_utils.ExtensionSnapshot(
+            name="KeepNode",
+            path=custom_nodes / "KeepNode",
+            enabled=False,
+            is_git_repo=True,
+            url="https://example.test/keep",
+            commit="abcdef",
+        )
+    ]
+
+    restored = []
+    statuses = []
+    removed = []
+
+    monkeypatch.setattr(
+        restore_utils,
+        "_extension_tools",
+        lambda _type: restore_utils.ExtensionRestoreTools(
+            directory_name="custom_nodes",
+            set_status=lambda path, name, enabled: statuses.append((path, name, enabled)),
+            uninstall=lambda path, name: removed.append((path, name)),
+            strip_disabled_suffix=True,
+        ),
+    )
+    monkeypatch.setattr(
+        restore_utils,
+        "restore_git_repository",
+        lambda repo, target_path, options: restored.append((repo.name, target_path, options.prune_extensions)) or True,
+    )
+
+    restore_utils.restore_extensions(
+        snapshot,
+        webui_path,
+        restore_utils.SnapshotRestoreOptions(prune_extensions=True),
+    )
+
+    assert restore_utils.normalize_extension_name("KeepNode.disabled", strip_disabled_suffix=True) == "keepnode"
+    assert restored == [("KeepNode", custom_nodes / "KeepNode", True)]
+    assert statuses == [(webui_path, "KeepNode", False)]
+    assert removed == [(webui_path, "ExtraNode.disabled")]
+
+
 def test_product_snapshot_cli_parse_smoke(monkeypatch, tmp_path):
     cases = [
         (sd_webui_cli, sd_webui_cli.register_sd_webui, "sd-webui", "--sd-webui-path", "sd_webui_path"),
@@ -268,5 +513,41 @@ def test_product_snapshot_cli_parse_smoke(monkeypatch, tmp_path):
                 path_key: tmp_path / command,
                 "output": tmp_path / f"{command}.json",
                 "include_packages": False,
+            }
+        ]
+
+        restore_calls = []
+        monkeypatch.setattr(module, "restore", lambda **kwargs: restore_calls.append(kwargs))
+        args = parser.parse_args(
+            [
+                command,
+                "restore",
+                str(tmp_path / "snapshot.json"),
+                path_arg,
+                str(tmp_path / command),
+                "--prune-packages",
+                "--prune-extensions",
+                "--force-git-reset",
+                "--no-uv",
+                "--no-pypi-mirror",
+                "--no-github-mirror",
+                "--custom-github-mirror",
+                "https://mirror.example",
+                "--no-auto-mirror",
+            ]
+        )
+        args.func(args)
+
+        assert restore_calls == [
+            {
+                "snapshot_path": tmp_path / "snapshot.json",
+                path_key: tmp_path / command,
+                "prune_packages": True,
+                "prune_extensions": True,
+                "force_git_reset": True,
+                "use_uv": False,
+                "use_pypi_mirror": False,
+                "use_github_mirror": False,
+                "custom_github_mirror": "https://mirror.example",
             }
         ]

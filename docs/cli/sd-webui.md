@@ -45,6 +45,21 @@ sd-webui-all-in-one sd-webui snapshot [选项]
   - `--output <路径>`: 输出 JSON 文件路径；未传时输出到终端。
   - `--no-packages`: 不记录当前 Python 环境已安装软件包。
 
+### 恢复环境快照
+```bash
+sd-webui-all-in-one sd-webui restore <快照文件> [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--prune-packages`: 卸载快照外 Python 软件包，受保护的管理器和基础安装工具不会卸载。
+  - `--prune-extensions`: 删除快照外扩展。
+  - `--force-git-reset`: 允许覆盖 Git 仓库未提交变更。
+  - `--no-uv`: 不使用 uv 安装 Python 软件包。
+  - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+
 ### 检查运行环境
 ```bash
 sd-webui-all-in-one sd-webui check-env [选项]

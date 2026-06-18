@@ -55,8 +55,18 @@ from sd_webui_all_in_one.base_manager.snapshot import (
     WebUiIdentitySnapshot,
     WebUiSnapshot,
     WheelSnapshot,
+    load_snapshot,
     save_snapshot,
+    snapshot_from_dict,
     snapshot_to_dict,
+)
+from sd_webui_all_in_one.base_manager.snapshot_restore import (
+    SnapshotRestoreOptions,
+    normalize_extension_name,
+    restore_extensions,
+    restore_git_repository,
+    restore_python_packages,
+    restore_webui_snapshot,
 )
 
 from sd_webui_all_in_one.base_manager.comfyui_base import (
@@ -268,8 +278,16 @@ __all__ = [
     "WebUiIdentitySnapshot",
     "WebUiSnapshot",
     "WheelSnapshot",
+    "load_snapshot",
     "save_snapshot",
+    "snapshot_from_dict",
     "snapshot_to_dict",
+    "SnapshotRestoreOptions",
+    "normalize_extension_name",
+    "restore_extensions",
+    "restore_git_repository",
+    "restore_python_packages",
+    "restore_webui_snapshot",
     # comfyui_base.py - ComfyUI 管理模块
     # 类型定义
     "ComfyUiCustomNodeInfo",

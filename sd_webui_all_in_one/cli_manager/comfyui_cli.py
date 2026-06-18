@@ -45,6 +45,10 @@ from sd_webui_all_in_one.cli_manager.auto_mirror import (
     with_auto_mirror,
 )
 from sd_webui_all_in_one.cli_manager.snapshot import output_snapshot
+from sd_webui_all_in_one.cli_manager.snapshot_restore import (
+    add_restore_arguments,
+    restore_snapshot,
+)
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
@@ -148,6 +152,32 @@ def snapshot(
             include_packages=include_packages,
         ),
         output=output,
+    )
+
+
+def restore(
+    snapshot_path: Path,
+    comfyui_path: Path,
+    prune_packages: bool = False,
+    prune_extensions: bool = False,
+    force_git_reset: bool = False,
+    use_uv: bool = True,
+    use_pypi_mirror: bool = True,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """恢复 ComfyUI 环境快照"""
+    restore_snapshot(
+        snapshot_path=snapshot_path,
+        webui_path=comfyui_path,
+        expected_webui_type="comfyui",
+        prune_packages=prune_packages,
+        prune_extensions=prune_extensions,
+        force_git_reset=force_git_reset,
+        use_uv=use_uv,
+        use_pypi_mirror=use_pypi_mirror,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
     )
 
 
@@ -621,6 +651,25 @@ def register_comfyui(
             comfyui_path=args.comfyui_path,
             output=args.output,
             include_packages=args.include_packages,
+        )
+    )
+
+    # restore
+    restore_p = comfy_sub.add_parser("restore", help="恢复 ComfyUI 环境快照")
+    add_restore_arguments(restore_p, "--comfyui-path", "comfyui_path", COMFYUI_ROOT_PATH)
+    restore_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: restore(
+                snapshot_path=args.snapshot_path,
+                comfyui_path=args.comfyui_path,
+                prune_packages=args.prune_packages,
+                prune_extensions=args.prune_extensions,
+                force_git_reset=args.force_git_reset,
+                use_uv=args.use_uv,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
         )
     )
 

@@ -45,6 +45,10 @@ from sd_webui_all_in_one.cli_manager.auto_mirror import (
     with_auto_mirror,
 )
 from sd_webui_all_in_one.cli_manager.snapshot import output_snapshot
+from sd_webui_all_in_one.cli_manager.snapshot_restore import (
+    add_restore_arguments,
+    restore_snapshot,
+)
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_CATEGORY_LIST,
     PyTorchDeviceTypeCategory,
@@ -136,6 +140,32 @@ def snapshot(
             include_packages=include_packages,
         ),
         output=output,
+    )
+
+
+def restore(
+    snapshot_path: Path,
+    invokeai_path: Path,
+    prune_packages: bool = False,
+    prune_extensions: bool = False,
+    force_git_reset: bool = False,
+    use_uv: bool = True,
+    use_pypi_mirror: bool = True,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """恢复 InvokeAI 环境快照"""
+    restore_snapshot(
+        snapshot_path=snapshot_path,
+        webui_path=invokeai_path,
+        expected_webui_type="invokeai",
+        prune_packages=prune_packages,
+        prune_extensions=prune_extensions,
+        force_git_reset=force_git_reset,
+        use_uv=use_uv,
+        use_pypi_mirror=use_pypi_mirror,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
     )
 
 
@@ -568,6 +598,25 @@ def register_invokeai(
             invokeai_path=args.invokeai_path,
             output=args.output,
             include_packages=args.include_packages,
+        )
+    )
+
+    # restore
+    restore_p = invoke_sub.add_parser("restore", help="恢复 InvokeAI 环境快照")
+    add_restore_arguments(restore_p, "--invokeai-path", "invokeai_path", INVOKEAI_ROOT_PATH)
+    restore_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: restore(
+                snapshot_path=args.snapshot_path,
+                invokeai_path=args.invokeai_path,
+                prune_packages=args.prune_packages,
+                prune_extensions=args.prune_extensions,
+                force_git_reset=args.force_git_reset,
+                use_uv=args.use_uv,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
         )
     )
 

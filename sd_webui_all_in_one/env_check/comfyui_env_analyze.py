@@ -1,7 +1,6 @@
 """ComfyUI 环境检查工具"""
 
 import os
-import re
 import sys
 from pathlib import Path
 from typing import TypedDict
@@ -25,6 +24,7 @@ from sd_webui_all_in_one.package_analyzer import (
     get_package_name,
     is_package_has_version,
     is_package_installed,
+    normalize_package_name,
     parse_package_spec,
     parse_requirement_list,
     read_packages_from_requirements_file,
@@ -84,22 +84,6 @@ class ComponentEnvironmentDetails(TypedDict):
 
 ComfyUIEnvironmentComponent = dict[str, ComponentEnvironmentDetails]
 """ComfyUI 环境组件表字典"""
-
-
-def normalize_package_name(
-    name: str,
-) -> str:
-    """规范化软件包名 (https://peps.python.org/pep-0503/#normalized-names)
-
-    Args:
-        name (str):
-            原始包名字符串
-
-    Returns:
-        str:
-            规范化后的软件包名字符串
-    """
-    return re.sub(r"[-_.]+", "-", name).lower()
 
 
 def create_comfyui_environment_dict(

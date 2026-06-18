@@ -26,6 +26,7 @@ from sd_webui_all_in_one.package_analyzer.version_utils import (
     get_package_version_specs,
     remove_optional_dependence_from_package,
     get_correct_package_name,
+    normalize_package_name,
 )
 
 # Wheel 文件名解析
@@ -91,6 +92,7 @@ __all__ = [
     "get_package_version_specs",
     "remove_optional_dependence_from_package",
     "get_correct_package_name",
+    "normalize_package_name",
     # wheel_parser
     "parse_wheel_filename",
     "parse_wheel_version",

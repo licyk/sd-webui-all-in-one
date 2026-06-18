@@ -32,6 +32,13 @@ REPLACE_PACKAGE_NAME_DICT = {
 """Python 软件包名替换表"""
 
 
+def normalize_package_name(
+    name: str,
+) -> str:
+    """规范化软件包名 (https://peps.python.org/pep-0503/#normalized-names)"""
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
 def version_string_is_canonical(
     version: str,
 ) -> bool:
