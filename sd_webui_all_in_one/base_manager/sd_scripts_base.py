@@ -24,6 +24,7 @@ from sd_webui_all_in_one.base_manager.base import (
     prepare_pytorch_install_info,
     print_divider,
 )
+from sd_webui_all_in_one.base_manager.snapshot import WebUiSnapshot, build_webui_snapshot
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.downloader import (
     DownloadToolType,
@@ -484,6 +485,30 @@ def update_sd_scripts(
     git_warpper.update(sd_scripts_path)
 
     logger.info("更新 SD Scripts 完成")
+
+
+def get_sd_scripts_snapshot(
+    sd_scripts_path: Path,
+    include_packages: bool = True,
+) -> WebUiSnapshot:
+    """获取 SD Scripts 环境快照
+
+    Args:
+        sd_scripts_path (Path):
+            SD Scripts 根目录
+        include_packages (bool):
+            是否记录当前 Python 环境已安装软件包
+
+    Returns:
+        WebUiSnapshot:
+            SD Scripts 环境快照
+    """
+    return build_webui_snapshot(
+        webui_name="SD Scripts",
+        webui_type="sd_scripts",
+        webui_path=sd_scripts_path,
+        include_packages=include_packages,
+    )
 
 
 def check_sd_scripts_env(

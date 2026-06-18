@@ -29,6 +29,16 @@ sd-webui-all-in-one invokeai update [选项]
   - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
   - `--no-uv`: 不使用 uv 安装 Python 软件包。
 
+### 生成环境快照
+```bash
+sd-webui-all-in-one invokeai snapshot [选项]
+```
+
+- **高级选项**:
+  - `--invokeai-path <路径>`: InvokeAI 根目录。
+  - `--output <路径>`: 输出 JSON 文件路径；未传时输出到终端。
+  - `--no-packages`: 不记录当前 Python 环境已安装软件包。
+
 ### 检查运行环境
 ```bash
 sd-webui-all-in-one invokeai check-env [选项]

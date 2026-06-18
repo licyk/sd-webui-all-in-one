@@ -16,6 +16,7 @@ from sd_webui_all_in_one.base_manager import (
     uninstall_sd_scripts_model,
     launch_sd_scripts_version_gui,
     reinstall_pytorch,
+    get_sd_scripts_snapshot,
 )
 from sd_webui_all_in_one.config import SD_SCRIPTS_ROOT_PATH
 from sd_webui_all_in_one.downloader import (
@@ -30,6 +31,7 @@ from sd_webui_all_in_one.cli_manager.auto_mirror import (
     add_auto_mirror_argument,
     with_auto_mirror,
 )
+from sd_webui_all_in_one.cli_manager.snapshot import output_snapshot
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
@@ -110,6 +112,21 @@ def update(
         sd_scripts_path=sd_scripts_path,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
+    )
+
+
+def snapshot(
+    sd_scripts_path: Path,
+    output: Path | None = None,
+    include_packages: bool = True,
+) -> None:
+    """生成 SD Scripts 环境快照"""
+    output_snapshot(
+        lambda: get_sd_scripts_snapshot(
+            sd_scripts_path=sd_scripts_path,
+            include_packages=include_packages,
+        ),
+        output=output,
     )
 
 
@@ -384,6 +401,19 @@ def register_sd_scripts(
                 use_github_mirror=args.use_github_mirror,
                 custom_github_mirror=args.custom_github_mirror,
             )
+        )
+    )
+
+    # snapshot
+    snapshot_p = scripts_sub.add_parser("snapshot", help="生成 SD Scripts 环境快照")
+    snapshot_p.add_argument("--sd-scripts-path", type=normalized_filepath, required=False, default=SD_SCRIPTS_ROOT_PATH, dest="sd_scripts_path", help="SD Scripts 根目录")
+    snapshot_p.add_argument("--output", type=normalized_filepath, default=None, help="输出 JSON 文件路径, 未传时输出到终端")
+    snapshot_p.add_argument("--no-packages", action="store_false", dest="include_packages", help="不记录当前 Python 环境已安装软件包")
+    snapshot_p.set_defaults(
+        func=lambda args: snapshot(
+            sd_scripts_path=args.sd_scripts_path,
+            output=args.output,
+            include_packages=args.include_packages,
         )
     )
 

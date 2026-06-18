@@ -18,6 +18,7 @@ from sd_webui_all_in_one.base_manager.base import (
     prepare_pytorch_install_info,
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import apply_hotpatcher_launch_env
+from sd_webui_all_in_one.base_manager.snapshot import WebUiSnapshot, build_webui_snapshot
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.env_check import (
     check_torch_version,
@@ -221,6 +222,30 @@ def update_qwen_tts_webui(
     git_warpper.update(qwen_tts_webui_path)
 
     logger.info("更新 Qwen TTS WebUI 完成")
+
+
+def get_qwen_tts_webui_snapshot(
+    qwen_tts_webui_path: Path,
+    include_packages: bool = True,
+) -> WebUiSnapshot:
+    """获取 Qwen TTS WebUI 环境快照
+
+    Args:
+        qwen_tts_webui_path (Path):
+            Qwen TTS WebUI 根目录
+        include_packages (bool):
+            是否记录当前 Python 环境已安装软件包
+
+    Returns:
+        WebUiSnapshot:
+            Qwen TTS WebUI 环境快照
+    """
+    return build_webui_snapshot(
+        webui_name="Qwen TTS WebUI",
+        webui_type="qwen_tts_webui",
+        webui_path=qwen_tts_webui_path,
+        include_packages=include_packages,
+    )
 
 
 def check_qwen_tts_webui_env(

@@ -35,6 +35,16 @@ sd-webui-all-in-one sd-webui update [选项]
   - `--no-github-mirror`: 不使用 Github 镜像源。
   - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
 
+### 生成环境快照
+```bash
+sd-webui-all-in-one sd-webui snapshot [选项]
+```
+
+- **高级选项**:
+  - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--output <路径>`: 输出 JSON 文件路径；未传时输出到终端。
+  - `--no-packages`: 不记录当前 Python 环境已安装软件包。
+
 ### 检查运行环境
 ```bash
 sd-webui-all-in-one sd-webui check-env [选项]

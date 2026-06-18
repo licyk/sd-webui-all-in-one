@@ -27,6 +27,11 @@ from sd_webui_all_in_one.base_manager.base import (
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import apply_hotpatcher_launch_env
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
+from sd_webui_all_in_one.base_manager.snapshot import (
+    WebUiSnapshot,
+    build_webui_snapshot,
+    collect_git_extensions,
+)
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.downloader import (
     DownloadToolType,
@@ -807,6 +812,34 @@ def update_comfyui_custom_nodes(
         raise AggregateError("更新 ComfyUI 扩展时发生错误", err)
 
     logger.info("更新 ComfyUI 扩展完成")
+
+
+def get_comfyui_snapshot(
+    comfyui_path: Path,
+    include_packages: bool = True,
+) -> WebUiSnapshot:
+    """获取 ComfyUI 环境快照
+
+    Args:
+        comfyui_path (Path):
+            ComfyUI 根目录
+        include_packages (bool):
+            是否记录当前 Python 环境已安装软件包
+
+    Returns:
+        WebUiSnapshot:
+            ComfyUI 环境快照
+    """
+    return build_webui_snapshot(
+        webui_name="ComfyUI",
+        webui_type="comfyui",
+        webui_path=comfyui_path,
+        include_packages=include_packages,
+        extensions=collect_git_extensions(
+            comfyui_path / "custom_nodes",
+            enabled_resolver=lambda name, _path: not name.endswith(".disabled"),
+        ),
+    )
 
 
 def uninstall_comfyui_custom_node(

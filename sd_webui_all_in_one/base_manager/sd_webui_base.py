@@ -57,6 +57,11 @@ from sd_webui_all_in_one.base_manager.base import (
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import apply_hotpatcher_launch_env
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
+from sd_webui_all_in_one.base_manager.snapshot import (
+    WebUiSnapshot,
+    build_webui_snapshot,
+    collect_git_extensions,
+)
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.mirror_manager import (
@@ -1553,6 +1558,51 @@ def update_sd_webui_extensions(
         raise AggregateError("更新 Stable Diffusion WebUI 扩展时发生错误", err)
 
     logger.info("更新 Stable Diffusion WebUI 扩展完成")
+
+
+def get_sd_webui_snapshot(
+    sd_webui_path: Path,
+    include_packages: bool = True,
+) -> WebUiSnapshot:
+    """获取 Stable Diffusion WebUI 环境快照
+
+    Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录
+        include_packages (bool):
+            是否记录当前 Python 环境已安装软件包
+
+    Returns:
+        WebUiSnapshot:
+            Stable Diffusion WebUI 环境快照
+    """
+    config_path = sd_webui_path / "config.json"
+    try:
+        with open(config_path, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+    except Exception:
+        settings = {}
+
+    disabled_extensions = set(settings.get("disabled_extensions", []))
+    disable_all_extensions = settings.get("disable_all_extensions", "none")
+
+    def _extension_enabled(name: str, _path: Path) -> bool:
+        if disable_all_extensions == "all":
+            return False
+        if disable_all_extensions != "extra":
+            return name not in disabled_extensions
+        return True
+
+    return build_webui_snapshot(
+        webui_name="Stable Diffusion WebUI",
+        webui_type="sd_webui",
+        webui_path=sd_webui_path,
+        include_packages=include_packages,
+        extensions=collect_git_extensions(
+            sd_webui_path / "extensions",
+            enabled_resolver=_extension_enabled,
+        ),
+    )
 
 
 def uninstall_sd_webui_extension(

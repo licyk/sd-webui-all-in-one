@@ -22,6 +22,7 @@ from sd_webui_all_in_one.base_manager import (
     uninstall_invokeai_model,
     reinstall_invokeai_pytorch,
     launch_invokeai_version_gui,
+    get_invokeai_snapshot,
 )
 from sd_webui_all_in_one.config import (
     INVOKEAI_ROOT_PATH,
@@ -43,6 +44,7 @@ from sd_webui_all_in_one.cli_manager.auto_mirror import (
     add_auto_mirror_argument,
     with_auto_mirror,
 )
+from sd_webui_all_in_one.cli_manager.snapshot import output_snapshot
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_CATEGORY_LIST,
     PyTorchDeviceTypeCategory,
@@ -119,6 +121,21 @@ def update(
     update_invokeai(
         use_pypi_mirror=use_pypi_mirror,
         use_uv=use_uv,
+    )
+
+
+def snapshot(
+    invokeai_path: Path,
+    output: Path | None = None,
+    include_packages: bool = True,
+) -> None:
+    """生成 InvokeAI 环境快照"""
+    output_snapshot(
+        lambda: get_invokeai_snapshot(
+            invokeai_path=invokeai_path,
+            include_packages=include_packages,
+        ),
+        output=output,
     )
 
 
@@ -538,6 +555,19 @@ def register_invokeai(
                 use_pypi_mirror=args.use_pypi_mirror,
                 use_uv=args.use_uv,
             )
+        )
+    )
+
+    # snapshot
+    snapshot_p = invoke_sub.add_parser("snapshot", help="生成 InvokeAI 环境快照")
+    snapshot_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, dest="invokeai_path", help="InvokeAI 根目录")
+    snapshot_p.add_argument("--output", type=normalized_filepath, default=None, help="输出 JSON 文件路径, 未传时输出到终端")
+    snapshot_p.add_argument("--no-packages", action="store_false", dest="include_packages", help="不记录当前 Python 环境已安装软件包")
+    snapshot_p.set_defaults(
+        func=lambda args: snapshot(
+            invokeai_path=args.invokeai_path,
+            output=args.output,
+            include_packages=args.include_packages,
         )
     )
 

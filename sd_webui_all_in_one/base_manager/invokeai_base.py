@@ -39,6 +39,11 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     configure_hotpatcher_for_current_process,
 )
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
+from sd_webui_all_in_one.base_manager.snapshot import (
+    WebUiSnapshot,
+    build_webui_snapshot,
+    collect_git_extensions,
+)
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.custom_exceptions import (
     AggregateError,
@@ -1166,6 +1171,34 @@ def update_invokeai_custom_nodes(
         raise AggregateError("更新 InvokeAI 扩展时发生错误", err)
 
     logger.info("更新 InvokeAI 扩展完成")
+
+
+def get_invokeai_snapshot(
+    invokeai_path: Path,
+    include_packages: bool = True,
+) -> WebUiSnapshot:
+    """获取 InvokeAI 环境快照
+
+    Args:
+        invokeai_path (Path):
+            InvokeAI 根目录
+        include_packages (bool):
+            是否记录当前 Python 环境已安装软件包
+
+    Returns:
+        WebUiSnapshot:
+            InvokeAI 环境快照
+    """
+    return build_webui_snapshot(
+        webui_name="InvokeAI",
+        webui_type="invokeai",
+        webui_path=invokeai_path,
+        include_packages=include_packages,
+        extensions=collect_git_extensions(
+            invokeai_path / "nodes",
+            enabled_resolver=lambda _name, path: (path / "__init__.py").is_file(),
+        ),
+    )
 
 
 def uninstall_invokeai_custom_node(

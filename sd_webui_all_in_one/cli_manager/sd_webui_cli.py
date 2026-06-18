@@ -25,6 +25,7 @@ from sd_webui_all_in_one.base_manager import (
     list_sd_webui_models,
     uninstall_sd_webui_model,
     reinstall_pytorch,
+    get_sd_webui_snapshot,
 )
 from sd_webui_all_in_one.config import (
     SD_WEBUI_ROOT_PATH,
@@ -46,6 +47,7 @@ from sd_webui_all_in_one.cli_manager.auto_mirror import (
     add_auto_mirror_argument,
     with_auto_mirror,
 )
+from sd_webui_all_in_one.cli_manager.snapshot import output_snapshot
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
@@ -138,6 +140,21 @@ def update(
         sd_webui_path=sd_webui_path,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
+    )
+
+
+def snapshot(
+    sd_webui_path: Path,
+    output: Path | None = None,
+    include_packages: bool = True,
+) -> None:
+    """生成 Stable Diffusion WebUI 环境快照"""
+    output_snapshot(
+        lambda: get_sd_webui_snapshot(
+            sd_webui_path=sd_webui_path,
+            include_packages=include_packages,
+        ),
+        output=output,
     )
 
 
@@ -618,6 +635,19 @@ def register_sd_webui(
                 use_github_mirror=args.use_github_mirror,
                 custom_github_mirror=args.custom_github_mirror,
             )
+        )
+    )
+
+    # snapshot
+    snapshot_p = sd_sub.add_parser("snapshot", help="生成 Stable Diffusion WebUI 环境快照")
+    snapshot_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    snapshot_p.add_argument("--output", type=normalized_filepath, default=None, help="输出 JSON 文件路径, 未传时输出到终端")
+    snapshot_p.add_argument("--no-packages", action="store_false", dest="include_packages", help="不记录当前 Python 环境已安装软件包")
+    snapshot_p.set_defaults(
+        func=lambda args: snapshot(
+            sd_webui_path=args.sd_webui_path,
+            output=args.output,
+            include_packages=args.include_packages,
         )
     )
 

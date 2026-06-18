@@ -13,6 +13,7 @@ from sd_webui_all_in_one.base_manager import (
     launch_qwen_tts_webui,
     launch_qwen_tts_webui_version_gui,
     reinstall_pytorch,
+    get_qwen_tts_webui_snapshot,
 )
 from sd_webui_all_in_one.config import (
     QWEN_TTS_WEBUI_ROOT_PATH,
@@ -30,6 +31,7 @@ from sd_webui_all_in_one.cli_manager.auto_mirror import (
     add_auto_mirror_argument,
     with_auto_mirror,
 )
+from sd_webui_all_in_one.cli_manager.snapshot import output_snapshot
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
@@ -110,6 +112,21 @@ def update(
         qwen_tts_webui_path=qwen_tts_webui_path,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
+    )
+
+
+def snapshot(
+    qwen_tts_webui_path: Path,
+    output: Path | None = None,
+    include_packages: bool = True,
+) -> None:
+    """生成 Qwen TTS WebUI 环境快照"""
+    output_snapshot(
+        lambda: get_qwen_tts_webui_snapshot(
+            qwen_tts_webui_path=qwen_tts_webui_path,
+            include_packages=include_packages,
+        ),
+        output=output,
     )
 
 
@@ -339,6 +356,19 @@ def register_qwen_tts_webui(
                 use_github_mirror=args.use_github_mirror,
                 custom_github_mirror=args.custom_github_mirror,
             )
+        )
+    )
+
+    # snapshot
+    snapshot_p = qwen_tts_webui_sub.add_parser("snapshot", help="生成 Qwen TTS WebUI 环境快照")
+    snapshot_p.add_argument("--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录")
+    snapshot_p.add_argument("--output", type=normalized_filepath, default=None, help="输出 JSON 文件路径, 未传时输出到终端")
+    snapshot_p.add_argument("--no-packages", action="store_false", dest="include_packages", help="不记录当前 Python 环境已安装软件包")
+    snapshot_p.set_defaults(
+        func=lambda args: snapshot(
+            qwen_tts_webui_path=args.qwen_tts_webui_path,
+            output=args.output,
+            include_packages=args.include_packages,
         )
     )
 
