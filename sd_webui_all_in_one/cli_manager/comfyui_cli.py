@@ -459,6 +459,7 @@ def launch_version_gui(
 
 def launch_snapshot_gui(
     comfyui_path: Path,
+    snapshot_dir: Path | None = None,
     use_uv: bool = True,
     use_pypi_mirror: bool = True,
     use_github_mirror: bool = False,
@@ -467,6 +468,7 @@ def launch_snapshot_gui(
     """启动 ComfyUI 快照管理 GUI"""
     launch_comfyui_snapshot_gui(
         comfyui_path=comfyui_path,
+        snapshot_dir=snapshot_dir,
         use_uv=use_uv,
         use_pypi_mirror=use_pypi_mirror,
         use_github_mirror=use_github_mirror,
@@ -783,6 +785,7 @@ def register_comfyui(
         func=with_auto_mirror(
             lambda args: launch_snapshot_gui(
                 comfyui_path=args.comfyui_path,
+                snapshot_dir=args.snapshot_dir,
                 use_uv=args.use_uv,
                 use_pypi_mirror=args.use_pypi_mirror,
                 use_github_mirror=args.use_github_mirror,

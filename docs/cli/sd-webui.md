@@ -119,6 +119,7 @@ sd-webui-all-in-one sd-webui gui snapshot-manager [选项]
 
 - **高级选项**:
   - `--sd-webui-path <路径>`: Stable Diffusion WebUI 根目录。
+  - `--snapshot-dir <路径>`: 快照目录。
   - `--no-uv`: 不使用 uv 安装 Python 软件包。
   - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
   - `--no-github-mirror`: 不使用 Github 镜像源。

@@ -484,6 +484,7 @@ def launch_version_gui(
 
 def launch_snapshot_gui(
     sd_webui_path: Path,
+    snapshot_dir: Path | None = None,
     use_uv: bool = True,
     use_pypi_mirror: bool = True,
     use_github_mirror: bool = False,
@@ -492,6 +493,7 @@ def launch_snapshot_gui(
     """启动 Stable Diffusion WebUI 快照管理 GUI"""
     launch_sd_webui_snapshot_gui(
         sd_webui_path=sd_webui_path,
+        snapshot_dir=snapshot_dir,
         use_uv=use_uv,
         use_pypi_mirror=use_pypi_mirror,
         use_github_mirror=use_github_mirror,
@@ -786,6 +788,7 @@ def register_sd_webui(
         func=with_auto_mirror(
             lambda args: launch_snapshot_gui(
                 sd_webui_path=args.sd_webui_path,
+                snapshot_dir=args.snapshot_dir,
                 use_uv=args.use_uv,
                 use_pypi_mirror=args.use_pypi_mirror,
                 use_github_mirror=args.use_github_mirror,

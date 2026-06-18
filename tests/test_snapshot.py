@@ -25,6 +25,7 @@ from sd_webui_all_in_one.cli_manager import (
     sd_trainer_cli,
     sd_webui_cli,
 )
+from sd_webui_all_in_one.base_manager.gui.snapshot_gui import build_restore_blocking_guidance, format_restore_blocking_message, list_snapshot_files
 from sd_webui_all_in_one.cli_manager.snapshot import output_snapshot
 
 
@@ -256,6 +257,35 @@ def test_output_snapshot_writes_default_or_explicit_directory(monkeypatch, tmp_p
     assert json.loads(output_file.read_text(encoding="utf-8")) == snapshot_json
 
 
+def test_list_snapshot_files_reads_valid_snapshots_sorted_by_created_at(tmp_path):
+    old_snapshot = _webui_snapshot(tmp_path / "old")
+    old_snapshot.created_at = "2026-06-17T00:00:00Z"
+    old_snapshot.packages = [_package_snapshot("old", "1.0.0")]
+    old_path = snapshot_utils.save_snapshot(old_snapshot, tmp_path / "old.json")
+
+    new_snapshot = _webui_snapshot(tmp_path / "new")
+    new_snapshot.created_at = "2026-06-18T00:00:00Z"
+    new_snapshot.extensions = [_extension_snapshot("ext", tmp_path / "new" / "extensions" / "ext", True)]
+    new_path = snapshot_utils.save_snapshot(new_snapshot, tmp_path / "new.json")
+    (tmp_path / "invalid.json").write_text("{", encoding="utf-8")
+    (tmp_path / "note.txt").write_text("not a snapshot", encoding="utf-8")
+
+    items = list_snapshot_files(tmp_path)
+
+    assert [item.path for item in items] == [new_path, old_path]
+    assert items[0].filename == "new.json"
+    assert items[0].created_at == "2026-06-18T00:00:00Z"
+    assert items[0].webui_name == "Demo"
+    assert items[0].webui_type == "demo"
+    assert items[0].package_count == 0
+    assert items[0].extension_count == 1
+    assert items[1].package_count == 1
+
+
+def test_list_snapshot_files_returns_empty_for_missing_directory(tmp_path):
+    assert list_snapshot_files(tmp_path / "missing") == []
+
+
 def test_load_snapshot_roundtrip_and_rejects_unsupported_schema(tmp_path):
     local_source = tmp_path / "local-package"
     local_source.mkdir()
@@ -390,6 +420,10 @@ def test_preview_restore_plan_blocks_dirty_kernel_without_force(monkeypatch, tmp
     assert blocked.kernel_change is not None
     assert blocked.kernel_change.action == "blocked_dirty"
     assert blocked.errors == ["内核仓库存在未提交变更"]
+    blocking_message = format_restore_blocking_message(blocked)
+    assert "允许覆盖 Git 未提交变更" in blocking_message
+    assert "风险" in blocking_message
+    assert (tmp_path / "demo").as_posix() in blocking_message
 
     forced = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -401,6 +435,24 @@ def test_preview_restore_plan_blocks_dirty_kernel_without_force(monkeypatch, tmp
     assert forced.kernel_change is not None
     assert forced.kernel_change.action == "switch_commit"
     assert forced.errors == []
+
+
+def test_restore_blocking_guidance_explains_webui_type_mismatch(tmp_path):
+    snapshot = _webui_snapshot(tmp_path / "demo")
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+
+    plan = restore_utils.preview_webui_snapshot_restore(
+        snapshot_path=output,
+        webui_path=tmp_path / "demo",
+        expected_webui_type="other_webui",
+    )
+
+    guidance = "\n".join(build_restore_blocking_guidance(plan))
+
+    assert plan.errors == ["快照 WebUI 类型不匹配: 期望 'other_webui', 实际 'demo'"]
+    assert "对应的快照管理器" in guidance
+    assert "跨 WebUI 类型恢复会被终止" in guidance
 
 
 def test_preview_restore_plan_prunes_comfyui_extensions_with_disabled_name(monkeypatch, tmp_path):
@@ -702,6 +754,8 @@ def test_product_snapshot_cli_parse_smoke(monkeypatch, tmp_path):
                 "snapshot-manager",
                 path_arg,
                 str(tmp_path / command),
+                "--snapshot-dir",
+                str(tmp_path / "gui-snapshots"),
                 "--no-uv",
                 "--no-pypi-mirror",
                 "--no-github-mirror",
@@ -715,6 +769,7 @@ def test_product_snapshot_cli_parse_smoke(monkeypatch, tmp_path):
         assert gui_calls == [
             {
                 path_key: tmp_path / command,
+                "snapshot_dir": tmp_path / "gui-snapshots",
                 "use_uv": False,
                 "use_pypi_mirror": False,
                 "use_github_mirror": False,

@@ -760,6 +760,7 @@ def launch_sd_scripts_version_gui(
 
 def launch_sd_scripts_snapshot_gui(
     sd_scripts_path: Path,
+    snapshot_dir: Path | None = None,
     use_uv: bool = True,
     use_pypi_mirror: bool = True,
     use_github_mirror: bool = False,
@@ -778,6 +779,7 @@ def launch_sd_scripts_snapshot_gui(
         webui_type="sd_scripts",
         webui_path=sd_scripts_path,
         snapshot_factory=lambda include_packages: get_sd_scripts_snapshot(sd_scripts_path, include_packages=include_packages),
+        snapshot_dir=snapshot_dir,
         use_uv=use_uv,
         use_pypi_mirror=use_pypi_mirror,
         use_github_mirror=use_github_mirror,

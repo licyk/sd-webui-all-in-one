@@ -6,9 +6,9 @@ from __future__ import annotations
 
 import tkinter as tk
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 from tkinter import (
-    filedialog,
     messagebox,
     ttk,
 )
@@ -20,7 +20,7 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     configure_gui_fonts,
     install_text_context_menu,
 )
-from sd_webui_all_in_one.base_manager.snapshot import WebUiSnapshot, resolve_snapshot_output, save_snapshot
+from sd_webui_all_in_one.base_manager.snapshot import WebUiSnapshot, load_snapshot, resolve_snapshot_output, save_snapshot
 from sd_webui_all_in_one.base_manager.snapshot_restore import (
     GitRestorePlanItem,
     PackageRestorePlanItem,
@@ -33,6 +33,83 @@ from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR
 
 
 SnapshotFactory = Callable[[bool], WebUiSnapshot]
+
+
+@dataclass(slots=True)
+class SnapshotListItem:
+    """快照列表项"""
+
+    path: Path
+    filename: str
+    created_at: str
+    webui_name: str
+    webui_type: str
+    package_count: int
+    extension_count: int
+
+
+def list_snapshot_files(snapshot_dir: Path) -> list[SnapshotListItem]:
+    """读取目录中的有效快照文件列表"""
+    if not snapshot_dir.is_dir():
+        return []
+
+    items: list[SnapshotListItem] = []
+    for path in snapshot_dir.glob("*.json"):
+        if not path.is_file():
+            continue
+        try:
+            snapshot = load_snapshot(path)
+        except (OSError, ValueError):
+            continue
+        items.append(
+            SnapshotListItem(
+                path=path,
+                filename=path.name,
+                created_at=snapshot.created_at,
+                webui_name=snapshot.webui.name,
+                webui_type=snapshot.webui.type,
+                package_count=len(snapshot.packages),
+                extension_count=len(snapshot.extensions),
+            )
+        )
+    return sorted(items, key=lambda item: (item.created_at, item.filename), reverse=True)
+
+
+def build_restore_blocking_guidance(plan: SnapshotRestorePlan) -> list[str]:
+    """根据恢复阻断项生成处理建议"""
+    guidance: list[str] = []
+    if not plan.webui_type_match:
+        guidance.append(
+            f"请使用 {plan.snapshot_webui_type} 对应的快照管理器恢复该快照, 或选择 {plan.expected_webui_type} 类型的快照。"
+            "跨 WebUI 类型恢复会被终止, 避免写错内核和扩展目录。"
+        )
+
+    dirty_targets: list[str] = []
+    if plan.kernel_change is not None and plan.kernel_change.action == "blocked_dirty":
+        dirty_targets.append(f"内核: {plan.kernel_change.path}")
+    for item in plan.extension_changes:
+        if item.git is not None and item.git.action == "blocked_dirty":
+            dirty_targets.append(f"扩展 {item.name}: {item.path}")
+    if dirty_targets:
+        guidance.append(f"存在 Git 未提交变更: {'; '.join(dirty_targets)}。建议先提交、stash 或备份这些变更后再恢复。")
+        guidance.append(
+            "如果确认要丢弃这些未提交变更, 可以勾选“允许覆盖 Git 未提交变更”后再次恢复。"
+            "风险: 该开关会强制恢复上述 Git 仓库, 未提交的文件修改可能被永久覆盖。"
+        )
+
+    if plan.errors and not guidance:
+        guidance.append("请根据阻断信息处理当前环境或更换快照文件后再次恢复。")
+    return guidance
+
+
+def format_restore_blocking_message(plan: SnapshotRestorePlan) -> str:
+    """格式化无法恢复时展示给用户的提示"""
+    lines = [*plan.errors]
+    guidance = build_restore_blocking_guidance(plan)
+    if guidance:
+        lines.extend(("", "处理建议:"))
+        lines.extend(f"- {item}" for item in guidance)
+    return "\n".join(lines)
 
 
 class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
@@ -48,19 +125,21 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
         use_pypi_mirror: bool = True,
         use_github_mirror: bool = False,
         custom_github_mirror: str | list[str] | None = None,
+        snapshot_dir: Path | None = None,
     ) -> None:
         tk.Tk.__init__(self)
         BackgroundTaskMixin.__init__(self)
         self.app_title = title
         self.webui_type = webui_type
         self.webui_path = Path(webui_path)
+        self.snapshot_dir = Path(snapshot_dir or SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR)
         self.snapshot_factory = snapshot_factory
         self.use_pypi_mirror = use_pypi_mirror
         self.use_github_mirror = use_github_mirror
         self.custom_github_mirror = custom_github_mirror
         self.current_plan: SnapshotRestorePlan | None = None
+        self.snapshot_list_items: dict[str, SnapshotListItem] = {}
 
-        self.output_path_var = tk.StringVar(value=SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR.as_posix())
         self.include_packages_var = tk.BooleanVar(value=True)
         self.snapshot_path_var = tk.StringVar(value="")
         self.use_uv_var = tk.BooleanVar(value=use_uv)
@@ -75,6 +154,7 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
         self._create_styles()
         self._create_widgets()
         self._install_task_poller(self)
+        self.refresh_snapshot_list(show_message=False)
 
     def _create_styles(self) -> None:
         theme_applied = apply_gui_theme(self)
@@ -88,15 +168,7 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
         top = ttk.Frame(self)
         top.pack(fill=tk.X)
         ttk.Label(top, text=f"路径: {self.webui_path}").pack(side=tk.LEFT, padx=10, pady=8)
-
-        self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill=tk.BOTH, expand=True)
-        self.create_tab = ttk.Frame(self.notebook)
-        self.restore_tab = ttk.Frame(self.notebook)
-        self.notebook.add(self.create_tab, text="创建快照")
-        self.notebook.add(self.restore_tab, text="恢复快照")
-        self._create_snapshot_tab()
-        self._create_restore_tab()
+        ttk.Label(top, text=f"快照目录: {self.snapshot_dir}").pack(side=tk.LEFT, padx=(10, 0), pady=8)
 
         status_frame = ttk.Frame(self)
         status_frame.pack(fill=tk.X, side=tk.BOTTOM)
@@ -107,30 +179,64 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
         self.progress = ttk.Progressbar(status_frame, mode="indeterminate", length=180)
         self.progress.pack(side=tk.RIGHT, padx=(0, 8), pady=4)
 
+        content = ttk.Frame(self)
+        content.pack(fill=tk.BOTH, expand=True)
+        self.create_tab = ttk.Frame(content)
+        self.create_tab.pack(fill=tk.X)
+        self.restore_tab = ttk.Frame(content)
+        self.restore_tab.pack(fill=tk.BOTH, expand=True)
+        self._create_snapshot_tab()
+        self._create_restore_tab()
+
     def _create_snapshot_tab(self) -> None:
         form = ttk.Frame(self.create_tab)
-        form.pack(fill=tk.X, padx=18, pady=16)
-        ttk.Label(form, text="输出目录:").grid(row=0, column=0, sticky=tk.W, pady=4)
-        ttk.Entry(form, textvariable=self.output_path_var).grid(row=0, column=1, sticky=tk.EW, padx=(12, 8), pady=4)
-        ttk.Button(form, text="选择", command=self._choose_output_path).grid(row=0, column=2, pady=4)
-        ttk.Checkbutton(form, text="记录 Python packages", variable=self.include_packages_var).grid(row=1, column=1, sticky=tk.W, padx=(12, 0), pady=4)
-        form.columnconfigure(1, weight=1)
-
-        buttons = ttk.Frame(self.create_tab)
-        buttons.pack(fill=tk.X, padx=18, pady=(0, 8))
-        ttk.Button(buttons, text="创建快照", command=self.create_snapshot).pack(side=tk.LEFT)
-
-        self.create_result = tk.Text(self.create_tab, height=18, wrap=tk.WORD, state=tk.DISABLED)
-        self.create_result.pack(fill=tk.BOTH, expand=True, padx=18, pady=(0, 18))
-        install_text_context_menu(self.create_result, editable=False)
+        form.pack(fill=tk.X, padx=18, pady=(16, 8))
+        ttk.Checkbutton(form, text="记录 Python packages", variable=self.include_packages_var).pack(side=tk.LEFT)
+        ttk.Button(form, text="创建快照", command=self.create_snapshot).pack(side=tk.LEFT, padx=(12, 0))
 
     def _create_restore_tab(self) -> None:
         form = ttk.Frame(self.restore_tab)
-        form.pack(fill=tk.X, padx=18, pady=16)
-        ttk.Label(form, text="快照文件:").grid(row=0, column=0, sticky=tk.W, pady=4)
-        ttk.Entry(form, textvariable=self.snapshot_path_var).grid(row=0, column=1, sticky=tk.EW, padx=(12, 8), pady=4)
-        ttk.Button(form, text="选择", command=self._choose_snapshot_path).grid(row=0, column=2, pady=4)
+        form.pack(fill=tk.X, padx=18, pady=(0, 8))
+        ttk.Label(form, text="已选快照:").grid(row=0, column=0, sticky=tk.W, pady=4)
+        ttk.Entry(form, textvariable=self.snapshot_path_var, state="readonly").grid(row=0, column=1, sticky=tk.EW, padx=(12, 8), pady=4)
+        ttk.Button(form, text="刷新列表", command=self.refresh_snapshot_list).grid(row=0, column=2, pady=4)
         form.columnconfigure(1, weight=1)
+
+        list_frame = ttk.Frame(self.restore_tab)
+        list_frame.pack(fill=tk.BOTH, padx=18, pady=(0, 8))
+        self.snapshot_tree = ttk.Treeview(
+            list_frame,
+            columns=("created_at", "webui", "type", "packages", "extensions", "filename"),
+            show="headings",
+            height=8,
+            selectmode="browse",
+        )
+        headings = {
+            "created_at": "创建时间",
+            "webui": "WebUI",
+            "type": "类型",
+            "packages": "包",
+            "extensions": "扩展",
+            "filename": "文件名",
+        }
+        widths = {
+            "created_at": 170,
+            "webui": 190,
+            "type": 130,
+            "packages": 70,
+            "extensions": 70,
+            "filename": 360,
+        }
+        for column, heading in headings.items():
+            self.snapshot_tree.heading(column, text=heading)
+            self.snapshot_tree.column(column, width=widths[column], minwidth=60, anchor=tk.W)
+        self.snapshot_tree.column("packages", anchor=tk.CENTER)
+        self.snapshot_tree.column("extensions", anchor=tk.CENTER)
+        scrollbar = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=self.snapshot_tree.yview)
+        self.snapshot_tree.configure(yscrollcommand=scrollbar.set)
+        self.snapshot_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.snapshot_tree.bind("<<TreeviewSelect>>", self._on_snapshot_selected)
 
         options = ttk.Frame(self.restore_tab)
         options.pack(fill=tk.X, padx=18, pady=(0, 8))
@@ -141,13 +247,21 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
 
         buttons = ttk.Frame(self.restore_tab)
         buttons.pack(fill=tk.X, padx=18, pady=(0, 8))
-        ttk.Button(buttons, text="预检查", command=self.preview_restore).pack(side=tk.LEFT)
+        self.preview_button = ttk.Button(buttons, text="查看变更", command=self.preview_restore, state=tk.DISABLED)
+        self.preview_button.pack(side=tk.LEFT)
         self.restore_button = ttk.Button(buttons, text="恢复快照", command=self.restore_snapshot, state=tk.DISABLED)
         self.restore_button.pack(side=tk.LEFT, padx=(8, 0))
+        self.delete_button = ttk.Button(buttons, text="删除快照", command=self.delete_snapshot, state=tk.DISABLED)
+        self.delete_button.pack(side=tk.LEFT, padx=(8, 0))
 
-        self.restore_result = tk.Text(self.restore_tab, height=18, wrap=tk.WORD, state=tk.DISABLED)
-        self.restore_result.pack(fill=tk.BOTH, expand=True, padx=18, pady=(0, 18))
-        install_text_context_menu(self.restore_result, editable=False)
+        result_frame = ttk.Frame(self.restore_tab)
+        result_frame.pack(fill=tk.BOTH, expand=True, padx=18, pady=(0, 18))
+        self.result_text = tk.Text(result_frame, height=18, wrap=tk.WORD, state=tk.DISABLED)
+        result_scrollbar = ttk.Scrollbar(result_frame, orient=tk.VERTICAL, command=self.result_text.yview)
+        self.result_text.configure(yscrollcommand=result_scrollbar.set)
+        self.result_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        result_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        install_text_context_menu(self.result_text, editable=False)
 
     def set_status(self, message: str) -> None:
         self.status_var.set(message)
@@ -160,26 +274,67 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
             self.busy_var.set("")
             self.progress.stop()
 
-    def _choose_output_path(self) -> None:
-        current_output = Path(self.output_path_var.get())
-        initial_dir = current_output if current_output.suffix == "" else current_output.parent
-        path = filedialog.askdirectory(
-            parent=self,
-            title="选择快照输出目录",
-            initialdir=initial_dir.as_posix(),
-        )
-        if path:
-            self.output_path_var.set(path)
-
-    def _choose_snapshot_path(self) -> None:
-        path = filedialog.askopenfilename(
-            parent=self,
-            title="选择快照文件",
-            filetypes=(("JSON 文件", "*.json"), ("所有文件", "*.*")),
-        )
-        if path:
-            self.snapshot_path_var.set(path)
+    def refresh_snapshot_list(self, show_message: bool = True) -> None:
+        """刷新快照目录列表"""
+        if not self.snapshot_dir.is_dir():
+            self._clear_snapshot_list()
+            self.snapshot_path_var.set("")
             self._invalidate_plan()
+            self._set_snapshot_action_state(False)
+            if show_message:
+                messagebox.showwarning("快照目录不存在", f"快照目录不存在: {self.snapshot_dir}")
+            else:
+                self.set_status(f"快照目录不存在: {self.snapshot_dir}")
+            return
+
+        current_selection = self.snapshot_path_var.get().strip()
+        self._clear_snapshot_list()
+        for item in list_snapshot_files(self.snapshot_dir):
+            item_id = item.path.as_posix()
+            self.snapshot_list_items[item_id] = item
+            self.snapshot_tree.insert(
+                "",
+                tk.END,
+                iid=item_id,
+                values=(item.created_at, item.webui_name, item.webui_type, item.package_count, item.extension_count, item.filename),
+            )
+
+        if current_selection and current_selection in self.snapshot_list_items:
+            self._select_snapshot(Path(current_selection))
+        else:
+            self.snapshot_path_var.set("")
+            self._invalidate_plan()
+            self._set_snapshot_action_state(False)
+        if show_message:
+            self.set_status(f"已加载 {len(self.snapshot_list_items)} 个快照")
+
+    def _clear_snapshot_list(self) -> None:
+        for item_id in self.snapshot_tree.get_children():
+            self.snapshot_tree.delete(item_id)
+        self.snapshot_list_items.clear()
+
+    def _on_snapshot_selected(self, _event: tk.Event | None = None) -> None:
+        selection = self.snapshot_tree.selection()
+        if not selection:
+            return
+        item = self.snapshot_list_items.get(selection[0])
+        if item is None:
+            return
+        self.snapshot_path_var.set(item.path.as_posix())
+        self._invalidate_plan()
+        self._set_snapshot_action_state(True)
+        self.set_status(f"已选择快照: {item.filename}")
+
+    def _select_snapshot(self, path: Path) -> None:
+        item_id = path.as_posix()
+        if item_id not in self.snapshot_list_items:
+            return
+        self.snapshot_tree.selection_set(item_id)
+        self.snapshot_tree.focus(item_id)
+        self.snapshot_tree.see(item_id)
+        self.snapshot_path_var.set(item_id)
+        self._invalidate_plan()
+        self._set_snapshot_action_state(True)
 
     def _restore_options(self) -> SnapshotRestoreOptions:
         return SnapshotRestoreOptions(
@@ -195,7 +350,7 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
     def _snapshot_path(self) -> Path | None:
         value = self.snapshot_path_var.get().strip()
         if not value:
-            messagebox.showwarning("缺少快照文件", "请选择要恢复的快照文件")
+            messagebox.showwarning("缺少快照文件", "请从快照列表选择快照文件")
             return None
         path = Path(value)
         if not path.is_file():
@@ -205,18 +360,20 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
 
     def _invalidate_plan(self) -> None:
         self.current_plan = None
-        self.restore_button.configure(state=tk.DISABLED)
+
+    def _set_delete_state(self, enabled: bool) -> None:
+        self.delete_button.configure(state=tk.NORMAL if enabled else tk.DISABLED)
+
+    def _set_snapshot_action_state(self, enabled: bool) -> None:
+        state = tk.NORMAL if enabled else tk.DISABLED
+        self.preview_button.configure(state=state)
+        self.restore_button.configure(state=state)
+        self._set_delete_state(enabled)
 
     def create_snapshot(self) -> None:
-        output_text = self.output_path_var.get().strip()
-        if not output_text:
-            messagebox.showwarning("缺少输出目录", "请选择快照输出目录")
-            return
-        output_dir = Path(output_text)
-
         def _task() -> tuple[WebUiSnapshot, Path]:
             snapshot = self.snapshot_factory(bool(self.include_packages_var.get()))
-            output_path = resolve_snapshot_output(snapshot, output_dir)
+            output_path = resolve_snapshot_output(snapshot, self.snapshot_dir)
             save_snapshot(snapshot, output_path)
             return snapshot, output_path
 
@@ -227,6 +384,8 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
         )
 
     def _show_create_result(self, snapshot: WebUiSnapshot, output: Path) -> None:
+        self.refresh_snapshot_list(show_message=False)
+        self._select_snapshot(output)
         lines = [
             "快照创建完成",
             f"输出文件: {output}",
@@ -236,43 +395,72 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
             f"内核: {'Git 仓库' if snapshot.kernel and snapshot.kernel.is_git_repo else '非 Git 仓库'}",
             f"扩展: {len(snapshot.extensions)}",
         ]
-        self._set_text(self.create_result, "\n".join(lines))
+        self._set_result_text("\n".join(lines))
         messagebox.showinfo("创建完成", f"快照已保存到:\n{output}")
+
+    def delete_snapshot(self) -> None:
+        snapshot_path = self._snapshot_path()
+        if snapshot_path is None:
+            return
+        if not messagebox.askyesno("确认删除", f"是否删除快照文件?\n{snapshot_path}"):
+            return
+        try:
+            snapshot_path.unlink()
+        except OSError as exc:
+            messagebox.showerror("删除失败", f"删除快照失败:\n{exc}")
+            return
+        self.snapshot_path_var.set("")
+        self._invalidate_plan()
+        self._set_snapshot_action_state(False)
+        self.refresh_snapshot_list(show_message=False)
+        self._set_result_text("")
+        self.set_status(f"已删除快照: {snapshot_path.name}")
 
     def preview_restore(self) -> None:
         snapshot_path = self._snapshot_path()
         if snapshot_path is None:
             return
+        options = self._restore_options()
         self.run_background(
-            "预检查快照恢复中...",
+            "检查快照变更中...",
             lambda: preview_webui_snapshot_restore(
                 snapshot_path=snapshot_path,
                 webui_path=self.webui_path,
                 expected_webui_type=self.webui_type,
-                options=self._restore_options(),
+                options=options,
             ),
             self._show_restore_plan,
         )
 
     def _show_restore_plan(self, plan: SnapshotRestorePlan) -> None:
         self.current_plan = plan
-        self._set_text(self.restore_result, self._format_restore_plan(plan))
-        self.restore_button.configure(state=tk.NORMAL if not plan.errors else tk.DISABLED)
+        self._set_result_text(self._format_restore_plan(plan))
 
     def restore_snapshot(self) -> None:
         snapshot_path = self._snapshot_path()
         if snapshot_path is None:
             return
-        if self.current_plan is None:
-            messagebox.showwarning("需要预检查", "请先执行预检查")
+        options = self._restore_options()
+        self.run_background(
+            "检查快照恢复中...",
+            lambda: preview_webui_snapshot_restore(
+                snapshot_path=snapshot_path,
+                webui_path=self.webui_path,
+                expected_webui_type=self.webui_type,
+                options=options,
+            ),
+            lambda plan: self._confirm_restore_plan(snapshot_path, options, plan),
+        )
+
+    def _confirm_restore_plan(self, snapshot_path: Path, options: SnapshotRestoreOptions, plan: SnapshotRestorePlan) -> None:
+        self._show_restore_plan(plan)
+        if plan.errors:
+            messagebox.showwarning("无法恢复", format_restore_blocking_message(plan))
             return
-        if self.current_plan.errors:
-            messagebox.showwarning("无法恢复", "\n".join(self.current_plan.errors))
-            return
-        if (self.prune_packages_var.get() or self.prune_extensions_var.get() or self.force_git_reset_var.get()) and not messagebox.askyesno(
-            "确认恢复",
-            "当前恢复选项包含清理或强制覆盖操作, 是否继续?",
-        ):
+        confirm_message = "将按结果框中的变更恢复快照, 是否继续?"
+        if options.prune_packages or options.prune_extensions or options.force_git_reset:
+            confirm_message = "当前恢复选项包含清理或强制覆盖操作, 将按结果框中的变更恢复快照, 是否继续?"
+        if not messagebox.askyesno("确认恢复", confirm_message):
             return
 
         self.run_background(
@@ -281,7 +469,7 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
                 snapshot_path=snapshot_path,
                 webui_path=self.webui_path,
                 expected_webui_type=self.webui_type,
-                options=self._restore_options(),
+                options=options,
             ),
             lambda _value: self._restore_finished(),
         )
@@ -290,11 +478,11 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
         messagebox.showinfo("恢复完成", "快照恢复完成")
         self.preview_restore()
 
-    def _set_text(self, widget: tk.Text, text: str) -> None:
-        widget.configure(state=tk.NORMAL)
-        widget.delete("1.0", tk.END)
-        widget.insert(tk.END, text)
-        widget.configure(state=tk.DISABLED)
+    def _set_result_text(self, text: str) -> None:
+        self.result_text.configure(state=tk.NORMAL)
+        self.result_text.delete("1.0", tk.END)
+        self.result_text.insert(tk.END, text)
+        self.result_text.configure(state=tk.DISABLED)
 
     def _format_restore_plan(self, plan: SnapshotRestorePlan) -> str:
         lines = [
@@ -314,6 +502,11 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
             lines.append("")
             lines.append("阻断:")
             lines.extend(f"- {item}" for item in plan.errors)
+            guidance = build_restore_blocking_guidance(plan)
+            if guidance:
+                lines.append("")
+                lines.append("处理建议:")
+                lines.extend(f"- {item}" for item in guidance)
 
         if plan.package_changes:
             lines.append("")
@@ -360,6 +553,7 @@ def launch_snapshot_manager_gui(
     use_pypi_mirror: bool = True,
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
+    snapshot_dir: Path | None = None,
 ) -> None:
     """启动 WebUI 快照管理 GUI"""
     app = SnapshotManagerApp(
@@ -371,5 +565,6 @@ def launch_snapshot_manager_gui(
         use_pypi_mirror=use_pypi_mirror,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
+        snapshot_dir=snapshot_dir,
     )
     app.mainloop()

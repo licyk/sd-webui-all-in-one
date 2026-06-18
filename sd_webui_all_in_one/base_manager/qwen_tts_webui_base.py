@@ -446,6 +446,7 @@ def launch_qwen_tts_webui_version_gui(
 
 def launch_qwen_tts_webui_snapshot_gui(
     qwen_tts_webui_path: Path,
+    snapshot_dir: Path | None = None,
     use_uv: bool = True,
     use_pypi_mirror: bool = True,
     use_github_mirror: bool = False,
@@ -464,6 +465,7 @@ def launch_qwen_tts_webui_snapshot_gui(
         webui_type="qwen_tts_webui",
         webui_path=qwen_tts_webui_path,
         snapshot_factory=lambda include_packages: get_qwen_tts_webui_snapshot(qwen_tts_webui_path, include_packages=include_packages),
+        snapshot_dir=snapshot_dir,
         use_uv=use_uv,
         use_pypi_mirror=use_pypi_mirror,
         use_github_mirror=use_github_mirror,
