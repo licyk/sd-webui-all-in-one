@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import platform
+import re
 import sys
 from dataclasses import dataclass, field, fields, is_dataclass
 from datetime import datetime, timezone
@@ -16,6 +17,7 @@ from sd_webui_all_in_one.base_manager.repository_inspector import (
     inspect_repository,
     run_git_output,
 )
+from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR
 
 
 SNAPSHOT_SCHEMA_VERSION = 1
@@ -679,3 +681,27 @@ def save_snapshot(snapshot: WebUiSnapshot, output: Path) -> Path:
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(snapshot_to_dict(snapshot), ensure_ascii=False, indent=2), encoding="utf-8")
     return output
+
+
+def _safe_filename_part(value: str) -> str:
+    part = re.sub(r"[^A-Za-z0-9._-]+", "-", value.strip())
+    return part.strip("-._") or "snapshot"
+
+
+def _snapshot_timestamp(snapshot: WebUiSnapshot) -> str:
+    return _safe_filename_part(snapshot.created_at.replace(":", "").replace("+", ""))
+
+
+def default_snapshot_output(snapshot: WebUiSnapshot, output_dir: Path | None = None) -> Path:
+    """生成默认快照输出文件路径"""
+    if output_dir is None:
+        output_dir = SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR
+    filename = f"{_safe_filename_part(snapshot.webui.type)}-{_snapshot_timestamp(snapshot)}.json"
+    return output_dir / filename
+
+
+def resolve_snapshot_output(snapshot: WebUiSnapshot, output_dir: Path | None = None) -> Path:
+    """解析快照输出文件路径"""
+    if output_dir is None:
+        return default_snapshot_output(snapshot)
+    return default_snapshot_output(snapshot, output_dir=output_dir)

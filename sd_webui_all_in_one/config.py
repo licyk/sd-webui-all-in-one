@@ -63,6 +63,11 @@ ARIA2_MINIMUM_VER = "1.37.0"
 SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH = Path(os.getenv("SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH", os.getcwd()))
 """SD WebUI All In One 运行时的起始目录"""
 
+SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR = Path(
+    os.getenv("SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR", (SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / "snapshots").as_posix())
+)
+"""SD WebUI All In One 环境快照保存目录"""
+
 SD_WEBUI_ROOT_PATH = Path(os.getenv("SD_WEBUI_ROOT", (SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / "stable-diffusion-webui").as_posix()))
 """Stable Diffusion WebUI 根目录"""
 

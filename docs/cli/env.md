@@ -31,6 +31,9 @@ SD WebUI All In One 支持通过环境变量来调整其行为。
 - `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH`
   
   SD WebUI All In One 起始路径。
+- `SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR`
+
+  快照保存目录，默认值为 `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH/snapshots`。
 - `SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY`
   
   是否跳过安装 PyTorch 时设备的兼容性检查。

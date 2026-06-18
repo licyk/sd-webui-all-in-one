@@ -41,7 +41,7 @@ sd-webui-all-in-one sd-scripts snapshot [选项]
 
 - **高级选项**:
   - `--sd-scripts-path <路径>`: SD Scripts 根目录。
-  - `--output <路径>`: 输出 JSON 文件路径；未传时输出到终端。
+  - `--output <路径>`: 输出目录路径；未传时保存到默认快照目录并自动生成带时间戳的文件名。
   - `--no-packages`: 不记录当前 Python 环境已安装软件包。
 
 ### 恢复环境快照

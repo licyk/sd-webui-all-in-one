@@ -572,7 +572,7 @@ def register_fooocus(
     # snapshot
     snapshot_p = fooocus_sub.add_parser("snapshot", help="生成 Fooocus 环境快照")
     snapshot_p.add_argument("--fooocus-path", type=normalized_filepath, required=False, default=FOOOCUS_ROOT_PATH, dest="fooocus_path", help="Fooocus 根目录")
-    snapshot_p.add_argument("--output", type=normalized_filepath, default=None, help="输出 JSON 文件路径, 未传时输出到终端")
+    snapshot_p.add_argument("--output", type=normalized_filepath, default=None, help="输出目录路径, 未传时保存到默认快照目录")
     snapshot_p.add_argument("--no-packages", action="store_false", dest="include_packages", help="不记录当前 Python 环境已安装软件包")
     snapshot_p.set_defaults(
         func=lambda args: snapshot(

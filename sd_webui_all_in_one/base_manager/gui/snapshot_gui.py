@@ -20,7 +20,7 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     configure_gui_fonts,
     install_text_context_menu,
 )
-from sd_webui_all_in_one.base_manager.snapshot import WebUiSnapshot, save_snapshot
+from sd_webui_all_in_one.base_manager.snapshot import WebUiSnapshot, resolve_snapshot_output, save_snapshot
 from sd_webui_all_in_one.base_manager.snapshot_restore import (
     GitRestorePlanItem,
     PackageRestorePlanItem,
@@ -29,6 +29,7 @@ from sd_webui_all_in_one.base_manager.snapshot_restore import (
     preview_webui_snapshot_restore,
     restore_webui_snapshot,
 )
+from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR
 
 
 SnapshotFactory = Callable[[bool], WebUiSnapshot]
@@ -59,7 +60,7 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
         self.custom_github_mirror = custom_github_mirror
         self.current_plan: SnapshotRestorePlan | None = None
 
-        self.output_path_var = tk.StringVar(value=(Path.cwd() / f"{self.webui_type}-snapshot.json").as_posix())
+        self.output_path_var = tk.StringVar(value=SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR.as_posix())
         self.include_packages_var = tk.BooleanVar(value=True)
         self.snapshot_path_var = tk.StringVar(value="")
         self.use_uv_var = tk.BooleanVar(value=use_uv)
@@ -109,7 +110,7 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
     def _create_snapshot_tab(self) -> None:
         form = ttk.Frame(self.create_tab)
         form.pack(fill=tk.X, padx=18, pady=16)
-        ttk.Label(form, text="输出文件:").grid(row=0, column=0, sticky=tk.W, pady=4)
+        ttk.Label(form, text="输出目录:").grid(row=0, column=0, sticky=tk.W, pady=4)
         ttk.Entry(form, textvariable=self.output_path_var).grid(row=0, column=1, sticky=tk.EW, padx=(12, 8), pady=4)
         ttk.Button(form, text="选择", command=self._choose_output_path).grid(row=0, column=2, pady=4)
         ttk.Checkbutton(form, text="记录 Python packages", variable=self.include_packages_var).grid(row=1, column=1, sticky=tk.W, padx=(12, 0), pady=4)
@@ -160,12 +161,12 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
             self.progress.stop()
 
     def _choose_output_path(self) -> None:
-        path = filedialog.asksaveasfilename(
+        current_output = Path(self.output_path_var.get())
+        initial_dir = current_output if current_output.suffix == "" else current_output.parent
+        path = filedialog.askdirectory(
             parent=self,
-            title="选择快照输出文件",
-            defaultextension=".json",
-            filetypes=(("JSON 文件", "*.json"), ("所有文件", "*.*")),
-            initialfile=Path(self.output_path_var.get()).name or f"{self.webui_type}-snapshot.json",
+            title="选择快照输出目录",
+            initialdir=initial_dir.as_posix(),
         )
         if path:
             self.output_path_var.set(path)
@@ -209,19 +210,20 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
     def create_snapshot(self) -> None:
         output_text = self.output_path_var.get().strip()
         if not output_text:
-            messagebox.showwarning("缺少输出文件", "请选择快照输出文件")
+            messagebox.showwarning("缺少输出目录", "请选择快照输出目录")
             return
-        output = Path(output_text)
+        output_dir = Path(output_text)
 
-        def _task() -> WebUiSnapshot:
+        def _task() -> tuple[WebUiSnapshot, Path]:
             snapshot = self.snapshot_factory(bool(self.include_packages_var.get()))
-            save_snapshot(snapshot, output)
-            return snapshot
+            output_path = resolve_snapshot_output(snapshot, output_dir)
+            save_snapshot(snapshot, output_path)
+            return snapshot, output_path
 
         self.run_background(
             "创建快照中...",
             _task,
-            lambda snapshot: self._show_create_result(snapshot, output),
+            lambda result: self._show_create_result(result[0], result[1]),
         )
 
     def _show_create_result(self, snapshot: WebUiSnapshot, output: Path) -> None:

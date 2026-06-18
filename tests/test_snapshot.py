@@ -239,16 +239,21 @@ def test_product_snapshots_include_webui_identity_and_extension_state(monkeypatc
     assert sd_scripts_base.get_sd_scripts_snapshot(tmp_path / "scripts", include_packages=False).webui.type == "sd_scripts"
 
 
-def test_output_snapshot_prints_json_or_writes_file(tmp_path, capsys):
+def test_output_snapshot_writes_default_or_explicit_directory(monkeypatch, tmp_path):
     snapshot = _webui_snapshot(tmp_path / "demo")
     snapshot_json = snapshot_utils.snapshot_to_dict(snapshot)
+    default_dir = tmp_path / "snapshots"
+    default_file = default_dir / "demo-2026-06-18T000000Z.json"
 
-    output_snapshot(lambda: snapshot)
-    assert json.loads(capsys.readouterr().out) == snapshot_json
+    monkeypatch.setattr(snapshot_utils, "SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR", default_dir)
 
-    output = tmp_path / "snapshot.json"
-    output_snapshot(lambda: snapshot, output=output)
-    assert json.loads(output.read_text(encoding="utf-8")) == snapshot_json
+    assert output_snapshot(lambda: snapshot) == default_file
+    assert json.loads(default_file.read_text(encoding="utf-8")) == snapshot_json
+
+    output_dir = tmp_path / "custom-snapshots"
+    output_file = output_dir / "demo-2026-06-18T000000Z.json"
+    assert output_snapshot(lambda: snapshot, output=output_dir) == output_file
+    assert json.loads(output_file.read_text(encoding="utf-8")) == snapshot_json
 
 
 def test_load_snapshot_roundtrip_and_rejects_unsupported_schema(tmp_path):
@@ -638,7 +643,7 @@ def test_product_snapshot_cli_parse_smoke(monkeypatch, tmp_path):
                 path_arg,
                 str(tmp_path / command),
                 "--output",
-                str(tmp_path / f"{command}.json"),
+                str(tmp_path / f"{command}-snapshots"),
                 "--no-packages",
             ]
         )
@@ -647,7 +652,7 @@ def test_product_snapshot_cli_parse_smoke(monkeypatch, tmp_path):
         assert calls == [
             {
                 path_key: tmp_path / command,
-                "output": tmp_path / f"{command}.json",
+                "output": tmp_path / f"{command}-snapshots",
                 "include_packages": False,
             }
         ]
