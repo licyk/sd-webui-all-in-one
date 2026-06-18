@@ -3652,6 +3652,131 @@ Main
 }
 
 
+# 快照管理脚本
+function Write-SnapshotManagerScript {
+    $content = "
+param (
+    [Parameter(HelpMessage=@`"
+获取 SD Trainer Installer 的帮助信息
+`"@)][switch]`$Help,
+
+    [Parameter(HelpMessage=@`"
+设置内核的路径前缀, 默认路径前缀为 core
+`"@)][string]`$CorePrefix,
+
+    [Parameter(HelpMessage=@`"
+禁用 SD Trainer Installer 更新检查
+`"@)][switch]`$DisableUpdate,
+
+    [Parameter(HelpMessage=@`"
+禁用 SD Trainer Installer 自动设置代理服务器
+`"@)][switch]`$DisableProxy,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
+`"@)][string]`$UseCustomProxy,
+
+    [Parameter(HelpMessage=@`"
+禁用 SD Trainer Installer 自动设置 GitHub 镜像源
+`"@)][switch]`$DisableGithubMirror,
+
+    [Parameter(HelpMessage=@`"
+禁用 CLI 自动选择下载镜像源; 禁用后才会遵守 PyPI / GitHub / Hugging Face / 模型下载来源等手动镜像设置
+`"@)][switch]`$DisableAutoMirror,
+
+    [Parameter(HelpMessage=@`"
+使用自定义的 GitHub 镜像站地址
+`"@)][string]`$UseCustomGithubMirror,
+
+    [Parameter(HelpMessage=@`"
+脚本执行完成后不暂停, 直接退出
+`"@)][switch]`$NoPause
+)
+try {
+    `$config = @{
+        OriginalScriptPath = `$script:PSCommandPath
+        LaunchCommandLine = if (`$script:MyInvocation.Line) { `$script:MyInvocation.Line } else { `$([Environment]::CommandLine) }
+        Help = `$script:Help
+        CorePrefix = `$script:CorePrefix
+        DisableProxy = `$script:DisableProxy
+        UseCustomProxy = `$script:UseCustomProxy
+        DisableGithubMirror = `$script:DisableGithubMirror
+        DisableAutoMirror = `$script:DisableAutoMirror
+        UseCustomGithubMirror = `$script:UseCustomGithubMirror
+        DisableUpdate = `$script:DisableUpdate
+        NoPause = `$script:NoPause
+    }
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Update-Installer`", `"Set-Proxy`", `"Set-PyPIMirror`", `"Set-uv`", `"Set-GithubMirror`", `"Update-SDWebUiAllInOne`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+        param (`$cfg)
+        `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
+        `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
+        `$script:Help = `$cfg.Help
+        `$script:CorePrefix = `$cfg.CorePrefix
+        `$script:DisableProxy = `$cfg.DisableProxy
+        `$script:UseCustomProxy = `$cfg.UseCustomProxy
+        `$script:DisableGithubMirror = `$cfg.DisableGithubMirror
+        `$script:DisableAutoMirror = `$cfg.DisableAutoMirror
+        `$script:UseCustomGithubMirror = `$cfg.UseCustomGithubMirror
+        `$script:DisableUpdate = `$cfg.DisableUpdate
+        `$script:NoPause = `$cfg.NoPause
+    }, `$config)
+}
+catch {
+    Write-Error `"导入 Installer 模块发生错误: `$_`"
+    Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
+    Write-Host `"launch_sd_trainer_installer.ps1`" -ForegroundColor Yellow -NoNewline
+    Write-Host `" 脚本修复该问题`" -ForegroundColor White
+    if ((-not `$script:BuildMode) -and (-not `$script:NoPause)) { Read-Host | Out-Null }
+    exit 1
+}
+
+
+# 获取启动 SD WebUI All In One 内核的启动参数
+function Get-LaunchCoreArgs {
+    `$launch_params = New-Object System.Collections.ArrayList
+    Set-uv `$launch_params
+    Set-PyPIMirror `$launch_params
+    Set-GithubMirror `$launch_params
+    return `$launch_params
+}
+
+
+function Main {
+    Get-HelpMessage
+    Get-Version
+    Set-CorePrefix
+    Initialize-EnvPath
+    Test-PythonAndGit
+    Set-Proxy
+    Update-Installer
+    Update-SDWebUiAllInOne
+
+    if (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX))) {
+        Write-Log `"内核路径 `$(Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) 未找到, 请检查 SD Trainer 是否已正确安装, 或者尝试运行 SD Trainer Installer 进行修复`" -Level ERROR
+        Exit-ManagerScript -ExitCode 1
+    }
+
+    `$launch_args = Get-LaunchCoreArgs
+    `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `"sd-trainer`", `"gui`", `"snapshot-manager`")
+    & python -m sd_webui_all_in_one sd-trainer gui snapshot-manager `$launch_args
+    `$exit_code = Get-NativeCommandExitCode -Success `$?
+    if (`$exit_code -ne 0) { Write-CoreCliFailureCommand -CommandPrefix `$core_cli_command -Arguments `$launch_args -ExitCode `$exit_code }
+
+    Write-Log `"退出 SD Trainer 快照管理脚本`"
+
+    Exit-ManagerScript -ExitCode `$exit_code
+}
+
+###################
+
+Main
+".Trim()
+
+    Write-Log "$(if (Test-Path (Join-NormalizedPath $script:InstallPath "snapshot_manager.ps1")) { "更新" } else { "生成" }) snapshot_manager.ps1 中"
+    Write-FileWithStreamWriter -Encoding UTF8BOM -Path (Join-NormalizedPath $script:InstallPath "snapshot_manager.ps1") -Value $content
+}
+
+
 # SD Trainer Installer 设置脚本
 function Write-SettingsScript {
     $content = "
@@ -4871,6 +4996,7 @@ SD Trainer Installer 文档：https://licyk.github.io/sd-webui-all-in-one/instal
 - reinstall_pytorch.ps1：PyTorch 损坏、版本不匹配或需要切换 CUDA / ROCm / XPU 版本时使用。
 - switch_branch.ps1：切换 SD Trainer / SD Trainer Next / Kohya GUI 分支。
 - version_manager.ps1：管理 SD Trainer 版本。
+- snapshot_manager.ps1：创建和恢复当前环境快照。
 - settings.ps1：调整网络代理、下载镜像、Python 包管理器、应用启动参数、Installer 内核路径前缀等本地设置。
 - terminal.ps1：打开已配置好的 PowerShell 终端。
 - activate.ps1：在当前终端激活安装器环境。
@@ -4941,6 +5067,7 @@ function Write-ManagerScripts {
     Write-PyTorchReInstallScript
     Write-DownloadModelScript
     Write-VersionManagerScript
+    Write-SnapshotManagerScript
     Write-SettingsScript
     Write-EnvActivateScript
     Write-LaunchTerminalScript

@@ -235,3 +235,29 @@ def test_installer_scripts_use_refactored_self_manager_paths():
     init_installer = _read_installer(INIT_INSTALLER_SCRIPTS[0])
     assert "self-manager get cuda-malloc" in init_installer
     assert "self-manager get-cuda-malloc" not in init_installer
+
+
+def test_installer_templates_include_snapshot_manager_script():
+    expected_commands = {
+        "installer/stable_diffusion_webui_installer.ps1": "sd-webui gui snapshot-manager",
+        "installer/comfyui_installer.ps1": "comfyui gui snapshot-manager",
+        "installer/fooocus_installer.ps1": "fooocus gui snapshot-manager",
+        "installer/invokeai_installer.ps1": "invokeai gui snapshot-manager",
+        "installer/qwen_tts_webui_installer.ps1": "qwen-tts-webui gui snapshot-manager",
+        "installer/sd_trainer_installer.ps1": "sd-trainer gui snapshot-manager",
+        "installer/sd_trainer_script_installer.ps1": "sd-scripts gui snapshot-manager",
+    }
+
+    for script_path, command in expected_commands.items():
+        installer = _read_installer(script_path)
+        snapshot_start = installer.index("function Write-SnapshotManagerScript")
+        snapshot_end = installer.index("function Write-SettingsScript", snapshot_start)
+        snapshot_template = installer[snapshot_start:snapshot_end]
+        assert "function Write-SnapshotManagerScript" in installer, script_path
+        assert "Write-SnapshotManagerScript" in installer[installer.index("function Write-ManagerScripts") :], script_path
+        assert "snapshot_manager.ps1" in installer, script_path
+        assert command in installer, script_path
+        assert '`"Set-PyPIMirror`"' in snapshot_template, script_path
+        assert '`"Set-uv`"' in snapshot_template, script_path
+        assert "    Set-uv `$launch_params\n    Set-PyPIMirror `$launch_params\n    Set-GithubMirror `$launch_params" in snapshot_template, script_path
+        assert "- snapshot_manager.ps1：创建和恢复当前环境快照。" in installer, script_path
