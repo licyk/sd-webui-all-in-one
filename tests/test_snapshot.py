@@ -524,12 +524,24 @@ def test_preview_restore_plan_prunes_comfyui_extensions_with_disabled_name(monke
 
 def test_restore_python_packages_prioritizes_pytorch_skips_missing_local_and_prunes(monkeypatch, tmp_path):
     missing_local = tmp_path / "missing-local"
+    existing_local = tmp_path / "existing-local"
+    existing_local.mkdir()
     snapshot = _webui_snapshot(tmp_path / "demo")
     snapshot.packages = [
         _package_snapshot("sd-webui-all-in-one", "99.0.0"),
         _package_snapshot("Torch", "2.7.0+cu128"),
         _package_snapshot("torchvision", "0.22.0+cu128"),
         _package_snapshot("demo-pkg", "2.0.0"),
+        _package_snapshot("other-pkg", "3.0.0"),
+        _package_snapshot(
+            "editable-existing",
+            "1.0.0",
+            direct_url=snapshot_utils.DirectUrlSnapshot(
+                url=existing_local.as_uri(),
+                dir_info=snapshot_utils.DirectUrlDirInfo(editable=True),
+            ),
+            editable=True,
+        ),
         _package_snapshot(
             "editable-local",
             "1.0.0",
@@ -602,10 +614,23 @@ def test_restore_python_packages_prioritizes_pytorch_skips_missing_local_and_pru
         }
     ]
     assert events[0][0] == "pytorch"
-    assert events[0][1]["torch_package"] == ["Torch==2.7.0+cu128", "torchvision==0.22.0+cu128"]
+    assert events[0][1]["torch_package"] == ["Torch==2.7.0+cu128", "torchvision==0.22.0+cu128", "--no-deps"]
     assert events[0][1]["xformers_package"] is None
     assert events[0][1]["use_uv"] is False
-    assert ("pip", ("demo-pkg==2.0.0",), {"use_uv": False, "custom_env": {"PIP_INDEX_URL": "https://pypi.example"}}) in events
+    pip_events = [event for event in events if event[0] == "pip"]
+    assert pip_events == [
+        (
+            "pip",
+            (
+                "demo-pkg==2.0.0",
+                "other-pkg==3.0.0",
+                "-e",
+                existing_local.as_posix(),
+                "--no-deps",
+            ),
+            {"use_uv": False, "custom_env": {"PIP_INDEX_URL": "https://pypi.example"}},
+        )
+    ]
     assert not any(event[0] == "pip" and "editable-local" in event[1][0] for event in events)
     assert not any(event[0] == "pip" and "sd-webui-all-in-one" in event[1][0] for event in events)
     assert events[-1][0] == "uninstall"

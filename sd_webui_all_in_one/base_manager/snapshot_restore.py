@@ -242,12 +242,21 @@ def _local_path_from_package(package: PackageSnapshot) -> Path | None:
     return _local_path_from_url(direct_url.url)
 
 
-def _install_package(package: PackageSnapshot, custom_env: dict[str, str], use_uv: bool) -> None:
-    args = _install_args_from_direct_url(package)
-    if args is None:
+def _install_packages(packages: list[PackageSnapshot], custom_env: dict[str, str], use_uv: bool) -> None:
+    install_args: list[str] = []
+    package_names: list[str] = []
+    for package in packages:
+        args = _install_args_from_direct_url(package)
+        if args is None:
+            continue
+        install_args.extend(args)
+        package_names.append(package.name)
+
+    if not install_args:
         return
-    logger.info("恢复 Python 包: %s", package.name)
-    pip_install(*args, use_uv=use_uv, custom_env=custom_env)
+
+    logger.info("恢复 Python 包: %s", ", ".join(package_names))
+    pip_install(*install_args, "--no-deps", use_uv=use_uv, custom_env=custom_env)
 
 
 def _infer_pytorch_device_type(packages: list[PackageSnapshot]) -> PyTorchDeviceType | None:
@@ -311,8 +320,8 @@ def _install_pytorch_packages(packages: list[PackageSnapshot], options: Snapshot
     torch_packages = [package for package in packages if _normalized_package_name(package.name) != "xformers"]
     xformers_packages = [package for package in packages if _normalized_package_name(package.name) == "xformers"]
     custom_env = _pytorch_env(packages, use_pypi_mirror=options.use_pypi_mirror)
-    torch_package = [_package_version_spec(package) for package in torch_packages] or None
-    xformers_package = [_package_version_spec(package) for package in xformers_packages] or None
+    torch_package = [*[_package_version_spec(package) for package in torch_packages], "--no-deps"] if torch_packages else None
+    xformers_package = [*[_package_version_spec(package) for package in xformers_packages], "--no-deps"] if xformers_packages else None
 
     install_pytorch_with_fallback(
         torch_package=torch_package,
@@ -471,8 +480,7 @@ def restore_python_packages(snapshot: WebUiSnapshot, options: SnapshotRestoreOpt
 
     _install_pytorch_packages(pytorch_packages, options)
     custom_env = _pypi_env(use_pypi_mirror=options.use_pypi_mirror)
-    for package in other_packages:
-        _install_package(package, custom_env=custom_env, use_uv=options.use_uv)
+    _install_packages(other_packages, custom_env=custom_env, use_uv=options.use_uv)
 
     if options.prune_packages:
         _prune_python_packages(target_packages=target_packages, current_packages=current_packages)
