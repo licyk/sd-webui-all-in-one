@@ -458,6 +458,9 @@ def auto_detect_avaliable_pytorch_type() -> PyTorchDeviceType:
         return "cpu"
 
     if nvidia_gpu_avaliable:
+        # TODO: cu132 对于 torchaudio, xformers 存在不兼容风险, 有待考量
+        # if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("13.2"):
+        #     return "cu132"
         if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("13.0"):
             return "cu130"
         if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("12.9"):
@@ -480,7 +483,8 @@ def auto_detect_avaliable_pytorch_type() -> PyTorchDeviceType:
 
     if amd_gpu_avaliable:
         if sys.platform == "linux":
-            return "rocm7.1"
+            # TODO: 待实现详细的分配机制
+            return "rocm7.2"
         if sys.platform == "win32":
             return "rocm_win"
 
