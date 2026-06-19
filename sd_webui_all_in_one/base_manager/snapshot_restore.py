@@ -270,13 +270,37 @@ def _install_packages(packages: list[PackageSnapshot], custom_env: dict[str, str
     pip_install(*install_args, "--no-deps", use_uv=use_uv, custom_env=custom_env)
 
 
-def _infer_pytorch_device_type(packages: list[PackageSnapshot]) -> PyTorchDeviceType | None:
+def _is_windows_platform(platform_tag: str) -> bool:
+    return platform_tag.casefold().startswith("win")
+
+
+def _normalize_pytorch_version_suffix(
+    suffix: str,
+    platform_tag: str | None = None,
+) -> PyTorchDeviceType | None:
+    platform_tag = sys.platform if platform_tag is None else platform_tag
+    normalized_suffix = suffix.strip().casefold()
+
+    if normalized_suffix == "rocm_win":
+        return "rocm_win"
+    if _is_windows_platform(platform_tag) and normalized_suffix.startswith("rocm"):
+        return "rocm_win"
+    if normalized_suffix in PYTORCH_DEVICE_LIST:
+        return cast(PyTorchDeviceType, normalized_suffix)
+    return None
+
+
+def _infer_pytorch_device_type(
+    packages: list[PackageSnapshot],
+    platform_tag: str | None = None,
+) -> PyTorchDeviceType | None:
     for package in packages:
         if "+" not in package.version:
             continue
         suffix = package.version.split("+", 1)[1]
-        if suffix in PYTORCH_DEVICE_LIST:
-            return cast(PyTorchDeviceType, suffix)
+        dtype = _normalize_pytorch_version_suffix(suffix, platform_tag=platform_tag)
+        if dtype is not None:
+            return dtype
     return None
 
 
@@ -343,10 +367,7 @@ def _install_pytorch_packages(packages: list[PackageSnapshot], options: Snapshot
 
 
 def _current_package_map() -> dict[str, PackageSnapshot]:
-    return {
-        _normalized_package_name(package.name): package
-        for package in collect_installed_packages()
-    }
+    return {_normalized_package_name(package.name): package for package in collect_installed_packages()}
 
 
 def _target_package_map(snapshot: WebUiSnapshot) -> dict[str, PackageSnapshot]:
@@ -477,22 +498,10 @@ def restore_python_packages(snapshot: WebUiSnapshot, options: SnapshotRestoreOpt
     """
     target_packages = _target_package_map(snapshot)
     current_packages = _current_package_map()
-    to_install = [
-        package
-        for normalized, package in target_packages.items()
-        if normalized not in current_packages or current_packages[normalized].version != package.version
-    ]
+    to_install = [package for normalized, package in target_packages.items() if normalized not in current_packages or current_packages[normalized].version != package.version]
 
-    pytorch_packages = [
-        package
-        for package in to_install
-        if _normalized_package_name(package.name) in PYTORCH_PACKAGE_NAMES
-    ]
-    other_packages = [
-        package
-        for package in to_install
-        if _normalized_package_name(package.name) not in PYTORCH_PACKAGE_NAMES
-    ]
+    pytorch_packages = [package for package in to_install if _normalized_package_name(package.name) in PYTORCH_PACKAGE_NAMES]
+    other_packages = [package for package in to_install if _normalized_package_name(package.name) not in PYTORCH_PACKAGE_NAMES]
 
     _install_pytorch_packages(pytorch_packages, options)
     custom_env = _pypi_env(use_pypi_mirror=options.use_pypi_mirror)
@@ -506,11 +515,7 @@ def _prune_python_packages(
     target_packages: dict[str, PackageSnapshot],
     current_packages: dict[str, PackageSnapshot],
 ) -> None:
-    uninstall_names = [
-        package.name
-        for normalized, package in current_packages.items()
-        if normalized not in target_packages and not _is_protected_package(package.name)
-    ]
+    uninstall_names = [package.name for normalized, package in current_packages.items() if normalized not in target_packages and not _is_protected_package(package.name)]
     if not uninstall_names:
         return
 
@@ -851,11 +856,7 @@ def _extension_target_path(webui_path: Path, extension: ExtensionSnapshot, tools
 
 
 def _target_extension_names(snapshot: WebUiSnapshot, tools: ExtensionRestoreTools) -> set[str]:
-    return {
-        normalize_extension_name(extension.name, strip_disabled_suffix=tools.strip_disabled_suffix)
-        for extension in snapshot.extensions
-        if extension.is_git_repo
-    }
+    return {normalize_extension_name(extension.name, strip_disabled_suffix=tools.strip_disabled_suffix) for extension in snapshot.extensions if extension.is_git_repo}
 
 
 def _prune_extensions(webui_path: Path, snapshot: WebUiSnapshot, tools: ExtensionRestoreTools) -> None:

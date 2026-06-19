@@ -533,6 +533,54 @@ def test_preview_restore_plan_reports_package_actions_and_pytorch_source(monkeyp
     assert plan.errors == []
 
 
+@pytest.mark.parametrize(
+    ("platform_tag", "torch_version", "expected_dtype", "expected_url"),
+    [
+        ("win32", "2.9.0+rocm9.0", "rocm_win", "https://torch.example/rocm-win"),
+        ("win32", "2.9.0+rocm6.4", "rocm_win", "https://torch.example/rocm-win"),
+        ("linux", "2.9.0+rocm6.4", "rocm6.4", "https://torch.example/rocm64"),
+        ("linux", "2.9.0+rocm9.0", None, None),
+    ],
+)
+def test_preview_restore_plan_normalizes_rocm_pytorch_suffix(monkeypatch, tmp_path, platform_tag, torch_version, expected_dtype, expected_url):
+    webui_path = tmp_path / "demo"
+    webui_path.mkdir()
+    snapshot = _webui_snapshot(webui_path)
+    snapshot.packages = [_package_snapshot("Torch", torch_version)]
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+
+    mirror_by_dtype = {
+        "rocm_win": ("https://torch.example/rocm-win", "find_links"),
+        "rocm6.4": ("https://torch.example/rocm64", "index_url"),
+    }
+    mirror_calls = []
+
+    def fake_get_pytorch_mirror(dtype, use_cn_mirror):
+        mirror_calls.append((dtype, use_cn_mirror))
+        return mirror_by_dtype[dtype]
+
+    monkeypatch.setattr(restore_utils.sys, "platform", platform_tag)
+    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_utils, "get_pytorch_mirror", fake_get_pytorch_mirror)
+
+    plan = restore_utils.preview_webui_snapshot_restore(
+        snapshot_path=output,
+        webui_path=webui_path,
+        expected_webui_type="demo",
+        options=restore_utils.SnapshotRestoreOptions(use_pypi_mirror=True),
+    )
+
+    assert plan.pytorch_device_type == expected_dtype
+    assert plan.pytorch_mirror_url == expected_url
+    if expected_dtype is None:
+        assert mirror_calls == []
+        assert plan.warnings == ["未从 PyTorch 包版本推断出特殊源, 将使用普通 PyPI 源"]
+    else:
+        assert mirror_calls == [(expected_dtype, True)]
+        assert plan.warnings == []
+
+
 def test_preview_restore_plan_blocks_dirty_kernel_without_force(monkeypatch, tmp_path):
     snapshot = _webui_snapshot(tmp_path / "demo")
     snapshot.kernel = snapshot_utils.RepositorySnapshot(
