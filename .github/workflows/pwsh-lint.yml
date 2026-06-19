@@ -7,6 +7,7 @@ on:
       - '**.psm1'
       - '**.psd1'
       - '.github/check_installer_param_config.py'
+      - '.github/PSScriptAnalyzerSettings.psd1'
       - '.github/pwsh_lint.ps1'
       - '.github/workflows/pwsh-lint.yml'
   delete:

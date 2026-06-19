@@ -234,16 +234,23 @@ function Test-InstallerParameterForwarding {
 function Invoke-PowerShellScriptAnalyzer {
     param(
         [Parameter(Mandatory = $true)]
+        [string]$Workspace,
+        [Parameter(Mandatory = $true)]
         [string]$LintRoot
     )
 
     Import-Module PSScriptAnalyzer -ErrorAction Stop
 
+    $settingsPath = Join-Path $Workspace ".github/PSScriptAnalyzerSettings.psd1"
+    if (-not (Test-Path -LiteralPath $settingsPath -PathType Leaf)) {
+        throw "PSScriptAnalyzer settings file not found: $settingsPath"
+    }
+
     $scriptFiles = Get-PowerShellScriptFiles -Root $LintRoot
     $allIssues = @()
     foreach ($scriptFile in $scriptFiles) {
-        $issues = @(Invoke-ScriptAnalyzer -Path $scriptFile.FullName -Severity @("Error", "ParseError"))
-        $blockingIssues = @($issues | Where-Object { $_.Severity -in @("Error", "ParseError") })
+        $issues = @(Invoke-ScriptAnalyzer -Path $scriptFile.FullName -Settings $settingsPath)
+        $blockingIssues = @($issues)
         if ($blockingIssues.Count -eq 0) {
             continue
         }
@@ -277,7 +284,7 @@ try {
     New-InstallerManagedScripts -LintRoot $lintRoot
     Test-PowerShellScriptEncoding -LintRoot $lintRoot
     Test-InstallerParameterForwarding -Workspace $workspaceRoot -LintRoot $lintRoot
-    Invoke-PowerShellScriptAnalyzer -LintRoot $lintRoot
+    Invoke-PowerShellScriptAnalyzer -Workspace $workspaceRoot -LintRoot $lintRoot
 } catch {
     $failed = $true
     throw
