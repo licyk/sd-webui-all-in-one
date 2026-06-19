@@ -198,9 +198,9 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
         self.include_packages_var = tk.BooleanVar(value=True)
         self.snapshot_path_var = tk.StringVar(value="")
         self.use_uv_var = tk.BooleanVar(value=use_uv)
-        self.prune_packages_var = tk.BooleanVar(value=False)
-        self.prune_extensions_var = tk.BooleanVar(value=False)
-        self.force_git_reset_var = tk.BooleanVar(value=False)
+        self.prune_packages_var = tk.BooleanVar(value=True)
+        self.prune_extensions_var = tk.BooleanVar(value=True)
+        self.force_git_reset_var = tk.BooleanVar(value=True)
 
         self.title(f"{self.app_title} 快照管理")
         apply_window_icon(self)
