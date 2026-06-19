@@ -563,14 +563,8 @@ def snapshot_from_dict(data: JsonObject) -> WebUiSnapshot:
     if schema_version != SNAPSHOT_SCHEMA_VERSION:
         raise ValueError(f"不支持的快照结构版本: {schema_version}")
 
-    packages = [
-        _package_from_json(item, f"packages[{index}]")
-        for index, item in enumerate(_require_list(_get_required(data, "packages", "packages"), "packages"))
-    ]
-    extensions = [
-        _extension_from_json(item, f"extensions[{index}]")
-        for index, item in enumerate(_require_list(_get_required(data, "extensions", "extensions"), "extensions"))
-    ]
+    packages = [_package_from_json(item, f"packages[{index}]") for index, item in enumerate(_require_list(_get_required(data, "packages", "packages"), "packages"))]
+    extensions = [_extension_from_json(item, f"extensions[{index}]") for index, item in enumerate(_require_list(_get_required(data, "extensions", "extensions"), "extensions"))]
 
     return WebUiSnapshot(
         schema_version=schema_version,

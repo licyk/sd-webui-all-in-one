@@ -134,14 +134,10 @@ def build_restore_blocking_guidance(plan: SnapshotRestorePlan) -> list[str]:
     """
     guidance: list[str] = []
     if not plan.webui_type_match:
-        guidance.append(
-            f"请使用 {plan.snapshot_webui_type} 对应的快照管理器恢复该快照, 或选择 {plan.expected_webui_type} 类型的快照。"
-            "跨 WebUI 类型恢复会被终止, 避免写错内核和扩展目录。"
-        )
+        guidance.append(f"请使用 {plan.snapshot_webui_type} 对应的快照管理器恢复该快照, 或选择 {plan.expected_webui_type} 类型的快照。跨 WebUI 类型恢复会被终止, 避免写错内核和扩展目录。")
     if plan.kernel_change is not None and plan.kernel_change.action == "blocked_missing_target":
         guidance.append(
-            f"请先通过 installer 准备对应的 WebUI kernel, 确认内核目录存在后再恢复: {format_snapshot_path(plan.kernel_change.path)}。"
-            "该问题不能通过强制恢复开关绕过, 因为扩展恢复依赖 kernel 目录。"
+            f"请先通过 installer 准备对应的 WebUI kernel, 确认内核目录存在后再恢复: {format_snapshot_path(plan.kernel_change.path)}。该问题不能通过强制恢复开关绕过, 因为扩展恢复依赖 kernel 目录。"
         )
 
     dirty_targets: list[str] = []
@@ -152,10 +148,7 @@ def build_restore_blocking_guidance(plan: SnapshotRestorePlan) -> list[str]:
             dirty_targets.append(f"扩展 {item.name}: {format_snapshot_path(item.path)}")
     if dirty_targets:
         guidance.append(f"存在 Git 未提交变更: {'; '.join(dirty_targets)}。建议先提交、stash 或备份这些变更后再恢复。")
-        guidance.append(
-            "如果确认要丢弃这些未提交变更, 可以勾选“允许覆盖 Git 未提交变更”后再次恢复。"
-            "风险: 该开关会强制恢复上述 Git 仓库, 未提交的文件修改可能被永久覆盖。"
-        )
+        guidance.append("如果确认要丢弃这些未提交变更, 可以勾选“允许覆盖 Git 未提交变更”后再次恢复。风险: 该开关会强制恢复上述 Git 仓库, 未提交的文件修改可能被永久覆盖。")
 
     if plan.errors and not guidance:
         guidance.append("请根据阻断信息处理当前环境或更换快照文件后再次恢复。")
@@ -463,6 +456,7 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
 
     def create_snapshot(self) -> None:
         """创建新的 WebUI 环境快照。"""
+
         def _task() -> tuple[WebUiSnapshot, Path]:
             snapshot = self.snapshot_factory(bool(self.include_packages_var.get()))
             output_path = resolve_snapshot_output(snapshot, self.snapshot_dir)

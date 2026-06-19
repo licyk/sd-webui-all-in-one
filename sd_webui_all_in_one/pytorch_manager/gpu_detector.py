@@ -553,11 +553,7 @@ def has_gpus(
         bool:
             当列表中存在可用显卡时则返回 True
     """
-    return any(
-        x
-        for x in gpu_list
-        if "Intel" in (x.get("AdapterCompatibility") or "") or "NVIDIA" in (x.get("AdapterCompatibility") or "") or _is_amd_vendor(x.get("AdapterCompatibility"))
-    )
+    return any(x for x in gpu_list if "Intel" in (x.get("AdapterCompatibility") or "") or "NVIDIA" in (x.get("AdapterCompatibility") or "") or _is_amd_vendor(x.get("AdapterCompatibility")))
 
 
 def has_nvidia_gpu(
