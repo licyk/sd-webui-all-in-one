@@ -366,29 +366,40 @@ def _read_loose_commit_details(git_dir: Path, commit: str) -> tuple[str | None, 
     return _parse_loose_commit_object(content)
 
 
-def _read_repository_head(path: Path, git_dir: Path) -> tuple[str | None, str | None, str | None]:
+def _read_repository_head_from_git(path: Path) -> tuple[str | None, str | None, str | None] | None:
     """
-    使用一次 Git 命令读取当前提交信息
+    使用 Git 命令读取当前提交信息
 
     Args:
         path (Path):
             仓库路径
+
+    Returns:
+        tuple[str | None, str | None, str | None] | None: 提交 ID、提交时间和提交信息, 读取失败时返回 None
+    """
+    try:
+        output = run_git_output(path, "show", "-s", "--format=%H%x1f%ci%x1f%s", "HEAD")
+    except Exception:
+        return None
+
+    parts = output.split("\x1f", 2)
+    if len(parts) == 3:
+        commit, commit_date, message = parts
+        return commit or None, commit_date or None, message or None
+    return None
+
+
+def _read_repository_head_from_git_dir(git_dir: Path) -> tuple[str | None, str | None, str | None]:
+    """
+    从 Git 目录读取当前提交信息
+
+    Args:
         git_dir (Path):
             Git 目录路径
 
     Returns:
         tuple[str | None, str | None, str | None]: 提交 ID、提交时间和提交信息
     """
-    try:
-        output = run_git_output(path, "show", "-s", "--format=%H%x1f%ci%x1f%s", "HEAD")
-    except Exception:
-        output = ""
-
-    parts = output.split("\x1f", 2)
-    if len(parts) == 3:
-        commit, commit_date, message = parts
-        return commit or None, commit_date or None, message or None
-
     commit = _read_head_commit(git_dir)
     if commit is None:
         return None, None, None
@@ -423,5 +434,8 @@ def inspect_repository(path: Path) -> RepositoryState:
     state.is_git_repo = True
     state.branch = _read_repository_branch(git_dir)
     state.url = _read_repository_remote_url(git_dir, state.branch)
-    state.commit, state.commit_date, state.message = _read_repository_head(path, git_dir)
+    head_info = _read_repository_head_from_git(path)
+    if head_info is None:
+        head_info = _read_repository_head_from_git_dir(git_dir)
+    state.commit, state.commit_date, state.message = head_info
     return state
