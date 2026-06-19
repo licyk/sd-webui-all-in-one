@@ -36,7 +36,8 @@ class OrtType(str, Enum):
     - CU121CUDNN9: CUDA 12.1 + cuDNN9
     - CU118: CUDA 11.8
 
-    PyPI 中 1.19.0 及之后的版本为 CUDA 12.x 的
+    PyPI 中 1.19.0 及之后的版本为 CUDA 12.x 的,
+    1.27.0 及之后的版本为 CUDA 13.x 的
 
     Attributes:
         CU130 (str): CUDA 13.x 版本的 ONNXRuntime GPU
@@ -372,9 +373,7 @@ def check_onnxruntime_gpu(
             _install_onnxruntime_gpu("onnxruntime-gpu>=1.18.1")
         elif ver == OrtType.CU121CUDNN9:
             _uninstall_onnxruntime_gpu()
-            # 限制最高版本在 1.24.2 以避免 cu130 的正式版发布在 PyPI 后安装的版本的不对
-            # TODO: 待正式发布到 PyPI 后更新实际的限制版本
-            _install_onnxruntime_gpu("onnxruntime-gpu>=1.19.0,<=1.24.2")
+            _install_onnxruntime_gpu("onnxruntime-gpu>=1.19.0,<=1.26.0")
         elif ver == OrtType.CU121CUDNN8:
             _clean_env()
             custom_env["PIP_INDEX_URL"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/"
@@ -382,11 +381,11 @@ def check_onnxruntime_gpu(
             _uninstall_onnxruntime_gpu()
             _install_onnxruntime_gpu("onnxruntime-gpu==1.17.1")
         elif ver == OrtType.CU130:
-            _clean_env()
-            custom_env["PIP_INDEX_URL"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-13/pypi/simple/"
-            custom_env["UV_DEFAULT_INDEX"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-13/pypi/simple/"
+            # _clean_env()
+            # custom_env["PIP_INDEX_URL"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-13/pypi/simple/"
+            # custom_env["UV_DEFAULT_INDEX"] = "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-13/pypi/simple/"
             _uninstall_onnxruntime_gpu()
-            _install_onnxruntime_gpu("onnxruntime-gpu>=1.24.2")
+            _install_onnxruntime_gpu("onnxruntime-gpu>=1.27.0")
     except RuntimeError as e:
         logger.error("修复 ONNXRuntime GPU 版本问题时出现错误: %s", e)
         raise RuntimeError(f"修复 Onnxrunime GPU 版本问题时发生错误: {e}") from e

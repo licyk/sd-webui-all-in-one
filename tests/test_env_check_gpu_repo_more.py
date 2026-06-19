@@ -61,15 +61,15 @@ def test_need_install_ort_ver_reads_cudnn_lazily(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("ort_type", "expected_spec", "expected_index"),
+    ("ort_type", "expected_spec", "expected_index", "expected_clean_env"),
     [
-        (onnx_check.OrtType.CU118, "onnxruntime-gpu>=1.18.1", "onnxruntime-cuda-11"),
-        (onnx_check.OrtType.CU121CUDNN8, "onnxruntime-gpu==1.17.1", "onnxruntime-cuda-12"),
-        (onnx_check.OrtType.CU121CUDNN9, "onnxruntime-gpu>=1.19.0,<=1.24.2", None),
-        (onnx_check.OrtType.CU130, "onnxruntime-gpu>=1.24.2", "onnxruntime-cuda-13"),
+        (onnx_check.OrtType.CU118, "onnxruntime-gpu>=1.18.1", "onnxruntime-cuda-11", True),
+        (onnx_check.OrtType.CU121CUDNN8, "onnxruntime-gpu==1.17.1", "onnxruntime-cuda-12", True),
+        (onnx_check.OrtType.CU121CUDNN9, "onnxruntime-gpu>=1.19.0,<=1.26.0", None, False),
+        (onnx_check.OrtType.CU130, "onnxruntime-gpu>=1.27.0", None, False),
     ],
 )
-def test_check_onnxruntime_gpu_installs_expected_package_and_env(monkeypatch, ort_type, expected_spec, expected_index):
+def test_check_onnxruntime_gpu_installs_expected_package_and_env(monkeypatch, ort_type, expected_spec, expected_index, expected_clean_env):
     custom_env = {
         "PIP_EXTRA_INDEX_URL": "old-extra",
         "UV_INDEX": "old-uv-index",
@@ -102,14 +102,20 @@ def test_check_onnxruntime_gpu_installs_expected_package_and_env(monkeypatch, or
 
     if expected_index is None:
         assert "PIP_INDEX_URL" not in calls[1][2]["custom_env"]
-        assert calls[1][2]["custom_env"]["PIP_EXTRA_INDEX_URL"] == "old-extra"
     else:
         assert expected_index in calls[1][2]["custom_env"]["PIP_INDEX_URL"]
         assert expected_index in calls[1][2]["custom_env"]["UV_DEFAULT_INDEX"]
+
+    if expected_clean_env:
         assert "PIP_EXTRA_INDEX_URL" not in calls[1][2]["custom_env"]
         assert "UV_INDEX" not in calls[1][2]["custom_env"]
         assert "PIP_FIND_LINKS" not in calls[1][2]["custom_env"]
         assert "UV_FIND_LINKS" not in calls[1][2]["custom_env"]
+    else:
+        assert calls[1][2]["custom_env"]["PIP_EXTRA_INDEX_URL"] == "old-extra"
+        assert calls[1][2]["custom_env"]["UV_INDEX"] == "old-uv-index"
+        assert calls[1][2]["custom_env"]["PIP_FIND_LINKS"] == "old-links"
+        assert calls[1][2]["custom_env"]["UV_FIND_LINKS"] == "old-uv-links"
 
 
 def test_check_onnxruntime_gpu_skips_and_wraps_install_errors(monkeypatch):
