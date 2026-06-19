@@ -265,6 +265,7 @@ https://space.bilibili.com/46497516
             ("switch_branch.ps1", "切换分支.bat"),
             ("reinstall_pytorch.ps1", "重装 PyTorch.bat"),
             ("version_manager.ps1", "版本管理.bat"),
+            ("snapshot_manager.ps1", "快照管理.bat"),
             ("settings.ps1", "打开 Installer 设置.bat"),
             ("terminal.ps1", "打开终端.bat"),
             ("train.ps1", "启动训练.bat"),
