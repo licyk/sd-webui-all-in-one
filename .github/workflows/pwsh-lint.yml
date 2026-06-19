@@ -4,7 +4,10 @@ on:
   push:
     paths:
       - '**.ps1'
+      - '**.psm1'
+      - '**.psd1'
       - '.github/check_installer_param_config.py'
+      - '.github/pwsh_lint.ps1'
       - '.github/workflows/pwsh-lint.yml'
   delete:
   create:
@@ -29,56 +32,7 @@ jobs:
           Set-PSRepository PSGallery -InstallationPolicy Trusted
           Install-Module PSScriptAnalyzer -ErrorAction Stop
 
-      - name: Generate Installer manage scripts
+      - name: Run PowerShell lint tooling
         shell: pwsh
         run: |
-          $installers = @(
-              @{ File = "fooocus_installer.ps1"; Path = "fooocus" },
-              @{ File = "comfyui_installer.ps1"; Path = "comfyui" },
-              @{ File = "invokeai_installer.ps1"; Path = "invokeai" },
-              @{ File = "sd_trainer_installer.ps1"; Path = "sd_trainer" },
-              @{ File = "sd_trainer_script_installer.ps1"; Path = "sd_trainer_script" },
-              @{ File = "stable_diffusion_webui_installer.ps1"; Path = "sd_webui" },
-              @{ File = "qwen_tts_webui_installer.ps1"; Path = "qwen_tts_webui" }
-          )
-
-          foreach ($item in $installers) {
-              try {
-                  pwsh -File "${{ github.workspace }}/installer/$($item.File)" -InstallPath "${{ github.workspace }}/$($item.Path)" -UseUpdateMode
-              } catch {
-                  Write-Host "$($item.File) 执行时出现错误: $_"
-              }
-          }
-
-      - name: List files in the repository
-        shell: pwsh
-        run: |
-          Get-ChildItem -Path "${{ github.workspace }}" -Recurse
-
-      - name: Check UTF-8 BOM encoding
-        run: |
-          python "${{ github.workspace }}/.github/check_ps1_encoding.py"
-
-      - name: Check installer template parameter forwarding
-        run: |
-          python "${{ github.workspace }}/.github/check_installer_param_config.py"
-
-      - name: Lint with PSScriptAnalyzer
-        shell: pwsh
-        run: |
-          $file_list = Get-ChildItem -Path "**/*.ps1" -Filter *.ps1 -Recurse
-          foreach ($file in $file_list) {
-              Invoke-ScriptAnalyzer -Path "$file" -Recurse -OutVariable issues -Severity @("Error", "ParseError")
-              $errors = $issues.Where({$_.Severity -eq 'Error'})
-              $parse_errors = $issues.Where({$_.Severity -eq 'ParseError'})
-              $all_errors += $errors
-              $all_parse_errors += $parse_errors
-              if ($errors -or $parse_errors) {
-                  Write-Host "$($file.FullName) 出现 $($errors.Count) 个错误和 $($parse_errors.Count) 个语法错误"
-              }
-          }
-          if ($all_errors -or $all_parse_errors) {
-              Write-Error "检查完成, 出现 $($all_errors.Count) 个错误和 $($all_parse_errors.Count) 个语法错误" -ErrorAction Stop
-          } else {
-              Write-Output "检查完成"
-          }
+          & "${{ github.workspace }}/.github/pwsh_lint.ps1" -Workspace "${{ github.workspace }}"
