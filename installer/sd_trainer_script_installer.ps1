@@ -254,10 +254,10 @@ $script:HotpatcherPortProvided = $PSBoundParameters.ContainsKey("HotpatcherPort"
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # SD Trainer Script Installer 版本和检查更新间隔
-$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 397
+$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 398
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.2.53"
+$script:CORE_MINIMUM_VER = "2.2.54"
 # 快照重建模式
 $script:SnapshotExpectedWebUIType = "sd_scripts"
 $script:SnapshotRestoreCliName = "sd-scripts"
