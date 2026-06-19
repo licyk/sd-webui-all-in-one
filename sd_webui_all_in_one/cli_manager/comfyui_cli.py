@@ -131,11 +131,15 @@ def update(
 
     Args:
         comfyui_path (Path):
-            Stable DIffusion WebUI 根目录
+            ComfyUI 根目录。
         use_github_mirror (bool):
-            是否使用 Github 镜像源
+            是否使用 GitHub 镜像源。
         custom_github_mirror (str | list[str] | None):
-            自定义 Github 镜像源
+            自定义 GitHub 镜像源。
+        snapshot_enabled (bool):
+            是否启用操作前自动快照。
+        snapshot_dir (Path | None):
+            快照文件目录。
     """
     _create_pre_operation_snapshot(
         comfyui_path=comfyui_path,
@@ -171,7 +175,16 @@ def snapshot(
     output: Path | None = None,
     include_packages: bool = True,
 ) -> None:
-    """生成 ComfyUI 环境快照"""
+    """生成 ComfyUI 环境快照
+
+    Args:
+        comfyui_path (Path):
+            ComfyUI 根目录。
+        output (Path | None):
+            快照输出路径或目录。
+        include_packages (bool):
+            是否采集当前 Python 包列表。
+    """
     output_snapshot(
         lambda: get_comfyui_snapshot(
             comfyui_path=comfyui_path,
@@ -192,7 +205,28 @@ def restore(
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
-    """恢复 ComfyUI 环境快照"""
+    """恢复 ComfyUI 环境快照
+
+    Args:
+        snapshot_path (Path):
+            快照 JSON 文件路径。
+        comfyui_path (Path):
+            ComfyUI 根目录。
+        prune_packages (bool):
+            是否卸载快照外 Python 包。
+        prune_extensions (bool):
+            是否删除快照外扩展。
+        force_git_reset (bool):
+            是否允许覆盖 Git 仓库未提交变更。
+        use_uv (bool):
+            是否使用 uv 执行 Python 包安装。
+        use_pypi_mirror (bool):
+            是否使用 PyPI 镜像源。
+        use_github_mirror (bool):
+            是否使用 GitHub 镜像源。
+        custom_github_mirror (str | list[str] | None):
+            自定义 GitHub 镜像源。
+    """
     restore_snapshot(
         snapshot_path=snapshot_path,
         webui_path=comfyui_path,
@@ -430,11 +464,15 @@ def update_custom_nodes(
 
     Args:
         comfyui_path (Path):
-            ComfyUI 根目录
+            ComfyUI 根目录。
         use_github_mirror (bool):
-            是否使用 Github 镜像源
+            是否使用 GitHub 镜像源。
         custom_github_mirror (str | list[str] | None):
-            自定义 Github 镜像源
+            自定义 GitHub 镜像源。
+        snapshot_enabled (bool):
+            是否启用操作前自动快照。
+        snapshot_dir (Path | None):
+            快照文件目录。
     """
     _create_pre_operation_snapshot(
         comfyui_path=comfyui_path,
@@ -478,11 +516,15 @@ def launch_version_gui(
 
     Args:
         comfyui_path (Path):
-            ComfyUI 根目录
+            ComfyUI 根目录。
         use_github_mirror (bool):
-            是否使用 Github 镜像源
+            是否使用 GitHub 镜像源。
         custom_github_mirror (str | list[str] | None):
-            自定义 Github 镜像源
+            自定义 GitHub 镜像源。
+        snapshot_enabled (bool):
+            是否启用操作前自动快照。
+        snapshot_dir (Path | None):
+            快照文件目录。
     """
     _create_pre_operation_snapshot(
         comfyui_path=comfyui_path,
@@ -510,7 +552,30 @@ def reinstall_pytorch(
     snapshot_enabled: bool = True,
     snapshot_dir: Path | None = None,
 ) -> None:
-    """为 ComfyUI 重装 PyTorch"""
+    """为 ComfyUI 重装 PyTorch
+
+    Args:
+        comfyui_path (Path):
+            ComfyUI 根目录。
+        pytorch_name (str | None):
+            PyTorch 版本条目名称。
+        pytorch_index (int | None):
+            PyTorch 版本条目索引。
+        use_pypi_mirror (bool):
+            是否使用 PyPI 镜像源。
+        use_uv (bool | None):
+            是否使用 uv 执行 Python 包安装。
+        interactive_mode (bool):
+            是否启用交互模式。
+        list_only (bool):
+            是否仅列出可选 PyTorch 版本并退出。
+        force_reinstall (bool):
+            是否强制重新安装。
+        snapshot_enabled (bool):
+            是否启用操作前自动快照。
+        snapshot_dir (Path | None):
+            快照文件目录。
+    """
     if not list_only:
         _create_pre_operation_snapshot(
             comfyui_path=comfyui_path,
@@ -537,7 +602,22 @@ def launch_snapshot_gui(
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
-    """启动 ComfyUI 快照管理 GUI"""
+    """启动 ComfyUI 快照管理 GUI
+
+    Args:
+        comfyui_path (Path):
+            ComfyUI 根目录。
+        snapshot_dir (Path | None):
+            快照文件目录。
+        use_uv (bool):
+            是否使用 uv 执行 Python 包安装。
+        use_pypi_mirror (bool):
+            是否使用 PyPI 镜像源。
+        use_github_mirror (bool):
+            是否使用 GitHub 镜像源。
+        custom_github_mirror (str | list[str] | None):
+            自定义 GitHub 镜像源。
+    """
     launch_comfyui_snapshot_gui(
         comfyui_path=comfyui_path,
         snapshot_dir=snapshot_dir,

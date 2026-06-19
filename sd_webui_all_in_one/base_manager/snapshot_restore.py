@@ -174,7 +174,17 @@ def normalize_extension_name(
     name: str,
     strip_disabled_suffix: bool = False,
 ) -> str:
-    """规范化扩展名用于快照对比"""
+    """规范化扩展名用于快照对比
+
+    Args:
+        name (str):
+            待规范化的名称。
+        strip_disabled_suffix (bool):
+            是否移除禁用扩展使用的后缀。
+
+    Returns:
+        str: 规范化后的扩展名。
+    """
     normalized = name.casefold()
     if strip_disabled_suffix:
         normalized = normalized.removesuffix(".disabled")
@@ -457,7 +467,14 @@ def _build_package_restore_plan(
 
 
 def restore_python_packages(snapshot: WebUiSnapshot, options: SnapshotRestoreOptions) -> None:
-    """恢复 Python 包"""
+    """恢复 Python 包
+
+    Args:
+        snapshot (WebUiSnapshot):
+            WebUI 环境快照。
+        options (SnapshotRestoreOptions):
+            快照恢复选项。
+    """
     target_packages = _target_package_map(snapshot)
     current_packages = _current_package_map()
     to_install = [
@@ -794,7 +811,23 @@ def restore_git_repository(
     target_path: Path,
     options: SnapshotRestoreOptions,
 ) -> bool:
-    """恢复 Git 仓库到快照提交"""
+    """恢复 Git 仓库到快照提交
+
+    Args:
+        repo (RepositorySnapshot | ExtensionSnapshot):
+            快照中的 Git 仓库或扩展记录。
+        target_path (Path):
+            恢复目标路径。
+        options (SnapshotRestoreOptions):
+            快照恢复选项。
+
+    Returns:
+        bool: 仓库是否已恢复或可视为存在。
+
+    Raises:
+        RuntimeError:
+            当恢复或 GUI 启动无法安全继续时抛出。
+    """
     if repo.commit is None:
         logger.info("快照目标缺少 commit, 跳过: %s", target_path)
         return target_path.is_dir()
@@ -842,7 +875,16 @@ def _prune_extensions(webui_path: Path, snapshot: WebUiSnapshot, tools: Extensio
 
 
 def restore_extensions(snapshot: WebUiSnapshot, webui_path: Path, options: SnapshotRestoreOptions) -> None:
-    """恢复 WebUI 扩展"""
+    """恢复 WebUI 扩展
+
+    Args:
+        snapshot (WebUiSnapshot):
+            WebUI 环境快照。
+        webui_path (Path):
+            WebUI 根目录。
+        options (SnapshotRestoreOptions):
+            快照恢复选项。
+    """
     tools = _extension_tools(snapshot.webui.type)
     if tools is None:
         if snapshot.extensions:
@@ -869,7 +911,21 @@ def preview_webui_snapshot_restore(
     expected_webui_type: str,
     options: SnapshotRestoreOptions | None = None,
 ) -> SnapshotRestorePlan:
-    """预检查 WebUI 快照恢复将执行的变更"""
+    """预检查 WebUI 快照恢复将执行的变更
+
+    Args:
+        snapshot_path (Path):
+            快照 JSON 文件路径。
+        webui_path (Path):
+            WebUI 根目录。
+        expected_webui_type (str):
+            期望的 WebUI 类型。
+        options (SnapshotRestoreOptions | None):
+            快照恢复选项。
+
+    Returns:
+        SnapshotRestorePlan: 快照恢复预检查计划。
+    """
     if options is None:
         options = SnapshotRestoreOptions()
 
@@ -924,7 +980,22 @@ def restore_webui_snapshot(
     expected_webui_type: str,
     options: SnapshotRestoreOptions | None = None,
 ) -> None:
-    """从快照文件恢复 WebUI 环境"""
+    """从快照文件恢复 WebUI 环境
+
+    Args:
+        snapshot_path (Path):
+            快照 JSON 文件路径。
+        webui_path (Path):
+            WebUI 根目录。
+        expected_webui_type (str):
+            期望的 WebUI 类型。
+        options (SnapshotRestoreOptions | None):
+            快照恢复选项。
+
+    Raises:
+        ValueError:
+            当输入数据无效或快照内容不匹配时抛出。
+    """
     if options is None:
         options = SnapshotRestoreOptions()
 

@@ -51,7 +51,15 @@ class SnapshotListItem:
 
 
 def format_snapshot_timestamp(value: str) -> str:
-    """将快照 ISO 时间戳转换为当前系统本地时间显示"""
+    """将快照 ISO 时间戳转换为当前系统本地时间显示
+
+    Args:
+        value (str):
+            快照 ISO 时间戳字符串。
+
+    Returns:
+        str: 适合界面展示的时间字符串。
+    """
     try:
         normalized = value.strip()
         if normalized.endswith("Z"):
@@ -66,7 +74,15 @@ def format_snapshot_timestamp(value: str) -> str:
 
 
 def list_snapshot_files(snapshot_dir: Path) -> list[SnapshotListItem]:
-    """读取目录中的有效快照文件列表"""
+    """读取目录中的有效快照文件列表
+
+    Args:
+        snapshot_dir (Path):
+            快照文件目录。
+
+    Returns:
+        list[SnapshotListItem]: 快照文件列表。
+    """
     if not snapshot_dir.is_dir():
         return []
 
@@ -94,7 +110,15 @@ def list_snapshot_files(snapshot_dir: Path) -> list[SnapshotListItem]:
 
 
 def build_restore_blocking_guidance(plan: SnapshotRestorePlan) -> list[str]:
-    """根据恢复阻断项生成处理建议"""
+    """根据恢复阻断项生成处理建议
+
+    Args:
+        plan (SnapshotRestorePlan):
+            快照恢复预检查结果。
+
+    Returns:
+        list[str]: 面向用户的恢复阻塞处理建议。
+    """
     guidance: list[str] = []
     if not plan.webui_type_match:
         guidance.append(
@@ -126,7 +150,15 @@ def build_restore_blocking_guidance(plan: SnapshotRestorePlan) -> list[str]:
 
 
 def format_restore_blocking_message(plan: SnapshotRestorePlan) -> str:
-    """格式化无法恢复时展示给用户的提示"""
+    """格式化无法恢复时展示给用户的提示
+
+    Args:
+        plan (SnapshotRestorePlan):
+            快照恢复预检查结果。
+
+    Returns:
+        str: 恢复阻塞提示文本。
+    """
     lines = [*plan.errors]
     guidance = build_restore_blocking_guidance(plan)
     if guidance:
@@ -287,9 +319,21 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
         install_text_context_menu(self.result_text, editable=False)
 
     def set_status(self, message: str) -> None:
+        """更新状态栏文本。
+
+        Args:
+            message (str):
+                状态栏消息文本。
+        """
         self.status_var.set(message)
 
     def set_busy_state(self, busy: bool) -> None:
+        """切换界面忙碌状态。
+
+        Args:
+            busy (bool):
+                是否进入忙碌状态。
+        """
         if busy:
             self.busy_var.set("执行中")
             self.progress.start(12)
@@ -298,7 +342,12 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
             self.progress.stop()
 
     def refresh_snapshot_list(self, show_message: bool = True) -> None:
-        """刷新快照目录列表"""
+        """刷新快照目录列表
+
+        Args:
+            show_message (bool):
+                刷新后是否显示提示消息。
+        """
         if not self.snapshot_dir.is_dir():
             self._clear_snapshot_list()
             self.snapshot_path_var.set("")
@@ -401,6 +450,7 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
         self._set_delete_state(enabled)
 
     def create_snapshot(self) -> None:
+        """创建新的 WebUI 环境快照。"""
         def _task() -> tuple[WebUiSnapshot, Path]:
             snapshot = self.snapshot_factory(bool(self.include_packages_var.get()))
             output_path = resolve_snapshot_output(snapshot, self.snapshot_dir)
@@ -429,6 +479,7 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
         messagebox.showinfo("创建完成", f"快照已保存到:\n{output}")
 
     def delete_snapshot(self) -> None:
+        """删除当前选中的快照文件。"""
         snapshot_path = self._snapshot_path()
         if snapshot_path is None:
             return
@@ -447,6 +498,7 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
         self.set_status(f"已删除快照: {snapshot_path.name}")
 
     def preview_restore(self) -> None:
+        """预览当前选中快照的恢复计划。"""
         snapshot_path = self._snapshot_path()
         if snapshot_path is None:
             return
@@ -467,6 +519,7 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
         self._set_result_text(self._format_restore_plan(plan))
 
     def restore_snapshot(self) -> None:
+        """恢复当前选中的快照。"""
         snapshot_path = self._snapshot_path()
         if snapshot_path is None:
             return
@@ -585,7 +638,28 @@ def launch_snapshot_manager_gui(
     custom_github_mirror: str | list[str] | None = None,
     snapshot_dir: Path | None = None,
 ) -> None:
-    """启动 WebUI 快照管理 GUI"""
+    """启动 WebUI 快照管理 GUI
+
+    Args:
+        title (str):
+            GUI 窗口标题。
+        webui_type (str):
+            WebUI 类型标识。
+        webui_path (Path):
+            WebUI 根目录。
+        snapshot_factory (SnapshotFactory):
+            创建快照对象的回调。
+        use_uv (bool):
+            是否使用 uv 执行 Python 包安装。
+        use_pypi_mirror (bool):
+            是否使用 PyPI 镜像源。
+        use_github_mirror (bool):
+            是否使用 GitHub 镜像源。
+        custom_github_mirror (str | list[str] | None):
+            自定义 GitHub 镜像源。
+        snapshot_dir (Path | None):
+            快照文件目录。
+    """
     app = SnapshotManagerApp(
         title=title,
         webui_type=webui_type,

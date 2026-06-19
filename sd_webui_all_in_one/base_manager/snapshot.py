@@ -43,7 +43,11 @@ class DirectUrlVcsInfo:
     extra: JsonObject = field(default_factory=dict)
 
     def to_dict(self) -> JsonObject:
-        """转换为 direct_url.json 兼容结构"""
+        """转换为 direct_url.json 兼容结构
+
+        Returns:
+            JsonObject: JSON 可序列化对象。
+        """
         return _compact_json_object(
             {
                 "vcs": self.vcs,
@@ -63,7 +67,11 @@ class DirectUrlDirInfo:
     extra: JsonObject = field(default_factory=dict)
 
     def to_dict(self) -> JsonObject:
-        """转换为 direct_url.json 兼容结构"""
+        """转换为 direct_url.json 兼容结构
+
+        Returns:
+            JsonObject: JSON 可序列化对象。
+        """
         return _compact_json_object({"editable": self.editable}, self.extra)
 
 
@@ -76,7 +84,11 @@ class DirectUrlArchiveInfo:
     extra: JsonObject = field(default_factory=dict)
 
     def to_dict(self) -> JsonObject:
-        """转换为 direct_url.json 兼容结构"""
+        """转换为 direct_url.json 兼容结构
+
+        Returns:
+            JsonObject: JSON 可序列化对象。
+        """
         return _compact_json_object({"hash": self.hash, "hashes": self.hashes}, self.extra)
 
 
@@ -92,7 +104,11 @@ class DirectUrlSnapshot:
     extra: JsonObject = field(default_factory=dict)
 
     def to_dict(self) -> JsonObject:
-        """转换为 direct_url.json 兼容结构"""
+        """转换为 direct_url.json 兼容结构
+
+        Returns:
+            JsonObject: JSON 可序列化对象。
+        """
         return _compact_json_object(
             {
                 "url": self.url,
@@ -202,12 +218,20 @@ class WebUiSnapshot:
     system: SystemSnapshot = field(default_factory=lambda: collect_system_info())
 
     def to_dict(self) -> JsonObject:
-        """转换为 JSON 可序列化结构"""
+        """转换为 JSON 可序列化结构
+
+        Returns:
+            JsonObject: JSON 可序列化对象。
+        """
         return cast(JsonObject, snapshot_to_dict(self))
 
 
 def utc_now_iso() -> str:
-    """获取当前 UTC 时间"""
+    """获取当前 UTC 时间
+
+    Returns:
+        str: 当前 UTC 时间字符串。
+    """
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
@@ -224,7 +248,15 @@ def _compact_json_object(data: dict[str, object], extra: JsonObject | None = Non
 
 
 def snapshot_to_dict(value: object) -> JsonValue:
-    """将快照数据转换为 JSON 可序列化结构"""
+    """将快照数据转换为 JSON 可序列化结构
+
+    Args:
+        value (object):
+            需要转换为 JSON 可序列化结构的值。
+
+    Returns:
+        JsonValue: JSON 可序列化值。
+    """
     if isinstance(value, (DirectUrlVcsInfo, DirectUrlDirInfo, DirectUrlArchiveInfo, DirectUrlSnapshot)):
         return value.to_dict()
     if isinstance(value, Path):
@@ -239,12 +271,24 @@ def snapshot_to_dict(value: object) -> JsonValue:
 
 
 def json_safe(value: object) -> JsonValue:
-    """将快照数据转换为 JSON 可序列化结构"""
+    """将快照数据转换为 JSON 可序列化结构
+
+    Args:
+        value (object):
+            需要转换为 JSON 可序列化结构的值。
+
+    Returns:
+        JsonValue: JSON 可序列化值。
+    """
     return snapshot_to_dict(value)
 
 
 def collect_python_info() -> PythonSnapshot:
-    """采集当前 Python 解释器信息"""
+    """采集当前 Python 解释器信息
+
+    Returns:
+        PythonSnapshot: 当前 Python 解释器快照。
+    """
     return PythonSnapshot(
         version=platform.python_version(),
         implementation=platform.python_implementation(),
@@ -254,7 +298,11 @@ def collect_python_info() -> PythonSnapshot:
 
 
 def collect_system_info() -> SystemSnapshot:
-    """采集当前系统和架构信息"""
+    """采集当前系统和架构信息
+
+    Returns:
+        SystemSnapshot: 当前系统环境快照。
+    """
     return SystemSnapshot(
         system=platform.system() or sys.platform,
         architecture=platform.machine() or "unknown",
@@ -496,7 +544,19 @@ def _webui_identity_from_json(value: JsonValue, field_name: str) -> WebUiIdentit
 
 
 def snapshot_from_dict(data: JsonObject) -> WebUiSnapshot:
-    """从 JSON 对象解析 WebUI 快照"""
+    """从 JSON 对象解析 WebUI 快照
+
+    Args:
+        data (JsonObject):
+            快照 JSON 对象。
+
+    Returns:
+        WebUiSnapshot: 解析后的 WebUI 环境快照。
+
+    Raises:
+        ValueError:
+            当输入数据无效或快照内容不匹配时抛出。
+    """
     schema_version = _get_required(data, "schema_version", "schema_version")
     if not isinstance(schema_version, int) or isinstance(schema_version, bool):
         raise ValueError("快照字段 'schema_version' 应为整数")
@@ -525,7 +585,19 @@ def snapshot_from_dict(data: JsonObject) -> WebUiSnapshot:
 
 
 def load_snapshot(path: Path) -> WebUiSnapshot:
-    """从 JSON 文件加载 WebUI 快照"""
+    """从 JSON 文件加载 WebUI 快照
+
+    Args:
+        path (Path):
+            快照 JSON 文件路径。
+
+    Returns:
+        WebUiSnapshot: 从文件加载的 WebUI 环境快照。
+
+    Raises:
+        ValueError:
+            当输入数据无效或快照内容不匹配时抛出。
+    """
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
@@ -581,7 +653,11 @@ def _parse_wheel_metadata(raw_wheel: str | None) -> WheelSnapshot | None:
 
 
 def collect_installed_packages() -> list[PackageSnapshot]:
-    """采集当前 Python 环境已安装软件包信息"""
+    """采集当前 Python 环境已安装软件包信息
+
+    Returns:
+        list[PackageSnapshot]: 已安装 Python 包快照列表。
+    """
     packages: list[PackageSnapshot] = []
     for dist in metadata.distributions():
         try:
@@ -613,7 +689,15 @@ def collect_installed_packages() -> list[PackageSnapshot]:
 
 
 def repository_state_to_snapshot(state: RepositoryState) -> RepositorySnapshot:
-    """将仓库状态转换为快照字段"""
+    """将仓库状态转换为快照字段
+
+    Args:
+        state (RepositoryState):
+            仓库检查结果。
+
+    Returns:
+        RepositorySnapshot: 仓库快照对象。
+    """
     return RepositorySnapshot(
         path=state.path,
         name=state.name,
@@ -628,7 +712,17 @@ def repository_state_to_snapshot(state: RepositoryState) -> RepositorySnapshot:
 
 
 def repository_dirty(path: Path, is_git_repo: bool) -> bool | None:
-    """检查 Git 仓库是否存在未提交变更"""
+    """检查 Git 仓库是否存在未提交变更
+
+    Args:
+        path (Path):
+            Git 仓库路径。
+        is_git_repo (bool):
+            目标路径是否为 Git 仓库。
+
+    Returns:
+        bool | None: Git 仓库是否存在未提交变更；非 Git 仓库或检查失败时返回 None。
+    """
     if not is_git_repo:
         return None
     try:
@@ -638,7 +732,15 @@ def repository_dirty(path: Path, is_git_repo: bool) -> bool | None:
 
 
 def collect_repository_snapshot(path: Path) -> RepositorySnapshot:
-    """采集 Git 仓库快照"""
+    """采集 Git 仓库快照
+
+    Args:
+        path (Path):
+            Git 仓库路径。
+
+    Returns:
+        RepositorySnapshot: Git 仓库快照。
+    """
     state = inspect_repository(path)
     snapshot = repository_state_to_snapshot(state)
     snapshot.dirty = repository_dirty(path, state.is_git_repo)
@@ -650,7 +752,19 @@ def collect_git_extensions(
     enabled_resolver: ExtensionEnabledResolver | None = None,
     ignored_names: set[str] | None = None,
 ) -> list[ExtensionSnapshot]:
-    """采集扩展目录中的 Git 扩展快照"""
+    """采集扩展目录中的 Git 扩展快照
+
+    Args:
+        extension_dir (Path):
+            扩展根目录。
+        enabled_resolver (ExtensionEnabledResolver | None):
+            用于判断扩展启用状态的回调。
+        ignored_names (set[str] | None):
+            采集扩展时需要忽略的目录名。
+
+    Returns:
+        list[ExtensionSnapshot]: Git 扩展快照列表。
+    """
     if ignored_names is None:
         ignored_names = {"__pycache__"}
     if not extension_dir.is_dir():
@@ -689,7 +803,23 @@ def build_webui_snapshot(
     include_packages: bool = True,
     extensions: list[ExtensionSnapshot] | None = None,
 ) -> WebUiSnapshot:
-    """构建 WebUI 环境快照"""
+    """构建 WebUI 环境快照
+
+    Args:
+        webui_name (str):
+            WebUI 显示名称。
+        webui_type (str):
+            WebUI 类型标识。
+        webui_path (Path):
+            WebUI 根目录。
+        include_packages (bool):
+            是否采集当前 Python 包列表。
+        extensions (list[ExtensionSnapshot] | None):
+            已采集的扩展快照列表。
+
+    Returns:
+        WebUiSnapshot: WebUI 环境快照。
+    """
     return WebUiSnapshot(
         schema_version=SNAPSHOT_SCHEMA_VERSION,
         created_at=utc_now_iso(),
@@ -707,7 +837,17 @@ def build_webui_snapshot(
 
 
 def save_snapshot(snapshot: WebUiSnapshot, output: Path) -> Path:
-    """保存快照 JSON 文件"""
+    """保存快照 JSON 文件
+
+    Args:
+        snapshot (WebUiSnapshot):
+            WebUI 环境快照。
+        output (Path):
+            快照输出路径或目录。
+
+    Returns:
+        Path: 已写入的快照文件路径。
+    """
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(snapshot_to_dict(snapshot), ensure_ascii=False, indent=2), encoding="utf-8")
     return output
@@ -723,7 +863,17 @@ def _snapshot_timestamp(snapshot: WebUiSnapshot) -> str:
 
 
 def default_snapshot_output(snapshot: WebUiSnapshot, output_dir: Path | None = None) -> Path:
-    """生成默认快照输出文件路径"""
+    """生成默认快照输出文件路径
+
+    Args:
+        snapshot (WebUiSnapshot):
+            WebUI 环境快照。
+        output_dir (Path | None):
+            快照输出目录。
+
+    Returns:
+        Path: 默认快照输出路径。
+    """
     if output_dir is None:
         output_dir = SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR
     filename = f"{_safe_filename_part(snapshot.webui.type)}-{_snapshot_timestamp(snapshot)}.json"
@@ -731,7 +881,17 @@ def default_snapshot_output(snapshot: WebUiSnapshot, output_dir: Path | None = N
 
 
 def resolve_snapshot_output(snapshot: WebUiSnapshot, output_dir: Path | None = None) -> Path:
-    """解析快照输出文件路径"""
+    """解析快照输出文件路径
+
+    Args:
+        snapshot (WebUiSnapshot):
+            WebUI 环境快照。
+        output_dir (Path | None):
+            快照输出目录。
+
+    Returns:
+        Path: 最终快照输出路径。
+    """
     if output_dir is None:
         return default_snapshot_output(snapshot)
     return default_snapshot_output(snapshot, output_dir=output_dir)

@@ -122,10 +122,16 @@ def update(
     """更新 InvokeAI
 
     Args:
+        invokeai_path (Path):
+            InvokeAI 根目录。
         use_pypi_mirror (bool):
-            是否使用国内 PyPI 镜像源
+            是否使用 PyPI 镜像源。
         use_uv (bool):
-            是否使用 uv 安装 Python 软件包
+            是否使用 uv 执行 Python 包安装。
+        snapshot_enabled (bool):
+            是否启用操作前自动快照。
+        snapshot_dir (Path | None):
+            快照文件目录。
     """
     _create_pre_operation_snapshot(
         invokeai_path=invokeai_path,
@@ -160,7 +166,16 @@ def snapshot(
     output: Path | None = None,
     include_packages: bool = True,
 ) -> None:
-    """生成 InvokeAI 环境快照"""
+    """生成 InvokeAI 环境快照
+
+    Args:
+        invokeai_path (Path):
+            InvokeAI 根目录。
+        output (Path | None):
+            快照输出路径或目录。
+        include_packages (bool):
+            是否采集当前 Python 包列表。
+    """
     output_snapshot(
         lambda: get_invokeai_snapshot(
             invokeai_path=invokeai_path,
@@ -181,7 +196,28 @@ def restore(
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
-    """恢复 InvokeAI 环境快照"""
+    """恢复 InvokeAI 环境快照
+
+    Args:
+        snapshot_path (Path):
+            快照 JSON 文件路径。
+        invokeai_path (Path):
+            InvokeAI 根目录。
+        prune_packages (bool):
+            是否卸载快照外 Python 包。
+        prune_extensions (bool):
+            是否删除快照外扩展。
+        force_git_reset (bool):
+            是否允许覆盖 Git 仓库未提交变更。
+        use_uv (bool):
+            是否使用 uv 执行 Python 包安装。
+        use_pypi_mirror (bool):
+            是否使用 PyPI 镜像源。
+        use_github_mirror (bool):
+            是否使用 GitHub 镜像源。
+        custom_github_mirror (str | list[str] | None):
+            自定义 GitHub 镜像源。
+    """
     restore_snapshot(
         snapshot_path=snapshot_path,
         webui_path=invokeai_path,
@@ -395,11 +431,15 @@ def update_custom_nodes(
 
     Args:
         invokeai_path (Path):
-            InvokeAI 根目录
+            InvokeAI 根目录。
         use_github_mirror (bool):
-            是否使用 Github 镜像源
+            是否使用 GitHub 镜像源。
         custom_github_mirror (str | list[str] | None):
-            自定义 Github 镜像源
+            自定义 GitHub 镜像源。
+        snapshot_enabled (bool):
+            是否启用操作前自动快照。
+        snapshot_dir (Path | None):
+            快照文件目录。
     """
     _create_pre_operation_snapshot(
         invokeai_path=invokeai_path,
@@ -445,15 +485,19 @@ def launch_version_gui(
 
     Args:
         invokeai_path (Path):
-            InvokeAI 根目录
+            InvokeAI 根目录。
         use_pypi_mirror (bool):
-            是否使用 PyPI 国内镜像
+            是否使用 PyPI 镜像源。
         use_uv (bool):
-            是否使用 uv 安装 Python 软件包
+            是否使用 uv 执行 Python 包安装。
         use_github_mirror (bool):
-            是否使用 Github 镜像源
+            是否使用 GitHub 镜像源。
         custom_github_mirror (str | list[str] | None):
-            自定义 Github 镜像源
+            自定义 GitHub 镜像源。
+        snapshot_enabled (bool):
+            是否启用操作前自动快照。
+        snapshot_dir (Path | None):
+            快照文件目录。
     """
     _create_pre_operation_snapshot(
         invokeai_path=invokeai_path,
@@ -481,7 +525,26 @@ def reinstall_invokeai_pytorch(
     snapshot_enabled: bool = True,
     snapshot_dir: Path | None = None,
 ) -> None:
-    """为 InvokeAI 重装 PyTorch"""
+    """为 InvokeAI 重装 PyTorch
+
+    Args:
+        invokeai_path (Path):
+            InvokeAI 根目录。
+        device_type (PyTorchDeviceTypeCategory | None):
+            InvokeAI PyTorch 设备类型。
+        use_pypi_mirror (bool):
+            是否使用 PyPI 镜像源。
+        use_uv (bool | None):
+            是否使用 uv 执行 Python 包安装。
+        interactive_mode (bool):
+            是否启用交互模式。
+        list_only (bool):
+            是否仅列出可选 PyTorch 版本并退出。
+        snapshot_enabled (bool):
+            是否启用操作前自动快照。
+        snapshot_dir (Path | None):
+            快照文件目录。
+    """
     if not list_only:
         _create_pre_operation_snapshot(
             invokeai_path=invokeai_path,
@@ -506,7 +569,22 @@ def launch_snapshot_gui(
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
-    """启动 InvokeAI 快照管理 GUI"""
+    """启动 InvokeAI 快照管理 GUI
+
+    Args:
+        invokeai_path (Path):
+            InvokeAI 根目录。
+        snapshot_dir (Path | None):
+            快照文件目录。
+        use_uv (bool):
+            是否使用 uv 执行 Python 包安装。
+        use_pypi_mirror (bool):
+            是否使用 PyPI 镜像源。
+        use_github_mirror (bool):
+            是否使用 GitHub 镜像源。
+        custom_github_mirror (str | list[str] | None):
+            自定义 GitHub 镜像源。
+    """
     launch_invokeai_snapshot_gui(
         invokeai_path=invokeai_path,
         snapshot_dir=snapshot_dir,

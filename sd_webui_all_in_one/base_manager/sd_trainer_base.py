@@ -779,7 +779,26 @@ def launch_sd_trainer_snapshot_gui(
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
-    """启动 SD Trainer 快照管理 GUI"""
+    """启动 SD Trainer 快照管理 GUI
+
+    Args:
+        sd_trainer_path (Path):
+            SD Trainer 根目录。
+        snapshot_dir (Path | None):
+            快照文件目录。
+        use_uv (bool):
+            是否使用 uv 执行 Python 包安装。
+        use_pypi_mirror (bool):
+            是否使用 PyPI 镜像源。
+        use_github_mirror (bool):
+            是否使用 GitHub 镜像源。
+        custom_github_mirror (str | list[str] | None):
+            自定义 GitHub 镜像源。
+
+    Raises:
+        RuntimeError:
+            当恢复或 GUI 启动无法安全继续时抛出。
+    """
     try:
         from sd_webui_all_in_one.base_manager.gui.snapshot_gui import launch_snapshot_manager_gui
     except ModuleNotFoundError as e:

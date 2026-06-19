@@ -206,8 +206,7 @@ COMFYUI_CONFIG_PATH = ROOT_PATH / "base_manager" / "config" / "comfy.settings.js
 def set_comfyui_custom_node_list_mirror(
     custom_github_mirror: str | list[str] | None = None,
 ) -> str | None:
-    """
-    配置 ComfyUI 自定义节点列表镜像源
+    """配置 ComfyUI 自定义节点列表镜像源
 
     Args:
         custom_github_mirror (str | list[str] | None):
@@ -1050,7 +1049,26 @@ def launch_comfyui_snapshot_gui(
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
 ) -> None:
-    """启动 ComfyUI 快照管理 GUI"""
+    """启动 ComfyUI 快照管理 GUI
+
+    Args:
+        comfyui_path (Path):
+            ComfyUI 根目录。
+        snapshot_dir (Path | None):
+            快照文件目录。
+        use_uv (bool):
+            是否使用 uv 执行 Python 包安装。
+        use_pypi_mirror (bool):
+            是否使用 PyPI 镜像源。
+        use_github_mirror (bool):
+            是否使用 GitHub 镜像源。
+        custom_github_mirror (str | list[str] | None):
+            自定义 GitHub 镜像源。
+
+    Raises:
+        RuntimeError:
+            当恢复或 GUI 启动无法安全继续时抛出。
+    """
     try:
         from sd_webui_all_in_one.base_manager.gui.snapshot_gui import launch_snapshot_manager_gui
     except ModuleNotFoundError as e:

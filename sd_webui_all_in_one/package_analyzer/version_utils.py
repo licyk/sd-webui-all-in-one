@@ -35,7 +35,15 @@ REPLACE_PACKAGE_NAME_DICT = {
 def normalize_package_name(
     name: str,
 ) -> str:
-    """规范化软件包名 (https://peps.python.org/pep-0503/#normalized-names)"""
+    """规范化软件包名 (https://peps.python.org/pep-0503/#normalized-names)
+
+    Args:
+        name (str):
+            待规范化的名称。
+
+    Returns:
+        str: 规范化后的 Python 包名。
+    """
     return re.sub(r"[-_.]+", "-", name).lower()
 
 

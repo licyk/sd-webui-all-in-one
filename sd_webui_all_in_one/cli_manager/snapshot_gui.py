@@ -14,7 +14,18 @@ def add_snapshot_gui_arguments(
     path_dest: str,
     default_path: Path,
 ) -> None:
-    """为 WebUI snapshot-manager GUI 子命令添加通用参数"""
+    """为 WebUI snapshot-manager GUI 子命令添加通用参数
+
+    Args:
+        parser (argparse.ArgumentParser):
+            需要添加参数的命令行解析器。
+        path_argument (str):
+            WebUI 路径参数名。
+        path_dest (str):
+            WebUI 路径保存到 argparse 命名空间中的字段名。
+        default_path (Path):
+            默认 WebUI 根目录。
+    """
     parser.add_argument(path_argument, type=normalized_filepath, required=False, default=default_path, dest=path_dest, help="WebUI 根目录")
     parser.add_argument("--snapshot-dir", type=normalized_filepath, default=SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR, dest="snapshot_dir", help="快照目录")
     parser.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
