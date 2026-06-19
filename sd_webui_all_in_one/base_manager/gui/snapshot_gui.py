@@ -109,6 +109,19 @@ def list_snapshot_files(snapshot_dir: Path) -> list[SnapshotListItem]:
     return sorted(items, key=lambda item: (item.created_at, item.filename), reverse=True)
 
 
+def format_snapshot_path(path: Path) -> str:
+    """格式化快照 GUI 中展示的本地路径。
+
+    Args:
+        path (Path):
+            需要展示的本地路径。
+
+    Returns:
+        str: POSIX 风格的路径字符串。
+    """
+    return path.as_posix()
+
+
 def build_restore_blocking_guidance(plan: SnapshotRestorePlan) -> list[str]:
     """根据恢复阻断项生成处理建议
 
@@ -127,16 +140,16 @@ def build_restore_blocking_guidance(plan: SnapshotRestorePlan) -> list[str]:
         )
     if plan.kernel_change is not None and plan.kernel_change.action == "blocked_missing_target":
         guidance.append(
-            f"请先通过 installer 准备对应的 WebUI kernel, 确认内核目录存在后再恢复: {plan.kernel_change.path}。"
+            f"请先通过 installer 准备对应的 WebUI kernel, 确认内核目录存在后再恢复: {format_snapshot_path(plan.kernel_change.path)}。"
             "该问题不能通过强制恢复开关绕过, 因为扩展恢复依赖 kernel 目录。"
         )
 
     dirty_targets: list[str] = []
     if plan.kernel_change is not None and plan.kernel_change.action == "blocked_dirty":
-        dirty_targets.append(f"内核: {plan.kernel_change.path}")
+        dirty_targets.append(f"内核: {format_snapshot_path(plan.kernel_change.path)}")
     for item in plan.extension_changes:
         if item.git is not None and item.git.action == "blocked_dirty":
-            dirty_targets.append(f"扩展 {item.name}: {item.path}")
+            dirty_targets.append(f"扩展 {item.name}: {format_snapshot_path(item.path)}")
     if dirty_targets:
         guidance.append(f"存在 Git 未提交变更: {'; '.join(dirty_targets)}。建议先提交、stash 或备份这些变更后再恢复。")
         guidance.append(
