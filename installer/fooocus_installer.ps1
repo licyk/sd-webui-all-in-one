@@ -259,10 +259,10 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # Fooocus Installer 版本和检查更新间隔
-$script:FOOOCUS_INSTALLER_VERSION = 401
+$script:FOOOCUS_INSTALLER_VERSION = 402
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.2.51"
+$script:CORE_MINIMUM_VER = "2.2.52"
 # 快照重建模式
 $script:SnapshotExpectedWebUIType = "fooocus"
 $script:SnapshotRestoreCliName = "fooocus"
