@@ -38,6 +38,39 @@ def test_cuda_version_parse_falls_back_to_umd_version(monkeypatch):
     assert gpu_detector.get_cuda_version() == 12.8
 
 
+def test_rocm_gfx_targets_return_empty_when_rocminfo_missing(monkeypatch):
+    monkeypatch.setattr(gpu_detector.shutil, "which", lambda name: None if name == "rocminfo" else f"/usr/bin/{name}")
+
+    assert gpu_detector.get_rocm_gfx_targets() == []
+
+
+def test_rocm_gfx_targets_parse_unique_targets(monkeypatch):
+    output = """
+    Name:                    gfx1100
+    Marketing Name:          AMD Radeon RX 7900 XTX
+    Name:                    gfx1100
+    Name:                    gfx1201
+    """
+    monkeypatch.setattr(gpu_detector.shutil, "which", lambda name: "/usr/bin/rocminfo" if name == "rocminfo" else None)
+    monkeypatch.setattr(
+        gpu_detector.subprocess,
+        "run",
+        lambda *_args, **_kwargs: subprocess.CompletedProcess([], 0, stdout=output, stderr=""),
+    )
+
+    assert gpu_detector.get_rocm_gfx_targets() == ["gfx1100", "gfx1201"]
+
+
+def test_rocm_gfx_targets_return_empty_when_rocminfo_fails(monkeypatch):
+    def fake_run(*_args, **_kwargs):
+        raise subprocess.CalledProcessError(1, ["rocminfo"])
+
+    monkeypatch.setattr(gpu_detector.shutil, "which", lambda name: "/usr/bin/rocminfo" if name == "rocminfo" else None)
+    monkeypatch.setattr(gpu_detector.subprocess, "run", fake_run)
+
+    assert gpu_detector.get_rocm_gfx_targets() == []
+
+
 def test_windows_and_nvidia_smi_gpu_parsers(monkeypatch):
     windows_payload = {"Name": "NVIDIA RTX 4090", "AdapterCompatibility": "NVIDIA", "AdapterRAM": "123", "DriverVersion": "555"}
 
@@ -100,7 +133,9 @@ def test_gpu_classification_helpers():
         ("linux", [], 0.0, 0.0, "cpu", "cpu"),
         ("linux", [_gpu("NVIDIA RTX 4090", "NVIDIA")], 12.8, 8.9, "cu128", "cuda"),
         ("linux", [_gpu("Intel(R) Arc A770", "Intel")], 0.0, 0.0, "xpu", "xpu"),
-        ("linux", [_gpu("AMD Radeon RX 7900", "Advanced Micro Devices")], 0.0, 0.0, "rocm7.1", "rocm"),
+        ("linux", [_gpu("AMD Radeon RX 7900", "Advanced Micro Devices")], 0.0, 0.0, "rocm_rdna3", "rocm"),
+        ("linux", [_gpu("AMD Radeon RX 7600", "Advanced Micro Devices")], 0.0, 0.0, "cpu", "rocm"),
+        ("win32", [_gpu("AMD Radeon RX 7900", "Advanced Micro Devices")], 0.0, 0.0, "rocm_win", "rocm"),
         ("darwin", [], 0.0, 0.0, "all", "mps"),
     ],
 )
@@ -109,9 +144,83 @@ def test_auto_detect_pytorch_type_and_category(monkeypatch, platform, gpus, cuda
     monkeypatch.setattr(gpu_detector, "get_gpu_list", lambda: gpus)
     monkeypatch.setattr(gpu_detector, "get_cuda_version", lambda: cuda_version)
     monkeypatch.setattr(gpu_detector, "get_cuda_comp_cap", lambda: cuda_cap)
+    monkeypatch.setattr(gpu_detector, "get_rocm_gfx_targets", lambda: [])
 
     assert gpu_detector.auto_detect_avaliable_pytorch_type() == expected_type
     assert gpu_detector.auto_detect_pytorch_device_category() == expected_category
+
+
+@pytest.mark.parametrize(
+    ("gfx_targets", "expected"),
+    [
+        (["gfx1201"], "rocm_rdna4"),
+        (["gfx1151"], "rocm_rdna3.5"),
+        (["gfx942"], "rocm7.2"),
+        (["gfx906"], "cpu"),
+        (["gfx1102"], "cpu"),
+    ],
+)
+def test_auto_detect_amd_rocm_type_from_gfx_targets(monkeypatch, gfx_targets, expected):
+    monkeypatch.setattr(gpu_detector.sys, "platform", "linux")
+    monkeypatch.setattr(gpu_detector, "get_gpu_list", lambda: [_gpu("AMD Radeon Graphics", "Advanced Micro Devices")])
+    monkeypatch.setattr(gpu_detector, "get_cuda_version", lambda: 0.0)
+    monkeypatch.setattr(gpu_detector, "get_cuda_comp_cap", lambda: 0.0)
+    monkeypatch.setattr(gpu_detector, "get_rocm_gfx_targets", lambda: gfx_targets)
+
+    assert gpu_detector.auto_detect_avaliable_pytorch_type() == expected
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("AMD Radeon RX 9070 XT", "rocm_rdna4"),
+        ("AMD Radeon RX 9060 XT", "rocm_rdna4"),
+        ("AMD Radeon RX 7900 XTX", "rocm_rdna3"),
+        ("Navi 31 [Radeon RX 7900 XTX/XT]", "rocm_rdna3"),
+        ("AMD Radeon RX 7800 XT", "rocm_rdna3"),
+        ("AMD Radeon RX 7700 XT", "rocm_rdna3"),
+        ("AMD Radeon PRO V710", "rocm_rdna3"),
+        ("AMD Instinct MI300X", "rocm7.2"),
+        ("AMD Instinct MI100", "rocm7.2"),
+        ("AMD Radeon VII", "cpu"),
+        ("AMD Radeon RX 7600", "cpu"),
+        ("AMD Radeon Something", "cpu"),
+    ],
+)
+def test_auto_detect_amd_rocm_type_from_gpu_name(monkeypatch, name, expected):
+    monkeypatch.setattr(gpu_detector.sys, "platform", "linux")
+    monkeypatch.setattr(gpu_detector, "get_gpu_list", lambda: [_gpu(name, "Advanced Micro Devices")])
+    monkeypatch.setattr(gpu_detector, "get_cuda_version", lambda: 0.0)
+    monkeypatch.setattr(gpu_detector, "get_cuda_comp_cap", lambda: 0.0)
+    monkeypatch.setattr(gpu_detector, "get_rocm_gfx_targets", lambda: [])
+
+    assert gpu_detector.auto_detect_avaliable_pytorch_type() == expected
+
+
+def test_available_pytorch_types_only_include_detected_amd_rocm_type(monkeypatch):
+    monkeypatch.setattr(gpu_detector.sys, "platform", "linux")
+    monkeypatch.setattr(gpu_detector, "get_gpu_list", lambda: [_gpu("AMD Radeon RX 9070 XT", "Advanced Micro Devices")])
+    monkeypatch.setattr(gpu_detector, "get_cuda_version", lambda: 0.0)
+    monkeypatch.setattr(gpu_detector, "get_cuda_comp_cap", lambda: 0.0)
+    monkeypatch.setattr(gpu_detector, "get_rocm_gfx_targets", lambda: [])
+
+    result = gpu_detector.get_avaliable_pytorch_device_type()
+
+    assert "rocm_rdna4" in result
+    assert "rocm_rdna3" not in result
+    assert "rocm7.2" not in result
+
+
+def test_available_pytorch_types_skip_unknown_amd_rocm_type(monkeypatch):
+    monkeypatch.setattr(gpu_detector.sys, "platform", "linux")
+    monkeypatch.setattr(gpu_detector, "get_gpu_list", lambda: [_gpu("AMD Radeon RX 7600", "Advanced Micro Devices")])
+    monkeypatch.setattr(gpu_detector, "get_cuda_version", lambda: 0.0)
+    monkeypatch.setattr(gpu_detector, "get_cuda_comp_cap", lambda: 0.0)
+    monkeypatch.setattr(gpu_detector, "get_rocm_gfx_targets", lambda: [])
+
+    result = gpu_detector.get_avaliable_pytorch_device_type()
+
+    assert all(not dtype.startswith("rocm") for dtype in result)
 
 
 @pytest.mark.parametrize(
