@@ -1,4 +1,5 @@
 import json
+import zlib
 
 import pytest
 
@@ -103,6 +104,97 @@ def test_inspect_repository_reads_remote_url_from_git_config_with_duplicate_keys
 
     assert state.branch == "pixeloe"
     assert state.url == "https://github.com/KohakuBlueleaf/a1111-sd-webui-haku-img"
+
+
+def test_inspect_repository_falls_back_to_git_files_when_git_command_fails(tmp_path, monkeypatch):
+    repo_path = tmp_path / "repo"
+    git_path = repo_path / ".git"
+    git_path.mkdir(parents=True)
+    commit = "a" * 40
+    (git_path / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
+    (git_path / "refs" / "heads").mkdir(parents=True)
+    (git_path / "refs" / "heads" / "main").write_text(f"{commit}\n", encoding="utf-8")
+    (git_path / "config").write_text(
+        "\n".join(
+            [
+                '[remote "origin"]',
+                "    url = https://github.com/example/invoke-node",
+                '[branch "main"]',
+                "    remote = origin",
+                "    merge = refs/heads/main",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    body = "\n".join(
+        [
+            f"tree {'b' * 40}",
+            "author Demo <demo@example.com> 0 +0000",
+            "committer Demo <demo@example.com> 0 +0000",
+            "",
+            "Fix InvokeAI node snapshot",
+            "",
+        ]
+    ).encode("utf-8")
+    object_path = git_path / "objects" / commit[:2] / commit[2:]
+    object_path.parent.mkdir(parents=True)
+    object_path.write_bytes(zlib.compress(b"commit " + str(len(body)).encode("ascii") + b"\x00" + body))
+
+    def fail_git_output(*_args):
+        raise RuntimeError("git failed")
+
+    monkeypatch.setattr(repository_inspector, "run_git_output", fail_git_output)
+    monkeypatch.setattr(repository_inspector, "_run_git_output_with_safe_directory", fail_git_output)
+
+    state = inspect_repository(repo_path)
+
+    assert state.is_git_repo is True
+    assert state.url == "https://github.com/example/invoke-node"
+    assert state.branch == "main"
+    assert state.commit == commit
+    assert state.commit_date == "1970-01-01 00:00:00 +0000"
+    assert state.message == "Fix InvokeAI node snapshot"
+
+
+def test_inspect_repository_falls_back_to_packed_refs_when_git_command_fails(tmp_path, monkeypatch):
+    repo_path = tmp_path / "repo"
+    git_path = repo_path / ".git"
+    git_path.mkdir(parents=True)
+    commit = "b" * 40
+    (git_path / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
+    (git_path / "packed-refs").write_text(
+        "\n".join(
+            [
+                "# pack-refs with: peeled fully-peeled sorted",
+                f"{commit} refs/heads/main",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (git_path / "config").write_text(
+        "\n".join(
+            [
+                '[remote "origin"]',
+                "    url = https://github.com/example/packed-node",
+                '[branch "main"]',
+                "    remote = origin",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    def fail_git_output(*_args):
+        raise RuntimeError("git failed")
+
+    monkeypatch.setattr(repository_inspector, "run_git_output", fail_git_output)
+    monkeypatch.setattr(repository_inspector, "_run_git_output_with_safe_directory", fail_git_output)
+
+    state = inspect_repository(repo_path)
+
+    assert state.is_git_repo is True
+    assert state.url == "https://github.com/example/packed-node"
+    assert state.branch == "main"
+    assert state.commit == commit
 
 
 def test_sd_webui_extension_status_config(tmp_path):
