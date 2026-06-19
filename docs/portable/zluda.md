@@ -1,5 +1,8 @@
 # AMD ZLUDA 使用
 
+!!! warning
+    本方法依赖旧版 PyTorch（如 Torch 2.3.0 + CUDA 11.8）配合 ZLUDA 使用，可能已经不适配新版 PyTorch。部分 WebUI 或工作流需要新版 PyTorch 才能正常运行，例如较新的 ComfyUI 环境可能依赖新版 PyTorch，此时无法使用本方案。请优先确认目标 WebUI / 插件 / 节点对 PyTorch 版本的要求，再决定是否按本文方法切换到旧版 PyTorch。
+
 本文适用于 Windows 平台的 AMD RX 系列显卡和 AMD 780M / 680M 核显用户，通过绘世启动器启用 ZLUDA 引擎运行 SD WebUI、SD WebUI Forge、ComfyUI 或 Fooocus。
 
 目前在 ROCm 未在 Windows 上正式发布，则 AMD 显卡想要在 Windows 平台上跑图，需要借助 ZLUDA 进行转译。Installer 暂未提供 ZLUDA 功能支持（因技术原因），所以需使用绘世启动器提供 ZLUDA 功能支持，下面介绍了在 SD WebUI 上的操作方法，同时该方法也适用于 SD WebUI Forge、ComfyUI 和 Fooocus。
