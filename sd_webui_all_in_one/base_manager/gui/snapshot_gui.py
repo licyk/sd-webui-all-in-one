@@ -202,6 +202,7 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
         self.webui_path = Path(webui_path)
         self.snapshot_dir = Path(snapshot_dir or SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR)
         self.snapshot_factory = snapshot_factory
+        self.use_uv = use_uv
         self.use_pypi_mirror = use_pypi_mirror
         self.use_github_mirror = use_github_mirror
         self.custom_github_mirror = custom_github_mirror
@@ -210,7 +211,6 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
 
         self.include_packages_var = tk.BooleanVar(value=True)
         self.snapshot_path_var = tk.StringVar(value="")
-        self.use_uv_var = tk.BooleanVar(value=use_uv)
         self.prune_packages_var = tk.BooleanVar(value=True)
         self.prune_extensions_var = tk.BooleanVar(value=True)
         self.force_git_reset_var = tk.BooleanVar(value=True)
@@ -308,8 +308,7 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
 
         options = ttk.Frame(self.restore_tab)
         options.pack(fill=tk.X, padx=18, pady=(0, 8))
-        ttk.Checkbutton(options, text="使用 uv", variable=self.use_uv_var).pack(side=tk.LEFT)
-        ttk.Checkbutton(options, text="卸载快照外 Python 包", variable=self.prune_packages_var, command=self._invalidate_plan).pack(side=tk.LEFT, padx=(12, 0))
+        ttk.Checkbutton(options, text="卸载快照外 Python 包", variable=self.prune_packages_var, command=self._invalidate_plan).pack(side=tk.LEFT)
         ttk.Checkbutton(options, text="删除快照外扩展", variable=self.prune_extensions_var, command=self._invalidate_plan).pack(side=tk.LEFT, padx=(12, 0))
         ttk.Checkbutton(options, text="允许覆盖 Git 未提交变更", variable=self.force_git_reset_var, command=self._invalidate_plan).pack(side=tk.LEFT, padx=(12, 0))
 
@@ -433,7 +432,7 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
             prune_packages=bool(self.prune_packages_var.get()),
             prune_extensions=bool(self.prune_extensions_var.get()),
             force_git_reset=bool(self.force_git_reset_var.get()),
-            use_uv=bool(self.use_uv_var.get()),
+            use_uv=self.use_uv,
             use_pypi_mirror=self.use_pypi_mirror,
             use_github_mirror=self.use_github_mirror,
             custom_github_mirror=self.custom_github_mirror,
