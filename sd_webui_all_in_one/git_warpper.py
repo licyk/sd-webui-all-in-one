@@ -78,7 +78,28 @@ def run_git(
     cwd: Path | None = None,
     check: bool = True,
 ) -> str:
-    """执行 Git 命令并返回标准输出。"""
+    """
+    执行 Git 命令并返回标准输出。
+
+    Args:
+        *args (str):
+            Git 参数
+        path (Path | None):
+            Git 仓库路径
+        custom_env (dict[str, str] | None):
+            自定义环境变量
+        live (Literal[False]):
+            是否实时输出命令执行日志
+        shell (bool | None):
+            是否使用内置 Shell 执行命令
+        cwd (Path | None):
+            执行进程时的起始路径
+        check (bool):
+            是否检查进程退出状态
+
+    Returns:
+        str: 命令输出
+    """
     ...
 
 
@@ -92,7 +113,28 @@ def run_git(
     cwd: Path | None = None,
     check: bool = True,
 ) -> str | None:
-    """执行 Git 命令并实时输出日志。"""
+    """
+    执行 Git 命令并实时输出日志。
+
+    Args:
+        *args (str):
+            Git 参数
+        path (Path | None):
+            Git 仓库路径
+        custom_env (dict[str, str] | None):
+            自定义环境变量
+        live (Literal[True]):
+            是否实时输出命令执行日志
+        shell (bool | None):
+            是否使用内置 Shell 执行命令
+        cwd (Path | None):
+            执行进程时的起始路径
+        check (bool):
+            是否检查进程退出状态
+
+    Returns:
+        str | None: 命令输出
+    """
     ...
 
 
@@ -106,7 +148,28 @@ def run_git(
     cwd: Path | None = None,
     check: bool = True,
 ) -> str | None:
-    """执行 Git 命令。"""
+    """
+    执行 Git 命令。
+
+    Args:
+        *args (str):
+            Git 参数
+        path (Path | None):
+            Git 仓库路径
+        custom_env (dict[str, str] | None):
+            自定义环境变量
+        live (bool):
+            是否实时输出命令执行日志
+        shell (bool | None):
+            是否使用内置 Shell 执行命令
+        cwd (Path | None):
+            执行进程时的起始路径
+        check (bool):
+            是否检查进程退出状态
+
+    Returns:
+        str | None: 命令输出
+    """
     ...
 
 
