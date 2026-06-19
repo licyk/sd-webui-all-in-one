@@ -120,15 +120,40 @@ function New-InstallerManagedScripts {
         @{ File = "qwen_tts_webui_installer.ps1"; Path = "qwen_tts_webui" }
     )
 
+    $generationFailures = @()
     foreach ($item in $installers) {
         $installerPath = Join-Path (Join-Path $LintRoot "installer") $item.File
         $installPath = Join-Path $LintRoot $item.Path
         try {
             & pwsh -NoLogo -NoProfile -File $installerPath -InstallPath $installPath -UseUpdateMode
+            if ($LASTEXITCODE -ne 0) {
+                $generationFailures += [PSCustomObject]@{
+                    File = $item.File
+                    InstallPath = $installPath
+                    Reason = "Exited with code $LASTEXITCODE"
+                }
+            }
         } catch {
-            Write-Warning "$($item.File) failed while generating managed scripts: $_"
+            $generationFailures += [PSCustomObject]@{
+                File = $item.File
+                InstallPath = $installPath
+                Reason = $_.Exception.Message
+            }
         }
     }
+
+    if ($generationFailures.Count -eq 0) {
+        return
+    }
+
+    $summaryLines = @("Installer managed script generation failed for $($generationFailures.Count) installer(s):")
+    foreach ($failure in $generationFailures) {
+        $summaryLines += "  $($failure.File) -> $($failure.InstallPath): $($failure.Reason)"
+    }
+
+    $summary = $summaryLines -join [Environment]::NewLine
+    Write-Host $summary
+    throw $summary
 }
 
 function Test-Utf8Bom {
