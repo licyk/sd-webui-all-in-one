@@ -108,7 +108,14 @@ ROCM_GFX_TARGET_PYTORCH_TYPE_MAP: dict[str, PyTorchDeviceType] = {
     "gfx90a": "rocm7.2",
     "gfx908": "rocm7.2",
 }
-"""ROCm gfx target 到 PyTorch 类型的映射"""
+"""ROCm gfx target 到 PyTorch 类型的映射
+
+参考:
+```
+https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html
+https://rocm.docs.amd.com/projects/radeon-ryzen/en/latest/docs/compatibility/compatibilityrad.html
+```
+"""
 
 ROCM_RDNA4_GPU_NAME_PATTERNS = (
     r"\brx\s+9070\b",
@@ -298,6 +305,13 @@ def get_amd_rocm_pytorch_type(
     gpu_list: list[GPUDeviceInfo],
 ) -> PyTorchDeviceType | None:
     """获取 AMD GPU 适配的 PyTorch ROCm 类型
+
+    参考:
+    ```
+    https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html
+    https://rocm.docs.amd.com/projects/radeon-ryzen/en/latest/docs/compatibility/compatibilityrad.html
+    https://rocm.docs.amd.com/projects/radeon-ryzen/en/latest/docs/install/installrad/native_linux/install-pytorch.html
+    ```
 
     Args:
         gpu_list (list[GPUDeviceInfo]):
