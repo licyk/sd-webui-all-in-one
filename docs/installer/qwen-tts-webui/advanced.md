@@ -28,6 +28,9 @@ Qwen TTS WebUI Installer 支持使用命令参数设置安装 Qwen TTS WebUI 的
     例如：`./qwen_tts_webui_installer.ps1 -InstallPath "D:\Download"`，这将指定安装到 D:\Download 路径。
 - `-PyTorchMirrorType` `<PyTorch 镜像源类型>`：指定安装 PyTorch 时使用的镜像源类型。可指定的类型包括：`cu113`, `cu117`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`, `cu130`, `rocm5.4.2`, `rocm5.6`, `rocm5.7`, `rocm6.0`, `rocm6.1`, `rocm6.2`, `rocm6.2.4`, `rocm6.3`, `rocm6.4`, `rocm7.1`, `rocm_rdna3`, `rocm_rdna3.5`, `rocm_rdna4`, `rocm_win`, `xpu`, `ipex_legacy_arc`, `cpu`, `directml`, `all`
 - `-InstallPythonVersion` `<Python 版本>`：指定要安装的 Python 版本。可选值：`3.10`, `3.11`, `3.12`, `3.13`, `3.14`
+- `-RestoreFromSnapshot`：启用快照重建模式，根据快照文件重新准备 Python 版本并恢复环境。
+- `-SnapshotPath` `<快照文件>`：指定用于快照重建的环境快照 JSON 文件路径。启用快照重建模式时需要和 `-RestoreFromSnapshot` 同时使用。
+- `-DisableSnapshot`：禁用自动快照，包括安装结束后的结果快照以及管理脚本执行前的自动快照。
 - `-UseUpdateMode`：指定 Qwen TTS WebUI Installer 使用更新模式，只对 Qwen TTS WebUI Installer 的管理脚本进行更新。
 - `-DisablePyPIMirror`：禁用 Qwen TTS WebUI Installer 使用 PyPI镜像源，使用 PyPI 官方源下载 Python 软件包。
 - `-DisableAutoMirror`：禁用 CLI 自动镜像源选择。默认自动镜像启用时，Python CLI 会强制覆盖 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置；需要手动控制这些镜像参数时，请添加该参数。
@@ -48,6 +51,7 @@ Qwen TTS WebUI Installer 支持使用命令参数设置安装 Qwen TTS WebUI 的
 - `-PyTorchPackage` `<PyTorch 软件包>`：(需搭配 `-xFormersPackage`) 指定安装的 PyTorch 版本。如：`-PyTorchPackage "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"`
 - `-xFormersPackage` `<xFormers 软件包>`：(需搭配 `-PyTorchPackage`) 指定安装的 xFormers 版本。如：`-xFormersPackage "xformers===0.0.26.post1+cu118"`
 - `-NoCleanCache`：安装结束后保留下载的 Python 软件包缓存。
+- `-DisableModelMirror`：不使用 ModelScope 下载模型, 使用 HuggingFace 下载模型。
 - `-NoPause`：脚本执行完成后不暂停, 直接退出。
 - `-DisableUpdate`：(仅在构建模式生效且只作用于管理脚本) 禁用 Qwen TTS WebUI Installer 更新检查。
 - `-DisableHuggingFaceMirror`：(仅在构建模式生效且只作用于管理脚本) 禁用 HuggingFace 镜像源。

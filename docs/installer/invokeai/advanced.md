@@ -28,6 +28,9 @@ InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支
     例如：`./invokeai_installer.ps1 -InstallPath "D:\Download"`，这将指定安装到 D:\Download 路径。
 - `-PyTorchMirrorType` `<PyTorch 镜像源类型>`：指定安装 PyTorch 时使用的镜像源类型。可指定的类型包括：`cuda`, `rocm`, `xpu`, `mps`, `cpu`
 - `-InstallPythonVersion` `<Python 版本>`：指定要安装的 Python 版本。可选值：`3.10`, `3.11`, `3.12`, `3.13`, `3.14`
+- `-RestoreFromSnapshot`：启用快照重建模式，根据快照文件重新准备 Python 版本并恢复环境。
+- `-SnapshotPath` `<快照文件>`：指定用于快照重建的环境快照 JSON 文件路径。启用快照重建模式时需要和 `-RestoreFromSnapshot` 同时使用。
+- `-DisableSnapshot`：禁用自动快照，包括安装结束后的结果快照以及管理脚本执行前的自动快照。
 - `-UseUpdateMode`：指定 InvokeAI Installer 使用更新模式，只对 InvokeAI Installer 的管理脚本进行更新。
 - `-DisablePyPIMirror`：禁用 InvokeAI Installer 使用 PyPI镜像源，使用 PyPI 官方源下载 Python 软件包。
 - `-DisableAutoMirror`：禁用 CLI 自动镜像源选择。默认自动镜像启用时，Python CLI 会强制覆盖 PyPI / Github / HuggingFace / 模型下载源等手动镜像设置；需要手动控制这些镜像参数时，请添加该参数。

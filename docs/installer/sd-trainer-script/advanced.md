@@ -13,6 +13,9 @@ SD Trainer Script Installer 支持使用命令参数设置安装 SD-Trainer-Scri
     例如：`./sd_trainer_script_installer.ps1 -InstallPath "D:\Download"`，这将指定安装到 D:\Download 路径。
 - `-PyTorchMirrorType` `<PyTorch 镜像源类型>`：指定安装 PyTorch 时使用的镜像源类型。可指定的类型包括：`cu113`, `cu117`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`, `cu130`, `rocm5.4.2`, `rocm5.6`, `rocm5.7`, `rocm6.0`, `rocm6.1`, `rocm6.2`, `rocm6.2.4`, `rocm6.3`, `rocm6.4`, `rocm7.1`, `rocm_rdna3`, `rocm_rdna3.5`, `rocm_rdna4`, `rocm_win`, `xpu`, `ipex_legacy_arc`, `cpu`, `directml`, `all`
 - `-InstallPythonVersion` `<Python 版本>`：指定要安装的 Python 版本。可选值：`3.10`, `3.11`, `3.12`, `3.13`, `3.14`
+- `-RestoreFromSnapshot`：启用快照重建模式，根据快照文件重新准备 Python 版本并恢复环境。
+- `-SnapshotPath` `<快照文件>`：指定用于快照重建的环境快照 JSON 文件路径。启用快照重建模式时需要和 `-RestoreFromSnapshot` 同时使用。
+- `-DisableSnapshot`：禁用自动快照，包括安装结束后的结果快照以及管理脚本执行前的自动快照。
 - `-InstallBranch` `<安装的 SD Trainer Script 分支>`：指定安装的分支。未指定时默认安装 `kohya-ss/sd-scripts`。
     支持的分支如下：
     - `sd_scripts_main`: kohya-ss - sd-scripts 主分支

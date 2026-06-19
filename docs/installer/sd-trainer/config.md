@@ -89,6 +89,16 @@ Hotpatcher 默认配置路径固定为 `launch.ps1` 同级目录的 `patcher_con
 
 如需启用 Hotpatcher runtime host 连接，可以创建 `enable_hotpatcher_runtime.txt`，或启动时使用 `-EnableHotpatcherRuntime`。`hotpatcher_port.txt` / `-HotpatcherPort <端口>` 只在 runtime 模式下生效，端口范围为 `1` 到 `65535`，命令行参数优先于 `hotpatcher_port.txt`。
 
+### 设置快照功能
+!!! info
+    该设置可通过 [管理 SD Trainer Installer 设置](#sd-trainer-installer_1) 中提到的 `settings.ps1` 进行修改。
+
+快照功能默认启用。SD Trainer Installer 会在安装完成后保存一次安装结果快照；启动、更新、切换分支、重装 PyTorch 等可能改变环境的管理脚本会在执行前创建操作前快照。
+
+如需禁用自动快照，可以在安装目录中创建 `disable_snapshot.txt`，或运行安装器和管理脚本时添加 `-DisableSnapshot` 参数。首次运行安装器时，也可以把 `disable_snapshot.txt` 放在安装器脚本同级目录，安装器会将该配置复制到安装目录。禁用后会跳过安装结果快照和管理脚本执行前的自动快照。
+
+需要手动创建或恢复快照时，运行 `snapshot_manager.ps1` 打开快照管理 GUI。需要从快照重建安装目录时，重新运行 SD Trainer Installer，并同时传入 `-RestoreFromSnapshot` 和 `-SnapshotPath <快照文件>`；该模式会按快照中的 Python 版本和环境信息恢复，不能和 `-UseUpdateMode` 同时使用。
+
 ### 设置 uv 包管理器
 !!! info
     该设置可通过 [管理 SD Trainer Installer 设置](#sd-trainer-installer_1) 中提到的 `settings.ps1` 进行修改。
@@ -114,7 +124,7 @@ SD Trainer Installer 通过“内核路径前缀”找到要启动和管理的 S
 ### 管理 SD Trainer Installer 设置
 运行 `settings.ps1`，根据提示进行设置管理和调整。
 
-其中“补丁系统”菜单项会切换 `disable_hotpatcher.txt`，“补丁系统 Runtime”菜单项会切换 `enable_hotpatcher_runtime.txt`，“补丁系统端口”菜单项会写入或删除 `hotpatcher_port.txt`，“补丁系统 GUI”菜单项会打开 Hotpatcher 配置管理 GUI 并使用同级目录的 `patcher_config.json`。
+其中“补丁系统”菜单项会切换 `disable_hotpatcher.txt`，“补丁系统 Runtime”菜单项会切换 `enable_hotpatcher_runtime.txt`，“补丁系统端口”菜单项会写入或删除 `hotpatcher_port.txt`，“自动快照”菜单项会切换 `disable_snapshot.txt`，“补丁系统 GUI”菜单项会打开 Hotpatcher 配置管理 GUI 并使用同级目录的 `patcher_config.json`。
 
 ### SD Trainer Installer 对 Python / Git 环境的识别
 SD Trainer Installer 通常不会主动调用系统环境中的 Python / Git。运行安装器和管理脚本时，会先把安装器管理的 Python / Git 路径加入 `PATH`，避免被系统环境干扰。

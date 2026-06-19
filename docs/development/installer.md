@@ -86,6 +86,18 @@
 
 SD Trainer Script 是特殊启动方式：训练命令由用户脚本在 `init.ps1` 初始化后执行，不走 Python `launch` 函数。它通过 `sd-webui-all-in-one self-manager patcher get-pythonpath` 获取补丁路径优先的 `PYTHONPATH`，再由 `init.ps1` 默认只设置 Hotpatcher `PYTHONPATH` 和从同级 `patcher_config.json` 读取的配置内容；启用 runtime 时才设置连接用的 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME/HOST/PORT/SERVICES` 环境变量；`-DisableHotpatcher`、`-EnableHotpatcherRuntime`、`-HotpatcherPort` 和同级配置文件仍保持与其它安装器一致的语义。
 
+## 快照功能封装
+
+已有快照能力的产品安装器需要同步安装结果自动快照、管理脚本操作前自动快照、快照管理 GUI 和 Installer 快照重建模式：
+
+- PowerShell 参数：`-RestoreFromSnapshot`、`-SnapshotPath`、`-DisableSnapshot`。
+- 配置文件：`disable_snapshot.txt`。
+- 生成脚本和模块函数：`Test-SnapshotDisabled`、`Set-SnapshotCliArgs`、`Save-InstallResultSnapshot`、`Write-SnapshotManagerScript`。
+- 默认行为：安装完成后保存一次安装结果快照；会触发 Python CLI 自动快照的管理脚本在执行前创建操作前快照。
+- 参数约束：`-RestoreFromSnapshot` 必须和 `-SnapshotPath` 同时使用，且不能和 `-UseUpdateMode` 同时使用；`-DisableSnapshot` 或同级 `disable_snapshot.txt` 会禁用安装结果快照和管理脚本操作前自动快照。
+
+维护这类参数时，需要同步主安装器参数和帮助文本、更新模式转发、构建模式转发、`settings.ps1` 的“自动快照”菜单、`Copy-InstallerConfig` 的配置复制、生成管理脚本的 Python CLI 参数拼接和产品文档。快照重建模式应优先校验快照中的产品类型、平台、架构和 Python 版本，再准备对应内核和 Python 环境。
+
 ## 版本与更新
 
 每个安装器脚本内部维护自己的版本号和更新检查间隔，并记录所需的 `sd_webui_all_in_one` 内核最低版本。更新模式会下载或复制新版安装器，再刷新管理脚本。修改安装器行为时，应确认：
