@@ -16,6 +16,14 @@ def clear_git_exec_cache():
     git_warpper.get_git_exec.cache_clear()
 
 
+def _git(repo: Path, *args: str) -> list[str]:
+    return ["/bin/git", "-c", "safe.directory=*", "-c", "core.longpaths=true", "-C", repo.as_posix(), *args]
+
+
+def _git_no_path(*args: str) -> list[str]:
+    return ["/bin/git", "-c", "safe.directory=*", "-c", "core.longpaths=true", *args]
+
+
 def test_get_git_exec_uses_which_and_caches(monkeypatch):
     calls = []
 
@@ -35,6 +43,14 @@ def test_get_git_exec_uses_which_and_caches(monkeypatch):
         git_warpper.get_git_exec()
 
 
+def test_build_git_command_adds_runtime_git_config(monkeypatch, tmp_path):
+    repo = tmp_path / "repo"
+    monkeypatch.setattr(git_warpper, "get_git_exec", lambda: Path("/bin/git"))
+
+    assert git_warpper.build_git_command("status", path=repo) == _git(repo, "status")
+    assert git_warpper.build_git_command("clone", "repo", repo.as_posix()) == _git_no_path("clone", "repo", repo.as_posix())
+
+
 def test_clone_wraps_git_command_and_errors(monkeypatch, tmp_path):
     calls = []
     monkeypatch.setattr(git_warpper, "get_git_exec", lambda: Path("/bin/git"))
@@ -49,7 +65,7 @@ def test_clone_wraps_git_command_and_errors(monkeypatch, tmp_path):
     assert result == tmp_path / "repo"
     assert calls == [
         (
-            ["/bin/git", "clone", "--recurse-submodules", "https://github.com/example/repo", (tmp_path / "repo").as_posix()],
+            _git_no_path("clone", "--recurse-submodules", "https://github.com/example/repo", (tmp_path / "repo").as_posix()),
             {},
         )
     ]
@@ -122,9 +138,9 @@ def test_update_detached_repo_resets_remote_branch(monkeypatch, tmp_path):
     git_warpper.update(repo)
 
     assert calls[0] == ("fix", repo)
-    assert ["/bin/git", "-C", repo.as_posix(), "submodule", "init"] in [c[0] for c in calls if isinstance(c[0], list)]
-    assert ["/bin/git", "-C", repo.as_posix(), "fetch", "--all", "--recurse-submodules"] in [c[0] for c in calls if isinstance(c[0], list)]
-    assert ["/bin/git", "-C", repo.as_posix(), "reset", "--hard", "origin/main", "--recurse-submodules"] in [c[0] for c in calls if isinstance(c[0], list)]
+    assert _git(repo, "submodule", "init") in [c[0] for c in calls if isinstance(c[0], list)]
+    assert _git(repo, "fetch", "--all", "--recurse-submodules") in [c[0] for c in calls if isinstance(c[0], list)]
+    assert _git(repo, "reset", "--hard", "origin/main", "--recurse-submodules") in [c[0] for c in calls if isinstance(c[0], list)]
 
 
 def test_switch_branch_rolls_back_remote_on_failure(monkeypatch, tmp_path):
@@ -148,8 +164,8 @@ def test_switch_branch_rolls_back_remote_on_failure(monkeypatch, tmp_path):
         git_warpper.switch_branch(repo, "dev", new_url="https://new.example/repo", recurse_submodules=True)
 
     assert "切换" in str(exc.value)
-    assert ["/bin/git", "-C", repo.as_posix(), "remote", "set-url", "origin", "https://new.example/repo"] in calls
-    assert ["/bin/git", "-C", repo.as_posix(), "remote", "set-url", "origin", "https://old.example/repo"] in calls
+    assert _git(repo, "remote", "set-url", "origin", "https://new.example/repo") in calls
+    assert _git(repo, "remote", "set-url", "origin", "https://old.example/repo") in calls
 
 
 def test_pip_install_prefers_uv_and_falls_back_to_pip(monkeypatch, tmp_path):
@@ -300,9 +316,9 @@ def test_fix_point_offset_uses_local_branch_and_reports_missing(monkeypatch, tmp
 
     git_warpper.fix_point_offset(repo)
 
-    assert ["/bin/git", "-C", repo.as_posix(), "submodule", "init"] in [call[0] for call in calls]
-    assert ["/bin/git", "-C", repo.as_posix(), "checkout", "master"] in [call[0] for call in calls]
-    assert ["/bin/git", "-C", repo.as_posix(), "reset", "--recurse-submodules", "--hard", "master"] in [call[0] for call in calls]
+    assert _git(repo, "submodule", "init") in [call[0] for call in calls]
+    assert _git(repo, "checkout", "master") in [call[0] for call in calls]
+    assert _git(repo, "reset", "--recurse-submodules", "--hard", "master") in [call[0] for call in calls]
 
     monkeypatch.setattr(git_warpper, "get_git_repo_main_branch", lambda _path: (None, None))
     with pytest.raises(FileNotFoundError):
@@ -321,11 +337,11 @@ def test_update_submodule_switch_commit_and_git_config(monkeypatch, tmp_path):
     git_warpper.set_git_config(username="tester", email="tester@example.test")
 
     assert calls == [
-        (["/bin/git", "-C", repo.as_posix(), "submodule", "init"], {}),
-        (["/bin/git", "-C", repo.as_posix(), "submodule", "update"], {}),
-        (["/bin/git", "-C", repo.as_posix(), "reset", "--hard", "abc123"], {}),
-        (["/bin/git", "config", "--global", "user.name", "tester"], {}),
-        (["/bin/git", "config", "--global", "user.email", "tester@example.test"], {}),
+        (_git(repo, "submodule", "init"), {}),
+        (_git(repo, "submodule", "update"), {}),
+        (_git(repo, "reset", "--hard", "abc123"), {}),
+        (_git_no_path("config", "--global", "user.name", "tester"), {}),
+        (_git_no_path("config", "--global", "user.email", "tester@example.test"), {}),
     ]
 
     monkeypatch.setattr(git_warpper, "run_cmd", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("git bad")))

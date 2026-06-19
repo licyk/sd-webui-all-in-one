@@ -10,7 +10,6 @@ from sd_webui_all_in_one.config import (
 )
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one import git_warpper
-from sd_webui_all_in_one.cmd import run_cmd
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -47,17 +46,20 @@ def fix_stable_diffusion_invaild_repo_url(
         custom_env = custom_env.copy()
 
     custom_env.pop("GIT_CONFIG_GLOBAL", None)
-    git_command_prefix = ["git", "-C", stable_diffusion_path.as_posix()]
     try:
-        repo_url = run_cmd(
-            [*git_command_prefix, "remote", "get-url", "origin"],
+        repo_url = git_warpper.run_git(
+            "remote",
+            "get-url",
+            "origin",
+            path=stable_diffusion_path,
             custom_env=custom_env,
             live=False,
         )
     except RuntimeError as e:
         try:
-            remotes = run_cmd(
-                [*git_command_prefix, "remote"],
+            remotes = git_warpper.run_git(
+                "remote",
+                path=stable_diffusion_path,
                 custom_env=custom_env,
                 live=False,
             )
@@ -69,8 +71,12 @@ def fix_stable_diffusion_invaild_repo_url(
             raise RuntimeError(f"修复 Stable Diffusion WebUI 无效的组件仓库源时发生错误: {e}") from e
 
         try:
-            run_cmd(
-                [*git_command_prefix, "remote", "add", "origin", new_repo_url],
+            git_warpper.run_git(
+                "remote",
+                "add",
+                "origin",
+                new_repo_url,
+                path=stable_diffusion_path,
                 custom_env=custom_env,
                 live=False,
             )
@@ -85,8 +91,12 @@ def fix_stable_diffusion_invaild_repo_url(
     repo_url = (repo_url or "").strip()
     if repo_url in ["https://github.com/Stability-AI/stablediffusion.git", "https://github.com/Stability-AI/stablediffusion"]:
         try:
-            run_cmd(
-                [*git_command_prefix, "remote", "set-url", "origin", new_repo_url],
+            git_warpper.run_git(
+                "remote",
+                "set-url",
+                "origin",
+                new_repo_url,
+                path=stable_diffusion_path,
                 custom_env=custom_env,
                 live=False,
             )

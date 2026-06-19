@@ -144,7 +144,6 @@ def test_inspect_repository_falls_back_to_git_files_when_git_command_fails(tmp_p
         raise RuntimeError("git failed")
 
     monkeypatch.setattr(repository_inspector, "run_git_output", fail_git_output)
-    monkeypatch.setattr(repository_inspector, "_run_git_output_with_safe_directory", fail_git_output)
 
     state = inspect_repository(repo_path)
 
@@ -187,7 +186,6 @@ def test_inspect_repository_falls_back_to_packed_refs_when_git_command_fails(tmp
         raise RuntimeError("git failed")
 
     monkeypatch.setattr(repository_inspector, "run_git_output", fail_git_output)
-    monkeypatch.setattr(repository_inspector, "_run_git_output_with_safe_directory", fail_git_output)
 
     state = inspect_repository(repo_path)
 

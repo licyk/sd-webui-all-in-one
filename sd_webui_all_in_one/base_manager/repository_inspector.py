@@ -1,14 +1,12 @@
 """本地 Git 仓库信息读取工具"""
 
 import configparser
-import os
 import zlib
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sd_webui_all_in_one import git_warpper
-from sd_webui_all_in_one.cmd import run_cmd
 
 
 @dataclass(slots=True)
@@ -61,43 +59,7 @@ def run_git_output(path: Path, *args: str) -> str:
     Returns:
         str: 命令输出
     """
-    git_exec = git_warpper.get_git_exec()
-    output = run_cmd([git_exec.as_posix(), "-C", path.as_posix(), *args], live=False)
-    return "" if output is None else output.strip()
-
-
-def _run_git_output_with_safe_directory(path: Path, *args: str) -> str:
-    """
-    使用不依赖全局 Git 配置的方式读取仓库信息
-
-    Args:
-        path (Path):
-            Git 仓库路径
-        *args (str):
-            Git 命令参数
-
-    Returns:
-        str: 命令输出
-    """
-    git_exec = git_warpper.get_git_exec()
-    custom_env = os.environ.copy()
-    custom_env.pop("GIT_CONFIG_GLOBAL", None)
-    try:
-        safe_path = path.resolve().as_posix()
-    except OSError:
-        safe_path = path.as_posix()
-    output = run_cmd(
-        [
-            git_exec.as_posix(),
-            "-c",
-            f"safe.directory={safe_path}",
-            "-C",
-            path.as_posix(),
-            *args,
-        ],
-        custom_env=custom_env,
-        live=False,
-    )
+    output = git_warpper.run_git(*args, path=path, live=False)
     return "" if output is None else output.strip()
 
 
@@ -420,10 +382,7 @@ def _read_repository_head(path: Path, git_dir: Path) -> tuple[str | None, str | 
     try:
         output = run_git_output(path, "show", "-s", "--format=%H%x1f%ci%x1f%s", "HEAD")
     except Exception:
-        try:
-            output = _run_git_output_with_safe_directory(path, "show", "-s", "--format=%H%x1f%ci%x1f%s", "HEAD")
-        except Exception:
-            output = ""
+        output = ""
 
     parts = output.split("\x1f", 2)
     if len(parts) == 3:

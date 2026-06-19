@@ -144,27 +144,31 @@ def test_fix_stable_diffusion_invalid_repo_url(monkeypatch, tmp_path):
 
     monkeypatch.setattr(fix_repo.git_warpper, "is_git_repo", lambda path: path == stable_repo)
 
-    def fake_run_cmd(command, custom_env=None, live=True):
-        calls.append((command, custom_env, live))
+    def fake_run_git(*args, path=None, custom_env=None, live=True):
+        calls.append((args, path, custom_env, live))
         assert "GIT_CONFIG_GLOBAL" not in custom_env
-        if command[-3:] == ["remote", "get-url", "origin"]:
+        if args == ("remote", "get-url", "origin"):
             return "https://github.com/Stability-AI/stablediffusion.git"
         return ""
 
-    monkeypatch.setattr(fix_repo, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(fix_repo.git_warpper, "run_git", fake_run_git)
     fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env)
     assert env == original_env
 
-    assert calls[0][0] == ["git", "-C", stable_repo.as_posix(), "remote", "get-url", "origin"]
-    assert calls[1][0] == ["git", "-C", stable_repo.as_posix(), "remote", "set-url", "origin", "https://github.com/licyk/stablediffusion"]
+    assert calls[0][:2] == (("remote", "get-url", "origin"), stable_repo)
+    assert calls[1][:2] == (("remote", "set-url", "origin", "https://github.com/licyk/stablediffusion"), stable_repo)
 
     calls.clear()
-    monkeypatch.setattr(fix_repo, "run_cmd", lambda command, custom_env=None, live=True: calls.append(command) or "https://github.com/licyk/stablediffusion")
+    monkeypatch.setattr(
+        fix_repo.git_warpper,
+        "run_git",
+        lambda *args, path=None, custom_env=None, live=True: calls.append((args, path)) or "https://github.com/licyk/stablediffusion",
+    )
     fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env)
-    assert calls == [["git", "-C", stable_repo.as_posix(), "remote", "get-url", "origin"]]
+    assert calls == [(("remote", "get-url", "origin"), stable_repo)]
     assert env == original_env
 
-    monkeypatch.setattr(fix_repo, "run_cmd", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("git bad")))
+    monkeypatch.setattr(fix_repo.git_warpper, "run_git", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("git bad")))
     with pytest.raises(RuntimeError, match="无效的组件仓库源"):
         fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env)
     assert env == original_env
@@ -179,19 +183,19 @@ def test_fix_stable_diffusion_invalid_repo_url_adds_missing_origin(monkeypatch, 
 
     monkeypatch.setattr(fix_repo.git_warpper, "is_git_repo", lambda path: path == stable_repo)
 
-    def fake_run_cmd(command, custom_env=None, live=True):
-        calls.append((command, custom_env, live))
+    def fake_run_git(*args, path=None, custom_env=None, live=True):
+        calls.append((args, path, custom_env, live))
         assert "GIT_CONFIG_GLOBAL" not in custom_env
-        if command[-3:] == ["remote", "get-url", "origin"]:
+        if args == ("remote", "get-url", "origin"):
             raise RuntimeError("No such remote 'origin'")
-        if command[-1:] == ["remote"]:
+        if args == ("remote",):
             return "upstream\n"
         return ""
 
-    monkeypatch.setattr(fix_repo, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(fix_repo.git_warpper, "run_git", fake_run_git)
     fix_repo.fix_stable_diffusion_invaild_repo_url(tmp_path, custom_env=env)
 
-    assert calls[0][0] == ["git", "-C", stable_repo.as_posix(), "remote", "get-url", "origin"]
-    assert calls[1][0] == ["git", "-C", stable_repo.as_posix(), "remote"]
-    assert calls[2][0] == ["git", "-C", stable_repo.as_posix(), "remote", "add", "origin", "https://github.com/licyk/stablediffusion"]
+    assert calls[0][:2] == (("remote", "get-url", "origin"), stable_repo)
+    assert calls[1][:2] == (("remote",), stable_repo)
+    assert calls[2][:2] == (("remote", "add", "origin", "https://github.com/licyk/stablediffusion"), stable_repo)
     assert env == original_env
