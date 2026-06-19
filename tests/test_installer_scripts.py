@@ -340,8 +340,8 @@ def test_installer_hotpatcher_config_path_is_not_parameterized():
 def test_installer_snapshot_rebuild_mode_is_wired():
     helper_names = [
         "Stop-SnapshotRestore",
-        "Normalize-SnapshotPlatform",
-        "Normalize-SnapshotArchitecture",
+        "ConvertTo-SnapshotPlatform",
+        "ConvertTo-SnapshotArchitecture",
         "Get-PythonMajorMinor",
         "Remove-ManagedPythonIfVersionMismatch",
         "Test-InstallerGitKernelSnapshot",
@@ -361,8 +361,8 @@ def test_installer_snapshot_rebuild_mode_is_wired():
         assert f'$script:SnapshotRestorePathArgument = "{config["path_arg"]}"' in installer, script_path
         git_kernel_value = "$true" if config["git_kernel"] else "$false"
         assert f"$script:SnapshotRequiresGitKernel = {git_kernel_value}" in installer, script_path
-        assert "Normalize-SnapshotPlatform $snapshot.system.system" in installer, script_path
-        assert "Normalize-SnapshotArchitecture $snapshot.system.architecture" in installer, script_path
+        assert "ConvertTo-SnapshotPlatform $snapshot.system.system" in installer, script_path
+        assert "ConvertTo-SnapshotArchitecture $snapshot.system.architecture" in installer, script_path
         assert "ConvertFrom-Json -ErrorAction Stop" in installer, script_path
         assert "Remove-ManagedPythonIfVersionMismatch -ExpectedVersion $py_ver" in installer, script_path
         assert "Resolve-SnapshotRebuildConfig" in installer, script_path

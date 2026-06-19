@@ -896,7 +896,7 @@ function Stop-SnapshotRestore {
     exit 1
 }
 
-function Normalize-SnapshotPlatform {
+function ConvertTo-SnapshotPlatform {
     param ([AllowNull()][string]$Value)
     if ([string]::IsNullOrWhiteSpace($Value)) { return $null }
     switch ($Value.Trim().ToLowerInvariant()) {
@@ -910,7 +910,7 @@ function Normalize-SnapshotPlatform {
     }
 }
 
-function Normalize-SnapshotArchitecture {
+function ConvertTo-SnapshotArchitecture {
     param ([AllowNull()][string]$Value)
     if ([string]::IsNullOrWhiteSpace($Value)) { return $null }
     switch ($Value.Trim().ToLowerInvariant()) {
@@ -1037,8 +1037,8 @@ function Resolve-SnapshotRebuildConfig {
         Stop-SnapshotRestore "快照 WebUI 类型不匹配: 期望 '$script:SnapshotExpectedWebUIType', 实际 '$snapshot_webui_type'"
     }
 
-    $snapshot_platform = Normalize-SnapshotPlatform $snapshot.system.system
-    $snapshot_arch = Normalize-SnapshotArchitecture $snapshot.system.architecture
+    $snapshot_platform = ConvertTo-SnapshotPlatform $snapshot.system.system
+    $snapshot_arch = ConvertTo-SnapshotArchitecture $snapshot.system.architecture
     $current_platform = Get-CurrentPlatform
     $current_arch = Get-CurrentArchitecture
     if ([string]::IsNullOrWhiteSpace($snapshot_platform) -or [string]::IsNullOrWhiteSpace($snapshot_arch)) {
