@@ -584,7 +584,10 @@ def collect_installed_packages() -> list[PackageSnapshot]:
     """采集当前 Python 环境已安装软件包信息"""
     packages: list[PackageSnapshot] = []
     for dist in metadata.distributions():
-        name = dist.metadata.get("Name")
+        try:
+            name = dist.metadata["Name"]
+        except KeyError:
+            continue
         if not name:
             continue
 

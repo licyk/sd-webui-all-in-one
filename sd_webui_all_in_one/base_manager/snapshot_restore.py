@@ -19,7 +19,6 @@ from sd_webui_all_in_one.base_manager.base import (
     install_pytorch_with_fallback,
 )
 from sd_webui_all_in_one.base_manager.snapshot import (
-    DirectUrlSnapshot,
     ExtensionSnapshot,
     PackageSnapshot,
     RepositorySnapshot,
@@ -365,20 +364,23 @@ def _build_package_restore_plan(
         normalized = _normalized_package_name(package.name)
         current = current_packages.get(normalized)
         local_path = _local_path_from_package(package)
-        base = {
-            "name": package.name,
-            "normalized_name": normalized,
-            "target_version": package.version,
-            "current_version": current.version if current is not None else None,
-            "source_type": package.source_type,
-            "editable": package.editable,
-            "local_path": local_path,
-        }
+
+        def make_item(action: PackageRestoreAction, reason: str) -> PackageRestorePlanItem:
+            return PackageRestorePlanItem(
+                name=package.name,
+                normalized_name=normalized,
+                action=action,
+                reason=reason,
+                target_version=package.version,
+                current_version=current.version if current is not None else None,
+                source_type=package.source_type,
+                editable=package.editable,
+                local_path=local_path,
+            )
 
         if normalized in PROTECTED_PACKAGE_NAMES:
             items.append(
-                PackageRestorePlanItem(
-                    **base,
+                make_item(
                     action="skip_protected",
                     reason="受保护的管理器或基础安装工具不会通过快照恢复修改",
                 )
@@ -388,8 +390,7 @@ def _build_package_restore_plan(
         target_packages[normalized] = package
         if current is not None and current.version == package.version:
             items.append(
-                PackageRestorePlanItem(
-                    **base,
+                make_item(
                     action="skip_same_version",
                     reason="当前版本与快照一致",
                 )
@@ -398,8 +399,7 @@ def _build_package_restore_plan(
 
         if local_path is not None and not local_path.exists():
             items.append(
-                PackageRestorePlanItem(
-                    **base,
+                make_item(
                     action="skip_missing_local_path",
                     reason=f"本地安装来源路径不存在: {local_path}",
                 )
@@ -409,24 +409,21 @@ def _build_package_restore_plan(
         if normalized in PYTORCH_PACKAGE_NAMES:
             pytorch_to_install.append(package)
             items.append(
-                PackageRestorePlanItem(
-                    **base,
+                make_item(
                     action="install_pytorch_special",
                     reason="PyTorch 相关包会优先恢复并尝试按版本后缀选择特殊安装源",
                 )
             )
         elif current is None:
             items.append(
-                PackageRestorePlanItem(
-                    **base,
+                make_item(
                     action="install",
                     reason="当前环境未安装该包",
                 )
             )
         else:
             items.append(
-                PackageRestorePlanItem(
-                    **base,
+                make_item(
                     action="update",
                     reason="当前版本与快照不一致",
                 )
