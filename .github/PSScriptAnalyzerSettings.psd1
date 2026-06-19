@@ -1,6 +1,14 @@
 ﻿@{
     IncludeRules = @(
+        'PSAvoidDefaultValueSwitchParameter',
+        'PSMisleadingBacktick',
+        'PSMissingModuleManifestField',
+        'PSReservedCmdletChar',
         'PSReservedParams',
+        'PSShouldProcess',
+        # 'PSUseApprovedVerbs',
+        'PSAvoidUsingCmdletAliases',
+        # 'PSUseDeclaredVarsMoreThanAssignments',
         'PSAvoidUsingUsernameAndPasswordParams',
         'PSAvoidUsingComputerNameHardcoded',
         'PSAvoidUsingConvertToSecureStringWithPlainText',
