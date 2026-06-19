@@ -257,7 +257,7 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # SD Trainer Installer 版本和检查更新间隔
-$script:SD_TRAINER_INSTALLER_VERSION = 509
+$script:SD_TRAINER_INSTALLER_VERSION = 510
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.52"
@@ -3040,8 +3040,6 @@ param (
 使用自定义的 GitHub 镜像站地址
 `"@)][string]`$UseCustomGithubMirror,
 
-
-
     [Parameter(HelpMessage=@`"
 禁用自动快照, 包括安装结束后的结果快照以及管理脚本执行前的自动快照
 `"@)][switch]`$DisableSnapshot,
@@ -3182,8 +3180,6 @@ SD Trainer 分支编号可运行 switch_branch.ps1 脚本进行查看
 使用自定义的 GitHub 镜像站地址
 `"@)][string]`$UseCustomGithubMirror,
 
-
-
     [Parameter(HelpMessage=@`"
 禁用自动快照, 包括安装结束后的结果快照以及管理脚本执行前的自动快照
 `"@)][switch]`$DisableSnapshot,
@@ -3301,7 +3297,6 @@ param (
     [string]`$CorePrefix,
     [switch]`$RestoreFromSnapshot,
     [string]`$SnapshotPath,
-
     [switch]`$DisableSnapshot,
     [switch]`$NoPause,
     [Parameter(ValueFromRemainingArguments=`$true)]`$ExtraArgs
@@ -3647,8 +3642,6 @@ PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 使用自定义的代理服务器地址, 例如代理服务器地址为 http://127.0.0.1:10809, 则使用 -UseCustomProxy ```"http://127.0.0.1:10809```" 设置代理服务器地址
 `"@)][string]`$UseCustomProxy,
 
-
-
     [Parameter(HelpMessage=@`"
 禁用自动快照, 包括安装结束后的结果快照以及管理脚本执行前的自动快照
 `"@)][switch]`$DisableSnapshot,
@@ -3920,8 +3913,6 @@ param (
     [Parameter(HelpMessage=@`"
 使用自定义的 GitHub 镜像站地址
 `"@)][string]`$UseCustomGithubMirror,
-
-
 
     [Parameter(HelpMessage=@`"
 禁用自动快照, 包括安装结束后的结果快照以及管理脚本执行前的自动快照
