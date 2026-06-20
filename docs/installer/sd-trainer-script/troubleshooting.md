@@ -139,4 +139,4 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 训练使用的模型可能有问题，尝试更换模型。
 
 ### Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.
-下载 [Microsoft Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe) 并安装。
+下载 [Microsoft Visual C++ Redistributable](https://aka.ms/vc14/vc_redist.x64.exe) 并安装。

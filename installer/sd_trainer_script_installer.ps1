@@ -254,7 +254,7 @@ $script:HotpatcherPortProvided = $PSBoundParameters.ContainsKey("HotpatcherPort"
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # SD Trainer Script Installer 版本和检查更新间隔
-$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 402
+$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 403
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.58"
@@ -2521,7 +2521,7 @@ function Test-MSVCPPRedistributable {
     `$result = [System.Windows.MessageBox]::Show(`$msg_text, `$msg_title, [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
 
     if (`$result -eq [System.Windows.MessageBoxResult]::Yes) {
-        `$download_url = `"https://aka.ms/vs/17/release/vc_redist.x64.exe`"
+        `$download_url = `"https://aka.ms/vc14/vc_redist.x64.exe`"
         Write-Log `"正在打开下载链接: `$download_url`"
         Start-Process `$download_url
     }

@@ -90,4 +90,4 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
     设置 Stable Diffusion WebUI 启动参数的方法可参考 [设置 Stable Diffusion WebUI 启动参数](usage.md#stable-diffusion-webui_3)。
 
 ### Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.
-下载 [Microsoft Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe) 并安装。
+下载 [Microsoft Visual C++ Redistributable](https://aka.ms/vc14/vc_redist.x64.exe) 并安装。

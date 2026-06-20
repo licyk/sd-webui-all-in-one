@@ -77,7 +77,7 @@ ERROR: [Error 13] error while attempting to bind on address ('127.0.0.1', 28000)
     设置 Qwen TTS WebUI 启动参数的方法可参考 [设置 Qwen TTS WebUI 启动参数](usage.md#qwen-tts-webui_2)。
 
 ### Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.
-下载 [Microsoft Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe) 并安装。
+下载 [Microsoft Visual C++ Redistributable](https://aka.ms/vc14/vc_redist.x64.exe) 并安装。
 
 ### PowerShell 中出现 xFormers 报错
 在控制台中出现有关 xFormers 的警告信息，类似下面的内容。

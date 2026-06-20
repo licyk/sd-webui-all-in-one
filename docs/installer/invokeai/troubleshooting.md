@@ -63,7 +63,7 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 尝试增加 Windows 系统虚拟内存。
 
 ### Microsoft Visual C++ Redistributable is not installed, this may lead to the DLL load failure.
-下载 [Microsoft Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe) 并安装。
+下载 [Microsoft Visual C++ Redistributable](https://aka.ms/vc14/vc_redist.x64.exe) 并安装。
 
 ### NotFoundError: 无法在"Node"上执行"removeChild": 要删除的节点不是此节点的子节点
 尝试重置 UI 或者更换浏览器。
