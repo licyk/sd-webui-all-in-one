@@ -107,7 +107,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "enabled": False,
         },
         "xformers_cutlass": {
-            "enabled": False,
+            "enabled": True,
         },
         "uv_pip": {
             "enabled": False,

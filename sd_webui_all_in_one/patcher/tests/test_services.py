@@ -151,7 +151,7 @@ def test_default_config_is_json_serializable_and_contains_features():
     assert defaults["extensions"]["extension_index"]["webui"]["url"] == "auto"
     assert defaults["extensions"]["extension_index"]["comfyui_manager"]["enabled"] is False
     assert defaults["extensions"]["extension_index"]["comfyui_manager"]["url"] == "auto"
-    assert defaults["extensions"]["xformers_cutlass"]["enabled"] is False
+    assert defaults["extensions"]["xformers_cutlass"]["enabled"] is True
     assert defaults["extensions"]["uv_pip"]["enabled"] is False
 
 
@@ -400,7 +400,7 @@ def test_catalog_reports_registered_patches():
     assert extension_index_settings["comfyui_manager.url"]["default"] == "auto"
     xformers_cutlass_settings = features["extensions.xformers_cutlass"]["settings"]
     assert xformers_cutlass_settings["enabled"]["type"] == "bool"
-    assert xformers_cutlass_settings["enabled"]["default"] is False
+    assert xformers_cutlass_settings["enabled"]["default"] is True
 
 
 def test_handle_request_json_supports_services_requests(tmp_path):
