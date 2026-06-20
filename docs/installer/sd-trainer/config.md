@@ -11,6 +11,31 @@ SD Trainer Installer 生成的管理脚本默认启用 CLI 自动镜像源选择
 !!! warning
     自动镜像源选择会强制覆盖 `disable_pypi_mirror.txt`、`disable_gh_mirror.txt`、`gh_mirror.txt`、`disable_hf_mirror.txt`、`hf_mirror.txt` 和 `disable_model_mirror.txt` 对 Python CLI 的手动镜像设置。需要手动调整这些设置时，请先在同级目录创建 `disable_auto_mirror.txt`，或运行管理脚本时传入 `-DisableAutoMirror`。
 
+### 常见配置文件
+下表列出 SD Trainer Installer 生成的管理脚本实际会读取的常见本地配置。多数配置可通过 `settings.ps1` 创建、修改或删除；多数 `disable_*.txt` / `enable_*.txt` 是空文件开关，文件存在就表示对应设置生效。
+
+| 配置文件 | 作用 | 备注 |
+| --- | --- | --- |
+| `disable_auto_mirror.txt` | 禁用 CLI 自动镜像源选择。 | 需要手动固定 PyPI / GitHub / Hugging Face / 模型下载源时使用。 |
+| `proxy.txt` / `disable_proxy.txt` | 手动指定代理，或禁用管理脚本自动设置代理。 | `proxy.txt` 中填写代理地址，例如 `http://127.0.0.1:10809`。 |
+| `disable_uv.txt` | 禁用 uv，改用 Pip 管理 Python 包。 | 排查 uv 安装问题时使用。 |
+| `hf_mirror.txt` / `disable_hf_mirror.txt` | 自定义或禁用 Hugging Face 镜像源。 | `hf_mirror.txt` 中填写镜像地址。 |
+| `gh_mirror.txt` / `disable_gh_mirror.txt` | 自定义或禁用 GitHub 镜像源。 | `gh_mirror.txt` 中填写镜像地址。 |
+| `disable_update.txt` | 禁用 SD Trainer Installer 管理脚本自动检查更新。 | 通常不建议禁用。 |
+| `disable_model_mirror.txt` | 将 `download_models.ps1` 的模型下载源从 ModelScope 切换为 Hugging Face。 | 固定模型下载源前，通常需要先禁用自动镜像源选择。 |
+| `launch_args.txt` | 保存 SD-Trainer 启动参数。 | `launch.ps1` 启动时读取；切换分支后参数可能需要重新调整。 |
+| `patcher_config.json` | Hotpatcher 补丁系统配置。 | Hotpatcher 默认启用时会自动生成；`settings.ps1` 的补丁系统 GUI 会使用该文件。 |
+| `disable_hotpatcher.txt` | 禁用 Hotpatcher 补丁系统。 | 空文件开关。 |
+| `enable_hotpatcher_runtime.txt` / `hotpatcher_port.txt` | 启用 Hotpatcher runtime host 连接，并指定通信端口。 | 一般用户通常不需要；端口范围为 `1` 到 `65535`。 |
+| `enable_shortcut.txt` | 允许管理脚本创建或刷新快捷启动方式。 | 移动安装目录后可重新运行 `launch.ps1` 刷新快捷方式。 |
+| `disable_pypi_mirror.txt` | 禁用 PyPI 镜像，改用 PyPI 官方源。 | 排查 Python 包下载或镜像兼容问题时使用。 |
+| `disable_set_pytorch_cuda_memory_alloc.txt` | 禁用管理脚本自动设置 PyTorch CUDA 内存分配优化。 | 遇到显存分配相关兼容问题时再考虑。 |
+| `disable_check_env.txt` | 禁用启动前环境检查。 | 只建议临时排查时使用，可能跳过问题检测。 |
+| `core_prefix.txt` | 指定 Installer 管理的 SD-Trainer 内核目录名、相对路径或绝对路径。 | 用于管理外部已有安装、整合包目录，或内核目录名不是默认值的情况。 |
+| `disable_snapshot.txt` | 禁用安装结果快照和管理脚本操作前自动快照。 | 空文件开关。 |
+
+这些配置文件不一定都会出现；只有启用过对应设置、安装器复制了设置，或管理脚本自动生成默认配置时才会出现。
+
 ### 设置 HuggingFace 镜像
 !!! info
     该设置可通过 [管理 SD Trainer Installer 设置](#sd-trainer-installer_1) 中提到的 `settings.ps1` 进行修改。

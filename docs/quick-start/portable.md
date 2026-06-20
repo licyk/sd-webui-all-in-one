@@ -8,7 +8,7 @@
 2. 在下载器中优先选择 `Nightly` 版本，`Stable` 版本相对较旧。
 3. 选择需要的 WebUI 或训练工具整合包，确认保存路径后开始下载。
 4. 保持“下载完成后自动解压到当前目录”启用，等待下载和解压完成。
-5. 进入解压目录，按整合包说明运行启动脚本。
+5. 进入解压目录，先运行 `configure_env.bat`，再右键 `.ps1` 启动脚本并选择 `使用 PowerShell 运行`。
 
 完整整合包列表和各产品脚本说明见 [整合包下载与使用](../portable/portable.md)。
 
@@ -16,7 +16,7 @@
 
 整合包解压后主要由 Installer 生成的脚本管理，也可以选择其他入口：
 
-- 使用 Installer 管理脚本：首次使用先运行 `configure_env.bat`，之后运行 `launch.ps1` 启动。
+- 使用 Installer 管理脚本：首次使用先运行 `configure_env.bat`，之后右键 `launch.ps1`，选择 `使用 PowerShell 运行` 启动。不要左键双击 `.ps1` 脚本，左键双击通常会用记事本或默认编辑器打开脚本；如果右键运行后窗口闪退，也先重新运行 `configure_env.bat`。
 - 使用绘世启动器：部分整合包包含 `hanamizuki.bat`，可通过绘世启动器启动对应 WebUI。
 - 使用 Windows GUI Launcher：把安装路径指向整合包解压目录，由 Launcher 接管 Installer 生成的启动、更新、终端、模型下载和版本管理脚本。
 

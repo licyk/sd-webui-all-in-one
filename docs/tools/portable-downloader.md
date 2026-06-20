@@ -26,7 +26,7 @@ AI 整合包下载器是 Windows 上的图形化下载工具，用于下载由 I
 
 整合包解压完成后，主要由 Installer 生成的管理脚本负责启动和维护，也可以选择其他入口：
 
-- 使用 Installer 管理脚本：首次使用先运行 `configure_env.bat`，之后按需要运行 `launch.ps1`、`update.ps1`、`terminal.ps1`、`download_models.ps1`、`version_manager.ps1` 等脚本。
+- 使用 Installer 管理脚本：首次使用先运行 `configure_env.bat`，之后右键所需 `.ps1` 脚本并选择 `使用 PowerShell 运行`，不要左键双击 `.ps1` 脚本；左键双击通常会用记事本或默认编辑器打开脚本。如果右键运行后窗口闪退，先重新运行 `configure_env.bat`。
 - 使用绘世启动器：部分整合包包含 `hanamizuki.bat`，双击后可通过绘世启动器启动和管理对应 WebUI。
 - 使用 Windows GUI Launcher：选择对应 WebUI / 工具，把安装路径设置为整合包解压目录，然后在“一键启动”中运行 Installer 生成的 `launch.ps1` 或其他管理脚本。
 

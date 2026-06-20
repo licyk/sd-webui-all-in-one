@@ -24,15 +24,15 @@
     + FullyQualifiedErrorId : UnauthorizedAccess
 ```
 
-或者右键运行 PowerShell 脚本时闪一下 PowerShell 的界面后就消失了。
+或者右键运行 PowerShell 脚本时窗口闪一下就消失了。遇到这种情况，优先运行安装文档“环境配置”中的 `configure_env.bat`，完成环境配置后再右键 `.ps1` 脚本选择 `使用 PowerShell 运行`。不要左键双击 `.ps1` 脚本，左键双击通常会用记事本或默认编辑器打开脚本，而不是执行脚本。
 
-这是因为未解除 Windows 系统对运行 PowerShell 脚本的限制，请使用管理员权限打开 PowerShell，运行下面的命令。
+如果仍然无法运行，可以使用管理员权限打开 PowerShell，运行下面的命令。
 
 ```powershell
 Set-ExecutionPolicy Unrestricted -Scope CurrentUser
 ```
 
-或者使用 [环境配置](install.md#_1) 中的脚本解除 Windows 系统对运行 PowerShell 脚本的限制。
+也可以重新使用 [环境配置](install.md#_1) 中的脚本解除 Windows 系统对运行 PowerShell 脚本的限制。
 
 !!! note
     关于 PowerShell 执行策略的说明：[关于执行策略 ### PowerShell | Microsoft Learn](https://learn.microsoft.com/zh-cn/powershell/module/microsoft.powershell.core/about/about_execution_policies)

@@ -13,7 +13,9 @@
 
 
 ## 运行 PowerShell 脚本闪退
-重新运行一次`configure_env.bat`脚本。
+先重新运行一次 `configure_env.bat` 脚本，完成环境配置后再运行 PowerShell 脚本。
+
+Windows 上不要左键双击 `.ps1` PowerShell 脚本；左键双击通常会用记事本或默认编辑器打开脚本，而不是执行脚本。正确方式是右键该脚本，选择 `使用 PowerShell 运行`。
 
 
 

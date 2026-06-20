@@ -5,7 +5,7 @@
 1. Windows 用户先在“环境配置脚本下载”中下载环境配置脚本 `configure_env.bat` 并运行；Linux / macOS 用户先安装 PowerShell，macOS 还需要安装 Homebrew。
 2. 在“ComfyUI Installer 下载地址”中下载 ComfyUI Installer 安装脚本 `comfyui_installer.ps1`。
 3. 将 ComfyUI Installer 安装脚本 `comfyui_installer.ps1` 放到希望安装 ComfyUI 的位置，按需创建镜像、代理或模型下载源配置文件。
-4. 右键 ComfyUI Installer 安装脚本 `comfyui_installer.ps1` 选择`使用 PowerShell 运行`，或在终端中使用 `pwsh comfyui_installer.ps1`。
+4. 右键 ComfyUI Installer 安装脚本 `comfyui_installer.ps1` 选择 `使用 PowerShell 运行`，不要左键双击 `.ps1` 脚本；或在终端中使用 `pwsh comfyui_installer.ps1`。
 
 ## 环境配置
 该脚本在 Windows / Linux / MacOS 系统上需要进行不同的环境配置，以下为不同平台配置环境的方法。
@@ -42,7 +42,7 @@
 将 ComfyUI Installer 下载至本地，右键`comfyui_installer.ps1`脚本，在弹出的右键菜单中点击`使用 PowerShell 运行`，此时 ComfyUI Installer 将安装 ComfyUI 至本地。
 
 !!! info
-    右键菜单中点击`使用 PowerShell 运行`为 Windows 平台上的使用方法，如果需要在 Linux / MacOS 平台中运行，请打开终端并使用`pwsh`命令去运行，例如：
+    Windows 平台运行 `.ps1` 脚本时，不要左键双击；左键双击通常会用记事本或默认编辑器打开脚本，而不是执行脚本。正确方式是右键脚本，在右键菜单中点击 `使用 PowerShell 运行`。如果右键运行后窗口闪退，先运行本页“环境配置”中的 `configure_env.bat` 后再重试。Linux / MacOS 平台请打开终端并使用 `pwsh` 命令运行，例如：
     
     ```bash
     pwsh comfyui_installer.ps1
@@ -89,5 +89,5 @@
     
 
 !!! note
-    1. 如果运行 PowerShell 脚本出现闪退，说明 Windows 对 PowerShell 脚本的运行限制未解除，需要按照[环境配置](install.md#_1)中的方法进行解除。
+    1. 如果右键运行 PowerShell 脚本后窗口闪退，先运行本页“环境配置”中的 `configure_env.bat` 解除 Windows 运行限制，再右键 `.ps1` 脚本选择 `使用 PowerShell 运行`。不要左键双击 `.ps1` 脚本，左键双击通常会用记事本或默认编辑器打开脚本，而不是执行脚本。
     2. ComfyUI Installer 支持使用在命令行中通过参数配置 ComfyUI 的安装参数，具体说明可阅读[使用命令运行 ComfyUI Installer](advanced.md#comfyui-installer_1)。

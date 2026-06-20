@@ -23,7 +23,7 @@
 
 ## 安装前注意
 
-- Windows 用户需要确认 PowerShell 脚本运行限制已解除。
+- Windows 用户需要先运行安装页提供的 `configure_env.bat` 解除 PowerShell 脚本运行限制。运行 `.ps1` 脚本时不要左键双击；左键双击通常会用记事本或默认编辑器打开脚本，正确方式是右键脚本并选择 `使用 PowerShell 运行`。如果右键运行后窗口闪退，先重新运行 `configure_env.bat`。
 - Linux / macOS 用户需要按安装页准备 Homebrew、PowerShell 或其他依赖。
 - 安装路径建议避免中文、空格和权限受限目录。
 - 如果只想少配置快速使用，优先考虑 [整合包快速开始](./portable.md)。整合包同样基于 Installer 构建，解压后主要通过 Installer 生成的管理脚本维护。

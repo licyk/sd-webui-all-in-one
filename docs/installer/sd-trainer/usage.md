@@ -1,6 +1,6 @@
 # SD Trainer Installer 启动与使用
 
-在 `SD-Trainer` 文件夹中可以看到不同的 PowerShell 脚本。如果是 Windows 平台，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。如果是 Linux / MacOS 平台，请打开终端并使用 `pwsh` 命令去运行。
+在 `SD-Trainer` 文件夹中可以看到不同的 PowerShell 脚本。如果是 Windows 平台，不要左键双击 `.ps1` 脚本；左键双击通常会用记事本或默认编辑器打开脚本，而不是执行脚本。正确方式是右键 PowerShell 脚本，选择 `使用 PowerShell 运行`。如果右键运行后窗口闪退，先运行 `configure_env.bat` 完成环境配置，再重新右键运行 `.ps1` 脚本。如果是 Linux / MacOS 平台，请打开终端并使用 `pwsh` 命令去运行。
 
 ## 管理脚本速查
 
