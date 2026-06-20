@@ -21,8 +21,10 @@ D:/Downloads
 │   ├── python                                # Python 目录
 │   ├── reinstall_pytorch.ps1                 # 重新安装 PyTorch 的脚本
 │   ├── settings.ps1                          # 管理 Qwen TTS WebUI Installer 设置的脚本
+│   ├── snapshot_manager.ps1                  # 打开快照管理 GUI 的脚本
 │   ├── terminal.ps1                          # 自动打开 PowerShell 并激活 Qwen TTS WebUI Installer 的虚拟环境脚本
-│   └── update.ps1                            # 更新 Qwen TTS WebUI 的脚本
+│   ├── update.ps1                            # 更新 Qwen TTS WebUI 的脚本
+│   └── version_manager.ps1                   # 打开版本管理 GUI 的脚本
 ├── qwen_tts_webui_installer.ps1              # Qwen TTS WebUI Installer 一般放在 Qwen TTS WebUI 文件夹外面，和 Qwen TTS WebUI 文件夹同级
 └── QQ Files
 ```
@@ -46,9 +48,10 @@ D:/qwen-tts-webui
 ├── launch_qwen_tts_webui_installer.ps1
 ├── reinstall_pytorch.ps1
 ├── settings.ps1
-├── switch_branch.ps1
+├── snapshot_manager.ps1
 ├── terminal.ps1
 ├── update.ps1
+├── version_manager.ps1
 └── update_time.txt
 ```
 
@@ -73,9 +76,10 @@ D:/qwen-tts-webui
 ├── launch_qwen_tts_webui_installer.ps1
 ├── reinstall_pytorch.ps1
 ├── settings.ps1
-├── switch_branch.ps1
+├── snapshot_manager.ps1
 ├── terminal.ps1
 ├── update.ps1
+├── version_manager.ps1
 └── update_time.txt
 ```
 

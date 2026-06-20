@@ -18,6 +18,7 @@ D:/Downloads
 │   ├── git                                     # Git 目录
 │   ├── help.txt                                # 帮助文档
 │   ├── init.ps1                                # 初始化训练环境的脚本
+│   ├── train.ps1                               # 编写并运行训练命令的模板脚本
 │   ├── patcher_config.json                     # Hotpatcher 默认配置文件
 │   ├── disable_hotpatcher.txt                  # 可选, 禁用 Hotpatcher 补丁系统
 │   ├── enable_hotpatcher_runtime.txt           # 可选, 启用 Hotpatcher runtime host 连接
@@ -25,10 +26,12 @@ D:/Downloads
 │   ├── core                                    # SD-Trainer-Script 内核目录
 │   ├── python                                  # Python 目录
 │   ├── reinstall_pytorch.ps1                   # 重新安装 PyTorch 的脚本
+│   ├── snapshot_manager.ps1                    # 打开快照管理 GUI 的脚本
 │   ├── switch_branch.ps1                       # 切换 SD-Trainer-Script 分支的脚本
 │   ├── settings.ps1                            # 管理 SD Trainer Script Installer 设置的脚本
 │   ├── terminal.ps1                            # 自动打开 PowerShell 并激活 SD Trainer Script Installer 的虚拟环境脚本
-│   └── update.ps1                              # 更新 SD-Trainer-Script 的脚本
+│   ├── update.ps1                              # 更新 SD-Trainer-Script 的脚本
+│   └── version_manager.ps1                     # 打开版本管理 GUI 的脚本
 ├── sd_trainer_script_installer.ps1             # SD Trainer Script Installer 一般放在 SD-Trainer-Script 文件夹外面，和 SD-Trainer-Script 文件夹同级
 └── QQ Files
 ```

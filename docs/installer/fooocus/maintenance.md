@@ -23,8 +23,10 @@ D:/Downloads
 │   ├── reinstall_pytorch.ps1         # 重新安装 PyTorch 的脚本
 │   ├── switch_branch.ps1             # 切换 Fooocus 分支的脚本
 │   ├── settings.ps1                  # 管理 Fooocus Installer 设置的脚本
+│   ├── snapshot_manager.ps1          # 打开快照管理 GUI 的脚本
 │   ├── terminal.ps1                  # 自动打开 PowerShell 并激活 Fooocus Installer 的虚拟环境脚本
-│   └── update.ps1                    # 更新 Fooocus 的脚本
+│   ├── update.ps1                    # 更新 Fooocus 的脚本
+│   └── version_manager.ps1           # 打开版本管理 GUI 的脚本
 ├── fooocus_installer.ps1             # Fooocus Installer 一般放在 Fooocus 文件夹外面，和 Fooocus 文件夹同级
 └── QQ Files
 ```
@@ -117,9 +119,11 @@ D:/Fooocus
 ├── launch_fooocus_installer.ps1
 ├── reinstall_pytorch.ps1
 ├── settings.ps1
+├── snapshot_manager.ps1
 ├── switch_branch.ps1
 ├── terminal.ps1
 ├── update.ps1
+├── version_manager.ps1
 └── update_time.txt
 ```
 
@@ -145,9 +149,11 @@ D:/Fooocus
 ├── launch_fooocus_installer.ps1
 ├── reinstall_pytorch.ps1
 ├── settings.ps1
+├── snapshot_manager.ps1
 ├── switch_branch.ps1
 ├── terminal.ps1
 ├── update.ps1
+├── version_manager.ps1
 └── update_time.txt
 ```
 

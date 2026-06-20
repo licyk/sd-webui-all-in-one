@@ -2,6 +2,23 @@
 
 在 `qwen-tts-webui` 文件夹中可以看到不同的 PowerShell 脚本。如果是 Windows 平台，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。如果是 Linux / MacOS 平台，请打开终端并使用`pwsh`命令去运行。
 
+## 管理脚本速查
+
+安装完成后，日常启动、更新、修复环境和调整设置都优先通过这些脚本完成。运行管理脚本时建议在安装目录中执行；如果脚本缺失或被误改，可运行 `launch_qwen_tts_webui_installer.ps1` 重新生成。
+
+| 脚本 | 作用 | 何时使用 / 注意事项 |
+| --- | --- | --- |
+| `configure_env.bat` | Windows 环境配置脚本，会设置 PowerShell 脚本运行策略、启用 Windows 长路径支持，并尝试把 `.ps1` 默认打开方式设为 PowerShell。 | 首次使用 Installer、运行 `.ps1` 闪退、PowerShell 脚本被系统拦截或路径过长导致异常时使用。该脚本会申请管理员权限。 |
+| `launch.ps1` | 先调用 `qwen-tts-webui check-env` 做启动前环境检查，再调用 `qwen-tts-webui launch` 启动 Qwen TTS WebUI；启动参数来自 `launch_args.txt` 和命令行参数。 | 日常启动入口。启动参数写错导致无法启动时，可删除或修改 `launch_args.txt`，也可以通过 `settings.ps1` 调整。 |
+| `update.ps1` | 调用 `qwen-tts-webui update` 更新 Qwen TTS WebUI，并在调用前处理代理、GitHub 镜像、管理脚本更新和自动快照参数。 | 需要升级 Qwen TTS WebUI、修复依赖或重新同步仓库时使用。更新可能改变当前 WebUI 版本。 |
+| `reinstall_pytorch.ps1` | 调用 `qwen-tts-webui reinstall-pytorch`，按脚本显示的 PyTorch 版本编号重装 PyTorch。 | 出现 PyTorch 损坏、显卡后端切换、环境升级后无法启动时使用。该脚本会修改当前 Python 环境中的 PyTorch 相关包。 |
+| `version_manager.ps1` | 调用 `qwen-tts-webui gui version-manager` 打开版本管理 GUI。 | 需要通过图形界面查看或调整 Qwen TTS WebUI 版本时使用。 |
+| `snapshot_manager.ps1` | 调用 `qwen-tts-webui gui snapshot-manager` 打开快照管理 GUI。 | 需要通过图形界面处理环境快照时使用。自动快照设置可通过 `settings.ps1` 管理。 |
+| `settings.ps1` | 打开 Installer 设置管理器，用于调整代理、镜像源、uv、启动参数、Hotpatcher、自动快照、内核路径前缀和管理脚本更新等本地配置。 | 不想手动创建 `*.txt` 配置文件时优先使用。它会在管理脚本同级目录写入或删除对应配置文件。 |
+| `terminal.ps1` | 打开一个已经配置好 PATH、代理、镜像和产品环境变量的 PowerShell 终端，并自动激活当前 Installer 管理的 Python 环境。 | 需要运行 `python`、`pip`、`uv`、`git` 或 Qwen TTS WebUI 相关命令时使用。不要把 Installer 的 `python` 目录手动加入系统环境变量。 |
+| `activate.ps1` | 在当前 PowerShell 会话中激活 Installer 管理的 Python / Git 环境。 | 已经打开终端且只想在当前窗口进入环境时使用。一般用户直接运行 `terminal.ps1` 更省事。 |
+| `launch_qwen_tts_webui_installer.ps1` | 下载最新版 Qwen TTS WebUI Installer 到 `cache` 目录并运行，同时带上当前目录中的代理、镜像、内核路径前缀和快照等本地配置。 | 管理脚本损坏、缺失、需要重新运行 Installer 修复管理脚本，或 Python / Git 环境需要由安装器重新修复时使用。 |
+
 ## 基础操作
 
 ### 启动 Qwen TTS WebUI

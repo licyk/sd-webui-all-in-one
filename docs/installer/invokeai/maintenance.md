@@ -22,9 +22,11 @@ D:/Downloads
 │   ├── reinstall_pytorch.ps1           # 重装 PyTorch 脚本
 │   ├── download_models.ps1             # 模型下载脚本
 │   ├── settings.ps1                    # 管理 InvokeAI Installer 设置的脚本
+│   ├── snapshot_manager.ps1            # 打开快照管理 GUI 的脚本
 │   ├── terminal.ps1                    # 自动打开 PowerShell 并激活 InvokeAI Installer 的虚拟环境脚本
 │   ├── update_node.ps1                 # 更新 InvokeAI 自定义节点的脚本
-│   └── update.ps1                      # 更新 InvokeAI 的脚本
+│   ├── update.ps1                      # 更新 InvokeAI 的脚本
+│   └── version_manager.ps1             # 打开版本管理 GUI 的脚本
 ├── invokeai_installer.ps1              # InvokeAI Installer 一般放在 InvokeAI 文件夹外面，和 InvokeAI 文件夹同级
 └── QQ Files
 ```
@@ -49,9 +51,11 @@ D:/InvokeAI
 ├── launch_invokeai_installer.ps1
 ├── reinstall_pytorch.ps1
 ├── settings.ps1
+├── snapshot_manager.ps1
 ├── terminal.ps1
 ├── update.ps1
 ├── update_node.ps1
+├── version_manager.ps1
 └── update_time.txt
 ```
 
@@ -77,9 +81,11 @@ D:/InvokeAI
 ├── launch_invokeai_installer.ps1
 ├── reinstall_pytorch.ps1
 ├── settings.ps1
+├── snapshot_manager.ps1
 ├── terminal.ps1
 ├── update.ps1
 ├── update_node.ps1
+├── version_manager.ps1
 └── update_time.txt
 ```
 

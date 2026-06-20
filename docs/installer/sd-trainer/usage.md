@@ -1,6 +1,26 @@
 # SD Trainer Installer 启动与使用
 
-在 `SD-Trainer` 文件夹中可以看到不同的 PowerShell 脚本，右键 PowerShell 脚本。如果是 Windows 平台，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。如果是 Linux / MacOS 平台，请打开终端并使用`pwsh`命令去运行。
+在 `SD-Trainer` 文件夹中可以看到不同的 PowerShell 脚本。如果是 Windows 平台，右键 PowerShell 脚本，选择`使用 PowerShell 运行`后即可运行。如果是 Linux / MacOS 平台，请打开终端并使用 `pwsh` 命令去运行。
+
+## 管理脚本速查
+
+安装完成后，日常启动、更新、修复环境和调整设置都优先通过这些脚本完成。运行管理脚本时建议在安装目录中执行；如果脚本缺失或被误改，可运行 `launch_sd_trainer_installer.ps1` 重新生成。
+
+| 脚本 | 作用 | 何时使用 / 注意事项 |
+| --- | --- | --- |
+| `configure_env.bat` | Windows 环境配置脚本，会设置 PowerShell 脚本运行策略、启用 Windows 长路径支持，并尝试把 `.ps1` 默认打开方式设为 PowerShell。 | 首次使用 Installer、运行 `.ps1` 闪退、PowerShell 脚本被系统拦截或路径过长导致异常时使用。该脚本会申请管理员权限。 |
+| `launch.ps1` | 先调用 `sd-trainer check-env` 做启动前环境检查，再调用 `sd-trainer launch` 启动 SD-Trainer、SD Trainer Next 或 Kohya GUI；启动参数来自 `launch_args.txt` 和命令行参数。 | 日常启动入口。不同分支的启动参数可能不兼容，切换分支后建议重新检查 `launch_args.txt`。 |
+| `update.ps1` | 调用 `sd-trainer update` 更新当前训练 WebUI，并在调用前处理代理、GitHub 镜像、管理脚本更新和自动快照参数。 | 需要升级训练工具、修复依赖或重新同步仓库时使用。切换分支后通常也需要运行一次。 |
+| `switch_branch.ps1` | 调用 `sd-trainer switch` 在 SD-Trainer、SD Trainer Next、Kohya GUI 等受支持分支之间切换。 | 需要更换训练 WebUI 分支时使用。切换后依赖和启动参数可能不兼容，必要时运行 `update.ps1` 并清理旧的 `launch_args.txt`。 |
+| `download_models.ps1` | 调用 `sd-trainer model install-library`，从 Installer 内置模型库中选择并下载训练常用模型。 | 缺少训练基础模型或想快速下载预设模型时使用。固定下载源前，需要先禁用自动镜像源选择，具体见 [模型与资源](resources.md)。 |
+| `reinstall_pytorch.ps1` | 调用 `sd-trainer reinstall-pytorch`，按脚本显示的 PyTorch 版本编号重装 PyTorch / xFormers。 | 出现 PyTorch 损坏、xFormers CUDA 不匹配、显卡后端切换、环境升级后无法启动时使用。该脚本会修改当前 Python 环境中的 PyTorch 相关包。 |
+| `version_manager.ps1` | 调用 `sd-trainer gui version-manager` 打开版本管理 GUI。 | 需要通过图形界面查看或调整训练 WebUI 版本时使用。 |
+| `snapshot_manager.ps1` | 调用 `sd-trainer gui snapshot-manager` 打开快照管理 GUI。 | 需要通过图形界面处理环境快照时使用。自动快照设置可通过 `settings.ps1` 管理。 |
+| `settings.ps1` | 打开 Installer 设置管理器，用于调整代理、镜像源、uv、启动参数、Hotpatcher、自动快照、内核路径前缀和管理脚本更新等本地配置。 | 不想手动创建 `*.txt` 配置文件时优先使用。它会在管理脚本同级目录写入或删除对应配置文件。 |
+| `terminal.ps1` | 打开一个已经配置好 PATH、代理、镜像和产品环境变量的 PowerShell 终端，并自动激活当前 Installer 管理的 Python 环境。 | 需要运行 `python`、`pip`、`uv`、`git` 或训练相关命令时使用。不要把 Installer 的 `python` 目录手动加入系统环境变量。 |
+| `activate.ps1` | 在当前 PowerShell 会话中激活 Installer 管理的 Python / Git 环境。 | 已经打开终端且只想在当前窗口进入环境时使用。一般用户直接运行 `terminal.ps1` 更省事。 |
+| `launch_sd_trainer_installer.ps1` | 下载最新版 SD Trainer Installer 到 `cache` 目录并运行，同时带上当前目录中的代理、镜像、内核路径前缀和快照等本地配置。 | 管理脚本损坏、缺失、需要重新运行 Installer 修复管理脚本，或 Python / Git 环境需要由安装器重新修复时使用。 |
+| `hanamizuki.bat` | 启动绘世启动器的快捷脚本，依赖内核目录中的 `hanamizuki.exe`。 | 仅在安装或配置绘世启动器后使用。没有安装绘世启动器时运行该脚本会提示缺少 `hanamizuki.exe`。 |
 
 ## 基础操作
 
