@@ -520,11 +520,12 @@ def test_installer_auto_snapshot_disable_is_wired():
         assert "disable_snapshot.txt" in installer, script_path
         assert "function Test-SnapshotDisabled" in modules_template, script_path
         assert "function Set-SnapshotCliArgs" in modules_template, script_path
-        assert "function Save-InstallResultSnapshot" in modules_template, script_path
+        assert "function Save-InstallResultSnapshot" in installer, script_path
+        assert "function Save-InstallResultSnapshot" not in modules_template, script_path
         assert 'Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_snapshot.txt")' in installer, script_path
         assert "Test-SnapshotDisabled, ``" in modules_template, script_path
         assert "Set-SnapshotCliArgs, ``" in modules_template, script_path
-        assert "Save-InstallResultSnapshot, ``" in modules_template, script_path
+        assert "Save-InstallResultSnapshot, ``" not in modules_template, script_path
         assert (
             f"Save-InstallResultSnapshot -CliName \"{SNAPSHOT_REBUILD_INSTALLERS[script_path]['cli']}\" "
             "-WebUIPath (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX)"

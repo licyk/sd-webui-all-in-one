@@ -92,7 +92,7 @@ SD Trainer Script 是特殊启动方式：训练命令由用户脚本在 `init.p
 
 - PowerShell 参数：`-RestoreFromSnapshot`、`-SnapshotPath`、`-DisableSnapshot`。
 - 配置文件：`disable_snapshot.txt`。
-- 生成脚本和模块函数：`Test-SnapshotDisabled`、`Set-SnapshotCliArgs`、`Save-InstallResultSnapshot`、`Write-SnapshotManagerScript`。
+- 主安装器函数：`Save-InstallResultSnapshot`；生成脚本和模块函数：`Test-SnapshotDisabled`、`Set-SnapshotCliArgs`、`Write-SnapshotManagerScript`。
 - 默认行为：安装完成后保存一次安装结果快照；会触发 Python CLI 自动快照的管理脚本在执行前创建操作前快照。
 - 参数约束：`-RestoreFromSnapshot` 必须和 `-SnapshotPath` 同时使用，且不能和 `-UseUpdateMode` 同时使用；`-DisableSnapshot` 或同级 `disable_snapshot.txt` 会禁用安装结果快照和管理脚本操作前自动快照。
 

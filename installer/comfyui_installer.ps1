@@ -252,7 +252,7 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # ComfyUI Installer 版本和检查更新间隔
-$script:COMFYUI_INSTALLER_VERSION = 494
+$script:COMFYUI_INSTALLER_VERSION = 495
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.60"
@@ -2569,38 +2569,6 @@ function Set-SnapshotCliArgs {
     }
 }
 
-
-# 保存安装结果快照
-function Save-InstallResultSnapshot {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = `$true)][string]`$CliName,
-        [Parameter(Mandatory = `$true)][string]`$WebUIPath
-    )
-
-    if (Test-SnapshotDisabled) {
-        Write-Log `"检测到 disable_snapshot.txt 配置文件 / -DisableSnapshot 命令行参数, 已跳过安装结果自动快照`"
-        return
-    }
-
-    if (!(Test-Path -LiteralPath `$WebUIPath)) {
-        Write-Log `"快照目标路径不存在, 已跳过安装结果自动快照: `$WebUIPath`" -Level WARNING
-        return
-    }
-
-    Write-Log `"保存安装结果快照中`"
-    `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `$CliName, `"snapshot`")
-    & python -m sd_webui_all_in_one `$CliName snapshot
-    `$exit_code = Get-NativeCommandExitCode -Success `$?
-    if (`$exit_code -ne 0) {
-        `$command_line = Format-CoreCliCommandForLog -CommandPrefix `$core_cli_command -Arguments @()
-        Write-Log `"安装结果自动快照保存失败, 退出码: `$exit_code`" -Level WARNING
-        Write-Log `"失败命令: `$command_line`" -Level WARNING
-        return
-    }
-    Write-Log `"安装结果快照保存完成`"
-}
-
 # 设置 Hotpatcher 补丁系统
 function Set-Hotpatcher {
     param ([System.Collections.ArrayList]`$ArrayList)
@@ -2682,7 +2650,6 @@ Export-ModuleMember -Function ``
     Test-WebUIEnv, ``
     Test-SnapshotDisabled, ``
     Set-SnapshotCliArgs, ``
-    Save-InstallResultSnapshot, ``
     Set-Hotpatcher, ``
     Join-NormalizedPath, ``
     Get-NormalizedFilePath, ``
