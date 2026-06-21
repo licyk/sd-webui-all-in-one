@@ -228,16 +228,10 @@ $script:HotpatcherPortSet = $PSBoundParameters.ContainsKey("HotpatcherPort")
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # Qwen TTS WebUI Installer 版本和检查更新间隔
-$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 298
+$script:QWEN_TTS_WEBUI_INSTALLER_VERSION = 299
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.60"
-# 快照重建模式
-$script:SnapshotExpectedWebUIType = "qwen_tts_webui"
-$script:SnapshotRestoreCliName = "qwen-tts-webui"
-$script:SnapshotRestorePathArgument = "--qwen-tts-webui-path"
-$script:SnapshotDisplayName = "Qwen TTS WebUI"
-$script:SnapshotRequiresGitKernel = $true
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -939,18 +933,17 @@ function Test-DirectoryEmpty {
 function Test-InstallerGitKernelSnapshot {
     [CmdletBinding()]
     param ([Parameter(Mandatory = $true)]$Snapshot)
-    if (-not $script:SnapshotRequiresGitKernel) { return }
     if ($null -eq $Snapshot.kernel) {
-        Stop-SnapshotRestore "快照缺少内核信息, 无法在 Installer 重建模式中恢复 $script:SnapshotDisplayName"
+        Stop-SnapshotRestore "快照缺少内核信息, 无法在 Installer 重建模式中恢复 Qwen TTS WebUI"
     }
     if (-not [System.Convert]::ToBoolean($Snapshot.kernel.is_git_repo)) {
-        Stop-SnapshotRestore "快照中的 $script:SnapshotDisplayName 内核不是 Git 仓库, Installer 重建模式无法恢复该内核"
+        Stop-SnapshotRestore "快照中的 Qwen TTS WebUI 内核不是 Git 仓库, Installer 重建模式无法恢复该内核"
     }
     if ([string]::IsNullOrWhiteSpace([string]$Snapshot.kernel.url)) {
-        Stop-SnapshotRestore "快照中的 $script:SnapshotDisplayName 内核缺少 Git 远程地址, 无法从头重建环境"
+        Stop-SnapshotRestore "快照中的 Qwen TTS WebUI 内核缺少 Git 远程地址, 无法从头重建环境"
     }
     if ([string]::IsNullOrWhiteSpace([string]$Snapshot.kernel.commit)) {
-        Stop-SnapshotRestore "快照中的 $script:SnapshotDisplayName 内核缺少 Git commit, 无法恢复到快照版本"
+        Stop-SnapshotRestore "快照中的 Qwen TTS WebUI 内核缺少 Git commit, 无法恢复到快照版本"
     }
 }
 
@@ -974,8 +967,8 @@ function Resolve-SnapshotRebuildConfig {
     }
 
     $snapshot_webui_type = [string]$snapshot.webui.type
-    if ($snapshot_webui_type -ne $script:SnapshotExpectedWebUIType) {
-        Stop-SnapshotRestore "快照 WebUI 类型不匹配: 期望 '$script:SnapshotExpectedWebUIType', 实际 '$snapshot_webui_type'"
+    if ($snapshot_webui_type -ne "qwen_tts_webui") {
+        Stop-SnapshotRestore "快照 WebUI 类型不匹配: 期望 'qwen_tts_webui', 实际 '$snapshot_webui_type'"
     }
 
     $snapshot_platform = ConvertTo-SnapshotPlatform $snapshot.system.system
@@ -1019,7 +1012,6 @@ function Initialize-SnapshotRestoreTarget {
         New-Item -ItemType Directory -Path $core_path -Force > $null
         Write-Log "已为快照恢复创建内核根目录: $core_path"
     }
-    if (-not $script:SnapshotRequiresGitKernel) { return }
     if (Test-Path -LiteralPath (Join-NormalizedPath $core_path ".git") -PathType Container) { return }
     if (Test-DirectoryEmpty -Path $core_path) { return }
     Stop-SnapshotRestore "快照恢复目标路径已存在且不是空目录或 Git 仓库, 为避免覆盖本地数据已终止: $core_path"
@@ -1168,7 +1160,6 @@ function Test-SnapshotDisabled {
 function Save-InstallResultSnapshot {
     param (
         [Parameter(Mandatory = $true)][string]$CliName,
-        [Parameter(Mandatory = $true)][string]$PathArgument,
         [Parameter(Mandatory = $true)][string]$WebUIPath
     )
 
@@ -1183,8 +1174,8 @@ function Save-InstallResultSnapshot {
     }
 
     Write-Log "保存安装结果快照中"
-    $core_cli_command = @("python", "-m", "sd_webui_all_in_one", $CliName, "snapshot", $PathArgument, $WebUIPath)
-    & python -m sd_webui_all_in_one $CliName snapshot $PathArgument $WebUIPath
+    $core_cli_command = @("python", "-m", "sd_webui_all_in_one", $CliName, "snapshot")
+    & python -m sd_webui_all_in_one $CliName snapshot
     $exit_code = Get-NativeCommandExitCode -Success $?
     if ($exit_code -ne 0) {
         $command_line = Format-CoreCliCommandForLog -CommandPrefix $core_cli_command -Arguments @()
@@ -1217,9 +1208,8 @@ function Invoke-Installation {
     if ($script:RestoreFromSnapshot) {
         $launch_params = Get-RestoreCoreArgs
         $snapshot_path = Get-NormalizedFilePath $script:SnapshotPath
-        $core_path = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX
-        $core_cli_command = @("python", "-m", "sd_webui_all_in_one", $script:SnapshotRestoreCliName, "restore", $snapshot_path, $script:SnapshotRestorePathArgument, $core_path)
-        & python -m sd_webui_all_in_one $script:SnapshotRestoreCliName restore $snapshot_path $script:SnapshotRestorePathArgument $core_path $launch_params
+        $core_cli_command = @("python", "-m", "sd_webui_all_in_one", "qwen-tts-webui", "restore", $snapshot_path)
+        & python -m sd_webui_all_in_one qwen-tts-webui restore $snapshot_path $launch_params
         $operation_label = "恢复"
     } else {
         $launch_params = Get-LaunchCoreArgs
@@ -2438,7 +2428,6 @@ function Save-InstallResultSnapshot {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = `$true)][string]`$CliName,
-        [Parameter(Mandatory = `$true)][string]`$PathArgument,
         [Parameter(Mandatory = `$true)][string]`$WebUIPath
     )
 
@@ -2453,8 +2442,8 @@ function Save-InstallResultSnapshot {
     }
 
     Write-Log `"保存安装结果快照中`"
-    `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `$CliName, `"snapshot`", `$PathArgument, `$WebUIPath)
-    & python -m sd_webui_all_in_one `$CliName snapshot `$PathArgument `$WebUIPath
+    `$core_cli_command = @(`"python`", `"-m`", `"sd_webui_all_in_one`", `$CliName, `"snapshot`")
+    & python -m sd_webui_all_in_one `$CliName snapshot
     `$exit_code = Get-NativeCommandExitCode -Success `$?
     if (`$exit_code -ne 0) {
         `$command_line = Format-CoreCliCommandForLog -CommandPrefix `$core_cli_command -Arguments @()
@@ -4928,7 +4917,7 @@ function Use-InstallMode {
         Write-Log "Qwen TTS WebUI 安装结束, 安装路径为: $script:InstallPath"
     }
 
-    Save-InstallResultSnapshot -CliName $script:SnapshotRestoreCliName -PathArgument $script:SnapshotRestorePathArgument -WebUIPath (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX)
+    Save-InstallResultSnapshot -CliName "qwen-tts-webui" -WebUIPath (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX)
 
     Write-Log "帮助文档可在 Qwen TTS WebUI 文件夹中查看, 双击 help.txt 文件即可查看, 更多的说明请阅读 Qwen TTS WebUI Installer 使用文档"
     if (!($script:BuildMode)) { Invoke-Item (Join-NormalizedPath $script:InstallPath "help.txt") }

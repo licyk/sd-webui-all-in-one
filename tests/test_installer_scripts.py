@@ -27,43 +27,36 @@ SNAPSHOT_REBUILD_INSTALLERS = {
     "installer/stable_diffusion_webui_installer.ps1": {
         "cli": "sd-webui",
         "type": "sd_webui",
-        "path_arg": "--sd-webui-path",
         "git_kernel": True,
     },
     "installer/comfyui_installer.ps1": {
         "cli": "comfyui",
         "type": "comfyui",
-        "path_arg": "--comfyui-path",
         "git_kernel": True,
     },
     "installer/fooocus_installer.ps1": {
         "cli": "fooocus",
         "type": "fooocus",
-        "path_arg": "--fooocus-path",
         "git_kernel": True,
     },
     "installer/invokeai_installer.ps1": {
         "cli": "invokeai",
         "type": "invokeai",
-        "path_arg": "--invokeai-path",
         "git_kernel": False,
     },
     "installer/qwen_tts_webui_installer.ps1": {
         "cli": "qwen-tts-webui",
         "type": "qwen_tts_webui",
-        "path_arg": "--qwen-tts-webui-path",
         "git_kernel": True,
     },
     "installer/sd_trainer_installer.ps1": {
         "cli": "sd-trainer",
         "type": "sd_trainer",
-        "path_arg": "--sd-trainer-path",
         "git_kernel": True,
     },
     "installer/sd_trainer_script_installer.ps1": {
         "cli": "sd-scripts",
         "type": "sd_scripts",
-        "path_arg": "--sd-scripts-path",
         "git_kernel": True,
     },
 }
@@ -412,11 +405,19 @@ def test_installer_snapshot_rebuild_mode_is_wired():
 
         assert "[switch]$RestoreFromSnapshot" in installer, script_path
         assert "[string]$SnapshotPath" in installer, script_path
-        assert f'$script:SnapshotExpectedWebUIType = "{config["type"]}"' in installer, script_path
-        assert f'$script:SnapshotRestoreCliName = "{config["cli"]}"' in installer, script_path
-        assert f'$script:SnapshotRestorePathArgument = "{config["path_arg"]}"' in installer, script_path
-        git_kernel_value = "$true" if config["git_kernel"] else "$false"
-        assert f"$script:SnapshotRequiresGitKernel = {git_kernel_value}" in installer, script_path
+        assert "SnapshotExpectedWebUIType" not in installer, script_path
+        assert "SnapshotRestoreCliName" not in installer, script_path
+        assert "SnapshotDisplayName" not in installer, script_path
+        assert "SnapshotRestorePathArgument" not in installer, script_path
+        assert "SnapshotRequiresGitKernel" not in installer, script_path
+        assert f'if ($snapshot_webui_type -ne "{config["type"]}")' in installer, script_path
+        assert f"期望 '{config['type']}'" in installer, script_path
+        if config["git_kernel"]:
+            assert "内核不是 Git 仓库" in installer, script_path
+            assert "快照恢复目标路径已存在且不是空目录或 Git 仓库" in installer, script_path
+        else:
+            assert "内核不是 Git 仓库" not in installer, script_path
+            assert "快照恢复目标路径已存在且不是空目录或 Git 仓库" not in installer, script_path
         assert "ConvertTo-SnapshotPlatform $snapshot.system.system" in installer, script_path
         assert "ConvertTo-SnapshotArchitecture $snapshot.system.architecture" in installer, script_path
         assert "ConvertFrom-Json -ErrorAction Stop" in installer, script_path
@@ -425,8 +426,8 @@ def test_installer_snapshot_rebuild_mode_is_wired():
         assert "Initialize-SnapshotRestoreTarget" in installer, script_path
         assert "$script:RestoreFromSnapshot -and $script:UseUpdateMode" in installer, script_path
         assert (
-            "& python -m sd_webui_all_in_one $script:SnapshotRestoreCliName restore "
-            "$snapshot_path $script:SnapshotRestorePathArgument $core_path $launch_params"
+            f"& python -m sd_webui_all_in_one {config['cli']} restore "
+            "$snapshot_path $launch_params"
         ) in installer, script_path
         assert f'& python -m sd_webui_all_in_one {config["cli"]} install $launch_params' in installer, script_path
 
@@ -525,8 +526,7 @@ def test_installer_auto_snapshot_disable_is_wired():
         assert "Set-SnapshotCliArgs, ``" in modules_template, script_path
         assert "Save-InstallResultSnapshot, ``" in modules_template, script_path
         assert (
-            "Save-InstallResultSnapshot -CliName $script:SnapshotRestoreCliName "
-            "-PathArgument $script:SnapshotRestorePathArgument "
+            f"Save-InstallResultSnapshot -CliName \"{SNAPSHOT_REBUILD_INSTALLERS[script_path]['cli']}\" "
             "-WebUIPath (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX)"
         ) in installer, script_path
         assert '$launch_args.Add("-DisableSnapshot", $true)' in installer, script_path
