@@ -255,7 +255,7 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
 $script:COMFYUI_INSTALLER_VERSION = 493
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.2.58"
+$script:CORE_MINIMUM_VER = "2.2.59"
 # 快照重建模式
 $script:SnapshotExpectedWebUIType = "comfyui"
 $script:SnapshotRestoreCliName = "comfyui"
