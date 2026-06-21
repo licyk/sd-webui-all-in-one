@@ -243,6 +243,16 @@ def test_sd_webui_default_xformers_launch_args_require_cuda_torch():
     assert '$default_content = "$default_content $($xformers_launch_args_map[$launch_args_branch])"' in installation_function
 
 
+def test_sd_webui_installer_default_branch_mappings_use_main():
+    installer = _read_installer("installer/stable_diffusion_webui_installer.ps1")
+
+    assert '@{ Key = "sd_webui";              Val = "sd_webui_main" }' in installer
+    assert '`"AUTOMATIC1111/stable-diffusion-webui`"      = `"sd_webui_main`"' in installer
+    assert '@{ Key = `"sd_webui`";              Val = `"sd_webui_main`" }' in installer
+    assert '$launch_args_branch = "sd_webui_main"' in installer
+    assert '$default_content = $launch_args_map["sd_webui_main"]' in installer
+
+
 def test_launch_templates_import_and_call_windows_long_path_check():
     main_call_pattern = re.compile(
         r"function Main \{\s+"

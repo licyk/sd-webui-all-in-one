@@ -33,7 +33,7 @@
 
     [Parameter(HelpMessage=@"
 指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 分支 (sd_webui_main, sd_webui_dev, sd_webui_forge, sd_webui_reforge_main, sd_webui_reforge_dev, sd_webui_forge_classic, sd_webui_forge_neo, sd_webui_amdgpu, sd_next_main, sd_next_dev)
-未指定该参数时, 默认安装 AUTOMATIC1111 - Stable-Diffusion-WebUI 测试分支
+未指定该参数时, 默认安装 AUTOMATIC1111 - Stable-Diffusion-WebUI 主分支
 支持指定安装的分支如下:
     sd_webui_main:          AUTOMATIC1111 - Stable-Diffusion-WebUI 主分支
     sd_webui_dev:           AUTOMATIC1111 - Stable-Diffusion-WebUI 测试分支
@@ -604,7 +604,7 @@ function Set-GithubMirror {
 
 function Get-InstallBranch {
     $branch_mapping_table = @(
-        @{ Key = "sd_webui";              Val = "sd_webui_dev" }
+        @{ Key = "sd_webui";              Val = "sd_webui_main" }
         @{ Key = "sd_webui_main";         Val = "sd_webui_main" }
         @{ Key = "sd_webui_dev";          Val = "sd_webui_dev" }
         @{ Key = "sd_webui_forge";        Val = "sd_webui_forge" }
@@ -1385,8 +1385,8 @@ function Invoke-Installation {
             $launch_args_branch = $target_branch
             $default_content = $launch_args_map[$target_branch]
         } else {
-            $launch_args_branch = "sd_webui_dev"
-            $default_content = $launch_args_map["sd_webui_dev"]
+            $launch_args_branch = "sd_webui_main"
+            $default_content = $launch_args_map["sd_webui_main"]
         }
         if ($xformers_launch_args_map.ContainsKey($launch_args_branch) -and (Test-InstalledPyTorchIsCudaBuild)) {
             $default_content = "$default_content $($xformers_launch_args_map[$launch_args_branch])"
@@ -3719,7 +3719,7 @@ function Get-LocalSetting {
     }
 
     `$git_repo_map = @{
-        `"AUTOMATIC1111/stable-diffusion-webui`"      = `"sd_webui_dev`"
+        `"AUTOMATIC1111/stable-diffusion-webui`"      = `"sd_webui_main`"
         `"lllyasviel/stable-diffusion-webui-forge`"   = `"sd_webui_forge`"
         `"Panchovix/stable-diffusion-webui-reForge`"  = `"sd_webui_reforge_main`"
         `"Haoming02/sd-webui-forge-classic`"          = `"sd_webui_forge_neo`"
@@ -3728,7 +3728,7 @@ function Get-LocalSetting {
         `"vladmandic/sdnext`"                         = `"sd_next_main`"
     }
     `$fallback_check_list = @(
-        @{ Key = `"sd_webui`";              Val = `"sd_webui_dev`" }
+        @{ Key = `"sd_webui`";              Val = `"sd_webui_main`" }
         @{ Key = `"sd_webui_main`";         Val = `"sd_webui_main`" }
         @{ Key = `"sd_webui_dev`";          Val = `"sd_webui_dev`" }
         @{ Key = `"sd_webui_forge`";        Val = `"sd_webui_forge`" }
