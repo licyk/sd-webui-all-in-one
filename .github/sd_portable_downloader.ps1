@@ -73,7 +73,7 @@
 param (
     [string]$ScriptRootPath
 )
-$script:SD_PORTABLE_DOWNLOADER_VERSION = 112
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 113
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -1332,7 +1332,7 @@ function Start-App {
                                     </Style>
                                 </DataGrid.Resources>
                                 <DataGrid.Columns>
-                                    <DataGridTemplateColumn Header="资源类型" Width="250">
+                                    <DataGridTemplateColumn Header="资源类型" Width="320">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding Type}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
