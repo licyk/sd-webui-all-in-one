@@ -217,7 +217,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 支持 SD WebUI Installer / SD WebUI All In One Launcher / 绘世启动器进行管理。
 
-**Nvidia 显卡版本：**
+**NVIDIA 显卡版本：**
 
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_webui_forge_neo){ .md-button .md-button--primary }
 
@@ -297,7 +297,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 支持 ComfyUI Installer / SD WebUI All In One Launcher / 绘世启动器进行管理。
 
-**Nvidia 显卡版本：**
+**NVIDIA 显卡版本：**
 
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=comfyui){ .md-button .md-button--primary }
 

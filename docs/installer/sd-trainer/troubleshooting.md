@@ -51,7 +51,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 尝试将显卡驱动更至最新，确保显卡驱动支持的 CUDA 版本大于或等于 PyTorch 中所带的 CUDA 版本，或者使用 `reinstall_pytorch.ps1` 重装 PyTorch。
 
 !!! note
-    Nvidia 显卡驱动下载：https://www.nvidia.cn/geforce/drivers
+    NVIDIA 显卡驱动下载：https://www.nvidia.cn/geforce/drivers
 
 如果要查询驱动最高支持的 CUDA 版本，可以打开 PowerShell，运行下方的命令。
 

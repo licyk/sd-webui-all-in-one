@@ -132,10 +132,10 @@ def cuda_malloc_supported() -> bool:
 
 
 def is_nvidia_device():
-    """检查 GPU 是否为 Nvidia 的 GPU
+    """检查 GPU 是否为 NVIDIA 的 GPU
 
     Returns:
-        bool: 当 GPU 为 Nvidia 的 GPU 时返回 True
+        bool: 当 GPU 为 NVIDIA 的 GPU 时返回 True
     """
     try:
         names = get_gpu_names()

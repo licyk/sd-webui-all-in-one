@@ -2544,7 +2544,7 @@ function Set-PyTorch-CUDA-Memory-Alloc {
         `$Env:PYTORCH_CUDA_ALLOC_CONF = `$conf
         `$Env:PYTORCH_ALLOC_CONF = `$conf
     } else {
-        Write-Log `"显卡非 Nvidia 显卡, 无法设置 CUDA 内存分配器`" -Level WARNING
+        Write-Log `"显卡非 NVIDIA 显卡, 无法设置 CUDA 内存分配器`" -Level WARNING
     }
 }
 

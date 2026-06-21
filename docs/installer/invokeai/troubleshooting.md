@@ -108,4 +108,4 @@ WARNING[XFORMERS]: xFormers can't load C++/CUDA extensions. xFormers was built f
 尝试将显卡驱动更至最新或者运行 `reinstall_pytorch.ps1` 脚本重装 PyTorch。
 
 !!! note
-    Nvidia 显卡驱动下载：https://www.nvidia.cn/geforce/drivers
+    NVIDIA 显卡驱动下载：https://www.nvidia.cn/geforce/drivers

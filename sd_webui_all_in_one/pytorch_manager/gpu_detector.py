@@ -559,7 +559,7 @@ def has_gpus(
 def has_nvidia_gpu(
     gpu_list: list[GPUDeviceInfo],
 ) -> bool:
-    """检测 GPU 列表中是否包含可用的 Nvidia 显卡
+    """检测 GPU 列表中是否包含可用的 NVIDIA 显卡
 
     Args:
         gpu_list (list[GPUDeviceInfo]):
@@ -567,7 +567,7 @@ def has_nvidia_gpu(
 
     Returns:
         bool:
-            当列表中存在可用的 Nvidia 显卡时则返回 True
+            当列表中存在可用的 NVIDIA 显卡时则返回 True
     """
     return any(
         x
