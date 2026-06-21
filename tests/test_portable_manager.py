@@ -87,6 +87,9 @@ def test_build_portable_source_resources_uses_gpu_variant_metadata():
     files = [
         portable_manager.build_portable_file_resource("portable/sd_webui_rocm-licyk-v1.0.0.7z", "https://example.test/sd-webui-rocm")[1],
         portable_manager.build_portable_file_resource("portable/fooocus_xpu-licyk-v1.0.0.7z", "https://example.test/fooocus-xpu")[1],
+        portable_manager.build_portable_file_resource("portable/sd_webui_amdgpu-licyk-v1.0.0.7z", "https://example.test/sd-webui-amdgpu")[1],
+        portable_manager.build_portable_file_resource("portable/ruined_fooocus_rocm-licyk-v1.0.0.7z", "https://example.test/ruined-fooocus-rocm")[1],
+        portable_manager.build_portable_file_resource("portable/diffusion_pipe_xpu-licyk-v1.0.0.7z", "https://example.test/diffusion-pipe-xpu")[1],
     ]
 
     resources = portable_manager.build_portable_source_resources(files)
@@ -95,6 +98,26 @@ def test_build_portable_source_resources_uses_gpu_variant_metadata():
     assert resources["sd_webui_rocm"]["description"] == "Stable Diffusion WebUI 的 AMD 显卡整合包，上手简单，操作方便，适合入门使用。"
     assert resources["fooocus_xpu"]["display_name"] == "Fooocus (XPU)"
     assert resources["fooocus_xpu"]["description"] == "Fooocus 的 Intel 显卡整合包，化繁为简，更专注于提示词书写。"
+    assert resources["sd_webui_amdgpu"]["display_name"] == "Stable Diffusion WebUI AMDGPU (NVIDIA)"
+    assert resources["sd_webui_amdgpu"]["description"] == "Stable Diffusion WebUI AMDGPU 分支的 NVIDIA 显卡整合包，保留 Stable Diffusion WebUI 体验，并包含 DirectML 和 ZLUDA 等后端支持。"
+    assert resources["ruined_fooocus_rocm"]["display_name"] == "RuinedFooocus (ROCm)"
+    assert resources["ruined_fooocus_rocm"]["description"] == "RuinedFooocus 的 AMD 显卡整合包，基于 Fooocus，加入样式、通配符、随机提示词和更多可调参数。"
+    assert resources["diffusion_pipe_xpu"]["display_name"] == "Diffusion Pipe (XPU)"
+    assert resources["diffusion_pipe_xpu"]["description"] == "Diffusion Pipe 的 Intel 显卡整合包，面向扩散模型的流水线并行训练，适合训练单张显卡放不下的大模型。"
+
+
+def test_portable_software_metadata_includes_additional_products_and_gpu_variants():
+    for software in [
+        "sd_webui_amdgpu",
+        "ruined_fooocus",
+        "fooocus_mre",
+        "ai_toolkit",
+        "finetrainers",
+        "diffusion_pipe",
+    ]:
+        assert software in portable_manager.PORTABLE_SOFTWARE_METADATA
+        assert f"{software}_rocm" in portable_manager.PORTABLE_SOFTWARE_METADATA
+        assert f"{software}_xpu" in portable_manager.PORTABLE_SOFTWARE_METADATA
 
 
 def test_build_portable_list_data_uses_new_resources_shape():

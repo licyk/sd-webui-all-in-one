@@ -90,6 +90,18 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Stable Diffusion WebUI (XPU)",
         "description": "Stable Diffusion WebUI 的 Intel 显卡整合包，上手简单，操作方便，适合入门使用。",
     },
+    "sd_webui_amdgpu": {
+        "display_name": "Stable Diffusion WebUI AMDGPU (NVIDIA)",
+        "description": "Stable Diffusion WebUI AMDGPU 分支的 NVIDIA 显卡整合包，保留 Stable Diffusion WebUI 体验，并包含 DirectML 和 ZLUDA 等后端支持。",
+    },
+    "sd_webui_amdgpu_rocm": {
+        "display_name": "Stable Diffusion WebUI AMDGPU (ROCm)",
+        "description": "Stable Diffusion WebUI AMDGPU 分支的 AMD 显卡整合包，支持 DirectML 和 ZLUDA，更适合 AMD 显卡用户使用。",
+    },
+    "sd_webui_amdgpu_xpu": {
+        "display_name": "Stable Diffusion WebUI AMDGPU (XPU)",
+        "description": "Stable Diffusion WebUI AMDGPU 分支的 Intel 显卡整合包，保留 Stable Diffusion WebUI 体验，并包含 DirectML 等后端支持。",
+    },
     "sd_webui_forge": {
         "display_name": "Stable Diffusion WebUI Forge (NVIDIA)",
         "description": "Stable Diffusion WebUI Forge 的 NVIDIA 显卡整合包，基于 Stable Diffusion WebUI，有更强的显存优化，多了 FLUX 模型支持。",
@@ -174,6 +186,30 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Fooocus (XPU)",
         "description": "Fooocus 的 Intel 显卡整合包，化繁为简，更专注于提示词书写。",
     },
+    "ruined_fooocus": {
+        "display_name": "RuinedFooocus (NVIDIA)",
+        "description": "RuinedFooocus 的 NVIDIA 显卡整合包，基于 Fooocus，加入样式、通配符、随机提示词和更多可调参数。",
+    },
+    "ruined_fooocus_rocm": {
+        "display_name": "RuinedFooocus (ROCm)",
+        "description": "RuinedFooocus 的 AMD 显卡整合包，基于 Fooocus，加入样式、通配符、随机提示词和更多可调参数。",
+    },
+    "ruined_fooocus_xpu": {
+        "display_name": "RuinedFooocus (XPU)",
+        "description": "RuinedFooocus 的 Intel 显卡整合包，基于 Fooocus，加入样式、通配符、随机提示词和更多可调参数。",
+    },
+    "fooocus_mre": {
+        "display_name": "Fooocus-MRE (NVIDIA)",
+        "description": "Fooocus-MRE 的 NVIDIA 显卡整合包，基于 Fooocus，加入图生图、Control-LoRA、嵌入和更多采样参数。",
+    },
+    "fooocus_mre_rocm": {
+        "display_name": "Fooocus-MRE (ROCm)",
+        "description": "Fooocus-MRE 的 AMD 显卡整合包，基于 Fooocus，加入图生图、Control-LoRA、嵌入和更多采样参数。",
+    },
+    "fooocus_mre_xpu": {
+        "display_name": "Fooocus-MRE (XPU)",
+        "description": "Fooocus-MRE 的 Intel 显卡整合包，基于 Fooocus，加入图生图、Control-LoRA、嵌入和更多采样参数。",
+    },
     "invokeai": {
         "display_name": "InvokeAI (NVIDIA)",
         "description": "InvokeAI 的 NVIDIA 显卡整合包，拥有最强大的画布系统，更适合作为辅助绘画工具。",
@@ -234,6 +270,42 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "SD Scripts (XPU)",
         "description": "SD Scripts 的 Intel 显卡整合包，支持训练 SD1.5，SDXL，FLUX，ControlNet 等多种模型，并且是 SD-Trainer 和 Kohya GUI 的训练核心，不过操作比较麻烦。",
     },
+    "ai_toolkit": {
+        "display_name": "AI Toolkit (NVIDIA)",
+        "description": "AI Toolkit 的 NVIDIA 显卡整合包，易用的一体化扩散模型训练工具，支持图像和视频模型训练。",
+    },
+    "ai_toolkit_rocm": {
+        "display_name": "AI Toolkit (ROCm)",
+        "description": "AI Toolkit 的 AMD 显卡整合包，易用的一体化扩散模型训练工具，支持图像和视频模型训练。",
+    },
+    "ai_toolkit_xpu": {
+        "display_name": "AI Toolkit (XPU)",
+        "description": "AI Toolkit 的 Intel 显卡整合包，易用的一体化扩散模型训练工具，支持图像和视频模型训练。",
+    },
+    "finetrainers": {
+        "display_name": "Finetrainers (NVIDIA)",
+        "description": "Finetrainers 的 NVIDIA 显卡整合包，面向扩散模型训练，支持 LoRA、全量微调、分布式训练和省显存单卡训练。",
+    },
+    "finetrainers_rocm": {
+        "display_name": "Finetrainers (ROCm)",
+        "description": "Finetrainers 的 AMD 显卡整合包，面向扩散模型训练，支持 LoRA、全量微调、分布式训练和省显存单卡训练。",
+    },
+    "finetrainers_xpu": {
+        "display_name": "Finetrainers (XPU)",
+        "description": "Finetrainers 的 Intel 显卡整合包，面向扩散模型训练，支持 LoRA、全量微调、分布式训练和省显存单卡训练。",
+    },
+    "diffusion_pipe": {
+        "display_name": "Diffusion Pipe (NVIDIA)",
+        "description": "Diffusion Pipe 的 NVIDIA 显卡整合包，面向扩散模型的流水线并行训练，适合训练单张显卡放不下的大模型。",
+    },
+    "diffusion_pipe_rocm": {
+        "display_name": "Diffusion Pipe (ROCm)",
+        "description": "Diffusion Pipe 的 AMD 显卡整合包，面向扩散模型的流水线并行训练，适合训练单张显卡放不下的大模型。",
+    },
+    "diffusion_pipe_xpu": {
+        "display_name": "Diffusion Pipe (XPU)",
+        "description": "Diffusion Pipe 的 Intel 显卡整合包，面向扩散模型的流水线并行训练，适合训练单张显卡放不下的大模型。",
+    },
     "musubi_tuner": {
         "display_name": "Musubi Tuner (NVIDIA)",
         "description": "Musubi Tuner 的 NVIDIA 显卡整合包，支持训练 Hunyuan，Wan 等视频生成模型。",
@@ -259,7 +331,19 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "description": "Qwen TTS WebUI 的 Intel 显卡整合包，支持使用 Qwen3 TTS 生成语音。",
     },
 }
-"""整合包软件元数据"""
+"""整合包软件元数据
+
+命名规则:
+- Key 必须和整合包文件名中的 software 字段一致，例如 `sd_webui-licyk-v1.0.0.7z` 对应 `sd_webui`。
+- 不带 GPU 后缀的 Key 表示 NVIDIA 显卡整合包；`_rocm` 后缀表示 AMD 显卡整合包；`_xpu` 后缀表示 Intel 显卡整合包。
+- 只为下载列表需要展示的产品或独立变体添加条目，不为 `_main`、`_dev`、`_sd3` 等分支细分单独添加条目，除非构建产物直接使用该标识作为 software。
+- `display_name` 使用产品名加 GPU 类型后缀，例如 `ComfyUI (NVIDIA)`、`ComfyUI (ROCm)`、`ComfyUI (XPU)`。
+
+描述规则:
+- `description` 使用一句中文短描述，先说明这是哪个产品的哪类显卡整合包，再补充该产品的主要定位或特点。
+- NVIDIA / AMD / Intel 三类变体的产品定位描述应保持一致，只替换显卡类型；确有项目特性的差异时再单独调整。
+- 描述面向下载用户，避免写实现细节、分支名差异和过长功能清单。
+"""
 
 
 class PortableFilenameInfo(TypedDict):
