@@ -1280,6 +1280,42 @@ function Save-InstallResultSnapshot {
     Write-Log "安装结果快照保存完成"
 }
 
+
+# 检测当前已安装的 PyTorch 是否为 CUDA 版
+function Test-InstalledPyTorchIsCudaBuild {
+    $content = @"
+from importlib.metadata import version
+import re
+
+try:
+    torch_version = version("torch")
+except Exception:
+    raise SystemExit(1)
+
+print(torch_version)
+raise SystemExit(0 if re.search(r"\+cu\d+", torch_version) else 2)
+"@
+    $torch_version_output = & python -c $content 2>$null
+    $exit_code = Get-NativeCommandExitCode -Success $?
+    $torch_version = $torch_version_output | Select-Object -First 1
+    if ($null -ne $torch_version) {
+        $torch_version = $torch_version.ToString().Trim()
+    }
+
+    if ($exit_code -eq 0) {
+        Write-Log "检测到 CUDA 版 PyTorch: $torch_version, 默认启动参数将启用 xFormers"
+        return $true
+    }
+
+    if ([string]::IsNullOrWhiteSpace($torch_version)) {
+        Write-Log "未能读取 torch 包版本, 默认启动参数将跳过 xFormers" -Level WARNING
+    } else {
+        Write-Log "检测到非 CUDA 版 PyTorch: $torch_version, 默认启动参数将跳过 xFormers"
+    }
+    return $false
+}
+
+
 # 安装
 function Invoke-Installation {
     New-Item -ItemType Directory -Path $script:InstallPath -Force > $null
@@ -1321,23 +1357,39 @@ function Invoke-Installation {
 
     $target_branch = Get-InstallBranch
     $launch_args_map = @{
-        "sd_webui_dev"           = "--theme dark --autolaunch --xformers --api --skip-load-model-at-start --skip-python-version-check --skip-version-check --no-download-sd-model"
-        "sd_webui_main"          = "--theme dark --autolaunch --xformers --api --skip-load-model-at-start --skip-python-version-check --skip-version-check --no-download-sd-model"
-        "sd_webui_forge"         = "--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check --no-download-sd-model"
-        "sd_webui_reforge_main"  = "--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check --no-download-sd-model"
-        "sd_webui_reforge_dev"   = "--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check --no-download-sd-model"
-        "sd_webui_forge_classic" = "--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check"
-        "sd_webui_forge_neo"     = "--theme dark --autolaunch --xformers --api --skip-python-version-check --skip-version-check"
+        "sd_webui_dev"           = "--theme dark --autolaunch --api --skip-load-model-at-start --skip-python-version-check --skip-version-check --no-download-sd-model"
+        "sd_webui_main"          = "--theme dark --autolaunch --api --skip-load-model-at-start --skip-python-version-check --skip-version-check --no-download-sd-model"
+        "sd_webui_forge"         = "--theme dark --autolaunch --api --skip-python-version-check --skip-version-check --no-download-sd-model"
+        "sd_webui_reforge_main"  = "--theme dark --autolaunch --api --skip-python-version-check --skip-version-check --no-download-sd-model"
+        "sd_webui_reforge_dev"   = "--theme dark --autolaunch --api --skip-python-version-check --skip-version-check --no-download-sd-model"
+        "sd_webui_forge_classic" = "--theme dark --autolaunch --api --skip-python-version-check --skip-version-check"
+        "sd_webui_forge_neo"     = "--theme dark --autolaunch --api --skip-python-version-check --skip-version-check"
         "sd_webui_amdgpu"        = "--theme dark --autolaunch --api --skip-torch-cuda-test --backend directml --skip-python-version-check --skip-version-check --no-download-sd-model"
-        "sd_next_main"           = "--autolaunch --use-cuda --use-xformers"
-        "sd_next_dev"            = "--autolaunch --use-cuda --use-xformers"
+        "sd_next_main"           = "--autolaunch --use-cuda"
+        "sd_next_dev"            = "--autolaunch --use-cuda"
+    }
+    $xformers_launch_args_map = @{
+        "sd_webui_dev"           = "--xformers"
+        "sd_webui_main"          = "--xformers"
+        "sd_webui_forge"         = "--xformers"
+        "sd_webui_reforge_main"  = "--xformers"
+        "sd_webui_reforge_dev"   = "--xformers"
+        "sd_webui_forge_classic" = "--xformers"
+        "sd_webui_forge_neo"     = "--xformers"
+        "sd_next_main"           = "--use-xformers"
+        "sd_next_dev"            = "--use-xformers"
     }
     if (!(Test-Path (Join-NormalizedPath $script:InstallPath "launch_args.txt"))) {
         Write-Log "设置默认 Stable Diffusion WebUI 启动参数"
         if (($target_branch)-and $launch_args_map.ContainsKey($target_branch)) {
+            $launch_args_branch = $target_branch
             $default_content = $launch_args_map[$target_branch]
         } else {
+            $launch_args_branch = "sd_webui_dev"
             $default_content = $launch_args_map["sd_webui_dev"]
+        }
+        if ($xformers_launch_args_map.ContainsKey($launch_args_branch) -and (Test-InstalledPyTorchIsCudaBuild)) {
+            $default_content = "$default_content $($xformers_launch_args_map[$launch_args_branch])"
         }
         Write-FileWithStreamWriter -Encoding UTF8 (Join-NormalizedPath $script:InstallPath "launch_args.txt") -Value $default_content
     }

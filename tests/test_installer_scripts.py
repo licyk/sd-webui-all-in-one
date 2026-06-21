@@ -140,6 +140,18 @@ def _extract_build_with_model_block(text: str):
     return match.group(0)
 
 
+def _extract_invoke_installation_function(text: str) -> str:
+    start = text.index("function Invoke-Installation")
+    end = text.index("# 通用模块脚本", start)
+    return text[start:end]
+
+
+def _extract_powershell_map_body(text: str, variable_name: str) -> str:
+    match = re.search(rf"\${variable_name}\s*=\s*@\{{(?P<body>.*?)\n    \}}", text, re.S)
+    assert match is not None
+    return match.group("body")
+
+
 def test_installer_templates_include_windows_long_path_helpers():
     helper_names = [
         "Test-WindowsLongPathsEnabled",
@@ -195,6 +207,40 @@ if ($failed) {{ exit 1 }}
     )
 
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_sd_webui_default_xformers_launch_args_require_cuda_torch():
+    installer = _read_installer("installer/stable_diffusion_webui_installer.ps1")
+    cuda_check_start = installer.index("function Test-InstalledPyTorchIsCudaBuild")
+    cuda_check_end = installer.index("function Invoke-Installation", cuda_check_start)
+    cuda_check_function = installer[cuda_check_start:cuda_check_end]
+    installation_function = _extract_invoke_installation_function(installer)
+    launch_args_map_body = _extract_powershell_map_body(installation_function, "launch_args_map")
+    xformers_map_body = _extract_powershell_map_body(installation_function, "xformers_launch_args_map")
+
+    assert "from importlib.metadata import version" in cuda_check_function
+    assert 'version("torch")' in cuda_check_function
+    assert r"\+cu\d+" in cuda_check_function
+    assert "raise SystemExit(0 if re.search" in cuda_check_function
+
+    assert "--xformers" not in launch_args_map_body
+    assert "--use-xformers" not in launch_args_map_body
+    for branch in [
+        "sd_webui_dev",
+        "sd_webui_main",
+        "sd_webui_forge",
+        "sd_webui_reforge_main",
+        "sd_webui_reforge_dev",
+        "sd_webui_forge_classic",
+        "sd_webui_forge_neo",
+    ]:
+        assert f'"{branch}"' in xformers_map_body
+        assert "--xformers" in xformers_map_body
+
+    assert '"sd_next_main"           = "--use-xformers"' in xformers_map_body
+    assert '"sd_next_dev"            = "--use-xformers"' in xformers_map_body
+    assert "Test-InstalledPyTorchIsCudaBuild" in installation_function
+    assert '$default_content = "$default_content $($xformers_launch_args_map[$launch_args_branch])"' in installation_function
 
 
 def test_launch_templates_import_and_call_windows_long_path_check():
