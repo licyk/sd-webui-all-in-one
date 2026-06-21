@@ -66,47 +66,200 @@ PORTABLE_NAME_PATTERN = r"""
 PORTABLE_NAME_REGEX = re.compile(PORTABLE_NAME_PATTERN, re.VERBOSE | re.IGNORECASE)
 """整合包文件名解析正则对象"""
 
-PORTABLE_DISPLAY_NAMES = {
-    "sd_webui": "Stable Diffusion WebUI",
-    "sd_webui_forge": "Stable Diffusion WebUI Forge",
-    "sd_webui_reforge": "Stable Diffusion WebUI reForge",
-    "sd_webui_forge_classic": "Stable Diffusion WebUI Forge Classic",
-    "sd_webui_forge_neo": "Stable Diffusion WebUI Forge Neo",
-    "sd_next": "SD Next",
-    "comfyui": "ComfyUI",
-    "comfyui_rocm": "ComfyUI (ROCm)",
-    "comfyui_xpu": "ComfyUI (XPU)",
-    "fooocus": "Fooocus",
-    "invokeai": "InvokeAI",
-    "sd_trainer": "SD Trainer",
-    "sd_trainer_next": "SD Trainer Next",
-    "kohya_gui": "Kohya GUI",
-    "sd_scripts": "SD Scripts",
-    "musubi_tuner": "Musubi Tuner",
-    "qwen_tts_webui": "Qwen TTS WebUI",
-}
-"""整合包展示名称"""
 
-PORTABLE_DESCRIPTIONS = {
-    "sd_webui": "上手简单，操作方便，适合入门使用。",
-    "sd_webui_forge": "基于 Stable Diffusion WebUI，有更强的显存优化，多了 FLUX 模型支持。",
-    "sd_webui_reforge": "基于旧版 Stable Diffusion WebUI Forge 开发，插件兼容性比 Stable Diffusion WebUI Forge 好一点。",
-    "sd_webui_forge_classic": "Stable Diffusion WebUI Forge 的经典版本整合包。",
-    "sd_webui_forge_neo": "基于旧版 Stable Diffusion WebUI Forge 开发，精简了无用组件，更轻量。",
-    "sd_next": "基于 Stable Diffusion WebUI 开发，支持的模型种类多，就是比较臃肿。",
-    "comfyui": "流程高度自定义，可玩性高，显存优化强，支持的模型丰富。",
-    "comfyui_rocm": "ComfyUI 的 AMD 显卡整合包，流程高度自定义，可玩性高。",
-    "comfyui_xpu": "ComfyUI 的 Intel 显卡整合包，流程高度自定义，可玩性高。",
-    "fooocus": "化繁为简，更专注于提示词书写。",
-    "invokeai": "拥有最强大的画布系统，更适合作为辅助绘画工具。",
-    "sd_trainer": "训练模型如此简单。",
-    "sd_trainer_next": "训练模型如此简单。基于 SD Trainer 分支，并且新增了 Anima 模型的支持。",
-    "kohya_gui": "支持训练更多种类的模型，不过操作麻烦一点。",
-    "sd_scripts": "支持训练 SD1.5，SDXL，FLUX，ControlNet 等多种模型，并且是 SD-Trainer 和 Kohya GUI 的训练核心，不过操作比较麻烦。",
-    "musubi_tuner": "支持训练 Hunyuan，Wan 等视频生成模型。",
-    "qwen_tts_webui": "支持使用 Qwen3 TTS 生成语音。",
+class PortableSoftwareMetadata(TypedDict):
+    """整合包软件元数据"""
+
+    display_name: str
+    """展示名称"""
+
+    description: str
+    """整合包描述"""
+
+
+PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
+    "sd_webui": {
+        "display_name": "Stable Diffusion WebUI (NVIDIA)",
+        "description": "Stable Diffusion WebUI 的 NVIDIA 显卡整合包，上手简单，操作方便，适合入门使用。",
+    },
+    "sd_webui_rocm": {
+        "display_name": "Stable Diffusion WebUI (ROCm)",
+        "description": "Stable Diffusion WebUI 的 AMD 显卡整合包，上手简单，操作方便，适合入门使用。",
+    },
+    "sd_webui_xpu": {
+        "display_name": "Stable Diffusion WebUI (XPU)",
+        "description": "Stable Diffusion WebUI 的 Intel 显卡整合包，上手简单，操作方便，适合入门使用。",
+    },
+    "sd_webui_forge": {
+        "display_name": "Stable Diffusion WebUI Forge (NVIDIA)",
+        "description": "Stable Diffusion WebUI Forge 的 NVIDIA 显卡整合包，基于 Stable Diffusion WebUI，有更强的显存优化，多了 FLUX 模型支持。",
+    },
+    "sd_webui_forge_rocm": {
+        "display_name": "Stable Diffusion WebUI Forge (ROCm)",
+        "description": "Stable Diffusion WebUI Forge 的 AMD 显卡整合包，基于 Stable Diffusion WebUI，有更强的显存优化，多了 FLUX 模型支持。",
+    },
+    "sd_webui_forge_xpu": {
+        "display_name": "Stable Diffusion WebUI Forge (XPU)",
+        "description": "Stable Diffusion WebUI Forge 的 Intel 显卡整合包，基于 Stable Diffusion WebUI，有更强的显存优化，多了 FLUX 模型支持。",
+    },
+    "sd_webui_reforge": {
+        "display_name": "Stable Diffusion WebUI reForge (NVIDIA)",
+        "description": "Stable Diffusion WebUI reForge 的 NVIDIA 显卡整合包，基于旧版 Stable Diffusion WebUI Forge 开发，插件兼容性比 Stable Diffusion WebUI Forge 好一点。",
+    },
+    "sd_webui_reforge_rocm": {
+        "display_name": "Stable Diffusion WebUI reForge (ROCm)",
+        "description": "Stable Diffusion WebUI reForge 的 AMD 显卡整合包，基于旧版 Stable Diffusion WebUI Forge 开发，插件兼容性比 Stable Diffusion WebUI Forge 好一点。",
+    },
+    "sd_webui_reforge_xpu": {
+        "display_name": "Stable Diffusion WebUI reForge (XPU)",
+        "description": "Stable Diffusion WebUI reForge 的 Intel 显卡整合包，基于旧版 Stable Diffusion WebUI Forge 开发，插件兼容性比 Stable Diffusion WebUI Forge 好一点。",
+    },
+    "sd_webui_forge_classic": {
+        "display_name": "Stable Diffusion WebUI Forge Classic (NVIDIA)",
+        "description": "Stable Diffusion WebUI Forge Classic 的 NVIDIA 显卡整合包，属于 Stable Diffusion WebUI Forge 的经典版本。",
+    },
+    "sd_webui_forge_classic_rocm": {
+        "display_name": "Stable Diffusion WebUI Forge Classic (ROCm)",
+        "description": "Stable Diffusion WebUI Forge Classic 的 AMD 显卡整合包，属于 Stable Diffusion WebUI Forge 的经典版本。",
+    },
+    "sd_webui_forge_classic_xpu": {
+        "display_name": "Stable Diffusion WebUI Forge Classic (XPU)",
+        "description": "Stable Diffusion WebUI Forge Classic 的 Intel 显卡整合包，属于 Stable Diffusion WebUI Forge 的经典版本。",
+    },
+    "sd_webui_forge_neo": {
+        "display_name": "Stable Diffusion WebUI Forge Neo (NVIDIA)",
+        "description": "Stable Diffusion WebUI Forge Neo 的 NVIDIA 显卡整合包，基于旧版 Stable Diffusion WebUI Forge 开发，精简了无用组件，更轻量。",
+    },
+    "sd_webui_forge_neo_rocm": {
+        "display_name": "Stable Diffusion WebUI Forge Neo (ROCm)",
+        "description": "Stable Diffusion WebUI Forge Neo 的 AMD 显卡整合包，基于旧版 Stable Diffusion WebUI Forge 开发，精简了无用组件，更轻量。",
+    },
+    "sd_webui_forge_neo_xpu": {
+        "display_name": "Stable Diffusion WebUI Forge Neo (XPU)",
+        "description": "Stable Diffusion WebUI Forge Neo 的 Intel 显卡整合包，基于旧版 Stable Diffusion WebUI Forge 开发，精简了无用组件，更轻量。",
+    },
+    "sd_next": {
+        "display_name": "SD Next (NVIDIA)",
+        "description": "SD Next 的 NVIDIA 显卡整合包，基于 Stable Diffusion WebUI 开发，支持的模型种类多，就是比较臃肿。",
+    },
+    "sd_next_rocm": {
+        "display_name": "SD Next (ROCm)",
+        "description": "SD Next 的 AMD 显卡整合包，基于 Stable Diffusion WebUI 开发，支持的模型种类多，就是比较臃肿。",
+    },
+    "sd_next_xpu": {
+        "display_name": "SD Next (XPU)",
+        "description": "SD Next 的 Intel 显卡整合包，基于 Stable Diffusion WebUI 开发，支持的模型种类多，就是比较臃肿。",
+    },
+    "comfyui": {
+        "display_name": "ComfyUI (NVIDIA)",
+        "description": "ComfyUI 的 NVIDIA 显卡整合包，流程高度自定义，可玩性高，显存优化强，支持的模型丰富。",
+    },
+    "comfyui_rocm": {
+        "display_name": "ComfyUI (ROCm)",
+        "description": "ComfyUI 的 AMD 显卡整合包，流程高度自定义，可玩性高。",
+    },
+    "comfyui_xpu": {
+        "display_name": "ComfyUI (XPU)",
+        "description": "ComfyUI 的 Intel 显卡整合包，流程高度自定义，可玩性高。",
+    },
+    "fooocus": {
+        "display_name": "Fooocus (NVIDIA)",
+        "description": "Fooocus 的 NVIDIA 显卡整合包，化繁为简，更专注于提示词书写。",
+    },
+    "fooocus_rocm": {
+        "display_name": "Fooocus (ROCm)",
+        "description": "Fooocus 的 AMD 显卡整合包，化繁为简，更专注于提示词书写。",
+    },
+    "fooocus_xpu": {
+        "display_name": "Fooocus (XPU)",
+        "description": "Fooocus 的 Intel 显卡整合包，化繁为简，更专注于提示词书写。",
+    },
+    "invokeai": {
+        "display_name": "InvokeAI (NVIDIA)",
+        "description": "InvokeAI 的 NVIDIA 显卡整合包，拥有最强大的画布系统，更适合作为辅助绘画工具。",
+    },
+    "invokeai_rocm": {
+        "display_name": "InvokeAI (ROCm)",
+        "description": "InvokeAI 的 AMD 显卡整合包，拥有最强大的画布系统，更适合作为辅助绘画工具。",
+    },
+    "invokeai_xpu": {
+        "display_name": "InvokeAI (XPU)",
+        "description": "InvokeAI 的 Intel 显卡整合包，拥有最强大的画布系统，更适合作为辅助绘画工具。",
+    },
+    "sd_trainer": {
+        "display_name": "SD Trainer (NVIDIA)",
+        "description": "SD Trainer 的 NVIDIA 显卡整合包，训练模型如此简单。",
+    },
+    "sd_trainer_rocm": {
+        "display_name": "SD Trainer (ROCm)",
+        "description": "SD Trainer 的 AMD 显卡整合包，训练模型如此简单。",
+    },
+    "sd_trainer_xpu": {
+        "display_name": "SD Trainer (XPU)",
+        "description": "SD Trainer 的 Intel 显卡整合包，训练模型如此简单。",
+    },
+    "sd_trainer_next": {
+        "display_name": "SD Trainer Next (NVIDIA)",
+        "description": "SD Trainer Next 的 NVIDIA 显卡整合包，训练模型如此简单。基于 SD Trainer 分支，并且新增了 Anima 模型的支持。",
+    },
+    "sd_trainer_next_rocm": {
+        "display_name": "SD Trainer Next (ROCm)",
+        "description": "SD Trainer Next 的 AMD 显卡整合包，训练模型如此简单。基于 SD Trainer 分支，并且新增了 Anima 模型的支持。",
+    },
+    "sd_trainer_next_xpu": {
+        "display_name": "SD Trainer Next (XPU)",
+        "description": "SD Trainer Next 的 Intel 显卡整合包，训练模型如此简单。基于 SD Trainer 分支，并且新增了 Anima 模型的支持。",
+    },
+    "kohya_gui": {
+        "display_name": "Kohya GUI (NVIDIA)",
+        "description": "Kohya GUI 的 NVIDIA 显卡整合包，支持训练更多种类的模型，不过操作麻烦一点。",
+    },
+    "kohya_gui_rocm": {
+        "display_name": "Kohya GUI (ROCm)",
+        "description": "Kohya GUI 的 AMD 显卡整合包，支持训练更多种类的模型，不过操作麻烦一点。",
+    },
+    "kohya_gui_xpu": {
+        "display_name": "Kohya GUI (XPU)",
+        "description": "Kohya GUI 的 Intel 显卡整合包，支持训练更多种类的模型，不过操作麻烦一点。",
+    },
+    "sd_scripts": {
+        "display_name": "SD Scripts (NVIDIA)",
+        "description": "SD Scripts 的 NVIDIA 显卡整合包，支持训练 SD1.5，SDXL，FLUX，ControlNet 等多种模型，并且是 SD-Trainer 和 Kohya GUI 的训练核心，不过操作比较麻烦。",
+    },
+    "sd_scripts_rocm": {
+        "display_name": "SD Scripts (ROCm)",
+        "description": "SD Scripts 的 AMD 显卡整合包，支持训练 SD1.5，SDXL，FLUX，ControlNet 等多种模型，并且是 SD-Trainer 和 Kohya GUI 的训练核心，不过操作比较麻烦。",
+    },
+    "sd_scripts_xpu": {
+        "display_name": "SD Scripts (XPU)",
+        "description": "SD Scripts 的 Intel 显卡整合包，支持训练 SD1.5，SDXL，FLUX，ControlNet 等多种模型，并且是 SD-Trainer 和 Kohya GUI 的训练核心，不过操作比较麻烦。",
+    },
+    "musubi_tuner": {
+        "display_name": "Musubi Tuner (NVIDIA)",
+        "description": "Musubi Tuner 的 NVIDIA 显卡整合包，支持训练 Hunyuan，Wan 等视频生成模型。",
+    },
+    "musubi_tuner_rocm": {
+        "display_name": "Musubi Tuner (ROCm)",
+        "description": "Musubi Tuner 的 AMD 显卡整合包，支持训练 Hunyuan，Wan 等视频生成模型。",
+    },
+    "musubi_tuner_xpu": {
+        "display_name": "Musubi Tuner (XPU)",
+        "description": "Musubi Tuner 的 Intel 显卡整合包，支持训练 Hunyuan，Wan 等视频生成模型。",
+    },
+    "qwen_tts_webui": {
+        "display_name": "Qwen TTS WebUI (NVIDIA)",
+        "description": "Qwen TTS WebUI 的 NVIDIA 显卡整合包，支持使用 Qwen3 TTS 生成语音。",
+    },
+    "qwen_tts_webui_rocm": {
+        "display_name": "Qwen TTS WebUI (ROCm)",
+        "description": "Qwen TTS WebUI 的 AMD 显卡整合包，支持使用 Qwen3 TTS 生成语音。",
+    },
+    "qwen_tts_webui_xpu": {
+        "display_name": "Qwen TTS WebUI (XPU)",
+        "description": "Qwen TTS WebUI 的 Intel 显卡整合包，支持使用 Qwen3 TTS 生成语音。",
+    },
 }
-"""整合包描述"""
+"""整合包软件元数据"""
 
 
 class PortableFilenameInfo(TypedDict):
@@ -399,9 +552,16 @@ def build_portable_source_resources(
     for file in files:
         software = parse_portable_filename(file["filename"])["software"]
         if software not in grouped:
+            metadata = PORTABLE_SOFTWARE_METADATA.get(
+                software,
+                {
+                    "display_name": software,
+                    "description": "",
+                },
+            )
             grouped[software] = {
-                "display_name": PORTABLE_DISPLAY_NAMES.get(software, software),
-                "description": PORTABLE_DESCRIPTIONS.get(software, ""),
+                "display_name": metadata["display_name"],
+                "description": metadata["description"],
                 "stable": [],
                 "nightly": [],
             }

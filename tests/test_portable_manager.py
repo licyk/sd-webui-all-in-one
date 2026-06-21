@@ -69,8 +69,8 @@ def test_build_portable_source_resources_groups_and_sorts_versions():
     resources = portable_manager.build_portable_source_resources(files)
 
     assert list(resources) == ["custom_app", "sd_webui"]
-    assert resources["sd_webui"]["display_name"] == "Stable Diffusion WebUI"
-    assert resources["sd_webui"]["description"] == "上手简单，操作方便，适合入门使用。"
+    assert resources["sd_webui"]["display_name"] == "Stable Diffusion WebUI (NVIDIA)"
+    assert resources["sd_webui"]["description"] == "Stable Diffusion WebUI 的 NVIDIA 显卡整合包，上手简单，操作方便，适合入门使用。"
     assert [item["filename"] for item in resources["sd_webui"]["stable"]] == [
         "sd_webui-licyk-v1.10.0.7z",
         "sd_webui-licyk-v1.2.0.7z",
@@ -81,6 +81,20 @@ def test_build_portable_source_resources_groups_and_sorts_versions():
     ]
     assert resources["custom_app"]["display_name"] == "custom_app"
     assert resources["custom_app"]["description"] == ""
+
+
+def test_build_portable_source_resources_uses_gpu_variant_metadata():
+    files = [
+        portable_manager.build_portable_file_resource("portable/sd_webui_rocm-licyk-v1.0.0.7z", "https://example.test/sd-webui-rocm")[1],
+        portable_manager.build_portable_file_resource("portable/fooocus_xpu-licyk-v1.0.0.7z", "https://example.test/fooocus-xpu")[1],
+    ]
+
+    resources = portable_manager.build_portable_source_resources(files)
+
+    assert resources["sd_webui_rocm"]["display_name"] == "Stable Diffusion WebUI (ROCm)"
+    assert resources["sd_webui_rocm"]["description"] == "Stable Diffusion WebUI 的 AMD 显卡整合包，上手简单，操作方便，适合入门使用。"
+    assert resources["fooocus_xpu"]["display_name"] == "Fooocus (XPU)"
+    assert resources["fooocus_xpu"]["description"] == "Fooocus 的 Intel 显卡整合包，化繁为简，更专注于提示词书写。"
 
 
 def test_build_portable_list_data_uses_new_resources_shape():
@@ -99,8 +113,8 @@ def test_build_portable_list_data_uses_new_resources_shape():
         "resources": {
             "modelscope": {
                 "fooocus": {
-                    "display_name": "Fooocus",
-                    "description": "化繁为简，更专注于提示词书写。",
+                    "display_name": "Fooocus (NVIDIA)",
+                    "description": "Fooocus 的 NVIDIA 显卡整合包，化繁为简，更专注于提示词书写。",
                     "stable": [
                         {
                             "filename": "fooocus-licyk-v2.0.0.7z",
