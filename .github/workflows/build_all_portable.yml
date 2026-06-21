@@ -31,6 +31,8 @@ jobs:
               'build_sd_trainer.yml',
               'build_sd_trainer_next.yml',
               'build_sd_webui_forge_neo.yml',
+              'build_sd_webui_forge_neo_rocm.yml',
+              'build_sd_webui_forge_neo_xpu.yml',
               'build_sd_webui_forge.yml',
               'build_sd_webui_reforge.yml',
               'build_sd_webui.yml'

@@ -1,0 +1,88 @@
+name: Build SD WebUI Forge Neo ROCm
+
+on:
+  workflow_dispatch:
+
+jobs:
+  Build-SD-WebUI-Forge-Neo-ROCm:
+    name: Build SD WebUI Forge Neo
+    runs-on: windows-latest
+    env:
+      PYTHONIOENCODING: utf-8
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Setup portable build
+        uses: ./.github/actions/setup-portable-build
+
+      - name: Launch SD WebUI Installer
+        env:
+          SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY: 1
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/installer/stable_diffusion_webui_installer.ps1" `
+            -InstallPath "${{ github.workspace }}/sd_webui_forge_neo_rocm" `
+            -PyTorchMirrorType rocm_win `
+            -InstallPythonVersion 3.12 `
+            -BuildMode `
+            -BuildWithLaunch `
+            -InstallBranch "sd_webui_forge_neo" `
+            -NoPreDownloadModel `
+            -DisableAutoMirror `
+            -DisablePyPIMirror `
+            -DisableGithubMirror `
+            -InstallHanamizuki `
+            -DisableHuggingFaceMirror
+
+      - name: Install Insightface
+        shell: pwsh
+        env:
+          UV_PYTHON: "${{ github.workspace }}/sd_webui_forge_neo_rocm/core/python/python.exe"
+          UV_LINK_MODE: copy
+        run: |
+          uv pip install insightface
+
+      - name: Launch SD WebUI Forge Neo to init component
+        shell: pwsh
+        env:
+          PIP_NO_WARN_SCRIPT_LOCATION: 0
+          PIP_DISABLE_PIP_VERSION_CHECK: 1
+        continue-on-error: true
+        run: |
+          Set-Location -Path "${{ github.workspace }}/sd_webui_forge_neo_rocm/core"
+          & "${{ github.workspace }}/sd_webui_forge_neo_rocm/core/python/python.exe" `
+            "${{ github.workspace }}/sd_webui_forge_neo_rocm/core/launch.py" `
+            --exit `
+            --skip-torch-cuda-test `
+            --use-cpu all `
+            --skip-version-check `
+            --skip-python-version-check
+
+      - name: Launch to complete dependencies
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/sd_webui_forge_neo_rocm/launch.ps1" `
+            -BuildMode `
+            -DisableAutoMirror `
+            -DisablePyPIMirror `
+            -DisableGithubMirror `
+            -DisableHuggingFaceMirror
+
+      - name: Download VAE approx model
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/.github/install_vae_approx_model.ps1" `
+            -VAEApproxPath "${{ github.workspace }}/sd_webui_forge_neo_rocm/core/models/VAE-approx"
+
+      - name: Finalize portable package
+        uses: ./.github/actions/finalize-portable
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
+        with:
+          install-path: ${{ github.workspace }}/sd_webui_forge_neo_rocm
+          software-name: sd_webui_forge_neo_rocm
+          upload-path: ${{ github.workspace }}/sd-webui-all-in-one
+          hf-repo-id: licyk/sd-webui-all-in-one
+          ms-repo-id: licyks/sd-webui-all-in-one
