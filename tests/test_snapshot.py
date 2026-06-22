@@ -213,6 +213,50 @@ def test_collect_git_extensions_filters_non_git_directories(monkeypatch, tmp_pat
     assert extensions[0].commit == "abcdef"
 
 
+def test_load_comfyui_manager_snapshot_imports_registry_and_git_nodes(tmp_path):
+    snapshot_path = tmp_path / "manager.json"
+    snapshot_path.write_text(
+        json.dumps(
+            {
+                "comfyui": "kernel-commit",
+                "git_custom_nodes": {
+                    "https://github.com/example/git-node": {
+                        "hash": "git-commit",
+                        "disabled": True,
+                    }
+                },
+                "cnr_custom_nodes": {
+                    "registry-node": "1.2.3",
+                },
+                "file_custom_nodes": [
+                    {
+                        "filename": "single.py",
+                        "disabled": False,
+                    }
+                ],
+                "pips": {
+                    "demo": "0.1.0",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    snapshot = snapshot_utils.load_snapshot(snapshot_path)
+
+    assert snapshot.webui.type == "comfyui"
+    assert snapshot.kernel is not None
+    assert snapshot.kernel.commit == "kernel-commit"
+    assert [(item.name, item.source_type, item.enabled) for item in snapshot.extensions] == [
+        ("git-node", "git", False),
+        ("registry-node", "comfy-registry", True),
+        ("single.py", "file", True),
+    ]
+    assert snapshot.extensions[1].registry_id == "registry-node"
+    assert snapshot.extensions[1].registry_version == "1.2.3"
+    assert snapshot.packages[0].name == "demo"
+
+
 def test_product_snapshots_include_webui_identity_and_extension_state(monkeypatch, tmp_path):
     (tmp_path / "sd-webui" / "extensions").mkdir(parents=True)
     (tmp_path / "sd-webui" / "config.json").write_text(json.dumps({"disabled_extensions": ["disabled-ext"]}), encoding="utf-8")
@@ -237,10 +281,8 @@ def test_product_snapshots_include_webui_identity_and_extension_state(monkeypatc
 
     monkeypatch.setattr(
         comfyui_base,
-        "collect_git_extensions",
-        lambda _path, enabled_resolver=None, **_kwargs: [
-            _extension_snapshot("node.disabled", _path / "node.disabled", enabled_resolver("node.disabled", _path / "node.disabled"))
-        ],
+        "collect_comfyui_extensions",
+        lambda _path: [_extension_snapshot("node.disabled", _path / "custom_nodes" / "node.disabled", False)],
     )
     comfy_snapshot = comfyui_base.get_comfyui_snapshot(tmp_path / "ComfyUI", include_packages=False)
     assert comfy_snapshot.webui.type == "comfyui"
@@ -752,6 +794,57 @@ def test_preview_restore_plan_prunes_comfyui_extensions_with_disabled_name(monke
     assert extra.cleanup_action == "uninstall"
 
 
+def test_preview_restore_plan_keeps_comfyui_registry_extensions_when_pruning(monkeypatch, tmp_path):
+    webui_path = tmp_path / "ComfyUI"
+    custom_nodes = webui_path / "custom_nodes"
+    registry_path = custom_nodes / ".disabled" / "registry-node"
+    registry_path.mkdir(parents=True)
+    (registry_path / ".tracking").write_text("pyproject.toml\n", encoding="utf-8")
+    (registry_path / "pyproject.toml").write_text(
+        "\n".join(
+            [
+                "[project]",
+                'name = "registry-node"',
+                'version = "1.2.3"',
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (custom_nodes / "ExtraNode").mkdir()
+
+    snapshot = _webui_snapshot(webui_path)
+    snapshot.webui.type = "comfyui"
+    snapshot.extensions = [
+        snapshot_utils.ExtensionSnapshot(
+            name="registry-node",
+            path=custom_nodes / "registry-node",
+            enabled=False,
+            is_git_repo=False,
+            source_type="comfy-registry",
+            registry_id="registry-node",
+            registry_version="1.2.3",
+        )
+    ]
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+
+    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [])
+
+    plan = restore_utils.preview_webui_snapshot_restore(
+        snapshot_path=output,
+        webui_path=webui_path,
+        expected_webui_type="comfyui",
+        options=restore_utils.SnapshotRestoreOptions(prune_extensions=True),
+    )
+
+    registry = next(item for item in plan.extension_changes if item.name == "registry-node")
+    extra = next(item for item in plan.extension_changes if item.name == "ExtraNode")
+    assert registry.registry_action == "skip_same_registry_version"
+    assert registry.current_enabled is False
+    assert registry.target_enabled is False
+    assert extra.cleanup_action == "uninstall"
+
+
 def test_restore_python_packages_prioritizes_pytorch_skips_missing_local_and_prunes(monkeypatch, tmp_path):
     missing_local = tmp_path / "missing-local"
     existing_local = tmp_path / "existing-local"
@@ -950,6 +1043,46 @@ def test_restore_extensions_sets_status_and_prunes_with_comfyui_name_normalizati
     assert restored == [("KeepNode", custom_nodes / "KeepNode", True)]
     assert statuses == [(webui_path, "KeepNode", False)]
     assert removed == [(webui_path, "ExtraNode.disabled")]
+
+
+def test_restore_extensions_restores_comfyui_registry_node(monkeypatch, tmp_path):
+    webui_path = tmp_path / "ComfyUI"
+    snapshot = _webui_snapshot(webui_path)
+    snapshot.webui.type = "comfyui"
+    snapshot.extensions = [
+        snapshot_utils.ExtensionSnapshot(
+            name="registry-node",
+            path=webui_path / "custom_nodes" / "registry-node",
+            enabled=True,
+            is_git_repo=False,
+            source_type="comfy-registry",
+            registry_id="registry-node",
+            registry_version="1.2.3",
+        )
+    ]
+
+    statuses = []
+    restored = []
+    monkeypatch.setattr(
+        restore_utils,
+        "_extension_tools",
+        lambda _type: restore_utils.ExtensionRestoreTools(
+            directory_name="custom_nodes",
+            set_status=lambda path, name, enabled: statuses.append((path, name, enabled)),
+            uninstall=lambda path, name: None,
+            strip_disabled_suffix=True,
+        ),
+    )
+    monkeypatch.setattr(
+        restore_utils,
+        "restore_comfy_registry_extension",
+        lambda extension, webui_path, options: restored.append((extension.registry_id, extension.registry_version, webui_path, options.use_uv)) or True,
+    )
+
+    restore_utils.restore_extensions(snapshot, webui_path, restore_utils.SnapshotRestoreOptions(use_uv=False))
+
+    assert restored == [("registry-node", "1.2.3", webui_path, False)]
+    assert statuses == [(webui_path, "registry-node", True)]
 
 
 def test_product_snapshot_cli_parse_smoke(monkeypatch, tmp_path):

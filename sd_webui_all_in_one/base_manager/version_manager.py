@@ -11,6 +11,7 @@ from typing import (
     Any,
     Callable,
     Iterable,
+    Literal,
 )
 
 from sd_webui_all_in_one import git_warpper
@@ -36,6 +37,9 @@ DEFAULT_EXTENSION_INDEX_URL = "https://raw.githubusercontent.com/AUTOMATIC1111/s
 
 RepositoryState = _RepositoryState
 """Git 仓库状态"""
+
+ExtensionSourceType = Literal["git", "comfy-registry", "file", "unknown"]
+"""扩展安装来源类型"""
 
 
 @dataclass(slots=True)
@@ -117,6 +121,12 @@ class ManagedExtension:
     commit_date: str | None = None
     message: str | None = None
     error: str | None = None
+    source_type: ExtensionSourceType = "git"
+    registry_id: str | None = None
+    registry_version: str | None = None
+    download_url: str | None = None
+    repository: str | None = None
+    dependencies: tuple[str, ...] = ()
 
 
 @dataclass(slots=True)
@@ -148,6 +158,12 @@ class ExtensionIndexItem:
     install_type: str = "git-clone"
     files: tuple[str, ...] = ()
     reference: str = ""
+    source_type: ExtensionSourceType = "git"
+    registry_id: str | None = None
+    registry_version: str | None = None
+    repository: str | None = None
+    download_url: str | None = None
+    dependencies: tuple[str, ...] = ()
 
 
 @dataclass(slots=True)
@@ -443,6 +459,7 @@ class ExtensionManager:
                     commit_date=repo_state.commit_date,
                     message=repo_state.message,
                     error=repo_state.error,
+                    source_type="git" if repo_state.is_git_repo else ("file" if ext_path.is_file() else "unknown"),
                 )
             )
         return result
@@ -851,7 +868,17 @@ def filter_extension_index(
     selected_tags = {tag.lower() for tag in tags or []}
     result: list[ExtensionIndexItem] = []
     for item in items:
-        haystack = " ".join([item.name, item.description, item.url, " ".join(item.tags)]).lower()
+        haystack = " ".join(
+            [
+                item.name,
+                item.description,
+                item.url,
+                item.registry_id or "",
+                item.registry_version or "",
+                item.repository or "",
+                " ".join(item.tags),
+            ]
+        ).lower()
         if keyword and keyword not in haystack:
             continue
         if selected_tags and not selected_tags.intersection({tag.lower() for tag in item.tags}):

@@ -27,11 +27,19 @@ from sd_webui_all_in_one.base_manager.base import (
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import apply_hotpatcher_launch_env
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
+from sd_webui_all_in_one.base_manager.comfy_registry import (
+    read_comfy_registry_info,
+    read_comfy_registry_nightly_id,
+    switch_comfy_registry_node_version,
+    install_comfy_registry_node,
+)
 from sd_webui_all_in_one.base_manager.snapshot import (
+    ExtensionSnapshot,
     WebUiSnapshot,
     build_webui_snapshot,
-    collect_git_extensions,
+    collect_repository_snapshot,
 )
+from sd_webui_all_in_one.base_manager.version_manager import ManagedExtension
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.downloader import (
     DownloadToolType,
@@ -655,19 +663,127 @@ class ComfyUiLocalExtensionInfo(TypedDict, total=False):
     branch: str | None
     """ComfyUI 扩展的当前分支"""
 
+    source_type: str
+    """扩展安装来源"""
+
+    registry_id: str | None
+    """Comfy Registry 节点 ID"""
+
+    registry_version: str | None
+    """Comfy Registry 节点版本"""
+
+    repository: str | None
+    """Comfy Registry 记录的仓库地址"""
+
+    error: str | None
+    """扩展状态错误信息"""
+
 
 ComfyUiLocalExtensionInfoList = list[ComfyUiLocalExtensionInfo]
 """ComfyUI 本地扩展信息"""
 
 
+def _comfyui_custom_nodes_path(comfyui_path: Path) -> Path:
+    return comfyui_path / "custom_nodes"
+
+
+def _disabled_custom_nodes_path(comfyui_path: Path) -> Path:
+    return _comfyui_custom_nodes_path(comfyui_path) / ".disabled"
+
+
+def _normalize_custom_node_name(name: str) -> str:
+    return name.removesuffix(".disabled").split("@", 1)[0]
+
+
+def _iter_comfyui_custom_node_paths(
+    comfyui_path: Path,
+    include_files: bool = False,
+) -> list[tuple[str, Path, bool]]:
+    custom_nodes_path = _comfyui_custom_nodes_path(comfyui_path)
+    if not custom_nodes_path.is_dir():
+        return []
+
+    result: list[tuple[str, Path, bool]] = []
+    for path in sorted(custom_nodes_path.iterdir(), key=lambda item: item.name.lower()):
+        if path.name in {".disabled", "__pycache__"}:
+            continue
+        if path.is_dir():
+            result.append((path.name, path, not path.name.endswith(".disabled")))
+        elif include_files and path.is_file() and (path.suffix == ".py" or path.name.endswith(".py.disabled")):
+            result.append((path.name, path, not path.name.endswith(".disabled")))
+
+    disabled_root = custom_nodes_path / ".disabled"
+    if disabled_root.is_dir():
+        for path in sorted(disabled_root.iterdir(), key=lambda item: item.name.lower()):
+            if path.name == "__pycache__":
+                continue
+            if path.is_dir() or (include_files and path.is_file() and (path.suffix == ".py" or path.name.endswith(".py.disabled"))):
+                result.append((_normalize_custom_node_name(path.name), path, False))
+    return result
+
+
+def resolve_comfyui_custom_node_path(
+    comfyui_path: Path,
+    custom_node_name: str,
+) -> tuple[Path, bool] | None:
+    """查找 ComfyUI 自定义节点路径和启用状态。
+
+    Args:
+        comfyui_path (Path):
+            ComfyUI 根目录。
+        custom_node_name (str):
+            自定义节点名称。
+
+    Returns:
+        tuple[Path, bool] | None:
+            节点路径和启用状态；未找到时返回 None。
+    """
+    custom_nodes_path = _comfyui_custom_nodes_path(comfyui_path)
+    name = custom_node_name.removesuffix(".disabled")
+    candidates = [
+        (custom_nodes_path / name, True),
+        (custom_nodes_path / f"{name}.disabled", False),
+        (_disabled_custom_nodes_path(comfyui_path) / name, False),
+    ]
+    disabled_root = _disabled_custom_nodes_path(comfyui_path)
+    if disabled_root.is_dir():
+        candidates.extend((path, False) for path in disabled_root.glob(f"{name}@*"))
+    for path, enabled in candidates:
+        if path.exists():
+            return path, enabled
+    return None
+
+
+def get_comfyui_custom_node_enabled(comfyui_path: Path, custom_node_name: str) -> bool | None:
+    """读取 ComfyUI 自定义节点启用状态。
+
+    Args:
+        comfyui_path (Path):
+            ComfyUI 根目录。
+        custom_node_name (str):
+            自定义节点名称。
+
+    Returns:
+        bool | None:
+            启用状态；未找到节点时返回 None。
+    """
+    resolved = resolve_comfyui_custom_node_path(comfyui_path, custom_node_name)
+    if resolved is None:
+        return None
+    return resolved[1]
+
+
 def list_comfyui_custom_nodes(
     comfyui_path: Path,
+    include_files: bool = False,
 ) -> ComfyUiLocalExtensionInfoList:
     """获取 ComfyUI 本地扩展列表
 
     Args:
         comfyui_path (Path):
             ComfyUI 根目录
+        include_files (bool):
+            是否包含单文件自定义节点
 
     Returns:
         ComfyUiLocalExtensionInfoList:
@@ -679,18 +795,28 @@ def list_comfyui_custom_nodes(
     except ImportError:
         from sd_webui_all_in_one.simple_tqdm import SimpleTqdm as tqdm
 
-    custom_node_path = comfyui_path / "custom_nodes"
     info_list: ComfyUiLocalExtensionInfoList = []
-    ext_dirs = list(custom_node_path.iterdir())
+    ext_dirs = _iter_comfyui_custom_node_paths(comfyui_path, include_files=include_files)
 
-    def _process_extension(ext: Path) -> ComfyUiLocalExtensionInfo | None:
-        if ext.is_file() or ext.name == "__pycache__":
+    def _process_extension(entry: tuple[str, Path, bool]) -> ComfyUiLocalExtensionInfo | None:
+        name, path, status = entry
+        if path.name == "__pycache__":
             return None
 
-        name = ext.name
-        path = ext
-        status = not name.endswith(".disabled")
-        repo_state = inspect_repository(ext)
+        repo_state = inspect_repository(path)
+        source_type = "git" if repo_state.is_git_repo else ("file" if path.is_file() else "unknown")
+        registry_id = None
+        registry_version = None
+        repository = None
+        if repo_state.is_git_repo:
+            registry_id = read_comfy_registry_nightly_id(path)
+        else:
+            cnr_info = read_comfy_registry_info(path)
+            if cnr_info is not None:
+                source_type = "comfy-registry"
+                registry_id = cnr_info.registry_id
+                registry_version = cnr_info.version
+                repository = cnr_info.repository
 
         return {
             "name": name,
@@ -699,6 +825,11 @@ def list_comfyui_custom_nodes(
             "url": repo_state.url,
             "commit": repo_state.commit,
             "branch": repo_state.branch,
+            "source_type": source_type,
+            "registry_id": registry_id,
+            "registry_version": registry_version,
+            "repository": repository,
+            "error": repo_state.error,
         }
 
     logger.info("获取 ComfyUI 扩展列表中")
@@ -710,7 +841,7 @@ def list_comfyui_custom_nodes(
                 if result:
                     info_list.append(result)
             except Exception as e:
-                ext_name = future_to_ext[future].name
+                ext_name = future_to_ext[future][0]
                 logger.error("处理扩展 '%s' 时发生异常: %s", ext_name, e)
 
     logger.info("获取 ComfyUI 扩展列表中完成")
@@ -739,22 +870,28 @@ def set_comfyui_custom_node_status(
             ComfyUI 扩展未找到时
     """
     custom_node_name = custom_node_name.removesuffix(".disabled")
-    custom_node_path = comfyui_path / "custom_nodes"
-    custom_node_list = [ext.name for ext in custom_node_path.iterdir() if ext.is_dir()]
-    all_custom_nodes = [x.removesuffix(".disabled") for x in custom_node_list]
-
-    if custom_node_name not in all_custom_nodes:
+    custom_node_path = _comfyui_custom_nodes_path(comfyui_path)
+    resolved = resolve_comfyui_custom_node_path(comfyui_path, custom_node_name)
+    if resolved is None:
         raise FileNotFoundError(f"'{custom_node_name}' 扩展未找到, 请检查该扩展是否已安装")
 
     enable_path = custom_node_path / f"{custom_node_name}"
     disabled_path = custom_node_path / f"{custom_node_name}.disabled"
+    dot_disabled_path = _disabled_custom_nodes_path(comfyui_path) / custom_node_name
+    current_path, current_enabled = resolved
     if status:
-        if disabled_path.is_dir():
+        if not current_enabled and current_path.parent.name == ".disabled":
+            move_files(current_path, enable_path)
+        elif disabled_path.exists():
             move_files(disabled_path, enable_path)
         logger.info("启用 '%s' 扩展成功", custom_node_name)
     else:
-        if enable_path.is_dir():
-            move_files(enable_path, disabled_path)
+        if current_enabled and enable_path.exists():
+            if read_comfy_registry_info(enable_path) is not None:
+                dot_disabled_path.parent.mkdir(parents=True, exist_ok=True)
+                move_files(enable_path, dot_disabled_path)
+            else:
+                move_files(enable_path, disabled_path)
         logger.info("禁用 '%s' 扩展成功", custom_node_name)
 
 
@@ -807,10 +944,285 @@ def update_comfyui_custom_nodes(
             err.append(e)
             logger.error("[%s/%s] 更新 '%s' 扩展时发生错误: %s", count, task_sum, ext.name, e)
 
+    cnr_targets = [item for item in list_comfyui_custom_nodes(comfyui_path) if item.get("source_type") == "comfy-registry"]
+    for item in cnr_targets:
+        node_id = item.get("registry_id") or _normalize_custom_node_name(item["name"])
+        try:
+            logger.info("更新 Comfy Registry 节点 '%s' 中", node_id)
+            switch_comfy_registry_node_version(comfyui_path, node_id=node_id, version=None, target_path=item["path"])
+        except Exception as e:
+            err.append(e)
+            logger.error("更新 Comfy Registry 节点 '%s' 时发生错误: %s", node_id, e)
+
     if err:
         raise AggregateError("更新 ComfyUI 扩展时发生错误", err)
 
     logger.info("更新 ComfyUI 扩展完成")
+
+
+def collect_comfyui_extensions(comfyui_path: Path) -> list[ExtensionSnapshot]:
+    """采集 ComfyUI 自定义节点快照。
+
+    Args:
+        comfyui_path (Path):
+            ComfyUI 根目录。
+
+    Returns:
+        list[ExtensionSnapshot]:
+            自定义节点快照列表，包含 Git、Comfy Registry 和文件节点。
+    """
+    extensions: list[ExtensionSnapshot] = []
+    for info in list_comfyui_custom_nodes(comfyui_path, include_files=True):
+        name = info["name"]
+        path = info["path"]
+        source_type = info.get("source_type") or "unknown"
+        if source_type == "git":
+            repo = collect_repository_snapshot(path)
+            extensions.append(
+                ExtensionSnapshot(
+                    name=name,
+                    path=path,
+                    enabled=info.get("status"),
+                    is_git_repo=True,
+                    url=repo.url,
+                    branch=repo.branch,
+                    commit=repo.commit,
+                    commit_date=repo.commit_date,
+                    message=repo.message,
+                    error=repo.error,
+                    dirty=repo.dirty,
+                    source_type="git",
+                    registry_id=info.get("registry_id"),
+                )
+            )
+            continue
+
+        extensions.append(
+            ExtensionSnapshot(
+                name=name,
+                path=path,
+                enabled=info.get("status"),
+                is_git_repo=False,
+                url=info.get("url") or info.get("repository"),
+                branch=info.get("branch"),
+                commit=info.get("commit"),
+                error=info.get("error"),
+                source_type="comfy-registry" if source_type == "comfy-registry" else ("file" if source_type == "file" else "unknown"),
+                registry_id=info.get("registry_id"),
+                registry_version=info.get("registry_version"),
+                repository=info.get("repository"),
+            )
+        )
+    return extensions
+
+
+class ComfyUiExtensionManager:
+    """ComfyUI 专属扩展管理器，支持 Git 和 Comfy Registry 节点。"""
+
+    def __init__(self, comfyui_path: Path, include_files: bool = True) -> None:
+        self.root_path = Path(comfyui_path)
+        self.extension_path = self.root_path / "custom_nodes"
+        self.include_files = include_files
+
+    def list_extensions(self) -> list[ManagedExtension]:
+        """获取本地 ComfyUI 自定义节点列表。
+
+        Returns:
+            list[ManagedExtension]:
+                本地自定义节点列表。
+        """
+        result: list[ManagedExtension] = []
+        for info in list_comfyui_custom_nodes(self.root_path, include_files=self.include_files):
+            path = info["path"]
+            if path.is_file() and not self.include_files:
+                continue
+            source_type = info.get("source_type") or "unknown"
+            result.append(
+                ManagedExtension(
+                    name=info["name"],
+                    path=path,
+                    enabled=bool(info["status"]),
+                    is_git_repo=source_type == "git",
+                    url=info.get("url") or info.get("repository"),
+                    branch=info.get("branch"),
+                    commit=info.get("commit"),
+                    error=info.get("error"),
+                    source_type="comfy-registry" if source_type == "comfy-registry" else ("git" if source_type == "git" else ("file" if source_type == "file" else "unknown")),
+                    registry_id=info.get("registry_id"),
+                    registry_version=info.get("registry_version"),
+                    repository=info.get("repository"),
+                )
+            )
+        return result
+
+    def set_extension_enabled(self, name: str, enabled: bool) -> None:
+        """设置自定义节点启用状态。
+
+        Args:
+            name (str):
+                自定义节点名称。
+            enabled (bool):
+                是否启用。
+        """
+        set_comfyui_custom_node_status(self.root_path, name, enabled)
+
+    def install_extension(
+        self,
+        url: str,
+        use_github_mirror: bool = False,
+        custom_github_mirror: str | list[str] | None = None,
+    ) -> Path:
+        """从 Git URL 安装自定义节点。
+
+        Args:
+            url (str):
+                Git 仓库地址。
+            use_github_mirror (bool):
+                是否启用 GitHub 镜像。
+            custom_github_mirror (str | list[str] | None):
+                自定义 GitHub 镜像。
+
+        Returns:
+            Path:
+                自定义节点安装路径。
+        """
+        install_comfyui_custom_node(
+            comfyui_path=self.root_path,
+            custom_node_url=url,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+        )
+        return self.extension_path / get_repo_name_from_url(url)
+
+    def install_registry_extension(self, node_id: str, version: str | None = None, use_uv: bool = True) -> Path:
+        """从 Comfy Registry 安装自定义节点。
+
+        Args:
+            node_id (str):
+                Comfy Registry 节点 ID。
+            version (str | None):
+                指定安装版本。
+            use_uv (bool):
+                是否使用 uv 安装依赖。
+
+        Returns:
+            Path:
+                自定义节点安装路径。
+        """
+        install_comfy_registry_node(self.root_path, node_id=node_id, version=version, use_uv=use_uv)
+        return self.extension_path / node_id
+
+    def update_extension(self, name: str) -> None:
+        """更新自定义节点。
+
+        Args:
+            name (str):
+                自定义节点名称。
+
+        Raises:
+            FileNotFoundError:
+                节点未安装时抛出。
+            ValueError:
+                节点不是可更新来源时抛出。
+        """
+        ext = next((item for item in self.list_extensions() if item.name == name), None)
+        if ext is None:
+            raise FileNotFoundError(f"'{name}' 扩展未安装")
+        if ext.source_type == "comfy-registry":
+            node_id = ext.registry_id or _normalize_custom_node_name(ext.name)
+            switch_comfy_registry_node_version(self.root_path, node_id=node_id, version=None, target_path=ext.path)
+            return
+        if not ext.is_git_repo:
+            raise ValueError(f"'{name}' 不是 Git 仓库或 Comfy Registry 节点，无法更新")
+        git_warpper.update(ext.path)
+
+    def update_all(self) -> None:
+        """更新所有可更新的自定义节点。
+
+        Raises:
+            AggregateError:
+                一个或多个节点更新失败时抛出。
+        """
+        errors: list[Exception] = []
+        for ext in self.list_extensions():
+            if ext.source_type not in {"git", "comfy-registry"}:
+                continue
+            try:
+                self.update_extension(ext.name)
+            except Exception as e:
+                errors.append(e)
+        if errors:
+            raise AggregateError("更新 ComfyUI 扩展时发生错误", errors)
+
+    def uninstall_extension(self, name: str) -> None:
+        """卸载自定义节点。
+
+        Args:
+            name (str):
+                自定义节点名称。
+        """
+        uninstall_comfyui_custom_node(self.root_path, name)
+
+    def switch_extension_commit(self, name: str, commit: str) -> None:
+        """切换 Git 自定义节点到指定提交。
+
+        Args:
+            name (str):
+                自定义节点名称。
+            commit (str):
+                目标提交 ID。
+
+        Raises:
+            FileNotFoundError:
+                节点未安装时抛出。
+        """
+        resolved = resolve_comfyui_custom_node_path(self.root_path, name)
+        if resolved is None:
+            raise FileNotFoundError(f"'{name}' 扩展未安装")
+        git_warpper.switch_commit(path=resolved[0], commit=commit)
+
+    def switch_extension_branch(self, name: str, branch: str) -> None:
+        """切换 Git 自定义节点分支。
+
+        Args:
+            name (str):
+                自定义节点名称。
+            branch (str):
+                目标分支。
+
+        Raises:
+            FileNotFoundError:
+                节点未安装时抛出。
+        """
+        resolved = resolve_comfyui_custom_node_path(self.root_path, name)
+        if resolved is None:
+            raise FileNotFoundError(f"'{name}' 扩展未安装")
+        git_warpper.switch_branch(path=resolved[0], branch=branch)
+
+    def switch_registry_extension_version(self, name: str, version: str, use_uv: bool = True) -> None:
+        """切换 Comfy Registry 自定义节点版本。
+
+        Args:
+            name (str):
+                自定义节点名称。
+            version (str):
+                目标 Registry 版本。
+            use_uv (bool):
+                是否使用 uv 安装依赖。
+
+        Raises:
+            FileNotFoundError:
+                节点未安装时抛出。
+            ValueError:
+                节点不是 Comfy Registry 来源时抛出。
+        """
+        ext = next((item for item in self.list_extensions() if item.name == name), None)
+        if ext is None:
+            raise FileNotFoundError(f"'{name}' 扩展未安装")
+        if ext.source_type != "comfy-registry":
+            raise ValueError(f"'{name}' 不是 Comfy Registry 节点")
+        node_id = ext.registry_id or _normalize_custom_node_name(ext.name)
+        switch_comfy_registry_node_version(self.root_path, node_id=node_id, version=version, target_path=ext.path, use_uv=use_uv)
 
 
 def get_comfyui_snapshot(
@@ -834,10 +1246,7 @@ def get_comfyui_snapshot(
         webui_type="comfyui",
         webui_path=comfyui_path,
         include_packages=include_packages,
-        extensions=collect_git_extensions(
-            comfyui_path / "custom_nodes",
-            enabled_resolver=lambda name, _path: not name.endswith(".disabled"),
-        ),
+        extensions=collect_comfyui_extensions(comfyui_path),
     )
 
 
@@ -859,14 +1268,14 @@ def uninstall_comfyui_custom_node(
         RuntimeError:
             卸载扩展发生错误时
     """
-    custom_nodes_path = comfyui_path / "custom_nodes"
-    custom_nodes_list = [ext.name for ext in custom_nodes_path.iterdir() if ext.is_dir()]
-    if custom_node_name not in custom_nodes_list:
+    resolved = resolve_comfyui_custom_node_path(comfyui_path, custom_node_name)
+    if resolved is None:
         raise FileNotFoundError(f"'{custom_node_name}' 扩展未安装")
+    custom_node_path, _enabled = resolved
 
     try:
         logger.info("卸载 '%s' 扩展中", custom_node_name)
-        remove_files(custom_nodes_path / custom_node_name)
+        remove_files(custom_node_path)
         logger.info("卸载 '%s' 扩展完成", custom_node_name)
     except Exception as e:
         logger.info("卸载 '%s' 扩展时发生错误: %s", custom_node_name, e)

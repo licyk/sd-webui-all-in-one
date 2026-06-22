@@ -78,6 +78,13 @@ GitRestoreAction = Literal[
     "blocked_dirty",
     "blocked_missing_target",
 ]
+RegistryRestoreAction = Literal[
+    "install_registry",
+    "switch_registry_version",
+    "skip_same_registry_version",
+    "skip_registry_missing_id",
+    "skip_registry_unavailable",
+]
 ExtensionCleanupAction = Literal["keep", "uninstall"]
 
 
@@ -142,9 +149,14 @@ class ExtensionRestorePlanItem:
     normalized_name: str
     path: Path
     git: GitRestorePlanItem | None = None
+    registry_action: RegistryRestoreAction | None = None
     cleanup_action: ExtensionCleanupAction = "keep"
     current_enabled: bool | None = None
     target_enabled: bool | None = None
+    source_type: str | None = None
+    registry_id: str | None = None
+    current_version: str | None = None
+    target_version: str | None = None
     reason: str = ""
 
 
@@ -726,10 +738,47 @@ def _extension_current_enabled(
     if webui_type == "sd_webui":
         return _sd_webui_extension_enabled(webui_path, extension_name)
     if webui_type == "comfyui":
-        return not extension_name.endswith(".disabled")
+        from sd_webui_all_in_one.base_manager.comfyui_base import get_comfyui_custom_node_enabled
+
+        enabled = get_comfyui_custom_node_enabled(webui_path, extension_name)
+        return enabled if enabled is not None else not extension_name.endswith(".disabled")
     if webui_type == "invokeai":
         return (target_path / "__init__.py").is_file()
     return None
+
+
+def _extension_source_type(extension: ExtensionSnapshot) -> str:
+    source_type = getattr(extension, "source_type", None)
+    if source_type:
+        return source_type
+    return "git" if extension.is_git_repo else "unknown"
+
+
+def _build_registry_restore_plan(
+    extension: ExtensionSnapshot,
+    webui_path: Path,
+    target_path: Path,
+) -> tuple[RegistryRestoreAction, str, str | None, str | None, str | None]:
+    from sd_webui_all_in_one.base_manager.comfy_registry import read_comfy_registry_info
+    from sd_webui_all_in_one.base_manager.comfyui_base import resolve_comfyui_custom_node_path
+
+    registry_id = extension.registry_id or extension.name.removesuffix(".disabled")
+    if not registry_id:
+        return "skip_registry_missing_id", "快照缺少 Comfy Registry 节点 ID", None, extension.registry_version, None
+
+    resolved = resolve_comfyui_custom_node_path(webui_path, extension.name) or resolve_comfyui_custom_node_path(webui_path, registry_id)
+    current_version = None
+    if resolved is not None:
+        current_info = read_comfy_registry_info(resolved[0])
+        if current_info is not None:
+            current_version = current_info.version
+    target_version = extension.registry_version
+    del target_path
+    if resolved is None:
+        return "install_registry", "安装 Comfy Registry 节点", current_version, target_version, registry_id
+    if target_version and current_version == target_version:
+        return "skip_same_registry_version", "Registry 节点版本已一致", current_version, target_version, registry_id
+    return "switch_registry_version", "切换 Comfy Registry 节点版本", current_version, target_version, registry_id
 
 
 def _build_extension_restore_plan(
@@ -750,26 +799,39 @@ def _build_extension_restore_plan(
     for extension in snapshot.extensions:
         normalized = normalize_extension_name(extension.name, strip_disabled_suffix=tools.strip_disabled_suffix)
         target_path = _extension_target_path(webui_path, extension, tools)
-        git_plan = _build_git_restore_plan(extension, target_path, options)
+        source_type = _extension_source_type(extension)
+        git_plan = None if source_type == "comfy-registry" else _build_git_restore_plan(extension, target_path, options)
+        registry_action = None
+        current_version = None
+        target_version = None
+        registry_id = extension.registry_id
+        reason = git_plan.reason if git_plan is not None else ""
+        if source_type == "comfy-registry":
+            registry_action, reason, current_version, target_version, registry_id = _build_registry_restore_plan(extension, webui_path, target_path)
         current_enabled = _extension_current_enabled(webui_path, snapshot.webui.type, extension.name, tools)
         item = ExtensionRestorePlanItem(
             name=extension.name,
             normalized_name=normalized,
             path=target_path,
             git=git_plan,
+            registry_action=registry_action,
             current_enabled=current_enabled,
             target_enabled=extension.enabled,
-            reason=git_plan.reason,
+            source_type=source_type,
+            registry_id=registry_id,
+            current_version=current_version,
+            target_version=target_version,
+            reason=reason,
         )
         items.append(item)
-        if git_plan.action == "blocked_dirty":
+        if git_plan is not None and git_plan.action == "blocked_dirty":
             errors.append(f"扩展 '{extension.name}' 存在未提交变更")
 
     if options.prune_extensions:
         extension_root = webui_path / tools.directory_name
         if extension_root.is_dir():
             for path in sorted(extension_root.iterdir(), key=lambda item: item.name.casefold()):
-                if not path.is_dir() or path.name == "__pycache__":
+                if not path.is_dir() or path.name in {"__pycache__", ".disabled"}:
                     continue
                 normalized = normalize_extension_name(path.name, strip_disabled_suffix=tools.strip_disabled_suffix)
                 if normalized in target_names:
@@ -850,12 +912,56 @@ def restore_git_repository(
     return True
 
 
+def restore_comfy_registry_extension(
+    extension: ExtensionSnapshot,
+    webui_path: Path,
+    options: SnapshotRestoreOptions,
+) -> bool:
+    """恢复 Comfy Registry 扩展。
+
+    Args:
+        extension (ExtensionSnapshot):
+            快照中的 Registry 扩展记录。
+        webui_path (Path):
+            ComfyUI 根目录。
+        options (SnapshotRestoreOptions):
+            快照恢复选项。
+
+    Returns:
+        bool:
+            Registry 扩展是否已恢复或可视为存在。
+    """
+    from sd_webui_all_in_one.base_manager.comfy_registry import switch_comfy_registry_node_version
+    from sd_webui_all_in_one.base_manager.comfyui_base import resolve_comfyui_custom_node_path
+
+    registry_id = extension.registry_id or extension.name.removesuffix(".disabled")
+    if not registry_id:
+        logger.warning("快照扩展缺少 Comfy Registry 节点 ID, 跳过: %s", extension.name)
+        return False
+    resolved = resolve_comfyui_custom_node_path(webui_path, extension.name) or resolve_comfyui_custom_node_path(webui_path, registry_id)
+    target_path = resolved[0] if resolved is not None else webui_path / "custom_nodes" / registry_id
+    custom_env = _pypi_env(use_pypi_mirror=options.use_pypi_mirror)
+    switch_comfy_registry_node_version(
+        comfyui_path=webui_path,
+        node_id=registry_id,
+        version=extension.registry_version,
+        target_path=target_path if target_path.exists() else None,
+        use_uv=options.use_uv,
+        custom_env=custom_env,
+    )
+    return True
+
+
 def _extension_target_path(webui_path: Path, extension: ExtensionSnapshot, tools: ExtensionRestoreTools) -> Path:
     return webui_path / tools.directory_name / extension.name
 
 
 def _target_extension_names(snapshot: WebUiSnapshot, tools: ExtensionRestoreTools) -> set[str]:
-    return {normalize_extension_name(extension.name, strip_disabled_suffix=tools.strip_disabled_suffix) for extension in snapshot.extensions if extension.is_git_repo}
+    names = {normalize_extension_name(extension.name, strip_disabled_suffix=tools.strip_disabled_suffix) for extension in snapshot.extensions}
+    for extension in snapshot.extensions:
+        if extension.registry_id:
+            names.add(normalize_extension_name(extension.registry_id, strip_disabled_suffix=tools.strip_disabled_suffix))
+    return names
 
 
 def _prune_extensions(webui_path: Path, snapshot: WebUiSnapshot, tools: ExtensionRestoreTools) -> None:
@@ -865,7 +971,7 @@ def _prune_extensions(webui_path: Path, snapshot: WebUiSnapshot, tools: Extensio
 
     target_names = _target_extension_names(snapshot, tools)
     for path in sorted(extension_root.iterdir(), key=lambda item: item.name.casefold()):
-        if not path.is_dir() or path.name == "__pycache__":
+        if not path.is_dir() or path.name in {"__pycache__", ".disabled"}:
             continue
         normalized = normalize_extension_name(path.name, strip_disabled_suffix=tools.strip_disabled_suffix)
         if normalized in target_names:
@@ -892,12 +998,16 @@ def restore_extensions(snapshot: WebUiSnapshot, webui_path: Path, options: Snaps
         return
 
     for extension in snapshot.extensions:
-        target_path = _extension_target_path(webui_path, extension, tools)
-        restored = restore_git_repository(
-            repo=extension,
-            target_path=target_path,
-            options=options,
-        )
+        source_type = _extension_source_type(extension)
+        if source_type == "comfy-registry" and snapshot.webui.type == "comfyui":
+            restored = restore_comfy_registry_extension(extension=extension, webui_path=webui_path, options=options)
+        else:
+            target_path = _extension_target_path(webui_path, extension, tools)
+            restored = restore_git_repository(
+                repo=extension,
+                target_path=target_path,
+                options=options,
+            )
         if restored and extension.enabled is not None:
             tools.set_status(webui_path, extension.name, extension.enabled)
 

@@ -13,12 +13,18 @@ from tkinter import (
 from urllib.parse import urlparse
 
 from sd_webui_all_in_one.base_manager.base import get_repo_name_from_url
-from sd_webui_all_in_one.base_manager.comfyui_base import set_comfyui_custom_node_list_mirror
+from sd_webui_all_in_one.base_manager.comfy_registry import (
+    fetch_comfy_registry_extension_index,
+    fetch_comfy_registry_versions,
+)
+from sd_webui_all_in_one.base_manager.comfyui_base import (
+    ComfyUiExtensionManager,
+    set_comfyui_custom_node_list_mirror,
+)
 from sd_webui_all_in_one.base_manager.version_manager import (
     BranchInfo,
     CommitInfo,
     ExtensionIndexItem,
-    ExtensionManager,
     ManagedExtension,
     RepositoryState,
     configure_git_env,
@@ -116,13 +122,7 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self.extensions: list[ManagedExtension] = []
         self.extension_index: list[ExtensionIndexItem] = []
         self.filtered_extension_index: list[ExtensionIndexItem] = []
-        self.extension_manager = ExtensionManager(
-            root_path=self.comfyui_path,
-            extension_dir_name="custom_nodes",
-            is_enabled=_comfyui_custom_node_enabled,
-            set_enabled=lambda name, enabled: _set_comfyui_custom_node_enabled(self.custom_nodes_path, name, enabled),
-            include_files=True,
-        )
+        self.extension_manager = ComfyUiExtensionManager(self.comfyui_path, include_files=True)
 
         self.title("ComfyUI 版本管理")
         apply_window_icon(self)
@@ -226,9 +226,9 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
 
         self.extension_tree = SearchableTree(
             self.extensions_tab,
-            columns=("enabled", "name", "url", "branch", "commit", "date", "state"),
-            headings={"enabled": "启用", "name": "节点名", "url": "远程地址", "branch": "当前分支", "commit": "版本 ID", "date": "更新日期", "state": "状态"},
-            widths={"enabled": 60, "name": 250, "url": 420, "branch": 120, "commit": 90, "date": 170, "state": 120},
+            columns=("enabled", "source", "name", "version", "url", "branch", "commit", "date", "state"),
+            headings={"enabled": "启用", "source": "来源", "name": "节点名", "version": "版本", "url": "远程地址", "branch": "当前分支", "commit": "版本 ID", "date": "更新日期", "state": "状态"},
+            widths={"enabled": 60, "source": 110, "name": 230, "version": 100, "url": 380, "branch": 110, "commit": 90, "date": 160, "state": 130},
             search_placeholder="搜索已安装节点...",
         )
         self.extension_tree.pack(fill=tk.BOTH, expand=True)
@@ -247,9 +247,9 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
 
         self.index_tree = AdaptiveIndexList(
             self.install_tab,
-            columns=("name", "description", "type", "tags", "url"),
-            headings={"name": "节点名", "description": "简介", "type": "安装方式", "tags": "分类/作者", "url": "地址"},
-            widths={"name": 240, "description": 520, "type": 110, "tags": 180, "url": 420},
+            columns=("name", "description", "source", "version", "type", "tags", "url"),
+            headings={"name": "节点名", "description": "简介", "source": "来源", "version": "版本", "type": "安装方式", "tags": "分类/作者", "url": "地址"},
+            widths={"name": 220, "description": 440, "source": 110, "version": 100, "type": 120, "tags": 170, "url": 360},
             search_placeholder="搜索新节点...",
         )
         self.index_tree.pack(fill=tk.BOTH, expand=True)
@@ -366,7 +366,7 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self.extensions = extensions
         self.render_extensions()
 
-    def _extension_values(self, ext: ManagedExtension) -> tuple[str, str, str, str, str, str, str]:
+    def _extension_values(self, ext: ManagedExtension) -> tuple[str, str, str, str, str, str, str, str, str]:
         """
         生成自定义节点列表行数据
 
@@ -375,16 +375,26 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
                 自定义节点信息
 
         Returns:
-            tuple[str, str, str, str, str, str, str]: 列表行数据
+            tuple[str, str, str, str, str, str, str, str, str]: 列表行数据
         """
+        source_label = {
+            "git": "Git",
+            "comfy-registry": "Registry",
+            "file": "文件",
+            "unknown": "未知",
+        }.get(ext.source_type, ext.source_type)
+        version = ext.registry_version or ext.commit or "-"
+        state = "Git 仓库" if ext.is_git_repo else ("Comfy Registry" if ext.source_type == "comfy-registry" else (ext.error or "非 Git/文件安装"))
         return (
             "✓" if ext.enabled else "",
+            source_label,
             ext.name,
+            version,
             ext.url or "-",
             ext.branch or "-",
             ext.commit or "-",
             ext.commit_date or "-",
-            "Git 仓库" if ext.is_git_repo else (ext.error or "非 Git/文件安装"),
+            state,
         )
 
     def render_extensions(
@@ -396,7 +406,7 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         keyword = self.extension_tree.search_keyword()
         self.extension_tree.clear()
         for ext in self.extensions:
-            haystack = " ".join(str(x or "") for x in (ext.name, ext.url, ext.branch, ext.commit, ext.commit_date, ext.error)).lower()
+            haystack = " ".join(str(x or "") for x in (ext.name, ext.url, ext.branch, ext.commit, ext.commit_date, ext.error, ext.source_type, ext.registry_id, ext.registry_version)).lower()
             if keyword and keyword not in haystack:
                 continue
             self.extension_tree.tree.insert("", tk.END, iid=ext.name, values=self._extension_values(ext))
@@ -407,7 +417,17 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         """
         刷新自定义节点源列表
         """
-        self.run_background("刷新节点源中...", lambda: fetch_comfyui_custom_node_index(self.extension_index_url), self._apply_extension_index)
+        def _fetch_index() -> list[ExtensionIndexItem]:
+            manager_items = fetch_comfyui_custom_node_index(self.extension_index_url)
+            try:
+                registry_items = fetch_comfy_registry_extension_index(limit=200)
+            except Exception as e:
+                error_message = str(e)
+                self.after(0, lambda: self.set_status(f"Comfy Registry 刷新失败: {error_message}"))
+                registry_items = []
+            return [*manager_items, *registry_items]
+
+        self.run_background("刷新节点源中...", _fetch_index, self._apply_extension_index)
 
     def _apply_extension_index(
         self,
@@ -433,9 +453,11 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self.filtered_extension_index = filter_extension_index(self.extension_index, keyword, tags)
         self.index_tree.clear()
         for index, item in enumerate(self.filtered_extension_index):
-            installed = item.name in installed_names or get_repo_name_from_url(item.reference or item.url) in installed_names
+            registry_id = item.registry_id or ""
+            installed = item.name in installed_names or registry_id in installed_names or get_repo_name_from_url(item.reference or item.url) in installed_names
             status_url = "已装" if installed else (item.reference or item.url)
-            self.index_tree.insert(str(index), (item.name, item.description, item.install_type, ", ".join(item.tags), status_url))
+            source_label = "Registry" if item.source_type == "comfy-registry" else "Git/列表"
+            self.index_tree.insert(str(index), (item.name, item.description, source_label, item.registry_version or "-", item.install_type, ", ".join(item.tags), status_url))
 
     def _selected_extension(self) -> ManagedExtension | None:
         selected_id = self.extension_tree.selected_item_id()
@@ -520,8 +542,8 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         ext = self._selected_extension()
         if ext is None:
             return
-        if not ext.is_git_repo:
-            messagebox.showwarning("无法更新", f"'{ext.name}' 不是 Git 仓库")
+        if not ext.is_git_repo and ext.source_type != "comfy-registry":
+            messagebox.showwarning("无法更新", f"'{ext.name}' 不是 Git 仓库或 Comfy Registry 节点")
             return
         self.run_background("更新节点中...", lambda: self.extension_manager.update_extension(ext.name), lambda _value: self.refresh_extensions())
 
@@ -537,7 +559,7 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self.run_background(
             "修改节点状态中...",
             lambda: self.extension_manager.set_extension_enabled(ext.name, not ext.enabled),
-            lambda _value: self._apply_extension_enabled(ext.name, not ext.enabled),
+            lambda _value: self.refresh_extensions(),
         )
 
     def _apply_extension_enabled(
@@ -588,6 +610,33 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         ext = self._selected_extension()
         if ext is None:
             return
+        if ext.source_type == "comfy-registry":
+            node_id = ext.registry_id or ext.name
+            current_version = ext.registry_version
+            extension_name = ext.name
+
+            def _versions() -> list[CommitInfo]:
+                return [
+                    CommitInfo(
+                        commit=version.version,
+                        message=version.status or "Comfy Registry",
+                        date=version.created_at,
+                        is_current=version.version == current_version,
+                    )
+                    for version in fetch_comfy_registry_versions(node_id)
+                ]
+
+            self.run_background(
+                "读取 Registry 节点版本中...",
+                _versions,
+                lambda commits: CommitSwitchDialog(
+                    self,
+                    f"{extension_name} Registry 版本切换",
+                    commits,
+                    lambda commit: self._switch_registry_extension_version(extension_name, commit.commit),
+                ),
+            )
+            return
         if not ext.is_git_repo:
             messagebox.showwarning("无法切换", f"'{ext.name}' 不是 Git 仓库")
             return
@@ -609,6 +658,13 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
     ) -> None:
         self.run_background("切换节点版本中...", lambda: self.extension_manager.switch_extension_commit(name, commit), lambda _value: self.refresh_extensions())
 
+    def _switch_registry_extension_version(
+        self,
+        name: str,
+        version: str,
+    ) -> None:
+        self.run_background("切换 Registry 节点版本中...", lambda: self.extension_manager.switch_registry_extension_version(name, version), lambda _value: self.refresh_extensions())
+
     def open_extension_branch_dialog(
         self,
     ) -> None:
@@ -617,6 +673,9 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         """
         ext = self._selected_extension()
         if ext is None:
+            return
+        if ext.source_type == "comfy-registry":
+            messagebox.showwarning("无法切换", f"'{ext.name}' 是 Comfy Registry 节点，请使用“切换版本”选择 Registry 版本")
             return
         if not ext.is_git_repo:
             messagebox.showwarning("无法切换", f"'{ext.name}' 不是 Git 仓库")
@@ -682,6 +741,10 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
                 节点源条目
         """
         install_type = item.install_type.lower()
+        if item.source_type == "comfy-registry" or install_type == "comfy-registry":
+            node_id = item.registry_id or item.name
+            self.extension_manager.install_registry_extension(node_id, version=item.registry_version or None)
+            return
         files = item.files or (item.url,)
         if install_type == "git-clone":
             repo = files[0] if files else item.reference or item.url

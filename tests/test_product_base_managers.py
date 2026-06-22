@@ -148,6 +148,18 @@ def test_comfyui_custom_node_lifecycle(monkeypatch, tmp_path):
     custom_nodes = tmp_path / "custom_nodes"
     (custom_nodes / "installed" / ".git").mkdir(parents=True)
     (custom_nodes / "disabled.disabled").mkdir()
+    (custom_nodes / ".disabled" / "registry-node").mkdir(parents=True)
+    (custom_nodes / ".disabled" / "registry-node" / ".tracking").write_text("pyproject.toml\n", encoding="utf-8")
+    (custom_nodes / ".disabled" / "registry-node" / "pyproject.toml").write_text(
+        "\n".join(
+            [
+                "[project]",
+                'name = "registry-node"',
+                'version = "1.0.0"',
+            ]
+        ),
+        encoding="utf-8",
+    )
     (custom_nodes / "file.py").write_text("pass", encoding="utf-8")
 
     monkeypatch.setattr(comfyui_base, "inspect_repository", _fake_repository_state)
@@ -156,20 +168,25 @@ def test_comfyui_custom_node_lifecycle(monkeypatch, tmp_path):
     monkeypatch.setattr(comfyui_base.git_warpper, "get_current_branch", _fail_old_git_info_reader)
 
     nodes = sorted(comfyui_base.list_comfyui_custom_nodes(tmp_path), key=lambda item: item["name"])
-    assert [node["name"] for node in nodes] == ["disabled.disabled", "installed"]
+    assert [node["name"] for node in nodes] == ["disabled.disabled", "installed", "registry-node"]
     assert nodes[0]["status"] is False
     assert nodes[0]["url"] is None
     assert nodes[1]["url"] == "https://example.test/installed"
     assert nodes[1]["commit"] == "installed-full-commit"
     assert nodes[1]["branch"] == "main"
+    assert nodes[2]["status"] is False
+    assert nodes[2]["source_type"] == "comfy-registry"
+    assert nodes[2]["registry_version"] == "1.0.0"
 
     moves = []
     monkeypatch.setattr(comfyui_base, "move_files", lambda src, dst: moves.append((src, dst)))
     comfyui_base.set_comfyui_custom_node_status(tmp_path, "disabled", True)
     comfyui_base.set_comfyui_custom_node_status(tmp_path, "installed", False)
+    comfyui_base.set_comfyui_custom_node_status(tmp_path, "registry-node", True)
     assert moves == [
         (custom_nodes / "disabled.disabled", custom_nodes / "disabled"),
         (custom_nodes / "installed", custom_nodes / "installed.disabled"),
+        (custom_nodes / ".disabled" / "registry-node", custom_nodes / "registry-node"),
     ]
 
     removed = []

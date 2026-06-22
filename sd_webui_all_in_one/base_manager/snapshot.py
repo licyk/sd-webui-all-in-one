@@ -27,6 +27,7 @@ JsonPrimitive: TypeAlias = str | int | float | bool | None
 JsonValue: TypeAlias = JsonPrimitive | list["JsonValue"] | dict[str, "JsonValue"]
 JsonObject: TypeAlias = dict[str, JsonValue]
 SourceType: TypeAlias = Literal["vcs", "local-directory", "archive", "unknown"]
+ExtensionSourceType: TypeAlias = Literal["git", "comfy-registry", "file", "unknown"]
 
 ExtensionEnabledResolver = Callable[[str, Path], bool | None]
 """扩展启用状态解析器"""
@@ -193,6 +194,12 @@ class ExtensionSnapshot:
     message: str | None = None
     error: str | None = None
     dirty: bool | None = None
+    source_type: ExtensionSourceType = "git"
+    registry_id: str | None = None
+    registry_version: str | None = None
+    download_url: str | None = None
+    repository: str | None = None
+    dependencies: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -519,11 +526,16 @@ def _repository_from_json(value: JsonValue, field_name: str) -> RepositorySnapsh
 
 def _extension_from_json(value: JsonValue, field_name: str) -> ExtensionSnapshot:
     extension = _require_object(value, field_name)
+    is_git_repo = _require_bool(_get_required(extension, "is_git_repo", f"{field_name}.is_git_repo"), f"{field_name}.is_git_repo")
+    source_type = extension.get("source_type", "git" if is_git_repo else "unknown")
+    if source_type not in ("git", "comfy-registry", "file", "unknown"):
+        raise ValueError(f"快照字段 '{field_name}.source_type' 不支持: {source_type}")
+    dependencies = extension.get("dependencies", [])
     return ExtensionSnapshot(
         name=_require_str(_get_required(extension, "name", f"{field_name}.name"), f"{field_name}.name"),
         path=_require_path(_get_required(extension, "path", f"{field_name}.path"), f"{field_name}.path"),
         enabled=_optional_bool(extension.get("enabled"), f"{field_name}.enabled"),
-        is_git_repo=_require_bool(_get_required(extension, "is_git_repo", f"{field_name}.is_git_repo"), f"{field_name}.is_git_repo"),
+        is_git_repo=is_git_repo,
         url=_optional_str(extension.get("url"), f"{field_name}.url"),
         branch=_optional_str(extension.get("branch"), f"{field_name}.branch"),
         commit=_optional_str(extension.get("commit"), f"{field_name}.commit"),
@@ -531,6 +543,12 @@ def _extension_from_json(value: JsonValue, field_name: str) -> ExtensionSnapshot
         message=_optional_str(extension.get("message"), f"{field_name}.message"),
         error=_optional_str(extension.get("error"), f"{field_name}.error"),
         dirty=_optional_bool(extension.get("dirty"), f"{field_name}.dirty"),
+        source_type=cast(ExtensionSourceType, source_type),
+        registry_id=_optional_str(extension.get("registry_id"), f"{field_name}.registry_id"),
+        registry_version=_optional_str(extension.get("registry_version"), f"{field_name}.registry_version"),
+        download_url=_optional_str(extension.get("download_url"), f"{field_name}.download_url"),
+        repository=_optional_str(extension.get("repository"), f"{field_name}.repository"),
+        dependencies=[_require_str(item, f"{field_name}.dependencies[]") for item in _require_list(dependencies, f"{field_name}.dependencies")],
     )
 
 
@@ -596,7 +614,122 @@ def load_snapshot(path: Path) -> WebUiSnapshot:
         data = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
         raise ValueError(f"快照文件不是有效 JSON: {path}") from e
-    return snapshot_from_dict(_require_object(data, "snapshot"))
+    snapshot_data = _require_object(data, "snapshot")
+    if _is_comfyui_manager_snapshot(snapshot_data):
+        return comfyui_manager_snapshot_from_dict(snapshot_data, path)
+    return snapshot_from_dict(snapshot_data)
+
+
+def _is_comfyui_manager_snapshot(data: JsonObject) -> bool:
+    return any(key in data for key in ("git_custom_nodes", "cnr_custom_nodes", "file_custom_nodes")) and "schema_version" not in data
+
+
+def _package_snapshots_from_comfyui_manager_pips(value: JsonValue) -> list[PackageSnapshot]:
+    if not isinstance(value, dict):
+        return []
+    packages: list[PackageSnapshot] = []
+    for name, version in value.items():
+        if not isinstance(name, str):
+            continue
+        if isinstance(version, str) and version:
+            packages.append(PackageSnapshot(name=name, version=version))
+    return sorted(packages, key=lambda item: item.name.lower())
+
+
+def comfyui_manager_snapshot_from_dict(data: JsonObject, snapshot_path: Path | None = None) -> WebUiSnapshot:
+    """将 ComfyUI-Manager 原生快照转换为本项目快照对象。
+
+    Args:
+        data (JsonObject):
+            ComfyUI-Manager 原生快照数据。
+        snapshot_path (Path | None):
+            快照文件路径，用于推导快照来源目录。
+
+    Returns:
+        WebUiSnapshot:
+            转换后的本项目快照对象。
+    """
+    from sd_webui_all_in_one.base_manager.base import get_repo_name_from_url
+
+    extensions: list[ExtensionSnapshot] = []
+    git_nodes = data.get("git_custom_nodes", {})
+    if isinstance(git_nodes, dict):
+        for url, raw_info in git_nodes.items():
+            if not isinstance(url, str) or not url:
+                continue
+            info = raw_info if isinstance(raw_info, dict) else {}
+            name = get_repo_name_from_url(url)
+            commit = info.get("hash") if isinstance(info.get("hash"), str) else None
+            disabled = info.get("disabled") if isinstance(info.get("disabled"), bool) else False
+            extensions.append(
+                ExtensionSnapshot(
+                    name=name,
+                    path=Path("custom_nodes") / name,
+                    enabled=not disabled,
+                    is_git_repo=True,
+                    url=url,
+                    commit=commit,
+                    source_type="git",
+                )
+            )
+
+    cnr_nodes = data.get("cnr_custom_nodes", {})
+    if isinstance(cnr_nodes, dict):
+        for node_id, version in cnr_nodes.items():
+            if not isinstance(node_id, str) or not node_id:
+                continue
+            version_text = str(version) if version is not None else None
+            extensions.append(
+                ExtensionSnapshot(
+                    name=node_id,
+                    path=Path("custom_nodes") / node_id,
+                    enabled=True,
+                    is_git_repo=False,
+                    source_type="comfy-registry",
+                    registry_id=node_id,
+                    registry_version=version_text,
+                )
+            )
+
+    file_nodes = data.get("file_custom_nodes", [])
+    if isinstance(file_nodes, list):
+        for raw_item in file_nodes:
+            if not isinstance(raw_item, dict):
+                continue
+            filename = raw_item.get("filename")
+            if not isinstance(filename, str) or not filename:
+                continue
+            disabled = raw_item.get("disabled") if isinstance(raw_item.get("disabled"), bool) else filename.endswith(".disabled")
+            extensions.append(
+                ExtensionSnapshot(
+                    name=filename,
+                    path=Path("custom_nodes") / filename,
+                    enabled=not disabled,
+                    is_git_repo=False,
+                    source_type="file",
+                )
+            )
+
+    comfyui_commit = data.get("comfyui")
+    kernel = None
+    if isinstance(comfyui_commit, str) and comfyui_commit:
+        kernel = RepositorySnapshot(
+            path=Path("."),
+            name="ComfyUI",
+            is_git_repo=True,
+            commit=comfyui_commit,
+        )
+
+    return WebUiSnapshot(
+        schema_version=SNAPSHOT_SCHEMA_VERSION,
+        created_at=utc_now_iso(),
+        webui=WebUiIdentitySnapshot(name="ComfyUI", type="comfyui", path=snapshot_path.parent if snapshot_path else Path(".")),
+        python=collect_python_info(),
+        packages=_package_snapshots_from_comfyui_manager_pips(data.get("pips")),
+        kernel=kernel,
+        extensions=extensions,
+        system=collect_system_info(),
+    )
 
 
 def _source_type_from_direct_url(direct_url: DirectUrlSnapshot | None) -> SourceType:
@@ -785,6 +918,7 @@ def collect_git_extensions(
                 message=repo.message,
                 error=repo.error,
                 dirty=repo.dirty,
+                source_type="git",
             )
         )
     return extensions

@@ -626,6 +626,14 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
     def _format_extension_item(self, item) -> str:
         if item.cleanup_action == "uninstall":
             return f"- [uninstall] {item.name}: {item.reason}"
+        if item.registry_action is not None:
+            current = item.current_version or "-"
+            target = item.target_version or "latest"
+            registry_id = f" ({item.registry_id})" if item.registry_id else ""
+            enabled_text = ""
+            if item.target_enabled is not None:
+                enabled_text = f"; 启用状态: {item.current_enabled} -> {item.target_enabled}"
+            return f"- [{item.registry_action}] {item.name}{registry_id}: {current} -> {target} ({item.reason}){enabled_text}"
         git_text = self._format_git_item(item.git) if item.git is not None else "- [keep] -"
         enabled_text = ""
         if item.target_enabled is not None:
