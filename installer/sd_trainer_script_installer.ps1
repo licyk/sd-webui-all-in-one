@@ -254,7 +254,7 @@ $script:HotpatcherPortProvided = $PSBoundParameters.ContainsKey("HotpatcherPort"
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # SD Trainer Script Installer 版本和检查更新间隔
-$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 408
+$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION = 409
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.3.0"
@@ -2694,11 +2694,22 @@ Export-ModuleMember -Function ``
 # 训练模板脚本
 function Write-TrainScript {
     $content = "
+# 初始化基础环境变量, 以正确识别到运行环境
 `$NoPause = `$args -contains `"-NoPause`"
 `$init_path = Join-Path `$PSScriptRoot `"init.ps1`"
-# 初始化基础环境变量, 以正确识别到运行环境
+function Get-InstallerVersion {
+    try {
+        return (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -PassThru -Force -ErrorAction Stop).SessionState.PSVariable.GetValue(`"SD_TRAINER_SCRIPT_INSTALLER_VERSION`")
+    }
+    catch {
+        return `$null
+    }
+}
 if (Test-Path `$init_path) {
+    `$prev_version = Get-InstallerVersion
     & `"`$init_path`" @args
+    `$cur_version = Get-InstallerVersion
+    if (`$prev_version -ne `$cur_version) { & `"`$init_path`" @args }
 } else {
     Write-Error `"初始化脚本未找到, 无法初始化环境`"
     Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
