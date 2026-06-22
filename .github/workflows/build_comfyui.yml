@@ -53,6 +53,12 @@ jobs:
             -DisableGithubMirror `
             -DisableHuggingFaceMirror
 
+      - name: Configure ComfyUI Manager
+        shell: pwsh
+        run: |
+          python "${{ github.workspace }}/.github/configure_comfyui_manager.py" `
+            --config-path "${{ github.workspace }}/comfyui/core/user/__manager/config.ini"
+
       - name: Finalize portable package
         uses: ./.github/actions/finalize-portable
         env:
