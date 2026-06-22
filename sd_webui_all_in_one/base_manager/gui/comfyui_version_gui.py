@@ -133,6 +133,9 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self.kernel_commits: list[CommitInfo] = []
         self.extensions: list[ManagedExtension] = []
         self.extension_index: list[ExtensionIndexItem] = []
+        self._manager_extension_index: list[ExtensionIndexItem] = []
+        self._registry_extension_index: list[ExtensionIndexItem] = []
+        self._extension_index_generation = 0
         self.filtered_extension_index: list[ExtensionIndexItem] = []
         self.extension_manager = ComfyUiExtensionManager(self.comfyui_path, include_files=True)
 
@@ -429,17 +432,76 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         """
         刷新自定义节点源列表
         """
-        def _fetch_index() -> list[ExtensionIndexItem]:
-            manager_items = fetch_comfyui_custom_node_index(self.extension_index_url)
-            try:
-                registry_items = fetch_comfy_registry_extension_index(limit=200)
-            except Exception as e:
-                error_message = str(e)
-                self.after(0, lambda: self.set_status(f"Comfy Registry 刷新失败: {error_message}"))
-                registry_items = []
-            return [*manager_items, *registry_items]
+        self._extension_index_generation += 1
+        generation = self._extension_index_generation
+        self._manager_extension_index = []
+        self._registry_extension_index = []
 
-        self.run_background("刷新节点源中...", _fetch_index, self._apply_extension_index)
+        def _apply_manager_items(items: list[ExtensionIndexItem]) -> None:
+            self._apply_manager_extension_index(generation, items)
+
+        self.run_background("刷新 ComfyUI-Manager 节点源中...", lambda: fetch_comfyui_custom_node_index(self.extension_index_url), _apply_manager_items)
+
+    def _apply_manager_extension_index(
+        self,
+        generation: int,
+        items: list[ExtensionIndexItem],
+    ) -> None:
+        if generation != self._extension_index_generation:
+            return
+        self._manager_extension_index = items
+        self._apply_extension_index([*self._manager_extension_index])
+        self._refresh_registry_extension_index(generation)
+
+    def _refresh_registry_extension_index(
+        self,
+        generation: int,
+    ) -> None:
+        def _progress(loaded: int, total: int | None) -> None:
+            self.after(0, lambda loaded=loaded, total=total: self._apply_registry_extension_index_progress(generation, loaded, total))
+
+        def _apply_registry_items(items: list[ExtensionIndexItem]) -> None:
+            self._apply_registry_extension_index(generation, items)
+
+        def _handle_registry_error(error: BaseException) -> None:
+            self._handle_registry_extension_index_error(generation, error)
+
+        self.run_background(
+            "加载 Comfy Registry 节点源中...",
+            lambda: fetch_comfy_registry_extension_index(limit=None, page_size=500, progress_callback=_progress),
+            _apply_registry_items,
+            _handle_registry_error,
+        )
+
+    def _apply_registry_extension_index_progress(
+        self,
+        generation: int,
+        loaded: int,
+        total: int | None,
+    ) -> None:
+        if generation != self._extension_index_generation:
+            return
+        total_text = str(total) if total is not None else "?"
+        self.set_status(f"Comfy Registry 加载中: {loaded}/{total_text}")
+
+    def _apply_registry_extension_index(
+        self,
+        generation: int,
+        items: list[ExtensionIndexItem],
+    ) -> None:
+        if generation != self._extension_index_generation:
+            return
+        self._registry_extension_index = items
+        self._apply_extension_index([*self._manager_extension_index, *self._registry_extension_index])
+
+    def _handle_registry_extension_index_error(
+        self,
+        generation: int,
+        error: BaseException,
+    ) -> None:
+        if generation != self._extension_index_generation:
+            return
+        self.set_status(f"Comfy Registry 刷新失败: {error}")
 
     def _apply_extension_index(
         self,

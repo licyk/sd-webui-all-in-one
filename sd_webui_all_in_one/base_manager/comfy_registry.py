@@ -6,6 +6,7 @@ import json
 import os
 import shutil
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -13,7 +14,7 @@ import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -43,11 +44,22 @@ COMFY_REGISTRY_ACTIVE_VERSION_STATUSES = ("NodeVersionStatusActive", "NodeVersio
 COMFY_REGISTRY_UNAVAILABLE_STATUS = "Registry 无可安装版本"
 """Registry 节点存在但没有可安装 CNR 版本时的状态说明。"""
 
+COMFY_REGISTRY_DEFAULT_PAGE_SIZE = 500
+"""Registry 节点分页读取的默认页大小。"""
+
+COMFY_REGISTRY_CACHE_TTL_SECONDS = 6 * 60 * 60
+"""Registry 节点内存缓存有效期。"""
+
 logger = get_logger(
     name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+ComfyRegistryProgressCallback = Callable[[int, int | None], object]
+"""Registry 节点加载进度回调。"""
+
+_COMFY_REGISTRY_NODE_CACHE: dict[tuple[str, int | None], tuple[float, tuple["ComfyRegistryNode", ...]]] = {}
 
 
 class ComfyRegistryInstallUnavailableError(ValueError):
@@ -190,6 +202,38 @@ def _parse_node(data: Any) -> ComfyRegistryNode | None:
     )
 
 
+def _parse_total(payload: Any) -> int | None:
+    if not isinstance(payload, dict):
+        return None
+    total = payload.get("total")
+    if isinstance(total, int):
+        return total
+    if isinstance(total, str) and total.isdecimal():
+        return int(total)
+    return None
+
+
+def _fetch_comfy_registry_node_page(
+    search: str | None = None,
+    page: int = 1,
+    limit: int = COMFY_REGISTRY_DEFAULT_PAGE_SIZE,
+    timeout: int | None = 20,
+) -> tuple[list[ComfyRegistryNode], int | None]:
+    query: dict[str, object] = {"page": page, "limit": limit}
+    if search:
+        query["search"] = search
+    payload = _fetch_json(_api_url("/nodes", query), timeout=timeout)
+    raw_nodes = payload.get("nodes") if isinstance(payload, dict) else payload
+    if not isinstance(raw_nodes, list):
+        return [], _parse_total(payload)
+    return [node for raw_node in raw_nodes if (node := _parse_node(raw_node)) is not None], _parse_total(payload)
+
+
+def clear_comfy_registry_cache() -> None:
+    """清空 Comfy Registry 节点内存缓存。"""
+    _COMFY_REGISTRY_NODE_CACHE.clear()
+
+
 def fetch_comfy_registry_nodes(
     search: str | None = None,
     page: int = 1,
@@ -212,14 +256,81 @@ def fetch_comfy_registry_nodes(
         list[ComfyRegistryNode]:
             Registry 节点列表。
     """
-    query: dict[str, object] = {"page": page, "limit": limit}
-    if search:
-        query["search"] = search
-    payload = _fetch_json(_api_url("/nodes", query), timeout=timeout)
-    raw_nodes = payload.get("nodes") if isinstance(payload, dict) else payload
-    if not isinstance(raw_nodes, list):
+    nodes, _total = _fetch_comfy_registry_node_page(search=search, page=page, limit=limit, timeout=timeout)
+    return nodes
+
+
+def fetch_all_comfy_registry_nodes(
+    search: str | None = None,
+    page_size: int = COMFY_REGISTRY_DEFAULT_PAGE_SIZE,
+    max_items: int | None = None,
+    timeout: int | None = 20,
+    cache_ttl_seconds: int = COMFY_REGISTRY_CACHE_TTL_SECONDS,
+    force_refresh: bool = False,
+    progress_callback: ComfyRegistryProgressCallback | None = None,
+) -> list[ComfyRegistryNode]:
+    """分页读取全部 Registry 节点并使用内存缓存。
+
+    Args:
+        search (str | None):
+            搜索关键字，传给 Registry API。当前 Registry API 可能忽略该参数。
+        page_size (int):
+            单页节点数量。
+        max_items (int | None):
+            最多返回节点数量，未指定时读取 API 返回的全部节点。
+        timeout (int | None):
+            单次请求超时时间。
+        cache_ttl_seconds (int):
+            内存缓存有效期，单位为秒。
+        force_refresh (bool):
+            是否忽略缓存并重新请求 Registry。
+        progress_callback (ComfyRegistryProgressCallback | None):
+            每页读取后调用，参数为已加载数量和 Registry 返回的总量。
+
+    Returns:
+        list[ComfyRegistryNode]:
+            Registry 节点列表。
+    """
+    if max_items is not None and max_items <= 0:
         return []
-    return [node for raw_node in raw_nodes if (node := _parse_node(raw_node)) is not None]
+    page_size = max(1, page_size)
+    if max_items is not None:
+        page_size = min(page_size, max_items)
+    cache_key = ((search or "").strip(), max_items)
+    now = time.monotonic()
+    cached = _COMFY_REGISTRY_NODE_CACHE.get(cache_key)
+    if not force_refresh and cached is not None and now - cached[0] <= cache_ttl_seconds:
+        return list(cached[1])
+
+    result: list[ComfyRegistryNode] = []
+    seen_ids: set[str] = set()
+    fetched_count = 0
+    total: int | None = None
+    page = 1
+    while True:
+        page_nodes, total = _fetch_comfy_registry_node_page(search=search, page=page, limit=page_size, timeout=timeout)
+        if not page_nodes:
+            break
+        fetched_count += len(page_nodes)
+        for node in page_nodes:
+            if node.id in seen_ids:
+                continue
+            seen_ids.add(node.id)
+            result.append(node)
+            if max_items is not None and len(result) >= max_items:
+                break
+        if progress_callback is not None:
+            progress_callback(len(result), total)
+        if max_items is not None and len(result) >= max_items:
+            break
+        if total is not None and fetched_count >= total:
+            break
+        if len(page_nodes) < page_size:
+            break
+        page += 1
+
+    _COMFY_REGISTRY_NODE_CACHE[cache_key] = (time.monotonic(), tuple(result))
+    return list(result)
 
 
 def fetch_comfy_registry_versions(
@@ -571,14 +682,26 @@ def switch_comfy_registry_node_version(
     return info
 
 
-def fetch_comfy_registry_extension_index(search: str | None = None, limit: int = 200) -> list[ExtensionIndexItem]:
+def fetch_comfy_registry_extension_index(
+    search: str | None = None,
+    limit: int | None = None,
+    page_size: int = COMFY_REGISTRY_DEFAULT_PAGE_SIZE,
+    force_refresh: bool = False,
+    progress_callback: ComfyRegistryProgressCallback | None = None,
+) -> list[ExtensionIndexItem]:
     """获取 Registry 节点并转换为扩展源条目。
 
     Args:
         search (str | None):
             搜索关键字，未指定时返回默认列表。
-        limit (int):
-            请求节点数量。
+        limit (int | None):
+            最多返回节点数量，未指定时读取全部节点。
+        page_size (int):
+            Registry 分页读取的单页数量。
+        force_refresh (bool):
+            是否忽略内存缓存并重新请求 Registry。
+        progress_callback (ComfyRegistryProgressCallback | None):
+            Registry 分页加载进度回调。
 
     Returns:
         list[ExtensionIndexItem]:
@@ -587,7 +710,7 @@ def fetch_comfy_registry_extension_index(search: str | None = None, limit: int =
     from sd_webui_all_in_one.base_manager.version_manager import ExtensionIndexItem
 
     items: list[ExtensionIndexItem] = []
-    for node in fetch_comfy_registry_nodes(search=search, limit=limit):
+    for node in fetch_all_comfy_registry_nodes(search=search, page_size=page_size, max_items=limit, force_refresh=force_refresh, progress_callback=progress_callback):
         version = node.latest_version.version if node.latest_version else ""
         download_url = node.latest_version.download_url if node.latest_version else ""
         dependencies = tuple(node.latest_version.dependencies) if node.latest_version else ()

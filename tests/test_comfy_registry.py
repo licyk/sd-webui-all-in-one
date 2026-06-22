@@ -1,5 +1,6 @@
 import zipfile
 import urllib.error
+import urllib.parse
 
 import pytest
 
@@ -80,11 +81,44 @@ def test_comfy_registry_switch_version_preserves_untracked_files(monkeypatch, tm
     assert 'version = "2.0.0"' in (install_path / "pyproject.toml").read_text(encoding="utf-8")
 
 
+def test_fetch_all_comfy_registry_nodes_paginates_and_uses_cache(monkeypatch):
+    comfy_registry.clear_comfy_registry_cache()
+    calls = []
+
+    def fake_fetch_json(url, timeout=20):
+        del timeout
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+        page = int(query["page"][0])
+        limit = int(query["limit"][0])
+        calls.append((page, limit))
+        nodes = [
+            {"id": f"node-{index}", "name": f"Node {index}"}
+            for index in range((page - 1) * limit, min(page * limit, 5))
+        ]
+        return {"nodes": nodes, "total": 5}
+
+    monkeypatch.setattr(comfy_registry, "_fetch_json", fake_fetch_json)
+
+    first = comfy_registry.fetch_all_comfy_registry_nodes(page_size=2)
+    second = comfy_registry.fetch_all_comfy_registry_nodes(page_size=2)
+
+    assert [node.id for node in first] == ["node-0", "node-1", "node-2", "node-3", "node-4"]
+    assert [node.id for node in second] == ["node-0", "node-1", "node-2", "node-3", "node-4"]
+    assert calls == [(1, 2), (2, 2), (3, 2)]
+
+
 def test_fetch_comfy_registry_extension_index_marks_missing_versions(monkeypatch):
-    monkeypatch.setattr(
-        comfy_registry,
-        "fetch_comfy_registry_nodes",
-        lambda search=None, limit=200: [
+    def fake_fetch_all_nodes(
+        search=None,
+        page_size=500,
+        max_items=None,
+        timeout=20,
+        cache_ttl_seconds=comfy_registry.COMFY_REGISTRY_CACHE_TTL_SECONDS,
+        force_refresh=False,
+        progress_callback=None,
+    ):
+        del search, page_size, max_items, timeout, cache_ttl_seconds, force_refresh, progress_callback
+        return [
             comfy_registry.ComfyRegistryNode(
                 id="installable-node",
                 name="Installable Node",
@@ -101,7 +135,12 @@ def test_fetch_comfy_registry_extension_index_marks_missing_versions(monkeypatch
                 author="Metadata Author",
                 repository="https://github.com/example/metadata-only-node",
             ),
-        ],
+        ]
+
+    monkeypatch.setattr(
+        comfy_registry,
+        "fetch_all_comfy_registry_nodes",
+        fake_fetch_all_nodes,
     )
 
     items = comfy_registry.fetch_comfy_registry_extension_index()
