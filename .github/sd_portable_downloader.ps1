@@ -73,7 +73,7 @@
 param (
     [string]$ScriptRootPath
 )
-$script:SD_PORTABLE_DOWNLOADER_VERSION = 113
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 114
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -506,12 +506,136 @@ function Format-Portable-UpdateTime {
     }
 }
 
+function Normalize-PortableGpuName {
+    param([string]$Name)
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        return ""
+    }
+    return ([regex]::Replace($Name.ToLowerInvariant(), "[^a-z0-9]+", " ")).Trim()
+}
+
+function Test-PortableAmdVendor {
+    param([string]$Vendor)
+    if ([string]::IsNullOrWhiteSpace($Vendor)) {
+        return $false
+    }
+    $normalizedVendor = $Vendor.ToLowerInvariant()
+    return $normalizedVendor.Contains("advanced micro devices") -or $normalizedVendor.Contains("amd") -or $normalizedVendor.Contains("ati")
+}
+
+function Test-PortableAmdGpu {
+    param($Gpu)
+    if ($null -eq $Gpu -or -not (Test-PortableAmdVendor -Vendor ([string]$Gpu.AdapterCompatibility))) {
+        return $false
+    }
+    $normalizedName = Normalize-PortableGpuName -Name ([string]$Gpu.Name)
+    return $normalizedName.Contains("radeon") -or $normalizedName.Contains("instinct") -or ($normalizedName -match "\bmi\d{3}")
+}
+
+function Get-PortableGpuCompatibility {
+    $compatibility = @{
+        DetectionSucceeded = $false
+        NVIDIA             = $false
+        AMD                = $false
+        Intel              = $false
+    }
+
+    try {
+        $gpus = @(Get-CimInstance Win32_VideoController -ErrorAction Stop | Select-Object Name, AdapterCompatibility, AdapterRAM, DriverVersion)
+        $compatibility["DetectionSucceeded"] = $true
+    } catch {
+        Write-Host "[环境] 显卡信息检测失败: $($_.Exception.Message)" -ForegroundColor Yellow
+        return $compatibility
+    }
+
+    foreach ($gpu in $gpus) {
+        if ($null -eq $gpu -or [string]::IsNullOrWhiteSpace([string]$gpu.Name)) {
+            continue
+        }
+
+        $name = [string]$gpu.Name
+        $vendor = [string]$gpu.AdapterCompatibility
+        if ($vendor.Contains("NVIDIA") -and ($name.StartsWith("NVIDIA") -or $name.StartsWith("GeForce") -or $name.StartsWith("Tesla") -or $name.StartsWith("Quadro"))) {
+            $compatibility["NVIDIA"] = $true
+        }
+        if (Test-PortableAmdGpu -Gpu $gpu) {
+            $compatibility["AMD"] = $true
+        }
+        if ($vendor.Contains("Intel") -and ($name.StartsWith("Intel(R) Arc") -or $name.StartsWith("Intel(R) Core Ultra"))) {
+            $compatibility["Intel"] = $true
+        }
+    }
+
+    $detectedVendors = @()
+    foreach ($vendor in @("NVIDIA", "AMD", "Intel")) {
+        if ($compatibility[$vendor]) {
+            $detectedVendors += $vendor
+        }
+    }
+    if ($detectedVendors.Count -gt 0) {
+        Write-Host "[环境] 已检测到支持的显卡类型: $($detectedVendors -join ', ')" -ForegroundColor Green
+    } else {
+        Write-Host "[环境] 未检测到 NVIDIA / AMD / Intel Arc 或 Core Ultra 显卡" -ForegroundColor Yellow
+    }
+
+    return $compatibility
+}
+
+function Get-PortablePackageGpuVendor {
+    param([string]$DisplayName)
+    if ([string]::IsNullOrWhiteSpace($DisplayName)) {
+        return $null
+    }
+    if ($DisplayName -match "\((NVIDIA|AMD|Intel)\)\s*$") {
+        return $matches[1]
+    }
+    return $null
+}
+
+function Resolve-PortableCompatibility {
+    param([string]$DisplayName, $GpuCompatibility)
+
+    $vendor = Get-PortablePackageGpuVendor -DisplayName $DisplayName
+    if ([string]::IsNullOrWhiteSpace($vendor)) {
+        return [PSCustomObject]@{
+            Status  = "Unknown"
+            Text    = "未知"
+            Tooltip = "未从整合包名称中识别到 NVIDIA / AMD / Intel 类型"
+        }
+    }
+
+    if ($null -eq $GpuCompatibility -or -not $GpuCompatibility.ContainsKey("DetectionSucceeded") -or -not $GpuCompatibility["DetectionSucceeded"]) {
+        return [PSCustomObject]@{
+            Status  = "Unknown"
+            Text    = "未知"
+            Tooltip = "未能检测当前显卡信息，无法判断是否兼容 $vendor 整合包"
+        }
+    }
+
+    $supported = $GpuCompatibility.ContainsKey($vendor) -and $GpuCompatibility[$vendor]
+    if ($supported) {
+        return [PSCustomObject]@{
+            Status  = "Supported"
+            Text    = "支持"
+            Tooltip = "当前显卡支持 $vendor 整合包"
+        }
+    }
+
+    return [PSCustomObject]@{
+        Status  = "Unsupported"
+        Text    = "不支持"
+        Tooltip = "当前显卡未检测到对 $vendor 整合包的支持"
+    }
+}
+
 function Export-PortableDownloaderEventFunctions {
     $names = @(
         "Find-Visual-Element", "Format-Portable-UpdateTime", "Get-Aria2-Executable", "Get-7za-Executable",
+        "Get-PortableGpuCompatibility", "Get-PortablePackageGpuVendor", "Normalize-PortableGpuName",
         "Invoke-DownloadAction", "Invoke-DownloadTask", "Invoke-Refresh", "Invoke-Update-Async", "Invoke-WebRequest-Async",
-        "Open-Url", "Set-Proxy", "Show-Async-MsgBox", "Show-Update-Popup", "Start-ExtractionTask",
-        "Sync-PortableDataGrid", "Update-PortableDiskInfo", "Update-PortableQueueUi", "Update-PortableStatistics"
+        "Open-Url", "Resolve-PortableCompatibility", "Set-Proxy", "Show-Async-MsgBox", "Show-Update-Popup", "Start-ExtractionTask",
+        "Sync-PortableDataGrid", "Update-PortableDiskInfo", "Update-PortableQueueUi", "Update-PortableStatistics",
+        "Test-PortableAmdGpu", "Test-PortableAmdVendor"
     )
     foreach ($name in $names) {
         $command = Get-Command -Name $name -CommandType Function -ErrorAction Stop
@@ -548,6 +672,7 @@ function Sync-PortableDataGrid {
                 $displayName = $resourceKey
             }
             $description = ([string]$resourceNode.description).Trim()
+            $compatibility = Resolve-PortableCompatibility -DisplayName $displayName -GpuCompatibility $State.GpuCompatibility
 
             $versions = @()
             $vNode = $resourceNode."$versionType"
@@ -579,6 +704,9 @@ function Sync-PortableDataGrid {
                     Type            = $displayName
                     ResourceKey     = $resourceKey
                     Description     = $description
+                    CompatibilityText = $compatibility.Text
+                    CompatibilityStatus = $compatibility.Status
+                    CompatibilityTooltip = $compatibility.Tooltip
                     Versions        = $versions
                     SelectedVersion = $versions[0]
                 }
@@ -826,8 +954,8 @@ function Start-App {
     [xml]$xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="AI 整合包下载器" Height="745" Width="900"
-        MinHeight="500" MinWidth="700"
+        Title="AI 整合包下载器" Height="745" Width="1040"
+        MinHeight="500" MinWidth="860"
         WindowStartupLocation="CenterScreen" WindowStyle="None" AllowsTransparency="True"
         Background="Transparent" ResizeMode="CanResizeWithGrip">
     <Window.Resources>
@@ -1332,17 +1460,57 @@ function Start-App {
                                     </Style>
                                 </DataGrid.Resources>
                                 <DataGrid.Columns>
-                                    <DataGridTemplateColumn Header="资源类型" Width="320">
+                                    <DataGridTemplateColumn Header="资源类型" Width="440">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding Type}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
-                                                           ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="30000">
-                                                    <TextBlock.ToolTip>
-                                                        <ToolTip DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}" MaxWidth="420">
-                                                            <TextBlock Text="{Binding Description}" TextWrapping="Wrap" MaxWidth="380"/>
-                                                        </ToolTip>
-                                                    </TextBlock.ToolTip>
-                                                </TextBlock>
+                                                <Grid VerticalAlignment="Center">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="{Binding Type}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+                                                               ToolTipService.InitialShowDelay="350" ToolTipService.ShowDuration="30000">
+                                                        <TextBlock.ToolTip>
+                                                            <ToolTip DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}" MaxWidth="420">
+                                                                <TextBlock Text="{Binding Description}" TextWrapping="Wrap" MaxWidth="380"/>
+                                                            </ToolTip>
+                                                        </TextBlock.ToolTip>
+                                                    </TextBlock>
+                                                    <Border Grid.Column="1" MinWidth="44" Height="20" Margin="8,0,0,0" Padding="8,0" CornerRadius="10" BorderThickness="1"
+                                                            VerticalAlignment="Center" ToolTip="{Binding CompatibilityTooltip}">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="Background" Value="#1A8A8886"/>
+                                                                <Setter Property="BorderBrush" Value="#668A8886"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding CompatibilityStatus}" Value="Supported">
+                                                                        <Setter Property="Background" Value="#1A107C10"/>
+                                                                        <Setter Property="BorderBrush" Value="#66107C10"/>
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding CompatibilityStatus}" Value="Unsupported">
+                                                                        <Setter Property="Background" Value="#1AE81123"/>
+                                                                        <Setter Property="BorderBrush" Value="#66E81123"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <TextBlock Text="{Binding CompatibilityText}" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Foreground" Value="#8A8886"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding CompatibilityStatus}" Value="Supported">
+                                                                            <Setter Property="Foreground" Value="#107C10"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding CompatibilityStatus}" Value="Unsupported">
+                                                                            <Setter Property="Foreground" Value="#E81123"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </Border>
+                                                </Grid>
                                             </DataTemplate>
                                         </DataGridTemplateColumn.CellTemplate>
                                     </DataGridTemplateColumn>
@@ -1433,10 +1601,10 @@ function Start-App {
                                     </DataGridTextColumn.ElementStyle>
                                 </DataGridTextColumn>
                                 <DataGridTextColumn Header="进度" Binding="{Binding Progress}" Width="80"/>
-                                <DataGridTemplateColumn Header="操作" Width="80">
+                                <DataGridTemplateColumn Header="操作" Width="96">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
-                                            <Button Name="KillTask" Height="22" Padding="8,0" FontSize="11">
+                                            <Button Name="KillTask" Width="56" Height="22" Margin="0,0,10,0" Padding="8,0" FontSize="11" HorizontalAlignment="Center">
                                                 <Button.Style>
                                                     <Style TargetType="Button">
                                                         <Setter Property="Content" Value="终止"/>
@@ -1615,7 +1783,7 @@ function Start-App {
     })
     $UI.CloseBtn.Add_Click({ $window.Close() })
 
-    $State = [PSCustomObject]@{ Metadata = $null; TaskQueue = @(); CurrentTask = $null; CurrentExtractionTask = $null; IsCancelled = $false }
+    $State = [PSCustomObject]@{ Metadata = $null; TaskQueue = @(); CurrentTask = $null; CurrentExtractionTask = $null; IsCancelled = $false; GpuCompatibility = (Get-PortableGpuCompatibility) }
 
     $UI.RefreshBtn.Add_Click({ Invoke-Refresh -UI $UI -State $State })
     $onStateChanged = { Sync-PortableDataGrid -UI $UI -State $State }.GetNewClosure()
