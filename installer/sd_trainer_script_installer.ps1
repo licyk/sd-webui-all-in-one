@@ -2694,27 +2694,17 @@ Export-ModuleMember -Function ``
 # 训练模板脚本
 function Write-TrainScript {
     $content = "
-param(
-    [switch]`$Help,
-    [switch]`$NoPause,
-    [Parameter(ValueFromRemainingArguments=`$true)]
-    [string[]]`$Arguments
-)
-#################################################
-`$pass_args = @()
-if (`$script:NoPause) { `$pass_args += `"-NoPause`" }
-if (`$script:Help) { `$pass_args += `"-Help`" }
-if (`$Arguments) { `$pass_args += `$Arguments }
+`$NoPause = `$args -contains `"-NoPause`"
 `$init_path = Join-Path `$PSScriptRoot `"init.ps1`"
 # 初始化基础环境变量, 以正确识别到运行环境
 if (Test-Path `$init_path) {
-    & `"`$init_path`" @pass_args
+    & `"`$init_path`" @args
 } else {
     Write-Error `"初始化脚本未找到, 无法初始化环境`"
     Write-Host `"这可能是 Installer 文件出现了损坏, 请运行 `" -ForegroundColor White -NoNewline
     Write-Host `"launch_sd_trainer_installer.ps1`" -ForegroundColor Yellow -NoNewline
     Write-Host `" 脚本修复该问题`" -ForegroundColor White
-    if (!(`$script:NoPause)) { Read-Host | Out-Null }
+    if (!(`$NoPause)) { Read-Host | Out-Null }
     exit 1
 }
 Set-Location `$PSScriptRoot
@@ -2740,7 +2730,7 @@ Set-Location `$PSScriptRoot
 
 #################################################
 Write-Host `"训练结束, 退出训练脚本`"
-if (!(`$script:NoPause)) { Read-Host | Out-Null } # 训练结束后保持控制台不被关闭
+if (!(`$NoPause)) { Read-Host | Out-Null } # 训练结束后保持控制台不被关闭
 ".Trim()
 
     if (!(Test-Path (Join-NormalizedPath $InstallPath "train.ps1"))) {
