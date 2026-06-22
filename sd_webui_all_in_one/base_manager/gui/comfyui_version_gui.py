@@ -455,9 +455,15 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         for index, item in enumerate(self.filtered_extension_index):
             registry_id = item.registry_id or ""
             installed = item.name in installed_names or registry_id in installed_names or get_repo_name_from_url(item.reference or item.url) in installed_names
-            status_url = "已装" if installed else (item.reference or item.url)
+            if installed:
+                status_url = "已装"
+            elif not item.installable:
+                status_url = item.install_status or "不可安装"
+            else:
+                status_url = item.reference or item.url
             source_label = "Registry" if item.source_type == "comfy-registry" else "Git/列表"
-            self.index_tree.insert(str(index), (item.name, item.description, source_label, item.registry_version or "-", item.install_type, ", ".join(item.tags), status_url))
+            install_type = item.install_type if item.installable else "不可安装"
+            self.index_tree.insert(str(index), (item.name, item.description, source_label, item.registry_version or "-", install_type, ", ".join(item.tags), status_url))
 
     def _selected_extension(self) -> ManagedExtension | None:
         selected_id = self.extension_tree.selected_item_id()
@@ -727,6 +733,13 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             messagebox.showwarning("请选择节点", "请先选择节点源中的条目")
             return
         item = self.filtered_extension_index[int(selected_id)]
+        if not item.installable:
+            node_id = item.registry_id or item.name
+            detail = item.install_status or "当前条目不可安装"
+            if item.source_type == "comfy-registry":
+                detail = f"{detail}。Registry 中存在节点记录，但没有可安装 CNR 版本。节点 ID: {node_id}"
+            messagebox.showwarning("无法安装", f"'{item.name}' {detail}")
+            return
         self.run_background("安装节点中...", lambda: self._install_index_item(item), lambda _value: self.refresh_extensions())
 
     def _install_index_item(
@@ -741,6 +754,8 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
                 节点源条目
         """
         install_type = item.install_type.lower()
+        if not item.installable:
+            raise ValueError(f"'{item.name}' 不可安装: {item.install_status or '当前条目不可安装'}")
         if item.source_type == "comfy-registry" or install_type == "comfy-registry":
             node_id = item.registry_id or item.name
             self.extension_manager.install_registry_extension(node_id, version=item.registry_version or None)

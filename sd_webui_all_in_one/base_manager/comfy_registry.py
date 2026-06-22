@@ -6,6 +6,7 @@ import json
 import os
 import shutil
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
@@ -39,11 +40,35 @@ COMFY_REGISTRY_BASE_URL = "https://api.comfy.org"
 COMFY_REGISTRY_ACTIVE_VERSION_STATUSES = ("NodeVersionStatusActive", "NodeVersionStatusPending")
 """ComfyUI-Manager 视为可安装的 Registry 版本状态。"""
 
+COMFY_REGISTRY_UNAVAILABLE_STATUS = "Registry 无可安装版本"
+"""Registry 节点存在但没有可安装 CNR 版本时的状态说明。"""
+
 logger = get_logger(
     name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+
+class ComfyRegistryInstallUnavailableError(ValueError):
+    """Comfy Registry 节点没有可安装 CNR 版本。"""
+
+    def __init__(
+        self,
+        node_id: str,
+        version: str | None = None,
+        reason: str = COMFY_REGISTRY_UNAVAILABLE_STATUS,
+        http_status: int | None = None,
+    ) -> None:
+        self.node_id = node_id
+        self.version = version
+        self.reason = reason
+        self.http_status = http_status
+        status_text = f"HTTP {http_status}, " if http_status is not None else ""
+        super().__init__(
+            f"Comfy Registry 节点不可安装: {node_id}@{version or 'latest'}; "
+            f"{status_text}{reason}。Registry 中存在节点记录，但没有可安装 CNR 版本。"
+        )
 
 
 @dataclass(slots=True)
@@ -216,11 +241,25 @@ def fetch_comfy_registry_install_info(
             节点安装版本信息。
 
     Raises:
+        ComfyRegistryInstallUnavailableError:
+            Registry install 接口返回 404 时抛出。
+        urllib.error.HTTPError:
+            Registry install 接口返回其他 HTTP 错误时抛出。
         ValueError:
             Registry 返回内容无法解析为安装版本信息时抛出。
     """
     query: dict[str, object] | None = {"version": version} if version else None
-    payload = _fetch_json(_api_url(f"/nodes/{urllib.parse.quote(node_id, safe='')}/install", query), timeout=timeout)
+    try:
+        payload = _fetch_json(_api_url(f"/nodes/{urllib.parse.quote(node_id, safe='')}/install", query), timeout=timeout)
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            raise ComfyRegistryInstallUnavailableError(
+                node_id=node_id,
+                version=version,
+                reason="请求 install 返回 404",
+                http_status=e.code,
+            ) from e
+        raise
     info = _parse_node_version(payload)
     if info is None:
         raise ValueError(f"Comfy Registry 未返回有效安装信息: {node_id}@{version or 'latest'}")
@@ -355,6 +394,8 @@ def install_comfy_registry_node(
     Raises:
         ValueError:
             节点 ID 为空或 Registry 节点不可安装时抛出。
+        ComfyRegistryInstallUnavailableError:
+            Registry 节点没有可下载安装包时抛出。
         FileExistsError:
             目标节点已安装时抛出。
     """
@@ -363,7 +404,11 @@ def install_comfy_registry_node(
         raise ValueError("Comfy Registry 节点 ID 不能为空")
     info = fetch_comfy_registry_install_info(node_id, version=version)
     if not info.download_url:
-        raise ValueError(f"Comfy Registry 节点不可安装: {node_id}@{version or 'latest'}")
+        raise ComfyRegistryInstallUnavailableError(
+            node_id=node_id,
+            version=version,
+            reason="Registry install 元数据缺少 downloadUrl",
+        )
 
     custom_nodes_path = comfyui_path / "custom_nodes"
     install_path = custom_nodes_path / node_id
@@ -458,6 +503,8 @@ def switch_comfy_registry_node_version(
     Raises:
         ValueError:
             节点 ID 为空或 Registry 节点不可安装时抛出。
+        ComfyRegistryInstallUnavailableError:
+            Registry 节点没有可下载安装包时抛出。
     """
     node_id = node_id.strip()
     if not node_id:
@@ -476,7 +523,11 @@ def switch_comfy_registry_node_version(
 
     info = fetch_comfy_registry_install_info(node_id, version=version)
     if not info.download_url:
-        raise ValueError(f"Comfy Registry 节点不可安装: {node_id}@{version or 'latest'}")
+        raise ComfyRegistryInstallUnavailableError(
+            node_id=node_id,
+            version=version,
+            reason="Registry install 元数据缺少 downloadUrl",
+        )
 
     with TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir)
@@ -511,6 +562,8 @@ def fetch_comfy_registry_extension_index(search: str | None = None, limit: int =
         version = node.latest_version.version if node.latest_version else ""
         download_url = node.latest_version.download_url if node.latest_version else ""
         dependencies = tuple(node.latest_version.dependencies) if node.latest_version else ()
+        installable = bool(version)
+        install_status = "可安装" if installable else COMFY_REGISTRY_UNAVAILABLE_STATUS
         items.append(
             ExtensionIndexItem(
                 name=node.name,
@@ -526,6 +579,8 @@ def fetch_comfy_registry_extension_index(search: str | None = None, limit: int =
                 repository=node.repository,
                 download_url=download_url,
                 dependencies=dependencies,
+                installable=installable,
+                install_status=install_status,
             )
         )
     return items

@@ -931,7 +931,7 @@ def restore_comfy_registry_extension(
         bool:
             Registry 扩展是否已恢复或可视为存在。
     """
-    from sd_webui_all_in_one.base_manager.comfy_registry import switch_comfy_registry_node_version
+    from sd_webui_all_in_one.base_manager.comfy_registry import ComfyRegistryInstallUnavailableError, switch_comfy_registry_node_version
     from sd_webui_all_in_one.base_manager.comfyui_base import resolve_comfyui_custom_node_path
 
     registry_id = extension.registry_id or extension.name.removesuffix(".disabled")
@@ -941,14 +941,18 @@ def restore_comfy_registry_extension(
     resolved = resolve_comfyui_custom_node_path(webui_path, extension.name) or resolve_comfyui_custom_node_path(webui_path, registry_id)
     target_path = resolved[0] if resolved is not None else webui_path / "custom_nodes" / registry_id
     custom_env = _pypi_env(use_pypi_mirror=options.use_pypi_mirror)
-    switch_comfy_registry_node_version(
-        comfyui_path=webui_path,
-        node_id=registry_id,
-        version=extension.registry_version,
-        target_path=target_path if target_path.exists() else None,
-        use_uv=options.use_uv,
-        custom_env=custom_env,
-    )
+    try:
+        switch_comfy_registry_node_version(
+            comfyui_path=webui_path,
+            node_id=registry_id,
+            version=extension.registry_version,
+            target_path=target_path if target_path.exists() else None,
+            use_uv=options.use_uv,
+            custom_env=custom_env,
+        )
+    except ComfyRegistryInstallUnavailableError as e:
+        logger.warning("快照中的 Comfy Registry 节点不可安装，已跳过: %s", e)
+        return False
     return True
 
 

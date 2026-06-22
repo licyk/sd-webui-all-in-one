@@ -7,6 +7,7 @@ import pytest
 
 from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryState
 from sd_webui_all_in_one.base_manager import (
+    comfy_registry,
     comfyui_base,
     fooocus_base,
     invokeai_base,
@@ -1083,6 +1084,38 @@ def test_restore_extensions_restores_comfyui_registry_node(monkeypatch, tmp_path
 
     assert restored == [("registry-node", "1.2.3", webui_path, False)]
     assert statuses == [(webui_path, "registry-node", True)]
+
+
+def test_restore_comfy_registry_extension_skips_unavailable_node(monkeypatch, tmp_path):
+    webui_path = tmp_path / "ComfyUI"
+    extension = snapshot_utils.ExtensionSnapshot(
+        name="ComfyUI for CosyVoice",
+        path=webui_path / "custom_nodes" / "ComfyUI_CosyVoice",
+        enabled=True,
+        is_git_repo=False,
+        source_type="comfy-registry",
+        registry_id="ComfyUI_CosyVoice",
+        registry_version="1.0.0",
+    )
+
+    def fail_switch(**kwargs):
+        raise comfy_registry.ComfyRegistryInstallUnavailableError(
+            node_id=kwargs["node_id"],
+            version=kwargs["version"],
+            reason="请求 install 返回 404",
+            http_status=404,
+        )
+
+    monkeypatch.setattr(comfy_registry, "switch_comfy_registry_node_version", fail_switch)
+    monkeypatch.setattr(comfyui_base, "resolve_comfyui_custom_node_path", lambda *_args: None)
+
+    restored = restore_utils.restore_comfy_registry_extension(
+        extension,
+        webui_path,
+        restore_utils.SnapshotRestoreOptions(),
+    )
+
+    assert restored is False
 
 
 def test_product_snapshot_cli_parse_smoke(monkeypatch, tmp_path):

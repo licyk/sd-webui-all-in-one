@@ -1,4 +1,7 @@
 import zipfile
+import urllib.error
+
+import pytest
 
 from sd_webui_all_in_one.base_manager import comfy_registry
 
@@ -75,3 +78,69 @@ def test_comfy_registry_switch_version_preserves_untracked_files(monkeypatch, tm
 
     assert (install_path / "user-data.txt").read_text(encoding="utf-8") == "keep"
     assert 'version = "2.0.0"' in (install_path / "pyproject.toml").read_text(encoding="utf-8")
+
+
+def test_fetch_comfy_registry_extension_index_marks_missing_versions(monkeypatch):
+    monkeypatch.setattr(
+        comfy_registry,
+        "fetch_comfy_registry_nodes",
+        lambda search=None, limit=200: [
+            comfy_registry.ComfyRegistryNode(
+                id="installable-node",
+                name="Installable Node",
+                latest_version=comfy_registry.ComfyRegistryNodeVersion(
+                    node_id="installable-node",
+                    version="1.0.0",
+                    download_url="https://cdn.example/installable.zip",
+                ),
+            ),
+            comfy_registry.ComfyRegistryNode(
+                id="metadata-only-node",
+                name="Metadata Only Node",
+                repository="https://github.com/example/metadata-only-node",
+            ),
+        ],
+    )
+
+    items = comfy_registry.fetch_comfy_registry_extension_index()
+
+    assert [(item.registry_id, item.installable, item.install_status) for item in items] == [
+        ("installable-node", True, "可安装"),
+        ("metadata-only-node", False, comfy_registry.COMFY_REGISTRY_UNAVAILABLE_STATUS),
+    ]
+    assert items[1].url == "https://github.com/example/metadata-only-node"
+
+
+def test_fetch_comfy_registry_install_info_404_raises_unavailable(monkeypatch):
+    def fail_fetch(url, timeout=20):
+        raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+
+    monkeypatch.setattr(comfy_registry, "_fetch_json", fail_fetch)
+
+    with pytest.raises(comfy_registry.ComfyRegistryInstallUnavailableError) as exc:
+        comfy_registry.fetch_comfy_registry_install_info("ComfyUI_CosyVoice")
+
+    assert exc.value.node_id == "ComfyUI_CosyVoice"
+    assert exc.value.version is None
+    assert exc.value.http_status == 404
+    assert "ComfyUI_CosyVoice@latest" in str(exc.value)
+    assert "HTTP 404" in str(exc.value)
+    assert "没有可安装 CNR 版本" in str(exc.value)
+
+
+def test_comfy_registry_install_rejects_install_info_without_download_url(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        comfy_registry,
+        "fetch_comfy_registry_install_info",
+        lambda node_id, version=None: comfy_registry.ComfyRegistryNodeVersion(
+            node_id=node_id,
+            version=version or "1.0.0",
+            download_url="",
+        ),
+    )
+
+    with pytest.raises(comfy_registry.ComfyRegistryInstallUnavailableError) as exc:
+        comfy_registry.install_comfy_registry_node(tmp_path, "metadata-only-node", run_postinstall=False)
+
+    assert exc.value.node_id == "metadata-only-node"
+    assert "downloadUrl" in str(exc.value)

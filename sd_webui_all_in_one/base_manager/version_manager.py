@@ -149,6 +149,10 @@ class ExtensionIndexItem:
             扩展文件地址列表
         reference (str):
             扩展参考地址
+        installable (bool):
+            扩展源条目是否可直接安装
+        install_status (str):
+            扩展源条目的安装状态说明
     """
 
     name: str
@@ -164,6 +168,8 @@ class ExtensionIndexItem:
     repository: str | None = None
     download_url: str | None = None
     dependencies: tuple[str, ...] = ()
+    installable: bool = True
+    install_status: str = ""
 
 
 @dataclass(slots=True)
