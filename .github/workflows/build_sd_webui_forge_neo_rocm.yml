@@ -24,7 +24,6 @@ jobs:
           & "${{ github.workspace }}/installer/stable_diffusion_webui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_webui_forge_neo_rocm" `
             -PyTorchMirrorType rocm_win `
-            -InstallPythonVersion 3.12 `
             -BuildMode `
             -BuildWithLaunch `
             -InstallBranch "sd_webui_forge_neo" `
