@@ -2645,7 +2645,6 @@ function Set-Hotpatcher-Env {
     }
 
     Write-Log `"Hotpatcher 补丁系统默认启用`"
-    Write-Log `"Hotpatcher 使用默认配置文件内容: `$config_path`"
 }
 
 

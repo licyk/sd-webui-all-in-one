@@ -2621,7 +2621,6 @@ function Set-Hotpatcher {
             Exit-ManagerScript -ExitCode `$exit_code
         }
     }
-    Write-Log `"使用默认 Hotpatcher 配置文件: `$default_config_path`"
     `$hotpatcher_runtime_enabled = `$script:EnableHotpatcherRuntime -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"enable_hotpatcher_runtime.txt`"))
     if (`$hotpatcher_runtime_enabled) {
         `$ArrayList.Add(`"--hotpatcher-runtime`") | Out-Null
