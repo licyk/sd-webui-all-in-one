@@ -858,6 +858,7 @@ class AdaptiveIndexList(ttk.Frame):
         self._row_order: list[str] = []
         self._redraw_job: str | None = None
         self._draw_batch_job: str | None = None
+        self._search_change_job: str | None = None
         self._draw_cursor = 0
         self._double_click_callback: Callable[[], object] | None = None
         self._content_width = sum(self.widths.get(column, 120) for column in self.columns)
@@ -939,6 +940,7 @@ class AdaptiveIndexList(ttk.Frame):
     def bind_search_change(
         self,
         callback: Callable[[], object],
+        debounce_ms: int = 200,
     ) -> str:
         """
         绑定真实搜索关键词变化回调。
@@ -946,6 +948,8 @@ class AdaptiveIndexList(ttk.Frame):
         Args:
             callback (Callable[[], object]):
                 搜索关键词变化时执行的回调。
+            debounce_ms (int):
+                搜索变化回调延迟执行时间，单位为毫秒。
 
         Returns:
             str: Tk 变量监听 ID。
@@ -957,7 +961,21 @@ class AdaptiveIndexList(ttk.Frame):
             if keyword == self._last_search_keyword:
                 return
             self._last_search_keyword = keyword
-            callback()
+            if self._search_change_job is not None:
+                try:
+                    self.after_cancel(self._search_change_job)
+                except tk.TclError:
+                    pass
+                self._search_change_job = None
+            if debounce_ms <= 0:
+                callback()
+                return
+
+            def _run_callback() -> None:
+                self._search_change_job = None
+                callback()
+
+            self._search_change_job = self.after(debounce_ms, _run_callback)
 
         return self.search_var.trace_add("write", _on_search_var_changed)
 

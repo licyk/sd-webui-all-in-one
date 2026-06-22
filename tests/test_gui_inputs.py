@@ -244,6 +244,19 @@ def _drain_adaptive_index_list_draws(
     assert widget._draw_batch_job is None  # pylint: disable=protected-access
 
 
+def _drain_search_change_job(
+    tk_root: tk.Tk,
+    widget: AdaptiveIndexList,
+) -> None:
+    for _ in range(50):
+        tk_root.update()
+        if widget._search_change_job is None:  # pylint: disable=protected-access
+            return
+        time.sleep(0.01)
+    tk_root.update()
+    assert widget._search_change_job is None  # pylint: disable=protected-access
+
+
 def test_adaptive_index_list_preserves_scroll_after_refresh(tk_root: tk.Tk) -> None:
     widget = AdaptiveIndexList(
         tk_root,
@@ -283,7 +296,7 @@ def test_adaptive_index_list_search_change_ignores_placeholder_churn(tk_root: tk
     widget.pack(fill=tk.BOTH, expand=True)
     tk_root.update_idletasks()
     calls: list[str] = []
-    widget.bind_search_change(lambda: calls.append(widget.search_keyword()))
+    widget.bind_search_change(lambda: calls.append(widget.search_keyword()), debounce_ms=0)
 
     widget.search_var.set("")
     widget.search_var.set("搜索内容...")
@@ -293,6 +306,30 @@ def test_adaptive_index_list_search_change_ignores_placeholder_churn(tk_root: tk
     widget.search_var.set("搜索内容...")
 
     assert calls == ["alpha", ""]
+
+
+def test_adaptive_index_list_search_change_debounces_input(tk_root: tk.Tk) -> None:
+    widget = AdaptiveIndexList(
+        tk_root,
+        columns=("name",),
+        headings={"name": "名称"},
+        widths={"name": 240},
+        search_placeholder="搜索内容...",
+    )
+    widget.pack(fill=tk.BOTH, expand=True)
+    tk_root.update_idletasks()
+    calls: list[str] = []
+    widget.bind_search_change(lambda: calls.append(widget.search_keyword()), debounce_ms=30)
+
+    widget.search_var.set("a")
+    widget.search_var.set("ab")
+    widget.search_var.set("abc")
+    tk_root.update()
+    assert calls == []
+
+    _drain_search_change_job(tk_root, widget)
+
+    assert calls == ["abc"]
 
 
 def test_adaptive_index_list_user_scroll_cancels_refresh_restore(tk_root: tk.Tk) -> None:
