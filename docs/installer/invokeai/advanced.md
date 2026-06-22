@@ -27,7 +27,7 @@ InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支
 - `-InstallPath` `<安装 InvokeAI 的绝对路径>`：指定 InvokeAI Installer 安装 InvokeAI 的路径，使用绝对路径表示。
     例如：`./invokeai_installer.ps1 -InstallPath "D:\Download"`，这将指定安装到 D:\Download 路径。
 - `-PyTorchMirrorType` `<PyTorch 镜像源类型>`：指定安装 PyTorch 时使用的镜像源类型。可指定的类型包括：`cuda`, `rocm`, `xpu`, `mps`, `cpu`
-- `-InstallPythonVersion` `<Python 版本>`：指定要安装的 Python 版本。可选值：`3.10`, `3.11`, `3.12`, `3.13`, `3.14`
+- `-InstallPythonVersion` `<Python 版本>`：指定要安装的 Python 版本。可选值：`3.10`, `3.11`, `3.12`, `3.13`, `3.14`。未指定时默认使用 `3.12`。
 - `-RestoreFromSnapshot`：启用快照重建模式，根据快照文件重新准备 Python 版本并恢复环境。
 - `-SnapshotPath` `<快照文件>`：指定用于快照重建的环境快照 JSON 文件路径。启用快照重建模式时需要和 `-RestoreFromSnapshot` 同时使用。
 - `-DisableSnapshot`：禁用自动快照，包括安装结束后的结果快照以及管理脚本执行前的自动快照。

@@ -16,7 +16,7 @@
 "@)][string]$PyTorchMirrorType,
 
     [Parameter(HelpMessage=@"
-指定要安装的 Python 版本, 可指定安装的 Python 版本: 3.10, 3.11, 3.12, 3.13, 3.14
+指定要安装的 Python 版本, 可指定安装的 Python 版本: 3.10, 3.11, 3.12, 3.13, 3.14. 未指定时默认使用 3.11, 安装 sd_webui_forge_classic 或 sd_webui_forge_neo 分支时默认使用 3.12
 "@)][string]$InstallPythonVersion,
 
     [Parameter(HelpMessage=@"
@@ -273,7 +273,7 @@ $script:HotpatcherPortProvided = $PSBoundParameters.ContainsKey("HotpatcherPort"
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # SD WebUI Installer 版本和检查更新间隔
-$script:SD_WEBUI_INSTALLER_VERSION = 487
+$script:SD_WEBUI_INSTALLER_VERSION = 488
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.61"
@@ -1102,14 +1102,22 @@ function Initialize-SnapshotRestoreTarget {
     Stop-SnapshotRestore "快照恢复目标路径已存在且不是空目录或 Git 仓库, 为避免覆盖本地数据已终止: $core_path"
 }
 
+function Resolve-InstallPythonVersion {
+    if (-not [string]::IsNullOrWhiteSpace($script:InstallPythonVersion)) {
+        return $script:InstallPythonVersion
+    }
+    $target_branch = Get-InstallBranch
+    if (($target_branch -eq "sd_webui_forge_classic") -or ($target_branch -eq "sd_webui_forge_neo")) {
+        $script:InstallPythonVersion = "3.12"
+    } else {
+        $script:InstallPythonVersion = "3.11"
+    }
+    return $script:InstallPythonVersion
+}
+
 # 安装 Python
 function Install-Python {
-    if ($script:InstallPythonVersion) {
-        $py_ver = $script:InstallPythonVersion
-    }
-    else {
-        $py_ver = "3.11"
-    }
+    $py_ver = Resolve-InstallPythonVersion
     if ($script:RestoreFromSnapshot) {
         Remove-ManagedPythonIfVersionMismatch -ExpectedVersion $py_ver
     }

@@ -246,6 +246,34 @@ def test_sd_webui_installer_default_branch_mappings_use_main():
     assert '$default_content = $launch_args_map["sd_webui_main"]' in installer
 
 
+def test_sd_webui_installer_defaults_python_312_for_forge_classic_and_neo():
+    installer = _read_installer("installer/stable_diffusion_webui_installer.ps1")
+    resolve_start = installer.index("function Resolve-InstallPythonVersion")
+    resolve_end = installer.index("# 安装 Python", resolve_start)
+    resolve_function = installer[resolve_start:resolve_end]
+    install_start = installer.index("function Install-Python", resolve_end)
+    install_end = installer.index("function Invoke-SmartCommand", install_start)
+    install_function = installer[install_start:install_end]
+
+    assert "Get-InstallBranch" in resolve_function
+    assert '"sd_webui_forge_classic"' in resolve_function
+    assert '"sd_webui_forge_neo"' in resolve_function
+    assert '$script:InstallPythonVersion = "3.12"' in resolve_function
+    assert '$script:InstallPythonVersion = "3.11"' in resolve_function
+    assert "$py_ver = Resolve-InstallPythonVersion" in install_function
+
+
+def test_invokeai_installer_defaults_python_312():
+    installer = _read_installer("installer/invokeai_installer.ps1")
+    install_start = installer.index("function Install-Python")
+    install_end = installer.index("function Invoke-SmartCommand", install_start)
+    install_function = installer[install_start:install_end]
+
+    assert '$py_ver = "3.12"' in install_function
+    assert '$py_ver = "3.11"' not in install_function
+    assert "未指定时默认使用 3.12" in installer
+
+
 def test_launch_templates_import_and_call_windows_long_path_check():
     main_call_pattern = re.compile(
         r"function Main \{\s+"

@@ -16,7 +16,7 @@
 "@)][string]$PyTorchMirrorType,
 
     [Parameter(HelpMessage=@"
-指定要安装的 Python 版本, 可指定安装的 Python 版本: 3.10, 3.11, 3.12, 3.13, 3.14
+指定要安装的 Python 版本, 可指定安装的 Python 版本: 3.10, 3.11, 3.12, 3.13, 3.14. 未指定时默认使用 3.12
 "@)][string]$InstallPythonVersion,
 
     [Parameter(HelpMessage=@"
@@ -233,7 +233,7 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 494
+$script:INVOKEAI_INSTALLER_VERSION = 495
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
 $script:CORE_MINIMUM_VER = "2.2.61"
@@ -1010,7 +1010,7 @@ function Install-Python {
         $py_ver = $script:InstallPythonVersion
     }
     else {
-        $py_ver = "3.11"
+        $py_ver = "3.12"
     }
     if ($script:RestoreFromSnapshot) {
         Remove-ManagedPythonIfVersionMismatch -ExpectedVersion $py_ver
