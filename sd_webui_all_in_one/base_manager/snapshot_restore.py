@@ -53,7 +53,6 @@ PYTORCH_PACKAGE_NAMES = {"torch", "torchvision", "torchaudio", "xformers"}
 PROTECTED_PACKAGE_NAMES = {
     "sd-webui-all-in-one",
     "pip",
-    "setuptools",
     "wheel",
     "uv",
 }
