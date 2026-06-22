@@ -236,6 +236,17 @@ def test_filter_extension_index_by_keyword_and_tag():
     assert [item.name for item in filter_extension_index(items, "queue")] == ["Agent Scheduler"]
     assert [item.name for item in filter_extension_index(items, "", ["localization"])] == ["ua_UA Localization"]
 
+    registry_items = [
+        version_manager.ExtensionIndexItem(
+            name="Registry Node",
+            url="https://github.com/example/registry-node",
+            source_type="comfy-registry",
+            author="Registry Author",
+            tags=("Comfy Registry",),
+        )
+    ]
+    assert [item.name for item in filter_extension_index(registry_items, "registry author")] == ["Registry Node"]
+
 
 def test_parse_comfyui_custom_node_index_git_and_copy():
     items = parse_comfyui_custom_node_index(
@@ -262,6 +273,7 @@ def test_parse_comfyui_custom_node_index_git_and_copy():
     )
 
     assert [item.name for item in items] == ["ComfyUI-Manager", "CLIPSeg"]
+    assert [item.author for item in items] == ["Comfy-Org", "time-river"]
     assert items[0].install_type == "git-clone"
     assert items[1].install_type == "copy"
     assert items[1].files == ("https://raw.githubusercontent.com/time-river/ComfyUI-CLIPSeg/main/custom_nodes/clipseg.py",)

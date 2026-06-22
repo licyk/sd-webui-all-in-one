@@ -90,6 +90,7 @@ class ComfyRegistryNode:
 
     id: str
     name: str
+    author: str = ""
     description: str = ""
     repository: str = ""
     tags: tuple[str, ...] = ()
@@ -141,6 +142,33 @@ def _parse_node_version(data: Any) -> ComfyRegistryNodeVersion | None:
     )
 
 
+def _repository_owner(repository: str) -> str:
+    parsed = urllib.parse.urlparse(repository)
+    path_parts = [part for part in parsed.path.split("/") if part]
+    if parsed.netloc.endswith("github.com") and path_parts:
+        return path_parts[0]
+    return ""
+
+
+def _parse_node_author(data: dict[str, Any]) -> str:
+    raw_author = data.get("author")
+    if isinstance(raw_author, str) and raw_author.strip():
+        return raw_author.strip()
+
+    publisher = data.get("publisher")
+    if isinstance(publisher, dict):
+        raw_publisher_name = publisher.get("name")
+        if isinstance(raw_publisher_name, str):
+            publisher_name = raw_publisher_name.strip()
+            if publisher_name and publisher_name.casefold() != "unclaimed":
+                return publisher_name
+
+    raw_repository = data.get("repository")
+    if isinstance(raw_repository, str) and raw_repository.strip():
+        return _repository_owner(raw_repository.strip())
+    return ""
+
+
 def _parse_node(data: Any) -> ComfyRegistryNode | None:
     if not isinstance(data, dict):
         return None
@@ -153,6 +181,7 @@ def _parse_node(data: Any) -> ComfyRegistryNode | None:
     return ComfyRegistryNode(
         id=node_id,
         name=name,
+        author=_parse_node_author(data),
         description=str(data.get("description") or ""),
         repository=str(data.get("repository") or ""),
         tags=tuple(str(item) for item in tags if isinstance(item, str)),
@@ -579,6 +608,7 @@ def fetch_comfy_registry_extension_index(search: str | None = None, limit: int =
                 repository=node.repository,
                 download_url=download_url,
                 dependencies=dependencies,
+                author=node.author,
                 installable=installable,
                 install_status=install_status,
             )

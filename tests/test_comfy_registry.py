@@ -88,6 +88,7 @@ def test_fetch_comfy_registry_extension_index_marks_missing_versions(monkeypatch
             comfy_registry.ComfyRegistryNode(
                 id="installable-node",
                 name="Installable Node",
+                author="Install Author",
                 latest_version=comfy_registry.ComfyRegistryNodeVersion(
                     node_id="installable-node",
                     version="1.0.0",
@@ -97,6 +98,7 @@ def test_fetch_comfy_registry_extension_index_marks_missing_versions(monkeypatch
             comfy_registry.ComfyRegistryNode(
                 id="metadata-only-node",
                 name="Metadata Only Node",
+                author="Metadata Author",
                 repository="https://github.com/example/metadata-only-node",
             ),
         ],
@@ -108,6 +110,7 @@ def test_fetch_comfy_registry_extension_index_marks_missing_versions(monkeypatch
         ("installable-node", True, "可安装"),
         ("metadata-only-node", False, comfy_registry.COMFY_REGISTRY_UNAVAILABLE_STATUS),
     ]
+    assert [item.author for item in items] == ["Install Author", "Metadata Author"]
     assert items[1].url == "https://github.com/example/metadata-only-node"
 
 
@@ -144,3 +147,40 @@ def test_comfy_registry_install_rejects_install_info_without_download_url(monkey
 
     assert exc.value.node_id == "metadata-only-node"
     assert "downloadUrl" in str(exc.value)
+
+
+def test_parse_comfy_registry_node_author_priority():
+    explicit = comfy_registry._parse_node(
+        {
+            "id": "explicit-node",
+            "name": "Explicit Node",
+            "author": "node-author",
+            "publisher": {"name": "Publisher Name"},
+            "repository": "https://github.com/repo-owner/explicit-node",
+        }
+    )
+    publisher = comfy_registry._parse_node(
+        {
+            "id": "publisher-node",
+            "name": "Publisher Node",
+            "author": "",
+            "publisher": {"name": "Publisher Name"},
+            "repository": "https://github.com/repo-owner/publisher-node",
+        }
+    )
+    repository = comfy_registry._parse_node(
+        {
+            "id": "repository-node",
+            "name": "Repository Node",
+            "author": "",
+            "publisher": {"name": "Unclaimed"},
+            "repository": "https://github.com/repo-owner/repository-node",
+        }
+    )
+
+    assert explicit is not None
+    assert publisher is not None
+    assert repository is not None
+    assert explicit.author == "node-author"
+    assert publisher.author == "Publisher Name"
+    assert repository.author == "repo-owner"

@@ -149,6 +149,8 @@ class ExtensionIndexItem:
             扩展文件地址列表
         reference (str):
             扩展参考地址
+        author (str):
+            扩展作者或发布者名称
         installable (bool):
             扩展源条目是否可直接安装
         install_status (str):
@@ -168,6 +170,7 @@ class ExtensionIndexItem:
     repository: str | None = None
     download_url: str | None = None
     dependencies: tuple[str, ...] = ()
+    author: str = ""
     installable: bool = True
     install_status: str = ""
 
@@ -728,8 +731,9 @@ def parse_comfyui_custom_node_index(data: Any) -> list[ExtensionIndexItem]:
         name = str(title).strip() if title else get_repo_name_from_url(reference or url)
         tags = _pick_extension_tags(raw_item)
         author = raw_item.get("author")
-        if isinstance(author, str) and author.strip():
-            tags = (*tags, author.strip())
+        author_name = author.strip() if isinstance(author, str) and author.strip() else ""
+        if author_name:
+            tags = (*tags, author_name)
         install_type = str(raw_item.get("install_type") or "git-clone")
         items.append(
             ExtensionIndexItem(
@@ -740,6 +744,7 @@ def parse_comfyui_custom_node_index(data: Any) -> list[ExtensionIndexItem]:
                 install_type=install_type,
                 files=files,
                 reference=reference,
+                author=author_name,
             )
         )
     return items
@@ -882,6 +887,7 @@ def filter_extension_index(
                 item.registry_id or "",
                 item.registry_version or "",
                 item.repository or "",
+                item.author,
                 " ".join(item.tags),
             ]
         ).lower()

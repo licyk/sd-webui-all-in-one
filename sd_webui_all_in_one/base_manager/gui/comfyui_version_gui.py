@@ -85,6 +85,18 @@ def _download_name_from_url(url: str) -> str:
     return name or get_repo_name_from_url(url)
 
 
+def _format_index_tags(item: ExtensionIndexItem) -> str:
+    values: list[str] = []
+    for tag in item.tags:
+        if item.source_type == "comfy-registry" and tag == "Comfy Registry":
+            continue
+        if tag not in values:
+            values.append(tag)
+    if item.author and item.author not in values:
+        values.append(item.author)
+    return ", ".join(values) or "-"
+
+
 class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
     """
     ComfyUI 版本管理窗口
@@ -463,7 +475,7 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
                 status_url = item.reference or item.url
             source_label = "Registry" if item.source_type == "comfy-registry" else "Git/列表"
             install_type = item.install_type if item.installable else "不可安装"
-            self.index_tree.insert(str(index), (item.name, item.description, source_label, item.registry_version or "-", install_type, ", ".join(item.tags), status_url))
+            self.index_tree.insert(str(index), (item.name, item.description, source_label, item.registry_version or "-", install_type, _format_index_tags(item), status_url))
 
     def _selected_extension(self) -> ManagedExtension | None:
         selected_id = self.extension_tree.selected_item_id()
