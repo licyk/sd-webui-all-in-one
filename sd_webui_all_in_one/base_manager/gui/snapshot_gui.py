@@ -30,10 +30,17 @@ from sd_webui_all_in_one.base_manager.snapshot_restore import (
     preview_webui_snapshot_restore,
     restore_webui_snapshot,
 )
-from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME, SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR
+from sd_webui_all_in_one.logger import get_logger
 
 
 SnapshotFactory = Callable[[bool], WebUiSnapshot]
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 
 @dataclass(slots=True)
@@ -456,9 +463,11 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
 
     def create_snapshot(self) -> None:
         """创建新的 WebUI 环境快照。"""
+        include_packages = bool(self.include_packages_var.get())
+        logger.info("开始创建 WebUI 环境快照")
 
         def _task() -> tuple[WebUiSnapshot, Path]:
-            snapshot = self.snapshot_factory(bool(self.include_packages_var.get()))
+            snapshot = self.snapshot_factory(include_packages)
             output_path = resolve_snapshot_output(snapshot, self.snapshot_dir)
             save_snapshot(snapshot, output_path)
             return snapshot, output_path

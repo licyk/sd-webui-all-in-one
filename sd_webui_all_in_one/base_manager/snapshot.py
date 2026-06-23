@@ -17,11 +17,18 @@ from sd_webui_all_in_one.base_manager.repository_inspector import (
     inspect_repository,
     run_git_output,
 )
-from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME, SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR
+from sd_webui_all_in_one.logger import get_logger
 
 
 SNAPSHOT_SCHEMA_VERSION = 1
 """环境快照结构版本"""
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 JsonPrimitive: TypeAlias = str | int | float | bool | None
 JsonValue: TypeAlias = JsonPrimitive | list["JsonValue"] | dict[str, "JsonValue"]
@@ -948,6 +955,7 @@ def build_webui_snapshot(
     Returns:
         WebUiSnapshot: WebUI 环境快照。
     """
+    logger.info("开始采集 %s 环境快照: %s", webui_name, webui_path)
     return WebUiSnapshot(
         schema_version=SNAPSHOT_SCHEMA_VERSION,
         created_at=utc_now_iso(),

@@ -35,6 +35,7 @@ def output_snapshot(
     Returns:
         Path: 已写入的快照文件路径。
     """
+    logger.info("开始创建 WebUI 环境快照")
     snapshot = snapshot_factory()
     output_path = resolve_snapshot_output(snapshot, output)
     save_snapshot(snapshot, output_path)

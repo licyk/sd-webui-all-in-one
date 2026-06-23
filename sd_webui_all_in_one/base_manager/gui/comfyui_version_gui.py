@@ -254,7 +254,7 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
     ) -> None:
         toolbar = ttk.Frame(self.install_tab)
         toolbar.pack(fill=tk.X, padx=8, pady=8)
-        ttk.Button(toolbar, text="刷新节点源", command=self.refresh_extension_index).pack(side=tk.LEFT)
+        ttk.Button(toolbar, text="刷新节点源", command=lambda: self.refresh_extension_index(force_refresh=True)).pack(side=tk.LEFT)
         self.tag_var = tk.StringVar(value="全部分类")
         self.tag_combo = ttk.Combobox(toolbar, textvariable=self.tag_var, state="readonly", values=("全部分类",), width=18)
         self.tag_combo.pack(side=tk.LEFT, padx=(8, 0))
@@ -428,9 +428,14 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
 
     def refresh_extension_index(
         self,
+        force_refresh: bool = False,
     ) -> None:
         """
         刷新自定义节点源列表
+
+        Args:
+            force_refresh (bool):
+                是否强制忽略 Comfy Registry 内存缓存。
         """
         self._extension_index_generation += 1
         generation = self._extension_index_generation
@@ -438,7 +443,7 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self._registry_extension_index = []
 
         def _apply_manager_items(items: list[ExtensionIndexItem]) -> None:
-            self._apply_manager_extension_index(generation, items)
+            self._apply_manager_extension_index(generation, items, force_refresh)
 
         self.run_background("刷新 ComfyUI-Manager 节点源中...", lambda: fetch_comfyui_custom_node_index(self.extension_index_url), _apply_manager_items)
 
@@ -446,16 +451,18 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         self,
         generation: int,
         items: list[ExtensionIndexItem],
+        force_refresh: bool = False,
     ) -> None:
         if generation != self._extension_index_generation:
             return
         self._manager_extension_index = items
         self._apply_extension_index([*self._manager_extension_index])
-        self._refresh_registry_extension_index(generation)
+        self._refresh_registry_extension_index(generation, force_refresh)
 
     def _refresh_registry_extension_index(
         self,
         generation: int,
+        force_refresh: bool = False,
     ) -> None:
         def _progress(loaded: int, total: int | None) -> None:
             self.after(0, lambda loaded=loaded, total=total: self._apply_registry_extension_index_progress(generation, loaded, total))
@@ -468,7 +475,7 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
 
         self.run_background(
             "加载 Comfy Registry 节点源中...",
-            lambda: fetch_comfy_registry_extension_index(limit=None, page_size=500, progress_callback=_progress),
+            lambda: fetch_comfy_registry_extension_index(limit=None, page_size=500, force_refresh=force_refresh, progress_callback=_progress),
             _apply_registry_items,
             _handle_registry_error,
         )
