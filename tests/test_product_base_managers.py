@@ -11,6 +11,7 @@ from sd_webui_all_in_one.base_manager import invokeai_base
 from sd_webui_all_in_one.base_manager import qwen_tts_webui_base
 from sd_webui_all_in_one.base_manager import sd_webui_base
 from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryState
+from sd_webui_all_in_one.base_manager.version_manager import ManagedExtension
 
 
 def _fake_repository_state(path: Path) -> RepositoryState:
@@ -235,6 +236,59 @@ def test_comfyui_custom_node_install_and_update_aggregate_errors(monkeypatch, tm
     with pytest.raises(AggregateError):
         comfyui_base.update_comfyui_custom_nodes(tmp_path)
     assert sorted(updates) == ["bad", "ok"]
+
+
+def test_comfyui_extension_manager_update_all_reuses_extension_scan(monkeypatch, tmp_path):
+    manager = comfyui_base.ComfyUiExtensionManager(tmp_path)
+    git_path = tmp_path / "custom_nodes" / "git-node"
+    registry_path = tmp_path / "custom_nodes" / "registry-node"
+    file_path = tmp_path / "custom_nodes" / "file.py"
+    extensions = [
+        ManagedExtension(
+            name="git-node",
+            path=git_path,
+            enabled=True,
+            is_git_repo=True,
+            source_type="git",
+        ),
+        ManagedExtension(
+            name="registry-node",
+            path=registry_path,
+            enabled=True,
+            is_git_repo=False,
+            source_type="comfy-registry",
+            registry_id="registry-node",
+        ),
+        ManagedExtension(
+            name="file.py",
+            path=file_path,
+            enabled=True,
+            is_git_repo=False,
+            source_type="file",
+        ),
+    ]
+    scan_count = 0
+
+    def fake_list_extensions():
+        nonlocal scan_count
+        scan_count += 1
+        return extensions
+
+    git_updates = []
+    registry_updates = []
+
+    def fake_registry_update(comfyui_path, *, node_id, version, target_path):
+        registry_updates.append((comfyui_path, node_id, version, target_path))
+
+    monkeypatch.setattr(manager, "list_extensions", fake_list_extensions)
+    monkeypatch.setattr(comfyui_base.git_warpper, "update", lambda path: git_updates.append(path))
+    monkeypatch.setattr(comfyui_base, "switch_comfy_registry_node_version", fake_registry_update)
+
+    manager.update_all()
+
+    assert scan_count == 1
+    assert git_updates == [git_path]
+    assert registry_updates == [(tmp_path, "registry-node", None, registry_path)]
 
 
 def test_launch_helpers_build_env_and_delegate(monkeypatch, tmp_path):

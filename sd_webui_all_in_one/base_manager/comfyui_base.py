@@ -1128,12 +1128,25 @@ class ComfyUiExtensionManager:
         ext = next((item for item in self.list_extensions() if item.name == name), None)
         if ext is None:
             raise FileNotFoundError(f"'{name}' 扩展未安装")
+        self._update_extension(ext)
+
+    def _update_extension(self, ext: ManagedExtension) -> None:
+        """根据已解析的扩展信息更新自定义节点。
+
+        Args:
+            ext (ManagedExtension):
+                已解析的自定义节点信息。
+
+        Raises:
+            ValueError:
+                节点不是可更新来源时抛出。
+        """
         if ext.source_type == "comfy-registry":
             node_id = ext.registry_id or _normalize_custom_node_name(ext.name)
             switch_comfy_registry_node_version(self.root_path, node_id=node_id, version=None, target_path=ext.path)
             return
         if not ext.is_git_repo:
-            raise ValueError(f"'{name}' 不是 Git 仓库或 Comfy Registry 节点，无法更新")
+            raise ValueError(f"'{ext.name}' 不是 Git 仓库或 Comfy Registry 节点，无法更新")
         git_warpper.update(ext.path)
 
     def update_all(self) -> None:
@@ -1148,7 +1161,7 @@ class ComfyUiExtensionManager:
             if ext.source_type not in {"git", "comfy-registry"}:
                 continue
             try:
-                self.update_extension(ext.name)
+                self._update_extension(ext)
             except Exception as e:
                 errors.append(e)
         if errors:
