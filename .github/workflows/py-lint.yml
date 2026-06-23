@@ -39,11 +39,13 @@ jobs:
         run: python -m python_docstring_checker sd_webui_all_in_one
 
   Ty:
-    name: Ty on ${{ matrix.os }}
+    name: Ty on Python ${{ matrix.python-version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
         include:
           - os: ubuntu-latest
             ty-platform: linux
@@ -59,7 +61,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v8.1.0
@@ -70,5 +72,6 @@ jobs:
       - name: Run ty
         shell: bash
         run: |
-          PYTHON_PATH="$(uv run --group dev python -c "import sys; print(sys.executable)")"
-          uv run --group dev python -m ty check sd_webui_all_in_one --python "$PYTHON_PATH" --python-version 3.10 --python-platform "${{ matrix.ty-platform }}" --output-format github --no-progress
+          HOST_PYTHON="$(python -c "import sys; print(sys.executable)")"
+          PYTHON_PATH="$(uv run --group dev --python "$HOST_PYTHON" python -c "import sys; print(sys.executable)")"
+          uv run --group dev --python "$HOST_PYTHON" python -m ty check sd_webui_all_in_one --python "$PYTHON_PATH" --python-version "${{ matrix.python-version }}" --python-platform "${{ matrix.ty-platform }}" --output-format github --no-progress
