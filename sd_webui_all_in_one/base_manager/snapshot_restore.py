@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Literal, cast
 from urllib.parse import unquote, urlparse
-from urllib.request import url2pathname
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
@@ -214,11 +213,20 @@ def _package_version_spec(package: PackageSnapshot) -> str:
     return f"{package.name}=={package.version}"
 
 
+def _normalize_file_url_path(path: str) -> str:
+    path_text = unquote(path)
+    if len(path_text) >= 3 and path_text[0] == "/" and path_text[1].isalpha() and path_text[2] in {":", "|"}:
+        path_text = path_text[1:]
+    if len(path_text) >= 2 and path_text[0].isalpha() and path_text[1] == "|":
+        path_text = f"{path_text[0]}:{path_text[2:]}"
+    return path_text
+
+
 def _local_path_from_url(url: str) -> Path | None:
     parsed = urlparse(url)
     if parsed.scheme == "file":
-        path_text = url2pathname(unquote(parsed.path))
-        if parsed.netloc:
+        path_text = _normalize_file_url_path(parsed.path)
+        if parsed.netloc and parsed.netloc.lower() != "localhost":
             path_text = f"//{parsed.netloc}{path_text}"
         return Path(path_text)
     if parsed.scheme == "":

@@ -104,6 +104,22 @@ def _package_snapshot(
     )
 
 
+@pytest.mark.parametrize(
+    ("url", "expected"),
+    [
+        ("file:///workspace/demo%20pkg", Path("/workspace/demo pkg")),
+        ("file://localhost/workspace/demo", Path("/workspace/demo")),
+        ("file:///C:/Users/demo/pkg", Path("C:/Users/demo/pkg")),
+        ("file:///C|/Users/demo/pkg", Path("C:/Users/demo/pkg")),
+        ("file://server/share/demo%20pkg", Path("//server/share/demo pkg")),
+        ("relative/pkg", Path("relative/pkg")),
+        ("https://example.test/pkg", None),
+    ],
+)
+def test_snapshot_restore_local_path_from_url_handles_common_file_url_forms(url, expected):
+    assert restore_utils._local_path_from_url(url) == expected
+
+
 def test_collect_installed_packages_reads_standard_source_metadata(monkeypatch):
     direct_url = {
         "url": "file:///workspace/demo",
