@@ -8,12 +8,16 @@ import subprocess
 import os
 import sys
 from collections.abc import Mapping
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from tempfile import TemporaryDirectory
 from pathlib import Path
 from typing import Any
 
 import requests
+
+
+UTC_PLUS_8 = timezone(timedelta(hours=8))
+"""整合包更新时间显示时区。"""
 
 
 def fetch_portable_list(
@@ -60,22 +64,15 @@ def get_update_time(
 def format_update_time(
     update_time: str,
 ) -> str:
-    """将 ISO 更新时间格式化为本地时区时间"""
+    """将 ISO 更新时间格式化为 UTC+8 时间"""
     try:
         normalized_update_time = update_time.removesuffix("Z") + "+00:00" if update_time.endswith("Z") else update_time
         parsed_update_time = datetime.fromisoformat(normalized_update_time)
         if parsed_update_time.tzinfo is None:
             parsed_update_time = parsed_update_time.replace(tzinfo=timezone.utc)
 
-        local_update_time = parsed_update_time.astimezone()
-        offset = local_update_time.utcoffset()
-        timezone_text = "UTC"
-        if offset is not None and offset.total_seconds() != 0:
-            total_minutes = int(offset.total_seconds() / 60)
-            sign = "+" if total_minutes >= 0 else "-"
-            abs_minutes = abs(total_minutes)
-            timezone_text = f"UTC{sign}{abs_minutes // 60:02d}:{abs_minutes % 60:02d}"
-        return f"{local_update_time:%Y-%m-%d %H:%M:%S} ({timezone_text})"
+        display_update_time = parsed_update_time.astimezone(UTC_PLUS_8)
+        return f"{display_update_time:%Y-%m-%d %H:%M:%S} (UTC+08:00)"
     except ValueError:
         return update_time
 

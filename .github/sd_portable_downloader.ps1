@@ -73,7 +73,7 @@
 param (
     [string]$ScriptRootPath
 )
-$script:SD_PORTABLE_DOWNLOADER_VERSION = 114
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 115
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -490,17 +490,8 @@ function Format-Portable-UpdateTime {
             )
         }
 
-        $localTime = $dateTimeOffset.ToLocalTime()
-        $offset = $localTime.Offset
-        if ($offset -eq [TimeSpan]::Zero) {
-            $timeZoneText = "UTC"
-        } else {
-            $sign = if ($offset.Ticks -lt 0) { "-" } else { "+" }
-            $absOffset = $offset.Duration()
-            $offsetHours = [Math]::Floor($absOffset.TotalHours)
-            $timeZoneText = "UTC{0}{1:00}:{2:00}" -f $sign, $offsetHours, $absOffset.Minutes
-        }
-        return "{0} ({1})" -f $localTime.ToString("yyyy-MM-dd HH:mm:ss"), $timeZoneText
+        $displayTime = $dateTimeOffset.ToOffset([TimeSpan]::FromHours(8))
+        return "{0} (UTC+08:00)" -f $displayTime.ToString("yyyy-MM-dd HH:mm:ss")
     } catch {
         return $rawUpdateTime
     }
