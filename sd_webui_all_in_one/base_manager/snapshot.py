@@ -12,6 +12,7 @@ from importlib import metadata
 from pathlib import Path
 from typing import Callable, Literal, TypeAlias, cast
 
+from sd_webui_all_in_one.base_manager.base import get_repo_name_from_url
 from sd_webui_all_in_one.base_manager.repository_inspector import (
     RepositoryState,
     inspect_repository,
@@ -656,8 +657,6 @@ def comfyui_manager_snapshot_from_dict(data: JsonObject, snapshot_path: Path | N
         WebUiSnapshot:
             转换后的本项目快照对象。
     """
-    from sd_webui_all_in_one.base_manager.base import get_repo_name_from_url
-
     extensions: list[ExtensionSnapshot] = []
     git_nodes = data.get("git_custom_nodes", {})
     if isinstance(git_nodes, dict):

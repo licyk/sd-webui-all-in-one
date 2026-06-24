@@ -12,6 +12,10 @@ from typing import Callable, Literal, cast
 from urllib.parse import unquote, urlparse
 
 from sd_webui_all_in_one import git_warpper
+import sd_webui_all_in_one.base_manager.comfy_registry as comfy_registry
+import sd_webui_all_in_one.base_manager.comfyui_base as comfyui_base
+import sd_webui_all_in_one.base_manager.invokeai_base as invokeai_base
+import sd_webui_all_in_one.base_manager.sd_webui_base as sd_webui_base
 from sd_webui_all_in_one.base_manager.base import (
     apply_git_base_config_and_github_mirror,
     clone_repo,
@@ -544,29 +548,23 @@ def _prune_python_packages(
 
 def _extension_tools(webui_type: str) -> ExtensionRestoreTools | None:
     if webui_type == "sd_webui":
-        from sd_webui_all_in_one.base_manager.sd_webui_base import set_sd_webui_extensions_status, uninstall_sd_webui_extension
-
         return ExtensionRestoreTools(
             directory_name="extensions",
-            set_status=set_sd_webui_extensions_status,
-            uninstall=uninstall_sd_webui_extension,
+            set_status=sd_webui_base.set_sd_webui_extensions_status,
+            uninstall=sd_webui_base.uninstall_sd_webui_extension,
         )
     if webui_type == "comfyui":
-        from sd_webui_all_in_one.base_manager.comfyui_base import set_comfyui_custom_node_status, uninstall_comfyui_custom_node
-
         return ExtensionRestoreTools(
             directory_name="custom_nodes",
-            set_status=set_comfyui_custom_node_status,
-            uninstall=uninstall_comfyui_custom_node,
+            set_status=comfyui_base.set_comfyui_custom_node_status,
+            uninstall=comfyui_base.uninstall_comfyui_custom_node,
             strip_disabled_suffix=True,
         )
     if webui_type == "invokeai":
-        from sd_webui_all_in_one.base_manager.invokeai_base import set_invokeai_custom_nodes_status, uninstall_invokeai_custom_node
-
         return ExtensionRestoreTools(
             directory_name="nodes",
-            set_status=set_invokeai_custom_nodes_status,
-            uninstall=uninstall_invokeai_custom_node,
+            set_status=invokeai_base.set_invokeai_custom_nodes_status,
+            uninstall=invokeai_base.uninstall_invokeai_custom_node,
         )
     return None
 
@@ -746,9 +744,7 @@ def _extension_current_enabled(
     if webui_type == "sd_webui":
         return _sd_webui_extension_enabled(webui_path, extension_name)
     if webui_type == "comfyui":
-        from sd_webui_all_in_one.base_manager.comfyui_base import get_comfyui_custom_node_enabled
-
-        enabled = get_comfyui_custom_node_enabled(webui_path, extension_name)
+        enabled = comfyui_base.get_comfyui_custom_node_enabled(webui_path, extension_name)
         return enabled if enabled is not None else not extension_name.endswith(".disabled")
     if webui_type == "invokeai":
         return (target_path / "__init__.py").is_file()
@@ -767,17 +763,14 @@ def _build_registry_restore_plan(
     webui_path: Path,
     target_path: Path,
 ) -> tuple[RegistryRestoreAction, str, str | None, str | None, str | None]:
-    from sd_webui_all_in_one.base_manager.comfy_registry import read_comfy_registry_info
-    from sd_webui_all_in_one.base_manager.comfyui_base import resolve_comfyui_custom_node_path
-
     registry_id = extension.registry_id or extension.name.removesuffix(".disabled")
     if not registry_id:
         return "skip_registry_missing_id", "快照缺少 Comfy Registry 节点 ID", None, extension.registry_version, None
 
-    resolved = resolve_comfyui_custom_node_path(webui_path, extension.name) or resolve_comfyui_custom_node_path(webui_path, registry_id)
+    resolved = comfyui_base.resolve_comfyui_custom_node_path(webui_path, extension.name) or comfyui_base.resolve_comfyui_custom_node_path(webui_path, registry_id)
     current_version = None
     if resolved is not None:
-        current_info = read_comfy_registry_info(resolved[0])
+        current_info = comfy_registry.read_comfy_registry_info(resolved[0])
         if current_info is not None:
             current_version = current_info.version
     target_version = extension.registry_version
@@ -939,18 +932,15 @@ def restore_comfy_registry_extension(
         bool:
             Registry 扩展是否已恢复或可视为存在。
     """
-    from sd_webui_all_in_one.base_manager.comfy_registry import ComfyRegistryInstallUnavailableError, switch_comfy_registry_node_version
-    from sd_webui_all_in_one.base_manager.comfyui_base import resolve_comfyui_custom_node_path
-
     registry_id = extension.registry_id or extension.name.removesuffix(".disabled")
     if not registry_id:
         logger.warning("快照扩展缺少 Comfy Registry 节点 ID, 跳过: %s", extension.name)
         return False
-    resolved = resolve_comfyui_custom_node_path(webui_path, extension.name) or resolve_comfyui_custom_node_path(webui_path, registry_id)
+    resolved = comfyui_base.resolve_comfyui_custom_node_path(webui_path, extension.name) or comfyui_base.resolve_comfyui_custom_node_path(webui_path, registry_id)
     target_path = resolved[0] if resolved is not None else webui_path / "custom_nodes" / registry_id
     custom_env = _pypi_env(use_pypi_mirror=options.use_pypi_mirror)
     try:
-        switch_comfy_registry_node_version(
+        comfy_registry.switch_comfy_registry_node_version(
             comfyui_path=webui_path,
             node_id=registry_id,
             version=extension.registry_version,
@@ -958,7 +948,7 @@ def restore_comfy_registry_extension(
             use_uv=options.use_uv,
             custom_env=custom_env,
         )
-    except ComfyRegistryInstallUnavailableError as e:
+    except comfy_registry.ComfyRegistryInstallUnavailableError as e:
         logger.warning("快照中的 Comfy Registry 节点不可安装，已跳过: %s", e)
         return False
     return True

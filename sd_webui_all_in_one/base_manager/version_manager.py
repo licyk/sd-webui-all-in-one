@@ -21,7 +21,7 @@ from sd_webui_all_in_one.base_manager.base import (
     get_repo_name_from_url,
 )
 from sd_webui_all_in_one.base_manager.repository_inspector import (
-    RepositoryState as _RepositoryState,
+    RepositoryState as RepositoryState,
     inspect_repository,
     run_git_output,
 )
@@ -34,9 +34,6 @@ from sd_webui_all_in_one.package_analyzer import CommonVersionComparison
 DEFAULT_EXTENSION_INDEX_URL = "https://raw.githubusercontent.com/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json"
 """AUTOMATIC1111 扩展源地址"""
 
-
-RepositoryState = _RepositoryState
-"""Git 仓库状态"""
 
 ExtensionSourceType = Literal["git", "comfy-registry", "file", "unknown"]
 """扩展安装来源类型"""
