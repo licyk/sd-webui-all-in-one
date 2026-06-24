@@ -13,9 +13,12 @@ import time
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, TYPE_CHECKING
 
 from sd_webui_all_in_one.config import ROOT_PATH, SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH
+
+if TYPE_CHECKING:
+    from sd_webui_all_in_one_hotpatcher import services
 
 HOTPATCHER_PATH = ROOT_PATH / "patcher"
 DEFAULT_HOTPATCHER_CONFIG_PATH = SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH
@@ -39,7 +42,7 @@ def ensure_hotpatcher_import_path() -> Path:
     return HOTPATCHER_PATH
 
 
-def _services_module() -> Any:
+def _services_module() -> "services":  # ty: ignore[invalid-type-form]
     ensure_hotpatcher_import_path()
     from sd_webui_all_in_one_hotpatcher import services
 
