@@ -51,7 +51,7 @@ DEFAULT_ENV_VARS = [
 ROOT_PATH = Path(__file__).parent
 """SD WebUI All In One 根目录"""
 
-UV_MINIMUM_VER = "0.9.28"
+UV_MINIMUM_VER = "0.11.24"
 """uv 最低版本要求版本号"""
 
 PIP_MINIMUM_VER = "26.0"
