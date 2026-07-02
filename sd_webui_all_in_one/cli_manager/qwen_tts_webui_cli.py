@@ -7,6 +7,7 @@ import traceback
 from pathlib import Path
 
 from sd_webui_all_in_one.base_manager import (
+    DEFAULT_RUNTIME_PORT,
     install_qwen_tts_webui,
     update_qwen_tts_webui,
     check_qwen_tts_webui_env,
@@ -263,7 +264,7 @@ def launch(
     check_launch_env: bool = True,
     enable_hotpatcher: bool = False,
     hotpatcher_config_path: str | Path | None = None,
-    hotpatcher_port: int | None = None,
+    hotpatcher_port: int = DEFAULT_RUNTIME_PORT,
     enable_hotpatcher_runtime: bool = False,
 ) -> None:
     """启动 Qwen TTS WebUI
@@ -293,7 +294,7 @@ def launch(
             是否启用补丁系统注入
         hotpatcher_config_path (str | Path | None):
             补丁系统配置文件路径
-        hotpatcher_port (int | None):
+        hotpatcher_port (int):
             补丁系统 runtime 通信端口
         enable_hotpatcher_runtime (bool):
             是否启用补丁系统 runtime host 连接
@@ -387,7 +388,7 @@ def reinstall_pytorch(
     pytorch_name: str | None = None,
     pytorch_index: int | None = None,
     use_pypi_mirror: bool = True,
-    use_uv: bool | None = None,
+    use_uv: bool = True,
     interactive_mode: bool = False,
     list_only: bool = False,
     force_reinstall: bool = False,
@@ -405,7 +406,7 @@ def reinstall_pytorch(
             PyTorch 版本条目索引。
         use_pypi_mirror (bool):
             是否使用 PyPI 镜像源。
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 执行 Python 包安装。
         interactive_mode (bool):
             是否启用交互模式。
@@ -624,7 +625,7 @@ def register_qwen_tts_webui(
     launch_p.add_argument("--no-hotpatcher", action="store_false", dest="enable_hotpatcher", default=True, help="禁用补丁系统注入")
     launch_p.add_argument("--hotpatcher-runtime", action="store_true", dest="enable_hotpatcher_runtime", default=False, help="启用补丁系统 runtime host 连接")
     launch_p.add_argument("--hotpatcher-config", type=normalized_filepath, dest="hotpatcher_config_path", help="补丁系统配置文件路径")
-    launch_p.add_argument("--hotpatcher-port", type=int, dest="hotpatcher_port", help="补丁系统 runtime 通信端口")
+    launch_p.add_argument("--hotpatcher-port", type=int, dest="hotpatcher_port", default=DEFAULT_RUNTIME_PORT, help="补丁系统 runtime 通信端口")
     add_auto_mirror_argument(launch_p)
     launch_p.set_defaults(
         func=with_auto_mirror(

@@ -655,7 +655,7 @@ def test_webui_launch_cli_hotpatcher_parser(register_name, command, tmp_path):
     assert default_args.enable_hotpatcher is True
     assert default_args.enable_hotpatcher_runtime is False
     assert default_args.hotpatcher_config_path is None
-    assert default_args.hotpatcher_port is None
+    assert default_args.hotpatcher_port == DEFAULT_RUNTIME_PORT
 
     config_path = tmp_path / "patcher.json"
     custom_args = parser.parse_args(

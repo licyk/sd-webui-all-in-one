@@ -12,7 +12,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.cmd import run_cmd
+from sd_webui_all_in_one.cmd import DEFAULT_SUBPROCESS_SHELL, run_cmd
 
 
 logger = get_logger(
@@ -74,7 +74,7 @@ def run_git(
     path: Path | None = None,
     custom_env: dict[str, str] | None = None,
     live: Literal[False] = False,
-    shell: bool | None = None,
+    shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
 ) -> str:
@@ -90,7 +90,7 @@ def run_git(
             自定义环境变量
         live (Literal[False]):
             是否实时输出命令执行日志
-        shell (bool | None):
+        shell (bool):
             是否使用内置 Shell 执行命令
         cwd (Path | None):
             执行进程时的起始路径
@@ -109,7 +109,7 @@ def run_git(
     path: Path | None = None,
     custom_env: dict[str, str] | None = None,
     live: Literal[True] = True,
-    shell: bool | None = None,
+    shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
 ) -> str | None:
@@ -125,7 +125,7 @@ def run_git(
             自定义环境变量
         live (Literal[True]):
             是否实时输出命令执行日志
-        shell (bool | None):
+        shell (bool):
             是否使用内置 Shell 执行命令
         cwd (Path | None):
             执行进程时的起始路径
@@ -144,7 +144,7 @@ def run_git(
     path: Path | None = None,
     custom_env: dict[str, str] | None = None,
     live: bool = True,
-    shell: bool | None = None,
+    shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
 ) -> str | None:
@@ -160,7 +160,7 @@ def run_git(
             自定义环境变量
         live (bool):
             是否实时输出命令执行日志
-        shell (bool | None):
+        shell (bool):
             是否使用内置 Shell 执行命令
         cwd (Path | None):
             执行进程时的起始路径
@@ -178,7 +178,7 @@ def run_git(
     path: Path | None = None,
     custom_env: dict[str, str] | None = None,
     live: bool = True,
-    shell: bool | None = None,
+    shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
 ) -> str | None:
@@ -194,7 +194,7 @@ def run_git(
             自定义环境变量
         live (bool):
             是否实时输出命令执行日志
-        shell (bool | None):
+        shell (bool):
             是否使用内置 Shell 执行命令
         cwd (Path | None):
             执行进程时的起始路径
@@ -205,9 +205,9 @@ def run_git(
         str | None: 命令输出
     """
     command = build_git_command(*args, path=path)
-    if custom_env is None and live is True and shell is None and cwd is None and check is True:
+    if custom_env is None and live is True and shell == DEFAULT_SUBPROCESS_SHELL and cwd is None and check is True:
         return run_cmd(command)
-    if custom_env is None and shell is None and cwd is None and check is True:
+    if custom_env is None and shell == DEFAULT_SUBPROCESS_SHELL and cwd is None and check is True:
         return run_cmd(command, live=live)
     return run_cmd(command, custom_env=custom_env, live=live, shell=shell, cwd=cwd, check=check)
 

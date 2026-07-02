@@ -60,6 +60,8 @@ logger = get_logger(
     color=LOGGER_COLOR,
 )
 
+DEFAULT_SUBPROCESS_SHELL = sys.platform != "win32"
+
 
 def preprocess_command(
     command: list[str] | str,
@@ -95,7 +97,7 @@ def run_cmd(
     command: str | list[str],
     custom_env: dict[str, str] | None = None,
     live: Literal[False] = False,
-    shell: bool | None = None,
+    shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
 ) -> str:
@@ -108,7 +110,7 @@ def run_cmd(
             自定义环境变量
         live (Literal[False]):
             是否实时输出命令执行日志
-        shell (bool | None):
+        shell (bool):
             是否使用内置 Shell 执行命令
         cwd (Path | None):
             执行进程时的起始路径
@@ -127,7 +129,7 @@ def run_cmd(
     command: str | list[str],
     custom_env: dict[str, str] | None = None,
     live: Literal[True] = True,
-    shell: bool | None = None,
+    shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
 ) -> str | None:
@@ -140,7 +142,7 @@ def run_cmd(
             自定义环境变量
         live (Literal[True]):
             是否实时输出命令执行日志
-        shell (bool | None):
+        shell (bool):
             是否使用内置 Shell 执行命令
         cwd (Path | None):
             执行进程时的起始路径
@@ -159,7 +161,7 @@ def run_cmd(
     command: str | list[str],
     custom_env: dict[str, str] | None = None,
     live: bool = True,
-    shell: bool | None = None,
+    shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
 ) -> str | None:
@@ -172,7 +174,7 @@ def run_cmd(
             自定义环境变量
         live (bool):
             是否实时输出命令执行日志
-        shell (bool | None):
+        shell (bool):
             是否使用内置 Shell 执行命令
         cwd (Path | None):
             执行进程时的起始路径
@@ -190,7 +192,7 @@ def run_cmd(
     command: str | list[str],
     custom_env: dict[str, str] | None = None,
     live: bool = True,
-    shell: bool | None = None,
+    shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
 ) -> str | None:
@@ -203,7 +205,7 @@ def run_cmd(
             自定义环境变量
         live (bool):
             是否实时输出命令执行日志
-        shell (bool | None):
+        shell (bool):
             是否使用内置 Shell 执行命令
         cwd (Path | None):
             执行进程时的起始路径
@@ -220,10 +222,10 @@ def run_cmd(
     def _run_in_jupyter(
         command: str | list[str],
         custom_env: dict[str, str] | None = None,
-        shell: bool | None = None,
+        shell: bool = DEFAULT_SUBPROCESS_SHELL,
         cwd: Path | None = None,
     ) -> subprocess.Popen:
-        process = subprocess.Popen(  # ty: ignore[no-matching-overload]
+        process = subprocess.Popen(
             command,
             shell=shell,
             stdout=subprocess.PIPE,
@@ -245,9 +247,6 @@ def run_cmd(
 
         process.wait()
         return process
-
-    if shell is None:
-        shell = sys.platform != "win32"
 
     if custom_env is None:
         custom_env = os.environ.copy()

@@ -442,7 +442,7 @@ def reinstall_pytorch(
     pytorch_name: str | None = None,
     pytorch_index: int | None = None,
     use_pypi_mirror: bool = True,
-    use_uv: bool | None = None,
+    use_uv: bool = True,
     interactive_mode: bool = False,
     list_only: bool = False,
     force_reinstall: bool = False,
@@ -460,7 +460,7 @@ def reinstall_pytorch(
             PyTorch 版本条目索引。
         use_pypi_mirror (bool):
             是否使用 PyPI 镜像源。
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 执行 Python 包安装。
         interactive_mode (bool):
             是否启用交互模式。

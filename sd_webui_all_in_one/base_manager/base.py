@@ -213,7 +213,7 @@ def reinstall_pytorch(
     pytorch_name: str | None = None,
     pytorch_index: int | None = None,
     use_pypi_mirror: bool = True,
-    use_uv: bool | None = None,
+    use_uv: bool = True,
     interactive_mode: bool = False,
     list_only: bool = False,
     force_reinstall: bool = False,
@@ -227,7 +227,7 @@ def reinstall_pytorch(
             PyTorch 版本组合索引值
         use_pypi_mirror (bool):
             是否使用 PyPI 国内镜像
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 进行 PyTorch 安装
         interactive_mode (bool):
             是否启用交互模式
@@ -236,8 +236,6 @@ def reinstall_pytorch(
         force_reinstall (bool):
             是否强制重装 PyTorch
     """
-    resolved_use_uv = True if use_uv is None else use_uv
-
     def _install(
         input_name: str | None = None,
         input_index: int | None = None,
@@ -257,7 +255,7 @@ def reinstall_pytorch(
             torch_package=info["torch_ver"],
             xformers_package=info["xformers_ver"],
             custom_env=custom_env,
-            use_uv=resolved_use_uv,
+            use_uv=use_uv,
         )
 
     def _uninstall() -> None:
@@ -330,7 +328,7 @@ def reinstall_pytorch(
                     torch_package=pytorch,
                     xformers_package=xformers,
                     custom_env=custom_env,
-                    use_uv=resolved_use_uv,
+                    use_uv=use_uv,
                 )
                 return
 

@@ -113,7 +113,7 @@ class BaseManager:
         workfolder: str,
         hf_token: str | None = None,
         ms_token: str | None = None,
-        port: int | None = 7860,
+        port: int = 7860,
     ) -> None:
         """管理工具初始化
 
@@ -126,14 +126,14 @@ class BaseManager:
                 HuggingFace Token
             ms_token (str | None):
                 ModelScope Token
-            port (int | None):
+            port (int):
                 内网穿透端口
         """
         self.workspace = Path(workspace)
         self.workspace.mkdir(parents=True, exist_ok=True)
         self.workfolder = workfolder
         self.repo_manager = RepoManager(hf_token, ms_token)
-        self.tun_manager = TunnelManager(self.workspace, port if port is not None else 7860)
+        self.tun_manager = TunnelManager(self.workspace, port)
         self.tcmalloc_manager = TCMalloc(self.workspace)
         self.copy_files = copy_files
         self.remove_files = remove_files

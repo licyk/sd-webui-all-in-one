@@ -481,7 +481,7 @@ def recursive_tree_builder(
     counts: list[int],
     current_depth: int,
     max_depth: int | None,
-    show_hidden: bool | None,
+    show_hidden: bool,
 ) -> None:
     """递归地构建和打印目录树
 
@@ -491,7 +491,7 @@ def recursive_tree_builder(
         counts (list[int]): 包含目录和文件计数的列表
         current_depth (int): 当前的递归深度
         max_depth (int | None): 允许的最大递归深度
-        show_hidden (bool | None): 是否显示隐藏文件
+        show_hidden (bool): 是否显示隐藏文件
     """
     connectors_dict = {
         "T": "├── ",

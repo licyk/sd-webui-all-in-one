@@ -187,7 +187,7 @@ def apply_hotpatcher_launch_env(
     origin_env: dict[str, str] | None = None,
     enabled: bool = False,
     config_path: str | Path | None = None,
-    port: int | None = None,
+    port: int = DEFAULT_RUNTIME_PORT,
     enable_runtime: bool = False,
 ) -> dict[str, str]:
     """
@@ -200,8 +200,8 @@ def apply_hotpatcher_launch_env(
             是否启用 hotpatcher。关闭时会移除现有 hotpatcher 环境变量。
         config_path (str | Path | None):
             配置文件路径。为 None 时优先使用默认配置文件，不存在则注入默认配置 JSON。
-        port (int | None):
-            runtime host 端口。为 None 时使用默认端口。
+        port (int):
+            runtime host 端口。
         enable_runtime (bool):
             是否注入 runtime host 连接变量。默认只做本地补丁配置注入。
 
@@ -232,7 +232,7 @@ def apply_hotpatcher_launch_env(
             {
                 "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME": "1",
                 "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST": DEFAULT_RUNTIME_HOST,
-                "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT": str(port if port is not None else DEFAULT_RUNTIME_PORT),
+                "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT": str(port),
                 "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES": "1",
             }
         )

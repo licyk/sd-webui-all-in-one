@@ -24,7 +24,7 @@ from sd_webui_all_in_one.base_manager.base import (
     prepare_pytorch_install_info,
     print_divider,
 )
-from sd_webui_all_in_one.base_manager.hotpatcher_manager import apply_hotpatcher_launch_env
+from sd_webui_all_in_one.base_manager.hotpatcher_manager import DEFAULT_RUNTIME_PORT, apply_hotpatcher_launch_env
 from sd_webui_all_in_one.base_manager.snapshot import WebUiSnapshot, build_webui_snapshot
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.downloader import (
@@ -524,7 +524,7 @@ def launch_sd_trainer(
     use_cuda_malloc: bool = True,
     enable_hotpatcher: bool = False,
     hotpatcher_config_path: str | Path | None = None,
-    hotpatcher_port: int | None = None,
+    hotpatcher_port: int = DEFAULT_RUNTIME_PORT,
     enable_hotpatcher_runtime: bool = False,
 ) -> None:
     """启动 SD Trainer
@@ -550,7 +550,7 @@ def launch_sd_trainer(
             是否启用补丁系统注入
         hotpatcher_config_path (str | Path | None):
             补丁系统配置文件路径
-        hotpatcher_port (int | None):
+        hotpatcher_port (int):
             补丁系统 runtime 通信端口
         enable_hotpatcher_runtime (bool):
             是否启用补丁系统 runtime host 连接

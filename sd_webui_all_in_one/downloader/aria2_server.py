@@ -103,20 +103,20 @@ class Aria2RpcServer:
 
     def __init__(
         self,
-        port: int | None = 6800,
+        port: int = 6800,
         secret: str | None = None,
         download_dir: Path | None = None,
         log_file: Path | str | None = None,
         log_level: Literal["debug", "info", "notice", "warn", "error"] | None = "notice",
         user_agent: str | None = DEFAULT_USER_AGENT,
-        use_config_file: bool | None = True,
+        use_config_file: bool = True,
         use_external_server: bool = True,
     ) -> None:
         """
         初始化 aria2 RPC 服务器管理器
 
         Args:
-            port (int | None):
+            port (int):
                 RPC 服务器监听端口, 默认 6800
             secret (str | None):
                 RPC 密钥, 用于安全认证, 为 None 时不设置密钥
@@ -128,7 +128,7 @@ class Aria2RpcServer:
                 日志级别, 可选: debug, info, notice, warn, error, 默认 "notice"
             user_agent (str | None):
                 User-Agent 配置
-            use_config_file (bool | None):
+            use_config_file (bool):
                 是否使用配置文件启动 aria2, 默认 True
             use_external_server (bool):
                 是否允许连接到外部已存在的 aria2 服务器, 默认 True。
@@ -136,13 +136,13 @@ class Aria2RpcServer:
                 可能导致其他连接到同一服务器的实例崩溃。
                 设为 False 可强制每个实例启动独立的 aria2 进程, 避免此问题。
         """
-        self.port: int = port if port is not None else 6800
+        self.port: int = port
         self.secret: str | None = secret
         self.download_dir: Path = Path(download_dir) if download_dir else Path.cwd()
         self.log_file: Path | None = Path(log_file) if log_file else None
         self.log_level: str = log_level or "notice"
         self.user_agent = user_agent or DEFAULT_USER_AGENT
-        self.use_config_file: bool = True if use_config_file is None else use_config_file
+        self.use_config_file: bool = use_config_file
         self.use_external_server: bool = use_external_server
         self.rpc_url: str = f"http://localhost:{self.port}/jsonrpc"
         self.process: subprocess.Popen | None = None

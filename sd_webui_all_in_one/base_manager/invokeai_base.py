@@ -35,6 +35,7 @@ from sd_webui_all_in_one.base_manager.base import (
     install_pytorch_with_fallback,
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
+    DEFAULT_RUNTIME_PORT,
     HOTPATCHER_ENV_PREFIX,
     apply_hotpatcher_launch_env,
     configure_hotpatcher_for_current_process,
@@ -275,7 +276,7 @@ def _ensure_invokeai_package_installed(
 
 def sync_invokeai_component(
     device_type: PyTorchDeviceTypeCategory | None = None,
-    use_pypi_mirror: bool | None = None,
+    use_pypi_mirror: bool = False,
     use_uv: bool = True,
 ) -> None:
     """同步 InvokeAI 组件
@@ -283,7 +284,7 @@ def sync_invokeai_component(
     Args:
         device_type (PyTorchDeviceTypeCategory | None):
             显卡设备类型
-        use_pypi_mirror (bool | None):
+        use_pypi_mirror (bool):
             是否使用国内 PyPI 镜像
         use_uv (bool):
             是否使用 uv 安装 Python 软件包
@@ -293,7 +294,6 @@ def sync_invokeai_component(
             同步 InvokeAI 组件发生错误时
     """
     logger.info("获取 InvokeAI 安装配置")
-    resolved_use_pypi_mirror = False if use_pypi_mirror is None else use_pypi_mirror
 
     # 获取 InvokeAI 和 InvokeAI 所需的 PyTorch 的版本
     invokeai_ver = importlib.metadata.version("invokeai")
@@ -307,7 +307,7 @@ def sync_invokeai_component(
     _, _, custom_env_pytorch = prepare_pytorch_install_info(
         pytorch_mirror_type=pytorch_mirror_type,
         custom_pytorch_package=f"torch=={torch_ver}",
-        use_cn_mirror=resolved_use_pypi_mirror,
+        use_cn_mirror=use_pypi_mirror,
     )
 
     # 配置安装 PyTorch 所需的包版本声明
@@ -317,7 +317,7 @@ def sync_invokeai_component(
     torch_without_xformers = " ".join(pytorch_package.split())
 
     # 准备安装依赖的 PyPI 镜像源
-    custom_env = get_pypi_mirror_config(resolved_use_pypi_mirror)
+    custom_env = get_pypi_mirror_config(use_pypi_mirror)
 
     logger.debug("InvokeAI 所需的 PyTorch 版本: %s", torch_ver)
     logger.debug("InvokeAI 使用的 PyTorch 镜像源类型: %s", pytorch_mirror_type)
@@ -913,7 +913,7 @@ def launch_invokeai(
     use_cuda_malloc: bool = True,
     enable_hotpatcher: bool = False,
     hotpatcher_config_path: str | Path | None = None,
-    hotpatcher_port: int | None = None,
+    hotpatcher_port: int = DEFAULT_RUNTIME_PORT,
     enable_hotpatcher_runtime: bool = False,
 ) -> None:
     """启动 InvokeAI
@@ -935,7 +935,7 @@ def launch_invokeai(
             是否启用补丁系统注入
         hotpatcher_config_path (str | Path | None):
             补丁系统配置文件路径
-        hotpatcher_port (int | None):
+        hotpatcher_port (int):
             补丁系统 runtime 通信端口
         enable_hotpatcher_runtime (bool):
             是否启用补丁系统 runtime host 连接
@@ -1707,7 +1707,7 @@ def uninstall_invokeai_model(
 def reinstall_invokeai_pytorch(
     device_type: PyTorchDeviceTypeCategory | None = None,
     use_pypi_mirror: bool = True,
-    use_uv: bool | None = None,
+    use_uv: bool = True,
     interactive_mode: bool = False,
     list_only: bool = False,
 ) -> None:
@@ -1718,15 +1718,13 @@ def reinstall_invokeai_pytorch(
             PyTorch 设备类型
         use_pypi_mirror (bool):
             是否使用 PyPI 国内镜像
-        use_uv (bool | None):
+        use_uv (bool):
             是否使用 uv 进行 PyTorch 安装
         interactive_mode (bool):
             是否启用交互模式
         list_only (bool):
             是否仅列出 PyTorch 列表并退出
     """
-    resolved_use_uv = True if use_uv is None else use_uv
-
     def _uninstall() -> None:
         run_cmd([Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "xformers", "-y"])
 
@@ -1736,7 +1734,7 @@ def reinstall_invokeai_pytorch(
         install_invokeai_component(
             device_type=d,
             use_pypi_mirror=use_pypi_mirror,
-            use_uv=resolved_use_uv,
+            use_uv=use_uv,
         )
 
     def _get_torch_and_xformers_ver() -> tuple[str | None, str | None]:
