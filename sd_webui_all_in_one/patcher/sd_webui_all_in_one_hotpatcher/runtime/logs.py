@@ -11,7 +11,7 @@ import threading
 import time
 from dataclasses import dataclass
 from locale import getpreferredencoding
-from typing import Any, Iterable, TextIO
+from typing import Any, Iterable, TextIO, cast
 
 from ..state import HotpatcherState, get_default_state
 from .client import RuntimeClient
@@ -632,7 +632,7 @@ class SubprocessCapture:
         if not self.installed:
             return
         if subprocess.Popen is self.patched_popen:
-            subprocess.Popen = self.original_popen  # type: ignore[assignment]
+            subprocess.Popen = cast(Any, self.original_popen)
         self.patched_popen = None
         self.installed = False
 
@@ -673,9 +673,9 @@ class SubprocessCapture:
         """
 
         owner = self
-        original_popen = self.original_popen
+        original_popen = cast(Any, self.original_popen)
 
-        class CapturedPopen(original_popen):  # type: ignore[misc, valid-type]
+        class CapturedPopen(original_popen):
             def __init__(captured_self: Any, *popenargs: Any, **kwargs: Any) -> None:  # pylint: disable=no-self-argument
                 (
                     prepared_args,
@@ -699,7 +699,7 @@ class SubprocessCapture:
         CapturedPopen.__name__ = getattr(original_popen, "__name__", "Popen")
         CapturedPopen.__qualname__ = getattr(original_popen, "__qualname__", "Popen")
         CapturedPopen.__module__ = getattr(original_popen, "__module__", "subprocess")
-        CapturedPopen._sd_webui_all_in_one_hotpatcher_popen = True  # ty: ignore[unresolved-attribute]
+        CapturedPopen._sd_webui_all_in_one_hotpatcher_popen = True
         return CapturedPopen
 
     def _prepare_popen(

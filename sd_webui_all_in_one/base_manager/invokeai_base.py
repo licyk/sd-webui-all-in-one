@@ -720,7 +720,7 @@ def run_invokeai() -> None:
             return await original_uvicorn_serve(self, sockets)
 
         # 应用 Monkey patch
-        uvicorn.Server.serve = _patched_serve  # ty: ignore[invalid-assignment]
+        uvicorn.Server.serve = _patched_serve
 
         # 运行 InvokeAI
         run_app()
