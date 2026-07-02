@@ -20,6 +20,7 @@ from sd_webui_all_in_one.base_manager import (
     uninstall_sd_trainer_model,
     launch_sd_trainer_version_gui,
     launch_sd_trainer_snapshot_gui,
+    launch_sd_trainer_model_manager_gui,
     reinstall_pytorch as reinstall_base_pytorch,
     get_sd_trainer_snapshot,
 )
@@ -639,6 +640,18 @@ def launch_snapshot_gui(
     )
 
 
+def launch_model_gui(
+    sd_trainer_path: Path,
+) -> None:
+    """启动 SD Trainer 模型管理 GUI
+
+    Args:
+        sd_trainer_path (Path):
+            SD Trainer 根目录路径。
+    """
+    launch_sd_trainer_model_manager_gui(sd_trainer_path=sd_trainer_path)
+
+
 def register_sd_trainer(
     subparsers: "argparse._SubParsersAction",
 ) -> None:
@@ -882,6 +895,10 @@ def register_sd_trainer(
             )
         )
     )
+
+    model_gui_p = gui_sub.add_parser("model-manager", help="启动 SD Trainer 模型管理 GUI")
+    model_gui_p.add_argument("--sd-trainer-path", type=normalized_filepath, required=False, default=SD_TRAINER_ROOT_PATH, dest="sd_trainer_path", help="SD Trainer 根目录")
+    model_gui_p.set_defaults(func=lambda args: launch_model_gui(sd_trainer_path=args.sd_trainer_path))
 
     # model
     model_parser = trainer_sub.add_parser("model", help="模型管理")

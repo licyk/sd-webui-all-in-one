@@ -18,6 +18,7 @@ from sd_webui_all_in_one.base_manager import (
     uninstall_comfyui_custom_node,
     launch_comfyui_version_gui,
     launch_comfyui_snapshot_gui,
+    launch_comfyui_model_manager_gui,
     install_comfyui_model_from_library,
     install_comfyui_model_from_url,
     list_comfyui_models,
@@ -628,6 +629,18 @@ def launch_snapshot_gui(
     )
 
 
+def launch_model_gui(
+    comfyui_path: Path,
+) -> None:
+    """启动 ComfyUI 模型管理 GUI
+
+    Args:
+        comfyui_path (Path):
+            ComfyUI 根目录路径。
+    """
+    launch_comfyui_model_manager_gui(comfyui_path=comfyui_path)
+
+
 def install_model_from_library(
     comfyui_path: Path,
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
@@ -956,6 +969,10 @@ def register_comfyui(
             )
         )
     )
+
+    model_gui_p = gui_sub.add_parser("model-manager", help="启动 ComfyUI 模型管理 GUI")
+    model_gui_p.add_argument("--comfyui-path", type=normalized_filepath, required=False, default=COMFYUI_ROOT_PATH, dest="comfyui_path", help="ComfyUI 根目录")
+    model_gui_p.set_defaults(func=lambda args: launch_model_gui(comfyui_path=args.comfyui_path))
 
     # custom-node
     node_parser = comfy_sub.add_parser("custom-node", help="扩展管理")

@@ -697,7 +697,7 @@ def test_invokeai_custom_node_lifecycle_and_model_download(monkeypatch, tmp_path
     ]
 
     monkeypatch.setattr(invokeai_base, "install_webui_model_from_library", lambda **kwargs: [tmp_path / "model.safetensors"])
-    monkeypatch.setattr(invokeai_base, "import_model_to_invokeai", lambda model_list: calls.append(("import", model_list)))
+    monkeypatch.setattr(invokeai_base, "import_model_to_invokeai", lambda model_list, **_kwargs: calls.append(("import", model_list)))
     invokeai_base.install_invokeai_model_from_library(tmp_path, model_name="demo")
     assert calls[-1] == ("import", [tmp_path / "model.safetensors"])
 

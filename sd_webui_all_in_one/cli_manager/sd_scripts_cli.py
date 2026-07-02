@@ -16,6 +16,7 @@ from sd_webui_all_in_one.base_manager import (
     uninstall_sd_scripts_model,
     launch_sd_scripts_version_gui,
     launch_sd_scripts_snapshot_gui,
+    launch_sd_scripts_model_manager_gui,
     reinstall_pytorch as reinstall_base_pytorch,
     get_sd_scripts_snapshot,
 )
@@ -524,6 +525,18 @@ def launch_snapshot_gui(
     )
 
 
+def launch_model_gui(
+    sd_scripts_path: Path,
+) -> None:
+    """启动 SD Scripts 模型管理 GUI
+
+    Args:
+        sd_scripts_path (Path):
+            SD Scripts 根目录路径。
+    """
+    launch_sd_scripts_model_manager_gui(sd_scripts_path=sd_scripts_path)
+
+
 def register_sd_scripts(
     subparsers: "argparse._SubParsersAction",
 ) -> None:
@@ -729,6 +742,10 @@ def register_sd_scripts(
             )
         )
     )
+
+    model_gui_p = gui_sub.add_parser("model-manager", help="启动 SD Scripts 模型管理 GUI")
+    model_gui_p.add_argument("--sd-scripts-path", type=normalized_filepath, required=False, default=SD_SCRIPTS_ROOT_PATH, dest="sd_scripts_path", help="SD Scripts 根目录")
+    model_gui_p.set_defaults(func=lambda args: launch_model_gui(sd_scripts_path=args.sd_scripts_path))
 
     # model
     model_parser = scripts_sub.add_parser("model", help="模型管理")

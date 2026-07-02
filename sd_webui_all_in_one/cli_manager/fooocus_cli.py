@@ -20,6 +20,7 @@ from sd_webui_all_in_one.base_manager import (
     uninstall_fooocus_model,
     launch_fooocus_version_gui,
     launch_fooocus_snapshot_gui,
+    launch_fooocus_model_manager_gui,
     reinstall_pytorch as reinstall_base_pytorch,
     get_fooocus_snapshot,
 )
@@ -640,6 +641,18 @@ def launch_snapshot_gui(
     )
 
 
+def launch_model_gui(
+    fooocus_path: Path,
+) -> None:
+    """启动 Fooocus 模型管理 GUI
+
+    Args:
+        fooocus_path (Path):
+            Fooocus 根目录路径。
+    """
+    launch_fooocus_model_manager_gui(fooocus_path=fooocus_path)
+
+
 def register_fooocus(
     subparsers: "argparse._SubParsersAction",
 ) -> None:
@@ -881,6 +894,10 @@ def register_fooocus(
             )
         )
     )
+
+    model_gui_p = gui_sub.add_parser("model-manager", help="启动 Fooocus 模型管理 GUI")
+    model_gui_p.add_argument("--fooocus-path", type=normalized_filepath, required=False, default=FOOOCUS_ROOT_PATH, dest="fooocus_path", help="Fooocus 根目录")
+    model_gui_p.set_defaults(func=lambda args: launch_model_gui(fooocus_path=args.fooocus_path))
 
     # model
     model_parser = fooocus_sub.add_parser("model", help="模型管理")

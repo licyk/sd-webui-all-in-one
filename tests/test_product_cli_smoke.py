@@ -451,6 +451,8 @@ def test_product_cli_launch_and_gui_smoke(monkeypatch, tmp_path, module, registe
 
     monkeypatch.setattr(module, "launch", lambda **kwargs: calls.append(("launch", kwargs)))
     monkeypatch.setattr(module, "launch_version_gui", lambda **kwargs: calls.append(("gui", kwargs)))
+    if hasattr(module, "launch_model_gui"):
+        monkeypatch.setattr(module, "launch_model_gui", lambda **kwargs: calls.append(("model-gui", kwargs)))
 
     args = parser.parse_args([root, "launch", path_arg, str(tmp_path), "--no-auto-mirror", "--launch-args", "--listen --port 7861", "--no-check-env", "--no-hotpatcher"])
     args.func(args)
@@ -479,6 +481,35 @@ def test_product_cli_launch_and_gui_smoke(monkeypatch, tmp_path, module, registe
     assert calls[-1][1][path_key] == tmp_path
     assert calls[-1][1]["snapshot_enabled"] is False
     assert calls[-1][1]["snapshot_dir"] == snapshot_dir
+
+    if hasattr(module, "launch_model_gui"):
+        args = parser.parse_args([root, "gui", "model-manager", path_arg, str(tmp_path)])
+        args.func(args)
+        assert calls[-1][0] == "model-gui"
+        assert calls[-1][1][path_key] == tmp_path
+
+
+@pytest.mark.parametrize(
+    ("module", "register", "root", "path_arg", "path_key"),
+    [
+        (sd_webui_cli, sd_webui_cli.register_sd_webui, "sd-webui", "--sd-webui-path", "sd_webui_path"),
+        (comfyui_cli, comfyui_cli.register_comfyui, "comfyui", "--comfyui-path", "comfyui_path"),
+        (fooocus_cli, fooocus_cli.register_fooocus, "fooocus", "--fooocus-path", "fooocus_path"),
+        (sd_trainer_cli, sd_trainer_cli.register_sd_trainer, "sd-trainer", "--sd-trainer-path", "sd_trainer_path"),
+        (sd_scripts_cli, sd_scripts_cli.register_sd_scripts, "sd-scripts", "--sd-scripts-path", "sd_scripts_path"),
+        (invokeai_cli, invokeai_cli.register_invokeai, "invokeai", "--invokeai-path", "invokeai_path"),
+    ],
+)
+def test_product_cli_model_gui_smoke(monkeypatch, tmp_path, module, register, root, path_arg, path_key):
+    parser = _parser(register)
+    calls = []
+
+    monkeypatch.setattr(module, "launch_model_gui", lambda **kwargs: calls.append(kwargs))
+
+    args = parser.parse_args([root, "gui", "model-manager", path_arg, str(tmp_path)])
+    args.func(args)
+
+    assert calls == [{path_key: tmp_path}]
 
 
 @pytest.mark.parametrize(

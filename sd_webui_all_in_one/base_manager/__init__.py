@@ -80,6 +80,24 @@ from sd_webui_all_in_one.base_manager.snapshot_restore import (
     restore_webui_snapshot,
 )
 
+from sd_webui_all_in_one.base_manager.model_manager import (
+    FILE_MODEL_ROOT_DIRS,
+    FileModelManager,
+    FileWebUiModelType,
+    InvokeAIModelManager,
+    ModelEntry,
+    ModelRoot,
+    WEBUI_MODEL_TITLES,
+    WebUiModelType,
+    launch_comfyui_model_manager_gui,
+    launch_fooocus_model_manager_gui,
+    launch_invokeai_model_manager_gui,
+    launch_model_manager_gui,
+    launch_sd_scripts_model_manager_gui,
+    launch_sd_trainer_model_manager_gui,
+    launch_sd_webui_model_manager_gui,
+)
+
 from sd_webui_all_in_one.base_manager.comfyui_base import (
     ComfyUiCustomNodeInfo,
     ComfyUiLocalExtensionInfo,
@@ -154,6 +172,7 @@ from sd_webui_all_in_one.base_manager.invokeai_base import (
     uninstall_invokeai_custom_node,
     install_invokeai_model_from_library,
     install_invokeai_model_from_url,
+    install_invokeai_model_from_source,
     get_invokeai_model_list,
     list_invokeai_models,
     uninstall_model_from_invokeai,
@@ -322,6 +341,22 @@ __all__ = [
     "restore_git_repository",
     "restore_python_packages",
     "restore_webui_snapshot",
+    # model_manager.py - 模型管理 GUI 和服务
+    "FILE_MODEL_ROOT_DIRS",
+    "FileModelManager",
+    "FileWebUiModelType",
+    "InvokeAIModelManager",
+    "ModelEntry",
+    "ModelRoot",
+    "WEBUI_MODEL_TITLES",
+    "WebUiModelType",
+    "launch_comfyui_model_manager_gui",
+    "launch_fooocus_model_manager_gui",
+    "launch_invokeai_model_manager_gui",
+    "launch_model_manager_gui",
+    "launch_sd_scripts_model_manager_gui",
+    "launch_sd_trainer_model_manager_gui",
+    "launch_sd_webui_model_manager_gui",
     # comfyui_base.py - ComfyUI 管理模块
     # 类型定义
     "ComfyUiCustomNodeInfo",
@@ -400,6 +435,7 @@ __all__ = [
     "uninstall_invokeai_custom_node",
     "install_invokeai_model_from_library",
     "install_invokeai_model_from_url",
+    "install_invokeai_model_from_source",
     "get_invokeai_model_list",
     "list_invokeai_models",
     "uninstall_model_from_invokeai",

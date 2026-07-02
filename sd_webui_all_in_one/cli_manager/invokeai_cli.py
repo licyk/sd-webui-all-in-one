@@ -23,6 +23,7 @@ from sd_webui_all_in_one.base_manager import (
     reinstall_invokeai_pytorch as reinstall_base_invokeai_pytorch,
     launch_invokeai_version_gui,
     launch_invokeai_snapshot_gui,
+    launch_invokeai_model_manager_gui,
     get_invokeai_snapshot,
 )
 from sd_webui_all_in_one.config import (
@@ -595,6 +596,18 @@ def launch_snapshot_gui(
     )
 
 
+def launch_model_gui(
+    invokeai_path: Path,
+) -> None:
+    """启动 InvokeAI 模型管理 GUI
+
+    Args:
+        invokeai_path (Path):
+            InvokeAI 根目录路径。
+    """
+    launch_invokeai_model_manager_gui(invokeai_path=invokeai_path)
+
+
 def install_model_from_library(
     invokeai_path: Path,
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
@@ -659,14 +672,22 @@ def install_model_from_url(
     )
 
 
-def list_models() -> None:
-    """列出 InvokeAI 的模型目录"""
-    list_invokeai_models()
+def list_models(
+    invokeai_path: Path = INVOKEAI_ROOT_PATH,
+) -> None:
+    """列出 InvokeAI 的模型目录
+
+    Args:
+        invokeai_path (Path):
+            InvokeAI 根目录路径。
+    """
+    list_invokeai_models(invokeai_path=invokeai_path)
 
 
 def uninstall_model(
     model_name: str,
     interactive_mode: bool = False,
+    invokeai_path: Path = INVOKEAI_ROOT_PATH,
 ) -> None:
     """卸载 InvokeAI 中的模型
 
@@ -675,10 +696,13 @@ def uninstall_model(
             模型名称
         interactive_mode (bool):
             是否启用交互模式
+        invokeai_path (Path):
+            InvokeAI 根目录路径。
     """
     uninstall_invokeai_model(
         model_name=model_name,
         interactive_mode=interactive_mode,
+        invokeai_path=invokeai_path,
     )
 
 
@@ -894,6 +918,10 @@ def register_invokeai(
         )
     )
 
+    model_gui_p = gui_sub.add_parser("model-manager", help="启动 InvokeAI 模型管理 GUI")
+    model_gui_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, dest="invokeai_path", help="InvokeAI 根目录")
+    model_gui_p.set_defaults(func=lambda args: launch_model_gui(invokeai_path=args.invokeai_path))
+
     # custom-node
     node_parser = invoke_sub.add_parser("custom-node", help="扩展管理")
     node_sub = node_parser.add_subparsers(dest="node_action", required=True)
@@ -1010,15 +1038,18 @@ def register_invokeai(
 
     # model list
     model_list_p = model_sub.add_parser("list", help="列出模型")
-    model_list_p.set_defaults(func=lambda args: list_models())
+    model_list_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, dest="invokeai_path", help="InvokeAI 根目录")
+    model_list_p.set_defaults(func=lambda args: list_models(invokeai_path=args.invokeai_path))
 
     # model uninstall
     model_uninstall_p = model_sub.add_parser("uninstall", help="卸载模型")
+    model_uninstall_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, dest="invokeai_path", help="InvokeAI 根目录")
     model_uninstall_p.add_argument("--name", required=True, dest="name", help="模型名称")
     model_uninstall_p.add_argument("--interactive", action="store_true", dest="interactive", help="启用交互模式")
     model_uninstall_p.set_defaults(
         func=lambda args: uninstall_model(
             model_name=args.name,
             interactive_mode=args.interactive,
+            invokeai_path=args.invokeai_path,
         )
     )

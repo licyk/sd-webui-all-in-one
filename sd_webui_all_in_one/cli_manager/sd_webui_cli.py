@@ -21,6 +21,7 @@ from sd_webui_all_in_one.base_manager import (
     uninstall_sd_webui_extension,
     launch_sd_webui_version_gui,
     launch_sd_webui_snapshot_gui,
+    launch_sd_webui_model_manager_gui,
     install_sd_webui_model_from_library,
     install_sd_webui_model_from_url,
     list_sd_webui_models,
@@ -666,6 +667,18 @@ def launch_snapshot_gui(
     )
 
 
+def launch_model_gui(
+    sd_webui_path: Path,
+) -> None:
+    """启动 Stable Diffusion WebUI 模型管理 GUI
+
+    Args:
+        sd_webui_path (Path):
+            Stable Diffusion WebUI 根目录路径。
+    """
+    launch_sd_webui_model_manager_gui(sd_webui_path=sd_webui_path)
+
+
 def install_model_from_library(
     sd_webui_path: Path,
     download_resource_type: ModelDownloadUrlType | None = "modelscope",
@@ -975,6 +988,10 @@ def register_sd_webui(
             )
         )
     )
+
+    model_gui_p = gui_sub.add_parser("model-manager", help="启动 Stable Diffusion WebUI 模型管理 GUI")
+    model_gui_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    model_gui_p.set_defaults(func=lambda args: launch_model_gui(sd_webui_path=args.sd_webui_path))
 
     # launch
     launch_p = sd_sub.add_parser("launch", help="启动 Stable Diffusion WebUI")

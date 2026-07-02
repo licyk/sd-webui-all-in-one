@@ -112,6 +112,16 @@ sd-webui-all-in-one invokeai gui snapshot-manager [选项]
   - `--no-github-mirror`: 不使用 Github 镜像源。
   - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
 
+### 模型管理 GUI
+```bash
+sd-webui-all-in-one invokeai gui model-manager [选项]
+```
+
+- **高级选项**:
+  - `--invokeai-path <路径>`: InvokeAI 根目录。
+
+InvokeAI 模型管理 GUI 使用 InvokeAI 自身的模型管理服务，不按普通文件夹直接移动模型。URL 安装会交给 InvokeAI 解析和下载；本地导入会先复制源文件，再注册复制后的模型，原文件会保留在原位置。删除/注销操作会调用 InvokeAI 删除接口：位于 InvokeAI 管理目录内的模型文件会被同步删除，就地安装的外部模型文件只会保留并注销记录。
+
 ### 扩展管理 (Custom Node)
 
 #### 安装扩展

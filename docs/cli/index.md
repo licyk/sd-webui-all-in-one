@@ -54,6 +54,21 @@ pip install "sd-webui-all-in-one[full]"
 sd-webui-all-in-one --help
 ```
 
+## 模型管理 GUI
+
+支持模型目录管理的 WebUI 可以启动独立模型管理器：
+
+```bash
+sd-webui-all-in-one sd-webui gui model-manager --sd-webui-path <路径>
+sd-webui-all-in-one comfyui gui model-manager --comfyui-path <路径>
+sd-webui-all-in-one fooocus gui model-manager --fooocus-path <路径>
+sd-webui-all-in-one sd-trainer gui model-manager --sd-trainer-path <路径>
+sd-webui-all-in-one sd-scripts gui model-manager --sd-scripts-path <路径>
+sd-webui-all-in-one invokeai gui model-manager --invokeai-path <路径>
+```
+
+其中 SD WebUI、ComfyUI、Fooocus 使用 `models/`，SD Trainer、SD Scripts 使用 `sd-models/`。InvokeAI 使用自身模型管理服务注册、导入和删除/注销模型，不按普通文件夹直接移动模型；位于 InvokeAI 管理目录内的模型会随删除一起移除，就地安装的外部模型只注销记录。
+
 ## 自动镜像源选择
 
 CLI 中涉及 PyPI、Github、HuggingFace 或模型下载源的子命令默认启用自动镜像源选择。执行命令时会调用 `network_gfw_test()` 判断当前网络是否需要镜像源：

@@ -2,7 +2,6 @@
 
 import importlib.metadata
 import os
-import asyncio
 import re
 import sys
 import time
@@ -11,10 +10,12 @@ import traceback
 import threading
 import socket
 import webbrowser
+from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 from typing import (
     Any,
     Callable,
+    Iterator,
     TypedDict,
     cast,
 )
@@ -109,6 +110,26 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+
+@contextmanager
+def _temporary_invokeai_root(
+    invokeai_path: Path | None,
+) -> Iterator[None]:
+    """临时指定 InvokeAI 根目录"""
+    if invokeai_path is None:
+        yield
+        return
+
+    old_root = os.environ.get("INVOKEAI_ROOT")
+    os.environ["INVOKEAI_ROOT"] = Path(invokeai_path).as_posix()
+    try:
+        yield
+    finally:
+        if old_root is None:
+            os.environ.pop("INVOKEAI_ROOT", None)
+        else:
+            os.environ["INVOKEAI_ROOT"] = old_root
 
 
 def get_invokeai_require_torch_version() -> str:
@@ -392,6 +413,32 @@ def install_invokeai_component(
 def import_model_to_invokeai(
     model_list: list[Path],
     install_model_to_local: bool = False,
+    invokeai_path: Path | None = None,
+) -> bool:
+    """将模型列表导入到 InvokeAI 中
+
+    Args:
+        model_list (list[Path]):
+            模型路径列表
+        install_model_to_local (bool):
+            是否将模型安装到 InvokeAI 路径中, 为 False 时就地安装, 为 True 时则将模型复制到 InvokeAI 目录中
+        invokeai_path (Path | None):
+            InvokeAI 根目录, 为 None 时使用当前环境配置
+
+    Returns:
+        bool:
+            导入模型成功时
+    """
+    with _temporary_invokeai_root(invokeai_path):
+        return _import_model_to_invokeai(
+            model_list=model_list,
+            install_model_to_local=install_model_to_local,
+        )
+
+
+def _import_model_to_invokeai(
+    model_list: list[Path],
+    install_model_to_local: bool = False,
 ) -> bool:
     """将模型列表导入到 InvokeAI 中
 
@@ -417,7 +464,7 @@ def import_model_to_invokeai(
         from invokeai.app.services.model_install.model_install_common import InstallStatus  # ty: ignore[unresolved-import]
         from invokeai.app.services.model_records.model_records_sql import ModelRecordServiceSQL  # ty: ignore[unresolved-import]
         from invokeai.app.services.download.download_default import DownloadQueueService  # ty: ignore[unresolved-import]
-        from invokeai.app.services.events.events_fastapievents import FastAPIEventService  # ty: ignore[unresolved-import]
+        from invokeai.app.services.events.events_base import EventServiceBase  # ty: ignore[unresolved-import]
         from invokeai.app.services.config.config_default import get_config  # ty: ignore[unresolved-import]
         from invokeai.app.services.shared.sqlite.sqlite_util import init_db  # ty: ignore[unresolved-import]
         from invokeai.app.services.image_files.image_files_disk import DiskImageFileStorage  # ty: ignore[unresolved-import]
@@ -433,15 +480,13 @@ def import_model_to_invokeai(
         configuration.models_path.mkdir(parents=True, exist_ok=True)
         image_files = DiskImageFileStorage(f"{output_folder}/images")
         db = init_db(config=configuration, logger=logger, image_files=image_files)
-        event_handler_id = 1234
-        loop = asyncio.get_event_loop()
-        events = FastAPIEventService(event_handler_id, loop=loop)
+        events = EventServiceBase()
 
         model_manager = ModelManagerService.build_model_manager(
             app_config=configuration,
             model_record_service=ModelRecordServiceSQL(db=db, logger=logger),
             download_queue=DownloadQueueService(app_config=configuration, event_bus=events),
-            events=FastAPIEventService(event_handler_id, loop=loop),
+            events=events,
         )
 
         logger.info("初始化 InvokeAI 模型管理服务完成")
@@ -772,7 +817,7 @@ def install_invokeai(
             download_resource_type=model_download_resource_type,
         )
         if save_paths is not None:
-            import_model_to_invokeai(model_list=[save_paths])
+            import_model_to_invokeai(model_list=[save_paths], invokeai_path=invokeai_path)
 
     logger.info("安装 InvokeAI 完成")
 
@@ -1272,7 +1317,7 @@ def install_invokeai_model_from_library(
     )
     if paths is None:
         return
-    import_model_to_invokeai(model_list=paths)
+    import_model_to_invokeai(model_list=paths, invokeai_path=invokeai_path)
 
 
 def install_invokeai_model_from_url(
@@ -1299,7 +1344,74 @@ def install_invokeai_model_from_url(
         path=model_path,
         tool=downloader,
     )
-    import_model_to_invokeai(model_list=[path])
+    import_model_to_invokeai(model_list=[path], invokeai_path=sd_webui_path)
+
+
+def install_invokeai_model_from_source(
+    invokeai_path: Path | None,
+    source: str,
+) -> bool:
+    """通过 InvokeAI 模型管理器安装模型源
+
+    Args:
+        invokeai_path (Path | None):
+            InvokeAI 根目录, 为 None 时使用当前环境配置
+        source (str):
+            模型源, 可以是 URL、HuggingFace repo id 或本地路径
+
+    Returns:
+        bool:
+            安装成功时返回 True
+
+    Raises:
+        ImportError:
+            导入 InvokeAI 相关模块失败时抛出。
+    """
+    try:
+        logger.info("导入 InvokeAI 模块中")
+        from invokeai.app.services.model_manager.model_manager_default import ModelManagerService  # ty: ignore[unresolved-import]
+        from invokeai.app.services.model_install.model_install_common import InstallStatus  # ty: ignore[unresolved-import]
+        from invokeai.app.services.model_records.model_records_sql import ModelRecordServiceSQL  # ty: ignore[unresolved-import]
+        from invokeai.app.services.download.download_default import DownloadQueueService  # ty: ignore[unresolved-import]
+        from invokeai.app.services.events.events_base import EventServiceBase  # ty: ignore[unresolved-import]
+        from invokeai.app.services.config.config_default import get_config  # ty: ignore[unresolved-import]
+        from invokeai.app.services.shared.sqlite.sqlite_util import init_db  # ty: ignore[unresolved-import]
+        from invokeai.app.services.image_files.image_files_disk import DiskImageFileStorage  # ty: ignore[unresolved-import]
+        from invokeai.app.services.invoker import Invoker  # ty: ignore[unresolved-import]
+    except ImportError as e:
+        logger.error("导入 InvokeAI 模块失败, 无法安装模型: %s", e)
+        raise ImportError(f"导入 InvokeAI 模块发生错误: {e}") from e
+
+    def _get_invokeai_model_manager() -> ModelManagerService:
+        configuration = get_config()
+        configuration.models_path.mkdir(parents=True, exist_ok=True)
+        image_files = DiskImageFileStorage(f"{configuration.outputs_path}/images")
+        db = init_db(config=configuration, logger=logger, image_files=image_files)
+        events = EventServiceBase()
+        return ModelManagerService.build_model_manager(
+            app_config=configuration,
+            model_record_service=ModelRecordServiceSQL(db=db, logger=logger),
+            download_queue=DownloadQueueService(app_config=configuration, event_bus=events),
+            events=events,
+        )
+
+    with _temporary_invokeai_root(invokeai_path):
+        model_manager = _get_invokeai_model_manager()
+        started = False
+        try:
+            model_manager.start(Invoker)
+            started = True
+            logger.info("通过 InvokeAI 模型管理器安装模型: %s", source)
+            job = model_manager.install.heuristic_import(source=source)
+            result = model_manager.install.wait_for_job(job)
+            if result.status == InstallStatus.COMPLETED:
+                logger.info("InvokeAI 模型安装完成: %s", source)
+                return True
+            logger.error("InvokeAI 模型安装失败: %s", result.error)
+            return False
+        finally:
+            if started:
+                model_manager.stop(Invoker)
 
 
 class InvokeAILocalModelInfo(TypedDict, total=False):
@@ -1328,7 +1440,24 @@ InvokeAILocalModelInfoList = list[InvokeAILocalModelInfo]
 """InvokeAI 本地已安装的模型信息列表"""
 
 
-def get_invokeai_model_list() -> InvokeAILocalModelInfoList:
+def get_invokeai_model_list(
+    invokeai_path: Path | None = None,
+) -> InvokeAILocalModelInfoList:
+    """获取 InvokeAI 中所有已导入的模型列表
+
+    Args:
+        invokeai_path (Path | None):
+            InvokeAI 根目录, 为 None 时使用当前环境配置
+
+    Returns:
+        InvokeAILocalModelInfoList:
+            包含模型信息的字典列表
+    """
+    with _temporary_invokeai_root(invokeai_path):
+        return _get_invokeai_model_list()
+
+
+def _get_invokeai_model_list() -> InvokeAILocalModelInfoList:
     """获取 InvokeAI 中所有已导入的模型列表
 
     Returns:
@@ -1344,7 +1473,7 @@ def get_invokeai_model_list() -> InvokeAILocalModelInfoList:
         from invokeai.app.services.model_manager.model_manager_default import ModelManagerService  # ty: ignore[unresolved-import]
         from invokeai.app.services.model_records.model_records_sql import ModelRecordServiceSQL  # ty: ignore[unresolved-import]
         from invokeai.app.services.download.download_default import DownloadQueueService  # ty: ignore[unresolved-import]
-        from invokeai.app.services.events.events_fastapievents import FastAPIEventService  # ty: ignore[unresolved-import]
+        from invokeai.app.services.events.events_base import EventServiceBase  # ty: ignore[unresolved-import]
         from invokeai.app.services.config.config_default import get_config  # ty: ignore[unresolved-import]
         from invokeai.app.services.shared.sqlite.sqlite_util import init_db  # ty: ignore[unresolved-import]
         from invokeai.app.services.image_files.image_files_disk import DiskImageFileStorage  # ty: ignore[unresolved-import]
@@ -1357,8 +1486,7 @@ def get_invokeai_model_list() -> InvokeAILocalModelInfoList:
         configuration = get_config()
         image_files = DiskImageFileStorage(f"{configuration.outputs_path}/images")
         db = init_db(config=configuration, logger=logger, image_files=image_files)
-        loop = asyncio.get_event_loop()
-        events = FastAPIEventService(1234, loop=loop)
+        events = EventServiceBase()
         return ModelManagerService.build_model_manager(
             app_config=configuration,
             model_record_service=ModelRecordServiceSQL(db=db, logger=logger),
@@ -1393,10 +1521,17 @@ def get_invokeai_model_list() -> InvokeAILocalModelInfoList:
         return []
 
 
-def list_invokeai_models() -> None:
-    """列出 InvokeAI 的模型目录"""
+def list_invokeai_models(
+    invokeai_path: Path | None = None,
+) -> None:
+    """列出 InvokeAI 的模型目录
+
+    Args:
+        invokeai_path (Path | None):
+            InvokeAI 根目录, 为 None 时使用当前环境配置。
+    """
     logger.info("InvokeAI 模型列表")
-    model_list = get_invokeai_model_list()
+    model_list = get_invokeai_model_list(invokeai_path=invokeai_path)
     for m in model_list:
         print(f"- {m['name']}")
         print(f"模型 ID: {m['id']}")
@@ -1405,6 +1540,32 @@ def list_invokeai_models() -> None:
 
 
 def uninstall_model_from_invokeai(
+    model_identifiers: list[str | Path],
+    delete_files: bool = False,
+    invokeai_path: Path | None = None,
+) -> bool:
+    """从 InvokeAI 中卸载模型
+
+    Args:
+        model_identifiers (list[str | Path]):
+            模型 ID (Key) 列表或模型物理路径列表
+        delete_files (bool):
+            是否同时删除磁盘上的模型文件
+        invokeai_path (Path | None):
+            InvokeAI 根目录, 为 None 时使用当前环境配置
+
+    Returns:
+        bool:
+            所有模型卸载成功时返回 True
+    """
+    with _temporary_invokeai_root(invokeai_path):
+        return _uninstall_model_from_invokeai(
+            model_identifiers=model_identifiers,
+            delete_files=delete_files,
+        )
+
+
+def _uninstall_model_from_invokeai(
     model_identifiers: list[str | Path],
     delete_files: bool = False,
 ) -> bool:
@@ -1429,7 +1590,7 @@ def uninstall_model_from_invokeai(
         from invokeai.app.services.model_manager.model_manager_default import ModelManagerService  # ty: ignore[unresolved-import]
         from invokeai.app.services.model_records.model_records_sql import ModelRecordServiceSQL  # ty: ignore[unresolved-import]
         from invokeai.app.services.download.download_default import DownloadQueueService  # ty: ignore[unresolved-import]
-        from invokeai.app.services.events.events_fastapievents import FastAPIEventService  # ty: ignore[unresolved-import]
+        from invokeai.app.services.events.events_base import EventServiceBase  # ty: ignore[unresolved-import]
         from invokeai.app.services.config.config_default import get_config  # ty: ignore[unresolved-import]
         from invokeai.app.services.shared.sqlite.sqlite_util import init_db  # ty: ignore[unresolved-import]
         from invokeai.app.services.image_files.image_files_disk import DiskImageFileStorage  # ty: ignore[unresolved-import]
@@ -1442,8 +1603,7 @@ def uninstall_model_from_invokeai(
         configuration = get_config()
         image_files = DiskImageFileStorage(f"{configuration.outputs_path}/images")
         db = init_db(config=configuration, logger=logger, image_files=image_files)
-        loop = asyncio.get_event_loop()
-        events = FastAPIEventService(1234, loop=loop)
+        events = EventServiceBase()
         return ModelManagerService.build_model_manager(
             app_config=configuration,
             model_record_service=ModelRecordServiceSQL(db=db, logger=logger),
@@ -1499,6 +1659,7 @@ def uninstall_model_from_invokeai(
 def uninstall_invokeai_model(
     model_name: str,
     interactive_mode: bool = False,
+    invokeai_path: Path | None = None,
 ) -> None:
     """卸载 InvokeAI 中的模型
 
@@ -1507,13 +1668,15 @@ def uninstall_invokeai_model(
             模型名称
         interactive_mode (bool):
             是否启用交互模式
+        invokeai_path (Path | None):
+            InvokeAI 根目录, 为 None 时使用当前环境配置
 
     Raises:
         FileNotFoundError:
             未找到要删除的模型时
     """
 
-    model_list = get_invokeai_model_list()
+    model_list = get_invokeai_model_list(invokeai_path=invokeai_path)
     delete_list = [x for x in model_list if model_name.lower() in x["name"].lower()]
 
     if not delete_list:
@@ -1535,6 +1698,7 @@ def uninstall_invokeai_model(
     uninstall_model_from_invokeai(
         model_identifiers=[x["id"] for x in model_list if x["name"].lower() in delete_names],
         delete_files=True,
+        invokeai_path=invokeai_path,
     )
 
     logger.info("模型删除完成")
