@@ -437,7 +437,7 @@ def pre_download_model_for_webui(
 
 def launch_webui(
     webui_path: Path,
-    launch_script: str,
+    launch_script: str | Path,
     webui_name: str | None = None,
     launch_args: list[str] | None = None,
     custom_env: dict[str, str] | None = None,
@@ -447,8 +447,8 @@ def launch_webui(
     Args:
         webui_path (Path):
             WebUI 的根目录
-        launch_script (str):
-            启动 WebUI 的脚本名称, 使用相对路径
+        launch_script (str | Path):
+            启动 WebUI 的脚本路径, 相对路径会以 WebUI 根目录为基准解析
         webui_name (str | None):
             WebUI 的名称
         launch_args (list[str] | None):
@@ -476,7 +476,11 @@ def launch_webui(
     if any(key.startswith(HOTPATCHER_ENV_PREFIX) for key in custom_env):
         custom_env = ensure_hotpatcher_pythonpath_first(custom_env)
 
-    cmd = [Path(sys.executable).as_posix(), (webui_path / launch_script).as_posix()] + launch_args
+    launch_script_path = Path(launch_script)
+    if not launch_script_path.is_absolute():
+        launch_script_path = webui_path / launch_script_path
+
+    cmd = [Path(sys.executable).as_posix(), launch_script_path.as_posix()] + launch_args
     print_divider("=")
     try:
         try:

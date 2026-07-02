@@ -2,14 +2,7 @@
 
 import importlib.metadata
 import os
-import re
 import sys
-import time
-import copy
-import traceback
-import threading
-import socket
-import webbrowser
 from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 from typing import (
@@ -30,15 +23,14 @@ from sd_webui_all_in_one.base_manager.base import (
     clone_repo,
     get_repo_name_from_url,
     install_webui_model_from_library,
+    launch_webui,
     pre_download_model_for_webui,
     prepare_pytorch_install_info,
     install_pytorch_with_fallback,
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     DEFAULT_RUNTIME_PORT,
-    HOTPATCHER_ENV_PREFIX,
     apply_hotpatcher_launch_env,
-    configure_hotpatcher_for_current_process,
 )
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
 from sd_webui_all_in_one.base_manager.snapshot import (
@@ -49,7 +41,6 @@ from sd_webui_all_in_one.base_manager.snapshot import (
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.custom_exceptions import (
     AggregateError,
-    WebUiRuntimeError,
 )
 from sd_webui_all_in_one.downloader import (
     DownloadToolType,
@@ -101,6 +92,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
     LOGGER_NAME,
+    ROOT_PATH,
 )
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.utils import print_divider
@@ -111,6 +103,8 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+INVOKEAI_RUNNER_SCRIPT = ROOT_PATH / "launchers" / "invokeai.py"
 
 
 @contextmanager
@@ -675,81 +669,6 @@ def install_pypatchmatch(
     logger.info("PyPatchMatch 组件安装完成")
 
 
-def run_invokeai() -> None:
-    """启动 InvokeAI"""
-    import uvicorn
-    import invokeai.frontend.cli.arg_parser  # ty: ignore[unresolved-import]
-    from invokeai.frontend.cli.arg_parser import _parser, InvokeAIArgs  # ty: ignore[unresolved-import]
-    from invokeai.app.run_app import run_app  # ty: ignore[unresolved-import]
-
-    # 备份原始对象
-    original_parser = copy.deepcopy(_parser)
-    original_uvicorn_serve = uvicorn.Server.serve
-
-    # 标记是否成功运行
-    run_successful = False
-    try:
-        # 修改 _parser
-        _parser.add_argument("--disable-auto-launch", action="store_true", help="禁止自动启动浏览器打开 InvokeAI 界面")
-        args = InvokeAIArgs.parse_args()
-
-        async def _patched_serve(
-            self: uvicorn.Server,
-            sockets: list[socket.socket] | None = None,
-        ) -> None:
-            # 从 Server 实例的 config 中获取配置
-            host = self.config.host
-            port = self.config.port
-            url = f"http://{host}:{port}"
-            logger.debug("获取到的 InvokeAI 访问地址: %s", url)
-            if not args.disable_auto_launch:
-
-                def _open_browser():
-                    time.sleep(2)  # 等待服务器完全启动
-                    logger.info("通过浏览器打开 InvokeAI 访问地址 '%s' 中", url)
-                    logger.info("如果需要禁用自动打开浏览器, 可通过 --disable-auto-launch 参数禁用该功能")
-                    try:
-                        webbrowser.open(f"http://{host}:{port}")
-                    except Exception as e:
-                        logger.warning("打开浏览器时发生错误: %s", e)
-
-                # 在新线程中打开浏览器，避免阻塞
-                threading.Thread(target=_open_browser, daemon=True).start()
-
-            # 调用原始的 serve 方法
-            return await original_uvicorn_serve(self, sockets)
-
-        # 应用 Monkey patch
-        uvicorn.Server.serve = _patched_serve
-
-        # 运行 InvokeAI
-        run_app()
-
-        # 如果执行到这里，说明运行成功
-        run_successful = True
-    except KeyboardInterrupt:
-        logger.debug("捕获到 Ctrl + C 中断信号")
-        run_successful = True
-    except Exception as e:
-        traceback.print_exc()
-        logger.error("运行时发生 %s 错误: %s", type(e).__name__, e)
-    finally:
-        logger.debug("清理 Monkey patches")
-        # 恢复 uvicorn.Server.serve
-        uvicorn.Server.serve = original_uvicorn_serve
-
-        # 恢复原始的 _parser
-        invokeai.frontend.cli.arg_parser._parser = original_parser  # pylint: disable=protected-access
-
-        # 重置 InvokeAIArgs 的状态
-        InvokeAIArgs.args = None
-        InvokeAIArgs.did_parse = False
-
-        if not run_successful:
-            logger.warning("检测到异常, 尝试使用原始配置重新启动")
-            run_app()
-
-
 def install_invokeai(
     invokeai_path: Path,
     device_type: PyTorchDeviceTypeCategory | None = None,
@@ -943,8 +862,6 @@ def launch_invokeai(
     Raises:
         WebUiRuntimeError:
             InvokeAI 运行发生错误时抛出。
-        KeyboardInterrupt:
-            启动过程被用户中断时抛出。
     """
 
     logger.info("准备 InvokeAI 启动环境")
@@ -977,28 +894,15 @@ def launch_invokeai(
         port=hotpatcher_port,
         enable_runtime=enable_hotpatcher_runtime,
     )
-    for key in list(os.environ):
-        if key.startswith(HOTPATCHER_ENV_PREFIX):
-            os.environ.pop(key, None)
-    os.environ.update(custom_env)
-    configure_hotpatcher_for_current_process(enable_hotpatcher)
-    logger.info("启动 InvokeAI 中")
 
-    if launch_args is not None:
-        sys.argv = [sys.argv[0]] + launch_args
-    sys.argv[0] = re.sub(r"(-script\.pyw|\.exe)?$", "", sys.argv[0])
-    print_divider("=")
-    try:
-        try:
-            run_invokeai()
-            raise KeyboardInterrupt()
-        finally:
-            print_divider("=")
-    except KeyboardInterrupt:
-        logger.info("已退出 InvokeAI")
-        os._exit(0)
-    except Exception as e:
-        raise WebUiRuntimeError("运行 InvokeAI 时发生错误") from e
+    logger.info("启动 InvokeAI 中")
+    launch_webui(
+        webui_path=invokeai_path,
+        launch_script=INVOKEAI_RUNNER_SCRIPT,
+        webui_name="InvokeAI",
+        launch_args=launch_args,
+        custom_env=custom_env,
+    )
 
 
 def install_invokeai_custom_nodes(
