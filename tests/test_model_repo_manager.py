@@ -187,6 +187,41 @@ def test_repo_manager_modelscope_api_lazy_init_login_and_cache(monkeypatch):
     assert import_calls == ["modelscope"]
 
 
+def test_repo_manager_modelscope_api_prefers_constructor_token(monkeypatch):
+    import_calls = []
+    init_calls = []
+    login_calls = []
+
+    class FakeMsApi:
+        def __init__(self, token=None):
+            init_calls.append(token)
+
+        def login(self, access_token):
+            login_calls.append(access_token)
+
+    modelscope_module = types.ModuleType("modelscope")
+    modelscope_module.HubApi = FakeMsApi
+    monkeypatch.setitem(sys.modules, "modelscope", modelscope_module)
+
+    def fake_import_module(name):
+        import_calls.append(name)
+        assert name == "modelscope"
+        return modelscope_module
+
+    monkeypatch.setattr(repo_module.importlib, "import_module", fake_import_module)
+
+    manager = RepoManager(ms_token="ms-token")
+
+    first_api = manager.ms_api
+    second_api = manager.ms_api
+
+    assert first_api is second_api
+    assert isinstance(first_api, FakeMsApi)
+    assert init_calls == ["ms-token"]
+    assert login_calls == []
+    assert import_calls == ["modelscope"]
+
+
 def test_repo_manager_configure_tokens_updates_environment_and_invalidates_cached_apis(monkeypatch):
     monkeypatch.delenv("HF_TOKEN", raising=False)
     monkeypatch.delenv("MODELSCOPE_API_TOKEN", raising=False)

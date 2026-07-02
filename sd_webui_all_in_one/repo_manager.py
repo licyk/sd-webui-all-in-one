@@ -1,6 +1,7 @@
 """HuggingFace / Modelscope 仓库管理工具"""
 
 import hashlib
+import inspect
 import importlib
 import os
 import tempfile
@@ -163,6 +164,22 @@ def _ensure_modelscope(
     _ensure_optional_dependency(module_name, "modelscope", display_name=module_name)
 
 
+def _callable_accepts_keyword(
+    func: Any,
+    keyword: str,
+) -> bool:
+    """判断可调用对象是否接受指定关键字参数"""
+    try:
+        signature = inspect.signature(func)
+    except (TypeError, ValueError):
+        return True
+
+    return any(
+        parameter.name == keyword or parameter.kind == inspect.Parameter.VAR_KEYWORD
+        for parameter in signature.parameters.values()
+    )
+
+
 class RepoManager:
     """HuggingFace / ModelScope 仓库管理器
 
@@ -229,9 +246,14 @@ class RepoManager:
         _ensure_modelscope()
         from modelscope import HubApi
 
+        if self.ms_token is None:
+            return HubApi()
+
+        if _callable_accepts_keyword(HubApi, "token"):
+            return HubApi(token=self.ms_token)
+
         ms_api = HubApi()
-        if self.ms_token is not None:
-            ms_api.login(access_token=self.ms_token)
+        ms_api.login(self.ms_token)
         return ms_api
 
     def configure_tokens(
