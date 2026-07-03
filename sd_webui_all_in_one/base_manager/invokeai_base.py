@@ -104,7 +104,7 @@ logger = get_logger(
     color=LOGGER_COLOR,
 )
 
-INVOKEAI_RUNNER_SCRIPT = ROOT_PATH / "launchers" / "invokeai.py"
+INVOKEAI_RUNNER_SCRIPT = ROOT_PATH / "base_manager" / "run_invokeai.py"
 
 
 @contextmanager

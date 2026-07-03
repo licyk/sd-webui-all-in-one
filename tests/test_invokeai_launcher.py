@@ -3,7 +3,7 @@ import sys
 import types
 from types import SimpleNamespace
 
-from sd_webui_all_in_one.launchers import invokeai as invokeai_launcher
+from sd_webui_all_in_one.base_manager import run_invokeai as invokeai_launcher
 
 
 class _FakeParser:
