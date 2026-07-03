@@ -14,6 +14,7 @@ from typing import Any
 
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository, run_git_output
 from sd_webui_all_in_one.desktop_bridge import BRIDGE_PROTOCOL, CAPABILITIES
+from sd_webui_all_in_one.base_manager.version_manager import list_branches
 from sd_webui_all_in_one.version import VERSION
 
 
@@ -57,6 +58,8 @@ def dispatch_operation(operation: str, payload: dict[str, Any] | None) -> dict[s
         return bridge_info()
     if operation == "version.get_state":
         return get_version_state(payload)
+    if operation == "version.list_branches":
+        return list_version_branches(payload)
     raise BridgeOperationError(
         "BRIDGE_OPERATION_UNSUPPORTED",
         f"Unsupported desktop bridge operation: {operation}",
@@ -100,6 +103,29 @@ def get_version_state(payload: dict[str, Any]) -> dict[str, Any]:
     raise BridgeOperationError(
         "VERSION_STATE_KIND_UNSUPPORTED",
         f"Unsupported instance kind for version state: {kind}",
+        {"kind": kind},
+    )
+
+
+def list_version_branches(payload: dict[str, Any]) -> dict[str, Any]:
+    """
+    Return local Git branches for a desktop instance without fetching.
+
+    Args:
+        payload (dict[str, Any]):
+            Desktop bridge payload containing an instance object.
+
+    Returns:
+        dict[str, Any]: Branch list wrapped in ``branches``.
+    """
+    instance = _require_mapping(payload, "instance")
+    kind = _require_string(instance, "kind")
+    if kind in GIT_CORE_KINDS:
+        core_path = Path(_require_string(instance, "corePath"))
+        return {"mode": "git", "fetched": False, "branches": _git_version_branches(kind, core_path)}
+    raise BridgeOperationError(
+        "VERSION_BRANCHES_KIND_UNSUPPORTED",
+        f"Unsupported instance kind for branch listing: {kind}",
         {"kind": kind},
     )
 
@@ -161,6 +187,42 @@ def _package_version_state(package_name: str) -> dict[str, Any]:
         "latestVersion": None,
         "updateAvailable": None,
     }
+
+
+def _git_version_branches(kind: str, core_path: Path) -> list[dict[str, Any]]:
+    repository = inspect_repository(core_path)
+    if not repository.is_git_repo:
+        raise BridgeOperationError(
+            "VERSION_BRANCHES_NOT_GIT_REPOSITORY",
+            "Instance corePath is not a Git repository",
+            {
+                "kind": kind,
+                "corePath": str(core_path),
+                "repository": _jsonable_repository_state(repository),
+            },
+        )
+
+    try:
+        branches = list_branches(core_path, fetch=False)
+    except Exception as error:
+        raise BridgeOperationError(
+            "VERSION_BRANCHES_LIST_FAILED",
+            f"Failed to list Git branches: {error}",
+            {
+                "kind": kind,
+                "corePath": str(core_path),
+            },
+        ) from error
+
+    return [
+        {
+            "name": branch.name,
+            "isCurrent": branch.is_current,
+            "isRemote": branch.is_remote,
+        }
+        for branch in branches
+        if branch.name
+    ]
 
 
 def _git_dirty(path: Path) -> bool | None:

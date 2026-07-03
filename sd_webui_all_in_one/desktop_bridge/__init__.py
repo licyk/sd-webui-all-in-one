@@ -4,6 +4,7 @@ BRIDGE_PROTOCOL = 1
 CAPABILITIES = (
     "bridge.info",
     "version.get_state",
+    "version.list_branches",
 )
 
 __all__ = [

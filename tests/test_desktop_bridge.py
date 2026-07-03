@@ -7,6 +7,7 @@ import pytest
 
 from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryState
 from sd_webui_all_in_one.desktop_bridge import operations
+from sd_webui_all_in_one.base_manager.version_manager import BranchInfo
 from sd_webui_all_in_one.desktop_bridge.protocol import handle_request, main
 
 
@@ -22,7 +23,7 @@ def test_bridge_info_advertises_supported_capabilities():
     assert response["requestId"] == "info-1"
     assert response["ok"] is True
     assert response["data"]["bridgeProtocol"] == 1
-    assert response["data"]["capabilities"] == ["bridge.info", "version.get_state"]
+    assert response["data"]["capabilities"] == ["bridge.info", "version.get_state", "version.list_branches"]
     assert "get_install_catalog" not in response["data"]["capabilities"]
     assert "instance.prepare_launch" not in response["data"]["capabilities"]
 
@@ -129,6 +130,112 @@ def test_version_get_state_reads_real_git_repository_without_upstream(tmp_path):
     assert "updateAvailable" not in state
 
 
+def test_version_list_branches_returns_git_branches_without_fetch(monkeypatch, tmp_path):
+    core_path = tmp_path / "core"
+    core_path.mkdir()
+    repository = RepositoryState(
+        path=core_path,
+        is_git_repo=True,
+        name="core",
+        branch="main",
+        commit="abcdef1234567890abcdef1234567890abcdef12",
+    )
+    calls = []
+
+    def fake_list_branches(path, fetch=True):
+        calls.append((path, fetch))
+        return [
+            BranchInfo(name="main", is_current=True, is_remote=False),
+            BranchInfo(name="feature", is_current=False, is_remote=False),
+            BranchInfo(name="release", is_current=False, is_remote=True),
+        ]
+
+    monkeypatch.setattr(operations, "inspect_repository", lambda path: repository)
+    monkeypatch.setattr(operations, "list_branches", fake_list_branches)
+
+    response = handle_request(
+        {
+            "requestId": "branches-1",
+            "operation": "version.list_branches",
+            "payload": {
+                "instance": {
+                    "kind": "comfyui",
+                    "corePath": str(core_path),
+                }
+            },
+        }
+    )
+
+    assert response["ok"] is True
+    assert response["data"] == {
+        "mode": "git",
+        "fetched": False,
+        "branches": [
+            {"name": "main", "isCurrent": True, "isRemote": False},
+            {"name": "feature", "isCurrent": False, "isRemote": False},
+            {"name": "release", "isCurrent": False, "isRemote": True},
+        ],
+    }
+    assert calls == [(core_path, False)]
+
+
+def test_version_list_branches_rejects_invokeai_package_mode():
+    response = handle_request(
+        {
+            "requestId": "branches-2",
+            "operation": "version.list_branches",
+            "payload": {
+                "instance": {
+                    "kind": "invokeai",
+                    "corePath": "/tmp/not-used",
+                }
+            },
+        }
+    )
+
+    assert response["requestId"] == "branches-2"
+    assert response["ok"] is False
+    assert response["error"]["code"] == "VERSION_BRANCHES_KIND_UNSUPPORTED"
+    assert response["error"]["details"]["kind"] == "invokeai"
+
+
+def test_version_list_branches_reads_real_git_repository_without_fetch(tmp_path):
+    if shutil.which("git") is None:
+        pytest.skip("git executable is not available")
+
+    core_path = tmp_path / "core"
+    core_path.mkdir()
+    _run_git(core_path, "init")
+    _run_git(core_path, "config", "user.email", "desktop-bridge@example.test")
+    _run_git(core_path, "config", "user.name", "Desktop Bridge")
+    tracked_file = core_path / "README.md"
+    tracked_file.write_text("initial\n", encoding="utf-8")
+    _run_git(core_path, "add", "README.md")
+    _run_git(core_path, "commit", "-m", "initial")
+    _run_git(core_path, "checkout", "-b", "feature/local")
+
+    response = handle_request(
+        {
+            "requestId": "branches-real-git",
+            "operation": "version.list_branches",
+            "payload": {
+                "instance": {
+                    "kind": "sd_webui",
+                    "corePath": str(core_path),
+                }
+            },
+        }
+    )
+
+    assert response["ok"] is True
+    assert response["data"]["mode"] == "git"
+    assert response["data"]["fetched"] is False
+    branches = {branch["name"]: branch for branch in response["data"]["branches"]}
+    assert branches["feature/local"]["isCurrent"] is True
+    assert branches["feature/local"]["isRemote"] is False
+    assert any(name in branches for name in ("master", "main"))
+
+
 def test_version_get_state_returns_invokeai_package_state(monkeypatch):
     monkeypatch.setattr(operations, "package_version", lambda package: "4.2.0")
 
@@ -196,7 +303,9 @@ def test_unsupported_operation_returns_structured_error():
     assert response["requestId"] == "bad-1"
     assert response["ok"] is False
     assert response["error"]["code"] == "BRIDGE_OPERATION_UNSUPPORTED"
-    assert response["error"]["details"]["capabilities"] == ["bridge.info", "version.get_state"]
+    assert response["error"]["details"]["capabilities"] == [
+        "bridge.info", "version.get_state", "version.list_branches"
+    ]
 
 
 def test_main_reads_stdin_and_writes_one_response_line():
