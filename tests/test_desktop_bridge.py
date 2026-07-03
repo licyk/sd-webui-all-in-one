@@ -23,9 +23,13 @@ def test_bridge_info_advertises_supported_capabilities():
     assert response["requestId"] == "info-1"
     assert response["ok"] is True
     assert response["data"]["bridgeProtocol"] == 1
-    assert response["data"]["capabilities"] == ["bridge.info", "version.get_state", "version.list_branches"]
+    assert response["data"]["capabilities"] == [
+        "bridge.info",
+        "version.get_state",
+        "version.list_branches",
+        "instance.prepare_launch",
+    ]
     assert "get_install_catalog" not in response["data"]["capabilities"]
-    assert "instance.prepare_launch" not in response["data"]["capabilities"]
 
 
 def test_version_get_state_returns_git_state(monkeypatch, tmp_path):
@@ -291,6 +295,244 @@ def test_version_get_state_reports_non_git_repository(monkeypatch, tmp_path):
     assert response["error"]["details"]["repository"]["path"] == str(core_path)
 
 
+def test_prepare_launch_returns_comfyui_launch_spec(tmp_path):
+    core_path = tmp_path / "core"
+    core_path.mkdir()
+    entrypoint = core_path / "main.py"
+    entrypoint.write_text("# comfyui\n", encoding="utf-8")
+    python_path = tmp_path / "python" / "bin" / "python"
+
+    response = handle_request(
+        {
+            "requestId": "launch-1",
+            "operation": "instance.prepare_launch",
+            "payload": {
+                "instance": {
+                    "kind": "comfyui",
+                    "corePath": str(core_path),
+                    "pythonPath": str(python_path),
+                    "host": "127.0.0.1",
+                    "port": 8188,
+                    "launchArgs": ["--disable-auto-launch"],
+                    "envVars": {"CUSTOM_ENV": "1"},
+                }
+            },
+        }
+    )
+
+    assert response["ok"] is True
+    launch = response["data"]["launch"]
+    assert launch["cmd"] == str(python_path)
+    assert launch["args"] == [
+        str(entrypoint),
+        "--disable-auto-launch",
+        "--listen",
+        "127.0.0.1",
+        "--port",
+        "8188",
+    ]
+    assert launch["cwd"] == str(core_path)
+    assert launch["env"] == {
+        "PYTHONNOUSERSITE": "1",
+        "PYTHONUNBUFFERED": "1",
+        "CUSTOM_ENV": "1",
+    }
+    assert launch["host"] == "127.0.0.1"
+    assert launch["port"] == 8188
+    assert launch["url"] == "http://127.0.0.1:8188"
+    assert launch["readyCheck"] == {
+        "type": "port",
+        "host": "127.0.0.1",
+        "port": 8188,
+        "timeoutMs": 300000,
+    }
+    assert launch["healthCheck"] == {"kind": "http", "url": "http://127.0.0.1:8188"}
+
+
+def test_prepare_launch_selects_sd_trainer_existing_entrypoint(tmp_path):
+    core_path = tmp_path / "core"
+    core_path.mkdir()
+    entrypoint = core_path / "kohya_gui.py"
+    entrypoint.write_text("# kohya\n", encoding="utf-8")
+
+    response = handle_request(
+        {
+            "requestId": "launch-sd-trainer",
+            "operation": "instance.prepare_launch",
+            "payload": {
+                "instance": {
+                    "kind": "sd_trainer",
+                    "corePath": str(core_path),
+                    "pythonPath": "/tmp/python/bin/python",
+                    "host": "0.0.0.0",
+                    "port": 7860,
+                    "launchArgs": [],
+                    "envVars": {},
+                }
+            },
+        }
+    )
+
+    assert response["ok"] is True
+    launch = response["data"]["launch"]
+    assert launch["args"] == [str(entrypoint), "--listen", "--server_port", "7860"]
+    assert launch["url"] == "http://127.0.0.1:7860"
+
+
+@pytest.mark.parametrize(
+    ("kind", "entrypoint_name", "port"),
+    [
+        ("sd_webui", "launch.py", 7860),
+        ("fooocus", "launch.py", 7865),
+    ],
+)
+def test_prepare_launch_uses_git_core_entrypoint(kind, entrypoint_name, port, tmp_path):
+    core_path = tmp_path / "core"
+    core_path.mkdir()
+    entrypoint = core_path / entrypoint_name
+    entrypoint.write_text("# launch\n", encoding="utf-8")
+
+    response = handle_request(
+        {
+            "requestId": f"launch-{kind}",
+            "operation": "instance.prepare_launch",
+            "payload": {
+                "instance": {
+                    "kind": kind,
+                    "corePath": str(core_path),
+                    "pythonPath": "/tmp/python/bin/python",
+                    "host": "127.0.0.1",
+                    "port": port,
+                    "launchArgs": ["--theme", "dark"],
+                    "envVars": {},
+                }
+            },
+        }
+    )
+
+    assert response["ok"] is True
+    launch = response["data"]["launch"]
+    assert launch["args"] == [
+        str(entrypoint),
+        "--theme",
+        "dark",
+        "--port",
+        str(port),
+    ]
+    assert launch["port"] == port
+
+
+def test_prepare_launch_uses_qwen_tts_server_args(tmp_path):
+    core_path = tmp_path / "core"
+    core_path.mkdir()
+    entrypoint = core_path / "launch.py"
+    entrypoint.write_text("# qwen\n", encoding="utf-8")
+
+    response = handle_request(
+        {
+            "requestId": "launch-qwen",
+            "operation": "instance.prepare_launch",
+            "payload": {
+                "instance": {
+                    "kind": "qwen_tts_webui",
+                    "corePath": str(core_path),
+                    "pythonPath": "/tmp/python/bin/python",
+                    "host": "0.0.0.0",
+                    "port": 7860,
+                    "launchArgs": ["--api"],
+                    "envVars": {},
+                }
+            },
+        }
+    )
+
+    assert response["ok"] is True
+    launch = response["data"]["launch"]
+    assert launch["args"] == [
+        str(entrypoint),
+        "--api",
+        "--server-name",
+        "0.0.0.0",
+        "--server-port",
+        "7860",
+    ]
+    assert launch["url"] == "http://127.0.0.1:7860"
+
+
+def test_prepare_launch_rejects_unsupported_invokeai(tmp_path):
+    core_path = tmp_path / "core"
+    core_path.mkdir()
+
+    response = handle_request(
+        {
+            "requestId": "launch-invokeai",
+            "operation": "instance.prepare_launch",
+            "payload": {
+                "instance": {
+                    "kind": "invokeai",
+                    "corePath": str(core_path),
+                    "pythonPath": "/tmp/python/bin/python",
+                    "host": "127.0.0.1",
+                    "port": 9090,
+                }
+            },
+        }
+    )
+
+    assert response["ok"] is False
+    assert response["error"]["code"] == "PREPARE_LAUNCH_KIND_UNSUPPORTED"
+    assert response["error"]["details"]["kind"] == "invokeai"
+
+
+def test_prepare_launch_rejects_missing_port(tmp_path):
+    core_path = tmp_path / "core"
+    core_path.mkdir()
+    (core_path / "launch.py").write_text("# launch\n", encoding="utf-8")
+
+    response = handle_request(
+        {
+            "requestId": "launch-no-port",
+            "operation": "instance.prepare_launch",
+            "payload": {
+                "instance": {
+                    "kind": "sd_webui",
+                    "corePath": str(core_path),
+                    "pythonPath": "/tmp/python/bin/python",
+                    "host": "127.0.0.1",
+                }
+            },
+        }
+    )
+
+    assert response["ok"] is False
+    assert response["error"]["code"] == "PREPARE_LAUNCH_PORT_MISSING"
+
+
+def test_prepare_launch_rejects_missing_entrypoint(tmp_path):
+    core_path = tmp_path / "core"
+    core_path.mkdir()
+
+    response = handle_request(
+        {
+            "requestId": "launch-missing-entrypoint",
+            "operation": "instance.prepare_launch",
+            "payload": {
+                "instance": {
+                    "kind": "fooocus",
+                    "corePath": str(core_path),
+                    "pythonPath": "/tmp/python/bin/python",
+                    "host": "127.0.0.1",
+                    "port": 7865,
+                }
+            },
+        }
+    )
+
+    assert response["ok"] is False
+    assert response["error"]["code"] == "PREPARE_LAUNCH_ENTRYPOINT_MISSING"
+    assert response["error"]["details"]["entrypoint"] == str(core_path / "launch.py")
+
+
 def test_unsupported_operation_returns_structured_error():
     response = handle_request(
         {
@@ -304,7 +546,10 @@ def test_unsupported_operation_returns_structured_error():
     assert response["ok"] is False
     assert response["error"]["code"] == "BRIDGE_OPERATION_UNSUPPORTED"
     assert response["error"]["details"]["capabilities"] == [
-        "bridge.info", "version.get_state", "version.list_branches"
+        "bridge.info",
+        "version.get_state",
+        "version.list_branches",
+        "instance.prepare_launch",
     ]
 
 

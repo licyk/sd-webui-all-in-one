@@ -5,6 +5,7 @@ CAPABILITIES = (
     "bridge.info",
     "version.get_state",
     "version.list_branches",
+    "instance.prepare_launch",
 )
 
 __all__ = [

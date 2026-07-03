@@ -28,6 +28,14 @@ GIT_CORE_KINDS = {
 PACKAGE_VERSION_KINDS = {
     "invokeai": "invokeai",
 }
+PREPARE_LAUNCH_ENTRYPOINTS = {
+    "sd_webui": "launch.py",
+    "comfyui": "main.py",
+    "fooocus": "launch.py",
+    "qwen_tts_webui": "launch.py",
+}
+PREPARE_LAUNCH_SD_TRAINER_ENTRYPOINTS = ("gui.py", "kohya_gui.py")
+PREPARE_LAUNCH_TIMEOUT_MS = 300_000
 
 
 class BridgeOperationError(Exception):
@@ -60,6 +68,8 @@ def dispatch_operation(operation: str, payload: dict[str, Any] | None) -> dict[s
         return get_version_state(payload)
     if operation == "version.list_branches":
         return list_version_branches(payload)
+    if operation == "instance.prepare_launch":
+        return prepare_instance_launch(payload)
     raise BridgeOperationError(
         "BRIDGE_OPERATION_UNSUPPORTED",
         f"Unsupported desktop bridge operation: {operation}",
@@ -128,6 +138,68 @@ def list_version_branches(payload: dict[str, Any]) -> dict[str, Any]:
         f"Unsupported instance kind for branch listing: {kind}",
         {"kind": kind},
     )
+
+
+def prepare_instance_launch(payload: dict[str, Any]) -> dict[str, Any]:
+    """
+    Return a desktop LaunchSpec for an installed instance without starting it.
+
+    Args:
+        payload (dict[str, Any]):
+            Desktop bridge payload containing an instance object.
+
+    Returns:
+        dict[str, Any]: Launch spec wrapped in ``launch``.
+    """
+    instance = _require_mapping(payload, "instance")
+    kind = _require_string(instance, "kind")
+    core_path = Path(_require_string(instance, "corePath"))
+    python_path = _require_string(instance, "pythonPath")
+    host = _require_string(instance, "host")
+    port = _require_port(instance, "port")
+    launch_args = _optional_string_list(instance, "launchArgs")
+    env_vars = _optional_string_mapping(instance, "envVars")
+
+    entrypoint = _prepare_launch_entrypoint(kind, core_path)
+    if not entrypoint.is_file():
+        raise BridgeOperationError(
+            "PREPARE_LAUNCH_ENTRYPOINT_MISSING",
+            "Instance launch entrypoint is missing",
+            {
+                "kind": kind,
+                "corePath": str(core_path),
+                "entrypoint": str(entrypoint),
+            },
+        )
+
+    env = {
+        "PYTHONNOUSERSITE": "1",
+        "PYTHONUNBUFFERED": "1",
+    }
+    env.update(env_vars)
+    url = _launch_url(host, port)
+
+    return {
+        "launch": {
+            "cmd": python_path,
+            "args": [str(entrypoint), *launch_args, *_launch_network_args(kind, host, port)],
+            "cwd": str(core_path),
+            "env": env,
+            "host": host,
+            "port": port,
+            "url": url,
+            "readyCheck": {
+                "type": "port",
+                "host": host,
+                "port": port,
+                "timeoutMs": PREPARE_LAUNCH_TIMEOUT_MS,
+            },
+            "healthCheck": {
+                "kind": "http",
+                "url": url,
+            },
+        }
+    }
 
 
 def _git_version_state(kind: str, core_path: Path) -> dict[str, Any]:
@@ -225,6 +297,59 @@ def _git_version_branches(kind: str, core_path: Path) -> list[dict[str, Any]]:
     ]
 
 
+def _prepare_launch_entrypoint(kind: str, core_path: Path) -> Path:
+    if kind == "sd_trainer":
+        for entrypoint_name in PREPARE_LAUNCH_SD_TRAINER_ENTRYPOINTS:
+            entrypoint = core_path / entrypoint_name
+            if entrypoint.is_file():
+                return entrypoint
+        return core_path / PREPARE_LAUNCH_SD_TRAINER_ENTRYPOINTS[0]
+
+    entrypoint_name = PREPARE_LAUNCH_ENTRYPOINTS.get(kind)
+    if entrypoint_name is None:
+        raise BridgeOperationError(
+            "PREPARE_LAUNCH_KIND_UNSUPPORTED",
+            f"Unsupported instance kind for launch preparation: {kind}",
+            {"kind": kind},
+        )
+    return core_path / entrypoint_name
+
+
+def _launch_network_args(kind: str, host: str, port: int) -> list[str]:
+    args: list[str] = []
+    if kind == "comfyui":
+        args.extend(["--listen", host, "--port", str(port)])
+    elif kind == "qwen_tts_webui":
+        args.extend(["--server-name", host, "--server-port", str(port)])
+    elif kind == "sd_trainer":
+        if _is_wildcard_host(host):
+            args.append("--listen")
+        args.extend(["--server_port", str(port)])
+    else:
+        if _is_wildcard_host(host):
+            args.append("--listen")
+        args.extend(["--port", str(port)])
+    return args
+
+
+def _launch_url(host: str, port: int) -> str:
+    url_host = _browser_host(host)
+    if ":" in url_host and not url_host.startswith("["):
+        url_host = f"[{url_host}]"
+    return f"http://{url_host}:{port}"
+
+
+def _browser_host(host: str) -> str:
+    normalized = host.strip().lower()
+    if normalized in {"", "0.0.0.0", "::"}:
+        return "127.0.0.1"
+    return host.strip()
+
+
+def _is_wildcard_host(host: str) -> bool:
+    return host.strip().lower() in {"0.0.0.0", "::"}
+
+
 def _git_dirty(path: Path) -> bool | None:
     try:
         return run_git_output(path, "--no-optional-locks", "status", "--porcelain") != ""
@@ -279,6 +404,51 @@ def _require_string(payload: dict[str, Any], field: str) -> str:
     raise BridgeOperationError(
         "BRIDGE_REQUEST_INVALID",
         f"Bridge request field {field} must be a non-empty string",
+        {"field": field},
+    )
+
+
+def _require_port(payload: dict[str, Any], field: str) -> int:
+    value = payload.get(field)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise BridgeOperationError(
+            "PREPARE_LAUNCH_PORT_MISSING",
+            f"Bridge request field {field} must be a port in 1..=65535",
+            {"field": field},
+        )
+    if 1 <= value <= 65535:
+        return value
+    raise BridgeOperationError(
+        "PREPARE_LAUNCH_PORT_INVALID",
+        f"Bridge request field {field} must be a port in 1..=65535",
+        {"field": field, "port": value},
+    )
+
+
+def _optional_string_list(payload: dict[str, Any], field: str) -> list[str]:
+    value = payload.get(field, [])
+    if value is None:
+        return []
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return value
+    raise BridgeOperationError(
+        "BRIDGE_REQUEST_INVALID",
+        f"Bridge request field {field} must be a list of strings",
+        {"field": field},
+    )
+
+
+def _optional_string_mapping(payload: dict[str, Any], field: str) -> dict[str, str]:
+    value = payload.get(field, {})
+    if value is None:
+        return {}
+    if isinstance(value, dict) and all(
+        isinstance(key, str) and isinstance(item, str) for key, item in value.items()
+    ):
+        return dict(value)
+    raise BridgeOperationError(
+        "BRIDGE_REQUEST_INVALID",
+        f"Bridge request field {field} must be an object with string values",
         {"field": field},
     )
 
