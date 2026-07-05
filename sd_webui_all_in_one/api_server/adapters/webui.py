@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
+from collections.abc import Iterable
+from dataclasses import asdict, is_dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, cast
 from urllib.parse import urlparse
 
 from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, qwen_tts_webui_base, sd_scripts_base, sd_trainer_base, sd_webui_base
@@ -62,8 +63,16 @@ def _snapshot_restore_options(data: dict[str, Any] | None = None) -> SnapshotRes
     )
 
 
-def _dataclass_list(items: list[object]) -> list[dict[str, Any]]:
-    return [json_safe(asdict(item)) for item in items]
+def _dataclass_list(items: Iterable[Any]) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for item in items:
+        if not is_dataclass(item):
+            raise TypeError(f"Expected dataclass instance, got {type(item).__name__}")
+        data = json_safe(asdict(item))
+        if not isinstance(data, dict):
+            raise TypeError(f"Expected dataclass dict, got {type(data).__name__}")
+        result.append(cast(dict[str, Any], data))
+    return result
 
 
 def _load_json_object(path: Path) -> dict[str, Any]:
@@ -158,38 +167,102 @@ class WebUiApiAdapter:
         self._snapshot_factory = snapshot_factory
 
     def repository_status(self, webui_path: Path) -> dict[str, Any]:
-        """读取内核仓库状态。"""
+        """读取内核仓库状态。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+
+        Returns:
+            dict[str, Any]: 仓库状态信息。
+        """
         return {"repository": json_safe(asdict(inspect_repository(webui_path)))}
 
     def list_branches(self, webui_path: Path, fetch: bool = True) -> dict[str, Any]:
-        """列出内核分支。"""
+        """列出内核分支。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            fetch (bool): 是否先从远端拉取分支信息。
+
+        Returns:
+            dict[str, Any]: 分支列表。
+        """
         return {"branches": _dataclass_list(list_branches(webui_path, fetch=fetch))}
 
     def list_commits(self, webui_path: Path, limit: int | None = 100) -> dict[str, Any]:
-        """列出内核提交。"""
+        """列出内核提交。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            limit (int | None): 最大提交数量。
+
+        Returns:
+            dict[str, Any]: 提交列表。
+        """
         return {"commits": _dataclass_list(list_commits(webui_path, limit=limit))}
 
     def switch_branch(self, webui_path: Path, branch: str, new_url: str | None = None, recurse_submodules: bool = False) -> dict[str, Any]:
-        """切换内核分支。"""
+        """切换内核分支。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            branch (str): 目标分支。
+            new_url (str | None): 可选的新远端地址。
+            recurse_submodules (bool): 是否递归处理子模块。
+
+        Returns:
+            dict[str, Any]: 切换结果。
+        """
         switch_repository_branch(webui_path, branch=branch, new_url=new_url, recurse_submodules=recurse_submodules)
         return {"changed": True}
 
     def switch_commit(self, webui_path: Path, commit: str) -> dict[str, Any]:
-        """切换内核提交。"""
+        """切换内核提交。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            commit (str): 目标提交 ID。
+
+        Returns:
+            dict[str, Any]: 切换结果。
+        """
         switch_repository_commit(webui_path, commit=commit)
         return {"changed": True}
 
     def update(self, webui_path: Path) -> dict[str, Any]:
-        """更新内核仓库。"""
+        """更新内核仓库。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+
+        Returns:
+            dict[str, Any]: 更新结果。
+        """
         update_repository(webui_path)
         return {"updated": True}
 
     def snapshot_dir(self, webui_path: Path, snapshot_dir: Path | None = None) -> Path:
-        """获取快照目录。"""
+        """获取快照目录。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            snapshot_dir (Path | None): 显式指定的快照目录。
+
+        Returns:
+            Path: 实际使用的快照目录。
+        """
         return snapshot_dir or webui_path / "snapshots"
 
     def list_snapshots(self, webui_path: Path, snapshot_dir: Path | None = None) -> dict[str, Any]:
-        """列出快照文件。"""
+        """列出快照文件。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            snapshot_dir (Path | None): 显式指定的快照目录。
+
+        Returns:
+            dict[str, Any]: 快照文件列表。
+        """
         directory = self.snapshot_dir(webui_path, snapshot_dir=snapshot_dir)
         if not directory.exists():
             return {"snapshots": []}
@@ -214,25 +287,60 @@ class WebUiApiAdapter:
         return {"snapshots": snapshots}
 
     def read_snapshot(self, snapshot_path: Path) -> dict[str, Any]:
-        """读取快照文件。"""
+        """读取快照文件。
+
+        Args:
+            snapshot_path (Path): 快照文件路径。
+
+        Returns:
+            dict[str, Any]: 快照内容。
+        """
         return {"snapshot": snapshot_to_dict(load_snapshot(snapshot_path))}
 
     def create_snapshot(self, webui_path: Path, include_packages: bool = True, output_dir: Path | None = None) -> dict[str, Any]:
-        """创建快照。"""
+        """创建快照。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            include_packages (bool): 是否包含 Python 包列表。
+            output_dir (Path | None): 快照输出目录。
+
+        Returns:
+            dict[str, Any]: 快照路径和内容。
+        """
         snapshot = self._snapshot_factory(webui_path, include_packages)
         output = default_snapshot_output(snapshot, output_dir=output_dir)
         save_snapshot(snapshot, output)
         return {"path": output.as_posix(), "snapshot": snapshot_to_dict(snapshot)}
 
     def delete_snapshot(self, snapshot_path: Path) -> dict[str, Any]:
-        """删除快照文件。"""
+        """删除快照文件。
+
+        Args:
+            snapshot_path (Path): 快照文件路径。
+
+        Returns:
+            dict[str, Any]: 删除结果。
+
+        Raises:
+            FileNotFoundError: 快照文件不存在。
+        """
         if not snapshot_path.is_file():
             raise FileNotFoundError(f"Snapshot not found: {snapshot_path}")
         remove_files(snapshot_path)
         return {"deleted": True, "path": snapshot_path.as_posix()}
 
     def preview_restore_snapshot(self, webui_path: Path, snapshot_path: Path, options: dict[str, Any] | None = None) -> dict[str, Any]:
-        """预览快照恢复计划。"""
+        """预览快照恢复计划。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            snapshot_path (Path): 快照文件路径。
+            options (dict[str, Any] | None): 恢复选项。
+
+        Returns:
+            dict[str, Any]: 恢复计划。
+        """
         plan = preview_webui_snapshot_restore(
             snapshot_path=snapshot_path,
             webui_path=webui_path,
@@ -242,7 +350,16 @@ class WebUiApiAdapter:
         return {"plan": json_safe(asdict(plan))}
 
     def restore_snapshot(self, webui_path: Path, snapshot_path: Path, options: dict[str, Any] | None = None) -> dict[str, Any]:
-        """恢复快照。"""
+        """恢复快照。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            snapshot_path (Path): 快照文件路径。
+            options (dict[str, Any] | None): 恢复选项。
+
+        Returns:
+            dict[str, Any]: 恢复结果。
+        """
         restore_webui_snapshot(
             snapshot_path=snapshot_path,
             webui_path=webui_path,
@@ -252,7 +369,17 @@ class WebUiApiAdapter:
         return {"restored": True}
 
     def extension_manager(self, webui_path: Path):
-        """获取对应 WebUI 的扩展管理器。"""
+        """获取对应 WebUI 的扩展管理器。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+
+        Returns:
+            Any: 对应 WebUI 的扩展管理器。
+
+        Raises:
+            NotImplementedError: 当前 WebUI 类型不支持扩展管理。
+        """
         if self.webui_type == "sd_webui":
             return ExtensionManager(
                 root_path=webui_path,
@@ -272,46 +399,124 @@ class WebUiApiAdapter:
         raise NotImplementedError(f"{self.display_name} does not support extension management")
 
     def list_extensions(self, webui_path: Path) -> dict[str, Any]:
-        """列出扩展。"""
+        """列出扩展。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+
+        Returns:
+            dict[str, Any]: 扩展列表。
+        """
         return {"extensions": _dataclass_list(self.extension_manager(webui_path).list_extensions())}
 
     def set_extension_enabled(self, webui_path: Path, name: str, enabled: bool) -> dict[str, Any]:
-        """设置扩展启用状态。"""
+        """设置扩展启用状态。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            name (str): 扩展名称。
+            enabled (bool): 是否启用扩展。
+
+        Returns:
+            dict[str, Any]: 修改结果。
+        """
         self.extension_manager(webui_path).set_extension_enabled(name, enabled)
         return {"changed": True}
 
     def install_extension(self, webui_path: Path, url: str, use_github_mirror: bool = False, custom_github_mirror: str | list[str] | None = None) -> dict[str, Any]:
-        """从 Git URL 安装扩展。"""
+        """从 Git URL 安装扩展。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            url (str): 扩展 Git URL。
+            use_github_mirror (bool): 是否使用 GitHub 镜像。
+            custom_github_mirror (str | list[str] | None): 自定义 GitHub 镜像。
+
+        Returns:
+            dict[str, Any]: 安装结果。
+        """
         path = self.extension_manager(webui_path).install_extension(url, use_github_mirror=use_github_mirror, custom_github_mirror=custom_github_mirror)
         return {"installed": True, "path": path.as_posix()}
 
     def update_extension(self, webui_path: Path, name: str) -> dict[str, Any]:
-        """更新扩展。"""
+        """更新扩展。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            name (str): 扩展名称。
+
+        Returns:
+            dict[str, Any]: 更新结果。
+        """
         self.extension_manager(webui_path).update_extension(name)
         return {"updated": True}
 
     def update_all_extensions(self, webui_path: Path) -> dict[str, Any]:
-        """更新所有扩展。"""
+        """更新所有扩展。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+
+        Returns:
+            dict[str, Any]: 更新结果。
+        """
         self.extension_manager(webui_path).update_all()
         return {"updated": True}
 
     def uninstall_extension(self, webui_path: Path, name: str) -> dict[str, Any]:
-        """卸载扩展。"""
+        """卸载扩展。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            name (str): 扩展名称。
+
+        Returns:
+            dict[str, Any]: 卸载结果。
+        """
         self.extension_manager(webui_path).uninstall_extension(name)
         return {"uninstalled": True}
 
     def switch_extension_commit(self, webui_path: Path, name: str, commit: str) -> dict[str, Any]:
-        """切换扩展提交。"""
+        """切换扩展提交。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            name (str): 扩展名称。
+            commit (str): 目标提交 ID。
+
+        Returns:
+            dict[str, Any]: 切换结果。
+        """
         self.extension_manager(webui_path).switch_extension_commit(name, commit)
         return {"changed": True}
 
     def switch_extension_branch(self, webui_path: Path, name: str, branch: str) -> dict[str, Any]:
-        """切换扩展分支。"""
+        """切换扩展分支。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            name (str): 扩展名称。
+            branch (str): 目标分支。
+
+        Returns:
+            dict[str, Any]: 切换结果。
+        """
         self.extension_manager(webui_path).switch_extension_branch(name, branch)
         return {"changed": True}
 
     def fetch_extension_index(self, webui_path: Path, options: dict[str, Any] | None = None) -> dict[str, Any]:
-        """获取扩展源。"""
+        """获取扩展源。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            options (dict[str, Any] | None): 扩展源查询选项。
+
+        Returns:
+            dict[str, Any]: 可安装扩展列表。
+
+        Raises:
+            NotImplementedError: 当前 WebUI 类型不支持扩展源。
+        """
         options = options or {}
         query = str(options.get("query") or "")
         tags = tuple(str(item) for item in options.get("tags", ()) if str(item))
@@ -340,7 +545,20 @@ class WebUiApiAdapter:
         return {"extensions": filtered_items}
 
     def install_extension_index_item(self, webui_path: Path, item_data: dict[str, Any], use_github_mirror: bool = False, custom_github_mirror: str | list[str] | None = None) -> dict[str, Any]:
-        """安装扩展源条目。"""
+        """安装扩展源条目。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            item_data (dict[str, Any]): 扩展源条目。
+            use_github_mirror (bool): 是否使用 GitHub 镜像。
+            custom_github_mirror (str | list[str] | None): 自定义 GitHub 镜像。
+
+        Returns:
+            dict[str, Any]: 安装结果。
+
+        Raises:
+            ValueError: 条目不可安装或安装类型不受支持。
+        """
         item = _extension_index_item_from_params(item_data)
         if not item.installable:
             raise ValueError(f"'{item.name}' is not installable: {item.install_status or 'not installable'}")
@@ -372,24 +590,71 @@ class WebUiApiAdapter:
         raise ValueError(f"Unsupported install_type: {item.install_type}")
 
     def fetch_extension_versions(self, node_id: str, timeout: int | None = 20) -> dict[str, Any]:
-        """获取扩展可切换版本。"""
+        """获取扩展可切换版本。
+
+        Args:
+            node_id (str): Comfy Registry 节点 ID。
+            timeout (int | None): 请求超时时间。
+
+        Returns:
+            dict[str, Any]: 可安装版本列表。
+
+        Raises:
+            NotImplementedError: 当前 WebUI 类型不支持 Registry 版本查询。
+        """
         if self.webui_type != "comfyui":
             raise NotImplementedError(f"{self.display_name} does not support extension registry versions")
         return {"versions": _dataclass_list(fetch_comfy_registry_versions(node_id, timeout=timeout))}
 
     def switch_registry_extension_version(self, webui_path: Path, name: str, version: str, use_uv: bool = True) -> dict[str, Any]:
-        """切换 Comfy Registry 扩展版本。"""
+        """切换 Comfy Registry 扩展版本。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            name (str): 扩展名称。
+            version (str): 目标版本。
+            use_uv (bool): 是否使用 uv 安装依赖。
+
+        Returns:
+            dict[str, Any]: 切换结果。
+
+        Raises:
+            NotImplementedError: 当前 WebUI 类型不支持 Registry 版本切换。
+        """
         if self.webui_type != "comfyui":
             raise NotImplementedError(f"{self.display_name} does not support extension registry versions")
         self.extension_manager(webui_path).switch_registry_extension_version(name, version=version, use_uv=use_uv)
         return {"changed": True}
 
     def list_package_versions(self, package_name: str, current_version: str | None = None, index_url: str = "https://pypi.org/pypi", timeout: int | None = 20) -> dict[str, Any]:
-        """列出 PyPI 包版本。"""
+        """列出 PyPI 包版本。
+
+        Args:
+            package_name (str): PyPI 包名。
+            current_version (str | None): 当前版本。
+            index_url (str): PyPI JSON API 或镜像地址。
+            timeout (int | None): 请求超时时间。
+
+        Returns:
+            dict[str, Any]: 包版本列表。
+        """
         return {"versions": _dataclass_list(fetch_pypi_versions(package_name, current_version=current_version, index_url=index_url, timeout=timeout))}
 
     def install_invokeai_version(self, version: str | None = None, upgrade: bool = False, use_pypi_mirror: bool = False, use_uv: bool = True) -> dict[str, Any]:
-        """安装或升级 InvokeAI 内核版本。"""
+        """安装或升级 InvokeAI 内核版本。
+
+        Args:
+            version (str | None): 目标 InvokeAI 版本。
+            upgrade (bool): 是否升级到最新版。
+            use_pypi_mirror (bool): 是否使用 PyPI 镜像。
+            use_uv (bool): 是否使用 uv。
+
+        Returns:
+            dict[str, Any]: 安装结果。
+
+        Raises:
+            NotImplementedError: 当前 WebUI 类型不支持 PyPI 内核版本安装。
+        """
         if self.webui_type != "invokeai":
             raise NotImplementedError(f"{self.display_name} does not support PyPI kernel version installation")
         invokeai_base.install_invokeai_component(invokeai_version=version, upgrade=upgrade, use_pypi_mirror=use_pypi_mirror, use_uv=use_uv)
@@ -408,7 +673,17 @@ WEBUI_API_ADAPTERS: dict[str, WebUiApiAdapter] = {
 
 
 def get_webui_adapter(webui_type: str) -> WebUiApiAdapter:
-    """获取 WebUI API adapter。"""
+    """获取 WebUI API adapter。
+
+    Args:
+        webui_type (str): WebUI 类型。
+
+    Returns:
+        WebUiApiAdapter: 对应类型的 API adapter。
+
+    Raises:
+        ValueError: WebUI 类型不受支持。
+    """
     try:
         return WEBUI_API_ADAPTERS[webui_type]
     except KeyError as exc:

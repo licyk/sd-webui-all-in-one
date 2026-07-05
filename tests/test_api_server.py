@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 import threading
 import time
 import urllib.error

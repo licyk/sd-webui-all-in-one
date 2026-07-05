@@ -49,15 +49,39 @@ def _optional_path(value: Any) -> Path | None:
 
 
 def version_status(params: dict[str, Any]) -> dict[str, Any]:
+    """读取 WebUI 内核仓库状态。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 仓库状态信息。
+    """
     return _adapter(params).repository_status(_webui_path(params))
 
 
 def version_branches(params: dict[str, Any]) -> dict[str, Any]:
+    """列出 WebUI 内核仓库分支。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 分支列表。
+    """
     options = _options(params)
     return _adapter(params).list_branches(_webui_path(params), fetch=bool(options.get("fetch", True)))
 
 
 def version_commits(params: dict[str, Any]) -> dict[str, Any]:
+    """列出 WebUI 内核仓库提交。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 提交列表。
+    """
     options = _options(params)
     limit = options.get("limit", 100)
     if limit is not None:
@@ -66,27 +90,75 @@ def version_commits(params: dict[str, Any]) -> dict[str, Any]:
 
 
 def snapshot_list(params: dict[str, Any]) -> dict[str, Any]:
+    """列出 WebUI 快照文件。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 快照文件列表。
+    """
     options = _options(params)
     return _adapter(params).list_snapshots(_webui_path(params), snapshot_dir=_optional_path(options.get("snapshot_dir")))
 
 
 def snapshot_read(params: dict[str, Any]) -> dict[str, Any]:
+    """读取快照文件。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 快照内容。
+    """
     return _adapter(params).read_snapshot(Path(_require_str(params, "snapshot_path")))
 
 
 def snapshot_delete(params: dict[str, Any]) -> dict[str, Any]:
+    """删除快照文件。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 删除结果。
+    """
     return _adapter(params).delete_snapshot(Path(_require_str(params, "snapshot_path")))
 
 
 def extension_list(params: dict[str, Any]) -> dict[str, Any]:
+    """列出本地扩展或自定义节点。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 扩展列表。
+    """
     return _adapter(params).list_extensions(_webui_path(params))
 
 
 def extension_index(params: dict[str, Any]) -> dict[str, Any]:
+    """获取可安装扩展源条目。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 可安装扩展列表。
+    """
     return _adapter(params).fetch_extension_index(_webui_path(params), options=_options(params))
 
 
 def extension_versions(params: dict[str, Any]) -> dict[str, Any]:
+    """获取 Comfy Registry 扩展版本。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 扩展版本列表。
+    """
     options = _options(params)
     timeout = options.get("timeout", 20)
     if timeout is not None:
@@ -95,6 +167,14 @@ def extension_versions(params: dict[str, Any]) -> dict[str, Any]:
 
 
 def package_versions(params: dict[str, Any]) -> dict[str, Any]:
+    """获取 PyPI 包版本列表。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 包版本列表。
+    """
     options = _options(params)
     timeout = options.get("timeout", 20)
     if timeout is not None:
@@ -108,6 +188,15 @@ def package_versions(params: dict[str, Any]) -> dict[str, Any]:
 
 
 def version_switch_branch(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """切换 WebUI 内核仓库分支。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 切换结果。
+    """
     context.log("Switching repository branch")
     options = _options(params)
     result = _adapter(params).switch_branch(
@@ -121,6 +210,15 @@ def version_switch_branch(params: dict[str, Any], context: ApiTaskContext) -> di
 
 
 def version_switch_commit(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """切换 WebUI 内核仓库提交。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 切换结果。
+    """
     context.log("Switching repository commit")
     result = _adapter(params).switch_commit(_webui_path(params), commit=_require_str(params, "commit"))
     context.set_progress(100, "done")
@@ -128,6 +226,15 @@ def version_switch_commit(params: dict[str, Any], context: ApiTaskContext) -> di
 
 
 def version_update(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """更新 WebUI 内核仓库。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 更新结果。
+    """
     context.log("Updating repository")
     result = _adapter(params).update(_webui_path(params))
     context.set_progress(100, "done")
@@ -135,6 +242,15 @@ def version_update(params: dict[str, Any], context: ApiTaskContext) -> dict[str,
 
 
 def snapshot_create(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """创建 WebUI 快照。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 快照创建结果。
+    """
     context.log("Creating snapshot")
     options = _options(params)
     result = _adapter(params).create_snapshot(
@@ -147,6 +263,15 @@ def snapshot_create(params: dict[str, Any], context: ApiTaskContext) -> dict[str
 
 
 def snapshot_preview_restore(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """预览快照恢复计划。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 恢复计划。
+    """
     context.log("Previewing snapshot restore")
     result = _adapter(params).preview_restore_snapshot(
         _webui_path(params),
@@ -158,6 +283,15 @@ def snapshot_preview_restore(params: dict[str, Any], context: ApiTaskContext) ->
 
 
 def snapshot_restore(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """恢复 WebUI 快照。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 恢复结果。
+    """
     context.log("Restoring snapshot")
     result = _adapter(params).restore_snapshot(
         _webui_path(params),
@@ -169,6 +303,15 @@ def snapshot_restore(params: dict[str, Any], context: ApiTaskContext) -> dict[st
 
 
 def extension_set_enabled(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """启用或禁用扩展。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 修改结果。
+    """
     context.log("Changing extension status")
     result = _adapter(params).set_extension_enabled(_webui_path(params), name=_require_str(params, "name"), enabled=bool(params.get("enabled")))
     context.set_progress(100, "done")
@@ -176,6 +319,15 @@ def extension_set_enabled(params: dict[str, Any], context: ApiTaskContext) -> di
 
 
 def extension_install(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """从 Git URL 安装扩展。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 安装结果。
+    """
     context.log("Installing extension")
     options = _options(params)
     result = _adapter(params).install_extension(
@@ -189,6 +341,18 @@ def extension_install(params: dict[str, Any], context: ApiTaskContext) -> dict[s
 
 
 def extension_install_index_item(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """从扩展源条目安装扩展。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 安装结果。
+
+    Raises:
+        ValueError: item 字段不是对象。
+    """
     context.log("Installing extension index item")
     options = _options(params)
     item = params.get("item")
@@ -205,6 +369,15 @@ def extension_install_index_item(params: dict[str, Any], context: ApiTaskContext
 
 
 def extension_update(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """更新单个扩展。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 更新结果。
+    """
     context.log("Updating extension")
     result = _adapter(params).update_extension(_webui_path(params), name=_require_str(params, "name"))
     context.set_progress(100, "done")
@@ -212,6 +385,15 @@ def extension_update(params: dict[str, Any], context: ApiTaskContext) -> dict[st
 
 
 def extension_update_all(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """更新所有扩展。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 更新结果。
+    """
     context.log("Updating all extensions")
     result = _adapter(params).update_all_extensions(_webui_path(params))
     context.set_progress(100, "done")
@@ -219,6 +401,15 @@ def extension_update_all(params: dict[str, Any], context: ApiTaskContext) -> dic
 
 
 def extension_uninstall(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """卸载扩展。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 卸载结果。
+    """
     context.log("Uninstalling extension")
     result = _adapter(params).uninstall_extension(_webui_path(params), name=_require_str(params, "name"))
     context.set_progress(100, "done")
@@ -226,6 +417,15 @@ def extension_uninstall(params: dict[str, Any], context: ApiTaskContext) -> dict
 
 
 def extension_switch_commit(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """切换扩展提交。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 切换结果。
+    """
     context.log("Switching extension commit")
     result = _adapter(params).switch_extension_commit(_webui_path(params), name=_require_str(params, "name"), commit=_require_str(params, "commit"))
     context.set_progress(100, "done")
@@ -233,6 +433,15 @@ def extension_switch_commit(params: dict[str, Any], context: ApiTaskContext) -> 
 
 
 def extension_switch_branch(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """切换扩展分支。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 切换结果。
+    """
     context.log("Switching extension branch")
     result = _adapter(params).switch_extension_branch(_webui_path(params), name=_require_str(params, "name"), branch=_require_str(params, "branch"))
     context.set_progress(100, "done")
@@ -240,6 +449,15 @@ def extension_switch_branch(params: dict[str, Any], context: ApiTaskContext) -> 
 
 
 def extension_switch_registry_version(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """切换 Comfy Registry 扩展版本。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 切换结果。
+    """
     context.log("Switching Comfy Registry extension version")
     options = _options(params)
     result = _adapter(params).switch_registry_extension_version(
@@ -253,6 +471,15 @@ def extension_switch_registry_version(params: dict[str, Any], context: ApiTaskCo
 
 
 def invokeai_install_version(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """安装或升级 InvokeAI PyPI 版本。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 安装结果。
+    """
     context.log("Installing InvokeAI version")
     options = _options(params)
     result = _adapter(params).install_invokeai_version(
@@ -274,7 +501,11 @@ def _task_spec(name: str, handler: Callable[[dict[str, Any], ApiTaskContext], di
 
 
 def get_default_methods() -> ApiMethodRegistry:
-    """获取默认同步 API 方法。"""
+    """获取默认同步 API 方法。
+
+    Returns:
+        ApiMethodRegistry: 默认同步方法注册表。
+    """
     return {
         "version.status": _sync_spec("version.status", version_status, "Inspect WebUI kernel repository status."),
         "version.branches": _sync_spec("version.branches", version_branches, "List repository branches for a WebUI kernel."),
@@ -300,7 +531,11 @@ def get_default_methods() -> ApiMethodRegistry:
 
 
 def get_default_task_methods() -> ApiTaskRegistry:
-    """获取默认后台任务 API 方法。"""
+    """获取默认后台任务 API 方法。
+
+    Returns:
+        ApiTaskRegistry: 默认后台任务方法注册表。
+    """
     return {
         "version.switch_branch": _task_spec("version.switch_branch", version_switch_branch, "Switch repository branch."),
         "version.switch_commit": _task_spec("version.switch_commit", version_switch_commit, "Switch repository commit."),

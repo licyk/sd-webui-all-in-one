@@ -61,7 +61,11 @@ class ApiMethodSpec:
     result_schema: dict[str, Any] | None = None
 
     def metadata(self) -> dict[str, Any]:
-        """导出给客户端消费的方法元数据。"""
+        """导出给客户端消费的方法元数据。
+
+        Returns:
+            dict[str, Any]: 方法名称、类型、描述和 schema 元数据。
+        """
         data: dict[str, Any] = {
             "name": self.name,
             "kind": self.kind,
@@ -78,7 +82,14 @@ ApiTaskRegistry = Mapping[str, ApiTaskHandler | ApiMethodSpec]
 
 
 def validate_api_method_name(name: str) -> None:
-    """校验 API 方法名。"""
+    """校验 API 方法名。
+
+    Args:
+        name (str): API 方法名。
+
+    Raises:
+        ValueError: 方法名不符合 API 命名规则。
+    """
     if not API_METHOD_NAME_PATTERN.match(name):
         raise ValueError(f"Invalid API method name: {name}")
 
@@ -135,23 +146,45 @@ class ApiTaskContext:
 
     @property
     def task_id(self) -> str:
-        """任务 ID。"""
+        """任务 ID。
+
+        Returns:
+            str: 当前任务 ID。
+        """
         return self._task.task_id
 
     def set_progress(self, value: float | int | None = None, message: str = "") -> None:
-        """设置任务进度。"""
+        """设置任务进度。
+
+        Args:
+            value (float | int | None): 任务进度值。
+            message (str): 进度说明。
+        """
         self._task.set_progress(value, message)
 
     def log(self, message: str, level: str = "info") -> None:
-        """记录任务日志。"""
+        """记录任务日志。
+
+        Args:
+            message (str): 日志内容。
+            level (str): 日志级别。
+        """
         self._task.add_log(message, level=level)
 
     def is_canceled(self) -> bool:
-        """任务是否已收到取消请求。"""
+        """任务是否已收到取消请求。
+
+        Returns:
+            bool: 任务收到取消请求时返回 True。
+        """
         return self._task.is_canceled
 
     def check_canceled(self) -> None:
-        """任务已取消时抛出异常。"""
+        """任务已取消时抛出异常。
+
+        Raises:
+            ApiTaskCanceled: 当前任务已收到取消请求。
+        """
         if self.is_canceled():
             raise ApiTaskCanceled("Task was canceled")
 
@@ -179,6 +212,11 @@ class ApiTask:
 
     @property
     def is_canceled(self) -> bool:
+        """任务是否已收到取消请求。
+
+        Returns:
+            bool: 已收到取消请求时返回 True。
+        """
         return self._cancel_event.is_set()
 
     def start(self) -> None:
@@ -187,7 +225,11 @@ class ApiTask:
         self._thread.start()
 
     def cancel(self) -> bool:
-        """请求取消任务。"""
+        """请求取消任务。
+
+        Returns:
+            bool: 成功发出取消请求时返回 True，任务已结束时返回 False。
+        """
         with self._lock:
             if self.status in {"succeeded", "failed", "canceled"}:
                 return False
@@ -196,18 +238,35 @@ class ApiTask:
             return True
 
     def set_progress(self, value: float | int | None = None, message: str = "") -> None:
-        """设置任务进度。"""
+        """设置任务进度。
+
+        Args:
+            value (float | int | None): 任务进度值。
+            message (str): 进度说明。
+        """
         with self._lock:
             self.progress = value
             self.progress_message = message
 
     def add_log(self, message: str, level: str = "info") -> None:
-        """添加任务日志。"""
+        """添加任务日志。
+
+        Args:
+            message (str): 日志内容。
+            level (str): 日志级别。
+        """
         with self._lock:
             self.logs.append({"time": time.time(), "level": level, "message": message})
 
     def snapshot(self, include_result: bool = True) -> dict[str, Any]:
-        """导出任务状态快照。"""
+        """导出任务状态快照。
+
+        Args:
+            include_result (bool): 是否包含任务结果。
+
+        Returns:
+            dict[str, Any]: 任务状态快照。
+        """
         with self._lock:
             data: dict[str, Any] = {
                 "id": self.task_id,
@@ -226,7 +285,11 @@ class ApiTask:
             return data
 
     def logs_snapshot(self) -> list[dict[str, Any]]:
-        """导出任务日志。"""
+        """导出任务日志。
+
+        Returns:
+            list[dict[str, Any]]: 任务日志快照。
+        """
         with self._lock:
             return list(self.logs)
 
@@ -266,7 +329,16 @@ class ApiTaskManager:
         self._lock = threading.RLock()
 
     def create_task(self, method: str, params: dict[str, Any], handler: ApiTaskHandler) -> ApiTask:
-        """创建并启动后台任务。"""
+        """创建并启动后台任务。
+
+        Args:
+            method (str): 任务方法名。
+            params (dict[str, Any]): 任务参数。
+            handler (ApiTaskHandler): 任务处理器。
+
+        Returns:
+            ApiTask: 已创建的后台任务。
+        """
         task = ApiTask(uuid.uuid4().hex, method, params, handler)
         with self._lock:
             self._tasks[task.task_id] = task
@@ -274,12 +346,23 @@ class ApiTaskManager:
         return task
 
     def get(self, task_id: str) -> ApiTask | None:
-        """获取任务。"""
+        """获取任务。
+
+        Args:
+            task_id (str): 任务 ID。
+
+        Returns:
+            ApiTask | None: 找到时返回任务，否则返回 None。
+        """
         with self._lock:
             return self._tasks.get(task_id)
 
-    def list(self) -> list[dict[str, Any]]:
-        """列出任务快照。"""
+    def snapshots(self) -> list[dict[str, Any]]:
+        """列出任务快照。
+
+        Returns:
+            list[dict[str, Any]]: 后台任务状态快照列表。
+        """
         with self._lock:
             return [task.snapshot(include_result=False) for task in self._tasks.values()]
 
@@ -307,7 +390,11 @@ class ApiServer(ThreadingHTTPServer):
         self.max_request_body_size = max_request_body_size
 
     def method_catalog(self) -> dict[str, Any]:
-        """导出方法目录和 API 规范信息。"""
+        """导出方法目录和 API 规范信息。
+
+        Returns:
+            dict[str, Any]: 同步方法、任务方法、元数据和错误码列表。
+        """
         metadata = {name: spec.metadata() for name, spec in {**self.method_specs, **self.task_method_specs}.items()}
         return {
             "methods": sorted(self.methods),
@@ -339,7 +426,7 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/v1/tasks":
-            self._send_success({"tasks": self.server.task_manager.list()})
+            self._send_success({"tasks": self.server.task_manager.snapshots()})
             return
 
         task_id, suffix = self._parse_task_path(path)
@@ -546,11 +633,22 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Authorization,Content-Type")
 
     def log_request(self, code: int | str = "-", size: int | str = "-") -> None:
-        """输出 API access log。"""
+        """输出 API access log。
+
+        Args:
+            code (int | str): HTTP 响应状态码。
+            size (int | str): 响应体大小。
+        """
         host, port = self.client_address[:2]
         logger.info('API %s:%s - "%s %s %s" %s', host, port, self.command, self.path, self.request_version, code)
 
     def log_message(self, format: str, *args: Any) -> None:
+        """输出 API debug log。
+
+        Args:
+            format (str): 日志格式字符串。
+            *args (Any): 格式化参数。
+        """
         logger.debug("API %s - " + format, self.address_string(), *args)
 
 
@@ -563,7 +661,20 @@ def create_api_server(
     task_manager: ApiTaskManager | None = None,
     include_default_methods: bool = True,
 ) -> ApiServer:
-    """创建 API 服务实例。"""
+    """创建 API 服务实例。
+
+    Args:
+        host (str): API 服务监听地址。
+        port (int): API 服务监听端口。
+        token (str): Bearer token，空字符串表示不启用鉴权。
+        methods (ApiMethodRegistry | None): 额外同步方法注册表。
+        task_methods (ApiTaskRegistry | None): 额外后台任务方法注册表。
+        task_manager (ApiTaskManager | None): 自定义任务管理器。
+        include_default_methods (bool): 是否加载默认业务方法。
+
+    Returns:
+        ApiServer: 已创建但尚未启动的 API 服务实例。
+    """
     if include_default_methods:
         from sd_webui_all_in_one.api_server.registry import get_default_methods, get_default_task_methods
 
@@ -586,9 +697,20 @@ def serve_api(
     task_methods: ApiTaskRegistry | None = None,
     include_default_methods: bool = True,
 ) -> None:
-    """启动阻塞式 API 服务。"""
+    """启动阻塞式 API 服务。
+
+    Args:
+        host (str): API 服务监听地址。
+        port (int): API 服务监听端口。
+        token (str): Bearer token，空字符串表示不启用鉴权。
+        methods (ApiMethodRegistry | None): 额外同步方法注册表。
+        task_methods (ApiTaskRegistry | None): 额外后台任务方法注册表。
+        include_default_methods (bool): 是否加载默认业务方法。
+    """
     server = create_api_server(host=host, port=port, token=token, methods=methods, task_methods=task_methods, include_default_methods=include_default_methods)
-    address, actual_port = server.server_address
+    address_info = server.server_address
+    address = str(address_info[0])
+    actual_port = int(address_info[1])
     logger.info("API 服务已启动: http://%s:%s", address, actual_port)
     try:
         server.serve_forever()
