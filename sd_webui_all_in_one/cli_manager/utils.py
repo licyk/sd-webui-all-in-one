@@ -72,6 +72,10 @@ from sd_webui_all_in_one.optimize import (
     get_tcmalloc_path,
     get_tcmalloc_var,
 )
+from sd_webui_all_in_one.pytorch_manager import (
+    auto_detect_pytorch_device_category,
+    get_available_pytorch_device_type,
+)
 from sd_webui_all_in_one.tunnel import TunnelManager
 from sd_webui_all_in_one.logger import get_logger, silence_logger_output
 from sd_webui_all_in_one.utils import (
@@ -192,6 +196,22 @@ def get_env_config() -> None:
         if isinstance(value, Path):
             value = value.as_posix()
         print(f"{name}: '{value}'")
+
+
+def get_pytorch_device_type(
+    output_category: bool = False,
+) -> None:
+    """获取当前设备支持的 PyTorch 类型
+
+    Args:
+        output_category (bool):
+            是否只输出 PyTorch 设备大类
+    """
+    if output_category:
+        print(auto_detect_pytorch_device_category())
+        return
+
+    print(",".join(get_available_pytorch_device_type()))
 
 
 def download_file_cli(
@@ -1095,6 +1115,15 @@ def register_manager(
     # get env-config
     get_env_config_p = get_sub.add_parser("env-config", help="获取 SD WebUI All In One 使用的环境变量配置")
     get_env_config_p.set_defaults(func=lambda args: get_env_config())
+
+    # get pytorch-device-type
+    get_pytorch_device_type_p = get_sub.add_parser("pytorch-device-type", help="获取当前设备支持的 PyTorch 类型")
+    get_pytorch_device_type_p.add_argument("--category", action="store_true", help="只输出 PyTorch 设备大类")
+    get_pytorch_device_type_p.set_defaults(
+        func=lambda args: get_pytorch_device_type(
+            output_category=args.category,
+        )
+    )
 
     portable_p = sd_webui_all_in_one_sub.add_parser("portable", help="整合包资源管理")
     portable_sub = portable_p.add_subparsers(dest="portable_action", required=True)

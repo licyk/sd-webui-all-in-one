@@ -118,6 +118,19 @@ sd-webui-all-in-one self-manager get tcmalloc --path
 sd-webui-all-in-one self-manager get env-config
 ```
 
+### 获取当前设备支持的 PyTorch 类型
+默认输出当前设备支持的细分 PyTorch 类型，使用英文逗号分隔。
+
+```bash
+sd-webui-all-in-one self-manager get pytorch-device-type
+```
+
+只输出当前设备对应的 PyTorch 大类：
+
+```bash
+sd-webui-all-in-one self-manager get pytorch-device-type --category
+```
+
 ### 整合包资源管理
 生成 AI 整合包下载器使用的远程资源列表。
 

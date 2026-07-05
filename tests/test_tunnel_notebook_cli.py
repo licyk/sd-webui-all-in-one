@@ -1221,6 +1221,17 @@ def test_self_manager_archive_cli_parse_smoke(monkeypatch, tmp_path):
     ]
 
 
+def test_get_pytorch_device_type_prints_comma_separated_types(monkeypatch, capsys):
+    monkeypatch.setattr(cli_utils, "get_available_pytorch_device_type", lambda: ["all", "cpu", "cu128"])
+    monkeypatch.setattr(cli_utils, "auto_detect_pytorch_device_category", lambda: "cuda")
+
+    cli_utils.get_pytorch_device_type()
+    assert capsys.readouterr().out.strip() == "all,cpu,cu128"
+
+    cli_utils.get_pytorch_device_type(output_category=True)
+    assert capsys.readouterr().out.strip() == "cuda"
+
+
 def test_get_env_config_prints_resolved_config_values(monkeypatch, capsys, tmp_path):
     monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_LOGGER_LEVEL", "999")
     monkeypatch.setenv("SD_WEBUI_ROOT", "/env/sd-webui")

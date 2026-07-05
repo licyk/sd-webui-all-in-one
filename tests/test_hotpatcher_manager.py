@@ -379,6 +379,18 @@ def test_self_manager_patcher_cli_parser(tmp_path):
     assert tcmalloc_path_args.path is True
     assert callable(tcmalloc_path_args.func)
 
+    pytorch_type_args = parser.parse_args(["self-manager", "get", "pytorch-device-type"])
+    assert pytorch_type_args.sd_webui_all_in_one_action == "get"
+    assert pytorch_type_args.get_action == "pytorch-device-type"
+    assert pytorch_type_args.category is False
+    assert callable(pytorch_type_args.func)
+
+    pytorch_category_args = parser.parse_args(["self-manager", "get", "pytorch-device-type", "--category"])
+    assert pytorch_category_args.sd_webui_all_in_one_action == "get"
+    assert pytorch_category_args.get_action == "pytorch-device-type"
+    assert pytorch_category_args.category is True
+    assert callable(pytorch_category_args.func)
+
     extract_args = parser.parse_args(["self-manager", "archive", "extract", str(tmp_path / "archive.zip"), "--output", str(tmp_path / "out")])
     assert extract_args.sd_webui_all_in_one_action == "archive"
     assert extract_args.archive_action == "extract"
