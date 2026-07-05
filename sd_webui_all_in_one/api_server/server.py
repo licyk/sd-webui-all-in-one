@@ -561,9 +561,21 @@ def create_api_server(
     methods: ApiMethodRegistry | None = None,
     task_methods: ApiTaskRegistry | None = None,
     task_manager: ApiTaskManager | None = None,
+    include_default_methods: bool = True,
 ) -> ApiServer:
     """创建 API 服务实例。"""
-    return ApiServer((host, port), methods=methods, task_methods=task_methods, token=token, task_manager=task_manager)
+    if include_default_methods:
+        from sd_webui_all_in_one.api_server.registry import get_default_methods, get_default_task_methods
+
+        merged_methods = dict(get_default_methods())
+        merged_methods.update(methods or {})
+        merged_task_methods = dict(get_default_task_methods())
+        merged_task_methods.update(task_methods or {})
+    else:
+        merged_methods = methods
+        merged_task_methods = task_methods
+
+    return ApiServer((host, port), methods=merged_methods, task_methods=merged_task_methods, token=token, task_manager=task_manager)
 
 
 def serve_api(
@@ -572,9 +584,10 @@ def serve_api(
     token: str = "",
     methods: ApiMethodRegistry | None = None,
     task_methods: ApiTaskRegistry | None = None,
+    include_default_methods: bool = True,
 ) -> None:
     """启动阻塞式 API 服务。"""
-    server = create_api_server(host=host, port=port, token=token, methods=methods, task_methods=task_methods)
+    server = create_api_server(host=host, port=port, token=token, methods=methods, task_methods=task_methods, include_default_methods=include_default_methods)
     address, actual_port = server.server_address
     logger.info("API 服务已启动: http://%s:%s", address, actual_port)
     try:

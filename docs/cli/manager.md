@@ -132,7 +132,7 @@ sd-webui-all-in-one self-manager get pytorch-device-type --category
 ```
 
 ### API 服务
-启动基于 Python 标准库的轻量 HTTP JSON API 服务。当前提供 API 基础设施、同步方法注册表和后台任务系统，暂未注册业务方法。
+启动基于 Python 标准库的轻量 HTTP JSON API 服务。当前提供 API 基础设施、同步方法注册表、后台任务系统，并默认挂载版本管理和快照管理方法。
 
 ```bash
 sd-webui-all-in-one self-manager api serve [选项]
@@ -193,6 +193,40 @@ Authorization: Bearer <令牌>
 ```text
 pending,running,succeeded,failed,canceled
 ```
+
+默认挂载的同步方法：
+
+- `version.status`：读取 WebUI 内核仓库状态。
+- `version.branches`：列出 WebUI 内核仓库分支。
+- `version.commits`：列出 WebUI 内核仓库提交。
+- `snapshot.list`：列出快照文件。
+- `snapshot.read`：读取快照文件。
+- `snapshot.delete`：删除快照文件。
+- `extension.list`：列出本地扩展或自定义节点。
+- `extension.index`：读取可安装扩展源；SD WebUI 使用扩展源列表，ComfyUI 同时合并 ComfyUI-Manager 列表和 Comfy Registry。
+- `extension.versions`：读取 Comfy Registry 节点可安装版本。
+- `package.versions`：读取 PyPI 包版本列表，供 InvokeAI 等 PyPI 版本管理使用。
+
+默认挂载的后台任务方法：
+
+- `version.switch_branch`：切换 WebUI 内核仓库分支。
+- `version.switch_commit`：切换 WebUI 内核仓库提交。
+- `version.update`：更新 WebUI 内核仓库。
+- `snapshot.create`：创建 WebUI 快照。
+- `snapshot.preview_restore`：预览快照恢复计划。
+- `snapshot.restore`：恢复 WebUI 快照。
+- `extension.set_enabled`：启用或禁用扩展。
+- `extension.install`：从 Git URL 安装扩展。
+- `extension.install_index_item`：安装扩展源条目；ComfyUI 支持 Git、copy、zip/unzip 和 Comfy Registry 条目。
+- `extension.update`：更新单个扩展。
+- `extension.update_all`：更新全部可更新扩展。
+- `extension.uninstall`：卸载扩展。
+- `extension.switch_branch`：切换扩展分支。
+- `extension.switch_commit`：切换扩展提交。
+- `extension.switch_registry_version`：切换 Comfy Registry 扩展版本。
+- `invokeai.install_version`：安装或升级 InvokeAI PyPI 版本。
+
+这些方法统一使用 `webui_type` 和 `webui_path` 参数，并通过内部 adapter 适配不同 WebUI 的实现差异。不支持某类能力的 WebUI 会返回错误，例如 Fooocus 没有扩展管理时调用 `extension.list` 会失败。
 
 外部 Python GUI 可以使用内置客户端：
 
