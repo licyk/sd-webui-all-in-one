@@ -18,7 +18,7 @@ def test_prepare_pytorch_install_info_auto_and_custom_packages(monkeypatch):
         "find_links": {"mirror": "links-mirror", "official": "links-official"},
     }
 
-    monkeypatch.setattr(base_module, "auto_detect_avaliable_pytorch_type", lambda: "cu128")
+    monkeypatch.setattr(base_module, "auto_detect_available_pytorch_type", lambda: "cu128")
     monkeypatch.setattr(base_module, "find_latest_pytorch_info", lambda dtype: calls.append(("latest", dtype)) or latest)
     monkeypatch.setattr(base_module, "get_pytorch_mirror", lambda dtype, use_cn_mirror=False: calls.append(("mirror", dtype, use_cn_mirror)) or (f"{dtype}-url", "extra_index_url"))
 

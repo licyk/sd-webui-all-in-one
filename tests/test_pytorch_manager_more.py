@@ -114,7 +114,7 @@ def test_export_and_find_latest_pytorch_info(monkeypatch):
     ]
     monkeypatch.setattr(version_manager, "PYTORCH_DOWNLOAD_DICT", data)
     monkeypatch.setattr(version_manager.sys, "platform", "linux")
-    monkeypatch.setattr(version_manager, "get_avaliable_pytorch_device_type", lambda: ["cu128"])
+    monkeypatch.setattr(version_manager, "get_available_pytorch_device_type", lambda: ["cu128"])
     monkeypatch.setattr(version_manager, "SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY", False)
 
     exported = version_manager.export_pytorch_list()
@@ -126,7 +126,7 @@ def test_export_and_find_latest_pytorch_info(monkeypatch):
     with pytest.raises(ValueError, match="当前平台不支持 PyTorch 类型"):
         version_manager.find_latest_pytorch_info("cpu")
 
-    monkeypatch.setattr(version_manager, "get_avaliable_pytorch_device_type", lambda: ["cpu"])
+    monkeypatch.setattr(version_manager, "get_available_pytorch_device_type", lambda: ["cpu"])
     assert version_manager.find_latest_pytorch_info("cpu")["name"] == "CPU new unsupported device"
 
     monkeypatch.setattr(version_manager, "SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY", True)
@@ -178,7 +178,7 @@ def test_find_latest_pytorch_info_parses_pep440_torch_versions(monkeypatch, dtyp
     ]
     monkeypatch.setattr(version_manager, "PYTORCH_DOWNLOAD_DICT", data)
     monkeypatch.setattr(version_manager.sys, "platform", "linux")
-    monkeypatch.setattr(version_manager, "get_avaliable_pytorch_device_type", lambda: [dtype])
+    monkeypatch.setattr(version_manager, "get_available_pytorch_device_type", lambda: [dtype])
     monkeypatch.setattr(version_manager, "SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY", False)
 
     assert version_manager.find_latest_pytorch_info(dtype)["name"] == expected

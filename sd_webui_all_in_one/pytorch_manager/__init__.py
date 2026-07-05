@@ -43,8 +43,8 @@ from sd_webui_all_in_one.pytorch_manager.gpu_detector import (
     has_nvidia_gpu,
     has_intel_xpu,
     has_amd_gpu,
-    get_avaliable_pytorch_device_type,
-    auto_detect_avaliable_pytorch_type,
+    get_available_pytorch_device_type,
+    auto_detect_available_pytorch_type,
     auto_detect_pytorch_device_category,
 )
 from sd_webui_all_in_one.pytorch_manager.mirror_selector import (
@@ -105,8 +105,8 @@ __all__ = [
     "has_nvidia_gpu",
     "has_intel_xpu",
     "has_amd_gpu",
-    "get_avaliable_pytorch_device_type",
-    "auto_detect_avaliable_pytorch_type",
+    "get_available_pytorch_device_type",
+    "auto_detect_available_pytorch_type",
     "auto_detect_pytorch_device_category",
     # mirror_selector.py: 镜像选择逻辑
     "get_pytorch_mirror_type_cuda",

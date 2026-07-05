@@ -11,7 +11,7 @@ from sd_webui_all_in_one.config import (
 )
 from sd_webui_all_in_one.utils import load_source_directly
 from sd_webui_all_in_one.pytorch_manager import (
-    get_avaliable_pytorch_device_type,
+    get_available_pytorch_device_type,
     get_gpu_list,
     has_gpus,
 )
@@ -81,7 +81,7 @@ def _is_ipex_version(
 def check_torch_version() -> None:
     """检查 PyTorch 版本可用性"""
     logger.info("检查当前环境中的 PyTorch 版本中")
-    avaliable_types = get_avaliable_pytorch_device_type()
+    available_types = get_available_pytorch_device_type()
     gpu_list = get_gpu_list()
     torch_data = load_source_directly("torch.version") or {}
     torch_ver: str | None = torch_data.get("__version__")
@@ -95,14 +95,14 @@ def check_torch_version() -> None:
             logger.warning("当前环境使用的 PyTorch 类型为 CPU, 而当前设备有可用的 GPU, 可尝试重装适配 GPU 的 PyTorch 以加速推理")
             return
 
-        if torch_type not in avaliable_types:
-            if _is_rocm_version_compatible(torch_type, avaliable_types) or _is_ipex_version(torch_type, avaliable_types):
+        if torch_type not in available_types:
+            if _is_rocm_version_compatible(torch_type, available_types) or _is_ipex_version(torch_type, available_types):
                 logger.info("当前环境中的 PyTorch 无版本问题")
                 return
 
             logger.warning(
                 "当前设备支持的 PyTorch 类型有 %s, 而当前环境安装的 PyTorch 类型为 %s, 该类型并不支持当前设备, 可能会导致性能下降的问题, 可尝试重新安装对应版本的 PyTorch",
-                avaliable_types,
+                available_types,
                 torch_type,
             )
             return

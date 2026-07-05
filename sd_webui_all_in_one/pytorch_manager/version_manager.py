@@ -11,7 +11,7 @@ from sd_webui_all_in_one.package_analyzer import (
     get_package_version,
     is_package_has_version,
 )
-from sd_webui_all_in_one.pytorch_manager.gpu_detector import get_avaliable_pytorch_device_type
+from sd_webui_all_in_one.pytorch_manager.gpu_detector import get_available_pytorch_device_type
 from sd_webui_all_in_one.pytorch_manager.types import (
     PyTorchVersionInfo,
     PyTorchDeviceType,
@@ -29,7 +29,7 @@ def export_pytorch_list() -> PyTorchVersionInfoList:
         PyTorchVersionInfoList:
             PyTorch 版本列表
     """
-    device_list = set(get_avaliable_pytorch_device_type())
+    device_list = set(get_available_pytorch_device_type())
     new_pytorch_list: PyTorchVersionInfoList = []
     current_platform = sys.platform
 

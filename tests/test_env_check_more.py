@@ -23,7 +23,7 @@ def test_torch_version_compatibility_helpers(monkeypatch):
 
 
 def test_check_torch_version_handles_missing_cpu_and_compatible_gpu(monkeypatch):
-    monkeypatch.setattr(check_torch_version, "get_avaliable_pytorch_device_type", lambda: ["rocm7.2", "xpu", "ipex_legacy_arc"])
+    monkeypatch.setattr(check_torch_version, "get_available_pytorch_device_type", lambda: ["rocm7.2", "xpu", "ipex_legacy_arc"])
     monkeypatch.setattr(check_torch_version, "get_gpu_list", lambda: ["gpu"])
     monkeypatch.setattr(check_torch_version, "has_gpus", lambda _gpu_list: True)
 
@@ -42,7 +42,7 @@ def test_check_torch_version_handles_missing_cpu_and_compatible_gpu(monkeypatch)
 
 def test_check_torch_version_warning_reports_supported_type_before_installed_type(monkeypatch):
     warnings = []
-    monkeypatch.setattr(check_torch_version, "get_avaliable_pytorch_device_type", lambda: ["cu128"])
+    monkeypatch.setattr(check_torch_version, "get_available_pytorch_device_type", lambda: ["cu128"])
     monkeypatch.setattr(check_torch_version, "get_gpu_list", lambda: ["gpu"])
     monkeypatch.setattr(check_torch_version, "has_gpus", lambda _gpu_list: True)
     monkeypatch.setattr(check_torch_version, "load_source_directly", lambda _name: {"__version__": "2.7.0+cu121"})

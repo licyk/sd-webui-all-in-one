@@ -19,7 +19,7 @@ from sd_webui_all_in_one.mirror_manager import (
 )
 from sd_webui_all_in_one.pytorch_manager import (
     query_pytorch_info_from_library,
-    auto_detect_avaliable_pytorch_type,
+    auto_detect_available_pytorch_type,
     auto_detect_pytorch_device_category,
     get_pytorch_mirror,
     get_pytorch_mirror_type,
@@ -119,7 +119,7 @@ def prepare_pytorch_install_info(
         if pytorch_mirror_type is not None:
             dtype = pytorch_mirror_type
         else:
-            dtype = auto_detect_avaliable_pytorch_type()
+            dtype = auto_detect_available_pytorch_type()
         pytorch_info = find_latest_pytorch_info(dtype)
         device_type = pytorch_info["dtype"]
         mirrors["index_url"] = pytorch_info["index_mirror"]["mirror"] if use_cn_mirror else pytorch_info["index_mirror"]["official"]
@@ -151,7 +151,7 @@ def prepare_pytorch_install_info(
                 )
             )
     else:
-        _update_mirror(auto_detect_avaliable_pytorch_type())
+        _update_mirror(auto_detect_available_pytorch_type())
 
     custom_env = generate_uv_and_pip_env_mirror_config(
         index_url=mirrors["index_url"],

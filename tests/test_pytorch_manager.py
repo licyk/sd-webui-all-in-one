@@ -146,7 +146,7 @@ def test_auto_detect_pytorch_type_and_category(monkeypatch, platform, gpus, cuda
     monkeypatch.setattr(gpu_detector, "get_cuda_comp_cap", lambda: cuda_cap)
     monkeypatch.setattr(gpu_detector, "get_rocm_gfx_targets", lambda: [])
 
-    assert gpu_detector.auto_detect_avaliable_pytorch_type() == expected_type
+    assert gpu_detector.auto_detect_available_pytorch_type() == expected_type
     assert gpu_detector.auto_detect_pytorch_device_category() == expected_category
 
 
@@ -167,7 +167,7 @@ def test_auto_detect_amd_rocm_type_from_gfx_targets(monkeypatch, gfx_targets, ex
     monkeypatch.setattr(gpu_detector, "get_cuda_comp_cap", lambda: 0.0)
     monkeypatch.setattr(gpu_detector, "get_rocm_gfx_targets", lambda: gfx_targets)
 
-    assert gpu_detector.auto_detect_avaliable_pytorch_type() == expected
+    assert gpu_detector.auto_detect_available_pytorch_type() == expected
 
 
 @pytest.mark.parametrize(
@@ -194,7 +194,7 @@ def test_auto_detect_amd_rocm_type_from_gpu_name(monkeypatch, name, expected):
     monkeypatch.setattr(gpu_detector, "get_cuda_comp_cap", lambda: 0.0)
     monkeypatch.setattr(gpu_detector, "get_rocm_gfx_targets", lambda: [])
 
-    assert gpu_detector.auto_detect_avaliable_pytorch_type() == expected
+    assert gpu_detector.auto_detect_available_pytorch_type() == expected
 
 
 def test_available_pytorch_types_only_include_detected_amd_rocm_type(monkeypatch):
@@ -204,7 +204,7 @@ def test_available_pytorch_types_only_include_detected_amd_rocm_type(monkeypatch
     monkeypatch.setattr(gpu_detector, "get_cuda_comp_cap", lambda: 0.0)
     monkeypatch.setattr(gpu_detector, "get_rocm_gfx_targets", lambda: [])
 
-    result = gpu_detector.get_avaliable_pytorch_device_type()
+    result = gpu_detector.get_available_pytorch_device_type()
 
     assert "rocm_rdna4" in result
     assert "rocm_rdna3" not in result
@@ -218,7 +218,7 @@ def test_available_pytorch_types_skip_unknown_amd_rocm_type(monkeypatch):
     monkeypatch.setattr(gpu_detector, "get_cuda_comp_cap", lambda: 0.0)
     monkeypatch.setattr(gpu_detector, "get_rocm_gfx_targets", lambda: [])
 
-    result = gpu_detector.get_avaliable_pytorch_device_type()
+    result = gpu_detector.get_available_pytorch_device_type()
 
     assert all(not dtype.startswith("rocm") for dtype in result)
 
@@ -241,7 +241,7 @@ def test_auto_detect_cuda_thresholds(monkeypatch, cuda_version, expected):
     monkeypatch.setattr(gpu_detector, "get_cuda_version", lambda: cuda_version)
     monkeypatch.setattr(gpu_detector, "get_cuda_comp_cap", lambda: 8.9)
 
-    assert gpu_detector.auto_detect_avaliable_pytorch_type() == expected
+    assert gpu_detector.auto_detect_available_pytorch_type() == expected
 
 
 def test_auto_detect_blackwell_falls_back_to_modern_cuda(monkeypatch):
@@ -250,7 +250,7 @@ def test_auto_detect_blackwell_falls_back_to_modern_cuda(monkeypatch):
     monkeypatch.setattr(gpu_detector, "get_cuda_version", lambda: 11.0)
     monkeypatch.setattr(gpu_detector, "get_cuda_comp_cap", lambda: 10.0)
 
-    assert gpu_detector.auto_detect_avaliable_pytorch_type() == "cu130"
+    assert gpu_detector.auto_detect_available_pytorch_type() == "cu130"
 
 
 def test_pytorch_mirror_type_boundaries(monkeypatch):

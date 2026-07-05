@@ -611,7 +611,7 @@ def has_amd_gpu(
     return any(_is_amd_gpu_info(x) for x in gpu_list)
 
 
-def get_avaliable_pytorch_device_type() -> list[PyTorchDeviceType]:
+def get_available_pytorch_device_type() -> list[PyTorchDeviceType]:
     """获取当前设备上可用的 PyTorch 设备类型
 
     Returns:
@@ -625,15 +625,15 @@ def get_avaliable_pytorch_device_type() -> list[PyTorchDeviceType]:
     if sys.platform != "darwin":
         device_list.append("cpu")
 
-    gpu_avaliable = has_gpus(gpu_list)
-    nvidia_gpu_avaliable = has_nvidia_gpu(gpu_list)
-    intel_xpu_avaliable = has_intel_xpu(gpu_list)
-    amd_gpu_avaliable = has_amd_gpu(gpu_list)
+    gpu_available = has_gpus(gpu_list)
+    nvidia_gpu_available = has_nvidia_gpu(gpu_list)
+    intel_xpu_available = has_intel_xpu(gpu_list)
+    amd_gpu_available = has_amd_gpu(gpu_list)
 
-    if gpu_avaliable:
+    if gpu_available:
         device_list.append("directml")
 
-    if nvidia_gpu_avaliable:
+    if nvidia_gpu_available:
         if CommonVersionComparison(cuda_comp_cap) >= CommonVersionComparison("10.0"):
             # RTX 50xx
             for ver in PYTORCH_DEVICE_LIST:
@@ -650,22 +650,22 @@ def get_avaliable_pytorch_device_type() -> list[PyTorchDeviceType]:
                 if CommonVersionComparison(ver.removeprefix("cu")) <= CommonVersionComparison(str(int(cuda_support_ver * 10))):
                     device_list.append(ver)
 
-    if intel_xpu_avaliable:
+    if intel_xpu_available:
         device_list.append("xpu")
         device_list.append("ipex_legacy_arc")
 
-    if amd_gpu_avaliable and sys.platform == "linux":
+    if amd_gpu_available and sys.platform == "linux":
         amd_pytorch_type = get_amd_rocm_pytorch_type(gpu_list)
         if amd_pytorch_type is not None:
             device_list.append(amd_pytorch_type)
 
-    if amd_gpu_avaliable and sys.platform == "win32":
+    if amd_gpu_available and sys.platform == "win32":
         device_list.append("rocm_win")
 
     return device_list
 
 
-def auto_detect_avaliable_pytorch_type() -> PyTorchDeviceType:
+def auto_detect_available_pytorch_type() -> PyTorchDeviceType:
     """检测当前的设备并获取适配当前设备的 PyTorch 类型
 
     Returns:
@@ -676,18 +676,18 @@ def auto_detect_avaliable_pytorch_type() -> PyTorchDeviceType:
     cuda_comp_cap = get_cuda_comp_cap()
     cuda_support_ver = get_cuda_version()
 
-    gpu_avaliable = has_gpus(gpu_list)
-    nvidia_gpu_avaliable = has_nvidia_gpu(gpu_list)
-    intel_xpu_avaliable = has_intel_xpu(gpu_list)
-    amd_gpu_avaliable = has_amd_gpu(gpu_list)
+    gpu_available = has_gpus(gpu_list)
+    nvidia_gpu_available = has_nvidia_gpu(gpu_list)
+    intel_xpu_available = has_intel_xpu(gpu_list)
+    amd_gpu_available = has_amd_gpu(gpu_list)
 
     if sys.platform == "darwin":
         return "all"
 
-    if not gpu_avaliable:
+    if not gpu_available:
         return "cpu"
 
-    if nvidia_gpu_avaliable:
+    if nvidia_gpu_available:
         # TODO: cu132 对于 torchaudio, xformers 存在不兼容风险, 有待考量
         # if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("13.2"):
         #     return "cu132"
@@ -708,10 +708,10 @@ def auto_detect_avaliable_pytorch_type() -> PyTorchDeviceType:
         if CommonVersionComparison(cuda_comp_cap) >= CommonVersionComparison("10.0"):
             return "cu130"
 
-    if intel_xpu_avaliable:
+    if intel_xpu_available:
         return "xpu"
 
-    if amd_gpu_avaliable:
+    if amd_gpu_available:
         if sys.platform == "linux":
             amd_pytorch_type = get_amd_rocm_pytorch_type(gpu_list)
             if amd_pytorch_type is not None:
@@ -730,24 +730,24 @@ def auto_detect_pytorch_device_category() -> PyTorchDeviceTypeCategory:
             支持当前设备的通用类型
     """
     gpu_list = get_gpu_list()
-    gpu_avaliable = has_gpus(gpu_list)
-    nvidia_gpu_avaliable = has_nvidia_gpu(gpu_list)
-    intel_xpu_avaliable = has_intel_xpu(gpu_list)
-    amd_gpu_avaliable = has_amd_gpu(gpu_list)
+    gpu_available = has_gpus(gpu_list)
+    nvidia_gpu_available = has_nvidia_gpu(gpu_list)
+    intel_xpu_available = has_intel_xpu(gpu_list)
+    amd_gpu_available = has_amd_gpu(gpu_list)
 
     if sys.platform == "darwin":
         return "mps"
 
-    if not gpu_avaliable:
+    if not gpu_available:
         return "cpu"
 
-    if nvidia_gpu_avaliable:
+    if nvidia_gpu_available:
         return "cuda"
 
-    if intel_xpu_avaliable:
+    if intel_xpu_available:
         return "xpu"
 
-    if amd_gpu_avaliable:
+    if amd_gpu_available:
         return "rocm"
 
     return "cpu"
