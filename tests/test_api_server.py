@@ -444,3 +444,76 @@ def test_webui_adapter_lists_and_deletes_snapshots(tmp_path):
     assert result["snapshots"][0]["webui_type"] == "sd_webui"
     assert adapter.delete_snapshot(snapshot_path) == {"deleted": True, "path": snapshot_path.as_posix()}
     assert not snapshot_path.exists()
+
+
+
+def test_default_api_registry_includes_model_and_hotpatcher_surface():
+    server = create_api_server(port=0)
+    try:
+        catalog = server.method_catalog()
+        assert {"model.root", "model.directories", "model.entries", "model.invokeai.list", "hotpatcher.catalog", "hotpatcher.runtime_status", "hotpatcher.runtime_logs"}.issubset(catalog["methods"])
+        assert {
+            "model.create_folder",
+            "model.copy",
+            "model.move",
+            "model.delete",
+            "model.import",
+            "model.download",
+            "model.invokeai.install_url",
+            "hotpatcher.save_config",
+            "hotpatcher.runtime_start",
+            "hotpatcher.runtime_stop",
+            "hotpatcher.runtime_apply_remote",
+        }.issubset(catalog["tasks"])
+    finally:
+        server.server_close()
+
+
+def test_model_api_adapter_file_operations(tmp_path):
+    from sd_webui_all_in_one.api_server.adapters.model import MODEL_API_ADAPTER
+
+    webui_path = tmp_path / "ComfyUI"
+    root = webui_path / "models"
+    source = tmp_path / "source.safetensors"
+    source.write_text("model", encoding="utf-8")
+
+    created = MODEL_API_ADAPTER.create_folder("comfyui", webui_path, ".", "checkpoints")
+    assert created["path"].endswith("models/checkpoints")
+
+    imported = MODEL_API_ADAPTER.import_paths("comfyui", webui_path, [source.as_posix()], "checkpoints")
+    assert imported["paths"][0].endswith("models/checkpoints/source.safetensors")
+
+    entries = MODEL_API_ADAPTER.list_entries("comfyui", webui_path, "checkpoints")
+    assert entries["entries"][0]["name"] == "source.safetensors"
+
+    copied = MODEL_API_ADAPTER.copy_entry("comfyui", webui_path, "checkpoints/source.safetensors", ".", new_name="copy.safetensors")
+    assert (root / "copy.safetensors").is_file()
+    assert copied["path"].endswith("models/copy.safetensors")
+
+    moved = MODEL_API_ADAPTER.move_entry("comfyui", webui_path, "copy.safetensors", "checkpoints", new_name="moved.safetensors")
+    assert moved["path"].endswith("models/checkpoints/moved.safetensors")
+    assert not (root / "copy.safetensors").exists()
+
+    deleted = MODEL_API_ADAPTER.delete_entry("comfyui", webui_path, "checkpoints/moved.safetensors")
+    assert deleted == {"deleted": True}
+    assert not (root / "checkpoints" / "moved.safetensors").exists()
+
+
+def test_hotpatcher_api_adapter_runtime_status_and_env():
+    from sd_webui_all_in_one.api_server.adapters.hotpatcher import HotpatcherApiAdapter
+
+    adapter = HotpatcherApiAdapter()
+    assert adapter.runtime_status()["running"] is False
+
+    env = adapter.runtime_env(host="127.0.0.1", port=9876, token="secret")
+    assert env["env"]["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT"] == "9876"
+    assert env["env"]["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN"] == "secret"
+
+    started = adapter.start_runtime(host="127.0.0.1", port=0, token="")
+    try:
+        assert started["running"] is True
+        assert started["address"]["port"] > 0
+        assert adapter.runtime_logs()["logs"] == []
+    finally:
+        assert adapter.stop_runtime() == {"stopped": True}
+    assert adapter.runtime_status()["running"] is False

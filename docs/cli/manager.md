@@ -206,6 +206,17 @@ pending,running,succeeded,failed,canceled
 - `extension.index`：读取可安装扩展源；SD WebUI 使用扩展源列表，ComfyUI 同时合并 ComfyUI-Manager 列表和 Comfy Registry。
 - `extension.versions`：读取 Comfy Registry 节点可安装版本。
 - `package.versions`：读取 PyPI 包版本列表，供 InvokeAI 等 PyPI 版本管理使用。
+- `model.root`：读取文件型 WebUI 的模型根目录信息。
+- `model.directories`：列出模型根目录内的文件夹。
+- `model.entries`：列出指定模型目录中的文件和文件夹。
+- `model.invokeai.list`：列出 InvokeAI 已注册模型。
+- `hotpatcher.default_config`：读取 Hotpatcher 默认配置。
+- `hotpatcher.catalog`：读取 Hotpatcher 功能目录。
+- `hotpatcher.load_config`：读取 Hotpatcher 配置文件。
+- `hotpatcher.normalize_config`：规范化 Hotpatcher 配置对象。
+- `hotpatcher.runtime_env`：生成连接 runtime host 所需的环境变量。
+- `hotpatcher.runtime_status`：读取 runtime host 状态。
+- `hotpatcher.runtime_logs`：读取 runtime host 日志。
 
 默认挂载的后台任务方法：
 
@@ -225,8 +236,24 @@ pending,running,succeeded,failed,canceled
 - `extension.switch_commit`：切换扩展提交。
 - `extension.switch_registry_version`：切换 Comfy Registry 扩展版本。
 - `invokeai.install_version`：安装或升级 InvokeAI PyPI 版本。
+- `model.create_folder`：在模型目录中新建文件夹。
+- `model.copy`：复制模型文件或文件夹。
+- `model.move`：移动模型文件或文件夹。
+- `model.delete`：删除模型文件或文件夹。
+- `model.import`：导入本地模型文件或文件夹。
+- `model.download`：从 URL 下载模型到模型目录。
+- `model.invokeai.install_url`：通过 InvokeAI 从 URL 安装模型。
+- `model.invokeai.import`：导入本地模型到 InvokeAI。
+- `model.invokeai.unregister`：注销 InvokeAI 模型。
+- `model.invokeai.delete`：删除 InvokeAI 模型。
+- `hotpatcher.save_config`：保存 Hotpatcher 配置文件。
+- `hotpatcher.export_default_config`：导出 Hotpatcher 默认配置文件。
+- `hotpatcher.apply_config`：将 Hotpatcher 配置应用到 API 进程。
+- `hotpatcher.runtime_start`：启动 Hotpatcher runtime host。
+- `hotpatcher.runtime_stop`：停止 Hotpatcher runtime host。
+- `hotpatcher.runtime_apply_remote`：通过 services channel 将配置应用到远端 runtime。
 
-这些方法统一使用 `webui_type` 和 `webui_path` 参数，并通过内部 adapter 适配不同 WebUI 的实现差异。不支持某类能力的 WebUI 会返回错误，例如 Fooocus 没有扩展管理时调用 `extension.list` 会失败。
+这些方法统一使用 `webui_type` 和 `webui_path` 参数，并通过内部 adapter 适配不同 WebUI 的实现差异。不支持某类能力的 WebUI 会返回错误，例如 Fooocus 没有扩展管理时调用 `extension.list` 会失败。模型管理中，SD WebUI、ComfyUI、Fooocus、SD Trainer 和 SD Scripts 使用文件目录管理；InvokeAI 使用专用的注册模型管理方法。
 
 外部 Python GUI 可以使用内置客户端：
 

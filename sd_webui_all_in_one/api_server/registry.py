@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable
 
-from sd_webui_all_in_one.api_server.adapters import WEBUI_API_ADAPTERS, get_webui_adapter
+from sd_webui_all_in_one.api_server.adapters import HOTPATCHER_API_ADAPTER, MODEL_API_ADAPTER, WEBUI_API_ADAPTERS, get_webui_adapter
 from sd_webui_all_in_one.api_server.server import ApiMethodRegistry, ApiMethodSpec, ApiTaskContext, ApiTaskRegistry
 
 
@@ -46,6 +46,34 @@ def _webui_path(params: dict[str, Any]) -> Path:
 
 def _optional_path(value: Any) -> Path | None:
     return Path(value) if isinstance(value, str) and value else None
+
+
+def _optional_str(params: dict[str, Any], name: str) -> str | None:
+    value = params.get(name)
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"Field '{name}' must be a string")
+    return value
+
+
+def _optional_bool(params: dict[str, Any], name: str, default: bool = False) -> bool:
+    value = params.get(name, default)
+    return bool(value)
+
+
+def _require_object(params: dict[str, Any], name: str) -> dict[str, Any]:
+    value = params.get(name)
+    if not isinstance(value, dict):
+        raise ValueError(f"Field '{name}' must be an object")
+    return value
+
+
+def _require_str_list(params: dict[str, Any], name: str) -> list[str]:
+    value = params.get(name)
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise ValueError(f"Field '{name}' must be a string list")
+    return value
 
 
 def version_status(params: dict[str, Any]) -> dict[str, Any]:
@@ -492,6 +520,412 @@ def invokeai_install_version(params: dict[str, Any], context: ApiTaskContext) ->
     return result
 
 
+def model_root(params: dict[str, Any]) -> dict[str, Any]:
+    """读取文件型模型根目录信息。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 模型根目录信息。
+    """
+    return MODEL_API_ADAPTER.root(_require_str(params, "webui_type"), _webui_path(params))
+
+
+def model_directories(params: dict[str, Any]) -> dict[str, Any]:
+    """列出模型目录。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 模型目录列表。
+    """
+    return MODEL_API_ADAPTER.list_directories(_require_str(params, "webui_type"), _webui_path(params))
+
+
+def model_entries(params: dict[str, Any]) -> dict[str, Any]:
+    """列出模型目录条目。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 模型条目列表。
+    """
+    options = _options(params)
+    return MODEL_API_ADAPTER.list_entries(_require_str(params, "webui_type"), _webui_path(params), relative_path=options.get("relative_path"))
+
+
+def model_invokeai_list(params: dict[str, Any]) -> dict[str, Any]:
+    """列出 InvokeAI 已注册模型。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: InvokeAI 模型列表。
+    """
+    return MODEL_API_ADAPTER.list_invokeai_models(_webui_path(params))
+
+
+def hotpatcher_default_config(params: dict[str, Any]) -> dict[str, Any]:
+    """获取 Hotpatcher 默认配置。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 默认配置。
+    """
+    del params
+    return HOTPATCHER_API_ADAPTER.default_config()
+
+
+def hotpatcher_catalog(params: dict[str, Any]) -> dict[str, Any]:
+    """获取 Hotpatcher 功能目录。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 功能目录。
+    """
+    del params
+    return HOTPATCHER_API_ADAPTER.catalog()
+
+
+def hotpatcher_load_config(params: dict[str, Any]) -> dict[str, Any]:
+    """读取 Hotpatcher 配置文件。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 配置对象。
+    """
+    options = _options(params)
+    return HOTPATCHER_API_ADAPTER.load_config(_optional_path(params.get("path")), normalize=bool(options.get("normalize", True)))
+
+
+def hotpatcher_normalize_config(params: dict[str, Any]) -> dict[str, Any]:
+    """规范化 Hotpatcher 配置。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 规范化配置。
+    """
+    return HOTPATCHER_API_ADAPTER.normalize_config(_require_object(params, "config"))
+
+
+def hotpatcher_runtime_env(params: dict[str, Any]) -> dict[str, Any]:
+    """构建 Hotpatcher runtime 环境变量。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 环境变量映射。
+    """
+    options = _options(params)
+    return HOTPATCHER_API_ADAPTER.runtime_env(
+        host=str(options.get("host") or "127.0.0.1"),
+        port=int(options.get("port", 8765)),
+        token=str(options.get("token") or ""),
+        config_source=str(options.get("config_source") or "remote"),
+    )
+
+
+def hotpatcher_runtime_status(params: dict[str, Any]) -> dict[str, Any]:
+    """获取 Hotpatcher runtime host 状态。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: runtime host 状态。
+    """
+    del params
+    return HOTPATCHER_API_ADAPTER.runtime_status()
+
+
+def hotpatcher_runtime_logs(params: dict[str, Any]) -> dict[str, Any]:
+    """获取 Hotpatcher runtime host 日志。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: runtime host 日志。
+    """
+    options = _options(params)
+    limit = options.get("limit", 200)
+    return HOTPATCHER_API_ADAPTER.runtime_logs(limit=int(limit) if limit is not None else None)
+
+
+def model_create_folder(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """创建模型文件夹。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 创建结果。
+    """
+    context.log("Creating model folder")
+    result = MODEL_API_ADAPTER.create_folder(_require_str(params, "webui_type"), _webui_path(params), _optional_str(params, "parent"), _require_str(params, "name"))
+    context.set_progress(100, "done")
+    return result
+
+
+def model_copy(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """复制模型条目。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 复制结果。
+    """
+    context.log("Copying model entry")
+    result = MODEL_API_ADAPTER.copy_entry(_require_str(params, "webui_type"), _webui_path(params), _require_str(params, "source"), _optional_str(params, "target_dir"), new_name=_optional_str(params, "new_name"), overwrite=_optional_bool(params, "overwrite"))
+    context.set_progress(100, "done")
+    return result
+
+
+def model_move(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """移动模型条目。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 移动结果。
+    """
+    context.log("Moving model entry")
+    result = MODEL_API_ADAPTER.move_entry(_require_str(params, "webui_type"), _webui_path(params), _require_str(params, "source"), _optional_str(params, "target_dir"), new_name=_optional_str(params, "new_name"), overwrite=_optional_bool(params, "overwrite"))
+    context.set_progress(100, "done")
+    return result
+
+
+def model_delete(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """删除模型条目。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 删除结果。
+    """
+    context.log("Deleting model entry")
+    result = MODEL_API_ADAPTER.delete_entry(_require_str(params, "webui_type"), _webui_path(params), _require_str(params, "relative_path"))
+    context.set_progress(100, "done")
+    return result
+
+
+def model_import(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """导入本地模型文件或文件夹。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 导入结果。
+    """
+    context.log("Importing model paths")
+    result = MODEL_API_ADAPTER.import_paths(_require_str(params, "webui_type"), _webui_path(params), _require_str_list(params, "source_paths"), _optional_str(params, "target_dir"), overwrite=_optional_bool(params, "overwrite"))
+    context.set_progress(100, "done")
+    return result
+
+
+def model_download(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """下载模型到模型目录。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 下载结果。
+    """
+    context.log("Downloading model")
+    result = MODEL_API_ADAPTER.download_url(_require_str(params, "webui_type"), _webui_path(params), _require_str(params, "url"), _optional_str(params, "target_dir"), save_name=_optional_str(params, "save_name"), downloader=params.get("downloader"))
+    context.set_progress(100, "done")
+    return result
+
+
+def model_invokeai_install_url(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """通过 InvokeAI 从 URL 安装模型。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 安装结果。
+    """
+    context.log("Installing InvokeAI model from URL")
+    result = MODEL_API_ADAPTER.invokeai_install_url(_webui_path(params), _require_str(params, "url"))
+    context.set_progress(100, "done")
+    return result
+
+
+def model_invokeai_import(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """导入本地模型到 InvokeAI。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 导入结果。
+    """
+    context.log("Importing InvokeAI model paths")
+    result = MODEL_API_ADAPTER.invokeai_import_paths(_webui_path(params), _require_str_list(params, "source_paths"))
+    context.set_progress(100, "done")
+    return result
+
+
+def model_invokeai_unregister(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """注销 InvokeAI 模型。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 注销结果。
+    """
+    context.log("Unregistering InvokeAI model")
+    result = MODEL_API_ADAPTER.invokeai_unregister(_webui_path(params), _require_str(params, "model_id"))
+    context.set_progress(100, "done")
+    return result
+
+
+def model_invokeai_delete(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """删除 InvokeAI 模型。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 删除结果。
+    """
+    context.log("Deleting InvokeAI model")
+    result = MODEL_API_ADAPTER.invokeai_delete(_webui_path(params), _require_str(params, "model_id"))
+    context.set_progress(100, "done")
+    return result
+
+
+def hotpatcher_save_config(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """保存 Hotpatcher 配置文件。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 保存结果。
+    """
+    context.log("Saving hotpatcher config")
+    result = HOTPATCHER_API_ADAPTER.save_config(_optional_path(params.get("path")), _require_object(params, "config"))
+    context.set_progress(100, "done")
+    return result
+
+
+def hotpatcher_export_default_config(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """导出 Hotpatcher 默认配置文件。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 导出结果。
+    """
+    context.log("Exporting hotpatcher default config")
+    result = HOTPATCHER_API_ADAPTER.export_default_config(_optional_path(params.get("path")), overwrite=_optional_bool(params, "overwrite"))
+    context.set_progress(100, "done")
+    return result
+
+
+def hotpatcher_apply_config(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """应用 Hotpatcher 配置到当前 API 进程。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 应用结果。
+    """
+    context.log("Applying hotpatcher config locally")
+    config_or_path: dict[str, Any] | Path | None = _require_object(params, "config") if "config" in params else _optional_path(params.get("path"))
+    result = HOTPATCHER_API_ADAPTER.apply_config(config_or_path)
+    context.set_progress(100, "done")
+    return result
+
+
+def hotpatcher_runtime_start(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """启动 Hotpatcher runtime host。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: runtime host 状态。
+    """
+    context.log("Starting hotpatcher runtime host")
+    options = _options(params)
+    config = params.get("config") if isinstance(params.get("config"), dict) else None
+    result = HOTPATCHER_API_ADAPTER.start_runtime(host=str(options.get("host") or "127.0.0.1"), port=int(options.get("port", 8765)), token=str(options.get("token") or ""), config=config)
+    context.set_progress(100, "done")
+    return result
+
+
+def hotpatcher_runtime_stop(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """停止 Hotpatcher runtime host。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 停止结果。
+    """
+    del params
+    context.log("Stopping hotpatcher runtime host")
+    result = HOTPATCHER_API_ADAPTER.stop_runtime()
+    context.set_progress(100, "done")
+    return result
+
+
+def hotpatcher_runtime_apply_remote(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """应用配置到远端 Hotpatcher runtime。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 远端应用结果。
+    """
+    context.log("Applying hotpatcher config remotely")
+    options = _options(params)
+    result = HOTPATCHER_API_ADAPTER.apply_remote_config(_require_object(params, "config"), timeout=float(options.get("timeout", 10.0)))
+    context.set_progress(100, "done")
+    return result
+
+
 def _sync_spec(name: str, handler: Callable[[dict[str, Any]], dict[str, Any]], description: str, schema: dict[str, Any] | None = None) -> ApiMethodSpec:
     return ApiMethodSpec(name=name, handler=handler, kind="sync", description=description, params_schema=schema or WEBUI_REQUEST_SCHEMA)
 
@@ -527,6 +961,17 @@ def get_default_methods() -> ApiMethodRegistry:
         "extension.index": _sync_spec("extension.index", extension_index, "Fetch installable extension index items."),
         "extension.versions": _sync_spec("extension.versions", extension_versions, "List Comfy Registry extension versions."),
         "package.versions": _sync_spec("package.versions", package_versions, "List PyPI package versions."),
+        "model.root": _sync_spec("model.root", model_root, "Inspect file model root."),
+        "model.directories": _sync_spec("model.directories", model_directories, "List model directories."),
+        "model.entries": _sync_spec("model.entries", model_entries, "List model directory entries."),
+        "model.invokeai.list": _sync_spec("model.invokeai.list", model_invokeai_list, "List InvokeAI registered models."),
+        "hotpatcher.default_config": _sync_spec("hotpatcher.default_config", hotpatcher_default_config, "Get hotpatcher default config."),
+        "hotpatcher.catalog": _sync_spec("hotpatcher.catalog", hotpatcher_catalog, "Get hotpatcher feature catalog."),
+        "hotpatcher.load_config": _sync_spec("hotpatcher.load_config", hotpatcher_load_config, "Load hotpatcher config file."),
+        "hotpatcher.normalize_config": _sync_spec("hotpatcher.normalize_config", hotpatcher_normalize_config, "Normalize hotpatcher config."),
+        "hotpatcher.runtime_env": _sync_spec("hotpatcher.runtime_env", hotpatcher_runtime_env, "Build hotpatcher runtime environment variables."),
+        "hotpatcher.runtime_status": _sync_spec("hotpatcher.runtime_status", hotpatcher_runtime_status, "Get hotpatcher runtime host status."),
+        "hotpatcher.runtime_logs": _sync_spec("hotpatcher.runtime_logs", hotpatcher_runtime_logs, "Get hotpatcher runtime logs."),
     }
 
 
@@ -553,4 +998,20 @@ def get_default_task_methods() -> ApiTaskRegistry:
         "extension.switch_commit": _task_spec("extension.switch_commit", extension_switch_commit, "Switch extension commit."),
         "extension.switch_registry_version": _task_spec("extension.switch_registry_version", extension_switch_registry_version, "Switch Comfy Registry extension version."),
         "invokeai.install_version": _task_spec("invokeai.install_version", invokeai_install_version, "Install or upgrade InvokeAI from PyPI."),
+        "model.create_folder": _task_spec("model.create_folder", model_create_folder, "Create model folder."),
+        "model.copy": _task_spec("model.copy", model_copy, "Copy model entry."),
+        "model.move": _task_spec("model.move", model_move, "Move model entry."),
+        "model.delete": _task_spec("model.delete", model_delete, "Delete model entry."),
+        "model.import": _task_spec("model.import", model_import, "Import local model files or folders."),
+        "model.download": _task_spec("model.download", model_download, "Download model from URL."),
+        "model.invokeai.install_url": _task_spec("model.invokeai.install_url", model_invokeai_install_url, "Install InvokeAI model from URL."),
+        "model.invokeai.import": _task_spec("model.invokeai.import", model_invokeai_import, "Import local models into InvokeAI."),
+        "model.invokeai.unregister": _task_spec("model.invokeai.unregister", model_invokeai_unregister, "Unregister InvokeAI model."),
+        "model.invokeai.delete": _task_spec("model.invokeai.delete", model_invokeai_delete, "Delete InvokeAI model."),
+        "hotpatcher.save_config": _task_spec("hotpatcher.save_config", hotpatcher_save_config, "Save hotpatcher config file."),
+        "hotpatcher.export_default_config": _task_spec("hotpatcher.export_default_config", hotpatcher_export_default_config, "Export hotpatcher default config file."),
+        "hotpatcher.apply_config": _task_spec("hotpatcher.apply_config", hotpatcher_apply_config, "Apply hotpatcher config locally."),
+        "hotpatcher.runtime_start": _task_spec("hotpatcher.runtime_start", hotpatcher_runtime_start, "Start hotpatcher runtime host."),
+        "hotpatcher.runtime_stop": _task_spec("hotpatcher.runtime_stop", hotpatcher_runtime_stop, "Stop hotpatcher runtime host."),
+        "hotpatcher.runtime_apply_remote": _task_spec("hotpatcher.runtime_apply_remote", hotpatcher_runtime_apply_remote, "Apply config to remote hotpatcher runtime."),
     }
