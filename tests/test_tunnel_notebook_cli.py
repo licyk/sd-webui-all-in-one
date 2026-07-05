@@ -1221,6 +1221,15 @@ def test_self_manager_archive_cli_parse_smoke(monkeypatch, tmp_path):
     ]
 
 
+def test_serve_api_cli_delegates_to_api_server(monkeypatch):
+    calls = []
+    monkeypatch.setattr(cli_utils, "serve_api", lambda **kwargs: calls.append(kwargs))
+
+    cli_utils.serve_api_cli(host="0.0.0.0", port=9000, token="secret")
+
+    assert calls == [{"host": "0.0.0.0", "port": 9000, "token": "secret"}]
+
+
 def test_get_pytorch_device_type_prints_comma_separated_types(monkeypatch, capsys):
     monkeypatch.setattr(cli_utils, "get_available_pytorch_device_type", lambda: ["all", "cpu", "cu128"])
     monkeypatch.setattr(cli_utils, "auto_detect_pytorch_device_category", lambda: "cuda")

@@ -379,6 +379,14 @@ def test_self_manager_patcher_cli_parser(tmp_path):
     assert tcmalloc_path_args.path is True
     assert callable(tcmalloc_path_args.func)
 
+    api_serve_args = parser.parse_args(["self-manager", "api", "serve", "--host", "0.0.0.0", "--port", "9000", "--token", "secret"])
+    assert api_serve_args.sd_webui_all_in_one_action == "api"
+    assert api_serve_args.api_action == "serve"
+    assert api_serve_args.host == "0.0.0.0"
+    assert api_serve_args.port == 9000
+    assert api_serve_args.token == "secret"
+    assert callable(api_serve_args.func)
+
     pytorch_type_args = parser.parse_args(["self-manager", "get", "pytorch-device-type"])
     assert pytorch_type_args.sd_webui_all_in_one_action == "get"
     assert pytorch_type_args.get_action == "pytorch-device-type"

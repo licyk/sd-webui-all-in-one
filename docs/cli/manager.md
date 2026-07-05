@@ -131,6 +131,79 @@ sd-webui-all-in-one self-manager get pytorch-device-type
 sd-webui-all-in-one self-manager get pytorch-device-type --category
 ```
 
+### API 服务
+启动基于 Python 标准库的轻量 HTTP JSON API 服务。当前提供 API 基础设施、同步方法注册表和后台任务系统，暂未注册业务方法。
+
+```bash
+sd-webui-all-in-one self-manager api serve [选项]
+```
+
+高级选项：
+
+- `--host <地址>`：监听地址，默认 `127.0.0.1`。
+- `--port <端口>`：监听端口，默认 `8765`。
+- `--token <令牌>`：Bearer token；为空时不启用鉴权。
+
+鉴权启用时，请求需要携带：
+
+```text
+Authorization: Bearer <令牌>
+```
+
+统一响应格式：
+
+```json
+{"ok":true,"result":{}}
+```
+
+错误响应格式：
+
+```json
+{"ok":false,"error":{"code":"error_code","message":"error message"}}
+```
+
+基础端点：
+
+- `GET /health`：健康检查，不需要鉴权。
+- `GET /api/v1/methods`：获取已注册同步方法、任务方法、方法元数据、任务状态列表和错误码列表。
+- `POST /api/v1/call`：调用已注册同步 API 方法。
+- `POST /api/v1/tasks`：创建后台任务。
+- `GET /api/v1/tasks`：获取后台任务列表。
+- `GET /api/v1/tasks/<task_id>`：获取后台任务状态、进度、结果和错误。
+- `GET /api/v1/tasks/<task_id>/logs`：获取后台任务日志。
+- `POST /api/v1/tasks/<task_id>/cancel`：请求取消后台任务。
+
+`HEAD /health` 和 `OPTIONS` 可用于外部 GUI 进行连通性和能力探测。
+
+方法命名规范：
+
+- 使用点号分隔的小写命名空间，例如 `model.list`、`snapshot.create`、`version.switch_branch`。
+- 每段只能使用小写字母、数字和下划线，并且必须以小写字母开头。
+
+方法元数据由 `GET /api/v1/methods` 的 `metadata` 字段返回，每个方法可包含：
+
+- `name`：方法名。
+- `kind`：`sync` 或 `task`。
+- `description`：方法说明。
+- `params_schema`：参数 JSON schema。
+- `result_schema`：结果 JSON schema，可选。
+
+任务状态固定为：
+
+```text
+pending,running,succeeded,failed,canceled
+```
+
+外部 Python GUI 可以使用内置客户端：
+
+```python
+from sd_webui_all_in_one.api_server import ApiClient
+
+client = ApiClient("http://127.0.0.1:8765", token="")
+print(client.health())
+print(client.methods())
+```
+
 ### 整合包资源管理
 生成 AI 整合包下载器使用的远程资源列表。
 

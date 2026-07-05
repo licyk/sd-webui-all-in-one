@@ -43,6 +43,7 @@ from sd_webui_all_in_one.downloader.requests_downloader import (
     DEFAULT_PIECE_LENGTH,
     DEFAULT_SPLIT,
 )
+from sd_webui_all_in_one.api_server import serve_api
 from sd_webui_all_in_one.archive_manager import (
     create_archive,
     extract_archive,
@@ -136,6 +137,24 @@ def check_aria2() -> None:
         sys.exit(1)
     else:
         sys.exit(0)
+
+
+def serve_api_cli(
+    host: str = "127.0.0.1",
+    port: int = 8765,
+    token: str = "",
+) -> None:
+    """启动 API 服务
+
+    Args:
+        host (str):
+            监听地址
+        port (int):
+            监听端口
+        token (str):
+            Bearer token, 为空时不启用鉴权
+    """
+    serve_api(host=host, port=port, token=token)
 
 
 def get_proxy() -> None:
@@ -1407,6 +1426,21 @@ def register_manager(
             sources=args.sources,
             output=args.output,
             progress=args.progress,
+        )
+    )
+
+    api_p = sd_webui_all_in_one_sub.add_parser("api", help="API 服务")
+    api_sub = api_p.add_subparsers(dest="api_action", required=True)
+
+    api_serve_p = api_sub.add_parser("serve", help="启动 API 服务")
+    api_serve_p.add_argument("--host", type=str, default="127.0.0.1", help="监听地址")
+    api_serve_p.add_argument("--port", type=int, default=8765, help="监听端口")
+    api_serve_p.add_argument("--token", type=str, default="", help="Bearer token, 为空时不启用鉴权")
+    api_serve_p.set_defaults(
+        func=lambda args: serve_api_cli(
+            host=args.host,
+            port=args.port,
+            token=args.token,
         )
     )
 
