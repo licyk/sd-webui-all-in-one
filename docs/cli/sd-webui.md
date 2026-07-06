@@ -73,6 +73,8 @@ sd-webui-all-in-one sd-webui check-env [选项]
   - `--no-github-mirror`: 不使用 Github 镜像源。
   - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
   - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
+  - `--include-check <名称>`: 仅执行指定环境检查任务，可重复传入。
+  - `--exclude-check <名称>`: 跳过指定环境检查任务，可重复传入。
 
 ### 切换分支
 ```bash

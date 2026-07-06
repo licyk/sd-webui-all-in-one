@@ -140,6 +140,34 @@ def test_pre_download_model_for_webui_skips_existing_or_missing_and_downloads_em
     ]
 
 
+def test_run_env_check_tasks_filters_and_aggregates_errors():
+    calls = []
+
+    def record(name):
+        calls.append(name)
+
+    def fail():
+        calls.append("fail")
+        raise RuntimeError("boom")
+
+    tasks = [
+        base_module.EnvCheckTask("alpha", record, {"name": "alpha"}),
+        base_module.EnvCheckTask("beta", record, {"name": "beta"}),
+        base_module.EnvCheckTask("fail", fail, {}),
+    ]
+
+    base_module.run_env_check_tasks(tasks, include_checks=["alpha", "fail"], exclude_checks=["fail"], error_message="failed")
+    assert calls == ["alpha"]
+
+    with pytest.raises(ValueError, match="missing"):
+        base_module.run_env_check_tasks(tasks, include_checks=["missing"], error_message="failed")
+
+    with pytest.raises(base_module.AggregateError) as exc:
+        base_module.run_env_check_tasks(tasks, include_checks=["fail"], error_message="failed")
+    assert calls == ["alpha", "fail"]
+    assert len(exc.value.exceptions) == 1
+
+
 def test_apply_github_raw_file_mirror_selects_first_working_list_entry(monkeypatch):
     class FakeResponse:
         def __init__(self, code):

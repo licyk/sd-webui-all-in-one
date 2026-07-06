@@ -1,6 +1,7 @@
 """基础管理模块导出"""
 
 from sd_webui_all_in_one.base_manager.base import (
+    EnvCheckTask,
     prepare_pytorch_install_info,
     install_pytorch_for_webui,
     reinstall_pytorch,
@@ -13,6 +14,8 @@ from sd_webui_all_in_one.base_manager.base import (
     apply_git_base_config_and_github_mirror,
     apply_hf_mirror,
     install_pytorch_with_fallback,
+    select_env_check_tasks,
+    run_env_check_tasks,
 )
 
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
@@ -268,6 +271,7 @@ from sd_webui_all_in_one.base_manager.sd_webui_base import (
 # 导出的公共 API 列表，按模块分类
 __all__ = [
     # base.py - 基础功能模块
+    "EnvCheckTask",
     "prepare_pytorch_install_info",
     "install_pytorch_for_webui",
     "reinstall_pytorch",
@@ -280,6 +284,8 @@ __all__ = [
     "apply_git_base_config_and_github_mirror",
     "apply_hf_mirror",
     "install_pytorch_with_fallback",
+    "select_env_check_tasks",
+    "run_env_check_tasks",
     # hotpatcher_manager.py - Hotpatcher 配置管理
     "HOTPATCHER_PATH",
     "DEFAULT_HOTPATCHER_CONFIG_PATH",

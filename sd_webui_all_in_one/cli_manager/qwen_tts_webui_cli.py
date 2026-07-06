@@ -33,6 +33,7 @@ from sd_webui_all_in_one.cli_manager.auto_mirror import (
     add_auto_mirror_argument,
     with_auto_mirror,
 )
+from sd_webui_all_in_one.cli_manager.env_check import add_env_check_selection_arguments
 from sd_webui_all_in_one.cli_manager.snapshot import add_pre_operation_snapshot_arguments, create_pre_operation_snapshot, output_snapshot
 from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     add_restore_arguments,
@@ -227,6 +228,8 @@ def check_env(
     use_pypi_mirror: bool = False,
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
+    include_checks: list[str] | None = None,
+    exclude_checks: list[str] | None = None,
 ) -> None:
     """检查 Qwen TTS WebUI 运行环境
 
@@ -241,6 +244,10 @@ def check_env(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
+        include_checks (list[str] | None):
+            仅执行的环境检查任务名称。
+        exclude_checks (list[str] | None):
+            跳过的环境检查任务名称。
     """
     check_qwen_tts_webui_env(
         qwen_tts_webui_path=qwen_tts_webui_path,
@@ -248,6 +255,8 @@ def check_env(
         use_pypi_mirror=use_pypi_mirror,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
+        include_checks=include_checks,
+        exclude_checks=exclude_checks,
     )
 
 
@@ -598,6 +607,7 @@ def register_qwen_tts_webui(
     check_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     check_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     check_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    add_env_check_selection_arguments(check_p)
     add_auto_mirror_argument(check_p)
     check_p.set_defaults(
         func=with_auto_mirror(
@@ -607,6 +617,8 @@ def register_qwen_tts_webui(
                 use_pypi_mirror=args.use_pypi_mirror,
                 use_github_mirror=args.use_github_mirror,
                 custom_github_mirror=args.custom_github_mirror,
+                include_checks=args.include_checks,
+                exclude_checks=args.exclude_checks,
             )
         )
     )

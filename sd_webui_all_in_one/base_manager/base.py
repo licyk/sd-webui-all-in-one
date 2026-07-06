@@ -5,9 +5,10 @@ import sys
 import importlib.metadata
 import urllib.parse
 import urllib.request
+from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import cast
+from typing import Any, Callable, cast
 
 from sd_webui_all_in_one.downloader import DownloadToolType
 from sd_webui_all_in_one.mirror_manager import (
@@ -62,7 +63,7 @@ from sd_webui_all_in_one.utils import (
     print_divider,
     append_python_path,
 )
-from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
+from sd_webui_all_in_one.custom_exceptions import AggregateError, WebUiRuntimeError
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     HOTPATCHER_ENV_PREFIX,
     ensure_hotpatcher_pythonpath_first,
@@ -73,6 +74,84 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+
+@dataclass(frozen=True)
+class EnvCheckTask:
+    """命名环境检查任务。"""
+
+    name: str
+    """稳定的检查任务名称。"""
+
+    func: Callable[..., Any]
+    """检查任务函数。"""
+
+    kwargs: dict[str, Any]
+    """检查任务参数。"""
+
+
+def select_env_check_tasks(
+    tasks: list[EnvCheckTask],
+    include_checks: list[str] | None = None,
+    exclude_checks: list[str] | None = None,
+) -> list[EnvCheckTask]:
+    """根据包含和排除列表筛选环境检查任务。
+
+    Args:
+        tasks (list[EnvCheckTask]): 环境检查任务列表。
+        include_checks (list[str] | None): 仅执行的检查任务名称。
+        exclude_checks (list[str] | None): 跳过的检查任务名称。
+
+    Returns:
+        list[EnvCheckTask]: 筛选后的环境检查任务列表。
+
+    Raises:
+        ValueError: 检查任务名称未知时抛出。
+    """
+    task_names = {task.name for task in tasks}
+    include_set = set(include_checks or [])
+    exclude_set = set(exclude_checks or [])
+    unknown_names = (include_set | exclude_set) - task_names
+    if unknown_names:
+        raise ValueError(f"未知环境检查任务: {', '.join(sorted(unknown_names))}")
+
+    selected_tasks = tasks
+    if include_set:
+        selected_tasks = [task for task in selected_tasks if task.name in include_set]
+    if exclude_set:
+        selected_tasks = [task for task in selected_tasks if task.name not in exclude_set]
+    return selected_tasks
+
+
+def run_env_check_tasks(
+    tasks: list[EnvCheckTask],
+    *,
+    include_checks: list[str] | None = None,
+    exclude_checks: list[str] | None = None,
+    error_message: str,
+) -> None:
+    """运行命名环境检查任务并聚合异常。
+
+    Args:
+        tasks (list[EnvCheckTask]): 环境检查任务列表。
+        include_checks (list[str] | None): 仅执行的检查任务名称。
+        exclude_checks (list[str] | None): 跳过的检查任务名称。
+        error_message (str): 聚合异常消息。
+
+    Raises:
+        AggregateError: 任一检查任务失败时抛出。
+        ValueError: 检查任务名称未知时抛出。
+    """
+    err: list[Exception] = []
+    for task in select_env_check_tasks(tasks, include_checks=include_checks, exclude_checks=exclude_checks):
+        try:
+            task.func(**task.kwargs)
+        except Exception as e:
+            err.append(e)
+            logger.error("执行环境检查 '%s' 时发生错误: %s", task.name, e)
+
+    if err:
+        raise AggregateError(error_message, err)
 
 
 def prepare_pytorch_install_info(

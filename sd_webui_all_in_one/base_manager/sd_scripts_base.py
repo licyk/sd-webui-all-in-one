@@ -6,8 +6,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import (
     cast,
-    Any,
-    Callable,
     TypeAlias,
     TypedDict,
     Literal,
@@ -23,9 +21,10 @@ from sd_webui_all_in_one.base_manager.base import (
     pre_download_model_for_webui,
     prepare_pytorch_install_info,
     print_divider,
+    EnvCheckTask,
+    run_env_check_tasks,
 )
 from sd_webui_all_in_one.base_manager.snapshot import WebUiSnapshot, build_webui_snapshot
-from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.downloader import (
     DownloadToolType,
     download_file,
@@ -517,6 +516,8 @@ def check_sd_scripts_env(
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
     use_pypi_mirror: bool = False,
+    include_checks: list[str] | None = None,
+    exclude_checks: list[str] | None = None,
 ) -> None:
     """检查 SD Scripts 运行环境
 
@@ -531,6 +532,10 @@ def check_sd_scripts_env(
             自定义 Github 镜像源
         use_pypi_mirror (bool):
             是否使用国内 PyPI 镜像源
+        include_checks (list[str] | None):
+            仅执行的环境检查任务名称。
+        exclude_checks (list[str] | None):
+            跳过的环境检查任务名称。
 
     Raises:
         AggregateError:
@@ -568,24 +573,19 @@ def check_sd_scripts_env(
                 )
 
         # 检查任务列表
-        tasks: list[tuple[Callable, dict[str, Any]]] = [
-            (py_dependency_checker, {"requirement_path": requirements_path, "name": "SD Scripts", "use_uv": use_uv, "custom_env": custom_env}),
-            (fix_torch_libomp, {}),
-            (check_torch_version, {}),
-            (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": False, "custom_env": custom_env}),
-            (check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
+        tasks = [
+            EnvCheckTask("python-dependencies", py_dependency_checker, {"requirement_path": requirements_path, "name": "SD Scripts", "use_uv": use_uv, "custom_env": custom_env}),
+            EnvCheckTask("torch-libomp", fix_torch_libomp, {}),
+            EnvCheckTask("torch-version", check_torch_version, {}),
+            EnvCheckTask("onnxruntime-gpu", check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": False, "custom_env": custom_env}),
+            EnvCheckTask("numpy", check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
         ]
-        err: list[Exception] = []
-
-        for func, kwargs in tasks:
-            try:
-                func(**kwargs)
-            except Exception as e:
-                err.append(e)
-                logger.error("执行 '%s' 时发生错误: %s", getattr(func, "__name__", repr(func)), e)
-
-        if err:
-            raise AggregateError("检查 SD Scripts 环境时发生错误", err)
+        run_env_check_tasks(
+            tasks,
+            include_checks=include_checks,
+            exclude_checks=exclude_checks,
+            error_message="检查 SD Scripts 环境时发生错误",
+        )
 
         logger.info("检查 SD Scripts 环境完成")
 

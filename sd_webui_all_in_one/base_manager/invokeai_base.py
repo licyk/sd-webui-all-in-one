@@ -7,7 +7,6 @@ from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 from typing import (
     Any,
-    Callable,
     Iterator,
     TypedDict,
     cast,
@@ -27,6 +26,8 @@ from sd_webui_all_in_one.base_manager.base import (
     pre_download_model_for_webui,
     prepare_pytorch_install_info,
     install_pytorch_with_fallback,
+    EnvCheckTask,
+    run_env_check_tasks,
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     DEFAULT_RUNTIME_PORT,
@@ -768,6 +769,8 @@ def check_invokeai_env(
     use_pypi_mirror: bool = False,
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
+    include_checks: list[str] | None = None,
+    exclude_checks: list[str] | None = None,
 ) -> None:
     """检查 InvokeAI 运行环境
 
@@ -780,6 +783,10 @@ def check_invokeai_env(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
+        include_checks (list[str] | None):
+            仅执行的环境检查任务名称。
+        exclude_checks (list[str] | None):
+            跳过的环境检查任务名称。
 
     Raises:
         AggregateError:
@@ -801,24 +808,19 @@ def check_invokeai_env(
     )
 
     # 检查任务列表
-    tasks: list[tuple[Callable, dict[str, Any]]] = [
-        (_ensure_invokeai_package_installed, {"use_uv": use_uv, "custom_env": custom_env}),
-        (py_package_metadata_dependency_checker, {"package_name": "invokeai", "name": "InvokeAI", "use_uv": use_uv, "custom_env": custom_env}),
-        (fix_torch_libomp, {}),
-        (check_torch_version, {}),
-        (check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
+    tasks = [
+        EnvCheckTask("invokeai-package", _ensure_invokeai_package_installed, {"use_uv": use_uv, "custom_env": custom_env}),
+        EnvCheckTask("invokeai-package-dependencies", py_package_metadata_dependency_checker, {"package_name": "invokeai", "name": "InvokeAI", "use_uv": use_uv, "custom_env": custom_env}),
+        EnvCheckTask("torch-libomp", fix_torch_libomp, {}),
+        EnvCheckTask("torch-version", check_torch_version, {}),
+        EnvCheckTask("onnxruntime-gpu", check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
     ]
-    err: list[Exception] = []
-
-    for func, kwargs in tasks:
-        try:
-            func(**kwargs)
-        except Exception as e:
-            err.append(e)
-            logger.error("执行 '%s' 时发生错误: %s", getattr(func, "__name__", repr(func)), e)
-
-    if err:
-        raise AggregateError("检查 InvokeAI 环境时发生错误", err)
+    run_env_check_tasks(
+        tasks,
+        include_checks=include_checks,
+        exclude_checks=exclude_checks,
+        error_message="检查 InvokeAI 环境时发生错误",
+    )
 
     logger.info("检查 InvokeAI 环境完成")
 

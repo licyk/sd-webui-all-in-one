@@ -65,6 +65,8 @@ sd-webui-all-in-one invokeai check-env [选项]
 - **高级选项**:
   - `--no-uv`: 不使用 uv。
   - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
+  - `--include-check <名称>`: 仅执行指定环境检查任务，可重复传入。
+  - `--exclude-check <名称>`: 跳过指定环境检查任务，可重复传入。
 
 ### 启动 InvokeAI
 ```bash
