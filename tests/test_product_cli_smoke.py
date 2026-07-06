@@ -454,11 +454,31 @@ def test_product_cli_launch_and_gui_smoke(monkeypatch, tmp_path, module, registe
     if hasattr(module, "launch_model_gui"):
         monkeypatch.setattr(module, "launch_model_gui", lambda **kwargs: calls.append(("model-gui", kwargs)))
 
-    args = parser.parse_args([root, "launch", path_arg, str(tmp_path), "--no-auto-mirror", "--launch-args", "--listen --port 7861", "--no-check-env", "--no-hotpatcher"])
+    args = parser.parse_args(
+        [
+            root,
+            "launch",
+            path_arg,
+            str(tmp_path),
+            "--no-auto-mirror",
+            "--launch-args",
+            "--listen --port 7861",
+            "--no-uv",
+            "--include-check",
+            "torch-version",
+            "--exclude-check",
+            "onnxruntime-gpu",
+            "--no-check-env",
+            "--no-hotpatcher",
+        ]
+    )
     args.func(args)
     assert calls[-1][0] == "launch"
     assert calls[-1][1][path_key] == tmp_path
     assert calls[-1][1]["launch_args"] == "--listen --port 7861"
+    assert calls[-1][1]["use_uv"] is False
+    assert calls[-1][1]["include_checks"] == ["torch-version"]
+    assert calls[-1][1]["exclude_checks"] == ["onnxruntime-gpu"]
     assert calls[-1][1]["check_launch_env"] is False
     assert calls[-1][1]["enable_hotpatcher"] is False
 

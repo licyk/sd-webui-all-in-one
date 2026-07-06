@@ -100,6 +100,8 @@ sd-webui-all-in-one sd-trainer launch [选项]
   - `--no-cuda-malloc`: 禁用 CUDA Malloc 优化。
   - `--no-uv`: 不使用 uv。
   - `--no-check-env`: 不检查运行环境完整性。
+  - `--include-check <名称>`: 启动前仅执行指定环境检查任务，可重复传入。
+  - `--exclude-check <名称>`: 启动前跳过指定环境检查任务，可重复传入。
   - `--no-hotpatcher`: 禁用 Hotpatcher 补丁系统注入，默认启用。
   - `--hotpatcher-runtime`: 启用 Hotpatcher runtime host 连接，默认只做本地补丁注入。
   - `--hotpatcher-config <路径>`: Hotpatcher 配置文件路径。未指定时使用默认配置路径或内置默认配置。

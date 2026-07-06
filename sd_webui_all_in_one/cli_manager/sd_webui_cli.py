@@ -347,6 +347,8 @@ def launch(
     use_cuda_malloc: bool = True,
     use_uv: bool = True,
     check_launch_env: bool = True,
+    include_checks: list[str] | None = None,
+    exclude_checks: list[str] | None = None,
     enable_hotpatcher: bool = False,
     hotpatcher_config_path: str | Path | None = None,
     hotpatcher_port: int = DEFAULT_RUNTIME_PORT,
@@ -375,6 +377,10 @@ def launch(
             是否使用 uv 安装 Python 软件包
         check_launch_env (bool):
             是否在启动前检查运行环境
+        include_checks (list[str] | None):
+            仅执行的环境检查任务名称。
+        exclude_checks (list[str] | None):
+            跳过的环境检查任务名称。
         enable_hotpatcher (bool):
             是否启用补丁系统注入
         hotpatcher_config_path (str | Path | None):
@@ -396,6 +402,8 @@ def launch(
                 use_github_mirror=use_github_mirror,
                 custom_github_mirror=custom_github_mirror,
                 use_pypi_mirror=use_pypi_mirror,
+                include_checks=include_checks,
+                exclude_checks=exclude_checks,
             )
         except Exception as e:
             if SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH:
@@ -1018,6 +1026,7 @@ def register_sd_webui(
     launch_p.add_argument("--no-cuda-malloc", action="store_false", dest="use_cuda_malloc", help="禁用 CUDA Malloc 优化")
     launch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
     launch_p.add_argument("--no-check-env", action="store_false", dest="check_env", help="不检查运行环境完整性")
+    add_env_check_selection_arguments(launch_p)
     launch_p.add_argument("--no-hotpatcher", action="store_false", dest="enable_hotpatcher", default=True, help="禁用补丁系统注入")
     launch_p.add_argument("--hotpatcher-runtime", action="store_true", dest="enable_hotpatcher_runtime", default=False, help="启用补丁系统 runtime host 连接")
     launch_p.add_argument("--hotpatcher-config", type=normalized_filepath, dest="hotpatcher_config_path", help="补丁系统配置文件路径")
@@ -1036,6 +1045,8 @@ def register_sd_webui(
                 use_cuda_malloc=args.use_cuda_malloc,
                 use_uv=args.use_uv,
                 check_launch_env=args.check_env,
+                include_checks=args.include_checks,
+                exclude_checks=args.exclude_checks,
                 enable_hotpatcher=args.enable_hotpatcher,
                 enable_hotpatcher_runtime=args.enable_hotpatcher_runtime,
                 hotpatcher_config_path=args.hotpatcher_config_path,
