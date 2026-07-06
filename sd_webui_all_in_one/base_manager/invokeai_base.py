@@ -895,7 +895,7 @@ def prepare_invokeai_launch(
     )
     return WebUiLaunchInfo(
         webui_path=invokeai_path,
-        launch_script=INVOKEAI_RUNNER_SCRIPT.as_posix(),
+        launch_script=INVOKEAI_RUNNER_SCRIPT,
         webui_name="InvokeAI",
         launch_args=launch_args or [],
         custom_env=custom_env,
@@ -960,7 +960,7 @@ def launch_invokeai(
         webui_path=launch_info.webui_path,
         launch_script=launch_info.launch_script,
         webui_name=launch_info.webui_name,
-        launch_args=launch_info.launch_args,
+        launch_args=launch_args,
         custom_env=launch_info.custom_env,
     )
 

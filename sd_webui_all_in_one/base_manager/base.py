@@ -97,7 +97,7 @@ class WebUiLaunchInfo:
     webui_path: Path
     """WebUI 根目录。"""
 
-    launch_script: str
+    launch_script: str | Path
     """启动脚本路径。"""
 
     webui_name: str
