@@ -3,6 +3,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from typing import cast
 
 import pytest
 
@@ -10,6 +11,8 @@ from sd_webui_all_in_one.api_server import ApiClient, ApiClientError, ApiMethodS
 from sd_webui_all_in_one.api_server import registry
 from sd_webui_all_in_one.api_server import server as api_server_module
 from sd_webui_all_in_one.api_server.adapters import webui as webui_adapters
+from sd_webui_all_in_one.api_server.adapters.webui import WebUiApiType
+from sd_webui_all_in_one.base_manager import version_manager
 
 
 def _request(url, method="GET", data=None, token=""):
@@ -319,11 +322,16 @@ def test_default_api_registry_dispatches_version_queries(monkeypatch, tmp_path):
             calls.append(("commits", webui_path, limit))
             return {"commits": []}
 
+        def check_updates(self, webui_path, options=None):
+            calls.append(("check-updates", webui_path, options))
+            return {"summary": {"has_update": False}}
+
     monkeypatch.setattr(registry, "get_webui_adapter", lambda webui_type: FakeAdapter())
 
     assert registry.version_branches({"webui_type": "sd_webui", "webui_path": str(tmp_path), "options": {"fetch": False}}) == {"branches": []}
     assert registry.version_commits({"webui_type": "sd_webui", "webui_path": str(tmp_path), "options": {"limit": 5}}) == {"commits": []}
-    assert calls == [("branches", tmp_path, False), ("commits", tmp_path, 5)]
+    assert registry.webui_check_updates({"webui_type": "sd_webui", "webui_path": str(tmp_path), "options": {"include_extensions": False}}) == {"summary": {"has_update": False}}
+    assert calls == [("branches", tmp_path, False), ("commits", tmp_path, 5), ("check-updates", tmp_path, {"include_extensions": False})]
 
 
 def test_default_api_registry_dispatches_snapshot_task(monkeypatch, tmp_path):
@@ -354,14 +362,55 @@ def test_default_api_registry_dispatches_snapshot_task(monkeypatch, tmp_path):
 
 def test_get_webui_adapter_rejects_unknown_type():
     with pytest.raises(ValueError, match="Unsupported webui_type"):
-        webui_adapters.get_webui_adapter("missing")
+        webui_adapters.get_webui_adapter(cast(WebUiApiType, "missing"))
+
+
+def test_webui_adapter_check_updates_returns_structured_summary(monkeypatch, tmp_path):
+    adapter = webui_adapters.WebUiApiAdapter("sd_webui", "Stable Diffusion WebUI", lambda _path, _include_packages: None)
+    extension_status = version_manager.RepositoryUpdateStatus(
+        name="demo-ext",
+        path=tmp_path / "extensions" / "demo-ext",
+        is_git_repo=True,
+        has_update=True,
+        behind=2,
+    )
+
+    class FakeExtensionManager:
+        def check_updates(self, **_kwargs):
+            return [extension_status]
+
+    monkeypatch.setattr(
+        webui_adapters,
+        "check_repository_update",
+        lambda path, **_kwargs: version_manager.RepositoryUpdateStatus(
+            name=path.name,
+            path=path,
+            is_git_repo=True,
+            has_update=True,
+            behind=1,
+        ),
+    )
+    monkeypatch.setattr(adapter, "extension_manager", lambda _path: FakeExtensionManager())
+
+    result = adapter.check_updates(tmp_path, options={"fetch": False})
+
+    assert result["kernel"]["has_update"] is True
+    assert result["extensions"][0]["name"] == "demo-ext"
+    assert result["extensions"][0]["behind"] == 2
+    assert result["summary"] == {
+        "has_update": True,
+        "kernel_has_update": True,
+        "extension_update_count": 1,
+        "skipped_count": 0,
+        "error_count": 0,
+    }
 
 
 def test_default_api_registry_includes_full_version_snapshot_extension_surface():
     server = create_api_server(port=0)
     try:
         catalog = server.method_catalog()
-        assert {"version.status", "snapshot.list", "snapshot.delete", "extension.list", "extension.index", "extension.versions", "environment.dependencies", "environment.pytorch_version", "package.versions", "launch.prepare", "system.proxy"}.issubset(catalog["methods"])
+        assert {"version.status", "webui.check_updates", "snapshot.list", "snapshot.delete", "extension.list", "extension.index", "extension.versions", "environment.dependencies", "environment.pytorch_version", "package.versions", "launch.prepare", "system.proxy"}.issubset(catalog["methods"])
         assert {
             "extension.set_enabled",
             "extension.install",

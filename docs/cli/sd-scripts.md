@@ -36,6 +36,16 @@ sd-webui-all-in-one sd-scripts update [选项]
   - `--no-snapshot`: 禁用操作前自动创建环境快照。
   - `--snapshot-dir <路径>`: 操作前自动快照目录；未传时使用默认快照目录。
 
+### 检查 SD Scripts 更新
+```bash
+sd-webui-all-in-one sd-scripts check-update [选项]
+```
+
+- **高级选项**:
+  - `--sd-scripts-path <路径>`: SD Scripts 根目录。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+
 ### 生成环境快照
 ```bash
 sd-webui-all-in-one sd-scripts snapshot [选项]

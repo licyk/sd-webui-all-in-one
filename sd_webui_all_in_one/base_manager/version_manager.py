@@ -195,6 +195,77 @@ class PackageVersionInfo:
     is_current: bool = False
 
 
+@dataclass(slots=True)
+class RepositoryUpdateStatus:
+    """
+    Git 仓库更新状态
+
+    Attributes:
+        name (str):
+            仓库名称
+        path (Path):
+            仓库路径
+        is_git_repo (bool):
+            是否为 Git 仓库
+        branch (str | None):
+            当前分支
+        remote_branch (str | None):
+            用于比较的远程分支
+        current_commit (str | None):
+            当前提交 ID
+        remote_commit (str | None):
+            远程提交 ID
+        ahead (int):
+            本地领先远程的提交数量
+        behind (int):
+            本地落后远程的提交数量
+        has_update (bool):
+            是否有可拉取更新
+        is_dirty (bool):
+            工作区是否有未提交改动
+        error (str | None):
+            检查错误信息
+    """
+
+    name: str
+    path: Path
+    is_git_repo: bool
+    branch: str | None = None
+    remote_branch: str | None = None
+    current_commit: str | None = None
+    remote_commit: str | None = None
+    ahead: int = 0
+    behind: int = 0
+    has_update: bool = False
+    is_dirty: bool = False
+    error: str | None = None
+
+
+@dataclass(slots=True)
+class WebUiUpdateSummary:
+    """
+    WebUI 更新检查摘要
+
+    Attributes:
+        has_update (bool):
+            内核或扩展是否存在更新
+        kernel_has_update (bool):
+            内核是否存在更新
+        extension_update_count (int):
+            可更新扩展数量
+        skipped_count (int):
+            跳过或无法检查的条目数量
+        error_count (int):
+            检查失败条目数量
+    """
+
+    has_update: bool
+    kernel_has_update: bool
+    extension_update_count: int
+    skipped_count: int
+    error_count: int
+
+
 def configure_git_env(
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
@@ -220,6 +291,29 @@ def configure_git_env(
     return custom_env
 
 
+def _run_git_output(
+    path: Path,
+    *args: str,
+    custom_env: dict[str, str] | None = None,
+) -> str:
+    """
+    执行 Git 命令并返回输出
+
+    Args:
+        path (Path):
+            Git 仓库路径
+        *args (str):
+            Git 命令参数
+        custom_env (dict[str, str] | None):
+            自定义环境变量
+
+    Returns:
+        str: 命令输出
+    """
+    output = git_warpper.run_git(*args, path=path, custom_env=custom_env, live=False)
+    return "" if output is None else output.strip()
+
+
 def _safe_git_value(func: Callable[[Path], str | None], path: Path) -> str | None:
     """
     安全读取 Git 字段
@@ -241,6 +335,8 @@ def _safe_git_value(func: Callable[[Path], str | None], path: Path) -> str | Non
 
 def fetch_repository(
     path: Path,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
 ) -> None:
     """
     拉取远程引用
@@ -248,6 +344,10 @@ def fetch_repository(
     Args:
         path (Path):
             Git 仓库路径
+        use_github_mirror (bool):
+            是否启用 GitHub 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 GitHub 镜像源
 
     Raises:
         ValueError:
@@ -255,7 +355,124 @@ def fetch_repository(
     """
     if not git_warpper.is_git_repo(path):
         raise ValueError(f"'{path}' 不是有效的 Git 仓库")
-    run_git_output(path, "fetch", "--all", "--prune")
+    custom_env = configure_git_env(use_github_mirror=use_github_mirror, custom_github_mirror=custom_github_mirror) if use_github_mirror else None
+    _run_git_output(path, "fetch", "--all", "--prune", custom_env=custom_env)
+
+
+def _resolve_update_remote_ref(path: Path, branch: str | None) -> str | None:
+    """
+    解析用于更新检查的远程引用
+
+    Args:
+        path (Path):
+            Git 仓库路径
+        branch (str | None):
+            当前分支
+
+    Returns:
+        str | None: 远程引用
+    """
+    remote_branch = git_warpper.get_git_repo_current_remote_branch(path)
+    if remote_branch:
+        return remote_branch
+    if branch:
+        fallback_ref = f"origin/{branch}"
+        try:
+            _run_git_output(path, "rev-parse", "--verify", fallback_ref)
+            return fallback_ref
+        except RuntimeError:
+            return None
+    return None
+
+
+def _read_repository_dirty(path: Path) -> bool:
+    """
+    检查 Git 工作区是否有未提交改动
+
+    Args:
+        path (Path):
+            Git 仓库路径
+
+    Returns:
+        bool: 存在未提交改动时返回 True
+    """
+    try:
+        return bool(_run_git_output(path, "status", "--porcelain"))
+    except Exception:
+        return False
+
+
+def _read_ahead_behind(path: Path, remote_ref: str) -> tuple[int, int]:
+    """
+    读取本地与远程引用的领先/落后提交数
+
+    Args:
+        path (Path):
+            Git 仓库路径
+        remote_ref (str):
+            远程引用
+
+    Returns:
+        tuple[int, int]: 本地领先数量和本地落后数量
+    """
+    output = _run_git_output(path, "rev-list", "--left-right", "--count", f"HEAD...{remote_ref}")
+    parts = output.replace("\t", " ").split()
+    if len(parts) < 2:
+        return 0, 0
+    return int(parts[0]), int(parts[1])
+
+
+def check_repository_update(
+    path: Path,
+    fetch: bool = True,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> RepositoryUpdateStatus:
+    """
+    检查 Git 仓库是否存在远程更新
+
+    Args:
+        path (Path):
+            Git 仓库路径
+        fetch (bool):
+            是否先拉取远程引用
+        use_github_mirror (bool):
+            是否启用 GitHub 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 GitHub 镜像源
+
+    Returns:
+        RepositoryUpdateStatus: 仓库更新状态
+    """
+    state = inspect_repository(path)
+    status = RepositoryUpdateStatus(
+        name=state.name,
+        path=state.path,
+        is_git_repo=state.is_git_repo,
+        branch=state.branch,
+        current_commit=state.commit,
+        is_dirty=False,
+        error=state.error,
+    )
+    if not state.is_git_repo:
+        return status
+
+    try:
+        if fetch:
+            fetch_repository(path, use_github_mirror=use_github_mirror, custom_github_mirror=custom_github_mirror)
+        status.is_dirty = _read_repository_dirty(path)
+        status.remote_branch = _resolve_update_remote_ref(path, state.branch)
+        if status.remote_branch is None:
+            status.error = "未找到远程跟踪分支"
+            return status
+        status.current_commit = _run_git_output(path, "rev-parse", "HEAD")
+        status.remote_commit = _run_git_output(path, "rev-parse", status.remote_branch)
+        status.ahead, status.behind = _read_ahead_behind(path, status.remote_branch)
+        status.has_update = status.behind > 0
+        status.error = None
+    except Exception as exc:
+        status.error = str(exc)
+    return status
 
 
 def list_commits(path: Path, limit: int | None = 100) -> list[CommitInfo]:
@@ -557,6 +774,50 @@ class ExtensionManager:
                 errors.append(e)
         if errors:
             raise AggregateError("更新扩展时发生错误", errors)
+
+    def check_updates(
+        self,
+        fetch: bool = True,
+        use_github_mirror: bool = False,
+        custom_github_mirror: str | list[str] | None = None,
+    ) -> list[RepositoryUpdateStatus]:
+        """
+        检查所有扩展是否存在远程更新
+
+        Args:
+            fetch (bool):
+                是否先拉取远程引用
+            use_github_mirror (bool):
+                是否启用 GitHub 镜像源
+            custom_github_mirror (str | list[str] | None):
+                自定义 GitHub 镜像源
+
+        Returns:
+            list[RepositoryUpdateStatus]: 扩展更新状态列表
+        """
+        result: list[RepositoryUpdateStatus] = []
+        for ext in self.list_extensions():
+            if not ext.is_git_repo:
+                result.append(
+                    RepositoryUpdateStatus(
+                        name=ext.name,
+                        path=ext.path,
+                        is_git_repo=False,
+                        branch=ext.branch,
+                        current_commit=ext.commit,
+                        error=ext.error or "非 Git 仓库",
+                    )
+                )
+                continue
+            status = check_repository_update(
+                ext.path,
+                fetch=fetch,
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+            )
+            status.name = ext.name
+            result.append(status)
+        return result
 
     def uninstall_extension(
         self,

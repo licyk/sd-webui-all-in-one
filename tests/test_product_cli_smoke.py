@@ -287,6 +287,66 @@ def test_qwen_tts_webui_cli_install_uses_standard_model_options(monkeypatch, tmp
 
 
 @pytest.mark.parametrize(
+    ("module", "register", "command", "path_arg", "webui_type"),
+    [
+        (sd_webui_cli, sd_webui_cli.register_sd_webui, "sd-webui", "--sd-webui-path", "sd_webui"),
+        (comfyui_cli, comfyui_cli.register_comfyui, "comfyui", "--comfyui-path", "comfyui"),
+        (fooocus_cli, fooocus_cli.register_fooocus, "fooocus", "--fooocus-path", "fooocus"),
+        (invokeai_cli, invokeai_cli.register_invokeai, "invokeai", "--invokeai-path", "invokeai"),
+        (qwen_tts_webui_cli, qwen_tts_webui_cli.register_qwen_tts_webui, "qwen-tts-webui", "--qwen-tts-webui-path", "qwen_tts_webui"),
+        (sd_trainer_cli, sd_trainer_cli.register_sd_trainer, "sd-trainer", "--sd-trainer-path", "sd_trainer"),
+        (sd_scripts_cli, sd_scripts_cli.register_sd_scripts, "sd-scripts", "--sd-scripts-path", "sd_scripts"),
+    ],
+)
+def test_webui_cli_check_update_uses_common_helper(monkeypatch, tmp_path, module, register, command, path_arg, webui_type):
+    parser = _parser(register)
+    calls = []
+
+    monkeypatch.setattr(module, "check_webui_updates", lambda **kwargs: calls.append(kwargs))
+
+    args = parser.parse_args(
+        [
+            command,
+            "check-update",
+            path_arg,
+            str(tmp_path),
+            "--no-auto-mirror",
+            "--no-github-mirror",
+            "--custom-github-mirror",
+            "https://github.example",
+        ]
+    )
+    args.func(args)
+
+    assert calls[-1]["webui_type"] == webui_type
+    assert calls[-1]["webui_path"] == tmp_path
+    assert calls[-1]["use_github_mirror"] is False
+    assert calls[-1]["custom_github_mirror"] == "https://github.example"
+
+
+@pytest.mark.parametrize(
+    ("module", "register", "command", "group", "path_arg", "webui_type"),
+    [
+        (sd_webui_cli, sd_webui_cli.register_sd_webui, "sd-webui", "extension", "--sd-webui-path", "sd_webui"),
+        (comfyui_cli, comfyui_cli.register_comfyui, "comfyui", "custom-node", "--comfyui-path", "comfyui"),
+        (invokeai_cli, invokeai_cli.register_invokeai, "invokeai", "custom-node", "--invokeai-path", "invokeai"),
+    ],
+)
+def test_extension_cli_check_update_excludes_kernel(monkeypatch, tmp_path, module, register, command, group, path_arg, webui_type):
+    parser = _parser(register)
+    calls = []
+
+    monkeypatch.setattr(module, "check_webui_updates", lambda **kwargs: calls.append(kwargs))
+
+    args = parser.parse_args([command, group, "check-update", path_arg, str(tmp_path), "--no-auto-mirror"])
+    args.func(args)
+
+    assert calls[-1]["webui_type"] == webui_type
+    assert calls[-1]["webui_path"] == tmp_path
+    assert calls[-1]["include_kernel"] is False
+
+
+@pytest.mark.parametrize(
     ("module", "register", "root", "path_arg", "path_key", "branch"),
     [
         (sd_webui_cli, sd_webui_cli.register_sd_webui, "sd-webui", "--sd-webui-path", "sd_webui_path", sd_webui_cli.SD_WEBUI_BRANCH_LIST[0]),

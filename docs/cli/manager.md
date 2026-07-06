@@ -200,6 +200,7 @@ pending,running,succeeded,failed,canceled
 - `version.branches`：列出 WebUI 内核仓库分支。
 - `version.commits`：列出 WebUI 内核仓库提交。
 - `version.branch_presets`：列出 WebUI 内置分支预设；未定义预设表的 WebUI 返回 `supported=false` 和空列表。
+- `webui.check_updates`：检查 WebUI 内核和扩展是否存在可用更新；CLI 使用文本输出，API 返回结构化结果。
 - `snapshot.list`：列出快照文件。
 - `snapshot.read`：读取快照文件。
 - `snapshot.delete`：删除快照文件。

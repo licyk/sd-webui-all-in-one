@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable
 from dataclasses import asdict, is_dataclass
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Callable, cast
+from typing import Any, Callable, Literal, TypeAlias, cast
 from urllib.parse import urlparse
 
 from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, qwen_tts_webui_base, sd_scripts_base, sd_trainer_base, sd_webui_base
@@ -34,6 +34,8 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     DEFAULT_EXTENSION_INDEX_URL,
     ExtensionIndexItem,
     ExtensionManager,
+    WebUiUpdateSummary,
+    check_repository_update,
     fetch_comfyui_custom_node_index,
     fetch_extension_index,
     fetch_pypi_versions,
@@ -47,8 +49,21 @@ from sd_webui_all_in_one.base_manager.version_manager import (
 )
 from sd_webui_all_in_one.downloader import download_archive_and_unpack, download_file
 from sd_webui_all_in_one.file_manager import move_files, remove_files
+from sd_webui_all_in_one.mirror_manager import PYPI_INDEX_MIRROR_OFFICIAL, PYPI_INDEX_MIRROR_TENCENT
+from sd_webui_all_in_one.package_analyzer import get_package_version_from_library
 
 SnapshotFactory = Callable[[Path, bool], WebUiSnapshot]
+
+WebUiApiType: TypeAlias = Literal[
+    "sd_webui",
+    "comfyui",
+    "fooocus",
+    "invokeai",
+    "sd_trainer",
+    "sd_scripts",
+    "qwen_tts_webui",
+]
+"""API 支持的 WebUI 类型。"""
 
 
 def _snapshot_restore_options(data: dict[str, Any] | None = None) -> SnapshotRestoreOptions:
@@ -74,6 +89,15 @@ def _dataclass_list(items: Iterable[Any]) -> list[dict[str, Any]]:
             raise TypeError(f"Expected dataclass dict, got {type(data).__name__}")
         result.append(cast(dict[str, Any], data))
     return result
+
+
+def _dataclass_dict(item: Any) -> dict[str, Any]:
+    if not is_dataclass(item):
+        raise TypeError(f"Expected dataclass instance, got {type(item).__name__}")
+    data = json_safe(asdict(item))
+    if not isinstance(data, dict):
+        raise TypeError(f"Expected dataclass dict, got {type(data).__name__}")
+    return cast(dict[str, Any], data)
 
 
 def _load_json_object(path: Path) -> dict[str, Any]:
@@ -162,7 +186,7 @@ def _extension_index_item_from_params(data: dict[str, Any]) -> ExtensionIndexIte
 class WebUiApiAdapter:
     """统一 WebUI API adapter。"""
 
-    def __init__(self, webui_type: str, display_name: str, snapshot_factory: SnapshotFactory) -> None:
+    def __init__(self, webui_type: WebUiApiType, display_name: str, snapshot_factory: SnapshotFactory) -> None:
         self.webui_type = webui_type
         self.display_name = display_name
         self._snapshot_factory = snapshot_factory
@@ -241,6 +265,94 @@ class WebUiApiAdapter:
         """
         update_repository(webui_path)
         return {"updated": True}
+
+    def _check_invokeai_kernel_update(self, options: dict[str, Any]) -> dict[str, Any]:
+        """检查 InvokeAI PyPI 内核版本更新。"""
+        current_version = get_package_version_from_library("invokeai")
+        index_url = str(options.get("pypi_index_url") or options.get("index_url") or (PYPI_INDEX_MIRROR_TENCENT if bool(options.get("use_pypi_mirror", False)) else PYPI_INDEX_MIRROR_OFFICIAL))
+        timeout = options.get("timeout", 20)
+        try:
+            versions = fetch_pypi_versions("invokeai", current_version=current_version, index_url=index_url, timeout=timeout)
+            latest_version = versions[0].version if versions else None
+            return {
+                "source_type": "pypi",
+                "name": "InvokeAI",
+                "package_name": "invokeai",
+                "current_version": current_version,
+                "latest_version": latest_version,
+                "has_update": bool(current_version and latest_version and current_version != latest_version),
+                "error": None if versions else "未获取到 PyPI 版本列表",
+            }
+        except Exception as exc:
+            return {
+                "source_type": "pypi",
+                "name": "InvokeAI",
+                "package_name": "invokeai",
+                "current_version": current_version,
+                "latest_version": None,
+                "has_update": False,
+                "error": str(exc),
+            }
+
+    def check_updates(self, webui_path: Path, options: dict[str, Any] | None = None) -> dict[str, Any]:
+        """检查 WebUI 内核和扩展更新。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            options (dict[str, Any] | None): 检查选项。
+
+        Returns:
+            dict[str, Any]: 更新检查结果。
+        """
+        options = options or {}
+        include_kernel = bool(options.get("include_kernel", True))
+        include_extensions = bool(options.get("include_extensions", True))
+        fetch = bool(options.get("fetch", True))
+        use_github_mirror = bool(options.get("use_github_mirror", False))
+        custom_github_mirror = options.get("custom_github_mirror")
+
+        kernel: dict[str, Any] | None = None
+        extensions: list[dict[str, Any]] = []
+        if include_kernel:
+            if self.webui_type == "invokeai":
+                kernel = self._check_invokeai_kernel_update(options)
+            else:
+                kernel = _dataclass_dict(
+                    check_repository_update(
+                        webui_path,
+                        fetch=fetch,
+                        use_github_mirror=use_github_mirror,
+                        custom_github_mirror=custom_github_mirror,
+                    )
+                )
+
+        if include_extensions:
+            try:
+                extension_status = self.extension_manager(webui_path).check_updates(
+                    fetch=fetch,
+                    use_github_mirror=use_github_mirror,
+                    custom_github_mirror=custom_github_mirror,
+                )
+                extensions = _dataclass_list(extension_status)
+            except NotImplementedError:
+                extensions = []
+
+        kernel_has_update = bool(kernel and kernel.get("has_update"))
+        extension_update_count = sum(1 for item in extensions if item.get("has_update"))
+        skipped_count = sum(1 for item in extensions if not item.get("is_git_repo", True))
+        error_count = (1 if kernel and kernel.get("error") else 0) + sum(1 for item in extensions if item.get("error"))
+        summary = WebUiUpdateSummary(
+            has_update=kernel_has_update or extension_update_count > 0,
+            kernel_has_update=kernel_has_update,
+            extension_update_count=extension_update_count,
+            skipped_count=skipped_count,
+            error_count=error_count,
+        )
+        return {
+            "kernel": kernel,
+            "extensions": extensions,
+            "summary": _dataclass_dict(summary),
+        }
 
     def snapshot_dir(self, webui_path: Path, snapshot_dir: Path | None = None) -> Path:
         """获取快照目录。
@@ -819,7 +931,7 @@ class WebUiApiAdapter:
         return {"launch": data}
 
 
-WEBUI_API_ADAPTERS: dict[str, WebUiApiAdapter] = {
+WEBUI_API_ADAPTERS: dict[WebUiApiType, WebUiApiAdapter] = {
     "sd_webui": WebUiApiAdapter("sd_webui", "Stable Diffusion WebUI", sd_webui_base.get_sd_webui_snapshot),
     "comfyui": WebUiApiAdapter("comfyui", "ComfyUI", comfyui_base.get_comfyui_snapshot),
     "fooocus": WebUiApiAdapter("fooocus", "Fooocus", fooocus_base.get_fooocus_snapshot),
@@ -830,11 +942,11 @@ WEBUI_API_ADAPTERS: dict[str, WebUiApiAdapter] = {
 }
 
 
-def get_webui_adapter(webui_type: str) -> WebUiApiAdapter:
+def get_webui_adapter(webui_type: WebUiApiType) -> WebUiApiAdapter:
     """获取 WebUI API adapter。
 
     Args:
-        webui_type (str): WebUI 类型。
+        webui_type (WebUiApiType): WebUI 类型。
 
     Returns:
         WebUiApiAdapter: 对应类型的 API adapter。

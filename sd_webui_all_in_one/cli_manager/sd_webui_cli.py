@@ -57,6 +57,7 @@ from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     restore_snapshot,
 )
 from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
+from sd_webui_all_in_one.cli_manager.update_status import check_webui_updates
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
@@ -893,6 +894,23 @@ def register_sd_webui(
         )
     )
 
+    # check-update
+    check_update_p = sd_sub.add_parser("check-update", help="检查 Stable Diffusion WebUI 内核和扩展更新")
+    check_update_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    check_update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    check_update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    add_auto_mirror_argument(check_update_p)
+    check_update_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: check_webui_updates(
+                webui_type="sd_webui",
+                webui_path=args.sd_webui_path,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
+    )
+
     # snapshot
     snapshot_p = sd_sub.add_parser("snapshot", help="生成 Stable Diffusion WebUI 环境快照")
     snapshot_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
@@ -1111,6 +1129,24 @@ def register_sd_webui(
                 custom_github_mirror=args.custom_github_mirror,
                 snapshot_enabled=args.snapshot_enabled,
                 snapshot_dir=args.snapshot_dir,
+            )
+        )
+    )
+
+    # extension check-update
+    ext_check_update_p = ext_sub.add_parser("check-update", help="检查扩展更新")
+    ext_check_update_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
+    ext_check_update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    ext_check_update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    add_auto_mirror_argument(ext_check_update_p)
+    ext_check_update_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: check_webui_updates(
+                webui_type="sd_webui",
+                webui_path=args.sd_webui_path,
+                include_kernel=False,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
             )
         )
     )

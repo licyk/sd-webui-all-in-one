@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable, cast
 
-from sd_webui_all_in_one.api_server.adapters import HOTPATCHER_API_ADAPTER, MODEL_API_ADAPTER, WEBUI_API_ADAPTERS, get_webui_adapter
+from sd_webui_all_in_one.api_server.adapters import HOTPATCHER_API_ADAPTER, MODEL_API_ADAPTER, WEBUI_API_ADAPTERS, WebUiApiType, get_webui_adapter
 from sd_webui_all_in_one.api_server.server import ApiMethodRegistry, ApiMethodSpec, ApiTaskContext, ApiTaskRegistry
 from sd_webui_all_in_one.base_manager import fooocus_base, sd_trainer_base, sd_webui_base
 from sd_webui_all_in_one.env_check import check_torch_version_status
@@ -42,7 +42,14 @@ def _options(params: dict[str, Any]) -> dict[str, Any]:
 
 
 def _adapter(params: dict[str, Any]):
-    return get_webui_adapter(_require_str(params, "webui_type"))
+    return get_webui_adapter(_webui_type(params))
+
+
+def _webui_type(params: dict[str, Any]) -> WebUiApiType:
+    value = _require_str(params, "webui_type")
+    if value not in WEBUI_API_ADAPTERS:
+        raise ValueError(f"Unsupported webui_type: {value}")
+    return cast(WebUiApiType, value)
 
 
 def _webui_path(params: dict[str, Any]) -> Path:
@@ -401,6 +408,18 @@ def version_update(params: dict[str, Any], context: ApiTaskContext) -> dict[str,
     result = _adapter(params).update(_webui_path(params))
     context.set_progress(100, "done")
     return result
+
+
+def webui_check_updates(params: dict[str, Any]) -> dict[str, Any]:
+    """检查 WebUI 内核和扩展更新。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 更新检查结果。
+    """
+    return _adapter(params).check_updates(_webui_path(params), options=_options(params))
 
 
 def snapshot_create(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
@@ -1095,6 +1114,7 @@ def get_default_methods() -> ApiMethodRegistry:
     """
     return {
         "version.status": _sync_spec("version.status", version_status, "Inspect WebUI kernel repository status."),
+        "webui.check_updates": _sync_spec("webui.check_updates", webui_check_updates, "Check WebUI kernel and extension updates.", WEBUI_REQUEST_SCHEMA),
         "version.branches": _sync_spec("version.branches", version_branches, "List repository branches for a WebUI kernel."),
         "version.commits": _sync_spec("version.commits", version_commits, "List repository commits for a WebUI kernel."),
         "version.branch_presets": _sync_spec(

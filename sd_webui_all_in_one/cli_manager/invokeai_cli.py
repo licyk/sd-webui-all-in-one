@@ -54,6 +54,7 @@ from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     restore_snapshot,
 )
 from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
+from sd_webui_all_in_one.cli_manager.update_status import check_webui_updates
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_CATEGORY_LIST,
     PyTorchDeviceTypeCategory,
@@ -808,6 +809,25 @@ def register_invokeai(
         )
     )
 
+    # check-update
+    check_update_p = invoke_sub.add_parser("check-update", help="检查 InvokeAI 内核和扩展更新")
+    check_update_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, dest="invokeai_path", help="InvokeAI 根目录")
+    check_update_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
+    check_update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    check_update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    add_auto_mirror_argument(check_update_p)
+    check_update_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: check_webui_updates(
+                webui_type="invokeai",
+                webui_path=args.invokeai_path,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
+    )
+
     # snapshot
     snapshot_p = invoke_sub.add_parser("snapshot", help="生成 InvokeAI 环境快照")
     snapshot_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, dest="invokeai_path", help="InvokeAI 根目录")
@@ -1003,6 +1023,24 @@ def register_invokeai(
                 custom_github_mirror=args.custom_github_mirror,
                 snapshot_enabled=args.snapshot_enabled,
                 snapshot_dir=args.snapshot_dir,
+            )
+        )
+    )
+
+    # custom-node check-update
+    node_check_update_p = node_sub.add_parser("check-update", help="检查扩展更新")
+    node_check_update_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, dest="invokeai_path", help="InvokeAI 根目录")
+    node_check_update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    node_check_update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    add_auto_mirror_argument(node_check_update_p)
+    node_check_update_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: check_webui_updates(
+                webui_type="invokeai",
+                webui_path=args.invokeai_path,
+                include_kernel=False,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
             )
         )
     )

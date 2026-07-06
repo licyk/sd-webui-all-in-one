@@ -248,6 +248,69 @@ def test_filter_extension_index_by_keyword_and_tag():
     assert [item.name for item in filter_extension_index(registry_items, "registry author")] == ["Registry Node"]
 
 
+def test_check_repository_update_reports_ahead_behind(monkeypatch, tmp_path):
+    repo_path = tmp_path / "repo"
+    state = repository_inspector.RepositoryState(
+        path=repo_path,
+        is_git_repo=True,
+        name="repo",
+        branch="main",
+        commit="local",
+    )
+
+    def fake_git_output(path, *args, custom_env=None):
+        assert path == repo_path
+        if args == ("status", "--porcelain"):
+            return " M file.py"
+        if args == ("rev-parse", "HEAD"):
+            return "a" * 40
+        if args == ("rev-parse", "origin/main"):
+            return "b" * 40
+        if args == ("rev-list", "--left-right", "--count", "HEAD...origin/main"):
+            return "1\t3"
+        raise AssertionError(args)
+
+    monkeypatch.setattr(version_manager, "inspect_repository", lambda path: state)
+    monkeypatch.setattr(version_manager, "fetch_repository", lambda *args, **kwargs: None)
+    monkeypatch.setattr(version_manager, "_resolve_update_remote_ref", lambda path, branch: "origin/main")
+    monkeypatch.setattr(version_manager, "_run_git_output", fake_git_output)
+
+    status = version_manager.check_repository_update(repo_path, use_github_mirror=True, custom_github_mirror="https://mirror.example")
+
+    assert status.has_update is True
+    assert status.ahead == 1
+    assert status.behind == 3
+    assert status.is_dirty is True
+    assert status.current_commit == "a" * 40
+    assert status.remote_commit == "b" * 40
+
+
+def test_extension_manager_check_updates_keeps_non_git_entries(monkeypatch, tmp_path):
+    manager = version_manager.ExtensionManager(
+        tmp_path,
+        "extensions",
+        is_enabled=lambda _name, _path: True,
+        set_enabled=lambda _name, _enabled: None,
+    )
+    git_ext = version_manager.ManagedExtension("git-ext", tmp_path / "extensions" / "git-ext", True, True)
+    file_ext = version_manager.ManagedExtension("file-ext", tmp_path / "extensions" / "file-ext.py", True, False, error="非 Git 仓库")
+
+    monkeypatch.setattr(manager, "list_extensions", lambda: [git_ext, file_ext])
+    monkeypatch.setattr(
+        version_manager,
+        "check_repository_update",
+        lambda path, **_kwargs: version_manager.RepositoryUpdateStatus(name=path.name, path=path, is_git_repo=True, has_update=True, behind=2),
+    )
+
+    result = manager.check_updates()
+
+    assert [item.name for item in result] == ["git-ext", "file-ext"]
+    assert result[0].has_update is True
+    assert result[0].behind == 2
+    assert result[1].is_git_repo is False
+    assert result[1].error == "非 Git 仓库"
+
+
 def test_parse_comfyui_custom_node_index_git_and_copy():
     items = parse_comfyui_custom_node_index(
         {

@@ -40,6 +40,7 @@ from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     restore_snapshot,
 )
 from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
+from sd_webui_all_in_one.cli_manager.update_status import check_webui_updates
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
@@ -634,6 +635,24 @@ def register_sd_scripts(
                 custom_github_mirror=args.custom_github_mirror,
                 snapshot_enabled=args.snapshot_enabled,
                 snapshot_dir=args.snapshot_dir,
+            )
+        )
+    )
+
+    # check-update
+    check_update_p = scripts_sub.add_parser("check-update", help="检查 SD Scripts 内核更新")
+    check_update_p.add_argument("--sd-scripts-path", type=normalized_filepath, required=False, default=SD_SCRIPTS_ROOT_PATH, dest="sd_scripts_path", help="SD Scripts 根目录")
+    check_update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    check_update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    add_auto_mirror_argument(check_update_p)
+    check_update_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: check_webui_updates(
+                webui_type="sd_scripts",
+                webui_path=args.sd_scripts_path,
+                include_extensions=False,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
             )
         )
     )
