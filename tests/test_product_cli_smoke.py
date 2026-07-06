@@ -261,6 +261,31 @@ def test_sd_trainer_cli_accepts_next_branch(monkeypatch, tmp_path):
     )
 
 
+def test_qwen_tts_webui_cli_install_uses_standard_model_options(monkeypatch, tmp_path):
+    parser = _parser(qwen_tts_webui_cli.register_qwen_tts_webui)
+    calls = []
+
+    monkeypatch.setattr(qwen_tts_webui_cli, "install", lambda **kwargs: calls.append(kwargs))
+
+    args = parser.parse_args(
+        [
+            "qwen-tts-webui",
+            "install",
+            "--qwen-tts-webui-path",
+            str(tmp_path),
+            "--no-auto-mirror",
+            "--no-pre-download-model",
+            "--model-resource",
+            "huggingface",
+        ]
+    )
+    args.func(args)
+
+    assert calls[-1]["qwen_tts_webui_path"] == tmp_path
+    assert calls[-1]["no_pre_download_model"] is True
+    assert calls[-1]["model_download_resource_type"] == "huggingface"
+
+
 @pytest.mark.parametrize(
     ("module", "register", "root", "path_arg", "path_key", "branch"),
     [

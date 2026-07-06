@@ -101,6 +101,10 @@ PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 "@)][switch]$NoCleanCache,
 
     [Parameter(HelpMessage=@"
+安装 Qwen TTS WebUI 时跳过预下载模型
+"@)][switch]$NoPreDownloadModel,
+
+    [Parameter(HelpMessage=@"
 不使用 ModelScope 下载模型, 使用 Hugging Face 下载模型
 "@)][switch]$DisableModelMirror,
 
@@ -509,6 +513,17 @@ function Set-ModelMirror {
 }
 
 
+# 设置预下载模型状态
+function Set-ModelDownload {
+    [CmdletBinding()]
+    param ([System.Collections.ArrayList]$ArrayList)
+    if (($script:NoPreDownloadModel) -or (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_model_download.txt"))) {
+        Write-Log "检测到 disable_model_download.txt 配置文件 / -NoPreDownloadModel 命令行参数, 已禁用预下载模型"
+        $ArrayList.Add("--no-pre-download-model") | Out-Null
+    }
+}
+
+
 # 设置 uv 的使用状态
 function Set-uv {
     [CmdletBinding()]
@@ -557,6 +572,7 @@ function Get-LaunchCoreArgs {
     Set-PyPIMirror $launch_params
     Set-Proxy
     Set-GithubMirror $launch_params
+    Set-ModelDownload $launch_params
     Set-ModelMirror $launch_params
     if ($script:PyTorchMirrorType) {
         $launch_params.Add("--pytorch-mirror-type") | Out-Null
@@ -2998,6 +3014,7 @@ param (
     [switch]`$DisableUV,
     [switch]`$DisableGithubMirror,
     [string]`$UseCustomGithubMirror,
+    [switch]`$NoPreDownloadModel,
     [string]`$CorePrefix,
     [switch]`$RestoreFromSnapshot,
     [string]`$SnapshotPath,
@@ -3178,6 +3195,10 @@ function Get-LocalSetting {
 
     if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_uv.txt`")) -or (`$script:DisableUV)) {
         `$arg.Add(`"-DisableUV`", `$true)
+    }
+
+    if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_model_download.txt`")) -or (`$script:NoPreDownloadModel)) {
+        `$arg.Add(`"-NoPreDownloadModel`", `$true)
     }
 
     if ((Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_gh_mirror.txt`")) -or (`$script:DisableGithubMirror)) {
@@ -4300,7 +4321,8 @@ function Main {
             @{ id=13; n=`"启动前环境检测`"; v=`$(Get-ToggleStatus `"disable_check_env.txt`" `"启用`" `"禁用`" `$true) },
             @{ id=14; n=`"Installer 内核路径前缀`"; v=`$(Get-TextStatus `"core_prefix.txt`" `"自动`") },
             @{ id=15; n=`"自动快照`"; v=`$(Get-ToggleStatus `"disable_snapshot.txt`" `"启用`" `"禁用`" `$true) },
-            @{ id=16; n=`"打开 Hotpatcher 补丁系统 GUI`" }
+            @{ id=16; n=`"预下载模型`"; v=`$(Get-ToggleStatus `"disable_model_download.txt`" `"启用`" `"禁用`" `$true) },
+            @{ id=17; n=`"打开 Hotpatcher 补丁系统 GUI`" }
         )
 
         `$menu | ForEach-Object {
@@ -4310,7 +4332,7 @@ function Main {
                 Write-Log `"`$(`$_.id). `$(`$_.n)`"
             }
         }
-        Write-Log `"17. 立即检查 Installer 更新 | 18. 打开在线文档 | 19. 退出设置`"
+        Write-Log `"18. 立即检查 Installer 更新 | 19. 打开在线文档 | 20. 退出设置`"
         Write-Log `"提示: 输入菜单编号后回车`"
 
         `$choice = Get-UserInput
@@ -4331,10 +4353,11 @@ function Main {
             `"13`" { Set-ToggleSetting `"disable_check_env.txt`" `"启动前环境检测`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_check_env.txt`")) }
             `"14`" { Update-Core-Prefix }
             `"15`" { Set-ToggleSetting `"disable_snapshot.txt`" `"自动快照`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_snapshot.txt`")) }
-            `"16`" { Open-Hotpatcher-Gui }
-            `"17`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
-            `"18`" { Start-Process `"https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/`" }
-            `"19`" { Write-Log `"退出设置菜单`"; return }
+            `"16`" { Set-ToggleSetting `"disable_model_download.txt`" `"预下载模型`" (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_model_download.txt`")) }
+            `"17`" { Open-Hotpatcher-Gui }
+            `"18`" { Remove-Item (Join-NormalizedPath `$PSScriptRoot `"update_time.txt`") -Force -ErrorAction SilentlyContinue; Update-Installer -DisableRestart }
+            `"19`" { Start-Process `"https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui/`" }
+            `"20`" { Write-Log `"退出设置菜单`"; return }
         }
     }
     if (!(`$script:NoPause)) { Read-Host | Out-Null }
@@ -4819,6 +4842,11 @@ function Copy-InstallerConfig {
     if ((!($script:DisableUV)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_uv.txt"))) {
         Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_uv.txt") -Destination $script:InstallPath -Force
         Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_uv.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_uv.txt")"
+    }
+
+    if ((!($script:NoPreDownloadModel)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_model_download.txt"))) {
+        Copy-Item -Path (Join-NormalizedPath $PSScriptRoot "disable_model_download.txt") -Destination $script:InstallPath -Force
+        Write-Log "$(Join-NormalizedPath $PSScriptRoot "disable_model_download.txt") -> $(Join-NormalizedPath $script:InstallPath "disable_model_download.txt")"
     }
 
     if ((!($script:DisableGithubMirror)) -and (Test-Path (Join-NormalizedPath $PSScriptRoot "disable_gh_mirror.txt"))) {

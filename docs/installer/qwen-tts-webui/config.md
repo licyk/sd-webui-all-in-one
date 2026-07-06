@@ -32,6 +32,7 @@ Qwen TTS WebUI Installer 生成的管理脚本默认启用 CLI 自动镜像源�
 | `disable_check_env.txt` | 禁用启动前环境检查。 | 只建议临时排查时使用，可能跳过问题检测。 |
 | `core_prefix.txt` | 指定 Installer 管理的 Qwen TTS WebUI 内核目录名、相对路径或绝对路径。 | 用于管理外部已有安装、整合包目录，或内核目录名不是默认值的情况。 |
 | `disable_snapshot.txt` | 禁用安装结果快照和管理脚本操作前自动快照。 | 空文件开关。 |
+| `disable_model_download.txt` | 安装 Qwen TTS WebUI 时跳过预下载模型。 | 等同于 Installer 的 `-NoPreDownloadModel` 参数，可由 `settings.ps1` 的“预下载模型”菜单生成。 |
 | `disable_model_mirror.txt` | 将 Python CLI 的模型下载源偏好从 ModelScope 切换为 Hugging Face。 | Qwen TTS WebUI Installer 兼容该配置和 `-DisableModelMirror` 参数，但当前不生成 `download_models.ps1`，`settings.ps1` 也不提供模型下载源菜单，日常一般不需要手动创建。 |
 
 这些配置文件不一定都会出现；只有启用过对应设置、安装器复制了设置，或管理脚本自动生成默认配置时才会出现。

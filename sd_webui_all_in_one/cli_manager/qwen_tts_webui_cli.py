@@ -64,6 +64,7 @@ def install(
     use_uv: bool = True,
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
+    no_pre_download_model: bool = False,
     model_download_resource_type: ModelDownloadUrlType | None = "modelscope",
 ) -> None:
     """安装 Qwen TTS WebUI
@@ -85,8 +86,10 @@ def install(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
+        no_pre_download_model (bool):
+            是否禁用预下载模型
         model_download_resource_type (ModelDownloadUrlType | None):
-            默认配置资源来源
+            下载模型使用的下载源
     """
     install_qwen_tts_webui(
         qwen_tts_webui_path=qwen_tts_webui_path,
@@ -97,6 +100,7 @@ def install(
         use_uv=use_uv,
         use_github_mirror=use_github_mirror,
         custom_github_mirror=custom_github_mirror,
+        no_pre_download_model=no_pre_download_model,
         model_download_resource_type=model_download_resource_type,
     )
 
@@ -539,7 +543,8 @@ def register_qwen_tts_webui(
     install_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
     install_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
-    install_p.add_argument("--model-resource", default="modelscope", dest="model_download_resource_type", choices=MODEL_DOWNLOAD_URL_TYPE_LIST, help="默认配置资源来源")
+    install_p.add_argument("--no-pre-download-model", action="store_true", dest="no_pre_download_model", help="禁用预下载模型")
+    install_p.add_argument("--model-resource", default="modelscope", dest="model_download_resource_type", choices=MODEL_DOWNLOAD_URL_TYPE_LIST, help="下载模型使用的下载源")
     add_auto_mirror_argument(install_p)
     install_p.set_defaults(
         func=with_auto_mirror(
@@ -552,6 +557,7 @@ def register_qwen_tts_webui(
                 use_uv=args.use_uv,
                 use_github_mirror=args.use_github_mirror,
                 custom_github_mirror=args.custom_github_mirror,
+                no_pre_download_model=args.no_pre_download_model,
                 model_download_resource_type=args.model_download_resource_type,
             )
         )

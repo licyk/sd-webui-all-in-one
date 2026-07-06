@@ -494,6 +494,18 @@ def test_launch_installer_templates_forward_snapshot_rebuild_args():
         assert '`$arg.Add(`"-DisableSnapshot`", `$true)' in launch_installer_template, script_path
 
 
+def test_qwen_tts_installer_uses_standard_model_download_options():
+    installer = _read_installer("installer/qwen_tts_webui_installer.ps1")
+
+    assert "[switch]$NoPreDownloadModel" in installer
+    assert "[switch]`$NoPreDownloadModel" in installer
+    assert "function Set-ModelDownload" in installer
+    assert "--no-pre-download-model" in installer
+    assert "disable_model_download.txt" in installer
+    assert '`$arg.Add(`"-NoPreDownloadModel`", `$true)' in installer
+    assert '`"预下载模型`"' in installer
+
+
 def test_installer_auto_snapshot_disable_is_wired():
     expected_snapshot_commands = {
         "installer/stable_diffusion_webui_installer.ps1": [

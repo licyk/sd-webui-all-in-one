@@ -63,6 +63,8 @@ def test_product_config_installers_skip_existing_and_reject_unknown(monkeypatch,
     with pytest.raises(ValueError):
         fooocus_base.install_fooocus_config(tmp_path, cast(Any, "unknown"))
 
+    qwen_tts_webui_base.install_qwen_tts_webui_config(tmp_path, False)
+
     with pytest.raises(ValueError):
         qwen_tts_webui_base.install_qwen_tts_webui_config(tmp_path, cast(Any, "unknown"))
 
@@ -116,6 +118,14 @@ def test_install_qwen_tts_webui_orchestrates_without_external_side_effects(monke
     assert calls[2][1]["path"] == tmp_path / "requirements.txt"
     assert calls[2][1]["cwd"] == tmp_path
     assert calls[3] == ("config", {"qwen_tts_webui_path": tmp_path, "download_resource_type": "huggingface"})
+
+    calls.clear()
+    qwen_tts_webui_base.install_qwen_tts_webui(
+        tmp_path,
+        no_pre_download_model=True,
+        model_download_resource_type="huggingface",
+    )
+    assert calls[-1] == ("config", {"qwen_tts_webui_path": tmp_path, "download_resource_type": False})
 
 
 def test_install_comfyui_orchestrates_extensions_models_and_missing_requirements(monkeypatch, tmp_path):

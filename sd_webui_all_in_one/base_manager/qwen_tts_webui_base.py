@@ -75,6 +75,9 @@ def install_qwen_tts_webui_config(
         ValueError:
             未知的下载配置源类型时抛出。
     """
+    if not download_resource_type:
+        return
+
     preset_path = qwen_tts_webui_path / "config.json"
     if download_resource_type == "huggingface":
         preset = QWEN_TTS_WEBUI_PRESET_HF_PATH
@@ -96,6 +99,7 @@ def install_qwen_tts_webui(
     use_uv: bool = True,
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
+    no_pre_download_model: bool = False,
     model_download_resource_type: ModelDownloadUrlType | None = "modelscope",
 ) -> None:
     """安装 Qwen TTS WebUI
@@ -117,8 +121,10 @@ def install_qwen_tts_webui(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
+        no_pre_download_model (bool):
+            是否禁用预下载模型
         model_download_resource_type (ModelDownloadUrlType | None):
-            默认配置资源来源
+            下载模型使用的下载源
 
     Raises:
         ValueError:
@@ -178,7 +184,7 @@ def install_qwen_tts_webui(
         cwd=qwen_tts_webui_path,
     )
 
-    config_download_resource_type: ModelDownloadUrlType | bool = model_download_resource_type if model_download_resource_type is not None else False
+    config_download_resource_type: ModelDownloadUrlType | bool = False if no_pre_download_model or model_download_resource_type is None else model_download_resource_type
     install_qwen_tts_webui_config(
         qwen_tts_webui_path=qwen_tts_webui_path,
         download_resource_type=config_download_resource_type,
