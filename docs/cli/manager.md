@@ -212,6 +212,7 @@ pending,running,succeeded,failed,canceled
 - `launch.prepare`：准备 WebUI 启动脚本、启动参数和环境变量，不实际启动进程。
 - `system.pytorch_device_type`：读取当前设备支持的 PyTorch 类型；`options.category=true` 时返回设备大类，否则返回细分类型列表。
 - `system.pytorch_library`：读取内置 PyTorch 版本组合列表；可用 `options.dtype` 和 `options.supported` 过滤。
+- `system.proxy`：读取当前系统代理地址；`options.test_connectivity=true` 时额外测试代理连通性。
 - `model.root`：读取文件型 WebUI 的模型根目录信息。
 - `model.library`：按 WebUI 类型读取内置模型下载库条目。
 - `model.directories`：列出模型根目录内的文件夹。

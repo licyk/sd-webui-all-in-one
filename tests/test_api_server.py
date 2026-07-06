@@ -361,7 +361,7 @@ def test_default_api_registry_includes_full_version_snapshot_extension_surface()
     server = create_api_server(port=0)
     try:
         catalog = server.method_catalog()
-        assert {"version.status", "snapshot.list", "snapshot.delete", "extension.list", "extension.index", "extension.versions", "environment.dependencies", "environment.pytorch_version", "package.versions", "launch.prepare"}.issubset(catalog["methods"])
+        assert {"version.status", "snapshot.list", "snapshot.delete", "extension.list", "extension.index", "extension.versions", "environment.dependencies", "environment.pytorch_version", "package.versions", "launch.prepare", "system.proxy"}.issubset(catalog["methods"])
         assert {
             "extension.set_enabled",
             "extension.install",
@@ -474,6 +474,22 @@ def test_default_api_registry_dispatches_environment_pytorch_version(monkeypatch
     result = registry.environment_pytorch_version({})
 
     assert result == {"pytorch": {"status": "compatible", "is_compatible": True}}
+
+
+def test_default_api_registry_dispatches_system_proxy(monkeypatch):
+    calls = []
+    monkeypatch.setattr(registry, "get_system_proxy_address", lambda: "http://127.0.0.1:7890")
+    monkeypatch.setattr(registry, "test_proxy_connectivity", lambda address, timeout=5: calls.append((address, timeout)) or True)
+
+    result = registry.system_proxy({"options": {"test_connectivity": True, "timeout": 2}})
+
+    assert result == {
+        "address": "http://127.0.0.1:7890",
+        "detected": True,
+        "connectivity_tested": True,
+        "connectivity": True,
+    }
+    assert calls == [("http://127.0.0.1:7890", 2)]
 
 
 def test_webui_adapter_lists_and_deletes_snapshots(tmp_path):

@@ -10,6 +10,7 @@ from sd_webui_all_in_one.api_server.server import ApiMethodRegistry, ApiMethodSp
 from sd_webui_all_in_one.base_manager import fooocus_base, sd_trainer_base, sd_webui_base
 from sd_webui_all_in_one.env_check import check_torch_version_status
 from sd_webui_all_in_one.model_downloader import SUPPORTED_WEBUI_LIST, SupportedWebUiType, export_model_list
+from sd_webui_all_in_one.proxy import get_system_proxy_address, test_proxy_connectivity
 from sd_webui_all_in_one.pytorch_manager import auto_detect_pytorch_device_category, export_pytorch_list, get_available_pytorch_device_type
 
 
@@ -325,6 +326,27 @@ def pytorch_library(params: dict[str, Any]) -> dict[str, Any]:
         supported = bool(options["supported"])
         items = [item for item in items if item.get("supported") is supported]
     return {"count": len(items), "items": items}
+
+
+def system_proxy(params: dict[str, Any]) -> dict[str, Any]:
+    """获取当前系统代理地址。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 系统代理信息。
+    """
+    options = _options(params)
+    address = get_system_proxy_address()
+    test_connectivity = bool(options.get("test_connectivity", False))
+    connectivity = test_proxy_connectivity(address, timeout=int(options.get("timeout", 5))) if address is not None and test_connectivity else None
+    return {
+        "address": address,
+        "detected": address is not None,
+        "connectivity_tested": test_connectivity,
+        "connectivity": connectivity,
+    }
 
 
 def version_switch_branch(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
@@ -1116,6 +1138,7 @@ def get_default_methods() -> ApiMethodRegistry:
             pytorch_library,
             "List built-in PyTorch version combinations.",
         ),
+        "system.proxy": _sync_spec("system.proxy", system_proxy, "Get current system proxy address."),
         "model.root": _sync_spec("model.root", model_root, "Inspect file model root."),
         "model.library": _sync_spec(
             "model.library",
