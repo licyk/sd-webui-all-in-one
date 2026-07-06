@@ -2,6 +2,7 @@
 
 import sys
 from collections.abc import Sequence
+from typing import Literal, TypedDict
 
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
@@ -21,6 +22,49 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+
+TorchVersionCheckStatus = Literal["missing", "cpu_with_gpu", "unsupported_type", "compatible"]
+"""PyTorch 版本检查状态。"""
+
+
+class TorchVersionCheckResult(TypedDict):
+    """PyTorch 版本检查结果。
+
+    Attributes:
+        available_types (list[str]): 当前设备支持的 PyTorch 类型列表。
+        gpu_list (list[str]): 当前检测到的 GPU 列表。
+        has_gpu (bool): 当前环境是否检测到可用 GPU。
+        installed_version (str | None): 当前环境安装的 PyTorch 版本。
+        installed_type (str | None): 当前环境安装的 PyTorch 类型。
+        status (TorchVersionCheckStatus): PyTorch 版本检查状态。
+        is_compatible (bool): 当前 PyTorch 版本是否适合当前设备。
+        message (str): 检查结果说明。
+    """
+
+    available_types: list[str]
+    """当前设备支持的 PyTorch 类型列表。"""
+
+    gpu_list: list[str]
+    """当前检测到的 GPU 列表。"""
+
+    has_gpu: bool
+    """当前环境是否检测到可用 GPU。"""
+
+    installed_version: str | None
+    """当前环境安装的 PyTorch 版本。"""
+
+    installed_type: str | None
+    """当前环境安装的 PyTorch 类型。"""
+
+    status: TorchVersionCheckStatus
+    """PyTorch 版本检查状态。"""
+
+    is_compatible: bool
+    """当前 PyTorch 版本是否适合当前设备。"""
+
+    message: str
+    """检查结果说明。"""
 
 
 def _is_rocm_version_compatible(
@@ -78,33 +122,98 @@ def _is_ipex_version(
     return all(i in available_types for i in ["xpu", "ipex_legacy_arc"]) and torch_type in ["gite9ebda2", "git7bcf7da", "cxx11.abi"]
 
 
-def check_torch_version() -> None:
-    """检查 PyTorch 版本可用性"""
-    logger.info("检查当前环境中的 PyTorch 版本中")
-    available_types = get_available_pytorch_device_type()
-    gpu_list = get_gpu_list()
+def check_torch_version_status() -> TorchVersionCheckResult:
+    """检查 PyTorch 版本可用性并返回结构化结果。
+
+    Returns:
+        TorchVersionCheckResult: PyTorch 版本检查结果。
+    """
+    available_types = [str(item) for item in get_available_pytorch_device_type()]
+    raw_gpu_list = get_gpu_list()
+    gpu_list = [str(item) for item in raw_gpu_list]
+    has_gpu = has_gpus(raw_gpu_list)
     torch_data = load_source_directly("torch.version") or {}
     torch_ver: str | None = torch_data.get("__version__")
     if torch_ver is None:
-        logger.warning("当前环境中未安装 PyTorch, 这将导致无法正常进行推理或者训练任务, 请安装对应版本的 PyTorch 后再试")
-        return
+        return {
+            "available_types": available_types,
+            "gpu_list": gpu_list,
+            "has_gpu": has_gpu,
+            "installed_version": None,
+            "installed_type": None,
+            "status": "missing",
+            "is_compatible": False,
+            "message": "当前环境中未安装 PyTorch, 这将导致无法正常进行推理或者训练任务, 请安装对应版本的 PyTorch 后再试",
+        }
 
     torch_type = torch_ver.split("+")[-1] if "+" in torch_ver else "all"
-    if has_gpus(gpu_list):
+    if has_gpu:
         if torch_type in ("all", "cpu"):
-            logger.warning("当前环境使用的 PyTorch 类型为 CPU, 而当前设备有可用的 GPU, 可尝试重装适配 GPU 的 PyTorch 以加速推理")
-            return
+            return {
+                "available_types": available_types,
+                "gpu_list": gpu_list,
+                "has_gpu": has_gpu,
+                "installed_version": torch_ver,
+                "installed_type": torch_type,
+                "status": "cpu_with_gpu",
+                "is_compatible": False,
+                "message": "当前环境使用的 PyTorch 类型为 CPU, 而当前设备有可用的 GPU, 可尝试重装适配 GPU 的 PyTorch 以加速推理",
+            }
 
         if torch_type not in available_types:
             if _is_rocm_version_compatible(torch_type, available_types) or _is_ipex_version(torch_type, available_types):
-                logger.info("当前环境中的 PyTorch 无版本问题")
-                return
+                return {
+                    "available_types": available_types,
+                    "gpu_list": gpu_list,
+                    "has_gpu": has_gpu,
+                    "installed_version": torch_ver,
+                    "installed_type": torch_type,
+                    "status": "compatible",
+                    "is_compatible": True,
+                    "message": "当前环境中的 PyTorch 无版本问题",
+                }
 
-            logger.warning(
-                "当前设备支持的 PyTorch 类型有 %s, 而当前环境安装的 PyTorch 类型为 %s, 该类型并不支持当前设备, 可能会导致性能下降的问题, 可尝试重新安装对应版本的 PyTorch",
-                available_types,
-                torch_type,
-            )
-            return
+            return {
+                "available_types": available_types,
+                "gpu_list": gpu_list,
+                "has_gpu": has_gpu,
+                "installed_version": torch_ver,
+                "installed_type": torch_type,
+                "status": "unsupported_type",
+                "is_compatible": False,
+                "message": "当前设备支持的 PyTorch 类型和当前环境安装的 PyTorch 类型不匹配, 该类型并不支持当前设备, 可能会导致性能下降的问题, 可尝试重新安装对应版本的 PyTorch",
+            }
 
-    logger.info("当前环境中的 PyTorch 无版本问题")
+    return {
+        "available_types": available_types,
+        "gpu_list": gpu_list,
+        "has_gpu": has_gpu,
+        "installed_version": torch_ver,
+        "installed_type": torch_type,
+        "status": "compatible",
+        "is_compatible": True,
+        "message": "当前环境中的 PyTorch 无版本问题",
+    }
+
+
+def check_torch_version() -> None:
+    """检查 PyTorch 版本可用性"""
+    logger.info("检查当前环境中的 PyTorch 版本中")
+    result = check_torch_version_status()
+    if result["status"] == "missing":
+        logger.warning(result["message"])
+        return
+
+    if result["status"] == "cpu_with_gpu":
+        logger.warning(result["message"])
+        return
+
+    if result["status"] == "unsupported_type":
+        logger.warning(
+            "当前设备支持的 PyTorch 类型有 %s, 而当前环境安装的 PyTorch 类型为 %s, 该类型并不支持当前设备, 可能会导致性能下降的问题, 可尝试重新安装对应版本的 PyTorch",
+            result["available_types"],
+            result["installed_type"],
+        )
+        return
+
+    logger.info(result["message"])

@@ -361,7 +361,7 @@ def test_default_api_registry_includes_full_version_snapshot_extension_surface()
     server = create_api_server(port=0)
     try:
         catalog = server.method_catalog()
-        assert {"version.status", "snapshot.list", "snapshot.delete", "extension.list", "extension.index", "extension.versions", "environment.dependencies", "package.versions", "launch.prepare"}.issubset(catalog["methods"])
+        assert {"version.status", "snapshot.list", "snapshot.delete", "extension.list", "extension.index", "extension.versions", "environment.dependencies", "environment.pytorch_version", "package.versions", "launch.prepare"}.issubset(catalog["methods"])
         assert {
             "extension.set_enabled",
             "extension.install",
@@ -466,6 +466,14 @@ def test_default_api_registry_dispatches_environment_dependencies(monkeypatch, t
 
     assert result == {"dependencies": {"has_missing_requires": False, "has_conflict_requires": False}}
     assert calls == [tmp_path]
+
+
+def test_default_api_registry_dispatches_environment_pytorch_version(monkeypatch):
+    monkeypatch.setattr(registry, "check_torch_version_status", lambda: {"status": "compatible", "is_compatible": True})
+
+    result = registry.environment_pytorch_version({})
+
+    assert result == {"pytorch": {"status": "compatible", "is_compatible": True}}
 
 
 def test_webui_adapter_lists_and_deletes_snapshots(tmp_path):

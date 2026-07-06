@@ -18,7 +18,7 @@ from sd_webui_all_in_one.env_check.fix_sd_webui_invaild_repo import fix_stable_d
 from sd_webui_all_in_one.env_check.fix_torch import fix_torch_libomp
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check import check_onnxruntime_gpu
 from sd_webui_all_in_one.env_check.sd_webui_extension_dependency_installer import install_extension_requirements
-from sd_webui_all_in_one.env_check.check_torch_version import check_torch_version
+from sd_webui_all_in_one.env_check.check_torch_version import TorchVersionCheckResult, TorchVersionCheckStatus, check_torch_version, check_torch_version_status
 
 __all__ = [
     "ComfyUIConflictAnalysisResult",
@@ -35,5 +35,8 @@ __all__ = [
     "fix_torch_libomp",
     "check_onnxruntime_gpu",
     "install_extension_requirements",
+    "TorchVersionCheckResult",
+    "TorchVersionCheckStatus",
     "check_torch_version",
+    "check_torch_version_status",
 ]

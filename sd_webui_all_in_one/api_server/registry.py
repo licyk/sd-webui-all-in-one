@@ -8,6 +8,7 @@ from typing import Any, Callable, cast
 from sd_webui_all_in_one.api_server.adapters import HOTPATCHER_API_ADAPTER, MODEL_API_ADAPTER, WEBUI_API_ADAPTERS, get_webui_adapter
 from sd_webui_all_in_one.api_server.server import ApiMethodRegistry, ApiMethodSpec, ApiTaskContext, ApiTaskRegistry
 from sd_webui_all_in_one.base_manager import fooocus_base, sd_trainer_base, sd_webui_base
+from sd_webui_all_in_one.env_check import check_torch_version_status
 from sd_webui_all_in_one.model_downloader import SUPPORTED_WEBUI_LIST, SupportedWebUiType, export_model_list
 from sd_webui_all_in_one.pytorch_manager import auto_detect_pytorch_device_category, export_pytorch_list, get_available_pytorch_device_type
 
@@ -239,6 +240,18 @@ def environment_dependencies(params: dict[str, Any]) -> dict[str, Any]:
         dict[str, Any]: 环境依赖检查结果。
     """
     return _adapter(params).check_environment_dependencies(_webui_path(params))
+
+
+def environment_pytorch_version(_params: dict[str, Any]) -> dict[str, Any]:
+    """检查当前环境中的 PyTorch 版本状态。
+
+    Args:
+        _params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: PyTorch 版本检查结果。
+    """
+    return {"pytorch": check_torch_version_status()}
 
 
 def package_versions(params: dict[str, Any]) -> dict[str, Any]:
@@ -1094,6 +1107,7 @@ def get_default_methods() -> ApiMethodRegistry:
         "extension.index": _sync_spec("extension.index", extension_index, "Fetch installable extension index items."),
         "extension.versions": _sync_spec("extension.versions", extension_versions, "List Comfy Registry extension versions."),
         "environment.dependencies": _sync_spec("environment.dependencies", environment_dependencies, "Check local environment dependency status."),
+        "environment.pytorch_version": _sync_spec("environment.pytorch_version", environment_pytorch_version, "Check current PyTorch version compatibility."),
         "package.versions": _sync_spec("package.versions", package_versions, "List PyPI package versions."),
         "launch.prepare": _sync_spec("launch.prepare", launch_prepare, "Prepare WebUI launch arguments and environment."),
         "system.pytorch_device_type": _sync_spec("system.pytorch_device_type", pytorch_device_type, "Get available PyTorch device types."),

@@ -40,6 +40,23 @@ def test_check_torch_version_handles_missing_cpu_and_compatible_gpu(monkeypatch)
     check_torch_version.check_torch_version()
 
 
+def test_check_torch_version_status_reports_structured_result(monkeypatch):
+    monkeypatch.setattr(check_torch_version, "get_available_pytorch_device_type", lambda: ["cu128"])
+    monkeypatch.setattr(check_torch_version, "get_gpu_list", lambda: ["gpu"])
+    monkeypatch.setattr(check_torch_version, "has_gpus", lambda _gpu_list: True)
+    monkeypatch.setattr(check_torch_version, "load_source_directly", lambda _name: {"__version__": "2.7.0+cu121"})
+
+    result = check_torch_version.check_torch_version_status()
+
+    assert result["available_types"] == ["cu128"]
+    assert result["gpu_list"] == ["gpu"]
+    assert result["has_gpu"] is True
+    assert result["installed_version"] == "2.7.0+cu121"
+    assert result["installed_type"] == "cu121"
+    assert result["status"] == "unsupported_type"
+    assert result["is_compatible"] is False
+
+
 def test_check_torch_version_warning_reports_supported_type_before_installed_type(monkeypatch):
     warnings = []
     monkeypatch.setattr(check_torch_version, "get_available_pytorch_device_type", lambda: ["cu128"])
