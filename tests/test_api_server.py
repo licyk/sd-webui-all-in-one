@@ -361,7 +361,7 @@ def test_default_api_registry_includes_full_version_snapshot_extension_surface()
     server = create_api_server(port=0)
     try:
         catalog = server.method_catalog()
-        assert {"version.status", "snapshot.list", "snapshot.delete", "extension.list", "extension.index", "extension.versions", "package.versions", "launch.prepare"}.issubset(catalog["methods"])
+        assert {"version.status", "snapshot.list", "snapshot.delete", "extension.list", "extension.index", "extension.versions", "environment.dependencies", "package.versions", "launch.prepare"}.issubset(catalog["methods"])
         assert {
             "extension.set_enabled",
             "extension.install",
@@ -450,6 +450,22 @@ def test_default_api_registry_dispatches_launch_prepare(monkeypatch, tmp_path):
     assert result["launch"]["launch_script"] == "main.py"
     assert result["launch"]["launch_args"] == ["--listen"]
     assert calls == [(tmp_path, {"launch_args": ["--listen"]})]
+
+
+def test_default_api_registry_dispatches_environment_dependencies(monkeypatch, tmp_path):
+    calls = []
+
+    class FakeAdapter:
+        def check_environment_dependencies(self, webui_path):
+            calls.append(webui_path)
+            return {"dependencies": {"has_missing_requires": False, "has_conflict_requires": False}}
+
+    monkeypatch.setattr(registry, "get_webui_adapter", lambda webui_type: FakeAdapter())
+
+    result = registry.environment_dependencies({"webui_type": "comfyui", "webui_path": str(tmp_path)})
+
+    assert result == {"dependencies": {"has_missing_requires": False, "has_conflict_requires": False}}
+    assert calls == [tmp_path]
 
 
 def test_webui_adapter_lists_and_deletes_snapshots(tmp_path):

@@ -607,6 +607,26 @@ class WebUiApiAdapter:
             raise NotImplementedError(f"{self.display_name} does not support extension registry versions")
         return {"versions": _dataclass_list(fetch_comfy_registry_versions(node_id, timeout=timeout))}
 
+    def check_environment_dependencies(self, webui_path: Path) -> dict[str, Any]:
+        """检查环境依赖状态。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+
+        Returns:
+            dict[str, Any]: 环境依赖检查结果。
+
+        Raises:
+            TypeError: 检查结果序列化后不是对象时抛出。
+            NotImplementedError: 当前 WebUI 类型不支持环境依赖检查。
+        """
+        if self.webui_type != "comfyui":
+            raise NotImplementedError(f"{self.display_name} does not support environment dependency checks")
+        result = json_safe(comfyui_base.check_comfyui_custom_node_dependencies(webui_path))
+        if not isinstance(result, dict):
+            raise TypeError("Expected extension dependency result object")
+        return {"dependencies": result}
+
     def switch_registry_extension_version(self, webui_path: Path, name: str, version: str, use_uv: bool = True) -> dict[str, Any]:
         """切换 Comfy Registry 扩展版本。
 

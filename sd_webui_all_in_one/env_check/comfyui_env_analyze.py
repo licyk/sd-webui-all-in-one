@@ -86,6 +86,38 @@ ComfyUIEnvironmentComponent = dict[str, ComponentEnvironmentDetails]
 """ComfyUI 环境组件表字典"""
 
 
+class ComfyUIConflictAnalysisResult(TypedDict):
+    """ComfyUI 组件依赖检查结果。
+
+    Attributes:
+        components (ComfyUIEnvironmentComponent):
+            ComfyUI 组件环境信息。
+        requirement_paths (list[Path]):
+            需要安装或修复的依赖文件路径。
+        conflict_info (str):
+            冲突依赖文本说明。
+        has_missing_requires (bool):
+            是否存在缺失依赖。
+        has_conflict_requires (bool):
+            是否存在冲突依赖。
+    """
+
+    components: ComfyUIEnvironmentComponent
+    """ComfyUI 组件环境信息。"""
+
+    requirement_paths: list[Path]
+    """需要安装或修复的依赖文件路径。"""
+
+    conflict_info: str
+    """冲突依赖文本说明。"""
+
+    has_missing_requires: bool
+    """是否存在缺失依赖。"""
+
+    has_conflict_requires: bool
+    """是否存在冲突依赖。"""
+
+
 def create_comfyui_environment_dict(
     comfyui_path: Path,
 ) -> ComfyUIEnvironmentComponent:
@@ -631,6 +663,33 @@ def process_comfyui_env_analysis(
     return env_data, req_list, conflict_info
 
 
+def check_comfyui_component_dependencies(
+    comfyui_root_path: Path,
+) -> ComfyUIConflictAnalysisResult:
+    """检查 ComfyUI 组件依赖状态，不执行依赖修复。
+
+    Args:
+        comfyui_root_path (Path):
+            ComfyUI 根目录。
+
+    Returns:
+        ComfyUIConflictAnalysisResult: ComfyUI 组件依赖检查结果。
+
+    Raises:
+        FileNotFoundError: ComfyUI 依赖文件缺失 / 自定义节点文件夹未找到时抛出。
+    """
+    env_data, req_list, conflict_info = process_comfyui_env_analysis(comfyui_root_path)
+    has_missing_requires = any(details.get("has_missing_requires", False) for details in env_data.values())
+    has_conflict_requires = any(details.get("has_conflict_requires", False) for details in env_data.values())
+    return {
+        "components": env_data,
+        "requirement_paths": req_list,
+        "conflict_info": conflict_info,
+        "has_missing_requires": has_missing_requires,
+        "has_conflict_requires": has_conflict_requires,
+    }
+
+
 def comfyui_conflict_analyzer(
     comfyui_root_path: Path,
     install_conflict_component_requirement: bool = False,
@@ -657,7 +716,10 @@ def comfyui_conflict_analyzer(
             安装依赖出现错误时
     """
     logger.info("检测 ComfyUI 环境中")
-    env_data, req_list, conflict_info = process_comfyui_env_analysis(comfyui_root_path)
+    analysis = check_comfyui_component_dependencies(comfyui_root_path)
+    env_data = analysis["components"]
+    req_list = analysis["requirement_paths"]
+    conflict_info = analysis["conflict_info"]
 
     if logger.level <= 10:
         display_comfyui_environment_dict(env_data)

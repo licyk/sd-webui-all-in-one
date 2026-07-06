@@ -61,6 +61,23 @@ def test_process_comfyui_env_analysis_detects_conflicts_and_missing_paths(monkey
         analyzer.process_comfyui_env_analysis(tmp_path / "missing")
 
 
+def test_check_comfyui_component_dependencies_returns_structured_result(monkeypatch, tmp_path):
+    comfyui = tmp_path / "ComfyUI"
+    node = comfyui / "custom_nodes" / "node"
+    node.mkdir(parents=True)
+    (comfyui / "requirements.txt").write_text("numpy<2\n", encoding="utf-8")
+    (node / "requirements.txt").write_text("numpy>=2\nmissing-demo\n", encoding="utf-8")
+    monkeypatch.setattr(analyzer, "is_package_installed", lambda package: package != "missing-demo")
+
+    result = analyzer.check_comfyui_component_dependencies(comfyui)
+
+    assert result["has_missing_requires"] is True
+    assert result["has_conflict_requires"] is True
+    assert result["requirement_paths"] == [comfyui / "requirements.txt", node / "requirements.txt"]
+    assert result["components"]["node"]["missing_requires"] == ["missing-demo"]
+    assert "node: numpy>=2" in result["conflict_info"]
+
+
 def test_comfyui_conflict_analyzer_installs_needed_requirements_and_aggregates(monkeypatch, tmp_path):
     node_a = tmp_path / "custom_nodes" / "node-a"
     node_b = tmp_path / "custom_nodes" / "node-b"

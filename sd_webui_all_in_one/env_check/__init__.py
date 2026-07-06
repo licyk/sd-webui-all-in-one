@@ -1,7 +1,9 @@
 """环境检查模块"""
 
 from sd_webui_all_in_one.env_check.comfyui_env_analyze import (
+    ComfyUIConflictAnalysisResult,
     comfyui_conflict_analyzer,
+    check_comfyui_component_dependencies,
     check_comfyui_manager_dependence,
 )
 from sd_webui_all_in_one.env_check.fix_accelerate_bin import check_accelerate_bin
@@ -19,7 +21,9 @@ from sd_webui_all_in_one.env_check.sd_webui_extension_dependency_installer impor
 from sd_webui_all_in_one.env_check.check_torch_version import check_torch_version
 
 __all__ = [
+    "ComfyUIConflictAnalysisResult",
     "comfyui_conflict_analyzer",
+    "check_comfyui_component_dependencies",
     "check_comfyui_manager_dependence",
     "check_accelerate_bin",
     "py_dependency_checker",

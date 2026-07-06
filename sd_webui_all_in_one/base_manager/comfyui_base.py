@@ -72,10 +72,12 @@ from sd_webui_all_in_one.optimize import (
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 from sd_webui_all_in_one.env_check import (
+    ComfyUIConflictAnalysisResult,
     py_dependency_checker,
     fix_torch_libomp,
     check_onnxruntime_gpu,
     comfyui_conflict_analyzer,
+    check_comfyui_component_dependencies,
     check_comfyui_manager_dependence,
     check_torch_version,
 )
@@ -1072,6 +1074,18 @@ def collect_comfyui_extensions(comfyui_path: Path) -> list[ExtensionSnapshot]:
             )
         )
     return extensions
+
+
+def check_comfyui_custom_node_dependencies(comfyui_path: Path) -> ComfyUIConflictAnalysisResult:
+    """检查 ComfyUI 自定义节点依赖状态。
+
+    Args:
+        comfyui_path (Path): ComfyUI 根目录。
+
+    Returns:
+        ComfyUIConflictAnalysisResult: ComfyUI 自定义节点依赖检查结果。
+    """
+    return check_comfyui_component_dependencies(comfyui_path)
 
 
 class ComfyUiExtensionManager:

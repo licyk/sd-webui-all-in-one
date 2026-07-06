@@ -229,6 +229,18 @@ def extension_versions(params: dict[str, Any]) -> dict[str, Any]:
     return _adapter(params).fetch_extension_versions(_require_str(params, "node_id"), timeout=timeout)
 
 
+def environment_dependencies(params: dict[str, Any]) -> dict[str, Any]:
+    """检查环境依赖状态。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 环境依赖检查结果。
+    """
+    return _adapter(params).check_environment_dependencies(_webui_path(params))
+
+
 def package_versions(params: dict[str, Any]) -> dict[str, Any]:
     """获取 PyPI 包版本列表。
 
@@ -1081,6 +1093,7 @@ def get_default_methods() -> ApiMethodRegistry:
         "extension.list": _sync_spec("extension.list", extension_list, "List local extensions or custom nodes."),
         "extension.index": _sync_spec("extension.index", extension_index, "Fetch installable extension index items."),
         "extension.versions": _sync_spec("extension.versions", extension_versions, "List Comfy Registry extension versions."),
+        "environment.dependencies": _sync_spec("environment.dependencies", environment_dependencies, "Check local environment dependency status."),
         "package.versions": _sync_spec("package.versions", package_versions, "List PyPI package versions."),
         "launch.prepare": _sync_spec("launch.prepare", launch_prepare, "Prepare WebUI launch arguments and environment."),
         "system.pytorch_device_type": _sync_spec("system.pytorch_device_type", pytorch_device_type, "Get available PyTorch device types."),
