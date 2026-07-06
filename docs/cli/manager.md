@@ -199,6 +199,7 @@ pending,running,succeeded,failed,canceled
 - `version.status`：读取 WebUI 内核仓库状态。
 - `version.branches`：列出 WebUI 内核仓库分支。
 - `version.commits`：列出 WebUI 内核仓库提交。
+- `version.branch_presets`：列出 WebUI 内置分支预设；未定义预设表的 WebUI 返回 `supported=false` 和空列表。
 - `snapshot.list`：列出快照文件。
 - `snapshot.read`：读取快照文件。
 - `snapshot.delete`：删除快照文件。
@@ -206,7 +207,10 @@ pending,running,succeeded,failed,canceled
 - `extension.index`：读取可安装扩展源；SD WebUI 使用扩展源列表，ComfyUI 同时合并 ComfyUI-Manager 列表和 Comfy Registry。
 - `extension.versions`：读取 Comfy Registry 节点可安装版本。
 - `package.versions`：读取 PyPI 包版本列表，供 InvokeAI 等 PyPI 版本管理使用。
+- `system.pytorch_device_type`：读取当前设备支持的 PyTorch 类型；`options.category=true` 时返回设备大类，否则返回细分类型列表。
+- `system.pytorch_library`：读取内置 PyTorch 版本组合列表；可用 `options.dtype` 和 `options.supported` 过滤。
 - `model.root`：读取文件型 WebUI 的模型根目录信息。
+- `model.library`：按 WebUI 类型读取内置模型下载库条目。
 - `model.directories`：列出模型根目录内的文件夹。
 - `model.entries`：列出指定模型目录中的文件和文件夹。
 - `model.invokeai.list`：列出 InvokeAI 已注册模型。

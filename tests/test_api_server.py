@@ -446,12 +446,23 @@ def test_webui_adapter_lists_and_deletes_snapshots(tmp_path):
     assert not snapshot_path.exists()
 
 
-
 def test_default_api_registry_includes_model_and_hotpatcher_surface():
     server = create_api_server(port=0)
     try:
         catalog = server.method_catalog()
-        assert {"model.root", "model.directories", "model.entries", "model.invokeai.list", "hotpatcher.catalog", "hotpatcher.runtime_status", "hotpatcher.runtime_logs"}.issubset(catalog["methods"])
+        assert {
+            "version.branch_presets",
+            "system.pytorch_device_type",
+            "system.pytorch_library",
+            "model.root",
+            "model.library",
+            "model.directories",
+            "model.entries",
+            "model.invokeai.list",
+            "hotpatcher.catalog",
+            "hotpatcher.runtime_status",
+            "hotpatcher.runtime_logs",
+        }.issubset(catalog["methods"])
         assert {
             "model.create_folder",
             "model.copy",
@@ -517,3 +528,74 @@ def test_hotpatcher_api_adapter_runtime_status_and_env():
     finally:
         assert adapter.stop_runtime() == {"stopped": True}
     assert adapter.runtime_status()["running"] is False
+
+
+def test_default_api_registry_dispatches_pytorch_device_type(monkeypatch):
+    monkeypatch.setattr(registry, "get_available_pytorch_device_type", lambda: ["all", "cpu", "cu128"])
+    monkeypatch.setattr(registry, "auto_detect_pytorch_device_category", lambda: "cuda")
+
+    assert registry.pytorch_device_type({}) == {"types": ["all", "cpu", "cu128"]}
+    assert registry.pytorch_device_type({"options": {"category": True}}) == {"category": "cuda"}
+
+
+def test_default_api_registry_dispatches_pytorch_library(monkeypatch):
+    monkeypatch.setattr(
+        registry,
+        "export_pytorch_list",
+        lambda: [
+            {"name": "Torch CPU", "dtype": "cpu", "supported": True},
+            {"name": "Torch CUDA", "dtype": "cu128", "supported": True},
+            {"name": "Torch ROCm", "dtype": "rocm6.4", "supported": False},
+        ],
+    )
+
+    all_items = registry.pytorch_library({})
+    cuda_items = registry.pytorch_library({"options": {"dtype": "cu128"}})
+    supported_items = registry.pytorch_library({"options": {"supported": True}})
+
+    assert all_items["count"] == 3
+    assert cuda_items == {"count": 1, "items": [{"name": "Torch CUDA", "dtype": "cu128", "supported": True}]}
+    assert supported_items["count"] == 2
+    assert [item["name"] for item in supported_items["items"]] == ["Torch CPU", "Torch CUDA"]
+
+    with pytest.raises(ValueError, match="options.dtype"):
+        registry.pytorch_library({"options": {"dtype": 128}})
+
+
+def test_default_api_registry_dispatches_model_library():
+    result = registry.model_library({"webui_type": "comfyui"})
+
+    assert result["webui_type"] == "comfyui"
+    assert result["count"] == len(result["models"])
+    assert result["count"] > 0
+    assert result["models"][0]["name"]
+    assert "comfyui" in result["models"][0]["supported_webui"]
+
+    with pytest.raises(ValueError, match="Unsupported model library"):
+        registry.model_library({"webui_type": "unknown"})
+
+
+def test_default_api_registry_dispatches_branch_presets():
+    sd_webui = registry.version_branch_presets({"webui_type": "sd_webui"})
+    fooocus = registry.version_branch_presets({"webui_type": "fooocus"})
+    sd_trainer = registry.version_branch_presets({"webui_type": "sd_trainer"})
+    unsupported = registry.version_branch_presets({"webui_type": "comfyui"})
+
+    assert sd_webui["webui_type"] == "sd_webui"
+    assert sd_webui["source"] == "preset"
+    assert sd_webui["supported"] is True
+    assert sd_webui["types"][0] == "sd_webui_main"
+    assert sd_webui["branches"][0]["dtype"] == "sd_webui_main"
+    assert fooocus["supported"] is True
+    assert fooocus["types"][0] == "fooocus_main"
+    assert fooocus["branches"][0]["dtype"] == "fooocus_main"
+    assert sd_trainer["supported"] is True
+    assert sd_trainer["types"][0] == "sd_trainer_main"
+    assert sd_trainer["branches"][0]["dtype"] == "sd_trainer_main"
+    assert unsupported == {
+        "webui_type": "comfyui",
+        "source": "preset",
+        "supported": False,
+        "branches": [],
+        "types": [],
+    }

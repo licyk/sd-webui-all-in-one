@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 from sd_webui_all_in_one.api_server.adapters import HOTPATCHER_API_ADAPTER, MODEL_API_ADAPTER, WEBUI_API_ADAPTERS, get_webui_adapter
 from sd_webui_all_in_one.api_server.server import ApiMethodRegistry, ApiMethodSpec, ApiTaskContext, ApiTaskRegistry
+from sd_webui_all_in_one.base_manager import fooocus_base, sd_trainer_base, sd_webui_base
+from sd_webui_all_in_one.model_downloader import SUPPORTED_WEBUI_LIST, SupportedWebUiType, export_model_list
+from sd_webui_all_in_one.pytorch_manager import auto_detect_pytorch_device_category, export_pytorch_list, get_available_pytorch_device_type
 
 
 WEBUI_REQUEST_SCHEMA: dict[str, Any] = {
@@ -117,6 +120,38 @@ def version_commits(params: dict[str, Any]) -> dict[str, Any]:
     return _adapter(params).list_commits(_webui_path(params), limit=limit)
 
 
+def version_branch_presets(params: dict[str, Any]) -> dict[str, Any]:
+    """列出 WebUI 内置分支预设。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 内置分支预设列表。
+    """
+    webui_type = _require_str(params, "webui_type")
+    result: dict[str, Any] = {"webui_type": webui_type, "source": "preset"}
+    if webui_type == "sd_webui":
+        return result | {
+            "supported": True,
+            "branches": list(sd_webui_base.SD_WEBUI_BRANCH_INFO_DICT),
+            "types": list(sd_webui_base.SD_WEBUI_BRANCH_LIST),
+        }
+    if webui_type == "fooocus":
+        return result | {
+            "supported": True,
+            "branches": list(fooocus_base.FOOOCUS_BRANCH_INFO_DICT),
+            "types": list(fooocus_base.FOOOCUS_BRANCH_LIST),
+        }
+    if webui_type == "sd_trainer":
+        return result | {
+            "supported": True,
+            "branches": list(sd_trainer_base.SD_TRAINER_BRANCH_INFO_DICT),
+            "types": list(sd_trainer_base.SD_TRAINER_BRANCH_LIST),
+        }
+    return result | {"supported": False, "branches": [], "types": []}
+
+
 def snapshot_list(params: dict[str, Any]) -> dict[str, Any]:
     """列出 WebUI 快照文件。
 
@@ -213,6 +248,46 @@ def package_versions(params: dict[str, Any]) -> dict[str, Any]:
         index_url=str(options.get("index_url") or "https://pypi.org/pypi"),
         timeout=timeout,
     )
+
+
+def pytorch_device_type(params: dict[str, Any]) -> dict[str, Any]:
+    """获取当前设备支持的 PyTorch 类型。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: PyTorch 设备类型信息。
+    """
+    options = _options(params)
+    if bool(options.get("category", False)):
+        return {"category": auto_detect_pytorch_device_category()}
+    return {"types": get_available_pytorch_device_type()}
+
+
+def pytorch_library(params: dict[str, Any]) -> dict[str, Any]:
+    """列出内置 PyTorch 版本组合。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: PyTorch 版本组合列表。
+
+    Raises:
+        ValueError: 过滤参数类型无效时抛出。
+    """
+    options = _options(params)
+    items = export_pytorch_list()
+    dtype = options.get("dtype")
+    if dtype is not None:
+        if not isinstance(dtype, str):
+            raise ValueError("Field 'options.dtype' must be a string")
+        items = [item for item in items if item["dtype"] == dtype]
+    if "supported" in options:
+        supported = bool(options["supported"])
+        items = [item for item in items if item.get("supported") is supported]
+    return {"count": len(items), "items": items}
 
 
 def version_switch_branch(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
@@ -530,6 +605,25 @@ def model_root(params: dict[str, Any]) -> dict[str, Any]:
         dict[str, Any]: 模型根目录信息。
     """
     return MODEL_API_ADAPTER.root(_require_str(params, "webui_type"), _webui_path(params))
+
+
+def model_library(params: dict[str, Any]) -> dict[str, Any]:
+    """列出内置模型库条目。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 内置模型库条目列表。
+
+    Raises:
+        ValueError: WebUI 类型不支持内置模型库时抛出。
+    """
+    webui_type = _require_str(params, "webui_type")
+    if webui_type not in SUPPORTED_WEBUI_LIST:
+        raise ValueError(f"Unsupported model library webui_type: {webui_type}")
+    models = export_model_list(cast(SupportedWebUiType, webui_type))
+    return {"webui_type": webui_type, "count": len(models), "models": models}
 
 
 def model_directories(params: dict[str, Any]) -> dict[str, Any]:
@@ -944,6 +1038,21 @@ def get_default_methods() -> ApiMethodRegistry:
         "version.status": _sync_spec("version.status", version_status, "Inspect WebUI kernel repository status."),
         "version.branches": _sync_spec("version.branches", version_branches, "List repository branches for a WebUI kernel."),
         "version.commits": _sync_spec("version.commits", version_commits, "List repository commits for a WebUI kernel."),
+        "version.branch_presets": _sync_spec(
+            "version.branch_presets",
+            version_branch_presets,
+            "List built-in WebUI branch presets.",
+            {
+                "type": "object",
+                "properties": {
+                    "webui_type": {
+                        "type": "string",
+                        "enum": ["fooocus", "sd_trainer", "sd_webui"],
+                    }
+                },
+                "required": ["webui_type"],
+            },
+        ),
         "snapshot.list": _sync_spec("snapshot.list", snapshot_list, "List WebUI snapshot files."),
         "snapshot.read": _sync_spec(
             "snapshot.read",
@@ -961,7 +1070,28 @@ def get_default_methods() -> ApiMethodRegistry:
         "extension.index": _sync_spec("extension.index", extension_index, "Fetch installable extension index items."),
         "extension.versions": _sync_spec("extension.versions", extension_versions, "List Comfy Registry extension versions."),
         "package.versions": _sync_spec("package.versions", package_versions, "List PyPI package versions."),
+        "system.pytorch_device_type": _sync_spec("system.pytorch_device_type", pytorch_device_type, "Get available PyTorch device types."),
+        "system.pytorch_library": _sync_spec(
+            "system.pytorch_library",
+            pytorch_library,
+            "List built-in PyTorch version combinations.",
+        ),
         "model.root": _sync_spec("model.root", model_root, "Inspect file model root."),
+        "model.library": _sync_spec(
+            "model.library",
+            model_library,
+            "List built-in downloadable models.",
+            {
+                "type": "object",
+                "properties": {
+                    "webui_type": {
+                        "type": "string",
+                        "enum": sorted(SUPPORTED_WEBUI_LIST),
+                    }
+                },
+                "required": ["webui_type"],
+            },
+        ),
         "model.directories": _sync_spec("model.directories", model_directories, "List model directories."),
         "model.entries": _sync_spec("model.entries", model_entries, "List model directory entries."),
         "model.invokeai.list": _sync_spec("model.invokeai.list", model_invokeai_list, "List InvokeAI registered models."),
