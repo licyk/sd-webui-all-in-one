@@ -16,6 +16,7 @@ from sd_webui_all_in_one.base_manager.comfy_registry import (
     fetch_comfy_registry_versions,
 )
 from sd_webui_all_in_one.base_manager.comfyui_base import ComfyUiExtensionManager
+from sd_webui_all_in_one.base_manager.hotpatcher_manager import DEFAULT_RUNTIME_PORT
 from sd_webui_all_in_one.base_manager.snapshot import (
     WebUiSnapshot,
     default_snapshot_output,
@@ -659,6 +660,143 @@ class WebUiApiAdapter:
             raise NotImplementedError(f"{self.display_name} does not support PyPI kernel version installation")
         invokeai_base.install_invokeai_component(invokeai_version=version, upgrade=upgrade, use_pypi_mirror=use_pypi_mirror, use_uv=use_uv)
         return {"installed": True}
+
+    def prepare_launch(self, webui_path: Path, options: dict[str, Any] | None = None) -> dict[str, Any]:
+        """准备 WebUI 启动参数。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+            options (dict[str, Any] | None): 启动选项。
+
+        Returns:
+            dict[str, Any]: 启动参数信息。
+
+        Raises:
+            ValueError: 启动选项格式无效时抛出。
+            TypeError: 启动信息序列化结果无效时抛出。
+            NotImplementedError: 当前 WebUI 类型不支持启动。
+        """
+        options = options or {}
+        launch_args = options.get("launch_args")
+        if isinstance(launch_args, str):
+            launch_args = [launch_args]
+        elif launch_args is None:
+            launch_args = []
+        elif not isinstance(launch_args, list) or not all(isinstance(item, str) for item in launch_args):
+            raise ValueError("Field 'options.launch_args' must be a string list")
+
+        custom_hf_mirror = options.get("custom_hf_mirror")
+        if custom_hf_mirror is not None and not isinstance(custom_hf_mirror, str):
+            raise ValueError("Field 'options.custom_hf_mirror' must be a string")
+        custom_github_mirror = options.get("custom_github_mirror")
+        if custom_github_mirror is not None and not isinstance(custom_github_mirror, str):
+            raise ValueError("Field 'options.custom_github_mirror' must be a string")
+        hotpatcher_config_path = options.get("hotpatcher_config_path")
+        if hotpatcher_config_path is not None and not isinstance(hotpatcher_config_path, str):
+            raise ValueError("Field 'options.hotpatcher_config_path' must be a string")
+
+        use_hf_mirror = bool(options.get("use_hf_mirror", False))
+        use_pypi_mirror = bool(options.get("use_pypi_mirror", False))
+        use_cuda_malloc = bool(options.get("use_cuda_malloc", True))
+        enable_hotpatcher = bool(options.get("enable_hotpatcher", False))
+        hotpatcher_port = int(options.get("hotpatcher_port", DEFAULT_RUNTIME_PORT))
+        enable_hotpatcher_runtime = bool(options.get("enable_hotpatcher_runtime", False))
+        use_github_mirror = bool(options.get("use_github_mirror", False))
+
+        if self.webui_type == "sd_webui":
+            launch_info = sd_webui_base.prepare_sd_webui_launch(
+                webui_path,
+                launch_args=launch_args,
+                use_hf_mirror=use_hf_mirror,
+                custom_hf_mirror=custom_hf_mirror,
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+                use_pypi_mirror=use_pypi_mirror,
+                use_cuda_malloc=use_cuda_malloc,
+                enable_hotpatcher=enable_hotpatcher,
+                hotpatcher_config_path=hotpatcher_config_path,
+                hotpatcher_port=hotpatcher_port,
+                enable_hotpatcher_runtime=enable_hotpatcher_runtime,
+            )
+        elif self.webui_type == "comfyui":
+            launch_info = comfyui_base.prepare_comfyui_launch(
+                webui_path,
+                launch_args=launch_args,
+                use_hf_mirror=use_hf_mirror,
+                custom_hf_mirror=custom_hf_mirror,
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+                use_pypi_mirror=use_pypi_mirror,
+                use_cuda_malloc=use_cuda_malloc,
+                enable_hotpatcher=enable_hotpatcher,
+                hotpatcher_config_path=hotpatcher_config_path,
+                hotpatcher_port=hotpatcher_port,
+                enable_hotpatcher_runtime=enable_hotpatcher_runtime,
+            )
+        elif self.webui_type == "fooocus":
+            launch_info = fooocus_base.prepare_fooocus_launch(
+                webui_path,
+                launch_args=launch_args,
+                use_hf_mirror=use_hf_mirror,
+                custom_hf_mirror=custom_hf_mirror,
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+                use_pypi_mirror=use_pypi_mirror,
+                use_cuda_malloc=use_cuda_malloc,
+                enable_hotpatcher=enable_hotpatcher,
+                hotpatcher_config_path=hotpatcher_config_path,
+                hotpatcher_port=hotpatcher_port,
+                enable_hotpatcher_runtime=enable_hotpatcher_runtime,
+            )
+        elif self.webui_type == "invokeai":
+            launch_info = invokeai_base.prepare_invokeai_launch(
+                webui_path,
+                launch_args=launch_args,
+                use_hf_mirror=use_hf_mirror,
+                custom_hf_mirror=custom_hf_mirror,
+                use_pypi_mirror=use_pypi_mirror,
+                use_cuda_malloc=use_cuda_malloc,
+                enable_hotpatcher=enable_hotpatcher,
+                hotpatcher_config_path=hotpatcher_config_path,
+                hotpatcher_port=hotpatcher_port,
+                enable_hotpatcher_runtime=enable_hotpatcher_runtime,
+            )
+        elif self.webui_type == "sd_trainer":
+            launch_info = sd_trainer_base.prepare_sd_trainer_launch(
+                webui_path,
+                launch_args=launch_args,
+                use_hf_mirror=use_hf_mirror,
+                custom_hf_mirror=custom_hf_mirror,
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+                use_pypi_mirror=use_pypi_mirror,
+                use_cuda_malloc=use_cuda_malloc,
+                enable_hotpatcher=enable_hotpatcher,
+                hotpatcher_config_path=hotpatcher_config_path,
+                hotpatcher_port=hotpatcher_port,
+                enable_hotpatcher_runtime=enable_hotpatcher_runtime,
+            )
+        elif self.webui_type == "qwen_tts_webui":
+            launch_info = qwen_tts_webui_base.prepare_qwen_tts_webui_launch(
+                webui_path,
+                launch_args=launch_args,
+                use_hf_mirror=use_hf_mirror,
+                custom_hf_mirror=custom_hf_mirror,
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+                use_pypi_mirror=use_pypi_mirror,
+                use_cuda_malloc=use_cuda_malloc,
+                enable_hotpatcher=enable_hotpatcher,
+                hotpatcher_config_path=hotpatcher_config_path,
+                hotpatcher_port=hotpatcher_port,
+                enable_hotpatcher_runtime=enable_hotpatcher_runtime,
+            )
+        else:
+            raise NotImplementedError(f"{self.display_name} does not support launch preparation")
+        data = json_safe(asdict(launch_info))
+        if not isinstance(data, dict):
+            raise TypeError("Expected launch info object")
+        return {"launch": data}
 
 
 WEBUI_API_ADAPTERS: dict[str, WebUiApiAdapter] = {

@@ -207,6 +207,7 @@ pending,running,succeeded,failed,canceled
 - `extension.index`：读取可安装扩展源；SD WebUI 使用扩展源列表，ComfyUI 同时合并 ComfyUI-Manager 列表和 Comfy Registry。
 - `extension.versions`：读取 Comfy Registry 节点可安装版本。
 - `package.versions`：读取 PyPI 包版本列表，供 InvokeAI 等 PyPI 版本管理使用。
+- `launch.prepare`：准备 WebUI 启动脚本、启动参数和环境变量，不实际启动进程。
 - `system.pytorch_device_type`：读取当前设备支持的 PyTorch 类型；`options.category=true` 时返回设备大类，否则返回细分类型列表。
 - `system.pytorch_library`：读取内置 PyTorch 版本组合列表；可用 `options.dtype` 和 `options.supported` 过滤。
 - `model.root`：读取文件型 WebUI 的模型根目录信息。

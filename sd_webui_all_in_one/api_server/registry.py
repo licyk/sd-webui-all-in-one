@@ -250,6 +250,18 @@ def package_versions(params: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def launch_prepare(params: dict[str, Any]) -> dict[str, Any]:
+    """准备 WebUI 启动参数。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: WebUI 启动参数信息。
+    """
+    return _adapter(params).prepare_launch(_webui_path(params), options=_options(params))
+
+
 def pytorch_device_type(params: dict[str, Any]) -> dict[str, Any]:
     """获取当前设备支持的 PyTorch 类型。
 
@@ -1070,6 +1082,7 @@ def get_default_methods() -> ApiMethodRegistry:
         "extension.index": _sync_spec("extension.index", extension_index, "Fetch installable extension index items."),
         "extension.versions": _sync_spec("extension.versions", extension_versions, "List Comfy Registry extension versions."),
         "package.versions": _sync_spec("package.versions", package_versions, "List PyPI package versions."),
+        "launch.prepare": _sync_spec("launch.prepare", launch_prepare, "Prepare WebUI launch arguments and environment."),
         "system.pytorch_device_type": _sync_spec("system.pytorch_device_type", pytorch_device_type, "Get available PyTorch device types."),
         "system.pytorch_library": _sync_spec(
             "system.pytorch_library",

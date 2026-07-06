@@ -361,7 +361,7 @@ def test_default_api_registry_includes_full_version_snapshot_extension_surface()
     server = create_api_server(port=0)
     try:
         catalog = server.method_catalog()
-        assert {"version.status", "snapshot.list", "snapshot.delete", "extension.list", "extension.index", "extension.versions", "package.versions"}.issubset(catalog["methods"])
+        assert {"version.status", "snapshot.list", "snapshot.delete", "extension.list", "extension.index", "extension.versions", "package.versions", "launch.prepare"}.issubset(catalog["methods"])
         assert {
             "extension.set_enabled",
             "extension.install",
@@ -419,6 +419,37 @@ def test_default_api_registry_dispatches_extension_methods(monkeypatch, tmp_path
         ("install_index", tmp_path, "ext", True, "https://mirror.example"),
         ("progress", 100, "done"),
     ]
+
+
+def test_default_api_registry_dispatches_launch_prepare(monkeypatch, tmp_path):
+    calls = []
+
+    class FakeAdapter:
+        def prepare_launch(self, webui_path, options=None):
+            calls.append((webui_path, options))
+            return {
+                "launch": {
+                    "webui_path": webui_path.as_posix(),
+                    "launch_script": "main.py",
+                    "webui_name": "ComfyUI",
+                    "launch_args": options["launch_args"],
+                    "custom_env": {"HF_ENDPOINT": "https://hf.example"},
+                }
+            }
+
+    monkeypatch.setattr(registry, "get_webui_adapter", lambda webui_type: FakeAdapter())
+
+    result = registry.launch_prepare(
+        {
+            "webui_type": "comfyui",
+            "webui_path": str(tmp_path),
+            "options": {"launch_args": ["--listen"]},
+        }
+    )
+
+    assert result["launch"]["launch_script"] == "main.py"
+    assert result["launch"]["launch_args"] == ["--listen"]
+    assert calls == [(tmp_path, {"launch_args": ["--listen"]})]
 
 
 def test_webui_adapter_lists_and_deletes_snapshots(tmp_path):

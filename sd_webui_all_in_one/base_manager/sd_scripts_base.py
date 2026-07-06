@@ -15,6 +15,7 @@ from typing import (
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
     apply_git_base_config_and_github_mirror,
+    apply_git_config_global_to_process,
     clone_repo,
     install_pytorch_for_webui,
     install_webui_model_from_library,
@@ -276,9 +277,7 @@ def install_sd_scripts(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=custom_env,
     )
-    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
-    if git_config_global is not None:
-        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
+    apply_git_config_global_to_process(custom_env)
 
     logger.debug("安装的 PyTorch 版本: %s", pytorch_package)
     logger.debug("安装的 xformers: %s", xformers_package)
@@ -398,9 +397,7 @@ def switch_sd_scripts_branch(
             custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
             origin_env=os.environ.copy(),
         )
-        git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
-        if git_config_global is not None:
-            os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
+        apply_git_config_global_to_process(custom_env)
 
         logger.info("切换 SD Scripts 分支到 %s", branch_info["name"])
         git_warpper.switch_branch(
@@ -477,9 +474,7 @@ def update_sd_scripts(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
-    if git_config_global is not None:
-        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
+    apply_git_config_global_to_process(custom_env)
 
     git_warpper.update(sd_scripts_path)
 
@@ -549,9 +544,7 @@ def check_sd_scripts_env(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
-    if git_config_global is not None:
-        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
+    apply_git_config_global_to_process(custom_env)
 
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(

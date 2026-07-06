@@ -90,6 +90,26 @@ class EnvCheckTask:
     """检查任务参数。"""
 
 
+@dataclass(frozen=True)
+class WebUiLaunchInfo:
+    """WebUI 启动参数信息。"""
+
+    webui_path: Path
+    """WebUI 根目录。"""
+
+    launch_script: str
+    """启动脚本路径。"""
+
+    webui_name: str
+    """WebUI 显示名称。"""
+
+    launch_args: list[str]
+    """启动参数列表。"""
+
+    custom_env: dict[str, str]
+    """启动环境变量。"""
+
+
 def select_env_check_tasks(
     tasks: list[EnvCheckTask],
     include_checks: list[str] | None = None,
@@ -778,6 +798,21 @@ def apply_git_base_config_and_github_mirror(
     custom_env["GIT_CONFIG_GLOBAL"] = config_path.as_posix()
 
     return custom_env
+
+
+def apply_git_config_global_to_process(custom_env: dict[str, str]) -> str | None:
+    """将环境变量中的 Git 全局配置路径同步到当前进程。
+
+    Args:
+        custom_env (dict[str, str]): 包含 Git 配置的环境变量字典。
+
+    Returns:
+        str | None: 已同步的 Git 全局配置路径，不存在时返回 None。
+    """
+    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
+    if git_config_global:
+        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
+    return git_config_global
 
 
 def apply_github_raw_file_mirror(

@@ -17,6 +17,7 @@ from typing import (
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
     apply_git_base_config_and_github_mirror,
+    apply_git_config_global_to_process,
     clone_repo,
     get_repo_name_from_url,
 )
@@ -215,9 +216,7 @@ def configure_git_env(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
-    if git_config_global:
-        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
+    apply_git_config_global_to_process(custom_env)
     return custom_env
 
 

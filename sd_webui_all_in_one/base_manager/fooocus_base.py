@@ -14,6 +14,7 @@ from typing import (
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
     apply_git_base_config_and_github_mirror,
+    apply_git_config_global_to_process,
     apply_hf_mirror,
     clone_repo,
     install_pytorch_for_webui,
@@ -24,6 +25,7 @@ from sd_webui_all_in_one.base_manager.base import (
     print_divider,
     EnvCheckTask,
     run_env_check_tasks,
+    WebUiLaunchInfo,
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import DEFAULT_RUNTIME_PORT, apply_hotpatcher_launch_env
 from sd_webui_all_in_one.base_manager.snapshot import WebUiSnapshot, build_webui_snapshot
@@ -266,9 +268,7 @@ def install_fooocus(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=custom_env,
     )
-    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
-    if git_config_global is not None:
-        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
+    apply_git_config_global_to_process(custom_env)
 
     logger.debug("安装的 PyTorch 版本: %s", pytorch_package)
     logger.debug("安装的 xformers: %s", xformers_package)
@@ -382,9 +382,7 @@ def switch_fooocus_branch(
             custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
             origin_env=os.environ.copy(),
         )
-        git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
-        if git_config_global is not None:
-            os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
+        apply_git_config_global_to_process(custom_env)
 
         logger.info("切换 Fooocus 分支到 %s", branch_info["name"])
         git_warpper.switch_branch(
@@ -462,9 +460,7 @@ def update_fooocus(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
-    if git_config_global is not None:
-        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
+    apply_git_config_global_to_process(custom_env)
 
     git_warpper.update(fooocus_path)
 
@@ -542,9 +538,7 @@ def check_fooocus_env(
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
         origin_env=os.environ.copy(),
     )
-    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
-    if git_config_global is not None:
-        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
+    apply_git_config_global_to_process(custom_env)
 
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(
@@ -568,6 +562,101 @@ def check_fooocus_env(
     )
 
     logger.info("检查 Fooocus 环境完成")
+
+
+def prepare_fooocus_launch(
+    fooocus_path: Path,
+    launch_args: list[str] | None = None,
+    use_hf_mirror: bool = False,
+    custom_hf_mirror: str | list[str] | None = None,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+    use_pypi_mirror: bool = False,
+    use_cuda_malloc: bool = True,
+    enable_hotpatcher: bool = False,
+    hotpatcher_config_path: str | Path | None = None,
+    hotpatcher_port: int = DEFAULT_RUNTIME_PORT,
+    enable_hotpatcher_runtime: bool = False,
+) -> WebUiLaunchInfo:
+    """准备 Fooocus 启动参数。
+
+    Args:
+        fooocus_path (Path):
+            Fooocus 根目录
+        launch_args (list[str] | None):
+            启动 Fooocus 的参数
+        use_hf_mirror (bool):
+            是否启用 HuggingFace 镜像源
+        custom_hf_mirror (str | list[str] | None):
+            自定义 HuggingFace 镜像源
+        use_github_mirror (bool):
+            是否启用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+        use_pypi_mirror (bool):
+            是否启用 PyPI 镜像源
+        use_cuda_malloc (bool):
+            是否启用 CUDA Malloc 显存优化
+        enable_hotpatcher (bool):
+            是否启用补丁系统注入
+        hotpatcher_config_path (str | Path | None):
+            补丁系统配置文件路径
+        hotpatcher_port (int):
+            补丁系统 runtime 通信端口
+        enable_hotpatcher_runtime (bool):
+            是否启用补丁系统 runtime host 连接
+
+    Returns:
+        WebUiLaunchInfo: Fooocus 启动参数信息。
+    """
+    logger.info("准备 Fooocus 启动环境")
+
+    # 准备 Git 配置
+    custom_env = apply_git_base_config_and_github_mirror(
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
+        origin_env=os.environ.copy(),
+    )
+    apply_git_config_global_to_process(custom_env)
+
+    launch_args = launch_args or []
+    hf_mirror_args: list[str] = []
+
+    if use_hf_mirror:
+        custom_env = apply_hf_mirror(
+            use_hf_mirror=use_hf_mirror,
+            custom_hf_mirror=(HUGGINGFACE_MIRROR_LIST if custom_hf_mirror is None else custom_hf_mirror) if use_hf_mirror else None,
+            origin_env=custom_env,
+        )
+        if custom_env.get("HF_ENDPOINT") is not None and not _launch_args_has_option(launch_args, "--hf-mirror") and check_fooocus_hf_mirror_arg(fooocus_path):
+            hf_mirror_args.extend(["--hf-mirror", custom_env["HF_ENDPOINT"]])
+
+    custom_env = get_pypi_mirror_config(
+        use_cn_mirror=use_pypi_mirror,
+        origin_env=custom_env,
+    )
+
+    if use_cuda_malloc:
+        cuda_malloc_config = get_cuda_malloc_var()
+        if cuda_malloc_config is not None:
+            custom_env = apply_pytorch_alloc_conf(
+                config=cuda_malloc_config,
+                origin_env=custom_env,
+            )
+    custom_env = apply_hotpatcher_launch_env(
+        origin_env=custom_env,
+        enabled=enable_hotpatcher,
+        config_path=hotpatcher_config_path,
+        port=hotpatcher_port,
+        enable_runtime=enable_hotpatcher_runtime,
+    )
+    return WebUiLaunchInfo(
+        webui_path=fooocus_path,
+        launch_script="launch.py",
+        webui_name="Fooocus",
+        launch_args=launch_args + hf_mirror_args,
+        custom_env=custom_env,
+    )
 
 
 def launch_fooocus(
@@ -612,57 +701,28 @@ def launch_fooocus(
         enable_hotpatcher_runtime (bool):
             是否启用补丁系统 runtime host 连接
     """
-    logger.info("准备 Fooocus 启动环境")
-
-    # 准备 Git 配置
-    custom_env = apply_git_base_config_and_github_mirror(
+    launch_info = prepare_fooocus_launch(
+        fooocus_path=fooocus_path,
+        launch_args=launch_args,
+        use_hf_mirror=use_hf_mirror,
+        custom_hf_mirror=custom_hf_mirror,
         use_github_mirror=use_github_mirror,
-        custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
-        origin_env=os.environ.copy(),
-    )
-    git_config_global = custom_env.get("GIT_CONFIG_GLOBAL")
-    if git_config_global is not None:
-        os.environ["GIT_CONFIG_GLOBAL"] = git_config_global
-
-    launch_args = launch_args or []
-    hf_mirror_args: list[str] = []
-
-    if use_hf_mirror:
-        custom_env = apply_hf_mirror(
-            use_hf_mirror=use_hf_mirror,
-            custom_hf_mirror=(HUGGINGFACE_MIRROR_LIST if custom_hf_mirror is None else custom_hf_mirror) if use_hf_mirror else None,
-            origin_env=custom_env,
-        )
-        if custom_env.get("HF_ENDPOINT") is not None and not _launch_args_has_option(launch_args, "--hf-mirror") and check_fooocus_hf_mirror_arg(fooocus_path):
-            hf_mirror_args.extend(["--hf-mirror", custom_env["HF_ENDPOINT"]])
-
-    custom_env = get_pypi_mirror_config(
-        use_cn_mirror=use_pypi_mirror,
-        origin_env=custom_env,
-    )
-
-    if use_cuda_malloc:
-        cuda_malloc_config = get_cuda_malloc_var()
-        if cuda_malloc_config is not None:
-            custom_env = apply_pytorch_alloc_conf(
-                config=cuda_malloc_config,
-                origin_env=custom_env,
-            )
-    custom_env = apply_hotpatcher_launch_env(
-        origin_env=custom_env,
-        enabled=enable_hotpatcher,
-        config_path=hotpatcher_config_path,
-        port=hotpatcher_port,
-        enable_runtime=enable_hotpatcher_runtime,
+        custom_github_mirror=custom_github_mirror,
+        use_pypi_mirror=use_pypi_mirror,
+        use_cuda_malloc=use_cuda_malloc,
+        enable_hotpatcher=enable_hotpatcher,
+        hotpatcher_config_path=hotpatcher_config_path,
+        hotpatcher_port=hotpatcher_port,
+        enable_hotpatcher_runtime=enable_hotpatcher_runtime,
     )
 
     logger.info("启动 Fooocus 中")
     launch_webui(
-        webui_path=fooocus_path,
-        launch_script="launch.py",
-        webui_name="Fooocus",
-        launch_args=launch_args + hf_mirror_args,
-        custom_env=custom_env,
+        webui_path=launch_info.webui_path,
+        launch_script=launch_info.launch_script,
+        webui_name=launch_info.webui_name,
+        launch_args=launch_info.launch_args,
+        custom_env=launch_info.custom_env,
     )
 
 

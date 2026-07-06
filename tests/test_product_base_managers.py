@@ -321,12 +321,16 @@ def test_launch_helpers_build_env_and_delegate(monkeypatch, tmp_path):
     comfyui_base.launch_comfyui(tmp_path / "comfy", launch_args=["--listen"], use_hf_mirror=True, use_cuda_malloc=True, enable_hotpatcher=True)
     fooocus_base.launch_fooocus(tmp_path / "fooocus", launch_args=["--preset", "x"], use_hf_mirror=True, use_cuda_malloc=True)
     qwen_tts_webui_base.launch_qwen_tts_webui(tmp_path / "qwen", launch_args=[], use_hf_mirror=True, use_cuda_malloc=True)
+    info = comfyui_base.prepare_comfyui_launch(tmp_path / "comfy", launch_args=["--listen"], use_hf_mirror=True, use_cuda_malloc=True, enable_hotpatcher=True)
 
     assert calls[0][1]["launch_script"] == "main.py"
     assert calls[0][1]["webui_name"] == "ComfyUI"
     assert calls[0][1]["custom_env"]["HOTPATCH"] == "True"
     assert calls[1][1]["launch_args"] == ["--preset", "x", "--hf-mirror", "https://hf.example"]
     assert calls[2][1]["launch_script"] == "launch.py"
+    assert info.launch_script == "main.py"
+    assert info.launch_args == ["--listen"]
+    assert info.custom_env["HOTPATCH"] == "True"
 
 
 def test_fooocus_launch_skips_hf_mirror_arg_when_parser_does_not_support_it(monkeypatch, tmp_path):

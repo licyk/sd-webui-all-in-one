@@ -355,6 +355,21 @@ def test_apply_git_base_config_uses_env_config_and_does_not_mutate_origin(monkey
     assert calls[0][1] is None
 
 
+def test_apply_git_config_global_to_process(monkeypatch, tmp_path):
+    monkeypatch.delenv("GIT_CONFIG_GLOBAL", raising=False)
+    config_path = (tmp_path / ".gitconfig").as_posix()
+
+    result = base_module.apply_git_config_global_to_process({"GIT_CONFIG_GLOBAL": config_path})
+
+    assert result == config_path
+    assert base_module.os.environ["GIT_CONFIG_GLOBAL"] == config_path
+
+    result = base_module.apply_git_config_global_to_process({"KEEP": "1"})
+
+    assert result is None
+    assert base_module.os.environ["GIT_CONFIG_GLOBAL"] == config_path
+
+
 def test_apply_hf_mirror_string_list_disabled_and_invalid(monkeypatch):
     origin = {"HF_ENDPOINT": "old", "KEEP": "1"}
 
