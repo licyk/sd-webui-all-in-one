@@ -53,7 +53,7 @@ DEFAULT_GIT_CONFIG = r"""
 	directory = *
 [core]
 	longpaths = true
-    quotepath = false
+	quotepath = false
 [user]
 	name = user
 	email = user@example.com
