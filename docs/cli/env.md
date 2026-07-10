@@ -25,12 +25,19 @@ SD WebUI All In One 支持通过环境变量来调整其行为。
 - `SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH`
   
   是否设置缓存路径，`1` / `True` 表示启用。
+- `SD_WEBUI_ALL_IN_ONE_DESKTOP_MODE`
+
+   是否启用桌面模式，`1` / `True` 表示启用。
 - `SD_WEBUI_ALL_IN_ONE_SET_CONFIG`
   
   是否在启动时通过环境变量进行配置，`1` / `True` 表示启用。
 - `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH`
   
   SD WebUI All In One 起始路径。
+
+- `SD_WEBUI_ALL_IN_ONE_CACHE_PATH`
+
+  SD WebUI All In One 运行时的缓存目录。
 - `SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR`
 
   快照保存目录，默认值为 `SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH/snapshots`。

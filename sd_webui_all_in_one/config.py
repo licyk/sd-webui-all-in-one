@@ -48,6 +48,18 @@ DEFAULT_ENV_VARS = [
 ]
 """默认配置的环境变量"""
 
+DEFAULT_GIT_CONFIG = r"""
+[safe]
+	directory = *
+[core]
+	longpaths = true
+    quotepath = false
+[user]
+	name = user
+	email = user@example.com
+""".strip()
+"""默认 Git 配置文件"""
+
 ROOT_PATH = Path(__file__).parent
 """SD WebUI All In One 根目录"""
 
@@ -62,6 +74,9 @@ ARIA2_MINIMUM_VER = "1.37.0"
 
 SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH = Path(os.getenv("SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH", os.getcwd()))
 """SD WebUI All In One 运行时的起始目录"""
+
+SD_WEBUI_ALL_IN_ONE_CACHE_PATH = Path(os.getenv("SD_WEBUI_ALL_IN_ONE_CACHE_PATH", os.path.join(os.getcwd(), "cache")))
+"""SD WebUI All In One 运行时的缓存目录"""
 
 SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR = Path(os.getenv("SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR", (SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / "snapshots").as_posix()))
 """SD WebUI All In One 环境快照保存目录"""
@@ -98,6 +113,9 @@ SD_WEBUI_ALL_IN_ONE_PROXY = os.getenv("SD_WEBUI_ALL_IN_ONE_PROXY") in ["1", "Tru
 
 SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH = os.getenv("SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH") in ["1", "True", "true"]
 """是否设置缓存路径"""
+
+SD_WEBUI_ALL_IN_ONE_DESKTOP_MODE = os.getenv("SD_WEBUI_ALL_IN_ONE_DESKTOP_MODE") in ["1", "True", "true"]
+"""是否启用桌面模式"""
 
 SD_WEBUI_ALL_IN_ONE_SET_CONFIG = os.getenv("SD_WEBUI_ALL_IN_ONE_SET_CONFIG") in ["1", "True", "true"]
 """是否在启动时通过环境变量进行配置"""
