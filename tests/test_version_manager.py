@@ -366,7 +366,9 @@ def test_list_commits_and_branches_parse_git_output(monkeypatch, tmp_path):
     fetch_calls = []
 
     monkeypatch.setattr(version_manager.git_warpper, "is_git_repo", lambda _path: True)
-    monkeypatch.setattr(version_manager.git_warpper, "get_current_commit", lambda _path: "abc123")
+    current = "abc1230000000000000000000000000000000000"
+    older = "def4560000000000000000000000000000000000"
+    monkeypatch.setattr(version_manager.git_warpper, "get_current_commit", lambda _path: current)
     monkeypatch.setattr(version_manager.git_warpper, "get_current_branch", lambda _path: "main")
     monkeypatch.setattr(version_manager, "fetch_repository", lambda path: fetch_calls.append(path))
 
@@ -374,8 +376,8 @@ def test_list_commits_and_branches_parse_git_output(monkeypatch, tmp_path):
         if args[:1] == ("log",):
             return "\n".join(
                 [
-                    "abc123\x1f2026-05-01\x1fcurrent",
-                    "def456\x1f2026-04-30\x1folder",
+                    f"{current}\x1fabc123\x1f2026-05-01\x1fAlice\x1f1777593600\x1fHEAD -> main, tag: v2.0\x1fcurrent",
+                    f"{older}\x1fdef456\x1f2026-04-30\x1fBob\x1f1777507200\x1forigin/main\x1folder",
                     "malformed",
                 ]
             )
@@ -386,7 +388,13 @@ def test_list_commits_and_branches_parse_git_output(monkeypatch, tmp_path):
     monkeypatch.setattr(version_manager, "run_git_output", fake_git_output)
 
     commits = version_manager.list_commits(repo_path, limit=2)
-    assert [(item.commit, item.is_current) for item in commits] == [("abc123", True), ("def456", False)]
+    assert [(item.commit, item.is_current) for item in commits] == [(current, True), (older, False)]
+    assert commits[0].short_commit == "abc123"
+    assert commits[0].author == "Alice"
+    assert commits[0].timestamp == 1777593600
+    assert commits[0].tags == ("v2.0",)
+    assert commits[0].branches == ("main",)
+    assert commits[1].branches == ("origin/main",)
 
     branches = version_manager.list_branches(repo_path, fetch=True)
     assert fetch_calls == [repo_path]

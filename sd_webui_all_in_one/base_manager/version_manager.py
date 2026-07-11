@@ -60,6 +60,11 @@ class CommitInfo:
     message: str
     date: str
     is_current: bool = False
+    short_commit: str = ""
+    author: str = ""
+    timestamp: int | None = None
+    tags: tuple[str, ...] = ()
+    branches: tuple[str, ...] = ()
 
 
 @dataclass(slots=True)
@@ -494,22 +499,38 @@ def list_commits(path: Path, limit: int | None = 100) -> list[CommitInfo]:
     except Exception:
         return []
     current_commit = _safe_git_value(git_warpper.get_current_commit, path)
-    format_arg = "--format=%h%x1f%ci%x1f%s"
+    format_arg = "--format=%H%x1f%h%x1f%ci%x1f%an%x1f%at%x1f%D%x1f%s"
     args = ["log", format_arg]
     if limit is not None:
         args.extend(["-n", str(limit)])
     output = run_git_output(path, *args)
     commits: list[CommitInfo] = []
     for line in output.splitlines():
-        parts = line.split("\x1f", 2)
-        if len(parts) != 3:
+        parts = line.split("\x1f", 6)
+        if len(parts) != 7:
             continue
-        commit, date, message = parts
+        commit, short_commit, date, author, timestamp_text, decorations, message = parts
+        tags: list[str] = []
+        branches: list[str] = []
+        for decoration in (item.strip() for item in decorations.split(",")):
+            if not decoration:
+                continue
+            if decoration.startswith("tag: "):
+                tags.append(decoration.removeprefix("tag: "))
+            elif decoration.startswith("HEAD -> "):
+                branches.append(decoration.removeprefix("HEAD -> "))
+            else:
+                branches.append(decoration)
         commits.append(
             CommitInfo(
                 commit=commit,
+                short_commit=short_commit,
                 date=date,
                 message=message,
+                author=author,
+                timestamp=int(timestamp_text) if timestamp_text else None,
+                tags=tuple(tags),
+                branches=tuple(branches),
                 is_current=bool(current_commit and commit.startswith(current_commit)),
             )
         )
