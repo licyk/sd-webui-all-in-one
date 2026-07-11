@@ -110,7 +110,19 @@ def _pytorch_item(webui_type: str, raw: dict[str, Any], recommended_id: str | No
 def pytorch_catalog(webui_type: str, _webui_path: Path) -> dict[str, Any]:
     """Build the complete GUI-oriented PyTorch catalog."""
     versions = _package_versions()
-    compatibility = check_torch_version_status()
+    try:
+        compatibility = check_torch_version_status()
+    except Exception as error:
+        compatibility = {
+            "available_types": [],
+            "gpu_list": [],
+            "has_gpu": False,
+            "installed_version": versions["torch"],
+            "installed_type": None,
+            "status": "check_failed",
+            "is_compatible": False,
+            "message": f"PyTorch compatibility inspection failed: {error}",
+        }
     if webui_type == "invokeai":
         detected = auto_detect_pytorch_device_category()
         items = [
@@ -149,7 +161,7 @@ def pytorch_catalog(webui_type: str, _webui_path: Path) -> dict[str, Any]:
         "webui_type": webui_type,
         "current": {
             "versions": versions,
-            "installed_type": detected_type,
+            "installed_type": compatibility["installed_type"],
             "compatibility": compatibility,
         },
         "detected_device_type": detected_type,

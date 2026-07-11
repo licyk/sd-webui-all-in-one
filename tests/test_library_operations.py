@@ -28,7 +28,7 @@ def test_pytorch_catalog_stable_ids_and_family_identity(monkeypatch):
     monkeypatch.setattr(ops, "auto_detect_available_pytorch_type", lambda: "cpu")
     monkeypatch.setattr(ops, "find_latest_pytorch_info", lambda _dtype: raw)
     monkeypatch.setattr(ops, "get_available_pytorch_device_type", lambda: ["cpu"])
-    monkeypatch.setattr(ops, "check_torch_version_status", lambda: {"compatible": True, "message": "ok"})
+    monkeypatch.setattr(ops, "check_torch_version_status", lambda: {"installed_type": "cu121", "is_compatible": True, "message": "ok"})
     monkeypatch.setattr(ops, "_package_versions", lambda: {name: None for name in ("torch", "torchvision", "torchaudio", "xformers")})
 
     comfy = ops.pytorch_catalog("comfyui", Path("/tmp/a"))
@@ -37,6 +37,18 @@ def test_pytorch_catalog_stable_ids_and_family_identity(monkeypatch):
     assert comfy["items"][0]["id"] == comfy_again["items"][0]["id"]
     assert comfy["items"][0]["id"] != fooocus["items"][0]["id"]
     assert comfy["automatic_selection_preview"]["selection_id"] == comfy["items"][0]["id"]
+    assert comfy["current"]["installed_type"] == "cu121"
+    assert comfy["detected_device_type"] == "cpu"
+
+
+def test_invokeai_catalog_keeps_installed_type_separate_from_detected_category(monkeypatch):
+    monkeypatch.setattr(ops, "check_torch_version_status", lambda: {"installed_type": "cu124", "is_compatible": True, "message": "ok"})
+    monkeypatch.setattr(ops, "auto_detect_pytorch_device_category", lambda: "cpu")
+    monkeypatch.setattr(ops, "_package_versions", lambda: {name: None for name in ("torch", "torchvision", "torchaudio", "xformers")})
+    catalog = ops.pytorch_catalog("invokeai", Path("/instance"))
+    assert catalog["current"]["installed_type"] == "cu124"
+    assert catalog["detected_device_type"] is None
+    assert catalog["detected_device_category"] == "cpu"
 
 
 def test_duplicate_catalog_id_rejected():
@@ -116,13 +128,15 @@ def test_invokeai_resolution_preserves_category_semantics(monkeypatch):
     assert result["cli_command_path"] == ["invokeai", "reinstall-pytorch"]
 
 
-def test_model_resolution_is_read_only_and_rejects_wrong_family(monkeypatch):
-    item = {"id": "model-library:test", "name": "demo", "sources": ["modelscope"], "downloaders": ["aria2"], "installable": True, "non_installable_reason": None}
+def test_model_resolution_is_read_only_and_rejects_unavailable_policy(monkeypatch):
+    item = {"id": "model-library:test", "name": "demo", "sources": ["modelscope"], "downloaders": ["requests"], "installable": True, "non_installable_reason": None}
     monkeypatch.setattr(ops, "model_library_catalog", lambda family: {"webui_type": family, "count": 1, "models": [item] if family == "comfyui" else []})
     monkeypatch.setitem(ops.MODEL_INSTALLERS, "comfyui", lambda **_kwargs: pytest.fail("resolver must not install"))
-    result = ops.resolve_model_library_install("comfyui", item["id"], {"source": "modelscope", "downloader": "aria2"})
+    result = ops.resolve_model_library_install("comfyui", item["id"], {"source": "modelscope", "downloader": "requests"})
     assert result["model_name"] == "demo"
     assert result["cli_command_path"] == ["comfyui", "model", "install-library"]
     assert "url" not in result and "path" not in result
     with pytest.raises(ValueError, match="Unknown or ambiguous"):
-        ops.resolve_model_library_install("fooocus", item["id"], {"source": "modelscope", "downloader": "aria2"})
+        ops.resolve_model_library_install("fooocus", item["id"], {"source": "modelscope", "downloader": "requests"})
+    with pytest.raises(ValueError, match="Source is not available"):
+        ops.resolve_model_library_install("comfyui", item["id"], {"source": "huggingface", "downloader": "requests"})
