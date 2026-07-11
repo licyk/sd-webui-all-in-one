@@ -5,7 +5,19 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable, cast
 
-from sd_webui_all_in_one.api_server.adapters import HOTPATCHER_API_ADAPTER, MODEL_API_ADAPTER, WEBUI_API_ADAPTERS, WebUiApiType, get_webui_adapter
+from sd_webui_all_in_one.api_server.adapters import (
+    HOTPATCHER_API_ADAPTER,
+    MODEL_API_ADAPTER,
+    WEBUI_API_ADAPTERS,
+    WebUiApiType,
+    get_webui_adapter,
+    install_model_from_catalog,
+    model_library_catalog,
+    pytorch_catalog as build_pytorch_catalog,
+    reinstall_from_catalog,
+    resolve_model_library_install,
+    resolve_pytorch_selection,
+)
 from sd_webui_all_in_one.api_server.server import ApiMethodRegistry, ApiMethodSpec, ApiTaskContext, ApiTaskRegistry
 from sd_webui_all_in_one.base_manager import fooocus_base, sd_trainer_base, sd_webui_base
 from sd_webui_all_in_one.env_check import check_torch_version_status
@@ -354,6 +366,18 @@ def pytorch_library(params: dict[str, Any]) -> dict[str, Any]:
         supported = bool(options["supported"])
         items = [item for item in items if item.get("supported") is supported]
     return {"count": len(items), "items": items}
+
+
+def pytorch_catalog(params: dict[str, Any]) -> dict[str, Any]:
+    """Return the stable aggregate PyTorch catalog for desktop clients."""
+    return build_pytorch_catalog(_webui_type(params), _webui_path(params))
+
+
+def pytorch_resolve_selection(params: dict[str, Any]) -> dict[str, Any]:
+    """Resolve stable PyTorch selection to a closed CLI business descriptor."""
+    return resolve_pytorch_selection(
+        _webui_type(params), _webui_path(params), _require_object(params, "selection")
+    )
 
 
 def system_proxy(params: dict[str, Any]) -> dict[str, Any]:
@@ -721,8 +745,31 @@ def model_library(params: dict[str, Any]) -> dict[str, Any]:
     webui_type = _require_str(params, "webui_type")
     if webui_type not in SUPPORTED_WEBUI_LIST:
         raise ValueError(f"Unsupported model library webui_type: {webui_type}")
-    models = export_model_list(cast(SupportedWebUiType, webui_type))
-    return {"webui_type": webui_type, "count": len(models), "models": models}
+    return model_library_catalog(webui_type)
+
+
+def pytorch_reinstall(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """Run a stable, non-interactive PyTorch reinstall task."""
+    selection = _require_object(params, "selection")
+    return reinstall_from_catalog(_webui_type(params), _webui_path(params), selection, _options(params), context)
+
+
+def model_install_library(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
+    """Install a built-in model by stable catalog identity."""
+    return install_model_from_catalog(
+        _webui_type(params),
+        _webui_path(params),
+        _require_str(params, "model_id"),
+        _options(params),
+        context,
+    )
+
+
+def model_resolve_library_install(params: dict[str, Any]) -> dict[str, Any]:
+    """Resolve stable model selection to a closed CLI business descriptor."""
+    return resolve_model_library_install(
+        _webui_type(params), _require_str(params, "model_id"), _options(params)
+    )
 
 
 def model_directories(params: dict[str, Any]) -> dict[str, Any]:
@@ -1196,6 +1243,10 @@ def get_default_methods() -> ApiMethodRegistry:
             pytorch_library,
             "List built-in PyTorch version combinations.",
         ),
+        "pytorch.device_type": _sync_spec("pytorch.device_type", pytorch_device_type, "Get available PyTorch device types."),
+        "pytorch.library": _sync_spec("pytorch.library", pytorch_library, "List built-in PyTorch version combinations."),
+        "pytorch.catalog": _sync_spec("pytorch.catalog", pytorch_catalog, "Get the stable aggregate PyTorch catalog."),
+        "pytorch.resolve_selection": _sync_spec("pytorch.resolve_selection", pytorch_resolve_selection, "Resolve a stable PyTorch selection without mutation."),
         "system.proxy": _sync_spec("system.proxy", system_proxy, "Get current system proxy address."),
         "model.root": _sync_spec("model.root", model_root, "Inspect file model root."),
         "model.library": _sync_spec(
@@ -1213,6 +1264,7 @@ def get_default_methods() -> ApiMethodRegistry:
                 "required": ["webui_type"],
             },
         ),
+        "model.resolve_library_install": _sync_spec("model.resolve_library_install", model_resolve_library_install, "Resolve a built-in model selection without mutation."),
         "model.directories": _sync_spec("model.directories", model_directories, "List model directories."),
         "model.entries": _sync_spec("model.entries", model_entries, "List model directory entries."),
         "model.invokeai.list": _sync_spec("model.invokeai.list", model_invokeai_list, "List InvokeAI registered models."),
@@ -1272,6 +1324,8 @@ def get_default_task_methods() -> ApiTaskRegistry:
         "model.invokeai.import": _task_spec("model.invokeai.import", model_invokeai_import, "Import local models into InvokeAI."),
         "model.invokeai.unregister": _task_spec("model.invokeai.unregister", model_invokeai_unregister, "Unregister InvokeAI model."),
         "model.invokeai.delete": _task_spec("model.invokeai.delete", model_invokeai_delete, "Delete InvokeAI model."),
+        "pytorch.reinstall": _task_spec("pytorch.reinstall", pytorch_reinstall, "Reinstall PyTorch from a stable catalog selection."),
+        "model.install_library": _task_spec("model.install_library", model_install_library, "Install a built-in model by stable ID."),
         "hotpatcher.save_config": _task_spec("hotpatcher.save_config", hotpatcher_save_config, "Save hotpatcher config file."),
         "hotpatcher.export_default_config": _task_spec("hotpatcher.export_default_config", hotpatcher_export_default_config, "Export hotpatcher default config file."),
         "hotpatcher.apply_config": _task_spec("hotpatcher.apply_config", hotpatcher_apply_config, "Apply hotpatcher config locally."),

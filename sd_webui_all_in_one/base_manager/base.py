@@ -382,7 +382,7 @@ def reinstall_pytorch(
 
     display_model = True
     input_err = (0, None)
-    enable_force_reinstall = False
+    enable_force_reinstall = force_reinstall
     if interactive_mode:
         while True:
             if display_model:
@@ -448,8 +448,6 @@ def reinstall_pytorch(
                 continue
 
     else:
-        if force_reinstall:
-            _uninstall()
         _install(
             input_name=pytorch_name,
             input_index=pytorch_index,
