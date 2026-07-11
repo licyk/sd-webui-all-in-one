@@ -128,15 +128,54 @@ def test_invokeai_resolution_preserves_category_semantics(monkeypatch):
     assert result["cli_command_path"] == ["invokeai", "reinstall-pytorch"]
 
 
-def test_model_resolution_is_read_only_and_rejects_unavailable_policy(monkeypatch):
+def test_model_resolution_manual_policy_is_strict_and_read_only(monkeypatch):
     item = {"id": "model-library:test", "name": "demo", "sources": ["modelscope"], "downloaders": ["requests"], "installable": True, "non_installable_reason": None}
     monkeypatch.setattr(ops, "model_library_catalog", lambda family: {"webui_type": family, "count": 1, "models": [item] if family == "comfyui" else []})
     monkeypatch.setitem(ops.MODEL_INSTALLERS, "comfyui", lambda **_kwargs: pytest.fail("resolver must not install"))
     result = ops.resolve_model_library_install("comfyui", item["id"], {"source": "modelscope", "downloader": "requests"})
     assert result["model_name"] == "demo"
+    assert result["source"] == "modelscope"
+    assert result["configured_source"] == "modelscope"
+    assert result["available_sources"] == ["modelscope"]
+    assert result["automatic_mirror"] is False
     assert result["cli_command_path"] == ["comfyui", "model", "install-library"]
     assert "url" not in result and "path" not in result
     with pytest.raises(ValueError, match="Unknown or ambiguous"):
         ops.resolve_model_library_install("fooocus", item["id"], {"source": "modelscope", "downloader": "requests"})
     with pytest.raises(ValueError, match="Source is not available"):
         ops.resolve_model_library_install("comfyui", item["id"], {"source": "huggingface", "downloader": "requests"})
+
+
+def test_model_resolution_automatic_policy_uses_deterministic_catalog_fallback(monkeypatch):
+    item = {"id": "model-library:test", "name": "demo", "sources": ["modelscope"], "downloaders": ["requests"], "installable": True, "non_installable_reason": None}
+    monkeypatch.setattr(ops, "model_library_catalog", lambda family: {"webui_type": family, "count": 1, "models": [item]})
+
+    result = ops.resolve_model_library_install(
+        "comfyui",
+        item["id"],
+        {"source": "huggingface", "downloader": "requests", "automatic_mirror": True},
+    )
+
+    assert result["source"] == "modelscope"
+    assert result["configured_source"] == "huggingface"
+    assert result["available_sources"] == ["modelscope"]
+    assert result["automatic_mirror"] is True
+
+
+def test_model_resolution_automatic_policy_still_requires_source_and_downloader(monkeypatch):
+    item = {"id": "model-library:test", "name": "demo", "sources": [], "downloaders": ["requests"], "installable": True, "non_installable_reason": None}
+    monkeypatch.setattr(ops, "model_library_catalog", lambda family: {"webui_type": family, "count": 1, "models": [item]})
+    with pytest.raises(ValueError, match="No source is available"):
+        ops.resolve_model_library_install(
+            "comfyui",
+            item["id"],
+            {"source": "huggingface", "downloader": "requests", "automatic_mirror": True},
+        )
+
+    item["sources"] = ["modelscope"]
+    with pytest.raises(ValueError, match="Downloader is not supported"):
+        ops.resolve_model_library_install(
+            "comfyui",
+            item["id"],
+            {"source": "huggingface", "downloader": "aria2", "automatic_mirror": True},
+        )

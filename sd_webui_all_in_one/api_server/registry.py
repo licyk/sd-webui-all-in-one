@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from argparse import Namespace
 from typing import Any, Callable, cast
 
 from sd_webui_all_in_one.api_server.adapters import (
@@ -20,6 +21,7 @@ from sd_webui_all_in_one.api_server.adapters import (
 )
 from sd_webui_all_in_one.api_server.server import ApiMethodRegistry, ApiMethodSpec, ApiTaskContext, ApiTaskRegistry
 from sd_webui_all_in_one.base_manager import fooocus_base, sd_trainer_base, sd_webui_base
+from sd_webui_all_in_one.cli_manager.auto_mirror import apply_auto_mirror
 from sd_webui_all_in_one.env_check import check_torch_version_status
 from sd_webui_all_in_one.model_downloader import SUPPORTED_WEBUI_LIST, SupportedWebUiType, export_model_list
 from sd_webui_all_in_one.proxy import get_system_proxy_address, test_proxy_connectivity
@@ -42,6 +44,20 @@ def _require_str(params: dict[str, Any], name: str) -> str:
     if not isinstance(value, str) or not value:
         raise ValueError(f"Field '{name}' must be a non-empty string")
     return value
+
+
+def _resolved_mirror_options(params: dict[str, Any], supported: tuple[str, ...]) -> dict[str, Any]:
+    """Apply the existing Python automatic-mirror authority to API options."""
+    options = dict(_options(params))
+    automatic = bool(options.pop("automatic_mirror", False))
+    if not automatic:
+        return options
+    for name in supported:
+        options.setdefault(name, None if name.startswith("custom_") else False)
+    namespace = Namespace(auto_mirror=True, **options)
+    resolved = vars(apply_auto_mirror(namespace))
+    resolved.pop("auto_mirror", None)
+    return resolved
 
 
 def _options(params: dict[str, Any]) -> dict[str, Any]:
@@ -325,7 +341,8 @@ def launch_prepare(params: dict[str, Any]) -> dict[str, Any]:
     Returns:
         dict[str, Any]: WebUI 启动参数信息。
     """
-    return _adapter(params).prepare_launch(_webui_path(params), options=_options(params))
+    options = _resolved_mirror_options(params, ("use_pypi_mirror", "use_github_mirror", "custom_github_mirror", "use_hf_mirror", "custom_hf_mirror"))
+    return _adapter(params).prepare_launch(_webui_path(params), options=options)
 
 
 def pytorch_device_type(params: dict[str, Any]) -> dict[str, Any]:
@@ -464,7 +481,10 @@ def webui_check_updates(params: dict[str, Any]) -> dict[str, Any]:
     Returns:
         dict[str, Any]: 更新检查结果。
     """
-    return _adapter(params).check_updates(_webui_path(params), options=_options(params))
+    return _adapter(params).check_updates(
+        _webui_path(params),
+        options=_resolved_mirror_options(params, ("use_pypi_mirror", "use_github_mirror", "custom_github_mirror")),
+    )
 
 
 def snapshot_create(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
@@ -502,7 +522,7 @@ def snapshot_preview_restore(params: dict[str, Any], context: ApiTaskContext) ->
     result = _adapter(params).preview_restore_snapshot(
         _webui_path(params),
         snapshot_path=Path(_require_str(params, "snapshot_path")),
-        options=_options(params),
+        options=_resolved_mirror_options(params, ("use_pypi_mirror", "use_github_mirror", "custom_github_mirror")),
     )
     context.set_progress(100, "done")
     return result
@@ -522,7 +542,7 @@ def snapshot_restore(params: dict[str, Any], context: ApiTaskContext) -> dict[st
     result = _adapter(params).restore_snapshot(
         _webui_path(params),
         snapshot_path=Path(_require_str(params, "snapshot_path")),
-        options=_options(params),
+        options=_resolved_mirror_options(params, ("use_pypi_mirror", "use_github_mirror", "custom_github_mirror")),
     )
     context.set_progress(100, "done")
     return result
@@ -555,7 +575,7 @@ def extension_install(params: dict[str, Any], context: ApiTaskContext) -> dict[s
         dict[str, Any]: 安装结果。
     """
     context.log("Installing extension")
-    options = _options(params)
+    options = _resolved_mirror_options(params, ("use_github_mirror", "custom_github_mirror"))
     result = _adapter(params).install_extension(
         _webui_path(params),
         url=_require_str(params, "url"),
@@ -580,7 +600,7 @@ def extension_install_index_item(params: dict[str, Any], context: ApiTaskContext
         ValueError: item 字段不是对象。
     """
     context.log("Installing extension index item")
-    options = _options(params)
+    options = _resolved_mirror_options(params, ("use_github_mirror", "custom_github_mirror"))
     item = params.get("item")
     if not isinstance(item, dict):
         raise ValueError("Field 'item' must be an object")
@@ -707,7 +727,7 @@ def invokeai_install_version(params: dict[str, Any], context: ApiTaskContext) ->
         dict[str, Any]: 安装结果。
     """
     context.log("Installing InvokeAI version")
-    options = _options(params)
+    options = _resolved_mirror_options(params, ("use_pypi_mirror",))
     result = _adapter(params).install_invokeai_version(
         version=params.get("version"),
         upgrade=bool(options.get("upgrade", False)),

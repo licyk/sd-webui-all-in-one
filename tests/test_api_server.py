@@ -13,6 +13,7 @@ from sd_webui_all_in_one.api_server import server as api_server_module
 from sd_webui_all_in_one.api_server.adapters import webui as webui_adapters
 from sd_webui_all_in_one.api_server.adapters.webui import WebUiApiType
 from sd_webui_all_in_one.base_manager import version_manager
+from sd_webui_all_in_one.cli_manager import auto_mirror
 
 
 def _request(url, method="GET", data=None, token=""):
@@ -576,6 +577,59 @@ def test_default_api_registry_dispatches_launch_prepare(monkeypatch, tmp_path):
     assert result["launch"]["launch_script"] == "main.py"
     assert result["launch"]["launch_args"] == ["--listen"]
     assert calls == [(tmp_path, {"launch_args": ["--listen"]})]
+
+
+def test_launch_prepare_delegates_automatic_mirror_rewriting_to_python(monkeypatch, tmp_path):
+    calls = []
+    received = []
+
+    class FakeAdapter:
+        def prepare_launch(self, webui_path, options=None):
+            calls.append(options)
+            return {"launch": {}}
+
+    monkeypatch.setattr(registry, "get_webui_adapter", lambda _webui_type: FakeAdapter())
+    def rewrite(namespace):
+        received.append(dict(vars(namespace)))
+        return registry.Namespace(**{**vars(namespace), "use_pypi_mirror": True,
+            "use_github_mirror": True, "use_hf_mirror": True,
+            "custom_github_mirror": None, "custom_hf_mirror": None})
+    monkeypatch.setattr(registry, "apply_auto_mirror", rewrite)
+    registry.launch_prepare({
+        "webui_type": "comfyui", "webui_path": str(tmp_path),
+        "options": {"automatic_mirror": True, "launch_args": ["--listen"],
+                    "use_pypi_mirror": False, "use_github_mirror": False,
+                    "custom_github_mirror": "https://configured.example",
+                    "use_hf_mirror": False, "custom_hf_mirror": "https://hf.example"},
+    })
+    assert received == [{"auto_mirror": True, "launch_args": ["--listen"],
+                         "use_pypi_mirror": False, "use_github_mirror": False,
+                         "custom_github_mirror": "https://configured.example",
+                         "use_hf_mirror": False, "custom_hf_mirror": "https://hf.example"}]
+    assert calls == [{"launch_args": ["--listen"], "use_pypi_mirror": True, "use_github_mirror": True,
+                      "use_hf_mirror": True, "custom_github_mirror": None,
+                      "custom_hf_mirror": None}]
+
+
+def test_api_mirror_processing_overwrites_automatic_and_preserves_manual(monkeypatch):
+    configured = {"automatic_mirror": True, "keep": "value", "use_pypi_mirror": True,
+                  "use_github_mirror": True, "custom_github_mirror": "https://github.example",
+                  "use_hf_mirror": True, "custom_hf_mirror": "https://hf.example",
+                  "source": "modelscope"}
+    monkeypatch.setattr(auto_mirror, "network_gfw_test", lambda: True)
+    automatic = registry._resolved_mirror_options(
+        {"options": configured},
+        ("use_pypi_mirror", "use_github_mirror", "custom_github_mirror",
+         "use_hf_mirror", "custom_hf_mirror", "source"),
+    )
+    assert automatic == {"keep": "value", "use_pypi_mirror": False,
+                         "use_github_mirror": False, "custom_github_mirror": None,
+                         "use_hf_mirror": False, "custom_hf_mirror": None,
+                         "source": "huggingface"}
+    configured["automatic_mirror"] = False
+    assert registry._resolved_mirror_options({"options": configured}, tuple(configured)) == {
+        key: value for key, value in configured.items() if key != "automatic_mirror"
+    }
 
 
 def test_default_api_registry_dispatches_environment_dependencies(monkeypatch, tmp_path):

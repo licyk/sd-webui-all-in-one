@@ -407,15 +407,23 @@ def resolve_model_library_install(
         raise ValueError(item["non_installable_reason"] or "Model is not installable")
     source = options.get("source")
     downloader = options.get("downloader")
-    if source not in item["sources"]:
+    automatic_mirror = bool(options.get("automatic_mirror", False))
+    available_sources = list(item["sources"])
+    if not available_sources:
+        raise ValueError(f"No source is available for {model_id}")
+    if not automatic_mirror and source not in available_sources:
         raise ValueError(f"Source is not available for {model_id}: {source}")
     if downloader not in item["downloaders"]:
         raise ValueError(f"Downloader is not supported for {model_id}: {downloader}")
+    validation_source = source if source in available_sources else available_sources[0]
     return {
         "webui_type": webui_type,
         "model_id": model_id,
         "model_name": item["name"],
-        "source": source,
+        "source": validation_source,
+        "configured_source": source,
+        "available_sources": available_sources,
+        "automatic_mirror": automatic_mirror,
         "downloader": downloader,
         "cli_command_path": list(MODEL_CLI_PATHS[webui_type]),
     }
