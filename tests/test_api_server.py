@@ -87,7 +87,11 @@ def test_api_server_loads_default_business_methods():
         assert "snapshot.read" in catalog["methods"]
         assert "version.update" in catalog["tasks"]
         assert "snapshot.create" in catalog["tasks"]
+        assert "snapshot.delete" in catalog["tasks"]
+        assert "snapshot.delete" not in catalog["methods"]
         assert catalog["metadata"]["snapshot.create"]["kind"] == "task"
+        assert catalog["metadata"]["snapshot.delete"]["kind"] == "task"
+        assert catalog["metadata"]["snapshot.delete"]["params_schema"]["required"] == ["webui_type", "snapshot_path"]
     finally:
         server.server_close()
 
@@ -330,14 +334,18 @@ def test_default_api_registry_dispatches_version_queries(monkeypatch, tmp_path):
 
     assert registry.version_branches({"webui_type": "sd_webui", "webui_path": str(tmp_path), "options": {"fetch": False}}) == {"branches": []}
     assert registry.version_commits({"webui_type": "sd_webui", "webui_path": str(tmp_path), "options": {"limit": 5}}) == {"commits": []}
+    assert registry.version_commits({"webui_type": "sd_webui", "webui_path": str(tmp_path), "options": {"limit": None}}) == {"commits": []}
     assert registry.webui_check_updates({"webui_type": "sd_webui", "webui_path": str(tmp_path), "options": {"include_extensions": False}}) == {"summary": {"has_update": False}}
-    assert calls == [("branches", tmp_path, False), ("commits", tmp_path, 5), ("check-updates", tmp_path, {"include_extensions": False})]
+    assert calls == [("branches", tmp_path, False), ("commits", tmp_path, 5), ("commits", tmp_path, None), ("check-updates", tmp_path, {"include_extensions": False})]
 
 
 def test_default_api_registry_dispatches_snapshot_task(monkeypatch, tmp_path):
     calls = []
 
     class FakeContext:
+        def check_canceled(self):
+            calls.append(("check-canceled",))
+
         def log(self, message):
             calls.append(("log", message))
 
@@ -349,6 +357,10 @@ def test_default_api_registry_dispatches_snapshot_task(monkeypatch, tmp_path):
             calls.append(("create", webui_path, include_packages, output_dir))
             return {"path": "snapshot.json"}
 
+        def delete_snapshot(self, snapshot_path):
+            calls.append(("delete", snapshot_path))
+            return {"deleted": True, "path": snapshot_path.as_posix()}
+
     monkeypatch.setattr(registry, "get_webui_adapter", lambda webui_type: FakeAdapter())
 
     result = registry.snapshot_create(
@@ -357,7 +369,42 @@ def test_default_api_registry_dispatches_snapshot_task(monkeypatch, tmp_path):
     )
 
     assert result == {"path": "snapshot.json"}
-    assert calls == [("log", "Creating snapshot"), ("create", tmp_path, False, tmp_path / "snapshots"), ("progress", 100, "done")]
+    delete_result = registry.snapshot_delete(
+        {"webui_type": "sd_webui", "snapshot_path": str(tmp_path / "snapshots" / "sample.json")},
+        FakeContext(),
+    )
+
+    assert delete_result == {"deleted": True, "path": (tmp_path / "snapshots" / "sample.json").as_posix()}
+    assert calls == [
+        ("log", "Creating snapshot"),
+        ("create", tmp_path, False, tmp_path / "snapshots"),
+        ("progress", 100, "done"),
+        ("check-canceled",),
+        ("log", "Deleting WebUI snapshot"),
+        ("delete", tmp_path / "snapshots" / "sample.json"),
+        ("progress", 100, "done"),
+    ]
+
+
+def test_snapshot_delete_honors_cancellation_before_mutation(monkeypatch, tmp_path):
+    class CanceledContext:
+        def check_canceled(self):
+            raise api_server_module.ApiTaskCanceled("canceled before delete")
+
+        def log(self, _message):
+            raise AssertionError("canceled deletion must not log or mutate")
+
+    class FakeAdapter:
+        def delete_snapshot(self, _snapshot_path):
+            raise AssertionError("canceled deletion must not reach the adapter")
+
+    monkeypatch.setattr(registry, "get_webui_adapter", lambda _webui_type: FakeAdapter())
+
+    with pytest.raises(api_server_module.ApiTaskCanceled, match="before delete"):
+        registry.snapshot_delete(
+            {"webui_type": "sd_webui", "snapshot_path": str(tmp_path / "sample.json")},
+            CanceledContext(),
+        )
 
 
 def test_get_webui_adapter_rejects_unknown_type():
@@ -410,8 +457,10 @@ def test_default_api_registry_includes_full_version_snapshot_extension_surface()
     server = create_api_server(port=0)
     try:
         catalog = server.method_catalog()
-        assert {"version.status", "webui.check_updates", "snapshot.list", "snapshot.delete", "extension.list", "extension.index", "extension.versions", "environment.dependencies", "environment.pytorch_version", "package.versions", "launch.prepare", "system.proxy"}.issubset(catalog["methods"])
+        assert {"version.status", "webui.check_updates", "snapshot.list", "extension.list", "extension.index", "extension.versions", "extension.commits", "environment.dependencies", "environment.pytorch_version", "package.versions", "launch.prepare", "system.proxy"}.issubset(catalog["methods"])
+        assert catalog["metadata"]["extension.commits"]["params_schema"]["required"] == ["webui_type", "webui_path", "name"]
         assert {
+            "snapshot.delete",
             "extension.set_enabled",
             "extension.install",
             "extension.install_index_item",
@@ -468,6 +517,34 @@ def test_default_api_registry_dispatches_extension_methods(monkeypatch, tmp_path
         ("install_index", tmp_path, "ext", True, "https://mirror.example"),
         ("progress", 100, "done"),
     ]
+
+
+def test_extension_commits_resolves_name_and_forwards_none_limit(monkeypatch, tmp_path):
+    extension_path = tmp_path / "extensions" / "demo"
+    calls = []
+
+    class FakeAdapter:
+        def list_extensions(self, webui_path):
+            calls.append(("list", webui_path))
+            return {"extensions": [{"name": "demo", "path": str(extension_path)}]}
+
+        def list_commits(self, path, limit=100):
+            calls.append(("commits", path, limit))
+            return {"commits": [{"commit": "full-id"}]}
+
+    monkeypatch.setattr(registry, "get_webui_adapter", lambda webui_type: FakeAdapter())
+
+    result = registry.extension_commits(
+        {
+            "webui_type": "sd_webui",
+            "webui_path": str(tmp_path),
+            "name": "demo",
+            "options": {"limit": None},
+        }
+    )
+
+    assert result == {"commits": [{"commit": "full-id"}]}
+    assert calls == [("list", tmp_path), ("commits", extension_path, None)]
 
 
 def test_default_api_registry_dispatches_launch_prepare(monkeypatch, tmp_path):

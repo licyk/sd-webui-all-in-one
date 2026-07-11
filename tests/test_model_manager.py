@@ -111,7 +111,7 @@ def test_invokeai_model_manager_delegates_to_invokeai_helpers(monkeypatch, tmp_p
     assert calls == [
         ("list", tmp_path / "InvokeAI"),
         ("install", tmp_path / "InvokeAI", "https://example.test/model.safetensors"),
-        ("uninstall", ["model-1"], True, tmp_path / "InvokeAI"),
+        ("uninstall", ["model-1"], False, tmp_path / "InvokeAI"),
         ("uninstall", ["model-1"], True, tmp_path / "InvokeAI"),
     ]
 

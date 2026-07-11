@@ -595,7 +595,7 @@ class InvokeAIModelManager:
         self,
         model_id: str,
     ) -> bool:
-        """按 InvokeAI 默认删除语义移除模型
+        """注销 InvokeAI 模型记录并保留模型文件
 
         Args:
             model_id (str):
@@ -609,7 +609,7 @@ class InvokeAIModelManager:
 
         return uninstall_model_from_invokeai(
             model_identifiers=[model_id],
-            delete_files=True,
+            delete_files=False,
             invokeai_path=self.invokeai_path,
         )
 

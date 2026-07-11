@@ -677,24 +677,22 @@ class InvokeAIModelManagerApp(tk.Tk, BackgroundTaskMixin):
         )
 
     def unregister_selected(self) -> None:
-        """按 InvokeAI 默认删除语义移除当前选中的模型"""
+        """注销当前选中的 InvokeAI 模型并保留文件"""
 
         model_id = self._selected_model_id()
         if model_id is None:
             return
         if not messagebox.askyesno(
-            "确认删除/注销",
+            "确认注销",
             (
-                "将通过 InvokeAI 移除模型记录。\n"
-                "如果模型文件位于 InvokeAI 管理的 models 目录内，将同时永久删除模型文件；"
-                "就地安装的外部模型文件只会注销记录。\n\n"
+                "将通过 InvokeAI 移除模型记录并保留模型文件。\n\n"
                 f"模型 ID: {model_id}\n\n是否继续？"
             ),
             parent=self,
         ):
             return
         self.run_background(
-            "删除/注销 InvokeAI 模型中...",
+            "注销 InvokeAI 模型中...",
             lambda: self.manager.unregister(model_id),
             self._after_operation,
         )

@@ -186,7 +186,7 @@ def snapshot_read(params: dict[str, Any]) -> dict[str, Any]:
     return _adapter(params).read_snapshot(Path(_require_str(params, "snapshot_path")))
 
 
-def snapshot_delete(params: dict[str, Any]) -> dict[str, Any]:
+def snapshot_delete(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
     """删除快照文件。
 
     Args:
@@ -195,7 +195,11 @@ def snapshot_delete(params: dict[str, Any]) -> dict[str, Any]:
     Returns:
         dict[str, Any]: 删除结果。
     """
-    return _adapter(params).delete_snapshot(Path(_require_str(params, "snapshot_path")))
+    context.check_canceled()
+    context.log("Deleting WebUI snapshot")
+    result = _adapter(params).delete_snapshot(Path(_require_str(params, "snapshot_path")))
+    context.set_progress(100, "done")
+    return result
 
 
 def extension_list(params: dict[str, Any]) -> dict[str, Any]:
@@ -236,6 +240,23 @@ def extension_versions(params: dict[str, Any]) -> dict[str, Any]:
     if timeout is not None:
         timeout = int(timeout)
     return _adapter(params).fetch_extension_versions(_require_str(params, "node_id"), timeout=timeout)
+
+
+def extension_commits(params: dict[str, Any]) -> dict[str, Any]:
+    """List the complete Git history for one installed extension by stable name."""
+    name = _require_str(params, "name")
+    extensions = _adapter(params).list_extensions(_webui_path(params)).get("extensions", [])
+    extension = next((item for item in extensions if item.get("name") == name), None)
+    if extension is None:
+        raise ValueError(f"extension not found: {name}")
+    path = extension.get("path")
+    if not path:
+        raise ValueError(f"extension path is unavailable: {name}")
+    options = _options(params)
+    limit = options.get("limit", None)
+    if limit is not None:
+        limit = int(limit)
+    return _adapter(params).list_commits(Path(path), limit=limit)
 
 
 def environment_dependencies(params: dict[str, Any]) -> dict[str, Any]:
@@ -1102,8 +1123,13 @@ def _sync_spec(name: str, handler: Callable[[dict[str, Any]], dict[str, Any]], d
     return ApiMethodSpec(name=name, handler=handler, kind="sync", description=description, params_schema=schema or WEBUI_REQUEST_SCHEMA)
 
 
-def _task_spec(name: str, handler: Callable[[dict[str, Any], ApiTaskContext], dict[str, Any]], description: str) -> ApiMethodSpec:
-    return ApiMethodSpec(name=name, handler=handler, kind="task", description=description, params_schema=WEBUI_REQUEST_SCHEMA)
+def _task_spec(
+    name: str,
+    handler: Callable[[dict[str, Any], ApiTaskContext], dict[str, Any]],
+    description: str,
+    schema: dict[str, Any] | None = None,
+) -> ApiMethodSpec:
+    return ApiMethodSpec(name=name, handler=handler, kind="task", description=description, params_schema=schema or WEBUI_REQUEST_SCHEMA)
 
 
 def get_default_methods() -> ApiMethodRegistry:
@@ -1139,15 +1165,24 @@ def get_default_methods() -> ApiMethodRegistry:
             "Read a snapshot file.",
             {"type": "object", "properties": {"webui_type": {"type": "string"}, "snapshot_path": {"type": "string"}}, "required": ["webui_type", "snapshot_path"]},
         ),
-        "snapshot.delete": _sync_spec(
-            "snapshot.delete",
-            snapshot_delete,
-            "Delete a snapshot file.",
-            {"type": "object", "properties": {"webui_type": {"type": "string"}, "snapshot_path": {"type": "string"}}, "required": ["webui_type", "snapshot_path"]},
-        ),
         "extension.list": _sync_spec("extension.list", extension_list, "List local extensions or custom nodes."),
         "extension.index": _sync_spec("extension.index", extension_index, "Fetch installable extension index items."),
         "extension.versions": _sync_spec("extension.versions", extension_versions, "List Comfy Registry extension versions."),
+        "extension.commits": _sync_spec(
+            "extension.commits",
+            extension_commits,
+            "List commits for an installed Git extension.",
+            {
+                "type": "object",
+                "properties": {
+                    "webui_type": {"type": "string", "enum": sorted(WEBUI_API_ADAPTERS)},
+                    "webui_path": {"type": "string"},
+                    "name": {"type": "string", "minLength": 1},
+                    "options": {"type": "object"},
+                },
+                "required": ["webui_type", "webui_path", "name"],
+            },
+        ),
         "environment.dependencies": _sync_spec("environment.dependencies", environment_dependencies, "Check local environment dependency status."),
         "environment.pytorch_version": _sync_spec("environment.pytorch_version", environment_pytorch_version, "Check current PyTorch version compatibility."),
         "package.versions": _sync_spec("package.versions", package_versions, "List PyPI package versions."),
@@ -1199,6 +1234,19 @@ def get_default_task_methods() -> ApiTaskRegistry:
         "version.switch_commit": _task_spec("version.switch_commit", version_switch_commit, "Switch repository commit."),
         "version.update": _task_spec("version.update", version_update, "Update repository."),
         "snapshot.create": _task_spec("snapshot.create", snapshot_create, "Create a WebUI snapshot."),
+        "snapshot.delete": _task_spec(
+            "snapshot.delete",
+            snapshot_delete,
+            "Delete a snapshot file.",
+            {
+                "type": "object",
+                "properties": {
+                    "webui_type": {"type": "string", "enum": sorted(WEBUI_API_ADAPTERS)},
+                    "snapshot_path": {"type": "string"},
+                },
+                "required": ["webui_type", "snapshot_path"],
+            },
+        ),
         "snapshot.preview_restore": _task_spec("snapshot.preview_restore", snapshot_preview_restore, "Preview WebUI snapshot restore plan."),
         "snapshot.restore": _task_spec("snapshot.restore", snapshot_restore, "Restore a WebUI snapshot."),
         "extension.set_enabled": _task_spec("extension.set_enabled", extension_set_enabled, "Enable or disable an extension."),
