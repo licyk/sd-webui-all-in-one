@@ -404,6 +404,7 @@ class RuntimeLogEntry:
     message_type: str
     payload: dict[str, Any]
     created: float = field(default_factory=time.time)
+    sequence: int = 0
 
     def format_line(self) -> str:
         """
@@ -662,6 +663,8 @@ class HotpatcherRuntimeHost:
         self._server: _RuntimeServer | None = None
         self._thread: threading.Thread | None = None
         self._service_channel: RuntimeServiceChannel | None = None
+        self._next_log_sequence = 0
+        self._log_retention = 2000
 
     @property
     def server_address(self) -> tuple[str, int]:
@@ -913,10 +916,41 @@ class HotpatcherRuntimeHost:
 
     def _record_log(self, entry: RuntimeLogEntry) -> None:
         with self._lock:
+            entry.sequence = self._next_log_sequence
+            self._next_log_sequence += 1
             self.log_entries.append(entry)
+            overflow = len(self.log_entries) - self._log_retention
+            if overflow > 0:
+                del self.log_entries[:overflow]
         self.log_queue.put(entry)
         if self.on_log is not None:
             self.on_log(entry)
+
+    def read_logs(self, since_cursor: int = 0, limit: int = 200) -> dict[str, Any]:
+        """Read a bounded monotonic slice of retained runtime logs."""
+
+        bounded_limit = max(1, min(int(limit), 1000))
+        requested = max(0, int(since_cursor))
+        with self._lock:
+            first_cursor = self.log_entries[0].sequence if self.log_entries else self._next_log_sequence
+            start_cursor = max(requested, first_cursor)
+            selected = [item for item in self.log_entries if item.sequence >= start_cursor][:bounded_limit]
+            next_cursor = selected[-1].sequence + 1 if selected else start_cursor
+            return {
+                "logs": [
+                    {
+                        "sequence": item.sequence,
+                        "message_type": item.message_type,
+                        "payload": item.payload,
+                        "created": item.created,
+                        "line": item.format_line(),
+                    }
+                    for item in selected
+                ],
+                "start_cursor": start_cursor,
+                "next_cursor": next_cursor,
+                "truncated": requested < first_cursor,
+            }
 
     def _safe_config(self) -> dict[str, Any]:
         try:

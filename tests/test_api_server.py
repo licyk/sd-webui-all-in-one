@@ -721,7 +721,12 @@ def test_hotpatcher_api_adapter_runtime_status_and_env():
     try:
         assert started["running"] is True
         assert started["address"]["port"] > 0
-        assert adapter.runtime_logs()["logs"] == []
+        assert adapter.runtime_logs() == {
+            "logs": [],
+            "start_cursor": 0,
+            "next_cursor": 0,
+            "truncated": False,
+        }
     finally:
         assert adapter.stop_runtime() == {"stopped": True}
     assert adapter.runtime_status()["running"] is False

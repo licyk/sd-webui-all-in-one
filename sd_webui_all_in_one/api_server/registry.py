@@ -855,7 +855,10 @@ def hotpatcher_runtime_logs(params: dict[str, Any]) -> dict[str, Any]:
     """
     options = _options(params)
     limit = options.get("limit", 200)
-    return HOTPATCHER_API_ADAPTER.runtime_logs(limit=int(limit) if limit is not None else None)
+    return HOTPATCHER_API_ADAPTER.runtime_logs(
+        limit=int(limit) if limit is not None else None,
+        since_cursor=int(options.get("since_cursor", 0)),
+    )
 
 
 def model_create_folder(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:

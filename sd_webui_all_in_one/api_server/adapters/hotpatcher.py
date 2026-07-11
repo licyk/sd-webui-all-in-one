@@ -137,7 +137,7 @@ class HotpatcherApiAdapter:
                 "log_count": len(host.log_entries),
             }
 
-    def runtime_logs(self, limit: int | None = 200) -> dict[str, Any]:
+    def runtime_logs(self, limit: int | None = 200, since_cursor: int = 0) -> dict[str, Any]:
         """获取 runtime host 日志。
 
         Args:
@@ -148,8 +148,10 @@ class HotpatcherApiAdapter:
         """
         with self._lock:
             host = self._runtime_host
-            entries = [] if host is None else host.log_entries[-limit:] if limit is not None else host.log_entries
-            return {"logs": [{"message_type": item.message_type, "payload": item.payload, "created": item.created, "line": item.format_line()} for item in entries]}
+            if host is None:
+                return {"logs": [], "start_cursor": max(0, since_cursor), "next_cursor": max(0, since_cursor), "truncated": False}
+            effective_limit = 1000 if limit is None else limit
+            return host.read_logs(since_cursor=since_cursor, limit=effective_limit)
 
     def start_runtime(self, host: str = DEFAULT_RUNTIME_HOST, port: int = DEFAULT_RUNTIME_PORT, token: str = "", config: dict[str, Any] | None = None) -> dict[str, Any]:
         """启动 runtime host。

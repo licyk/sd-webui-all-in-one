@@ -16,6 +16,7 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     HOTPATCHER_PATH,
     HOTPATCHER_ENV_PREFIX,
     HotpatcherRuntimeHost,
+    RuntimeLogEntry,
     apply_hotpatcher_launch_env,
     build_hotpatcher_runtime_env,
     export_hotpatcher_default_config,
@@ -59,6 +60,25 @@ def test_hotpatcher_catalog_schema_is_json_serializable():
     assert services["settings"]["apply_on_bootstrap"]["type"] == "bool"
     assert "default" in services["settings"]["apply_on_bootstrap"]
     assert catalog["features"]["extensions.uv_pip"]["settings"]["symlink"]["type"] == "bool"
+
+
+def test_runtime_log_cursor_is_monotonic_bounded_and_reports_truncation():
+    host = HotpatcherRuntimeHost(port=0)
+    host._log_retention = 2
+    host._record_log(RuntimeLogEntry("log.record", {"level": "INFO", "message": "one"}))
+    host._record_log(RuntimeLogEntry("log.stream", {"source": "stdout", "text": "two"}))
+
+    first = host.read_logs(since_cursor=0, limit=1)
+    assert [entry["sequence"] for entry in first["logs"]] == [0]
+    assert first["next_cursor"] == 1
+    assert first["truncated"] is False
+
+    host._record_log(RuntimeLogEntry("log.dropped", {"count": 1}))
+    retained = host.read_logs(since_cursor=0, limit=10)
+    assert [entry["sequence"] for entry in retained["logs"]] == [1, 2]
+    assert retained["start_cursor"] == 1
+    assert retained["next_cursor"] == 3
+    assert retained["truncated"] is True
 
 
 def test_hotpatcher_config_export_load_save_and_overwrite_guard(tmp_path):
@@ -275,6 +295,12 @@ def test_runtime_host_serves_config_and_records_logs():
             entry = wait_for_runtime_log(host, lambda item: item.payload.get("message") == "hello")
             assert entry is not None
             assert entry.format_line() == "[WARNING] demo: hello"
+
+            _send_json_line(file, {"id": "file-1", "type": "file.delete", "payload": {"path": "/tmp/demo"}})
+            rejection = _read_json_line(file)
+            assert rejection["id"] == "file-1"
+            assert rejection["ok"] is False
+            assert rejection["error"]["code"] == "cancelled"
 
 
 def test_runtime_client_optional_connection_failure_is_quiet(monkeypatch, capsys):
