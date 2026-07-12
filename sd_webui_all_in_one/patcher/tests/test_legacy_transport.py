@@ -1,0 +1,426 @@
+import errno
+import json
+import logging
+import socket
+import threading
+import time
+from types import SimpleNamespace
+
+import pytest
+
+from sd_webui_all_in_one_hotpatcher.runtime.client import RuntimeClient
+from sd_webui_all_in_one_hotpatcher.runtime.protocol import RuntimeProtocolError, encode_message
+from sd_webui_all_in_one_hotpatcher.runtime.transport import JsonlTcpTransport
+from sd_webui_all_in_one_hotpatcher.services import ServiceControlChannel
+
+
+class _ScriptedReader:
+    def __init__(self, items=(), *, close_error=None):
+        self.items = list(items)
+        self.close_error = close_error
+        self.close_calls = 0
+        self.closed = False
+
+    def readline(self):
+        if not self.items:
+            return b""
+        item = self.items.pop(0)
+        if isinstance(item, BaseException):
+            raise item
+        return item
+
+    def close(self):
+        self.close_calls += 1
+        self.closed = True
+        if self.close_error is not None:
+            raise self.close_error
+
+
+class _FakeSocket:
+    def __init__(
+        self,
+        reader,
+        *,
+        timeout=5.0,
+        fail_send_calls=(),
+        shutdown_error=None,
+        close_error=None,
+    ):
+        self.reader = reader
+        self.timeout = timeout
+        self.timeout_history = []
+        self.fail_send_calls = set(fail_send_calls)
+        self.shutdown_error = shutdown_error
+        self.close_error = close_error
+        self.send_attempts = []
+        self.makefile_timeouts = []
+        self.shutdown_calls = 0
+        self.close_calls = 0
+        self.closed = False
+        self.send_timeouts = []
+
+    def settimeout(self, value):
+        self.timeout = value
+        self.timeout_history.append(value)
+
+    def gettimeout(self):
+        return self.timeout
+
+    def makefile(self, mode):
+        assert mode == "rb"
+        self.makefile_timeouts.append(self.timeout)
+        return self.reader
+
+    def sendall(self, data):
+        self.send_attempts.append(data)
+        self.send_timeouts.append(self.timeout)
+        if len(self.send_attempts) in self.fail_send_calls:
+            raise BrokenPipeError("scripted send failure")
+
+    def shutdown(self, how):
+        assert how == socket.SHUT_RDWR
+        self.shutdown_calls += 1
+        if self.shutdown_error is not None:
+            raise self.shutdown_error
+
+    def close(self):
+        self.close_calls += 1
+        self.closed = True
+        if self.close_error is not None:
+            raise self.close_error
+
+
+class _ResponseReader(_ScriptedReader):
+    def __init__(self, sock):
+        super().__init__()
+        self.sock = sock
+
+    def readline(self):
+        request = json.loads(self.sock.send_attempts[-1])
+        return encode_message({"id": request["id"], "ok": True, "payload": {"value": 7}})
+
+
+class _StaticService:
+    def handle_request_json(self, request, *, runtime_client):
+        return {"ok": True, "payload": {"type": request["type"]}}
+
+
+class _FailingService:
+    def handle_request_json(self, request, *, runtime_client):
+        raise ValueError("scripted handler failure")
+
+
+def _wait_for_thread(channel):
+    channel.thread.join(timeout=2)
+    assert not channel.thread.is_alive()
+
+
+def test_jsonl_connect_uses_timeout_only_for_connection(monkeypatch):
+    reader = _ScriptedReader()
+    sock = _FakeSocket(reader, timeout=0.05)
+    observed = {}
+
+    def create_connection(address, *, timeout):
+        observed.update(address=address, timeout=timeout)
+        return sock
+
+    monkeypatch.setattr(socket, "create_connection", create_connection)
+
+    transport = JsonlTcpTransport.connect("127.0.0.1", 8123, timeout=0.05)
+    try:
+        assert observed == {"address": ("127.0.0.1", 8123), "timeout": 0.05}
+        assert sock.timeout_history == [None]
+        assert sock.makefile_timeouts == [None]
+    finally:
+        transport.close()
+
+
+def test_request_timeout_restores_blocking_mode_after_success():
+    sock = _FakeSocket(None, timeout=None)
+    reader = _ResponseReader(sock)
+    sock.reader = reader
+    transport = JsonlTcpTransport(sock, host="127.0.0.1", port=8123)
+
+    assert transport.request("echo", timeout=0.05) == {"value": 7}
+    assert sock.timeout_history == [0.05, None]
+    assert sock.gettimeout() is None
+    assert transport.closed is False
+    transport.close()
+
+
+def test_request_protocol_error_restores_timeout_without_invalidating_reader():
+    reader = _ScriptedReader([b'{"id":"wrong","ok":true,"payload":{}}\n', b"not-json\n"])
+    sock = _FakeSocket(reader, timeout=None)
+    transport = JsonlTcpTransport(sock, host="127.0.0.1", port=8123)
+
+    with pytest.raises(RuntimeProtocolError):
+        transport.request("echo", timeout=0.05)
+
+    assert sock.timeout_history == [0.05, None]
+    assert transport.closed is False
+    assert reader.close_calls == 0
+    transport.close()
+
+
+def test_concurrent_event_waits_for_request_timeout_scope():
+    request_reading = threading.Event()
+    release_response = threading.Event()
+
+    class BlockingResponseReader(_ScriptedReader):
+        def __init__(self, sock):
+            super().__init__()
+            self.sock = sock
+
+        def readline(self):
+            request_reading.set()
+            assert release_response.wait(timeout=1)
+            request = json.loads(self.sock.send_attempts[0])
+            return encode_message({"id": request["id"], "ok": True, "payload": {}})
+
+    sock = _FakeSocket(None, timeout=None)
+    reader = BlockingResponseReader(sock)
+    sock.reader = reader
+    transport = JsonlTcpTransport(sock, host="127.0.0.1", port=8123)
+    request_result = []
+    event_finished = threading.Event()
+
+    request_thread = threading.Thread(
+        target=lambda: request_result.append(transport.request("slow", timeout=0.05)),
+    )
+    request_thread.start()
+    assert request_reading.wait(timeout=1)
+
+    event_thread = threading.Thread(
+        target=lambda: (transport.event("progress.update", {"value": 1}), event_finished.set()),
+    )
+    event_thread.start()
+    assert event_finished.wait(timeout=0.05) is False
+    assert len(sock.send_attempts) == 1
+
+    release_response.set()
+    request_thread.join(timeout=1)
+    event_thread.join(timeout=1)
+    assert not request_thread.is_alive()
+    assert not event_thread.is_alive()
+    assert request_result == [{}]
+    assert event_finished.is_set()
+    assert [json.loads(item)["type"] for item in sock.send_attempts] == [
+        "slow",
+        "progress.update",
+    ]
+    assert sock.send_timeouts == [0.05, None]
+    transport.close()
+
+
+def test_timed_out_buffered_reader_is_invalidated_after_timeout_restoration():
+    reader = _ScriptedReader([socket.timeout("scripted request timeout")])
+    sock = _FakeSocket(reader, timeout=None)
+    transport = JsonlTcpTransport(sock, host="127.0.0.1", port=8123)
+
+    with pytest.raises(socket.timeout, match="scripted request timeout"):
+        transport.request("slow", timeout=0.05)
+
+    assert sock.timeout_history == [0.05, None]
+    assert transport.closed is True
+    assert reader.close_calls == 1
+    assert sock.close_calls == 1
+    with pytest.raises(RuntimeProtocolError, match="closed"):
+        transport.send_raw({"type": "event"})
+
+
+def _make_channel(monkeypatch, sock, *, service=None, timeout=0.05):
+    observed = {}
+
+    def create_connection(address, *, timeout):
+        observed.update(address=address, timeout=timeout)
+        return sock
+
+    monkeypatch.setattr(socket, "create_connection", create_connection)
+    client = SimpleNamespace(host="127.0.0.1", port=8123, token="secret")
+    channel = ServiceControlChannel(client, service or _StaticService(), timeout=timeout)
+    assert observed == {"address": ("127.0.0.1", 8123), "timeout": timeout}
+    assert sock.timeout_history == [None]
+    assert sock.makefile_timeouts == [None]
+    return channel
+
+
+def test_services_read_failure_is_terminal_without_second_write(monkeypatch):
+    reader = _ScriptedReader([ConnectionResetError("scripted read reset")])
+    sock = _FakeSocket(reader)
+    channel = _make_channel(monkeypatch, sock).start()
+    _wait_for_thread(channel)
+
+    assert channel.closed is True
+    assert channel.reader is reader
+    assert channel.sock is sock
+    assert reader.closed is True
+    assert sock.closed is True
+    assert channel.terminal_failure == {"stage": "read", "message": "scripted read reset"}
+    assert len(sock.send_attempts) == 1  # channel.open only
+
+    close_counts = (reader.close_calls, sock.close_calls, sock.shutdown_calls)
+    channel.close()
+    channel.close()
+    assert (reader.close_calls, sock.close_calls, sock.shutdown_calls) == close_counts
+
+
+def test_services_response_send_failure_is_terminal_and_contained(monkeypatch):
+    request = encode_message({"id": "svc-1", "type": "services.defaults.get", "payload": {}})
+    reader = _ScriptedReader([request])
+    sock = _FakeSocket(reader, fail_send_calls={2})
+    channel = _make_channel(monkeypatch, sock).start()
+    _wait_for_thread(channel)
+
+    assert channel.closed is True
+    assert channel.terminal_failure == {"stage": "response", "message": "scripted send failure"}
+    assert len(sock.send_attempts) == 2  # no attempted error write after the failed response
+    assert reader.close_calls == 1
+    assert sock.close_calls == 1
+
+
+@pytest.mark.parametrize(
+    ("reader", "service", "expected_stage"),
+    [
+        (_ScriptedReader([b"not-json\n"]), _StaticService(), "decode"),
+        (
+            _ScriptedReader([encode_message({"id": "svc-1", "type": "services.defaults.get", "payload": {}})]),
+            _FailingService(),
+            "handler",
+        ),
+    ],
+)
+def test_services_recoverable_failures_are_diagnosed_and_answered(monkeypatch, reader, service, expected_stage):
+    sock = _FakeSocket(reader)
+    channel = _make_channel(monkeypatch, sock, service=service).start()
+    _wait_for_thread(channel)
+
+    assert any(item["stage"] == expected_stage for item in channel.diagnostics)
+    assert len(sock.send_attempts) == 2
+    response = json.loads(sock.send_attempts[1])
+    assert response["ok"] is False
+    assert response["error"]["code"] == "request_failed"
+
+
+def test_services_connect_and_close_failures_have_distinct_diagnostics(monkeypatch, caplog):
+    def fail_connection(address, *, timeout):
+        raise ConnectionRefusedError("scripted connect failure")
+
+    monkeypatch.setattr(socket, "create_connection", fail_connection)
+    client = SimpleNamespace(host="127.0.0.1", port=8123, token="")
+    with caplog.at_level(logging.WARNING), pytest.raises(ConnectionRefusedError):
+        ServiceControlChannel(client, _StaticService())
+    assert "services control channel connect failure: scripted connect failure" in caplog.text
+
+    reader = _ScriptedReader(close_error=OSError("scripted reader close failure"))
+    sock = _FakeSocket(
+        reader,
+        shutdown_error=OSError(errno.EIO, "scripted shutdown failure"),
+        close_error=OSError("scripted socket close failure"),
+    )
+    channel = _make_channel(monkeypatch, sock)
+    channel.close()
+    first_diagnostics = list(channel.diagnostics)
+    channel.close()
+
+    close_messages = [item["message"] for item in channel.diagnostics if item["stage"] == "close"]
+    assert len(close_messages) == 3
+    assert any("shutdown failure" in message for message in close_messages)
+    assert any("reader close failure" in message for message in close_messages)
+    assert any("socket close failure" in message for message in close_messages)
+    assert channel.diagnostics == first_diagnostics
+
+
+class _IdleLegacyHost:
+    def __init__(self):
+        self.listener = socket.socket()
+        self.listener.bind(("127.0.0.1", 0))
+        self.listener.listen()
+        self.host, self.port = self.listener.getsockname()
+        self.stop_event = threading.Event()
+        self.service_open = threading.Event()
+        self.send_service_request = threading.Event()
+        self.service_response = threading.Event()
+        self.connections = []
+        self.threads = []
+        self.errors = []
+        self.thread = threading.Thread(target=self._accept, daemon=True)
+
+    def __enter__(self):
+        self.thread.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop_event.set()
+        try:
+            with socket.create_connection((self.host, self.port), timeout=0.2):
+                pass
+        except OSError:
+            pass
+        for conn in self.connections:
+            try:
+                conn.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            conn.close()
+        self.listener.close()
+        self.thread.join(timeout=2)
+        for thread in self.threads:
+            thread.join(timeout=2)
+
+    def _accept(self):
+        while not self.stop_event.is_set():
+            try:
+                conn, _ = self.listener.accept()
+            except OSError:
+                return
+            self.connections.append(conn)
+            thread = threading.Thread(target=self._handle, args=(conn,), daemon=True)
+            self.threads.append(thread)
+            thread.start()
+
+    def _handle(self, conn):
+        try:
+            reader = conn.makefile("rb")
+            first_line = reader.readline()
+            if not first_line:
+                return
+            first = json.loads(first_line)
+            if first.get("type") == "hello":
+                request = json.loads(reader.readline())
+                time.sleep(0.08)
+                conn.sendall(encode_message({"id": request["id"], "ok": True, "payload": {"idle": True}}))
+                return
+            if first.get("type") == "channel.open":
+                self.service_open.set()
+                if not self.send_service_request.wait(timeout=7):
+                    return
+                conn.sendall(encode_message({"id": "svc-idle", "type": "services.defaults.get", "payload": {}}))
+                response = json.loads(reader.readline())
+                if response.get("id") == "svc-idle" and response.get("ok") is True:
+                    self.service_response.set()
+        except Exception as exc:  # pragma: no cover - asserted through errors
+            if not self.stop_event.is_set():
+                self.errors.append(exc)
+
+
+def test_legacy_runtime_and_services_remain_usable_beyond_connect_deadline():
+    with _IdleLegacyHost() as host:
+        client = RuntimeClient.connect(host.host, host.port, timeout=0.05)
+        channel = ServiceControlChannel(client, _StaticService(), timeout=0.05).start()
+        try:
+            assert client.transport.sock.gettimeout() is None
+            assert channel.sock is not None
+            assert channel.sock.gettimeout() is None
+            assert host.service_open.wait(timeout=1)
+
+            # One real soak covers the historical five-second inherited socket
+            # timeout; the remaining timeout tests use deterministic fakes.
+            time.sleep(5.1)
+            host.send_service_request.set()
+            assert host.service_response.wait(timeout=1)
+            assert client.request("idle.echo") == {"idle": True}
+            assert channel.closed is False
+            assert host.errors == []
+        finally:
+            channel.close()
+            client.close()

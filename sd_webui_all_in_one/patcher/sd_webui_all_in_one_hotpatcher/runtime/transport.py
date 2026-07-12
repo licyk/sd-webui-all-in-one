@@ -44,7 +44,11 @@ class JsonlTcpTransport:
         self.token = token
         self._reader = sock.makefile("rb")
         self._write_lock = threading.Lock()
-        self._request_lock = threading.Lock()
+        # The socket timeout is process-object state. Hold this reentrant lock
+        # for the complete request timeout scope and for every standalone send
+        # so an event cannot inherit a temporary request deadline.
+        self._request_lock = threading.RLock()
+        self._close_lock = threading.Lock()
         self.closed = False
 
     @classmethod
@@ -68,7 +72,7 @@ class JsonlTcpTransport:
             token (str):
                 握手 token
             timeout (float):
-                连接超时时间
+                TCP 连接建立的超时时间。连接建立后恢复为阻塞模式。
             features (list[str] | None):
                 客户端能力列表
 
@@ -78,9 +82,27 @@ class JsonlTcpTransport:
         """
 
         sock = socket.create_connection((host, port), timeout=timeout)
-        transport = cls(sock, host=host, port=port, token=token)
-        transport.send_raw(hello_message(token, features))
-        return transport
+        transport: JsonlTcpTransport | None = None
+        try:
+            # ``create_connection`` leaves its establishment deadline on the
+            # socket.  Runtime connections are intentionally long-lived; only
+            # individual requests may opt into a read/write deadline.
+            sock.settimeout(None)
+            transport = cls(sock, host=host, port=port, token=token)
+            transport.send_raw(hello_message(token, features))
+            return transport
+        except Exception:
+            if transport is not None:
+                try:
+                    transport.close()
+                except Exception:
+                    pass
+            else:
+                try:
+                    sock.close()
+                except Exception:
+                    pass
+            raise
 
     def send_raw(self, message: dict[str, Any]) -> None:
         """
@@ -95,11 +117,12 @@ class JsonlTcpTransport:
                 传输已经关闭
         """
 
-        if self.closed:
-            raise RuntimeTransportError("Transport is closed")
         data = encode_message(message)
-        with self._write_lock:
-            self.sock.sendall(data)
+        with self._request_lock:
+            if self.closed:
+                raise RuntimeTransportError("Transport is closed")
+            with self._write_lock:
+                self.sock.sendall(data)
 
     def event(self, message_type: str, payload: dict[str, Any] | None = None) -> None:
         """
@@ -130,7 +153,7 @@ class JsonlTcpTransport:
             payload (dict[str, Any] | None):
                 请求载荷
             timeout (float | None):
-                本次请求超时时间
+                本次请求的临时超时时间。请求结束后恢复先前的 socket 模式。
 
         Returns:
             dict[str, Any]:
@@ -150,12 +173,23 @@ class JsonlTcpTransport:
 
         with self._request_lock:
             old_timeout = self.sock.gettimeout()
-            if timeout is not None:
-                self.sock.settimeout(timeout)
+            transport_timed_out = False
+            request_error: BaseException | None = None
             try:
+                if timeout is not None:
+                    self.sock.settimeout(timeout)
                 self.send_raw(message)
                 while True:
-                    line = self._reader.readline()
+                    try:
+                        line = self._reader.readline()
+                    except (TimeoutError, socket.timeout):
+                        # A buffered socket reader cannot be used reliably
+                        # after a timeout (CPython reports "cannot read from
+                        # timed out object" on subsequent reads).  The stream
+                        # may also be positioned in the middle of a JSON line,
+                        # so recreating the file object is not protocol-safe.
+                        transport_timed_out = True
+                        raise
                     if not line:
                         raise RuntimeTransportError("Host closed the connection")
                     response = decode_message(line)
@@ -174,20 +208,50 @@ class JsonlTcpTransport:
                         str(error.get("message", "")),
                         error,
                     )
+            except (TimeoutError, socket.timeout) as exc:
+                # A timed-out write may be partial too, so either read or write
+                # timeout makes the JSONL stream unsafe for another request.
+                transport_timed_out = True
+                request_error = exc
+                raise
+            except BaseException as exc:
+                request_error = exc
+                raise
             finally:
                 if timeout is not None:
-                    self.sock.settimeout(old_timeout)
+                    try:
+                        self.sock.settimeout(old_timeout)
+                    except Exception:
+                        # Failure to restore the prior mode also makes this
+                        # connection unsuitable for reuse.  Preserve an active
+                        # request error instead of masking it with cleanup.
+                        self._invalidate()
+                        if request_error is None:
+                            raise
+                if transport_timed_out:
+                    self._invalidate()
+
+    def _invalidate(self) -> None:
+        """Mark the transport unusable and close poisoned stream state."""
+
+        try:
+            self.close()
+        except Exception:
+            # Invalidation is cleanup for an already-active transport error.
+            # It must not replace that primary failure.
+            pass
 
     def close(self) -> None:
         """关闭 socket 和 reader"""
 
-        if self.closed:
-            return
-        self.closed = True
-        try:
-            self._reader.close()
-        finally:
-            self.sock.close()
+        with self._close_lock:
+            if self.closed:
+                return
+            self.closed = True
+            try:
+                self._reader.close()
+            finally:
+                self.sock.close()
 
     def __enter__(self) -> "JsonlTcpTransport":
         return self

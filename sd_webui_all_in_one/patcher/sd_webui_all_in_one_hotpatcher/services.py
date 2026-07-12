@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import copy
+import errno
 import json
+import logging
 import socket
 import threading
 from pathlib import Path
@@ -36,6 +38,8 @@ from .stack_shadow import (
 )
 
 _MISSING = object()
+_LOGGER = logging.getLogger(__name__)
+SERVICE_CONTROL_DIAGNOSTIC_LIMIT = 100
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "services": {
@@ -444,15 +448,45 @@ class ServiceControlChannel:
             service (PatchService | None):
                 请求处理服务。为 None 时使用默认服务。
             timeout (float):
-                TCP 连接超时时间
+                TCP 连接建立的超时时间。连接建立后恢复为阻塞模式。
         """
 
         self.client = client
         self.service = service or PatchService()
-        self.sock = socket.create_connection((client.host, client.port), timeout=timeout)
-        self.reader = self.sock.makefile("rb")
         self.write_lock = threading.Lock()
+        self._state_lock = threading.Lock()
+        self._diagnostic_lock = threading.Lock()
+        self._close_complete = threading.Event()
+        self._thread_started = False
+        self.diagnostics: list[dict[str, str]] = []
+        self.terminal_failure: dict[str, str] | None = None
         self.closed = False
+        self.sock: socket.socket | None = None
+        self.reader: Any | None = None
+        try:
+            sock = socket.create_connection((client.host, client.port), timeout=timeout)
+            self.sock = sock
+            # The timeout is a connect-establishment deadline, not an idle
+            # policy for this long-lived command channel.
+            sock.settimeout(None)
+            self.reader = sock.makefile("rb")
+        except Exception as exc:
+            self._record_diagnostic("connect", exc)
+            self.closed = True
+            if self.reader is not None:
+                try:
+                    self.reader.close()
+                except Exception as close_exc:
+                    self._record_diagnostic("close", close_exc)
+            if self.sock is not None:
+                try:
+                    self.sock.close()
+                except Exception as close_exc:
+                    self._record_diagnostic("close", close_exc)
+            self.reader = None
+            self.sock = None
+            self._close_complete.set()
+            raise
         self.thread = threading.Thread(
             target=self._run,
             name="sd_webui_all_in_one_hotpatcher-services",
@@ -468,46 +502,149 @@ class ServiceControlChannel:
                 当前控制通道对象
         """
 
-        self._send(
-            {
-                "type": "channel.open",
-                "channel": "services",
-                "token": self.client.token,
-            }
-        )
-        self.thread.start()
+        try:
+            self._send(
+                {
+                    "type": "channel.open",
+                    "channel": "services",
+                    "token": self.client.token,
+                }
+            )
+            self.thread.start()
+            self._thread_started = True
+        except Exception as exc:
+            self._set_terminal_failure("connect", exc)
+            self.close()
+            raise
         return self
 
     def close(self) -> None:
         """关闭控制通道"""
 
-        if self.closed:
+        owns_cleanup = False
+        reader = None
+        sock = None
+        with self._state_lock:
+            if not self.closed:
+                self.closed = True
+                reader = self.reader
+                sock = self.sock
+                owns_cleanup = True
+
+        if not owns_cleanup:
+            if threading.current_thread() is not self.thread:
+                self._close_complete.wait()
+                if self._thread_started:
+                    self.thread.join()
             return
-        self.closed = True
+
         try:
-            self.reader.close()
+            if sock is not None:
+                try:
+                    sock.shutdown(socket.SHUT_RDWR)
+                except OSError as exc:
+                    if exc.errno not in {errno.EBADF, errno.EINVAL, errno.ENOTCONN}:
+                        self._record_diagnostic("close", exc)
+                except Exception as exc:
+                    self._record_diagnostic("close", exc)
+            if reader is not None:
+                try:
+                    reader.close()
+                except Exception as exc:
+                    self._record_diagnostic("close", exc)
+            if sock is not None:
+                try:
+                    sock.close()
+                except Exception as exc:
+                    self._record_diagnostic("close", exc)
         finally:
-            self.sock.close()
+            self._close_complete.set()
+
+        if threading.current_thread() is not self.thread and self._thread_started:
+            self.thread.join()
 
     def _run(self) -> None:
-        while not self.closed:
-            try:
-                line = self.reader.readline()
-                if not line:
+        try:
+            while not self.closed:
+                reader = self.reader
+                if reader is None:
                     return
-                request = decode_message(line)
-                response = self.service.handle_request_json(request, runtime_client=self.client)
+                try:
+                    line = reader.readline()
+                except Exception as exc:
+                    if not self.closed:
+                        self._terminate("read", exc)
+                    return
+                if not line:
+                    if not self.closed:
+                        self._terminate("read", "host closed the services channel")
+                    return
+
+                try:
+                    request = decode_message(line)
+                except Exception as exc:
+                    self._record_diagnostic("decode", exc)
+                    if not self._send_error_response(_error_response("request_failed", str(exc))):
+                        return
+                    continue
+
+                try:
+                    response = self.service.handle_request_json(request, runtime_client=self.client)
+                except Exception as exc:
+                    self._record_diagnostic("handler", exc)
+                    response = _error_response("request_failed", str(exc))
                 if "id" in request:
                     response["id"] = request["id"]
-                self._send(response)
-            except Exception as exc:
-                if self.closed:
+
+                try:
+                    self._send(response)
+                except Exception as exc:
+                    if not self.closed:
+                        self._terminate("response", exc)
                     return
-                self._send(_error_response("request_failed", str(exc)))
+        finally:
+            self.close()
+
+    def _send_error_response(self, response: dict[str, Any]) -> bool:
+        """Send a recoverable decode/handler error while the socket is healthy."""
+
+        if self.closed:
+            return False
+        try:
+            self._send(response)
+            return True
+        except Exception as exc:
+            if not self.closed:
+                self._terminate("response", exc)
+            return False
+
+    def _terminate(self, stage: str, error: BaseException | str) -> None:
+        """Record the first terminal failure and close the channel."""
+
+        self._set_terminal_failure(stage, error)
+        self.close()
+
+    def _set_terminal_failure(self, stage: str, error: BaseException | str) -> None:
+        message = str(error)
+        self._record_diagnostic(stage, message)
+        with self._state_lock:
+            if self.terminal_failure is None:
+                self.terminal_failure = {"stage": stage, "message": message}
+
+    def _record_diagnostic(self, stage: str, error: BaseException | str) -> None:
+        message = str(error)
+        with self._diagnostic_lock:
+            self.diagnostics.append({"stage": stage, "message": message})
+            del self.diagnostics[:-SERVICE_CONTROL_DIAGNOSTIC_LIMIT]
+        _LOGGER.warning("services control channel %s failure: %s", stage, message)
 
     def _send(self, message: dict[str, Any]) -> None:
         with self.write_lock:
-            self.sock.sendall(encode_message(message))
+            with self._state_lock:
+                if self.closed or self.sock is None:
+                    raise RuntimeProtocolError("Services control channel is closed")
+                sock = self.sock
+            sock.sendall(encode_message(message))
 
 
 class PatchService:

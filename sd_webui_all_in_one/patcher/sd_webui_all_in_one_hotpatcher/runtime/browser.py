@@ -6,11 +6,11 @@ import functools
 import sys
 import warnings
 from types import ModuleType
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 from ..hook import install_import_hook, register_hook
 from ..state import HotpatcherState, get_default_state
-from .client import RuntimeClient
+from .interfaces import RuntimeEventSink, emit_runtime_event
 
 BrowserMode = Literal["host", "suppress", "passthrough"]
 _BROWSER_MODES = {"host", "suppress", "passthrough"}
@@ -19,15 +19,15 @@ _BROWSER_MODES = {"host", "suppress", "passthrough"}
 class ManagedBrowser:
     """Send browser requests to the runtime host."""
 
-    def __init__(self, client: RuntimeClient):
+    def __init__(self, client: RuntimeEventSink | Any):
         self.client = client
 
     def open(self, url: str) -> None:
-        self.client.event("browser.open", {"url": url})
+        emit_runtime_event(self.client, "browser.open", {"url": url})
 
 
 def patch_webbrowser(
-    client: RuntimeClient | ManagedBrowser | None,
+    client: RuntimeEventSink | ManagedBrowser | Any | None,
     *,
     mode: BrowserMode = "host",
     state: HotpatcherState | None = None,
@@ -52,6 +52,7 @@ def patch_webbrowser(
     if mode == "host" and client is None:
         diagnostic = "browser host mode has no runtime client; browser opening remains suppressed"
         active_state.browser_diagnostics.append(diagnostic)
+        del active_state.browser_diagnostics[:-100]
         warnings.warn(diagnostic, RuntimeWarning, stacklevel=2)
 
     install_import_hook(state=active_state)
@@ -69,11 +70,7 @@ def patch_webbrowser(
             if current_mode == "host":
                 current_client = active_state.browser_runtime_client
                 if current_client is not None:
-                    browser = (
-                        current_client
-                        if isinstance(current_client, ManagedBrowser)
-                        else ManagedBrowser(cast(RuntimeClient, current_client))
-                    )
+                    browser = current_client if isinstance(current_client, ManagedBrowser) else ManagedBrowser(current_client)
                     try:
                         browser.open(url)
                     except Exception as exc:

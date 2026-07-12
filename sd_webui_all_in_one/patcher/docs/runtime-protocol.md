@@ -1,6 +1,8 @@
 # Runtime 通信协议
 
-`sd_webui_all_in_one_hotpatcher.runtime` 提供补丁系统和外部宿主之间的控制通道。当前协议是 TCP + JSON Lines，不兼容原系统的 Windows named pipe + GUID 二进制协议。
+`sd_webui_all_in_one_hotpatcher.runtime` 提供补丁系统和外部宿主之间的控制通道。本文描述默认的 legacy TCP + JSON Lines 协议，不兼容原系统的 Windows named pipe + GUID 二进制协议。显式 desktop transport 是并行实现，不替代这里的任何 API；其版本化 HTTP 合同见 [Desktop Broker v1](desktop-broker-protocol.md)。
+
+transport selector 是 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TRANSPORT_MODE`。未设置、空值或 `legacy` 选择本文协议；只有精确值 `desktop_broker` 选择 desktop client。值区分大小写且不接受别名。
 
 ## 设计目标
 
@@ -123,9 +125,14 @@ client = RuntimeClient.connect_from_env()
 
 ## 断线和超时
 
-`JsonlTcpTransport.connect()` 使用 `socket.create_connection` 的 timeout。
+`JsonlTcpTransport.connect()` 的 timeout 只限制 TCP 建连。连接成功后会在创建 buffered reader 和发送 hello 前执行 `sock.settimeout(None)`，所以普通空闲不会继承五秒建连 deadline。
 
-`request(..., timeout=...)` 可以临时覆盖 socket timeout。超时、断开、空读取会抛异常。
+`request(..., timeout=...)` 是独立的单次请求 deadline。它在成功和所有异常路径恢复之前的 socket mode。buffered `makefile()` reader 一旦发生读/写 timeout 就不能安全复用（可能已位于半条 JSONL 中，CPython 也可能报 `cannot read from timed out object`），因此 transport 会在恢复 socket mode 后关闭并标为 terminal。协议/业务响应异常如果没有 socket timeout，则 reader 仍可继续使用。
+
+socket timeout 是整个 socket 对象的状态，不是 thread-local。`request()` 的完整临时
+timeout scope 和所有 `send_raw()` / `event()` write 使用同一把 reentrant lock；并发
+event 会等 request 恢复 blocking mode 后再写，不能继承 request deadline 或在 timeout
+后继续写入已 invalidated 的 JSONL stream。
 
 `RuntimeClient.connect_from_env(required=False)` 连接失败会捕获异常并返回 `None`。`required=True` 时抛出原异常。
 

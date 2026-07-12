@@ -82,7 +82,7 @@ class RuntimeClient:
             token (str):
                 握手 token
             timeout (float):
-                连接和请求默认超时时间
+                TCP 连接建立超时时间。连接成功后恢复为阻塞模式。
             features (list[str] | None):
                 握手时声明的能力列表
 
@@ -175,10 +175,32 @@ class RuntimeClient:
                 事件载荷
         """
 
+        self.emit_event(message_type, payload)
+
+    def emit_event(self, message_type: str, payload: dict[str, Any] | None = None) -> bool:
+        """Implement the transport-neutral best-effort event sink boundary."""
+
         try:
             self.transport.event(message_type, payload)
+            return True
         except Exception:
             capture_exception()
+            return False
+
+    def start(self) -> "RuntimeClient":
+        """Legacy connections are already started by :meth:`connect`."""
+
+        return self
+
+    def status(self) -> dict[str, Any]:
+        """Return a minimal lifecycle snapshot without changing legacy APIs."""
+
+        return {
+            "transport": "legacy",
+            "status": "closed" if self.transport.closed else "connected",
+            "host": self.host,
+            "port": self.port,
+        }
 
     def get_config(self) -> dict[str, Any]:
         """

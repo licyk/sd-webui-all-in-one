@@ -626,11 +626,9 @@ def _send_exception_event(
             context=context,
             include_locals=include_locals,
         )
-        transport = getattr(client, "transport", None)
-        if transport is not None:
-            transport.event(message_type, payload)
-        else:
-            client.event(message_type, payload)
+        from .interfaces import emit_runtime_event
+
+        emit_runtime_event(client, message_type, payload)
     except Exception:
         return
     finally:

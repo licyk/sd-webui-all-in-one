@@ -35,6 +35,12 @@ class BootstrapState:
             已安装的 services 控制通道, 未启用时为 None
         service_apply_result (dict[str, Any] | None):
             bootstrap 自动应用 services 配置的结果
+        transport_mode (str):
+            集中解析后的 transport mode
+        transport_status (dict[str, Any] | None):
+            selected transport 的初始状态快照
+        transport_diagnostics (list[str]):
+            bootstrap transport 初始化诊断
     """
 
     stack_shadower_installed: bool
@@ -45,6 +51,9 @@ class BootstrapState:
     log_capture: Any
     service_control_channel: Any
     service_apply_result: dict[str, Any] | None
+    transport_mode: str
+    transport_status: dict[str, Any] | None
+    transport_diagnostics: list[str]
 
 
 def configure_from_env(*, state: HotpatcherState | None = None) -> BootstrapState:
@@ -66,6 +75,12 @@ def configure_from_env(*, state: HotpatcherState | None = None) -> BootstrapStat
     active_state = state or get_default_state()
     os.environ[_BOOTSTRAPPED_ENV] = "1"
 
+    from .runtime.transport_mode import TransportMode, resolve_transport_mode
+
+    transport_mode = resolve_transport_mode()
+    active_state.bootstrap_transport_mode = transport_mode.value
+    active_state.bootstrap_transport_diagnostics.clear()
+
     from .stack_shadow import configure_stack_shadower_from_env, is_stack_shadower_installed
 
     configure_stack_shadower_from_env(state=active_state)
@@ -76,10 +91,25 @@ def configure_from_env(*, state: HotpatcherState | None = None) -> BootstrapStat
         install_import_hook(state=active_state)
 
     active_state.bootstrap_runtime_client = None
-    if _runtime_enabled_from_env():
-        from .runtime.client import RuntimeClient
-
-        active_state.bootstrap_runtime_client = RuntimeClient.connect_from_env(required=False)
+    if transport_mode is TransportMode.LEGACY:
+        initialize_legacy_runtime(state=active_state)
+    else:
+        try:
+            initialize_desktop_broker_runtime(
+                state=active_state,
+                start=False,
+                command_handler=lambda command_type, payload: _handle_desktop_command(
+                    command_type,
+                    payload,
+                    state=active_state,
+                ),
+            )
+        except Exception as exc:
+            # Explicit desktop selection remains desktop-only. Configuration
+            # application below can still install local browser suppression.
+            active_state.bootstrap_transport_diagnostics.append(f"desktop_broker initialization failed: {type(exc).__name__}: {exc}")
+            del active_state.bootstrap_transport_diagnostics[:-100]
+            capture_exception(state=active_state)
 
     try:
         from .runtime.config import load_config
@@ -136,7 +166,7 @@ def configure_from_env(*, state: HotpatcherState | None = None) -> BootstrapStat
             capture_exception(state=active_state)
 
     active_state.bootstrap_service_control_channel = None
-    if active_state.bootstrap_runtime_client is not None and os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES") == "1":
+    if transport_mode is TransportMode.LEGACY and active_state.bootstrap_runtime_client is not None and os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES") == "1":
         try:
             from .services import install_service_control_channel
 
@@ -149,6 +179,15 @@ def configure_from_env(*, state: HotpatcherState | None = None) -> BootstrapStat
 
     from .hook import is_import_hook_installed
 
+    if transport_mode is TransportMode.DESKTOP_BROKER and active_state.bootstrap_runtime_client is not None:
+        active_state.bootstrap_runtime_client.start()
+
+    runtime_status = None
+    if active_state.bootstrap_runtime_client is not None:
+        status = getattr(active_state.bootstrap_runtime_client, "status", None)
+        if status is not None:
+            runtime_status = status()
+
     return BootstrapState(
         stack_shadower_installed=is_stack_shadower_installed(state=active_state),
         import_hook_installed=is_import_hook_installed(state=active_state),
@@ -158,7 +197,73 @@ def configure_from_env(*, state: HotpatcherState | None = None) -> BootstrapStat
         log_capture=active_state.bootstrap_log_capture,
         service_control_channel=active_state.bootstrap_service_control_channel,
         service_apply_result=active_state.bootstrap_service_apply_result,
+        transport_mode=active_state.bootstrap_transport_mode,
+        transport_status=runtime_status,
+        transport_diagnostics=list(active_state.bootstrap_transport_diagnostics),
     )
+
+
+def initialize_legacy_runtime(*, state: HotpatcherState | None = None) -> Any:
+    """Initialize the existing TCP JSONL client when its legacy flag is set."""
+
+    active_state = state or get_default_state()
+    if not _runtime_enabled_from_env():
+        active_state.bootstrap_runtime_client = None
+        return None
+    from .runtime.client import RuntimeClient
+
+    active_state.bootstrap_runtime_client = RuntimeClient.connect_from_env(required=False)
+    return active_state.bootstrap_runtime_client
+
+
+def initialize_desktop_broker_runtime(
+    *,
+    state: HotpatcherState | None = None,
+    command_handler: Any = None,
+    start: bool = True,
+) -> Any:
+    """Initialize only the independent HTTP desktop broker client."""
+
+    active_state = state or get_default_state()
+    from .runtime.desktop_broker import DesktopBrokerClient
+
+    client = DesktopBrokerClient.from_env(command_handler=command_handler)
+    active_state.bootstrap_runtime_client = client
+    if start:
+        client.start()
+    return client
+
+
+def _handle_desktop_command(
+    command_type: str,
+    payload: dict[str, Any],
+    *,
+    state: HotpatcherState,
+) -> dict[str, Any]:
+    """Map the versioned desktop command surface to existing pure services."""
+
+    from .runtime.desktop_broker import DesktopBrokerCommandError
+
+    if command_type != "config.apply":
+        raise DesktopBrokerCommandError(
+            "unknown_command",
+            f"unsupported desktop broker command: {command_type}",
+        )
+    config = payload.get("config")
+    if not isinstance(config, dict):
+        raise DesktopBrokerCommandError(
+            "invalid_command_payload",
+            "config.apply payload.config must be an object",
+        )
+    from .services import apply_config
+
+    return {
+        "applyResult": apply_config(
+            config,
+            runtime_client=state.bootstrap_runtime_client,
+            state=state,
+        )
+    }
 
 
 def get_runtime_client(*, state: HotpatcherState | None = None) -> Any:

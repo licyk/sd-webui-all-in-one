@@ -11,6 +11,7 @@ README 面向快速理解和接入；更细的架构、实现原理、扩展开�
 - [环境变量总览](docs/environment-variables.md)：bootstrap、runtime、配置、日志、错误捕获和扩展变量。
 - [栈隐藏机制](docs/stack-shadow.md)：traceback filename 伪装和 source/zip loader 支持。
 - [Runtime 通信协议](docs/runtime-protocol.md)：TCP JSONL、请求/响应、事件、fault raw channel 和日志采集。
+- [Desktop Broker v1](docs/desktop-broker-protocol.md)：显式 desktop transport、HTTP 会话鉴权、事件确认/重放、心跳和命令结果。
 - [Services 控制层](docs/services.md)：业务系统查询补丁能力、读取字段元数据、补齐配置、应用配置和 runtime 控制通道。
 - [扩展模块开发](docs/extensions.md)：如何编写 `sd_webui_all_in_one_hotpatcher_ext` 扩展，含 ZLUDA 示例。
 - [测试指南](docs/testing.md)：现有测试覆盖、fixture 约定、常见测试模式。
@@ -398,7 +399,7 @@ PYTHONPATH=src python your_app.py
 
 ## 宿主通信协议
 
-`sd_webui_all_in_one_hotpatcher.runtime` 使用 TCP + JSON Lines。每条消息是一行 UTF-8 JSON。宿主只需要开 TCP server，读写 JSONL 即可接入。
+`sd_webui_all_in_one_hotpatcher.runtime` 默认使用原有 TCP + JSON Lines。每条消息是一行 UTF-8 JSON。宿主只需要开 TCP server，读写 JSONL 即可接入。只有显式设置 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TRANSPORT_MODE=desktop_broker` 才使用独立的 Rust-owned HTTP broker；未设置、空值和显式 `legacy` 都继续使用 `RuntimeClient`。desktop 模式失败时不会回退 legacy。完整协议见 [Desktop Broker v1](docs/desktop-broker-protocol.md)。
 
 连接环境变量：
 

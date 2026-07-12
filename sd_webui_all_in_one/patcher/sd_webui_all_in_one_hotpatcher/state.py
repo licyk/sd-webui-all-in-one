@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from importlib.machinery import ModuleSpec
 
     from .hook import HookedMetaPathFinder, MonkeyZoo
-    from .runtime.client import RuntimeClient
     from .runtime.errors import ErrorCapture
     from .runtime.logs import LogCapture
     from .services import ServiceControlChannel
@@ -42,8 +41,12 @@ class HotpatcherState:
             services 最近一次规范化配置。
         current_config_lock (RLockType):
             services 配置快照锁。
-        bootstrap_runtime_client (RuntimeClient | None):
-            最近一次 bootstrap 创建的 runtime client。
+        bootstrap_runtime_client (Any):
+            最近一次 bootstrap 选择的 legacy 或 desktop runtime transport。
+        bootstrap_transport_mode (str):
+            最近一次集中解析的 transport mode。
+        bootstrap_transport_diagnostics (list[str]):
+            transport 初始化阶段的 bounded diagnostic 摘要。
         bootstrap_runtime_config (dict[str, Any]):
             最近一次 bootstrap 加载的配置。
         bootstrap_error_capture (ErrorCapture | None):
@@ -71,7 +74,9 @@ class HotpatcherState:
     exception_reporter: ExceptionReporterCallback | None = None
     current_config: dict[str, Any] | None = None
     current_config_lock: "RLockType" = field(default_factory=threading.RLock)
-    bootstrap_runtime_client: "RuntimeClient | None" = None
+    bootstrap_runtime_client: Any = None
+    bootstrap_transport_mode: str = "legacy"
+    bootstrap_transport_diagnostics: list[str] = field(default_factory=list)
     bootstrap_runtime_config: dict[str, Any] = field(default_factory=dict)
     bootstrap_error_capture: "ErrorCapture | None" = None
     bootstrap_log_capture: "LogCapture | None" = None

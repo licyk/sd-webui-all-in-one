@@ -155,6 +155,12 @@ result = apply_config(config)
 
 services runtime 控制通道使用独立 TCP JSONL 连接，不复用 `RuntimeClient.request()` 所在的同步连接。
 
+`ServiceControlChannel(..., timeout=...)` 的 timeout 只限制 TCP 建连。建连后 socket
+恢复 blocking，默认没有五秒 idle policy。EOF、reset、不可恢复 read failure 或 response
+send failure 都会 terminal close worker；失败阶段以 `connect/read/decode/handler/response/close`
+分类保留在最多 100 条 diagnostics 中。已断开的 services channel 不会停止完整 runtime
+host，也不会删除 host 已保留的 browser events。
+
 ```python
 from sd_webui_all_in_one_hotpatcher.services import install_service_control_channel
 
@@ -186,3 +192,9 @@ SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES=1
 services 远程控制通道。即使通用 `services.apply_on_bootstrap=false`，显式启用的
 `runtime.browser` 仍会强制执行这次早期应用。运行时重应用可以改变 mode/client，但已经注册的 wrapper
 需要进程重启才能彻底移除。
+
+显式 `desktop_broker` 不创建这条 legacy TCP channel。Rust 通过 broker v1 commands
+发送稳定 command ID；当前 Python desktop surface 只接受 `config.apply`，并把
+`payload.config` 交给同一个 `apply_config()`。重复 command ID 只重发缓存结果，不重复
+执行 side effect；过期和未知 command 返回 typed error。详见
+[Desktop Broker v1](desktop-broker-protocol.md)。

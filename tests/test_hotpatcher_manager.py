@@ -5,6 +5,7 @@ import socket
 import subprocess
 import sys
 import threading
+import time
 import types
 
 import pytest
@@ -419,6 +420,39 @@ def test_runtime_host_services_channel_roundtrip():
 
             assert error == {}
             assert result["value"] == {"result": {"applied": ["core.import_hook"]}}
+
+
+def test_runtime_host_keeps_browser_retention_after_services_disconnect():
+    with HotpatcherRuntimeHost(port=0) as host:
+        with socket.create_connection(host.server_address, timeout=2) as services_sock:
+            services_file = services_sock.makefile("rwb")
+            _send_json_line(
+                services_file,
+                {"type": "channel.open", "channel": "services", "token": ""},
+            )
+            assert wait_for_service_channel(host)
+            services_file.close()
+
+        deadline = time.time() + 2
+        while host.service_channel_available and time.time() < deadline:
+            time.sleep(0.01)
+        assert host.service_channel_available is False
+
+        with socket.create_connection(host.server_address, timeout=2) as runtime_sock:
+            runtime_file = runtime_sock.makefile("rwb")
+            _send_json_line(runtime_file, {"type": "hello", "version": 1})
+            _send_json_line(
+                runtime_file,
+                {
+                    "type": "browser.open",
+                    "payload": {"url": "http://localhost:8188"},
+                },
+            )
+
+        deadline = time.time() + 2
+        while not host.browser_events and time.time() < deadline:
+            time.sleep(0.01)
+        assert [event.url for event in host.browser_events] == ["http://localhost:8188"]
 
 
 def test_self_manager_patcher_cli_parser(tmp_path):

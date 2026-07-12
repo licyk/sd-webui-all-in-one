@@ -30,6 +30,9 @@ src/
       protocol.py
       transport.py
       client.py
+      transport_mode.py
+      interfaces.py
+      desktop_broker.py
       config.py
       progress.py
       browser.py
@@ -91,12 +94,20 @@ Python import system   Python loader/compile          TCP JSONL host
 
 ### `sd_webui_all_in_one_hotpatcher.runtime`
 
-通用宿主通信层。当前协议是 TCP + JSON Lines。它包含：
+通用宿主通信层。legacy 默认协议是 TCP + JSON Lines；desktop 有一个并行的
+Rust-owned HTTP broker client。它包含：
 
 - 传输层：`JsonlTcpTransport`
 - 高层 client：`RuntimeClient`
+- 集中 selector：`transport_mode.resolve_transport_mode()`
+- 最小 project-owned boundary：`RuntimeEventSink` / `RuntimeTransportLifecycle` / `RuntimeCommandHandler`
+- 独立 desktop client：`DesktopBrokerClient`
 - 配置：`load_config`
 - 控制能力：progress、browser、fileops、faults、audit、errors、logs
+
+没有 selector、空 selector 和显式 `legacy` 都保持原实现。只有显式
+`desktop_broker` 会构建新 client，而且初始化、认证或网络失败不会 fallback 到
+`RuntimeClient`。两个实现没有共享 Python transport state。
 
 ### `sd_webui_all_in_one_hotpatcher.bootstrap`
 
@@ -108,7 +119,7 @@ from sd_webui_all_in_one_hotpatcher.bootstrap import configure_from_env
 state = configure_from_env()
 ```
 
-这个模块使用懒导入。原因是：如果用户想隐藏 `sd_webui_all_in_one_hotpatcher.*`，就必须先安装 stack shadower，再导入 hook/runtime 等更重的模块。
+这个模块使用懒导入。原因是：如果用户想隐藏 `sd_webui_all_in_one_hotpatcher.*`，就必须先安装 stack shadower，再导入 hook/runtime 等更重的模块。bootstrap 只在这里解析 transport selector，然后 dispatch 到 `initialize_legacy_runtime()` 或 `initialize_desktop_broker_runtime()`；feature 模块只接收选好的 event sink。
 
 ### `sd_webui_all_in_one_hotpatcher.services`
 
@@ -181,12 +192,25 @@ import torch
 ### Runtime 数据流
 
 ```text
+legacy (default):
 RuntimeClient.connect(host, port)
   -> TCP connect
+  -> 建连 deadline 后恢复 blocking socket
   -> 发送 hello JSONL
   -> event(): 只发不等
   -> request(): 发送带 id 的请求并等待同 id 响应
+
+desktop_broker (explicit):
+Rust launch env/session credential
+  -> DesktopBrokerClient bounded queue
+  -> background HTTP connect/events/heartbeat/commands/results
+  -> acknowledgement removes contiguous replay prefix
+  -> reconnect retries remaining events without duplicate Rust state
 ```
+
+browser/log/error 等 event producer 通过 `RuntimeEventSink` 发送。尤其
+`webbrowser.open()` 只做本地 bounded enqueue；HTTP 和 reconnect 永不进入 patched
+call site。`host` / `suppress` 的本地抑制决定也不依赖 broker health。
 
 ### Fault channel 数据流
 

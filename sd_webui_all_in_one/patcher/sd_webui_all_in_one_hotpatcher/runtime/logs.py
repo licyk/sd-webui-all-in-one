@@ -1306,7 +1306,9 @@ class LogCapture:
             return
         self._guard.active = True
         try:
-            self.client.transport.event(message_type, payload)
+            from .interfaces import emit_runtime_event
+
+            emit_runtime_event(self.client, message_type, payload)
         except Exception:
             return
         finally:

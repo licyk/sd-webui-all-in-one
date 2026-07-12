@@ -23,6 +23,7 @@ state = configure_from_env()
 - list 类变量使用英文逗号分隔，空白会被忽略。
 - 未设置环境变量时，通常使用运行时配置对象中的同名配置；没有配置时才使用代码默认值。
 - `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_BOOTSTRAPPED` 是内部防重复标记，通常不应手动设置。
+- `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TRANSPORT_MODE` 只接受精确的 `legacy` 或 `desktop_broker`；不区分大小写等宽松规则不适用于该 selector。
 
 ## 快速示例
 
@@ -75,9 +76,10 @@ HF_ENDPOINT=https://hf-mirror.example
 
 | 变量 | 用途 | 启用条件 | 默认值 | 取值格式 | 读取位置 / 入口 |
 | --- | --- | --- | --- | --- | --- |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TRANSPORT_MODE` | 集中选择 runtime transport。 | bootstrap 开始时读取一次。 | 未设置或空值选择 `legacy`。 | 精确的 `legacy` 或 `desktop_broker`，区分大小写且不裁剪空白。 | `runtime.transport_mode.resolve_transport_mode()` |
 | `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_IMPORT_HOOK` | 安装 import hook。 | 值为 `"1"`。 | 未设置，默认不安装。 | `"1"` 或未设置 | `bootstrap.configure_from_env()` |
-| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME` | 允许 bootstrap 创建 runtime client，并允许 `auto` 配置源尝试远程配置。 | 值为 `"1"`，并提供 `HOST` / `PORT` 才能连接。 | 未设置，默认不连接。 | `"1"` 或未设置 | `bootstrap.configure_from_env()`、`runtime.config.load_config()` |
-| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES` | 在已有 runtime client 时打开 services 控制通道。 | 值为 `"1"` 且 runtime 已连接。 | 未设置，默认不打开控制通道。 | `"1"` 或未设置 | `bootstrap.configure_from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME` | legacy 模式允许 bootstrap 创建 `RuntimeClient`，并允许 `auto` 配置源尝试远程配置。 | legacy 模式下值为 `"1"`，并提供 `HOST` / `PORT` 才能连接。desktop client 由 selector 明确启用。 | 未设置，legacy 默认不连接。 | `"1"` 或未设置 | `bootstrap.configure_from_env()`、`runtime.config.load_config()` |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES` | legacy 模式打开独立 TCP services 控制通道。 | 值为 `"1"`、legacy runtime 已连接。desktop 使用 broker commands，不创建该连接。 | 未设置，默认不打开控制通道。 | `"1"` 或未设置 | `bootstrap.configure_from_env()` |
 
 ## Stack Shadow
 
@@ -99,7 +101,19 @@ HF_ENDPOINT=https://hf-mirror.example
 | `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST` | runtime TCP 宿主地址。 | runtime 连接时必须提供。 | 未设置 | 主机名或 IP | `RuntimeClient.connect_from_env()` |
 | `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT` | runtime TCP 宿主端口。 | runtime 连接时必须提供。 | 未设置 | 整数端口 | `RuntimeClient.connect_from_env()` |
 | `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN` | hello 握手中的 token。 | runtime 连接时读取，可为空。 | 空字符串 | 字符串 | `RuntimeClient.connect_from_env()` |
-| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TIMEOUT` | 建连和请求默认超时时间。 | runtime 连接时读取。 | `5` | 秒数，可转换为 `float` | `RuntimeClient.connect_from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TIMEOUT` | legacy TCP 建连 deadline。连接建立后 socket 恢复 blocking；单次 request timeout 由调用参数独立指定。 | runtime 连接时读取。 | `5` | 秒数，可转换为 `float` | `RuntimeClient.connect_from_env()` |
+
+## Desktop Broker
+
+这些变量只有在 transport mode 精确为 `desktop_broker` 时读取。六项全部由 Rust launch owner 注入；Python 不从 Vue 或 legacy host 补齐任何 session authority。完整 HTTP v1 合同和各项 bound 见 [Desktop Broker v1](desktop-broker-protocol.md)。
+
+| 变量 | 用途 | 启用条件 | 默认值 | 取值格式 | 读取位置 / 入口 |
+| --- | --- | --- | --- | --- | --- |
+| `SD_WEBUI_ALL_IN_ONE_RUNTIME_BROKER_URL` | Rust application-level broker origin。 | desktop mode 必填。 | 无 | 无 userinfo/path/query/fragment 的 `http` literal loopback origin，必须显式端口。client 禁用 proxy。 | `DesktopBrokerSettings.from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_RUNTIME_SESSION_ID` | Rust 创建的单次 launch session ID。 | desktop mode 必填。 | 无 | 1-256 字符 | `DesktopBrokerSettings.from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_RUNTIME_TOKEN` | 不可预测、只属于该 session 的 Bearer credential。 | desktop mode 必填。 | 无 | 1-256 字符 | `DesktopBrokerSettings.from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_RUNTIME_IDENTITY` | 当前 WebUI runtime identity。 | desktop mode 必填。 | 无 | 1-256 字符 | `DesktopBrokerSettings.from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_RUNTIME_PROTOCOL_VERSION` | broker 协议版本。 | desktop mode 必填。 | 无 | 当前只接受精确值 `1`。 | `DesktopBrokerSettings.from_env()` |
 
 ## 配置来源
 
@@ -111,13 +125,13 @@ HF_ENDPOINT=https://hf-mirror.example
 | `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_JSON` | 直接提供配置 JSON。 | `CONFIG_SOURCE=env` 时读取；`auto` 模式下优先读取。 | 未设置 | JSON object 字符串 | `runtime.config.load_config()` |
 | `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE` | 指定配置文件路径。 | `CONFIG_SOURCE=file` 时读取；`auto` 模式下在 `CONFIG_JSON` 之后读取。 | 未设置 | UTF-8 JSON object 文件路径，支持 `~` | `runtime.config.load_config()` |
 
-`CONFIG_SOURCE=remote` 会通过 runtime client 发送 `config.get` 请求。`auto` 模式下只有在 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME=1` 且 `HOST` / `PORT` 都存在时才会尝试远程配置。
+`CONFIG_SOURCE=remote` 是 legacy API，会通过 `RuntimeClient` 发送 `config.get` 请求。`auto` 模式下只有在 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME=1` 且 `HOST` / `PORT` 都存在时才会尝试远程配置。desktop launch 使用 `CONFIG_SOURCE=env` / `CONFIG_JSON`，不借用 legacy remote config。
 
 ## Services
 
 | 变量 | 用途 | 启用条件 | 默认值 | 取值格式 | 读取位置 / 入口 |
 | --- | --- | --- | --- | --- | --- |
-| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES` | 打开 runtime services 控制通道。 | 值为 `"1"` 且 bootstrap 已连接 runtime client。 | 未设置，默认不打开。 | `"1"` 或未设置 | `bootstrap.configure_from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES` | legacy 模式打开 runtime services TCP 控制通道。 | 值为 `"1"` 且 bootstrap 已连接 legacy runtime client。desktop mode 不打开 fallback channel。 | 未设置，默认不打开。 | `"1"` 或未设置 | `bootstrap.configure_from_env()` |
 
 配置中的 `"services": {"apply_on_bootstrap": true}` 会让 bootstrap 在加载配置后自动调用 `services.apply_config()`。这个行为不是环境变量控制的。
 
@@ -165,4 +179,3 @@ HF_ENDPOINT=https://hf-mirror.example
 | 变量 | 用途 | 启用条件 | 默认值 | 取值格式 | 读取位置 / 入口 |
 | --- | --- | --- | --- | --- | --- |
 | `HF_ENDPOINT` | HF Endpoint 镜像源，用于把 `https://huggingface.co/...` 下载 URL 改写到镜像地址。 | 已调用 `sd_webui_all_in_one_hotpatcher_ext.hf_endpoint_mirror.apply_mirror()` 或相关低层 patch；下载函数调用时实时读取。 | 未设置，默认不改写 URL。 | 完整 URL，例如 `https://hf-mirror.example`。空值、非完整 URL 或目标 URL host 不是 `huggingface.co` 时不改写。 | `sd_webui_all_in_one_hotpatcher_ext.hf_endpoint_mirror.rewrite_huggingface_url()` |
-
