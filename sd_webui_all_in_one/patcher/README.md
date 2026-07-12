@@ -588,6 +588,11 @@ original function, but fully removing the import hook requires a process restart
 `webbrowser.open_new` and `open_new_tab` use the patched module-level `open` and
 therefore preserve the same single-event behavior.
 
+The desktop broker reserves 16 of its bounded 256 outbound-event slots for
+`browser.open`; ordinary events stop at 240 queued items. Browser events can use
+the reserve but cannot exceed the same 256-event hard limit. Admission failure
+never invokes the operating-system browser and never consumes a wire sequence.
+
 文件操作：
 
 ```python

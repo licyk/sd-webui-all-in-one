@@ -23,6 +23,10 @@ SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST=127.0.0.1
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT=8765
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN=optional-secret
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TIMEOUT=5
+# 可选：分别覆盖兼容值
+SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONNECT_TIMEOUT=5
+SD_WEBUI_ALL_IN_ONE_HOTPATCHER_REQUEST_TIMEOUT=5
+SD_WEBUI_ALL_IN_ONE_HOTPATCHER_EVENT_WRITE_TIMEOUT=5
 ```
 
 代码入口：
@@ -98,7 +102,7 @@ client = RuntimeClient.connect_from_env()
 1. 生成 message id。
 2. 发送请求。
 3. 持有 `_request_lock` 等待响应。
-4. 读取 JSONL，直到找到同 id 响应。
+4. 在单一 monotonic deadline 内完成完整写入，并读取 JSONL，直到找到同 id 响应。
 5. `ok=true` 返回 payload。
 6. `ok=false` 抛 `RuntimeRequestError`。
 
@@ -112,7 +116,9 @@ client = RuntimeClient.connect_from_env()
 {"type":"progress.update","payload":{"id":123,"value":50}}
 ```
 
-`RuntimeClient.event()` 会捕获发送异常并调用 `capture_exception()`。所以事件适合非关键路径，例如：
+`RuntimeClient.emit_event()` 会捕获发送异常、调用 `capture_exception()` 并返回
+`False`；`RuntimeClient.event()` 保留原有的无返回值 best-effort 入口。两者都不会把写入
+超时传播到被补丁的应用代码。所以事件适合非关键路径，例如：
 
 - progress
 - browser.open
@@ -125,14 +131,41 @@ client = RuntimeClient.connect_from_env()
 
 ## 断线和超时
 
-`JsonlTcpTransport.connect()` 的 timeout 只限制 TCP 建连。连接成功后会在创建 buffered reader 和发送 hello 前执行 `sock.settimeout(None)`，所以普通空闲不会继承五秒建连 deadline。
+legacy 传输明确分离四个概念：
 
-`request(..., timeout=...)` 是独立的单次请求 deadline。它在成功和所有异常路径恢复之前的 socket mode。buffered `makefile()` reader 一旦发生读/写 timeout 就不能安全复用（可能已位于半条 JSONL 中，CPython 也可能报 `cannot read from timed out object`），因此 transport 会在恢复 socket mode 后关闭并标为 terminal。协议/业务响应异常如果没有 socket timeout，则 reader 仍可继续使用。
+- `connect_timeout`：只传给 `socket.create_connection()`。
+- `default_request_timeout`：`request(timeout=None)` 使用的有限 deadline。
+- `event_write_timeout`：`send_raw()`、初始 hello 和 event 的有限写入 deadline。
+- idle mode：永远是 blocking，不使用建连或操作 timeout 作为空闲存活策略。
 
-socket timeout 是整个 socket 对象的状态，不是 thread-local。`request()` 的完整临时
-timeout scope 和所有 `send_raw()` / `event()` write 使用同一把 reentrant lock；并发
-event 会等 request 恢复 blocking mode 后再写，不能继承 request deadline 或在 timeout
-后继续写入已 invalidated 的 JSONL stream。
+现有 `RuntimeClient.connect(..., timeout=5)` / `JsonlTcpTransport.connect(..., timeout=5)` 调用形式
+保留：`timeout` 是兼容种子，未显式覆盖时同时设置上述三个有限 timeout。代码调用
+可通过 `connect_timeout=`、`default_request_timeout=` 和 `event_write_timeout=` 分别覆盖。
+环境变量入口中，`SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TIMEOUT` 也作为三者的兼容种子，
+`..._CONNECT_TIMEOUT`、`..._REQUEST_TIMEOUT` 和 `..._EVENT_WRITE_TIMEOUT` 可分别覆盖。
+所有默认值都是 5 秒，配置值必须是大于零的有限数字。
+
+建连成功后，socket 会在创建 buffered reader 和发送 hello 前立即执行
+`sock.settimeout(None)`。hello 只在自己的有限 write scope 内临时改变 socket timeout，
+成功后恢复 blocking。
+
+`request(..., timeout=...)` 的 deadline 覆盖一次请求的完整写入和所有响应读取，
+而不是每次 `readline()` 重新获得一份 timeout。transport 使用 monotonic 绝对
+deadline。它把收到的 bytes 保存在 transport-owned line buffer 中，并通过 buffered
+reader 的 `read1()` 每次最多执行一个 raw read；每个 partial chunk 后都重新计算剩余
+时间。因此没有换行符的 drip-fed frame 也不能通过持续产生少量 bytes 来续期 socket
+inactivity timeout。即使某一 chunk 在 deadline 后才补齐换行符，client 也会先判定
+timeout 而不返回该 frame。遇到不匹配的 response id 后同样只把剩余时间用于下一次
+读取。显式 `timeout=` 只覆盖当前请求；下一次省略参数的请求仍使用 configured default。
+
+socket timeout 是整个 socket 对象的状态，不是 thread-local。`request()` 的完整操作
+scope 和所有 `send_raw()` / `event()` write 使用同一把 reentrant lock；并发操作必须
+等待前一个操作恢复 blocking mode，不会观察或继承它的 deadline。
+
+buffered `makefile()` reader 一旦发生读 timeout 就不能安全复用；写 timeout 也可能只把
+半条 JSONL 写到 wire。任一 read/write timeout 都会先尝试恢复原 socket mode，再关闭并
+把 transport 标为 terminal。恢复/关闭失败不会替换原始 timeout。没有 socket timeout 的
+协议/业务响应异常仍按原有异常类型传播，reader 可继续使用。
 
 `RuntimeClient.connect_from_env(required=False)` 连接失败会捕获异常并返回 `None`。`required=True` 时抛出原异常。
 

@@ -6,9 +6,16 @@ import os
 from typing import Any
 
 from ..exceptions import capture_exception
-from .transport import JsonlTcpTransport
+from .transport import (
+    DEFAULT_CONNECT_TIMEOUT,
+    JsonlTcpTransport,
+)
 
 DEFAULT_FEATURES = ["config", "progress", "browser", "fileops", "faults", "audit", "logs", "services"]
+CONNECT_TIMEOUT_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONNECT_TIMEOUT"
+REQUEST_TIMEOUT_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_REQUEST_TIMEOUT"
+EVENT_WRITE_TIMEOUT_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_EVENT_WRITE_TIMEOUT"
+COMPATIBILITY_TIMEOUT_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TIMEOUT"
 
 
 class RuntimeClient:
@@ -68,7 +75,10 @@ class RuntimeClient:
         port: int,
         *,
         token: str = "",
-        timeout: float = 5.0,
+        timeout: float = DEFAULT_CONNECT_TIMEOUT,
+        connect_timeout: float | None = None,
+        default_request_timeout: float | None = None,
+        event_write_timeout: float | None = None,
         features: list[str] | None = None,
     ) -> "RuntimeClient":
         """
@@ -82,7 +92,13 @@ class RuntimeClient:
             token (str):
                 握手 token
             timeout (float):
-                TCP 连接建立超时时间。连接成功后恢复为阻塞模式。
+                兼容超时设置。未单独指定时，同时作为建连、默认请求和事件写入超时。
+            connect_timeout (float | None):
+                TCP 连接建立超时。为 None 时使用 ``timeout``。
+            default_request_timeout (float | None):
+                请求未显式给出 timeout 时的默认操作超时。
+            event_write_timeout (float | None):
+                best-effort 事件和原始消息的写入超时。
             features (list[str] | None):
                 握手时声明的能力列表
 
@@ -96,6 +112,9 @@ class RuntimeClient:
             port,
             token=token,
             timeout=timeout,
+            connect_timeout=connect_timeout,
+            default_request_timeout=default_request_timeout,
+            event_write_timeout=event_write_timeout,
             features=features or DEFAULT_FEATURES,
         )
         return cls(transport)
@@ -123,7 +142,10 @@ class RuntimeClient:
         host = os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST")
         port = os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT")
         token = os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN", "")
-        timeout = float(os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TIMEOUT", "5"))
+        compatibility_timeout = float(os.getenv(COMPATIBILITY_TIMEOUT_ENV, str(DEFAULT_CONNECT_TIMEOUT)))
+        connect_timeout = float(os.getenv(CONNECT_TIMEOUT_ENV, str(compatibility_timeout)))
+        default_request_timeout = float(os.getenv(REQUEST_TIMEOUT_ENV, str(compatibility_timeout)))
+        event_write_timeout = float(os.getenv(EVENT_WRITE_TIMEOUT_ENV, str(compatibility_timeout)))
 
         if not host or not port:
             if required:
@@ -131,7 +153,15 @@ class RuntimeClient:
             return None
 
         try:
-            return cls.connect(host, int(port), token=token, timeout=timeout)
+            return cls.connect(
+                host,
+                int(port),
+                token=token,
+                timeout=compatibility_timeout,
+                connect_timeout=connect_timeout,
+                default_request_timeout=default_request_timeout,
+                event_write_timeout=event_write_timeout,
+            )
         except Exception:
             if required:
                 raise
@@ -155,7 +185,7 @@ class RuntimeClient:
             payload (dict[str, Any] | None):
                 请求载荷
             timeout (float | None):
-                本次请求的超时时间
+                本次请求的超时时间。为 None 时使用 transport 的有限默认值。
 
         Returns:
             dict[str, Any]:

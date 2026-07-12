@@ -6,6 +6,7 @@ import copy
 import errno
 import json
 import logging
+import math
 import socket
 import threading
 from pathlib import Path
@@ -40,6 +41,15 @@ from .stack_shadow import (
 _MISSING = object()
 _LOGGER = logging.getLogger(__name__)
 SERVICE_CONTROL_DIAGNOSTIC_LIMIT = 100
+DEFAULT_SERVICE_CONTROL_TIMEOUT = 5.0
+
+
+def _service_control_timeout(name: str, value: float) -> float:
+    timeout = float(value)
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise ValueError(f"{name} must be a positive finite number")
+    return timeout
+
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "services": {
@@ -437,7 +447,9 @@ class ServiceControlChannel:
         client: RuntimeClient,
         service: "PatchService | None" = None,
         *,
-        timeout: float = 5.0,
+        timeout: float = DEFAULT_SERVICE_CONTROL_TIMEOUT,
+        connect_timeout: float | None = None,
+        response_write_timeout: float | None = None,
     ) -> None:
         """
         初始化 services 控制通道
@@ -448,11 +460,19 @@ class ServiceControlChannel:
             service (PatchService | None):
                 请求处理服务。为 None 时使用默认服务。
             timeout (float):
-                TCP 连接建立的超时时间。连接建立后恢复为阻塞模式。
+                兼容超时设置。未单独指定时，同时作为建连和响应写入超时。
+            connect_timeout (float | None):
+                TCP 连接建立超时。为 None 时使用 ``timeout``。
+            response_write_timeout (float | None):
+                ``channel.open`` 和单次响应的写入超时。为 None 时使用
+                ``timeout``。idle read 始终保持 blocking。
         """
 
         self.client = client
         self.service = service or PatchService()
+        compatibility_timeout = _service_control_timeout("timeout", timeout)
+        self.connect_timeout = compatibility_timeout if connect_timeout is None else _service_control_timeout("connect_timeout", connect_timeout)
+        self.response_write_timeout = compatibility_timeout if response_write_timeout is None else _service_control_timeout("response_write_timeout", response_write_timeout)
         self.write_lock = threading.Lock()
         self._state_lock = threading.Lock()
         self._diagnostic_lock = threading.Lock()
@@ -464,7 +484,7 @@ class ServiceControlChannel:
         self.sock: socket.socket | None = None
         self.reader: Any | None = None
         try:
-            sock = socket.create_connection((client.host, client.port), timeout=timeout)
+            sock = socket.create_connection((client.host, client.port), timeout=self.connect_timeout)
             self.sock = sock
             # The timeout is a connect-establishment deadline, not an idle
             # policy for this long-lived command channel.
@@ -644,7 +664,24 @@ class ServiceControlChannel:
                 if self.closed or self.sock is None:
                     raise RuntimeProtocolError("Services control channel is closed")
                 sock = self.sock
-            sock.sendall(encode_message(message))
+            old_timeout = sock.gettimeout()
+            operation_error: BaseException | None = None
+            try:
+                sock.settimeout(self.response_write_timeout)
+                sock.sendall(encode_message(message))
+            except BaseException as exc:
+                operation_error = exc
+                raise
+            finally:
+                try:
+                    sock.settimeout(old_timeout)
+                except Exception as restore_exc:
+                    if operation_error is None:
+                        raise
+                    # The caller will terminal-close this channel for the
+                    # primary write failure. Keep restoration diagnostics
+                    # without replacing that original exception.
+                    self._record_diagnostic("close", restore_exc)
 
 
 class PatchService:

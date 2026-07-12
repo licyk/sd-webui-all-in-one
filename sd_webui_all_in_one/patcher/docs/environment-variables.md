@@ -101,7 +101,10 @@ HF_ENDPOINT=https://hf-mirror.example
 | `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST` | runtime TCP 宿主地址。 | runtime 连接时必须提供。 | 未设置 | 主机名或 IP | `RuntimeClient.connect_from_env()` |
 | `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT` | runtime TCP 宿主端口。 | runtime 连接时必须提供。 | 未设置 | 整数端口 | `RuntimeClient.connect_from_env()` |
 | `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN` | hello 握手中的 token。 | runtime 连接时读取，可为空。 | 空字符串 | 字符串 | `RuntimeClient.connect_from_env()` |
-| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TIMEOUT` | legacy TCP 建连 deadline。连接建立后 socket 恢复 blocking；单次 request timeout 由调用参数独立指定。 | runtime 连接时读取。 | `5` | 秒数，可转换为 `float` | `RuntimeClient.connect_from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TIMEOUT` | legacy 兼容 timeout 种子。未被下面的专用变量覆盖时，同时作为 TCP 建连、默认 request 和 event/raw write deadline。连接建立后 idle 始终恢复 blocking。 | runtime 连接时读取。 | `5` | 大于零的有限秒数，可转换为 `float` | `RuntimeClient.connect_from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONNECT_TIMEOUT` | 只覆盖 `socket.create_connection()` 的 deadline。 | runtime 连接时可选。 | `HOTPATCHER_TIMEOUT` 的值 | 大于零的有限秒数 | `RuntimeClient.connect_from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_REQUEST_TIMEOUT` | 覆盖省略 `request(timeout=...)` 时的默认完整请求 deadline，包括 write 和所有 response reads。 | runtime 连接时可选。 | `HOTPATCHER_TIMEOUT` 的值 | 大于零的有限秒数 | `RuntimeClient.connect_from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_EVENT_WRITE_TIMEOUT` | 覆盖 hello、`send_raw()` 和 best-effort event 的 write deadline。 | runtime 连接时可选。 | `HOTPATCHER_TIMEOUT` 的值 | 大于零的有限秒数 | `RuntimeClient.connect_from_env()` |
 
 ## Desktop Broker
 

@@ -28,6 +28,7 @@ PROTOCOL_VERSION_ENV = "SD_WEBUI_ALL_IN_ONE_RUNTIME_PROTOCOL_VERSION"
 PROTOCOL_VERSION = "1"
 
 MAX_EVENT_COUNT = 256
+BROWSER_RESERVED_EVENT_CAPACITY = 16
 MAX_EVENT_PAYLOAD_BYTES = 16 * 1024
 MAX_EVENT_BATCH_COUNT = 32
 MAX_REQUEST_BYTES = 256 * 1024
@@ -279,6 +280,7 @@ class DesktopBrokerClient:
         requester: BrokerHttpRequester | None = None,
         command_handler: RuntimeCommandHandler | None = None,
         event_capacity: int = MAX_EVENT_COUNT,
+        browser_reserved_capacity: int | None = None,
         final_flush_seconds: float = DEFAULT_FINAL_FLUSH_SECONDS,
         heartbeat_seconds: float = DEFAULT_HEARTBEAT_SECONDS,
         monotonic: Callable[[], float] = time.monotonic,
@@ -286,10 +288,19 @@ class DesktopBrokerClient:
     ) -> None:
         if not 1 <= event_capacity <= MAX_EVENT_COUNT:
             raise ValueError(f"event_capacity must be between 1 and {MAX_EVENT_COUNT}")
+        if browser_reserved_capacity is None:
+            browser_reserved_capacity = max(
+                1,
+                math.ceil(event_capacity * BROWSER_RESERVED_EVENT_CAPACITY / MAX_EVENT_COUNT),
+            )
+        if not 1 <= browser_reserved_capacity <= event_capacity:
+            raise ValueError("browser_reserved_capacity must be between 1 and event_capacity")
         self.settings = settings
         self._requester = requester or StandardLibraryBrokerHttp(settings)
         self._command_handler = command_handler or _unavailable_command_handler
         self._event_capacity = event_capacity
+        self._browser_reserved_capacity = browser_reserved_capacity
+        self._ordinary_event_capacity = event_capacity - browser_reserved_capacity
         self._final_flush_seconds = max(0.0, final_flush_seconds)
         self._heartbeat_seconds = max(0.1, heartbeat_seconds)
         self._monotonic = monotonic
@@ -384,10 +395,17 @@ class DesktopBrokerClient:
             if self._closing or self._closed:
                 self._record_diagnostic_locked("transport_closed", "event rejected after transport close")
                 return False
-            if len(self._events) >= self._event_capacity:
+            is_browser_event = broker_event_type == "browser.open"
+            if not is_browser_event and len(self._events) >= self._ordinary_event_capacity:
                 self._record_diagnostic_locked(
-                    "queue_overflow",
-                    f"outbound event queue reached its {self._event_capacity}-event bound",
+                    "ordinary_event_capacity_exhausted",
+                    (f"ordinary event queue reached its {self._ordinary_event_capacity}-event admission limit; {self._browser_reserved_capacity} slots are reserved for browser.open"),
+                )
+                return False
+            if is_browser_event and len(self._events) >= self._event_capacity:
+                self._record_diagnostic_locked(
+                    "critical_event_capacity_exhausted",
+                    f"outbound event queue reached its {self._event_capacity}-event hard limit; browser.open was rejected",
                 )
                 return False
             if self._next_sequence > MAX_SEQUENCE:

@@ -194,11 +194,10 @@ import torch
 ```text
 legacy (default):
 RuntimeClient.connect(host, port)
-  -> TCP connect
-  -> 建连 deadline 后恢复 blocking socket
-  -> 发送 hello JSONL
-  -> event(): 只发不等
-  -> request(): 发送带 id 的请求并等待同 id 响应
+  -> 仅在 connect deadline 内建立 TCP，然后恢复 blocking idle socket
+  -> 在有限 write deadline 内发送 hello JSONL
+  -> event(): 在有限 write deadline 内只发不等，对上层 best-effort
+  -> request(): 在单一有限 monotonic deadline 内写请求并等待同 id 响应
 
 desktop_broker (explicit):
 Rust launch env/session credential

@@ -145,8 +145,8 @@ POST /v1/runtime/heartbeat
   "queuedEventCount": 0,
   "diagnostics": [
     {
-      "code": "queue_overflow",
-      "message": "outbound event queue reached its 256-event bound",
+      "code": "ordinary_event_capacity_exhausted",
+      "message": "ordinary event queue reached its 240-event admission limit; 16 slots are reserved for browser.open",
       "createdAt": 1780000001.0,
       "occurrences": 1
     }
@@ -227,7 +227,9 @@ All network work is performed by one daemon worker, never by a patched target.
 
 | State | Bound |
 | --- | ---: |
-| unacknowledged outbound events | 256 events |
+| unacknowledged outbound events, hard limit | 256 events |
+| ordinary-event admission | 240 queued events |
+| capacity reserved for `browser.open` | 16 events |
 | one event payload | 16 KiB encoded JSON |
 | one event upload | 32 events / 256 KiB |
 | HTTP response | 256 KiB |
@@ -240,9 +242,22 @@ All network work is performed by one daemon worker, never by a patched target.
 | one Python result batch | 32 items / 256 KiB |
 
 Event enqueue snapshots a JSON-compatible payload under a lock and returns
-without HTTP or reconnect work. Queue overflow rejects the new event before
-assigning a sequence, records `queue_overflow`, and therefore cannot introduce
-a sequence gap.
+without HTTP or reconnect work. Log, error, progress, and all other ordinary
+events are admitted only while fewer than 240 events are queued. The remaining
+16 slots are reserved for exact, normalized `browser.open` events. A queue made
+only of browser events is still bounded by the 256-event hard limit.
+
+Ordinary admission failure records the exact diagnostic
+`ordinary_event_capacity_exhausted` with message `ordinary event queue reached
+its 240-event admission limit; 16 slots are reserved for browser.open`.
+Complete queue exhaustion rejects a browser event and records
+`critical_event_capacity_exhausted` with message `outbound event queue reached
+its 256-event hard limit; browser.open was rejected`.
+
+Both rejection paths run before sequence assignment. The client never evicts a
+sequenced unacknowledged event, so accepted ordinary and browser events share
+one contiguous wire sequence. Upload batching, acknowledgement, reconnect
+replay, and the final flush continue to consume that single ordered queue.
 
 Connection failures retain unacknowledged events and move status through
 `disconnected` or `reconnecting`. Retry starts at 100 ms and doubles to a
@@ -260,6 +275,7 @@ Browser mode remains separate from transport selection:
 - `passthrough`: call the original standard-library browser implementation.
 
 In desktop `host` mode, `webbrowser.open()` performs no HTTP request and waits
-for no worker state. A disconnected broker, full queue, rejected credential, or
-protocol mismatch never falls through to the operating-system browser. The
-failure appears in bounded transport diagnostics instead.
+for no worker state. A disconnected broker, even a completely full 256-event
+queue, rejected credentials, or a protocol mismatch never falls through to the
+operating-system browser. The failure appears in bounded transport diagnostics
+instead.

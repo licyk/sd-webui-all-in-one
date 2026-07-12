@@ -155,11 +155,18 @@ result = apply_config(config)
 
 services runtime 控制通道使用独立 TCP JSONL 连接，不复用 `RuntimeClient.request()` 所在的同步连接。
 
-`ServiceControlChannel(..., timeout=...)` 的 timeout 只限制 TCP 建连。建连后 socket
-恢复 blocking，默认没有五秒 idle policy。EOF、reset、不可恢复 read failure 或 response
-send failure 都会 terminal close worker；失败阶段以 `connect/read/decode/handler/response/close`
-分类保留在最多 100 条 diagnostics 中。已断开的 services channel 不会停止完整 runtime
-host，也不会删除 host 已保留的 browser events。
+`ServiceControlChannel(..., timeout=5)` 保留历史调用形式：`timeout` 是兼容
+种子，未单独指定时同时作为 TCP 建连和单次 response write deadline。可以通过
+`connect_timeout=` 和 `response_write_timeout=` 分别覆盖，配置值必须是大于零
+的有限数字。`channel.open` 和每个 response 写入只在各自的有限 write scope 内
+临时设置 socket timeout，成功后恢复之前的 mode。
+
+建连后 socket 在创建 buffered reader 前立即恢复 blocking；后台 worker 的 idle
+`readline()` 不使用建连或 response timeout，也没有五秒 idle policy。EOF、reset、不可
+恢复 read failure 或 response send failure/timeout 都会 terminal close worker；失败阶段以
+`connect/read/decode/handler/response/close` 分类保留在最多 100 条 diagnostics 中。
+已断开的 services channel 不会停止完整 runtime host，也不会删除 host 已保留的
+browser events。
 
 ```python
 from sd_webui_all_in_one_hotpatcher.services import install_service_control_channel
