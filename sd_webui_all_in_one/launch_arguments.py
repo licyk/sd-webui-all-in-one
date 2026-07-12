@@ -127,7 +127,14 @@ def cancel_launch_argument_discovery() -> None:
 atexit.register(cancel_launch_argument_discovery)
 
 
-def _run_help(command: HelpCommand, context: LaunchArgumentDiscoveryContext) -> tuple[str, LaunchArgumentDiagnostic | None]:
+def _normalize_process_output(value: str) -> str:
+    return value.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+
+def _run_help(
+    command: HelpCommand,
+    context: LaunchArgumentDiscoveryContext,
+) -> tuple[str, str, LaunchArgumentDiagnostic | None]:
     try:
         process = subprocess.Popen(
             command.argv,
@@ -141,7 +148,7 @@ def _run_help(command: HelpCommand, context: LaunchArgumentDiscoveryContext) -> 
             start_new_session=os.name == "posix",
         )
     except OSError as error:
-        return "", LaunchArgumentDiagnostic("error", "discovery_unavailable", "Unable to start WebUI help discovery", str(error))
+        return "", "", LaunchArgumentDiagnostic("error", "discovery_unavailable", "Unable to start WebUI help discovery", str(error))
     with _ACTIVE_PROCESSES_LOCK:
         _ACTIVE_PROCESSES.add(process)
     try:
@@ -151,7 +158,7 @@ def _run_help(command: HelpCommand, context: LaunchArgumentDiscoveryContext) -> 
             _terminate_process(process)
             stdout, stderr = process.communicate()
             detail = (stdout + "\n" + stderr).strip()[-MAX_DIAGNOSTIC_OUTPUT:] or None
-            return "", LaunchArgumentDiagnostic(
+            return "", "", LaunchArgumentDiagnostic(
                 "error",
                 "discovery_timeout",
                 f"WebUI help discovery exceeded {context.timeout_seconds:g} seconds",
@@ -160,13 +167,14 @@ def _run_help(command: HelpCommand, context: LaunchArgumentDiscoveryContext) -> 
     finally:
         with _ACTIVE_PROCESSES_LOCK:
             _ACTIVE_PROCESSES.discard(process)
-    output = "\n".join(part for part in (stdout, stderr) if part).replace("\r\n", "\n").replace("\r", "\n").strip()
-    if process.returncode not in (0, None) and not output:
-        return "", LaunchArgumentDiagnostic("error", "discovery_failed", f"WebUI help discovery exited with code {process.returncode}")
-    return output, None
+    stdout = _normalize_process_output(stdout)
+    stderr = _normalize_process_output(stderr)
+    if process.returncode not in (0, None) and not stdout and not stderr:
+        return "", "", LaunchArgumentDiagnostic("error", "discovery_failed", f"WebUI help discovery exited with code {process.returncode}")
+    return stdout, stderr, None
 
 
-_HEADING = re.compile(r"^\s*(?P<name>[^:\n]+):\s*$")
+_HEADING = re.compile(r"^(?P<name>\S[^:\n]*):\s*$")
 _FLAG = re.compile(r"-{1,2}[A-Za-z0-9][A-Za-z0-9_-]*")
 _CHOICES = re.compile(r"\{([^{}]+)\}")
 _HELP_FLAGS = frozenset({"-h", "--help"})
@@ -224,8 +232,105 @@ def _split_option_declaration(line: str) -> tuple[str, str] | None:
         return None
     match = re.search(r"\s{2,}", stripped)
     if match is None:
-        return stripped.rstrip(), ""
-    return stripped[: match.start()].rstrip(), stripped[match.end() :].strip()
+        spec, help_text = stripped.rstrip(), ""
+    else:
+        spec, help_text = stripped[: match.start()].rstrip(), stripped[match.end() :].strip()
+    if "|" in spec:
+        return None
+    flags = list(_FLAG.finditer(spec))
+    if not flags or spec[: flags[0].start()].strip():
+        return None
+    for previous, current in zip(flags, flags[1:]):
+        if re.fullmatch(r"\s*,\s*", spec[previous.end() : current.start()]) is None:
+            return None
+    return spec, help_text
+
+
+def _usage_block(lines: list[str]) -> tuple[str, set[int]]:
+    indices: set[int] = set()
+    usage_lines: list[str] = []
+    for start, line in enumerate(lines):
+        if not line.lstrip().startswith("usage:"):
+            continue
+        for index in range(start, len(lines)):
+            current = lines[index]
+            if index > start and (not current.strip() or _HEADING.match(current)):
+                break
+            indices.add(index)
+            usage_lines.append(current.strip())
+        break
+    return " ".join(usage_lines), indices
+
+
+def _semantic_key(argument: LaunchArgumentDefinition) -> tuple[object, ...]:
+    return (
+        argument.name,
+        tuple(argument.flags),
+        argument.value_kind,
+        argument.min_values,
+        argument.max_values,
+        tuple(argument.choices),
+        argument.required,
+        argument.repeatable,
+        argument.exclusive_group,
+        argument.exclusive_group_required,
+        argument.hidden,
+    )
+
+
+def _coalesce_definitions(
+    arguments: list[LaunchArgumentDefinition],
+) -> tuple[list[LaunchArgumentDefinition], list[LaunchArgumentDiagnostic]]:
+    normalized: list[LaunchArgumentDefinition] = []
+    diagnostics: list[LaunchArgumentDiagnostic] = []
+    by_name: dict[str, int] = {}
+    by_flag: dict[str, int] = {}
+    for argument in arguments:
+        conflict_index = by_name.get(argument.name)
+        if conflict_index is None:
+            conflict_index = next((by_flag[flag] for flag in argument.flags if flag in by_flag), None)
+        if conflict_index is None:
+            index = len(normalized)
+            normalized.append(argument)
+            by_name[argument.name] = index
+            for flag in argument.flags:
+                by_flag[flag] = index
+            continue
+        existing = normalized[conflict_index]
+        if _semantic_key(existing) != _semantic_key(argument):
+            diagnostics.append(
+                LaunchArgumentDiagnostic(
+                    "error",
+                    "parse_conflict",
+                    f"Conflicting launch option definitions for {argument.name}",
+                    ", ".join(sorted(set(existing.flags) | set(argument.flags))),
+                )
+            )
+            continue
+        merged_help = max((existing.help, argument.help), key=lambda value: (len(value), value))
+        merged_category = min(existing.category, argument.category)
+        merged_metavar = min(
+            (value for value in (existing.metavar, argument.metavar) if value is not None),
+            default=None,
+        )
+        normalized[conflict_index] = LaunchArgumentDefinition(
+            name=existing.name,
+            flags=existing.flags,
+            value_kind=existing.value_kind,
+            min_values=existing.min_values,
+            max_values=existing.max_values,
+            help=merged_help,
+            category=merged_category,
+            metavar=merged_metavar,
+            choices=existing.choices,
+            required=existing.required,
+            repeatable=existing.repeatable,
+            exclusive_group=existing.exclusive_group,
+            exclusive_group_required=existing.exclusive_group_required,
+            hidden=existing.hidden,
+        )
+    normalized.sort(key=lambda argument: (argument.name, tuple(argument.flags)))
+    return normalized, diagnostics
 
 
 def _usage_metadata(usage: str) -> tuple[dict[str, tuple[str, bool]], set[str]]:
@@ -281,45 +386,62 @@ def parse_argparse_help(
 ) -> tuple[list[LaunchArgumentDefinition], list[LaunchArgumentDiagnostic]]:
     """Parse the stable subset common to argparse-style help formatters."""
     lines = help_output.replace("\r\n", "\n").replace("\r", "\n").split("\n")
-    usage_lines: list[str] = []
-    reading_usage = False
-    for line in lines:
-        if line.lstrip().startswith("usage:"):
-            reading_usage = True
-        if reading_usage:
-            if not line.strip():
-                break
-            usage_lines.append(line.strip())
-    usage = " ".join(usage_lines)
-    category = "other"
+    usage, usage_indices = _usage_block(lines)
     parsed: list[tuple[str, str, str]] = []
     diagnostics: list[LaunchArgumentDiagnostic] = []
-    current: int | None = None
     unrecognized_declarations = 0
-    for line in lines:
-        heading = _HEADING.match(line)
-        if heading and not line.lstrip().startswith("usage:"):
-            category = _category(heading.group("name"))
-            current = None
+    section_starts = [
+        index
+        for index, line in enumerate(lines)
+        if index not in usage_indices and (heading := _HEADING.match(line)) and not heading.group("name").startswith("usage")
+    ]
+    for section_position, start in enumerate(section_starts):
+        end = section_starts[section_position + 1] if section_position + 1 < len(section_starts) else len(lines)
+        category = _category(_HEADING.match(lines[start]).group("name"))
+        candidates = [
+            (index, len(lines[index]) - len(lines[index].lstrip()))
+            for index in range(start + 1, end)
+            if index not in usage_indices and _split_option_declaration(lines[index]) is not None
+        ]
+        if not candidates:
+            unrecognized_declarations += sum(
+                1
+                for index in range(start + 1, end)
+                if index not in usage_indices and lines[index].lstrip().startswith("-")
+            )
             continue
-        declaration = _split_option_declaration(line)
-        if declaration is not None:
-            spec, help_text = declaration
-            flags = _normalized_flags(_FLAG.findall(spec))
-            if not flags:
+        declaration_indent = min(indent for _, indent in candidates)
+        current: int | None = None
+        for index in range(start + 1, end):
+            if index in usage_indices:
                 current = None
-                unrecognized_declarations += 1
                 continue
-            parsed.append((spec, help_text, category))
-            current = len(parsed) - 1
-        elif line.lstrip().startswith("-"):
-            current = None
-            unrecognized_declarations += 1
-        elif current is not None and line.strip() and len(line) > len(line.lstrip()):
-            item = parsed[current]
-            parsed[current] = (item[0], " ".join((item[1], line.strip())).strip(), item[2])
-        elif not line.strip():
-            current = None
+            line = lines[index]
+            stripped = line.lstrip()
+            indent = len(line) - len(stripped)
+            if not stripped:
+                current = None
+                continue
+            if indent == declaration_indent:
+                declaration = _split_option_declaration(line)
+                if declaration is None:
+                    if stripped.startswith("-"):
+                        unrecognized_declarations += 1
+                    current = None
+                    continue
+                spec, help_text = declaration
+                parsed.append((spec, help_text, category))
+                current = len(parsed) - 1
+                continue
+            if indent > declaration_indent and current is not None:
+                item = parsed[current]
+                parsed[current] = (
+                    item[0],
+                    " ".join((item[1], stripped)).strip(),
+                    item[2],
+                )
+            elif indent <= declaration_indent:
+                current = None
 
     group_by_flag, required_flags = _usage_metadata(usage)
 
@@ -360,8 +482,86 @@ def parse_argparse_help(
                 f"Skipped {unrecognized_declarations} unrecognized option declaration(s)",
             )
         )
-    arguments.sort(key=lambda argument: (argument.name, tuple(argument.flags)))
+    arguments, conflict_diagnostics = _coalesce_definitions(arguments)
+    diagnostics.extend(conflict_diagnostics)
     return arguments, diagnostics
+
+
+def _has_option_section(document: str) -> bool:
+    lines = document.split("\n")
+    return any(
+        _HEADING.match(line)
+        and any(
+            _split_option_declaration(candidate) is not None
+            for candidate in lines[index + 1 :]
+        )
+        for index, line in enumerate(lines)
+    )
+
+
+def _select_help_document(
+    stdout: str,
+    stderr: str,
+    *,
+    hidden_flags: frozenset[str],
+) -> tuple[list[LaunchArgumentDefinition], list[LaunchArgumentDiagnostic]]:
+    documents = [("stdout", stdout), ("stderr", stderr)]
+    parsed = []
+    for name, document in documents:
+        arguments, diagnostics = parse_argparse_help(document, hidden_flags=hidden_flags)
+        viable = bool(arguments) and "usage:" in document and _has_option_section(document)
+        parsed.append((name, document, arguments, diagnostics, viable))
+
+    viable = [item for item in parsed if item[4]]
+    if len(viable) == 2:
+        stdout_result, stderr_result = viable
+        stdout_contract = tuple(_semantic_key(argument) for argument in stdout_result[2])
+        stderr_contract = tuple(_semantic_key(argument) for argument in stderr_result[2])
+        if stdout_contract != stderr_contract:
+            diagnostics = list(stdout_result[3])
+            diagnostics.append(
+                LaunchArgumentDiagnostic(
+                    "error",
+                    "discovery_conflict",
+                    "stdout and stderr exposed conflicting launch-argument contracts",
+                )
+            )
+            return stdout_result[2], diagnostics
+        return stdout_result[2], stdout_result[3]
+    if len(viable) == 1:
+        selected = viable[0]
+        diagnostics = list(selected[3])
+        other = parsed[1] if selected[0] == "stdout" else parsed[0]
+        if other[1]:
+            diagnostics.append(
+                LaunchArgumentDiagnostic(
+                    "warning",
+                    "discovery_other_stream",
+                    f"Ignored non-help process output from {other[0]}",
+                    other[1][-MAX_DIAGNOSTIC_OUTPUT:],
+                )
+            )
+        return selected[2], diagnostics
+
+    selected = max(
+        parsed,
+        key=lambda item: (
+            bool(item[2]),
+            "usage:" in item[1],
+            len(item[2]),
+            item[0] == "stdout",
+        ),
+    )
+    diagnostics = list(selected[3])
+    if not any(diagnostic.severity == "error" for diagnostic in diagnostics):
+        diagnostics.append(
+            LaunchArgumentDiagnostic(
+                "error",
+                "parse_empty",
+                "Neither stdout nor stderr contained a viable argparse help document",
+            )
+        )
+    return selected[2], diagnostics
 
 
 class ScriptHelpProvider:
@@ -412,7 +612,7 @@ class ScriptHelpProvider:
                 revision,
                 diagnostics=[LaunchArgumentDiagnostic("error", "discovery_unavailable", "No supported WebUI launch script exists in the installed core")],
             )
-        output, failure = _run_help(command, context)
+        stdout, stderr, failure = _run_help(command, context)
         if failure is not None:
             return LaunchArgumentCatalog(
                 CATALOG_SCHEMA_VERSION,
@@ -425,7 +625,11 @@ class ScriptHelpProvider:
                 ),
                 diagnostics=[failure],
             )
-        arguments, diagnostics = parse_argparse_help(output, hidden_flags=self.hidden_flags)
+        arguments, diagnostics = _select_help_document(
+            stdout,
+            stderr,
+            hidden_flags=self.hidden_flags,
+        )
         return LaunchArgumentCatalog(
             CATALOG_SCHEMA_VERSION,
             context.webui_type,

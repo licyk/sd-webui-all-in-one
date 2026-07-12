@@ -63,6 +63,37 @@ options:
 """
 
 
+LIVE_COMFYUI_HELP = """usage: main.py [-h] [--listen [IP]]
+               [--cache-classic |
+                --cache-lru CACHE_LRU |
+                --cache-none |
+                --cache-ram [GB ...]]
+               [--high-ram]
+
+options:
+  -h, --help            show this help message and exit
+  --listen [IP]
+                        Specify the IP address to listen on.
+  --disable-all-custom-nodes
+                        Disable custom nodes when
+                        --disable-all-custom-nodes is enabled.
+  --enable-manager
+                        Enable the manager when using
+                        --enable-manager.
+
+Performance options:
+  --cache-classic       Use classic caching.
+  --cache-lru CACHE_LRU
+                        Cache at most N results.
+  --cache-none          Disable caching.
+  --cache-ram [GB ...]
+                        Keep models cached in RAM.
+  --high-ram            Prefer RAM for model caching.
+                        Current valid optimizations:
+                        fp16_accumulation and scaled_mm.
+"""
+
+
 def test_catalog_models_serialize_stable_snake_case_shape(tmp_path: Path) -> None:
     script = tmp_path / "launch.py"
     script.write_text("print('''" + HELP_LF + "''')", encoding="utf-8")
@@ -151,6 +182,85 @@ options:
     assert (by_name["backend_b"].min_values, by_name["backend_b"].max_values) == (0, None)
 
 
+def test_live_comfyui_shape_never_parses_usage_or_help_prose_as_declarations() -> None:
+    arguments, diagnostics = parse_argparse_help(LIVE_COMFYUI_HELP)
+    assert not [diagnostic for diagnostic in diagnostics if diagnostic.severity == "error"]
+    names = [argument.name for argument in arguments]
+    flags = [flag for argument in arguments for flag in argument.flags]
+    assert len(names) == len(set(names))
+    assert len(flags) == len(set(flags))
+    for name in ["cache_classic", "disable_all_custom_nodes", "enable_manager", "high_ram"]:
+        assert names.count(name) == 1
+    by_name = {argument.name: argument for argument in arguments}
+    cache_group = by_name["cache_classic"].exclusive_group
+    assert cache_group
+    assert {
+        by_name["cache_lru"].exclusive_group,
+        by_name["cache_none"].exclusive_group,
+        by_name["cache_ram"].exclusive_group,
+    } == {cache_group}
+    assert by_name["cache_ram"].value_kind is LaunchArgumentValueKind.MULTI_VALUE
+    assert (by_name["cache_ram"].min_values, by_name["cache_ram"].max_values) == (0, None)
+    assert "--disable-all-custom-nodes is enabled." in by_name["disable_all_custom_nodes"].help
+    assert "--enable-manager." in by_name["enable_manager"].help
+    assert "Current valid optimizations:" in by_name["high_ram"].help
+    assert {argument.category for argument in arguments} == {"general", "performance_options"}
+    assert not {"|", ".", "]", "is enabled."} & {
+        argument.metavar for argument in arguments if argument.metavar
+    }
+
+
+def test_duplicate_semantic_conflicts_are_blocking_diagnostics() -> None:
+    help_text = """usage: demo [--port PORT]
+
+options:
+  --port PORT           scalar port
+  --port [PORT]         conflicting optional port
+"""
+    arguments, diagnostics = parse_argparse_help(help_text)
+    assert len(arguments) == 1
+    assert any(
+        diagnostic.severity == "error" and diagnostic.code == "parse_conflict"
+        for diagnostic in diagnostics
+    )
+
+
+def test_help_document_selection_is_stream_aware_and_conflict_safe() -> None:
+    arguments, diagnostics = launch_arguments_module._select_help_document(
+        LIVE_COMFYUI_HELP,
+        "warning: optional import failed",
+        hidden_flags=frozenset(),
+    )
+    assert arguments
+    assert any(diagnostic.code == "discovery_other_stream" for diagnostic in diagnostics)
+
+    equivalent, diagnostics = launch_arguments_module._select_help_document(
+        LIVE_COMFYUI_HELP,
+        LIVE_COMFYUI_HELP,
+        hidden_flags=frozenset(),
+    )
+    assert equivalent == arguments
+    assert not any(diagnostic.code == "discovery_conflict" for diagnostic in diagnostics)
+
+    conflicting = LIVE_COMFYUI_HELP.replace("--listen [IP]", "--listen IP")
+    _, diagnostics = launch_arguments_module._select_help_document(
+        LIVE_COMFYUI_HELP,
+        conflicting,
+        hidden_flags=frozenset(),
+    )
+    assert any(
+        diagnostic.severity == "error" and diagnostic.code == "discovery_conflict"
+        for diagnostic in diagnostics
+    )
+
+    stderr_only, _ = launch_arguments_module._select_help_document(
+        "ordinary stdout noise",
+        LIVE_COMFYUI_HELP,
+        hidden_flags=frozenset(),
+    )
+    assert stderr_only == arguments
+
+
 def test_variadic_choice_arity_distinguishes_zero_or_more_from_one_or_more() -> None:
     help_text = """usage: demo [--optional-colors [{red,green,blue} ...]]
             [--required-colors {red,green,blue} [{red,green,blue} ...]]
@@ -185,6 +295,14 @@ options:
     assert by_name["first"].help == "First help line."
     assert by_name["second"].help == "Second help line."
     assert diagnostics[0].code == "parse_partial"
+
+
+def test_section_with_only_malformed_declarations_reports_partial_parse() -> None:
+    arguments, diagnostics = parse_argparse_help(
+        "usage: demo\n\noptions:\n  ---not-an-option ???\n"
+    )
+    assert arguments == []
+    assert {diagnostic.code for diagnostic in diagnostics} == {"parse_empty", "parse_partial"}
 
 
 def test_missing_usage_and_malformed_help_return_typed_diagnostics() -> None:
@@ -322,7 +440,7 @@ def test_catalog_revision_is_stable_for_contract_and_ignores_transient_noise(
     monkeypatch.setattr(
         launch_arguments_module,
         "_run_help",
-        lambda _command, _context: (next(outputs), None),
+        lambda _command, _context: (next(outputs), "", None),
     )
     revisions = [
         get_launch_argument_catalog("sd_webui", tmp_path, python_executable=sys.executable).catalog_revision
