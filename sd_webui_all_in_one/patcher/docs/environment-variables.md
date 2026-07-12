@@ -108,7 +108,7 @@ HF_ENDPOINT=https://hf-mirror.example
 
 ## Desktop Broker
 
-这些变量只有在 transport mode 精确为 `desktop_broker` 时读取。六项全部由 Rust launch owner 注入；Python 不从 Vue 或 legacy host 补齐任何 session authority。完整 HTTP v1 合同和各项 bound 见 [Desktop Broker v1](desktop-broker-protocol.md)。
+这些变量只有在 transport mode 精确为 `desktop_broker` 时读取。六项全部由 Rust launch owner 注入；Python 不从 Vue 或 legacy host 补齐任何 session authority。完整 HTTP v2 合同和各项 bound 见 [Desktop Broker v2](desktop-broker-protocol.md)。
 
 | 变量 | 用途 | 启用条件 | 默认值 | 取值格式 | 读取位置 / 入口 |
 | --- | --- | --- | --- | --- | --- |
@@ -116,7 +116,7 @@ HF_ENDPOINT=https://hf-mirror.example
 | `SD_WEBUI_ALL_IN_ONE_RUNTIME_SESSION_ID` | Rust 创建的单次 launch session ID。 | desktop mode 必填。 | 无 | 1-256 字符 | `DesktopBrokerSettings.from_env()` |
 | `SD_WEBUI_ALL_IN_ONE_RUNTIME_TOKEN` | 不可预测、只属于该 session 的 Bearer credential。 | desktop mode 必填。 | 无 | 1-256 字符 | `DesktopBrokerSettings.from_env()` |
 | `SD_WEBUI_ALL_IN_ONE_RUNTIME_IDENTITY` | 当前 WebUI runtime identity。 | desktop mode 必填。 | 无 | 1-256 字符 | `DesktopBrokerSettings.from_env()` |
-| `SD_WEBUI_ALL_IN_ONE_RUNTIME_PROTOCOL_VERSION` | broker 协议版本。 | desktop mode 必填。 | 无 | 当前只接受精确值 `1`。 | `DesktopBrokerSettings.from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_RUNTIME_PROTOCOL_VERSION` | broker 协议版本。 | desktop mode 必填。 | 无 | 当前只接受精确值 `2`。 | `DesktopBrokerSettings.from_env()` |
 
 ## 配置来源
 

@@ -25,7 +25,7 @@ SESSION_ID_ENV = "SD_WEBUI_ALL_IN_ONE_RUNTIME_SESSION_ID"
 SESSION_TOKEN_ENV = "SD_WEBUI_ALL_IN_ONE_RUNTIME_TOKEN"
 RUNTIME_IDENTITY_ENV = "SD_WEBUI_ALL_IN_ONE_RUNTIME_IDENTITY"
 PROTOCOL_VERSION_ENV = "SD_WEBUI_ALL_IN_ONE_RUNTIME_PROTOCOL_VERSION"
-PROTOCOL_VERSION = "1"
+PROTOCOL_VERSION = "2"
 
 MAX_EVENT_COUNT = 256
 BROWSER_RESERVED_EVENT_CAPACITY = 16
@@ -35,7 +35,11 @@ MAX_REQUEST_BYTES = 256 * 1024
 MAX_RESPONSE_BYTES = 256 * 1024
 MAX_COMMAND_RESULT_BYTES = 64 * 1024
 MAX_DIAGNOSTIC_COUNT = 64
-MAX_DIAGNOSTIC_MESSAGE_CHARS = 2048
+MAX_DIAGNOSTIC_MESSAGE_BYTES = 2048
+MAX_DIAGNOSTIC_HISTORY_BYTES = 128 * 1024
+MAX_DIAGNOSTIC_BATCH_COUNT = 8
+MAX_DIAGNOSTIC_BATCH_BYTES = 64 * 1024
+MAX_DIAGNOSTIC_CODE_BYTES = 128
 MAX_RESULT_COUNT = 128
 MAX_COMMAND_HISTORY = 256
 MAX_COMMAND_BATCH_COUNT = 32
@@ -48,6 +52,7 @@ DEFAULT_HEARTBEAT_SECONDS = 5.0
 DEFAULT_FINAL_FLUSH_SECONDS = 0.5
 MIN_RECONNECT_SECONDS = 0.1
 MAX_RECONNECT_SECONDS = 5.0
+HEARTBEAT_RESPONSE_STATUSES = {"connected", "degraded", "reconnecting", "disconnected"}
 
 
 class DesktopBrokerConfigurationError(ValueError):
@@ -55,7 +60,7 @@ class DesktopBrokerConfigurationError(ValueError):
 
 
 class DesktopBrokerProtocolError(RuntimeError):
-    """The broker returned a response that violates protocol version 1."""
+    """The broker returned a response that violates protocol version 2."""
 
 
 class DesktopBrokerCommandError(RuntimeError):
@@ -163,6 +168,7 @@ class OutboundRuntimeEvent:
 
 @dataclass
 class DesktopTransportDiagnostic:
+    sequence: int
     code: str
     message: str
     createdAt: float
@@ -192,7 +198,7 @@ class _RejectRedirectHandler(urllib.request.HTTPRedirectHandler):
         response.close()
         raise DesktopBrokerHttpError(
             "redirect_rejected",
-            "runtime broker redirects are not permitted by protocol version 1",
+            "runtime broker redirects are not permitted by protocol version 2",
             retryable=False,
         )
 
@@ -310,7 +316,12 @@ class DesktopBrokerClient:
         self._results: deque[dict[str, Any]] = deque()
         self._queued_result_ids: set[str] = set()
         self._command_history: OrderedDict[str, tuple[int, str, dict[str, Any]]] = OrderedDict()
-        self._diagnostics: deque[DesktopTransportDiagnostic] = deque(maxlen=MAX_DIAGNOSTIC_COUNT)
+        self._diagnostic_history: deque[DesktopTransportDiagnostic] = deque()
+        self._diagnostic_history_bytes = 0
+        self._active_transport_diagnostic: DesktopTransportDiagnostic | None = None
+        self._next_diagnostic_sequence = 1
+        self._acknowledged_diagnostic_sequence = 0
+        self._diagnostics_truncated = False
         self._next_sequence = 1
         self._acknowledged_sequence = 0
         self._command_sequence = 0
@@ -452,9 +463,15 @@ class DesktopBrokerClient:
                 "queuedEventCount": len(self._events),
                 "queuedResultCount": len(self._results),
                 "acknowledgedSequence": self._acknowledged_sequence,
+                "activeDiagnostic": (asdict(self._active_transport_diagnostic) if self._active_transport_diagnostic is not None else None),
+                "unacknowledgedDiagnostics": [asdict(item) for item in self._diagnostic_history],
+                "unacknowledgedDiagnosticCount": len(self._diagnostic_history),
+                "unacknowledgedDiagnosticBytes": self._diagnostic_history_bytes,
+                "acknowledgedDiagnosticSequence": self._acknowledged_diagnostic_sequence,
+                "diagnosticsStartSequence": self._diagnostics_start_sequence_locked(),
+                "diagnosticsTruncated": self._diagnostics_truncated,
                 "lastHeartbeatAt": self._last_heartbeat_at,
                 "lastSuccessAt": self._last_success_at,
-                "diagnostics": [asdict(item) for item in self._diagnostics],
             }
 
     def close(self, *, flush_timeout: float | None = None) -> None:
@@ -468,7 +485,7 @@ class DesktopBrokerClient:
                 self._closed = True
                 self._closing = True
                 self._status = DesktopTransportStatus.CLOSED
-                if self._events or self._results:
+                if self._events or self._results or self._diagnostic_history:
                     self._record_diagnostic_locked(
                         "final_flush_incomplete",
                         "desktop broker closed before its worker was started",
@@ -483,7 +500,7 @@ class DesktopBrokerClient:
         with self._condition:
             self._closed = True
             self._status = DesktopTransportStatus.CLOSED
-            if self._events or self._results:
+            if self._events or self._results or self._diagnostic_history:
                 self._record_diagnostic_locked(
                     "final_flush_incomplete",
                     "desktop broker final flush deadline expired with pending state",
@@ -500,7 +517,7 @@ class DesktopBrokerClient:
                     return
                 closing = self._closing
                 close_deadline = self._close_deadline
-                work_pending = bool(self._events or self._results)
+                work_pending = bool(self._events or self._results or self._diagnostic_history)
                 if closing and (not work_pending or close_deadline is None or self._monotonic() >= close_deadline):
                     self._closed = True
                     self._status = DesktopTransportStatus.CLOSED
@@ -548,6 +565,10 @@ class DesktopBrokerClient:
                 return
         self._upload_results()
         if flushing:
+            with self._condition:
+                diagnostics_pending = bool(self._diagnostic_history)
+            if diagnostics_pending:
+                self._heartbeat()
             return
         now = self._monotonic()
         if self._last_heartbeat_monotonic is None or now - self._last_heartbeat_monotonic >= self._heartbeat_seconds:
@@ -563,7 +584,8 @@ class DesktopBrokerClient:
         )
         if response.get("status") not in {"connected", "reconnecting"}:
             raise DesktopBrokerProtocolError("connect response status must be connected or reconnecting")
-        acknowledgement = _optional_nonnegative_int(response, "acknowledgedSequence", default=0)
+        acknowledgement = _required_nonnegative_int(response, "acknowledgedSequence")
+        diagnostic_acknowledgement = _required_nonnegative_int(response, "acknowledgedDiagnosticSequence")
         with self._condition:
             if self._closed:
                 return
@@ -572,6 +594,8 @@ class DesktopBrokerClient:
             self._discard_acknowledged_locked(acknowledgement)
             if not self._events and acknowledgement >= self._next_sequence:
                 self._next_sequence = acknowledgement + 1
+            self._discard_acknowledged_diagnostics_locked(diagnostic_acknowledgement)
+            self._active_transport_diagnostic = None
             self._ever_connected = True
             self._status = DesktopTransportStatus.CONNECTED
             self._last_success_at = self._wall_time()
@@ -596,20 +620,37 @@ class DesktopBrokerClient:
 
     def _heartbeat(self) -> None:
         with self._condition:
-            diagnostics = [asdict(item) for item in list(self._diagnostics)[-8:]]
+            diagnostics = _bounded_diagnostic_batch(self._diagnostic_history)
+            prior_diagnostic_acknowledgement = self._acknowledged_diagnostic_sequence
             body = {
                 "transportStatus": self._status.value,
                 "lastAcknowledgedSequence": self._acknowledged_sequence,
                 "queuedEventCount": len(self._events),
-                "diagnostics": diagnostics,
+                "activeDiagnostic": (asdict(self._active_transport_diagnostic) if self._active_transport_diagnostic is not None else None),
+                "diagnostics": [asdict(item) for item in diagnostics],
+                "diagnosticsStartSequence": self._diagnostics_start_sequence_locked(),
+                "diagnosticsTruncated": self._diagnostics_truncated,
             }
-        self._requester.request(
+        response = self._requester.request(
             "POST",
             "/v1/runtime/heartbeat",
             body=body,
             timeout=DEFAULT_REQUEST_TIMEOUT,
         )
+        if response.get("status") not in HEARTBEAT_RESPONSE_STATUSES:
+            raise DesktopBrokerProtocolError("heartbeat response status must be connected, degraded, reconnecting, or disconnected")
+        acknowledgement = _required_nonnegative_int(response, "acknowledgedSequence")
+        diagnostic_acknowledgement = _required_nonnegative_int(response, "acknowledgedDiagnosticSequence")
+        maximum_diagnostic_acknowledgement = diagnostics[-1].sequence if diagnostics else prior_diagnostic_acknowledgement
+        if diagnostic_acknowledgement > maximum_diagnostic_acknowledgement:
+            raise DesktopBrokerProtocolError("diagnostic acknowledgement exceeds the uploaded heartbeat batch")
         with self._condition:
+            if self._events and acknowledgement >= self._next_sequence:
+                raise DesktopBrokerProtocolError("heartbeat acknowledgement exceeds the local event sequence")
+            self._discard_acknowledged_locked(acknowledgement)
+            if not self._events and acknowledgement >= self._next_sequence:
+                self._next_sequence = acknowledgement + 1
+            self._discard_acknowledged_diagnostics_locked(diagnostic_acknowledgement)
             self._last_heartbeat_monotonic = self._monotonic()
             self._last_heartbeat_at = self._wall_time()
             self._last_success_at = self._wall_time()
@@ -770,7 +811,18 @@ class DesktopBrokerClient:
         with self._condition:
             if self._closed:
                 return
-            self._record_diagnostic_locked(code, message)
+            normalized_code = _bounded_utf8_text(str(code), MAX_DIAGNOSTIC_CODE_BYTES)
+            normalized_message = _bounded_utf8_text(str(message), MAX_DIAGNOSTIC_MESSAGE_BYTES)
+            active = self._active_transport_diagnostic
+            if active is not None and active.code == normalized_code and active.message == normalized_message:
+                active.occurrences = min(MAX_SEQUENCE, active.occurrences + 1)
+                self._enforce_diagnostic_history_bounds_locked()
+            else:
+                self._active_transport_diagnostic = self._record_diagnostic_locked(
+                    normalized_code,
+                    normalized_message,
+                    coalesce=False,
+                )
             if retryable:
                 self._status = DesktopTransportStatus.RECONNECTING if self._ever_connected else DesktopTransportStatus.DISCONNECTED
             else:
@@ -780,12 +832,60 @@ class DesktopBrokerClient:
         with self._condition:
             self._record_diagnostic_locked(code, message)
 
-    def _record_diagnostic_locked(self, code: str, message: str) -> None:
-        message = message[:MAX_DIAGNOSTIC_MESSAGE_CHARS]
-        if self._diagnostics and self._diagnostics[-1].code == code and self._diagnostics[-1].message == message:
-            self._diagnostics[-1].occurrences += 1
+    def _record_diagnostic_locked(
+        self,
+        code: str,
+        message: str,
+        *,
+        coalesce: bool = True,
+    ) -> DesktopTransportDiagnostic:
+        normalized_code = _bounded_utf8_text(str(code), MAX_DIAGNOSTIC_CODE_BYTES)
+        normalized_message = _bounded_utf8_text(str(message), MAX_DIAGNOSTIC_MESSAGE_BYTES)
+        if coalesce and self._diagnostic_history and self._diagnostic_history[-1].code == normalized_code and self._diagnostic_history[-1].message == normalized_message:
+            diagnostic = self._diagnostic_history[-1]
+            diagnostic.occurrences = min(MAX_SEQUENCE, diagnostic.occurrences + 1)
+            self._enforce_diagnostic_history_bounds_locked()
+            return diagnostic
+
+        if self._next_diagnostic_sequence > MAX_SEQUENCE:
+            raise DesktopBrokerProtocolError("diagnostic sequence reached its protocol bound")
+        created_at = self._wall_time()
+        if not _is_finite_nonnegative_number(created_at):
+            created_at = 0.0
+        diagnostic = DesktopTransportDiagnostic(
+            sequence=self._next_diagnostic_sequence,
+            code=normalized_code,
+            message=normalized_message,
+            createdAt=created_at,
+        )
+        self._next_diagnostic_sequence += 1
+        self._diagnostic_history.append(diagnostic)
+        self._enforce_diagnostic_history_bounds_locked()
+        return diagnostic
+
+    def _enforce_diagnostic_history_bounds_locked(self) -> None:
+        self._diagnostic_history_bytes = sum(_diagnostic_size(item) for item in self._diagnostic_history)
+        while self._diagnostic_history and (len(self._diagnostic_history) > MAX_DIAGNOSTIC_COUNT or self._diagnostic_history_bytes > MAX_DIAGNOSTIC_HISTORY_BYTES):
+            removed = self._diagnostic_history.popleft()
+            self._diagnostic_history_bytes -= _diagnostic_size(removed)
+            self._diagnostics_truncated = True
+
+    def _discard_acknowledged_diagnostics_locked(self, acknowledgement: int) -> None:
+        if acknowledgement < self._acknowledged_diagnostic_sequence:
             return
-        self._diagnostics.append(DesktopTransportDiagnostic(code=code, message=message, createdAt=self._wall_time()))
+        if self._diagnostic_history and acknowledgement >= self._next_diagnostic_sequence:
+            raise DesktopBrokerProtocolError("diagnostic acknowledgement exceeds the local diagnostic sequence")
+        self._acknowledged_diagnostic_sequence = acknowledgement
+        while self._diagnostic_history and self._diagnostic_history[0].sequence <= acknowledgement:
+            self._diagnostic_history.popleft()
+        if not self._diagnostic_history and acknowledgement >= self._next_diagnostic_sequence:
+            self._next_diagnostic_sequence = acknowledgement + 1
+        self._diagnostic_history_bytes = sum(_diagnostic_size(item) for item in self._diagnostic_history)
+
+    def _diagnostics_start_sequence_locked(self) -> int:
+        if self._diagnostic_history:
+            return self._diagnostic_history[0].sequence
+        return self._next_diagnostic_sequence
 
 
 def _bounded_event_batch(events: deque[OutboundRuntimeEvent]) -> list[OutboundRuntimeEvent]:
@@ -806,6 +906,29 @@ def _bounded_result_batch(results: deque[dict[str, Any]]) -> list[dict[str, Any]
             break
         batch = candidate
     return batch
+
+
+def _bounded_diagnostic_batch(
+    diagnostics: deque[DesktopTransportDiagnostic],
+) -> list[DesktopTransportDiagnostic]:
+    batch: list[DesktopTransportDiagnostic] = []
+    for diagnostic in list(diagnostics)[:MAX_DIAGNOSTIC_BATCH_COUNT]:
+        candidate = batch + [diagnostic]
+        if len(_encode_json({"diagnostics": [asdict(item) for item in candidate]})) > MAX_DIAGNOSTIC_BATCH_BYTES:
+            break
+        batch = candidate
+    return batch
+
+
+def _diagnostic_size(diagnostic: DesktopTransportDiagnostic) -> int:
+    return len(_encode_json(asdict(diagnostic)))
+
+
+def _bounded_utf8_text(value: str, max_bytes: int) -> str:
+    encoded = value.encode("utf-8", errors="replace")
+    if len(encoded) <= max_bytes:
+        return encoded.decode("utf-8")
+    return encoded[:max_bytes].decode("utf-8", errors="ignore")
 
 
 def _required_nonnegative_int(response: dict[str, Any], key: str) -> int:
@@ -848,7 +971,7 @@ def _command_fingerprint(command_type: str, payload: dict[str, Any]) -> str:
 
 
 def _bounded_error_message(message: str) -> str:
-    return message[:MAX_DIAGNOSTIC_MESSAGE_CHARS]
+    return _bounded_utf8_text(message, MAX_DIAGNOSTIC_MESSAGE_BYTES)
 
 
 def _broker_event_type(event_type: str) -> str:

@@ -1,6 +1,6 @@
 # Runtime 通信协议
 
-`sd_webui_all_in_one_hotpatcher.runtime` 提供补丁系统和外部宿主之间的控制通道。本文描述默认的 legacy TCP + JSON Lines 协议，不兼容原系统的 Windows named pipe + GUID 二进制协议。显式 desktop transport 是并行实现，不替代这里的任何 API；其版本化 HTTP 合同见 [Desktop Broker v1](desktop-broker-protocol.md)。
+`sd_webui_all_in_one_hotpatcher.runtime` 提供补丁系统和外部宿主之间的控制通道。本文描述默认的 legacy TCP + JSON Lines 协议，不兼容原系统的 Windows named pipe + GUID 二进制协议。显式 desktop transport 是并行实现，不替代这里的任何 API；其版本化 HTTP 合同见 [Desktop Broker v2](desktop-broker-protocol.md)。
 
 transport selector 是 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TRANSPORT_MODE`。未设置、空值或 `legacy` 选择本文协议；只有精确值 `desktop_broker` 选择 desktop client。值区分大小写且不接受别名。
 

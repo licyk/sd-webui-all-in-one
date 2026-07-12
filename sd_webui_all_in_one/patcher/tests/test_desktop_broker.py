@@ -8,12 +8,18 @@ import pytest
 
 from sd_webui_all_in_one_hotpatcher import bootstrap
 from sd_webui_all_in_one_hotpatcher.runtime import browser
+from sd_webui_all_in_one_hotpatcher.runtime import desktop_broker as desktop_broker_module
 from sd_webui_all_in_one_hotpatcher.runtime.desktop_broker import (
     BROKER_URL_ENV,
     BROWSER_RESERVED_EVENT_CAPACITY,
     MAX_EVENT_BATCH_COUNT,
     MAX_EVENT_COUNT,
     MAX_EVENT_PAYLOAD_BYTES,
+    MAX_DIAGNOSTIC_BATCH_BYTES,
+    MAX_DIAGNOSTIC_BATCH_COUNT,
+    MAX_DIAGNOSTIC_COUNT,
+    MAX_DIAGNOSTIC_HISTORY_BYTES,
+    MAX_DIAGNOSTIC_MESSAGE_BYTES,
     MAX_REQUEST_BYTES,
     PROTOCOL_VERSION_ENV,
     RUNTIME_IDENTITY_ENV,
@@ -37,7 +43,7 @@ def _desktop_env(**updates):
         SESSION_ID_ENV: "session-1",
         SESSION_TOKEN_ENV: "unpredictable-token",
         RUNTIME_IDENTITY_ENV: "runtime-1",
-        PROTOCOL_VERSION_ENV: "1",
+        PROTOCOL_VERSION_ENV: "2",
     }
     values.update(updates)
     return values
@@ -47,6 +53,7 @@ class ScriptedRequester:
     def __init__(self, scripts=None):
         self.scripts = {path: list(items) for path, items in (scripts or {}).items()}
         self.calls = []
+        self.acknowledged_diagnostic_sequence = 0
 
     def request(self, method, path, *, body=None, query=None, timeout):
         self.calls.append(
@@ -67,7 +74,11 @@ class ScriptedRequester:
                 return value(self.calls[-1])
             return value
         if path == "/v1/runtime/connect":
-            return {"status": "connected", "acknowledgedSequence": 0}
+            return {
+                "status": "connected",
+                "acknowledgedSequence": 0,
+                "acknowledgedDiagnosticSequence": self.acknowledged_diagnostic_sequence,
+            }
         if path == "/v1/runtime/events":
             events = body["events"]
             return {"acknowledgedSequence": events[-1]["sequence"]}
@@ -75,6 +86,20 @@ class ScriptedRequester:
             return {"commands": []}
         if path == "/v1/runtime/results":
             return {"acceptedCommandIds": [item["commandId"] for item in body["results"]]}
+        if path == "/v1/runtime/heartbeat":
+            diagnostics = body["diagnostics"]
+            start = body["diagnosticsStartSequence"]
+            if body["diagnosticsTruncated"] and start > self.acknowledged_diagnostic_sequence + 1:
+                self.acknowledged_diagnostic_sequence = start - 1
+            for diagnostic in diagnostics:
+                if diagnostic["sequence"] != self.acknowledged_diagnostic_sequence + 1:
+                    break
+                self.acknowledged_diagnostic_sequence = diagnostic["sequence"]
+            return {
+                "status": "connected",
+                "acknowledgedSequence": body["lastAcknowledgedSequence"],
+                "acknowledgedDiagnosticSequence": self.acknowledged_diagnostic_sequence,
+            }
         return {}
 
 
@@ -106,9 +131,24 @@ class _ProtocolHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         body = self._record()
         if self.path == "/v1/runtime/connect":
-            self._respond({"status": "connected", "acknowledgedSequence": 0})
+            self._respond(
+                {
+                    "status": "connected",
+                    "acknowledgedSequence": 0,
+                    "acknowledgedDiagnosticSequence": 0,
+                }
+            )
         elif self.path == "/v1/runtime/events":
             self._respond({"acknowledgedSequence": body["events"][-1]["sequence"]})
+        elif self.path == "/v1/runtime/heartbeat":
+            acknowledged_diagnostic_sequence = body["diagnostics"][-1]["sequence"] if body["diagnostics"] else 0
+            self._respond(
+                {
+                    "status": "connected",
+                    "acknowledgedSequence": body["lastAcknowledgedSequence"],
+                    "acknowledgedDiagnosticSequence": acknowledged_diagnostic_sequence,
+                }
+            )
         else:
             self._respond({})
 
@@ -173,7 +213,7 @@ def test_standard_library_http_uses_exact_protocol_and_ignores_proxy(monkeypatch
     ]
     for _method, _path, headers, _body in _ProtocolHandler.requests:
         assert headers["Authorization"] == "Bearer unpredictable-token"
-        assert headers["X-Runtime-Protocol-Version"] == "1"
+        assert headers["X-Runtime-Protocol-Version"] == "2"
         assert headers["X-Runtime-Session-Id"] == "session-1"
         assert headers["X-Runtime-Identity"] == "runtime-1"
     event_body = _ProtocolHandler.requests[1][3]
@@ -212,7 +252,7 @@ def test_standard_library_http_rejects_redirect_without_forwarding_credentials()
 
     assert error.value.code == "redirect_rejected"
     assert error.value.retryable is False
-    assert str(error.value) == "runtime broker redirects are not permitted by protocol version 1"
+    assert str(error.value) == "runtime broker redirects are not permitted by protocol version 2"
     assert len(_RedirectingBrokerHandler.requests) == 1
     assert _RedirectingBrokerHandler.requests[0][1]["Authorization"] == "Bearer unpredictable-token"
     assert _RedirectTargetHandler.requests == []
@@ -223,7 +263,7 @@ def test_desktop_settings_require_exact_loopback_session_environment():
     assert settings.broker_url == "http://127.0.0.1:43123"
     assert settings.headers() == {
         "Authorization": "Bearer unpredictable-token",
-        "X-Runtime-Protocol-Version": "1",
+        "X-Runtime-Protocol-Version": "2",
         "X-Runtime-Session-Id": "session-1",
         "X-Runtime-Identity": "runtime-1",
     }
@@ -243,8 +283,8 @@ def test_desktop_settings_require_exact_loopback_session_environment():
     with pytest.raises(DesktopBrokerConfigurationError) as missing:
         DesktopBrokerSettings.from_env(_desktop_env(**{SESSION_TOKEN_ENV: ""}))
     assert SESSION_TOKEN_ENV in str(missing.value)
-    with pytest.raises(DesktopBrokerConfigurationError, match="supported value: 1"):
-        DesktopBrokerSettings.from_env(_desktop_env(**{PROTOCOL_VERSION_ENV: "2"}))
+    with pytest.raises(DesktopBrokerConfigurationError, match="supported value: 2"):
+        DesktopBrokerSettings.from_env(_desktop_env(**{PROTOCOL_VERSION_ENV: "3"}))
 
 
 def test_reserved_browser_capacity_is_bounded_without_sequence_gaps():
@@ -263,7 +303,8 @@ def test_reserved_browser_capacity_is_bounded_without_sequence_gaps():
     assert requester.calls == []
     status = client.status()
     assert status["queuedEventCount"] == 3
-    assert status["diagnostics"][-1] == {
+    assert status["unacknowledgedDiagnostics"][-1] == {
+        "sequence": 1,
         "code": "ordinary_event_capacity_exhausted",
         "message": "ordinary event queue reached its 3-event admission limit; 2 slots are reserved for browser.open",
         "createdAt": 123.5,
@@ -275,7 +316,8 @@ def test_reserved_browser_capacity_is_bounded_without_sequence_gaps():
     assert client.emit_event("browser.open", {"url": "http://localhost:6"}) is False
     status = client.status()
     assert status["queuedEventCount"] == 5
-    assert status["diagnostics"][-1] == {
+    assert status["unacknowledgedDiagnostics"][-1] == {
+        "sequence": 2,
         "code": "critical_event_capacity_exhausted",
         "message": "outbound event queue reached its 5-event hard limit; browser.open was rejected",
         "createdAt": 123.5,
@@ -308,7 +350,7 @@ def test_browser_only_queue_reaches_bounded_hard_limit():
     assert client.emit_event("browser.open", {"url": "http://localhost:full"}) is False
 
     assert [event.sequence for event in client._events] == [1, 2, 3]
-    assert client.status()["diagnostics"][-1]["code"] == "critical_event_capacity_exhausted"
+    assert client.status()["unacknowledgedDiagnostics"][-1]["code"] == "critical_event_capacity_exhausted"
 
 
 def test_default_queue_reserves_named_browser_capacity():
@@ -318,13 +360,13 @@ def test_default_queue_reserves_named_browser_capacity():
     for index in range(ordinary_capacity):
         assert client.emit_event("audit.event", {"index": index}) is True
     assert client.emit_event("audit.event", {"index": ordinary_capacity}) is False
-    assert client.status()["diagnostics"][-1]["message"] == ("ordinary event queue reached its 240-event admission limit; 16 slots are reserved for browser.open")
+    assert client.status()["unacknowledgedDiagnostics"][-1]["message"] == ("ordinary event queue reached its 240-event admission limit; 16 slots are reserved for browser.open")
     for index in range(BROWSER_RESERVED_EVENT_CAPACITY):
         assert client.emit_event("browser.open", {"url": f"http://localhost:{index}"}) is True
     assert client.emit_event("browser.open", {"url": "http://localhost:full"}) is False
 
     assert client.status()["queuedEventCount"] == MAX_EVENT_COUNT
-    assert client.status()["diagnostics"][-1]["message"] == ("outbound event queue reached its 256-event hard limit; browser.open was rejected")
+    assert client.status()["unacknowledgedDiagnostics"][-1]["message"] == ("outbound event queue reached its 256-event hard limit; browser.open was rejected")
 
 
 def test_event_validation_is_bounded_and_diagnostic():
@@ -332,7 +374,7 @@ def test_event_validation_is_bounded_and_diagnostic():
     assert client.emit_event("browser.open", {"text": "x" * (MAX_EVENT_PAYLOAD_BYTES + 1)}) is False
     assert client.emit_event("browser.open", {"bad": object()}) is False
     assert client.emit_event("browser.open", []) is False
-    assert [item["code"] for item in client.status()["diagnostics"]] == [
+    assert [item["code"] for item in client.status()["unacknowledgedDiagnostics"]] == [
         "event_rejected",
         "event_rejected",
         "event_rejected",
@@ -377,8 +419,8 @@ def test_mixed_unacknowledged_events_retry_and_acknowledge_after_reconnect():
     requester = ScriptedRequester(
         {
             "/v1/runtime/connect": [
-                {"status": "connected", "acknowledgedSequence": 0},
-                {"status": "reconnecting", "acknowledgedSequence": 0},
+                {"status": "connected", "acknowledgedSequence": 0, "acknowledgedDiagnosticSequence": 0},
+                {"status": "reconnecting", "acknowledgedSequence": 0, "acknowledgedDiagnosticSequence": 0},
             ],
             "/v1/runtime/events": [
                 DesktopBrokerHttpError("connection_failed", "temporary outage"),
@@ -447,16 +489,220 @@ def test_heartbeat_reports_bounded_local_diagnostics():
     heartbeat = next(call for call in requester.calls if call["path"] == "/v1/runtime/heartbeat")
     assert heartbeat["body"]["lastAcknowledgedSequence"] == 0
     assert heartbeat["body"]["queuedEventCount"] == 1
+    assert heartbeat["body"]["activeDiagnostic"] is None
+    assert heartbeat["body"]["diagnosticsStartSequence"] == 1
+    assert heartbeat["body"]["diagnosticsTruncated"] is False
+    assert heartbeat["body"]["diagnostics"][-1]["sequence"] == 1
     assert heartbeat["body"]["diagnostics"][-1]["code"] == "ordinary_event_capacity_exhausted"
     assert len(heartbeat["body"]["diagnostics"]) <= 8
+
+
+def test_winerror_failure_episode_is_active_and_reconnect_retains_history():
+    client = _client(wall_time=lambda: 100.0)
+    client._connect()
+    message = "[WinError 10053] software caused connection abort"
+
+    client._handle_transport_failure("connection_failed", message, retryable=True)
+    client._handle_transport_failure("connection_failed", message, retryable=True)
+
+    status = client.status()
+    assert status["status"] == "reconnecting"
+    assert status["activeDiagnostic"] == {
+        "sequence": 1,
+        "code": "connection_failed",
+        "message": message,
+        "createdAt": 100.0,
+        "occurrences": 2,
+    }
+    assert status["unacknowledgedDiagnostics"] == [status["activeDiagnostic"]]
+    assert status["acknowledgedDiagnosticSequence"] == 0
+    assert status["diagnosticsStartSequence"] == 1
+    assert status["diagnosticsTruncated"] is False
+
+    client._connect()
+    recovered = client.status()
+    assert recovered["status"] == "connected"
+    assert recovered["activeDiagnostic"] is None
+    assert recovered["unacknowledgedDiagnostics"][0]["message"] == message
+
+    client._handle_transport_failure("connection_failed", "later outage", retryable=True)
+    later = client.status()
+    assert later["activeDiagnostic"]["sequence"] == 2
+    assert [item["sequence"] for item in later["unacknowledgedDiagnostics"]] == [1, 2]
+
+
+def test_connect_consumes_diagnostic_acknowledgement_and_clears_active_error():
+    requester = ScriptedRequester(
+        {
+            "/v1/runtime/connect": [
+                {"status": "connected", "acknowledgedSequence": 0, "acknowledgedDiagnosticSequence": 0},
+                {"status": "reconnecting", "acknowledgedSequence": 0, "acknowledgedDiagnosticSequence": 1},
+            ]
+        }
+    )
+    client = _client(requester)
+    client._connect()
+    client._handle_transport_failure("connection_failed", "temporary outage", retryable=True)
+
+    client._connect()
+
+    status = client.status()
+    assert status["activeDiagnostic"] is None
+    assert status["unacknowledgedDiagnostics"] == []
+    assert status["acknowledgedDiagnosticSequence"] == 1
+    assert status["diagnosticsStartSequence"] == 2
+
+
+def test_heartbeat_acknowledges_history_once_and_subsequent_success_sends_none():
+    requester = ScriptedRequester()
+    client = _client(requester)
+    client._record_diagnostic("local_warning", "record once")
+    client._connect()
+
+    client._heartbeat()
+    client._heartbeat()
+
+    heartbeat_calls = [call for call in requester.calls if call["path"] == "/v1/runtime/heartbeat"]
+    assert [item["sequence"] for item in heartbeat_calls[0]["body"]["diagnostics"]] == [1]
+    assert heartbeat_calls[1]["body"]["diagnostics"] == []
+    assert heartbeat_calls[1]["body"]["diagnosticsStartSequence"] == 2
+    status = client.status()
+    assert status["unacknowledgedDiagnostics"] == []
+    assert status["acknowledgedDiagnosticSequence"] == 1
+
+
+def test_lost_heartbeat_response_replays_sequence_with_max_occurrences():
+    requester = ScriptedRequester(
+        {
+            "/v1/runtime/heartbeat": [
+                DesktopBrokerHttpError("connection_failed", "lost heartbeat response"),
+                {"status": "connected", "acknowledgedSequence": 0, "acknowledgedDiagnosticSequence": 1},
+            ]
+        }
+    )
+    client = _client(requester, wall_time=lambda: 200.0)
+    client._connect()
+    message = "[WinError 10053] software caused connection abort"
+    client._handle_transport_failure("connection_failed", message, retryable=True)
+
+    with pytest.raises(DesktopBrokerHttpError, match="lost heartbeat response"):
+        client._heartbeat()
+    client._handle_transport_failure("connection_failed", message, retryable=True)
+    client._heartbeat()
+
+    heartbeat_calls = [call for call in requester.calls if call["path"] == "/v1/runtime/heartbeat"]
+    assert heartbeat_calls[0]["body"]["diagnostics"][0]["sequence"] == 1
+    assert heartbeat_calls[0]["body"]["diagnostics"][0]["occurrences"] == 1
+    assert heartbeat_calls[1]["body"]["diagnostics"][0]["sequence"] == 1
+    assert heartbeat_calls[1]["body"]["diagnostics"][0]["occurrences"] == 2
+    assert client.status()["unacknowledgedDiagnostics"] == []
+    assert client.status()["activeDiagnostic"]["occurrences"] == 2
+
+
+def test_active_failure_heartbeat_accepts_degraded_broker_response():
+    requester = ScriptedRequester({"/v1/runtime/heartbeat": [{"status": "degraded", "acknowledgedSequence": 0, "acknowledgedDiagnosticSequence": 1}]})
+    client = _client(requester)
+    client._connect()
+    client._handle_transport_failure("connection_failed", "still unresolved", retryable=True)
+
+    client._heartbeat()
+
+    assert client.status()["activeDiagnostic"]["message"] == "still unresolved"
+    assert client.status()["unacknowledgedDiagnostics"] == []
+    assert client.status()["acknowledgedDiagnosticSequence"] == 1
+
+
+def test_diagnostic_gap_acknowledgement_keeps_unacknowledged_prefix():
+    requester = ScriptedRequester({"/v1/runtime/heartbeat": [{"status": "connected", "acknowledgedSequence": 0, "acknowledgedDiagnosticSequence": 0}]})
+    client = _client(requester)
+    client._record_diagnostic("first", "must remain pending")
+    client._connect()
+
+    client._heartbeat()
+
+    assert [item["sequence"] for item in client.status()["unacknowledgedDiagnostics"]] == [1]
+    assert client.status()["acknowledgedDiagnosticSequence"] == 0
+
+
+def test_heartbeat_rejects_diagnostic_acknowledgement_beyond_sent_batch():
+    requester = ScriptedRequester(
+        {
+            "/v1/runtime/heartbeat": [
+                {
+                    "status": "connected",
+                    "acknowledgedSequence": 0,
+                    "acknowledgedDiagnosticSequence": MAX_DIAGNOSTIC_BATCH_COUNT + 1,
+                }
+            ]
+        }
+    )
+    client = _client(requester)
+    for index in range(MAX_DIAGNOSTIC_BATCH_COUNT + 2):
+        client._record_diagnostic(f"diagnostic_{index}", f"message {index}")
+    client._connect()
+
+    with pytest.raises(DesktopBrokerProtocolError, match="exceeds the uploaded heartbeat batch"):
+        client._heartbeat()
+
+    heartbeat = next(call for call in requester.calls if call["path"] == "/v1/runtime/heartbeat")
+    assert [item["sequence"] for item in heartbeat["body"]["diagnostics"]] == list(range(1, MAX_DIAGNOSTIC_BATCH_COUNT + 1))
+    assert [item["sequence"] for item in client.status()["unacknowledgedDiagnostics"]] == list(range(1, MAX_DIAGNOSTIC_BATCH_COUNT + 3))
+    assert client.status()["acknowledgedDiagnosticSequence"] == 0
+
+
+def test_diagnostic_history_truncation_retains_valid_sequence_metadata():
+    requester = ScriptedRequester()
+    client = _client(requester, wall_time=lambda: 300.0)
+    for index in range(MAX_DIAGNOSTIC_COUNT + 3):
+        client._record_diagnostic(f"diagnostic_{index}", f"message {index}")
+
+    status = client.status()
+    assert status["unacknowledgedDiagnosticCount"] == MAX_DIAGNOSTIC_COUNT
+    assert status["unacknowledgedDiagnosticBytes"] <= MAX_DIAGNOSTIC_HISTORY_BYTES
+    assert status["diagnosticsStartSequence"] == 4
+    assert status["diagnosticsTruncated"] is True
+    assert [item["sequence"] for item in status["unacknowledgedDiagnostics"][:2]] == [4, 5]
+
+    client._connect()
+    client._heartbeat()
+    heartbeat = next(call for call in requester.calls if call["path"] == "/v1/runtime/heartbeat")
+    assert heartbeat["body"]["diagnosticsStartSequence"] == 4
+    assert heartbeat["body"]["diagnosticsTruncated"] is True
+    assert [item["sequence"] for item in heartbeat["body"]["diagnostics"]] == list(range(4, 12))
+    assert client.status()["acknowledgedDiagnosticSequence"] == 11
+    assert client.status()["diagnosticsStartSequence"] == 12
+
+
+def test_diagnostic_message_and_heartbeat_batch_have_encoded_byte_bounds(monkeypatch):
+    message = "\N{SNOWMAN}" * MAX_DIAGNOSTIC_MESSAGE_BYTES
+    message_client = _client()
+    message_client._record_diagnostic("unicode", message)
+    bounded_message = message_client.status()["unacknowledgedDiagnostics"][0]["message"]
+    assert len(bounded_message.encode("utf-8")) <= MAX_DIAGNOSTIC_MESSAGE_BYTES
+
+    monkeypatch.setattr(desktop_broker_module, "MAX_DIAGNOSTIC_BATCH_BYTES", 400)
+    requester = ScriptedRequester()
+    client = _client(requester)
+    client._record_diagnostic("first", "x" * 200)
+    client._record_diagnostic("second", "y" * 200)
+    client._connect()
+
+    client._heartbeat()
+
+    heartbeat = next(call for call in requester.calls if call["path"] == "/v1/runtime/heartbeat")
+    diagnostics = heartbeat["body"]["diagnostics"]
+    assert len(diagnostics) == 1
+    encoded = json.dumps({"diagnostics": diagnostics}, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    assert len(encoded) <= desktop_broker_module.MAX_DIAGNOSTIC_BATCH_BYTES
+    assert desktop_broker_module.MAX_DIAGNOSTIC_BATCH_BYTES < MAX_DIAGNOSTIC_BATCH_BYTES
 
 
 def test_heartbeat_and_command_poll_recover_after_transient_failure():
     requester = ScriptedRequester(
         {
             "/v1/runtime/connect": [
-                {"status": "connected", "acknowledgedSequence": 0},
-                {"status": "reconnecting", "acknowledgedSequence": 0},
+                {"status": "connected", "acknowledgedSequence": 0, "acknowledgedDiagnosticSequence": 0},
+                {"status": "reconnecting", "acknowledgedSequence": 0, "acknowledgedDiagnosticSequence": 0},
             ],
             "/v1/runtime/commands": [
                 DesktopBrokerHttpError("connection_failed", "poll outage"),
@@ -610,7 +856,8 @@ def test_authentication_rejection_is_degraded_without_transport_fallback():
     status = client.status()
     assert status["transport"] == "desktop_broker"
     assert status["status"] == "degraded"
-    assert status["diagnostics"][-1]["code"] == "authentication_rejected"
+    assert status["activeDiagnostic"]["code"] == "authentication_rejected"
+    assert status["unacknowledgedDiagnostics"][-1]["code"] == "authentication_rejected"
     assert all(call["path"].startswith("/v1/runtime/") for call in requester.calls)
 
 
@@ -663,7 +910,8 @@ def test_browser_host_mode_suppresses_locally_when_critical_queue_is_full(monkey
     assert time.monotonic() - started < 0.05
     assert original_calls == []
     assert sink.status()["queuedEventCount"] == 1
-    assert sink.status()["diagnostics"][-1] == {
+    assert sink.status()["unacknowledgedDiagnostics"][-1] == {
+        "sequence": 1,
         "code": "critical_event_capacity_exhausted",
         "message": "outbound event queue reached its 1-event hard limit; browser.open was rejected",
         "createdAt": 70.0,
@@ -789,4 +1037,4 @@ def test_close_final_flush_wait_is_bounded_even_when_http_is_stuck():
     release.set()
     assert elapsed < 0.15
     assert client.status()["status"] == "closed"
-    assert client.status()["diagnostics"][-1]["code"] == "final_flush_incomplete"
+    assert client.status()["unacknowledgedDiagnostics"][-1]["code"] == "final_flush_incomplete"

@@ -1,4 +1,4 @@
-# Desktop runtime broker protocol v1
+# Desktop runtime broker protocol v2
 
 The desktop broker is a second Hotpatch runtime transport owned by the Rust
 desktop application. It does not replace the legacy TCP JSONL transport.
@@ -28,7 +28,7 @@ SD_WEBUI_ALL_IN_ONE_RUNTIME_BROKER_URL=http://127.0.0.1:<port>
 SD_WEBUI_ALL_IN_ONE_RUNTIME_SESSION_ID=<session-id>
 SD_WEBUI_ALL_IN_ONE_RUNTIME_TOKEN=<unpredictable-session-token>
 SD_WEBUI_ALL_IN_ONE_RUNTIME_IDENTITY=<runtime-identity>
-SD_WEBUI_ALL_IN_ONE_RUNTIME_PROTOCOL_VERSION=1
+SD_WEBUI_ALL_IN_ONE_RUNTIME_PROTOCOL_VERSION=2
 ```
 
 The URL must be an `http` literal loopback origin with an explicit port and no user
@@ -39,7 +39,7 @@ variables are neither required nor used by the desktop client.
 
 The standard-library HTTP opener has proxy handling disabled, so session
 credentials cannot follow ambient `HTTP_PROXY` settings and no hostname lookup
-is needed for the broker connection. Protocol v1 defines no redirects. The
+is needed for the broker connection. Protocol v2 defines no redirects. The
 client replaces urllib's redirect handler with a terminal `redirect_rejected`
 failure before any redirected request is created, so `Authorization` and
 session identity headers cannot be forwarded to a `Location` target.
@@ -53,7 +53,7 @@ Every request carries the complete session binding in headers:
 
 ```http
 Authorization: Bearer <session-token>
-X-Runtime-Protocol-Version: 1
+X-Runtime-Protocol-Version: 2
 X-Runtime-Session-Id: <session-id>
 X-Runtime-Identity: <runtime-identity>
 ```
@@ -65,6 +65,13 @@ retries with bounded backoff; it never attempts a legacy connection.
 
 Timestamps are finite, non-negative Unix epoch seconds. Field names are
 camelCase. Request and response bodies are JSON objects.
+
+Protocol v2 separates an unresolved `activeDiagnostic` from acknowledged
+diagnostic history. A historical failure never becomes active merely because
+it is the newest retained item. The `/v1/runtime/*` route namespace remains
+unchanged; the required environment value and request header select protocol
+version 2 explicitly. Version 1 and unknown versions fail with the existing
+explicit protocol-mismatch response.
 
 ## Endpoints
 
@@ -78,14 +85,17 @@ POST /v1/runtime/connect
 Response:
 
 ```json
-{"status":"connected","acknowledgedSequence":0}
+{"status":"connected","acknowledgedSequence":0,"acknowledgedDiagnosticSequence":0}
 ```
 
-The acknowledgement lets a reconnecting client discard events already
-accepted by Rust. A session recovering from degraded/disconnected health may
-return `status: "reconnecting"`; that is also a successful authenticated attach.
-The Python worker resumes replay and reports its local transport as connected,
-then the next heartbeat lets Rust complete its authoritative health transition.
+The acknowledgements let a reconnecting client discard events and diagnostic
+history already accepted by Rust. A session recovering from
+degraded/disconnected health may return `status: "reconnecting"`; that is also
+a successful authenticated attach. The successful authenticated connect clears
+the Python client's active transport diagnostic, but not unacknowledged
+historical entries. The worker resumes replay and reports its local transport
+as connected, then the next heartbeat lets Rust complete its authoritative
+health transition.
 
 ### Events
 
@@ -143,19 +153,59 @@ POST /v1/runtime/heartbeat
   "transportStatus": "connected",
   "lastAcknowledgedSequence": 1,
   "queuedEventCount": 0,
+  "activeDiagnostic": null,
   "diagnostics": [
     {
-      "code": "ordinary_event_capacity_exhausted",
-      "message": "ordinary event queue reached its 240-event admission limit; 16 slots are reserved for browser.open",
+      "sequence": 1,
+      "code": "connection_failed",
+      "message": "[WinError 10053] software caused connection abort",
       "createdAt": 1780000001.0,
       "occurrences": 1
     }
-  ]
+  ],
+  "diagnosticsStartSequence": 1,
+  "diagnosticsTruncated": false
 }
 ```
 
-At most eight recent Python diagnostics are attached. Rust owns the
-authoritative heartbeat receipt time and session health transition.
+Response:
+
+```json
+{
+  "status": "connected",
+  "acknowledgedSequence": 1,
+  "acknowledgedDiagnosticSequence": 1
+}
+```
+
+`activeDiagnostic` is either `null` or the complete diagnostic envelope
+`{sequence, code, message, createdAt, occurrences}` for the currently unresolved
+transport failure episode. It is validated independently from history. A
+successful reconnect sets it to `null`; successful event/result upload or
+command polling does not infer recovery on its own.
+
+`diagnostics` contains only the oldest unacknowledged history prefix, never a
+repeated snapshot of the latest local entries. Diagnostic sequences start at 1
+and are monotonic per runtime session. Rust acknowledges only the highest
+contiguous accepted sequence. Duplicate sequences are idempotent; a retry may
+carry a larger `occurrences`, which Rust merges using the maximum without
+appending another history item. An undeclared gap leaves acknowledgement
+unchanged.
+
+`diagnosticsStartSequence` is the first locally available history sequence, or
+the client's next diagnostic sequence when the queue is empty. If bounded local
+retention evicts unacknowledged entries, `diagnosticsTruncated` becomes `true`
+and remains observable. Rust records the truncation and may rebase its
+acknowledgement baseline to `diagnosticsStartSequence - 1`; this is the only
+exception to ordinary no-gap advancement. A lost heartbeat response leaves the
+Python prefix queued, so the same sequences replay safely.
+
+Rust owns the authoritative heartbeat receipt time, active session health, and
+retained debug history. Invalid historical envelopes do not mutate active
+transport state, and an invalid active envelope does not ingest history.
+An authenticated heartbeat response may report `connected`, `degraded`,
+`reconnecting`, or `disconnected`; Python accepts each nonterminal broker state
+while preserving its own reconnect workflow.
 
 ### Commands
 
@@ -234,8 +284,10 @@ All network work is performed by one daemon worker, never by a patched target.
 | one event upload | 32 events / 256 KiB |
 | HTTP response | 256 KiB |
 | one Rust command response | 32 commands / 256 KiB |
-| local diagnostics | 64 entries |
-| heartbeat diagnostics | 8 entries |
+| unacknowledged diagnostic history | 64 entries / 128 KiB |
+| one diagnostic code | 128 bytes UTF-8 |
+| one diagnostic message | 2 KiB UTF-8 |
+| one heartbeat diagnostic batch | 8 entries / 64 KiB |
 | pending command results | 128 results |
 | one command result payload | 64 KiB encoded JSON |
 | completed command ID history | 256 commands |
@@ -265,6 +317,19 @@ maximum of 5 seconds. A heartbeat is sent every 5 seconds while connected;
 command long polling waits at most 100 ms per request. Process shutdown requests
 a final event/result flush bounded to 500 ms by default. A stuck operating
 system request cannot make `close()` wait without bound.
+
+Transport failures create or update one active diagnostic episode and one
+sequenced historical entry. Identical retries increment bounded `occurrences`
+instead of allocating a sequence per attempt. A different code/message or a
+later post-recovery failure starts a new sequence. `status()` exposes the
+current `activeDiagnostic`, `unacknowledgedDiagnostics`, their count and encoded
+bytes, `acknowledgedDiagnosticSequence`, `diagnosticsStartSequence`, and sticky
+`diagnosticsTruncated` metadata. Acknowledged entries leave Python's outbound
+replay queue; Rust's bounded retained session history remains the debug record.
+If an identical unresolved failure repeats after its history envelope was
+already acknowledged, only the detached active summary's `occurrences`
+advances. Protocol v2 does not mutate or replay an acknowledged historical
+envelope; a later post-recovery episode receives a new sequence.
 
 ## Browser behavior
 

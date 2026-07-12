@@ -200,8 +200,8 @@ services 远程控制通道。即使通用 `services.apply_on_bootstrap=false`�
 `runtime.browser` 仍会强制执行这次早期应用。运行时重应用可以改变 mode/client，但已经注册的 wrapper
 需要进程重启才能彻底移除。
 
-显式 `desktop_broker` 不创建这条 legacy TCP channel。Rust 通过 broker v1 commands
+显式 `desktop_broker` 不创建这条 legacy TCP channel。Rust 通过 broker v2 commands
 发送稳定 command ID；当前 Python desktop surface 只接受 `config.apply`，并把
 `payload.config` 交给同一个 `apply_config()`。重复 command ID 只重发缓存结果，不重复
 执行 side effect；过期和未知 command 返回 typed error。详见
-[Desktop Broker v1](desktop-broker-protocol.md)。
+[Desktop Broker v2](desktop-broker-protocol.md)。
