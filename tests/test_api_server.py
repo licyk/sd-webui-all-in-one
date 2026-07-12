@@ -1,4 +1,5 @@
 import json
+import os
 import threading
 import time
 import urllib.error
@@ -708,6 +709,100 @@ def test_default_api_registry_dispatches_system_proxy(monkeypatch):
         "connectivity": True,
     }
     assert calls == [("http://127.0.0.1:7890", 2)]
+
+
+def test_system_proxy_reports_only_executed_connectivity_checks(monkeypatch):
+    calls = []
+    monkeypatch.setattr(registry, "test_proxy_connectivity", lambda *args, **kwargs: calls.append((args, kwargs)) or False)
+    monkeypatch.setattr(registry, "get_system_proxy_address", lambda: "http://127.0.0.1:7890")
+    assert registry.system_proxy({}) == {
+        "address": "http://127.0.0.1:7890",
+        "detected": True,
+        "connectivity_tested": False,
+        "connectivity": None,
+    }
+    monkeypatch.setattr(registry, "get_system_proxy_address", lambda: None)
+    assert registry.system_proxy({"options": {"test_connectivity": True}}) == {
+        "address": None,
+        "detected": False,
+        "connectivity_tested": False,
+        "connectivity": None,
+    }
+    assert calls == []
+
+
+def test_system_proxy_reports_executed_unreachable_connectivity(monkeypatch):
+    monkeypatch.setattr(registry, "get_system_proxy_address", lambda: "http://127.0.0.1:7890")
+    monkeypatch.setattr(registry, "test_proxy_connectivity", lambda _address, timeout=5: False)
+    assert registry.system_proxy({"options": {"test_connectivity": True, "timeout": 3}}) == {
+        "address": "http://127.0.0.1:7890",
+        "detected": True,
+        "connectivity_tested": True,
+        "connectivity": False,
+    }
+
+
+@pytest.mark.parametrize(
+    ("options", "message"),
+    [
+        ({"test_connectivity": 1}, "must be a boolean"),
+        ({"timeout": True}, "must be an integer"),
+        ({"timeout": 1.5}, "must be an integer"),
+        ({"timeout": 0}, "between 1 and 30"),
+        ({"timeout": 31}, "between 1 and 30"),
+    ],
+)
+def test_system_proxy_rejects_invalid_connectivity_options(options, message):
+    with pytest.raises(ValueError, match=message):
+        registry.system_proxy({"options": options})
+
+
+def test_system_proxy_set_and_clear_are_validated_and_idempotent(monkeypatch):
+    calls = []
+    monkeypatch.setattr(registry, "set_proxy", lambda address: calls.append(("set", address)))
+    monkeypatch.setattr(registry, "clean_proxy", lambda: calls.append(("clear", None)))
+    expected_set = {"enabled": True, "address": "socks5://127.0.0.1:1080"}
+    assert registry.system_proxy_set({"address": expected_set["address"]}) == expected_set
+    assert registry.system_proxy_set({"address": expected_set["address"]}) == expected_set
+    expected_clear = {"enabled": False, "address": None}
+    assert registry.system_proxy_clear({}) == expected_clear
+    assert registry.system_proxy_clear({}) == expected_clear
+    assert calls == [
+        ("set", expected_set["address"]),
+        ("set", expected_set["address"]),
+        ("clear", None),
+        ("clear", None),
+    ]
+    for address in ["missing-port", "http://host", "ftp://host:21", "http://bad\0host:80"]:
+        with pytest.raises(ValueError):
+            registry.system_proxy_set({"address": address})
+
+
+def test_system_proxy_mutations_update_only_uppercase_proxy_environment(monkeypatch):
+    for key in ["HTTP_PROXY", "HTTPS_PROXY"]:
+        monkeypatch.delenv(key, raising=False)
+    expected = "http://127.0.0.1:7890"
+    assert registry.system_proxy_set({"address": expected}) == {
+        "enabled": True,
+        "address": expected,
+    }
+    assert os.environ["HTTP_PROXY"] == expected
+    assert os.environ["HTTPS_PROXY"] == expected
+    assert registry.system_proxy_clear({}) == {"enabled": False, "address": None}
+    assert "HTTP_PROXY" not in os.environ
+    assert "HTTPS_PROXY" not in os.environ
+
+
+def test_default_api_registry_exposes_proxy_mutation_schemas():
+    methods = registry.get_default_methods()
+    assert methods["system.proxy"].params_schema["properties"]["options"]["properties"] == {
+        "test_connectivity": {"type": "boolean"},
+        "timeout": {"type": "integer", "minimum": 1, "maximum": 30},
+    }
+    assert methods["system.proxy.set"].kind == "sync"
+    assert methods["system.proxy.set"].params_schema["required"] == ["address"]
+    assert methods["system.proxy.clear"].kind == "sync"
+    assert methods["system.proxy.clear"].params_schema == {"type": "object", "properties": {}}
 
 
 def test_webui_adapter_lists_and_deletes_snapshots(tmp_path):

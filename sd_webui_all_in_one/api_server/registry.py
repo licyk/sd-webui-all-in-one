@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from argparse import Namespace
 from typing import Any, Callable, cast
+from urllib.parse import urlparse
 
 from sd_webui_all_in_one.api_server.adapters import (
     HOTPATCHER_API_ADAPTER,
@@ -25,7 +26,7 @@ from sd_webui_all_in_one.cli_manager.auto_mirror import apply_auto_mirror
 from sd_webui_all_in_one.env_check import check_torch_version_status
 from sd_webui_all_in_one.launch_arguments import get_launch_argument_catalog
 from sd_webui_all_in_one.model_downloader import SUPPORTED_WEBUI_LIST
-from sd_webui_all_in_one.proxy import get_system_proxy_address, test_proxy_connectivity
+from sd_webui_all_in_one.proxy import clean_proxy, get_system_proxy_address, set_proxy, test_proxy_connectivity
 from sd_webui_all_in_one.pytorch_manager import auto_detect_pytorch_device_category, export_pytorch_list, get_available_pytorch_device_type
 
 
@@ -422,15 +423,54 @@ def system_proxy(params: dict[str, Any]) -> dict[str, Any]:
         dict[str, Any]: 系统代理信息。
     """
     options = _options(params)
+    test_connectivity = options.get("test_connectivity", False)
+    if not isinstance(test_connectivity, bool):
+        raise ValueError("Field 'options.test_connectivity' must be a boolean")
+    timeout = options.get("timeout", 5)
+    if isinstance(timeout, bool) or not isinstance(timeout, int):
+        raise ValueError("Field 'options.timeout' must be an integer")
+    if not 1 <= timeout <= 30:
+        raise ValueError("Field 'options.timeout' must be between 1 and 30")
     address = get_system_proxy_address()
-    test_connectivity = bool(options.get("test_connectivity", False))
-    connectivity = test_proxy_connectivity(address, timeout=int(options.get("timeout", 5))) if address is not None and test_connectivity else None
+    connectivity_tested = address is not None and test_connectivity
+    connectivity = test_proxy_connectivity(address, timeout=timeout) if connectivity_tested else None
     return {
         "address": address,
         "detected": address is not None,
-        "connectivity_tested": test_connectivity,
+        "connectivity_tested": connectivity_tested,
         "connectivity": connectivity,
     }
+
+
+def _proxy_address(params: dict[str, Any]) -> str:
+    address = _require_str(params, "address")
+    if "\0" in address:
+        raise ValueError("Field 'address' must not contain NUL")
+    try:
+        parsed = urlparse(address)
+        port = parsed.port
+    except ValueError as error:
+        raise ValueError("Field 'address' must be a valid proxy URL") from error
+    if parsed.scheme.lower() not in {"http", "https", "socks", "socks4", "socks4a", "socks5", "socks5h"}:
+        raise ValueError("Field 'address' uses an unsupported proxy scheme")
+    if not parsed.hostname or port is None:
+        raise ValueError("Field 'address' must include a host and explicit port")
+    return address
+
+
+def system_proxy_set(params: dict[str, Any]) -> dict[str, Any]:
+    """Set the proxy environment for this API server process."""
+    address = _proxy_address(params)
+    set_proxy(address)
+    return {"enabled": True, "address": address}
+
+
+def system_proxy_clear(params: dict[str, Any]) -> dict[str, Any]:
+    """Clear the proxy environment for this API server process."""
+    if params:
+        raise ValueError("system.proxy.clear accepts only an empty object")
+    clean_proxy()
+    return {"enabled": False, "address": None}
 
 
 def version_switch_branch(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
@@ -1315,7 +1355,39 @@ def get_default_methods() -> ApiMethodRegistry:
         "pytorch.library": _sync_spec("pytorch.library", pytorch_library, "List built-in PyTorch version combinations."),
         "pytorch.catalog": _sync_spec("pytorch.catalog", pytorch_catalog, "Get the stable aggregate PyTorch catalog."),
         "pytorch.resolve_selection": _sync_spec("pytorch.resolve_selection", pytorch_resolve_selection, "Resolve a stable PyTorch selection without mutation."),
-        "system.proxy": _sync_spec("system.proxy", system_proxy, "Get current system proxy address."),
+        "system.proxy": _sync_spec(
+            "system.proxy",
+            system_proxy,
+            "Get current system proxy address.",
+            {
+                "type": "object",
+                "properties": {
+                    "options": {
+                        "type": "object",
+                        "properties": {
+                            "test_connectivity": {"type": "boolean"},
+                            "timeout": {"type": "integer", "minimum": 1, "maximum": 30},
+                        },
+                    }
+                },
+            },
+        ),
+        "system.proxy.set": _sync_spec(
+            "system.proxy.set",
+            system_proxy_set,
+            "Set proxy environment for this API server process.",
+            {
+                "type": "object",
+                "properties": {"address": {"type": "string", "minLength": 1}},
+                "required": ["address"],
+            },
+        ),
+        "system.proxy.clear": _sync_spec(
+            "system.proxy.clear",
+            system_proxy_clear,
+            "Clear proxy environment for this API server process.",
+            {"type": "object", "properties": {}},
+        ),
         "model.root": _sync_spec("model.root", model_root, "Inspect file model root."),
         "model.library": _sync_spec(
             "model.library",

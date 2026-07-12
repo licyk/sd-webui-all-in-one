@@ -118,6 +118,16 @@ def test_proxy_platform_parsers_and_env(monkeypatch, tmp_path):
     assert "HTTP_PROXY" not in os.environ
     assert "HTTPS_PROXY" not in os.environ
 
+    proxy.clean_proxy()
+    proxy.set_proxy("https://proxy.local:8443")
+    proxy.set_proxy("https://proxy.local:8443")
+    assert os.environ["HTTP_PROXY"] == "https://proxy.local:8443"
+    assert os.environ["HTTPS_PROXY"] == "https://proxy.local:8443"
+    proxy.clean_proxy()
+    proxy.clean_proxy()
+    assert "HTTP_PROXY" not in os.environ
+    assert "HTTPS_PROXY" not in os.environ
+
 
 def test_proxy_connectivity_uses_tcp_socket(monkeypatch):
     events = []
