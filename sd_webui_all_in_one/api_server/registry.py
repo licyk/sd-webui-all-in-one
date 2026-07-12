@@ -23,7 +23,8 @@ from sd_webui_all_in_one.api_server.server import ApiMethodRegistry, ApiMethodSp
 from sd_webui_all_in_one.base_manager import fooocus_base, sd_trainer_base, sd_webui_base
 from sd_webui_all_in_one.cli_manager.auto_mirror import apply_auto_mirror
 from sd_webui_all_in_one.env_check import check_torch_version_status
-from sd_webui_all_in_one.model_downloader import SUPPORTED_WEBUI_LIST, SupportedWebUiType, export_model_list
+from sd_webui_all_in_one.launch_arguments import get_launch_argument_catalog
+from sd_webui_all_in_one.model_downloader import SUPPORTED_WEBUI_LIST
 from sd_webui_all_in_one.proxy import get_system_proxy_address, test_proxy_connectivity
 from sd_webui_all_in_one.pytorch_manager import auto_detect_pytorch_device_category, export_pytorch_list, get_available_pytorch_device_type
 
@@ -343,6 +344,20 @@ def launch_prepare(params: dict[str, Any]) -> dict[str, Any]:
     """
     options = _resolved_mirror_options(params, ("use_pypi_mirror", "use_github_mirror", "custom_github_mirror", "use_hf_mirror", "custom_hf_mirror"))
     return _adapter(params).prepare_launch(_webui_path(params), options=options)
+
+
+def launch_arguments_catalog(params: dict[str, Any]) -> dict[str, Any]:
+    """Discover the installed WebUI's structured launch-argument catalog."""
+    options = _options(params)
+    timeout = options.get("timeout", 15.0)
+    if not isinstance(timeout, (int, float)):
+        raise ValueError("Field 'options.timeout' must be a number")
+    catalog = get_launch_argument_catalog(
+        _webui_type(params),
+        _webui_path(params),
+        timeout_seconds=float(timeout),
+    )
+    return {"catalog": catalog.to_dict()}
 
 
 def pytorch_device_type(params: dict[str, Any]) -> dict[str, Any]:
@@ -1285,6 +1300,11 @@ def get_default_methods() -> ApiMethodRegistry:
         "environment.pytorch_version": _sync_spec("environment.pytorch_version", environment_pytorch_version, "Check current PyTorch version compatibility."),
         "package.versions": _sync_spec("package.versions", package_versions, "List PyPI package versions."),
         "launch.prepare": _sync_spec("launch.prepare", launch_prepare, "Prepare WebUI launch arguments and environment."),
+        "launch.arguments.catalog": _sync_spec(
+            "launch.arguments.catalog",
+            launch_arguments_catalog,
+            "Discover the installed WebUI launch-argument catalog.",
+        ),
         "system.pytorch_device_type": _sync_spec("system.pytorch_device_type", pytorch_device_type, "Get available PyTorch device types."),
         "system.pytorch_library": _sync_spec(
             "system.pytorch_library",

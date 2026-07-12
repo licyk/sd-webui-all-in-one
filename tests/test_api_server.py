@@ -458,7 +458,7 @@ def test_default_api_registry_includes_full_version_snapshot_extension_surface()
     server = create_api_server(port=0)
     try:
         catalog = server.method_catalog()
-        assert {"version.status", "webui.check_updates", "snapshot.list", "extension.list", "extension.index", "extension.versions", "extension.commits", "environment.dependencies", "environment.pytorch_version", "package.versions", "launch.prepare", "system.proxy"}.issubset(catalog["methods"])
+        assert {"version.status", "webui.check_updates", "snapshot.list", "extension.list", "extension.index", "extension.versions", "extension.commits", "environment.dependencies", "environment.pytorch_version", "package.versions", "launch.prepare", "launch.arguments.catalog", "system.proxy"}.issubset(catalog["methods"])
         assert catalog["metadata"]["extension.commits"]["params_schema"]["required"] == ["webui_type", "webui_path", "name"]
         assert {
             "snapshot.delete",
@@ -475,6 +475,44 @@ def test_default_api_registry_includes_full_version_snapshot_extension_surface()
         }.issubset(catalog["tasks"])
     finally:
         server.server_close()
+
+
+def test_launch_argument_catalog_api_success_and_typed_failure_envelopes(tmp_path):
+    (tmp_path / "main.py").write_text(
+        "print('usage: demo [-h]\\n\\noptions:\\n  -h, --help  show help')",
+        encoding="utf-8",
+    )
+    server = create_api_server(port=0)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    base_url = f"http://127.0.0.1:{server.server_address[1]}"
+    try:
+        status, payload = _request(
+            f"{base_url}/api/v1/call",
+            method="POST",
+            data={
+                "method": "launch.arguments.catalog",
+                "params": {"webui_type": "comfyui", "webui_path": str(tmp_path)},
+            },
+        )
+        assert status == 200
+        assert payload["ok"] is True
+        assert payload["result"]["catalog"]["arguments"][0]["name"] == "help"
+
+        status, payload = _request_error(
+            f"{base_url}/api/v1/call",
+            method="POST",
+            data={
+                "method": "launch.arguments.catalog",
+                "params": {"webui_type": "unknown", "webui_path": str(tmp_path)},
+            },
+        )
+        assert status == 500
+        assert payload["ok"] is False
+        assert payload["error"]["code"] == "method_failed"
+        assert "Unsupported webui_type" in payload["error"]["message"]
+    finally:
+        _stop_server(server, thread)
 
 
 def test_default_api_registry_dispatches_extension_methods(monkeypatch, tmp_path):

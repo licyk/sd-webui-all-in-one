@@ -405,6 +405,13 @@ class ApiServer(ThreadingHTTPServer):
             "error_codes": list(API_ERROR_CODES),
         }
 
+    def server_close(self) -> None:
+        """Close the listener and bound any in-flight discovery subprocess."""
+        from sd_webui_all_in_one.launch_arguments import cancel_launch_argument_discovery
+
+        cancel_launch_argument_discovery()
+        super().server_close()
+
 
 class ApiRequestHandler(BaseHTTPRequestHandler):
     """API HTTP 请求处理器。"""
