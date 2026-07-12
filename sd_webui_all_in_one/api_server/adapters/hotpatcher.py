@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 from pathlib import Path
 from threading import RLock
 from typing import Any
@@ -128,14 +129,37 @@ class HotpatcherApiAdapter:
         with self._lock:
             host = self._runtime_host
             if host is None:
-                return {"running": False, "service_channel_available": False, "address": None, "message_count": 0, "log_count": 0}
+                return {"running": False, "service_channel_available": False, "address": None, "message_count": 0, "log_count": 0, "browser_event_count": 0, "browser_diagnostic_count": 0, "browser_next_cursor": 0, "runtime_identity": None}
             return {
                 "running": True,
                 "service_channel_available": host.service_channel_available,
                 "address": {"host": host.server_address[0], "port": host.server_address[1]},
                 "message_count": len(host.messages),
                 "log_count": len(host.log_entries),
+                "browser_event_count": len(host.browser_events),
+                "browser_diagnostic_count": len(host.browser_diagnostics),
+                "browser_next_cursor": host.browser_next_cursor,
+                "runtime_identity": host.runtime_identity,
             }
+
+    def runtime_browser_events(self, since_cursor: int = 0, limit: int = 100) -> dict[str, Any]:
+        """Read the dedicated typed browser-event stream."""
+
+        if isinstance(since_cursor, bool) or not isinstance(since_cursor, int) or not 0 <= since_cursor <= 2**63 - 1:
+            raise ValueError("since_cursor must be an integer between 0 and 2^63-1")
+        if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 200:
+            raise ValueError("limit must be an integer between 1 and 200")
+        with self._lock:
+            host = self._runtime_host
+            if host is None:
+                return {
+                    "runtime_identity": None,
+                    "events": [],
+                    "start_cursor": since_cursor,
+                    "next_cursor": since_cursor,
+                    "truncated": False,
+                }
+            return host.read_browser_events(since_cursor=since_cursor, limit=limit)
 
     def runtime_logs(self, limit: int | None = 200, since_cursor: int = 0) -> dict[str, Any]:
         """获取 runtime host 日志。
@@ -173,6 +197,50 @@ class HotpatcherApiAdapter:
             runtime.start()
             self._runtime_host = runtime
             return self.runtime_status()
+
+    def ensure_runtime(self, host: str = DEFAULT_RUNTIME_HOST, port: int = 0, token: str = "", config: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Start or reuse one runtime host and return its private bootstrap env."""
+
+        try:
+            address = ipaddress.ip_address(host)
+        except ValueError as exc:
+            raise ValueError(f"runtime host must be a loopback IP address: {host}") from exc
+        if not address.is_loopback:
+            raise ValueError("runtime host must be loopback")
+        if isinstance(port, bool) or not 0 <= int(port) <= 65535:
+            raise ValueError("runtime port must be between 0 and 65535")
+        with self._lock:
+            normalized = normalize_hotpatcher_config(config or get_hotpatcher_default_config())
+            runtime = self._runtime_host
+            reused = runtime is not None
+            if runtime is None:
+                runtime = HotpatcherRuntimeHost(
+                    host=host,
+                    port=port,
+                    token=token,
+                    get_config=lambda: self._runtime_config or {},
+                )
+                self._runtime_config = normalized
+                runtime.start()
+                self._runtime_host = runtime
+            else:
+                self._runtime_config = normalized
+                if not runtime.token:
+                    runtime.token = token
+            actual_host, actual_port = runtime.server_address
+            result = self.runtime_status()
+            result.update(
+                {
+                    "reused": reused,
+                    "env": build_hotpatcher_runtime_env(
+                        actual_host,
+                        actual_port,
+                        token=runtime.token,
+                        config_source="remote",
+                    ),
+                }
+            )
+            return result
 
     def stop_runtime(self) -> dict[str, Any]:
         """停止 runtime host。

@@ -81,6 +81,75 @@ def test_runtime_log_cursor_is_monotonic_bounded_and_reports_truncation():
     assert retained["truncated"] is True
 
 
+def test_runtime_browser_events_are_typed_bounded_and_cursor_based():
+    host = HotpatcherRuntimeHost(port=0)
+    host._browser_retention = 2
+    host._record_message({"type": "browser.open", "payload": {"url": "http://localhost:1"}}, None)
+    host._record_message({"type": "browser.open", "payload": {"url": "http://localhost:2"}}, None)
+
+    first = host.read_browser_events(since_cursor=0, limit=1)
+    assert first["events"][0]["sequence"] == 0
+    assert first["events"][0]["url"] == "http://localhost:1"
+    assert isinstance(first["events"][0]["created"], float)
+    assert first["next_cursor"] == 1
+    assert first["truncated"] is False
+
+    host._record_message({"type": "browser.open", "payload": {"url": "http://localhost:3"}}, None)
+    host._record_message({"type": "browser.open", "payload": {"url": 42}}, None)
+    retained = host.read_browser_events(since_cursor=0, limit=200)
+    assert [event["sequence"] for event in retained["events"]] == [1, 2]
+    assert retained["start_cursor"] == 1
+    assert retained["next_cursor"] == 3
+    assert retained["truncated"] is True
+    assert len(host.messages) == 4
+    assert host.browser_diagnostics == ["rejected malformed browser.open runtime event"]
+
+
+def test_runtime_restart_resets_browser_stream_and_identity():
+    host = HotpatcherRuntimeHost(port=0)
+    host.start()
+    first_identity = host.runtime_identity
+    host._record_message({"type": "browser.open", "payload": {"url": "http://localhost:1"}}, None)
+    host.stop()
+    host.start()
+    try:
+        assert host.runtime_identity != first_identity
+        assert host.read_browser_events() == {
+            "runtime_identity": host.runtime_identity,
+            "events": [],
+            "start_cursor": 0,
+            "next_cursor": 0,
+            "truncated": False,
+        }
+    finally:
+        host.stop()
+
+
+def test_invokeai_existing_webbrowser_module_is_intercepted(monkeypatch):
+    from sd_webui_all_in_one.base_manager import run_invokeai
+    from sd_webui_all_in_one_hotpatcher.runtime import browser
+    from sd_webui_all_in_one_hotpatcher.state import HotpatcherState
+
+    events = []
+    client = types.SimpleNamespace(event=lambda kind, payload: events.append((kind, payload)))
+    monkeypatch.setattr(browser, "install_import_hook", lambda **_kwargs: None)
+    monkeypatch.setattr(browser, "register_hook", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(run_invokeai.webbrowser, "open", lambda *_args, **_kwargs: pytest.fail("system browser opened"))
+
+    class ImmediateThread:
+        def __init__(self, target, **_kwargs):
+            self.target = target
+
+        def start(self):
+            self.target()
+
+    monkeypatch.setattr(run_invokeai.threading, "Thread", ImmediateThread)
+    monkeypatch.setattr(run_invokeai.time, "sleep", lambda _seconds: None)
+    browser.patch_webbrowser(client, state=HotpatcherState())
+    run_invokeai._open_browser_later("http://127.0.0.1:9090")
+    assert events == [("browser.open", {"url": "http://127.0.0.1:9090"})]
+
+
 def test_hotpatcher_config_export_load_save_and_overwrite_guard(tmp_path):
     output = tmp_path / "hotpatcher.json"
 

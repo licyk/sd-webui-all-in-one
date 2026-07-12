@@ -713,6 +713,8 @@ def test_default_api_registry_includes_model_and_hotpatcher_surface():
             "hotpatcher.catalog",
             "hotpatcher.runtime_status",
             "hotpatcher.runtime_logs",
+            "hotpatcher.runtime_browser_events",
+            "hotpatcher.runtime_ensure",
         }.issubset(catalog["methods"])
         assert {
             "model.create_folder",
@@ -761,26 +763,90 @@ def test_model_api_adapter_file_operations(tmp_path):
     assert not (root / "checkpoints" / "moved.safetensors").exists()
 
 
-def test_hotpatcher_api_adapter_runtime_status_and_env():
+def test_hotpatcher_api_adapter_starts_stopped():
     from sd_webui_all_in_one.api_server.adapters.hotpatcher import HotpatcherApiAdapter
 
     adapter = HotpatcherApiAdapter()
     assert adapter.runtime_status()["running"] is False
 
+
+def test_hotpatcher_public_browser_event_api_and_adapter_runtime_contract(monkeypatch):
+    from sd_webui_all_in_one.api_server.adapters.hotpatcher import HotpatcherApiAdapter
+
+    adapter = HotpatcherApiAdapter()
+    monkeypatch.setattr(registry, "HOTPATCHER_API_ADAPTER", adapter)
+    ensured = registry.hotpatcher_runtime_ensure(
+        {
+            "config": {"runtime": {"browser": {"enabled": True, "mode": "host"}}},
+            "options": {"host": "127.0.0.1", "port": 0, "token": "secret"},
+        }
+    )
+    try:
+        assert adapter._runtime_host is not None
+        adapter._runtime_host._record_message(
+            {"type": "browser.open", "payload": {"url": "http://localhost:7860"}},
+            None,
+        )
+        result = registry.hotpatcher_runtime_browser_events(
+            {"options": {"since_cursor": ensured["browser_next_cursor"], "limit": 100}}
+        )
+        assert set(result) == {
+            "runtime_identity",
+            "events",
+            "start_cursor",
+            "next_cursor",
+            "truncated",
+        }
+        assert set(result["events"][0]) == {"sequence", "url", "created"}
+        assert result["events"][0]["url"] == "http://localhost:7860"
+    finally:
+        adapter.stop_runtime()
+
     env = adapter.runtime_env(host="127.0.0.1", port=9876, token="secret")
     assert env["env"]["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT"] == "9876"
     assert env["env"]["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN"] == "secret"
 
-    started = adapter.start_runtime(host="127.0.0.1", port=0, token="")
+    started = adapter.start_runtime(host="127.0.0.1", port=0, token="secret")
     try:
         assert started["running"] is True
         assert started["address"]["port"] > 0
+        assert isinstance(started["runtime_identity"], str)
         assert adapter.runtime_logs() == {
             "logs": [],
             "start_cursor": 0,
             "next_cursor": 0,
             "truncated": False,
         }
+        assert adapter._runtime_host is not None
+        adapter._runtime_host._record_message(
+            {"type": "browser.open", "payload": {"url": "http://127.0.0.1:8188/path?q=1#ui"}},
+            None,
+        )
+        events = adapter.runtime_browser_events(since_cursor=0, limit=100)
+        assert events["runtime_identity"] == started["runtime_identity"]
+        assert events["start_cursor"] == 0
+        assert events["next_cursor"] == 1
+        assert events["truncated"] is False
+        assert events["events"][0]["sequence"] == 0
+        assert events["events"][0]["url"] == "http://127.0.0.1:8188/path?q=1#ui"
+        assert isinstance(events["events"][0]["created"], float)
+
+        ensured = adapter.ensure_runtime(
+            host="127.0.0.1",
+            port=0,
+            token="replacement-must-not-win",
+            config={"runtime": {"browser": {"enabled": True, "mode": "host"}}},
+        )
+        assert ensured["reused"] is True
+        assert ensured["browser_next_cursor"] == 1
+        assert ensured["runtime_identity"] == started["runtime_identity"]
+        assert ensured["env"]["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN"] == "secret"
+        assert adapter._runtime_config["runtime"]["browser"] == {"enabled": True, "mode": "host"}
+
+        with pytest.raises(ValueError, match="since_cursor"):
+            adapter.runtime_browser_events(since_cursor=-1)
+        with pytest.raises(ValueError, match="limit"):
+            adapter.runtime_browser_events(limit=201)
     finally:
         assert adapter.stop_runtime() == {"stopped": True}
     assert adapter.runtime_status()["running"] is False

@@ -81,6 +81,10 @@ class HotpatcherState:
     error_guard: "ThreadLocal" = field(default_factory=threading.local)
     log_capture: "LogCapture | None" = None
     log_guard: "ThreadLocal" = field(default_factory=threading.local)
+    browser_patch_registered: bool = False
+    browser_patch_mode: str = "passthrough"
+    browser_runtime_client: Any = None
+    browser_diagnostics: list[str] = field(default_factory=list)
 
 
 _default_state = HotpatcherState()

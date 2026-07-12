@@ -2,6 +2,7 @@ import json
 import socket
 import sys
 import threading
+import types
 
 import pytest
 
@@ -23,6 +24,7 @@ from sd_webui_all_in_one_hotpatcher.services import (
     normalize_config,
 )
 from sd_webui_all_in_one_hotpatcher.stack_shadow import uninstall_stack_shadower
+from sd_webui_all_in_one_hotpatcher.state import HotpatcherState
 from sd_webui_all_in_one_hotpatcher_ext.uv_pip import unpatch_uv_to_subprocess
 
 
@@ -153,6 +155,7 @@ def test_default_config_is_json_serializable_and_contains_features():
     assert defaults["extensions"]["extension_index"]["comfyui_manager"]["url"] == "auto"
     assert defaults["extensions"]["xformers_cutlass"]["enabled"] is True
     assert defaults["extensions"]["uv_pip"]["enabled"] is False
+    assert defaults["runtime"]["browser"] == {"enabled": False, "mode": "host"}
 
 
 def test_normalize_config_deep_merges_without_overwriting_user_values():
@@ -172,7 +175,79 @@ def test_normalize_config_deep_merges_without_overwriting_user_values():
     assert normalized["runtime"]["logs"]["policy"] == "bounded"
     assert normalized["runtime"]["errors"]["enabled"] is False
     assert normalized["runtime"]["errors"]["caught_exceptions"]["enabled"] is False
+    assert normalized["runtime"]["browser"] == {"enabled": False, "mode": "host"}
     assert normalized["extensions"]["zluda"]["enabled"] is False
+
+
+def test_browser_config_rejects_unknown_modes_and_non_boolean_enablement():
+    with pytest.raises(ValueError, match="runtime.browser.mode"):
+        normalize_config({"runtime": {"browser": {"mode": "external"}}})
+    with pytest.raises(ValueError, match="runtime.browser.enabled"):
+        normalize_config({"runtime": {"browser": {"enabled": "yes"}}})
+
+
+def test_apply_config_browser_modes_are_idempotent_and_open_variants_emit_once(monkeypatch):
+    from sd_webui_all_in_one_hotpatcher.runtime import browser
+
+    calls = []
+
+    class Client:
+        def event(self, event_type, payload):
+            calls.append((event_type, payload))
+
+    original_calls = []
+    module = types.ModuleType("webbrowser")
+
+    def original(url, *args, **kwargs):
+        original_calls.append((url, args, kwargs))
+        return False
+
+    module.open = original
+    module.open_new = lambda url: module.open(url, 1)
+    module.open_new_tab = lambda url: module.open(url, 2)
+    monkeypatch.setitem(sys.modules, "webbrowser", module)
+    monkeypatch.setattr(browser, "install_import_hook", lambda **_kwargs: None)
+    registered = []
+    monkeypatch.setattr(browser, "register_hook", lambda *args, **kwargs: registered.append((args, kwargs)))
+    state = HotpatcherState()
+
+    host_config = {"runtime": {"browser": {"enabled": True, "mode": "host"}}}
+    first = apply_config(host_config, runtime_client=Client(), state=state)
+    wrapper = module.open
+    second = apply_config(host_config, runtime_client=Client(), state=state)
+    assert first["errors"] == second["errors"] == []
+    assert module.open is wrapper
+    assert len(registered) == 1
+    assert module.open_new("http://127.0.0.1:7860") is True
+    assert module.open_new_tab("http://localhost:8188") is True
+    assert [event[0] for event in calls] == ["browser.open", "browser.open"]
+
+    apply_config({"runtime": {"browser": {"enabled": True, "mode": "suppress"}}}, runtime_client=Client(), state=state)
+    assert module.open("http://localhost:3000", autoraise=False) is True
+    assert len(calls) == 2
+
+    apply_config({"runtime": {"browser": {"enabled": True, "mode": "passthrough"}}}, runtime_client=Client(), state=state)
+    assert module.open("https://example.test", 0, autoraise=True) is False
+    assert original_calls == [("https://example.test", (0,), {"autoraise": True})]
+
+
+def test_host_mode_without_runtime_client_suppresses_and_reports_diagnostics(monkeypatch):
+    from sd_webui_all_in_one_hotpatcher.runtime import browser
+
+    module = types.ModuleType("webbrowser")
+    module.open = lambda *_args, **_kwargs: pytest.fail("system browser must stay suppressed")
+    monkeypatch.setitem(sys.modules, "webbrowser", module)
+    monkeypatch.setattr(browser, "install_import_hook", lambda **_kwargs: None)
+    monkeypatch.setattr(browser, "register_hook", lambda *_args, **_kwargs: None)
+    state = HotpatcherState()
+    with pytest.warns(RuntimeWarning, match="remains suppressed"):
+        result = apply_config(
+            {"runtime": {"browser": {"enabled": True, "mode": "host"}}},
+            state=state,
+        )
+    assert module.open("http://localhost:7860") is True
+    assert result["warnings"][0]["feature"] == "runtime.browser"
+    assert state.browser_diagnostics
 
 
 def test_current_config_defaults_and_updates_after_apply():
@@ -389,6 +464,10 @@ def test_catalog_reports_registered_patches():
     assert fd_capture_setting["type"] == "choice"
     assert fd_capture_setting["choices"] == ["0", "fallback", "force"]
     assert fd_capture_setting["default"] == "0"
+    browser_feature = features["runtime.browser"]
+    assert browser_feature["settings"]["enabled"]["default"] is False
+    assert browser_feature["settings"]["mode"]["choices"] == ["host", "suppress", "passthrough"]
+    assert browser_feature["registered"] is False
     extension_index_settings = features["extensions.extension_index"]["settings"]
     assert extension_index_settings["webui.enabled"]["type"] == "bool"
     assert extension_index_settings["webui.enabled"]["default"] is False
@@ -471,6 +550,14 @@ def test_service_control_channel_handles_host_request():
 
 
 def test_bootstrap_applies_services_config_and_opens_control_channel(monkeypatch):
+    from sd_webui_all_in_one_hotpatcher.runtime import browser
+
+    browser_calls = []
+    monkeypatch.setattr(
+        browser,
+        "patch_webbrowser",
+        lambda client, *, mode, state: browser_calls.append((client, mode, state)),
+    )
     with ServicesHost() as host:
         monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME", "1")
         monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST", host.host)
@@ -478,7 +565,7 @@ def test_bootstrap_applies_services_config_and_opens_control_channel(monkeypatch
         monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE", "env")
         monkeypatch.setenv(
             "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_JSON",
-            '{"services":{"apply_on_bootstrap":true},"core":{"import_hook":{"enabled":true}}}',
+            '{"services":{"apply_on_bootstrap":true},"core":{"import_hook":{"enabled":true}},"runtime":{"browser":{"enabled":true,"mode":"host"}}}',
         )
         monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES", "1")
 
@@ -486,6 +573,9 @@ def test_bootstrap_applies_services_config_and_opens_control_channel(monkeypatch
         try:
             assert state.service_apply_result is not None
             assert "core.import_hook" in state.service_apply_result["applied"]
+            assert "runtime.browser" in state.service_apply_result["applied"]
+            assert browser_calls and browser_calls[0][0] is state.runtime_client
+            assert browser_calls[0][1] == "host"
             assert state.service_control_channel is not None
             assert host.response_ready.wait(timeout=2)
         finally:
@@ -509,3 +599,23 @@ def test_bootstrap_records_loaded_config_without_apply(monkeypatch):
     assert current["ok"] is True
     assert current["payload"]["config"]["services"]["apply_on_bootstrap"] is False
     assert current["payload"]["config"]["runtime"]["errors"]["asyncio"] is False
+
+
+def test_bootstrap_browser_interception_ignores_disabled_general_apply_toggle(monkeypatch):
+    from sd_webui_all_in_one_hotpatcher.runtime import browser
+
+    calls = []
+    monkeypatch.setattr(
+        browser,
+        "patch_webbrowser",
+        lambda client, *, mode, state: calls.append((client, mode, state)),
+    )
+    monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE", "env")
+    monkeypatch.setenv(
+        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_JSON",
+        '{"services":{"apply_on_bootstrap":false},"runtime":{"browser":{"enabled":true,"mode":"suppress"}}}',
+    )
+    state = configure_from_env()
+    assert state.service_apply_result is not None
+    assert "runtime.browser" in state.service_apply_result["applied"]
+    assert calls and calls[0][1] == "suppress"

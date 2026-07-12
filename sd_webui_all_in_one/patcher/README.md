@@ -578,6 +578,15 @@ from sd_webui_all_in_one_hotpatcher.runtime import patch_webbrowser
 patch_webbrowser(client)
 ```
 
+`patch_webbrowser` supports `mode="host"`, `"suppress"`, and `"passthrough"`.
+Host mode returns `True`, suppresses the operating-system browser, and emits one
+`browser.open` event when a runtime client exists. Suppress mode emits nothing;
+passthrough leaves a fresh process unmodified. Reapplying is idempotent. If the
+wrapper was already registered, switching to passthrough delegates to the
+original function, but fully removing the import hook requires a process restart.
+`webbrowser.open_new` and `open_new_tab` use the patched module-level `open` and
+therefore preserve the same single-event behavior.
+
 文件操作：
 
 ```python

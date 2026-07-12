@@ -1,6 +1,6 @@
 """运行时宿主通信工具"""
 
-from .browser import ManagedBrowser, patch_webbrowser
+from .browser import BrowserMode, ManagedBrowser, patch_webbrowser
 from .client import RuntimeClient
 from .config import load_config
 from .errors import (
@@ -30,6 +30,7 @@ __all__ = [
     "ErrorCapture",
     "LogCapture",
     "ManagedBrowser",
+    "BrowserMode",
     "Progress",
     "ProgressManager",
     "RuntimeLogHandler",

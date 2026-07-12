@@ -344,6 +344,7 @@ def build_hotpatcher_runtime_env(
         "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST": str(host),
         "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT": str(port),
         "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE": str(config_source),
+        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_IMPORT_HOOK": "1",
         "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES": "1",
     }
     if token:
@@ -448,6 +449,15 @@ class RuntimeMessage:
 
     message: dict[str, Any]
     address: tuple[str, int] | None = None
+    created: float = field(default_factory=time.time)
+
+
+@dataclass(slots=True)
+class RuntimeBrowserEvent:
+    """Validated browser request retained by the runtime host."""
+
+    sequence: int
+    url: str
     created: float = field(default_factory=time.time)
 
 
@@ -658,6 +668,8 @@ class HotpatcherRuntimeHost:
         self.confirm_file_operation = confirm_file_operation
         self.messages: list[RuntimeMessage] = []
         self.log_entries: list[RuntimeLogEntry] = []
+        self.browser_events: list[RuntimeBrowserEvent] = []
+        self.browser_diagnostics: list[str] = []
         self.log_queue: queue.Queue[RuntimeLogEntry] = queue.Queue()
         self._lock = threading.Lock()
         self._server: _RuntimeServer | None = None
@@ -665,6 +677,9 @@ class HotpatcherRuntimeHost:
         self._service_channel: RuntimeServiceChannel | None = None
         self._next_log_sequence = 0
         self._log_retention = 2000
+        self._next_browser_sequence = 0
+        self._browser_retention = 256
+        self.runtime_identity = uuid.uuid4().hex
 
     @property
     def server_address(self) -> tuple[str, int]:
@@ -694,6 +709,13 @@ class HotpatcherRuntimeHost:
         channel = self._service_channel
         return channel is not None and not channel.closed
 
+    @property
+    def browser_next_cursor(self) -> int:
+        """Return the next monotonic browser sequence for launch baselining."""
+
+        with self._lock:
+            return self._next_browser_sequence
+
     def start(self) -> "HotpatcherRuntimeHost":
         """
         启动 runtime host
@@ -705,6 +727,12 @@ class HotpatcherRuntimeHost:
 
         if self._server is not None:
             return self
+
+        with self._lock:
+            self.browser_events.clear()
+            self.browser_diagnostics.clear()
+            self._next_browser_sequence = 0
+            self.runtime_identity = uuid.uuid4().hex
 
         outer = self
 
@@ -911,8 +939,64 @@ class HotpatcherRuntimeHost:
         entry = RuntimeMessage(copy.deepcopy(message), address=address)
         with self._lock:
             self.messages.append(entry)
+        if message.get("type") == "browser.open":
+            payload = message.get("payload")
+            url = payload.get("url") if isinstance(payload, dict) else None
+            if isinstance(url, str):
+                self._record_browser_event(url)
+            else:
+                diagnostic = "rejected malformed browser.open runtime event"
+                with self._lock:
+                    self.browser_diagnostics.append(diagnostic)
+                    del self.browser_diagnostics[:-100]
+                self._emit_status(diagnostic)
         if self.on_message is not None:
             self.on_message(entry)
+
+    def _record_browser_event(self, url: str) -> None:
+        with self._lock:
+            event = RuntimeBrowserEvent(
+                sequence=self._next_browser_sequence,
+                url=url,
+            )
+            self._next_browser_sequence += 1
+            self.browser_events.append(event)
+            overflow = len(self.browser_events) - self._browser_retention
+            if overflow > 0:
+                del self.browser_events[:overflow]
+
+    def read_browser_events(self, since_cursor: int = 0, limit: int = 100) -> dict[str, Any]:
+        """Read a bounded monotonic slice of validated browser events."""
+
+        bounded_limit = max(1, min(int(limit), 200))
+        requested = max(0, int(since_cursor))
+        with self._lock:
+            first_cursor = (
+                self.browser_events[0].sequence
+                if self.browser_events
+                else self._next_browser_sequence
+            )
+            start_cursor = max(requested, first_cursor)
+            selected = [
+                event
+                for event in self.browser_events
+                if event.sequence >= start_cursor
+            ][:bounded_limit]
+            next_cursor = selected[-1].sequence + 1 if selected else start_cursor
+            return {
+                "runtime_identity": self.runtime_identity,
+                "events": [
+                    {
+                        "sequence": event.sequence,
+                        "url": event.url,
+                        "created": event.created,
+                    }
+                    for event in selected
+                ],
+                "start_cursor": start_cursor,
+                "next_cursor": next_cursor,
+                "truncated": requested < first_cursor,
+            }
 
     def _record_log(self, entry: RuntimeLogEntry) -> None:
         with self._lock:

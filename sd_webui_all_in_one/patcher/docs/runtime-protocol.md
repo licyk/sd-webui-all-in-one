@@ -184,7 +184,16 @@ client = RuntimeClient.connect_from_env()
 {"type":"browser.open","payload":{"url":"https://example.com"}}
 ```
 
-`ManagedBrowser.open()` 只发送事件。`patch_webbrowser(client)` 会 patch 标准库 `webbrowser.open`，使其转发到宿主并返回 `True`。
+`ManagedBrowser.open()` 只发送事件。`patch_webbrowser(client, mode="host")`
+会 patch 标准库 `webbrowser.open`，使其转发到宿主并返回 `True`。`suppress`
+不发送事件，`passthrough` 调用原函数；没有 client 的 host 模式仍安全抑制。
+`open_new`/`open_new_tab` 委托模块级 `open`，所以每次调用只产生一个事件。
+
+项目内置 `HotpatcherRuntimeHost` 只把 object payload 且 `url` 为 string 的
+`browser.open` 写入独立的 256 条事件流。事件使用与列表索引无关的单调 sequence，
+通过 `read_browser_events(since_cursor, limit)` 返回 `events/start_cursor/next_cursor/truncated`
+和 runtime UUID；单次读取最多 200 条。格式错误的消息保留在通用诊断中但不会进入
+类型化事件流。host 重启生成新 UUID 并把浏览器 cursor 重置为 0。
 
 ## File operation 请求
 

@@ -59,27 +59,17 @@ def test_install_audit_hook_filters_events_and_serializes_args(monkeypatch):
 
 
 def test_patch_webbrowser_routes_open_to_runtime_client(monkeypatch):
-    class FakeMonkeyZoo:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, traceback):
-            return False
-
-        def patch_function(self, name, hook):
-            self.name = name
-            self.hook = hook
-
-    fake_monkey = FakeMonkeyZoo()
+    registered = {}
     fake_webbrowser = types.SimpleNamespace(open=lambda url, *args, **kwargs: False)
     client = FakeClient()
-    monkeypatch.setattr(browser, "install_import_hook", lambda: None)
-    monkeypatch.setattr(browser, "monkey_zoo", lambda name: fake_monkey)
+    monkeypatch.setattr(browser, "install_import_hook", lambda **_kwargs: None)
+    monkeypatch.setattr(browser, "register_hook", lambda module, name, hook, **_kwargs: registered.update(module=module, name=name, hook=hook))
     monkeypatch.setitem(sys.modules, "webbrowser", fake_webbrowser)
 
-    browser.patch_webbrowser(client)
+    browser.patch_webbrowser(client, state=browser.HotpatcherState())
 
-    assert fake_monkey.name == "open"
+    assert registered["module"] == "webbrowser"
+    assert registered["name"] == "open"
     assert fake_webbrowser.open("https://example.test") is True
     assert client.events == [("browser.open", {"url": "https://example.test"})]
 

@@ -928,6 +928,34 @@ def hotpatcher_runtime_logs(params: dict[str, Any]) -> dict[str, Any]:
     )
 
 
+def hotpatcher_runtime_browser_events(params: dict[str, Any]) -> dict[str, Any]:
+    """Read validated browser events retained by the runtime host."""
+
+    options = _options(params)
+    since_cursor = options.get("since_cursor", 0)
+    limit = options.get("limit", 100)
+    if isinstance(since_cursor, bool) or not isinstance(since_cursor, int) or not 0 <= since_cursor <= 2**63 - 1:
+        raise ValueError("since_cursor must be an integer between 0 and 2^63-1")
+    if isinstance(limit, bool) or not isinstance(limit, int):
+        raise ValueError("limit must be an integer between 1 and 200")
+    return HOTPATCHER_API_ADAPTER.runtime_browser_events(
+        since_cursor=since_cursor,
+        limit=limit,
+    )
+
+
+def hotpatcher_runtime_ensure(params: dict[str, Any]) -> dict[str, Any]:
+    """Ensure one launch-compatible runtime host without a task channel."""
+
+    options = _options(params)
+    return HOTPATCHER_API_ADAPTER.ensure_runtime(
+        host=str(options.get("host") or "127.0.0.1"),
+        port=int(options.get("port", 0)),
+        token=str(options.get("token") or ""),
+        config=_require_object(params, "config"),
+    )
+
+
 def model_create_folder(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
     """创建模型文件夹。
 
@@ -1295,6 +1323,8 @@ def get_default_methods() -> ApiMethodRegistry:
         "hotpatcher.runtime_env": _sync_spec("hotpatcher.runtime_env", hotpatcher_runtime_env, "Build hotpatcher runtime environment variables."),
         "hotpatcher.runtime_status": _sync_spec("hotpatcher.runtime_status", hotpatcher_runtime_status, "Get hotpatcher runtime host status."),
         "hotpatcher.runtime_logs": _sync_spec("hotpatcher.runtime_logs", hotpatcher_runtime_logs, "Get hotpatcher runtime logs."),
+        "hotpatcher.runtime_browser_events": _sync_spec("hotpatcher.runtime_browser_events", hotpatcher_runtime_browser_events, "Read typed browser events from the hotpatcher runtime host."),
+        "hotpatcher.runtime_ensure": _sync_spec("hotpatcher.runtime_ensure", hotpatcher_runtime_ensure, "Ensure the launch-owned hotpatcher runtime host."),
     }
 
 

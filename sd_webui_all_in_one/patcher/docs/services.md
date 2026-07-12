@@ -6,10 +6,15 @@
 
 services 管理两类能力：
 
-- 核心框架能力：`core.import_hook`、`core.stack_shadow`、`runtime.errors`、`runtime.logs`
+- 核心框架能力：`core.import_hook`、`core.stack_shadow`、`runtime.browser`、`runtime.errors`、`runtime.logs`
 - 现有扩展补丁：`extensions.zluda`、`extensions.extension_index`、`extensions.hf_endpoint_mirror`、`extensions.uv_pip`
 
 v1 只负责启用和注册补丁，不负责撤销已经注册或已经生效的 import-time 补丁。`enabled=false` 的含义是“不主动注册这个功能”。
+
+`runtime.browser` 默认是 `{"enabled": false, "mode": "host"}`。`host`
+抑制系统浏览器并发送 `browser.open`，`suppress` 只抑制，`passthrough`
+保留标准库行为。未知 mode 会在规范化时明确失败。host 模式即使没有
+runtime client 也会安全抑制并返回诊断，绝不会回退到系统浏览器。
 
 ## Python API
 
@@ -177,3 +182,7 @@ SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES=1
 ```
 
 `bootstrap.configure_from_env()` 会在加载配置后调用 `apply_config()`。
+因此启用的 `runtime.browser` 会在 WebUI 入口脚本执行前注册；初始拦截不依赖
+services 远程控制通道。即使通用 `services.apply_on_bootstrap=false`，显式启用的
+`runtime.browser` 仍会强制执行这次早期应用。运行时重应用可以改变 mode/client，但已经注册的 wrapper
+需要进程重启才能彻底移除。

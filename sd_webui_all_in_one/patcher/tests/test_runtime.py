@@ -28,6 +28,7 @@ from sd_webui_all_in_one_hotpatcher.runtime.protocol import encode_message
 from sd_webui_all_in_one_hotpatcher.runtime.audit import install_audit_hook
 from sd_webui_all_in_one_hotpatcher.runtime.fileops import UserCanceledException
 from sd_webui_all_in_one_hotpatcher.exceptions import capture_exception
+from sd_webui_all_in_one_hotpatcher.state import HotpatcherState
 
 
 def _coverage_tracing_active():
@@ -250,6 +251,39 @@ def test_runtime_progress_browser_and_file_operation_events():
         assert "browser.open" in types
         assert "file.delete" in types
         assert "file.operation.perform" in types
+
+
+def test_webbrowser_future_import_and_fresh_passthrough(monkeypatch):
+    from sd_webui_all_in_one_hotpatcher.runtime import browser
+
+    registered = {}
+    monkeypatch.delitem(sys.modules, "webbrowser", raising=False)
+    monkeypatch.setattr(browser, "install_import_hook", lambda **_kwargs: None)
+    monkeypatch.setattr(
+        browser,
+        "register_hook",
+        lambda module, function, hook, **_kwargs: registered.update(
+            module=module,
+            function=function,
+            hook=hook,
+        ),
+    )
+    events = []
+    client = SimpleNamespace(event=lambda kind, payload: events.append((kind, payload)))
+    state = HotpatcherState()
+    browser.patch_webbrowser(client, state=state)
+
+    module = SimpleNamespace()
+    original = lambda *_args, **_kwargs: False
+    module.open = registered["hook"](original, module)
+    assert registered["module"] == "webbrowser"
+    assert registered["function"] == "open"
+    assert module.open(url="http://localhost:7860", autoraise=False) is True
+    assert events == [("browser.open", {"url": "http://localhost:7860"})]
+
+    untouched = HotpatcherState()
+    browser.patch_webbrowser(None, mode="passthrough", state=untouched)
+    assert untouched.browser_patch_registered is False
 
 
 def test_file_operation_cancelled_maps_to_user_cancelled():

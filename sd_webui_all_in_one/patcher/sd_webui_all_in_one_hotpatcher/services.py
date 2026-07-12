@@ -56,6 +56,10 @@ DEFAULT_CONFIG: dict[str, Any] = {
         },
     },
     "runtime": {
+        "browser": {
+            "enabled": False,
+            "mode": "host",
+        },
         "errors": {
             "enabled": False,
             "sys_excepthook": True,
@@ -232,6 +236,23 @@ SETTING_SCHEMA: dict[str, Any] = {
                 "title": "FD 级捕获",
                 "description": "实验性标准流捕获。0 关闭，fallback 在普通 stream hook 丢失时尝试启用，force 启动时直接启用。",
                 "choices": ["0", "fallback", "force"],
+            },
+        },
+    },
+    "runtime.browser": {
+        "title": "浏览器控制",
+        "description": "控制标准库 webbrowser 请求是否交给 runtime host。",
+        "settings": {
+            "enabled": {
+                "type": "bool",
+                "title": "启用浏览器控制",
+                "description": "在 WebUI 导入前应用标准库 webbrowser 补丁。",
+            },
+            "mode": {
+                "type": "choice",
+                "title": "处理模式",
+                "description": "host 发送事件并抑制系统浏览器，suppress 仅抑制，passthrough 保持标准行为。",
+                "choices": ["host", "suppress", "passthrough"],
             },
         },
     },
@@ -684,7 +705,14 @@ def normalize_config(config: dict[str, Any]) -> dict[str, Any]:
 
     if not isinstance(config, dict):
         raise ValueError("config must be an object")
-    return _merge_defaults(copy.deepcopy(config), get_default_config())
+    normalized = _merge_defaults(copy.deepcopy(config), get_default_config())
+    browser = _section(_section(normalized, "runtime"), "browser")
+    if not isinstance(browser.get("enabled"), bool):
+        raise ValueError("runtime.browser.enabled must be a boolean")
+    mode = browser.get("mode")
+    if mode not in {"host", "suppress", "passthrough"}:
+        raise ValueError(f"unknown runtime.browser.mode: {mode!r}")
+    return normalized
 
 
 def load_config_file(path: str | Path, write_back: bool = True) -> dict[str, Any]:
@@ -883,6 +911,26 @@ def _apply_runtime_config(
     state: HotpatcherState,
 ) -> None:
     runtime = _section(config, "runtime")
+    browser = _section(runtime, "browser")
+    from .runtime.browser import is_webbrowser_patch_registered, patch_webbrowser
+
+    if browser.get("enabled"):
+        mode = str(browser.get("mode", "host"))
+        _apply_step(
+            "runtime.browser",
+            lambda: patch_webbrowser(runtime_client, mode=mode, state=state),  # type: ignore[arg-type]
+            result,
+        )
+        if mode == "host" and runtime_client is None:
+            result["warnings"].append(
+                {
+                    "feature": "runtime.browser",
+                    "message": "runtime client is unavailable; browser opening is suppressed without host events",
+                }
+            )
+    elif is_webbrowser_patch_registered(state=state):
+        patch_webbrowser(None, mode="passthrough", state=state)
+
     errors = _section(runtime, "errors")
     if errors.get("enabled"):
         if runtime_client is None:
@@ -1054,6 +1102,16 @@ def _warn_disabled_but_active(config: dict[str, Any], result: dict[str, Any], st
             }
         )
 
+    from .runtime.browser import is_webbrowser_patch_registered
+
+    if not _section(_section(config, "runtime"), "browser").get("enabled") and is_webbrowser_patch_registered(state=state):
+        result["warnings"].append(
+            {
+                "feature": "runtime.browser",
+                "message": "browser wrapper remains registered in passthrough mode; process restart is required to remove it",
+            }
+        )
+
     extensions = _section(config, "extensions")
     if not _section(extensions, "uv_pip").get("enabled") and _is_uv_pip_patch_installed():
         result["warnings"].append(
@@ -1075,6 +1133,11 @@ def _attach_feature_state(features: dict[str, Any], defaults: dict[str, Any], st
     features["runtime.errors"]["active"] = is_error_capture_installed(state=state)
     features["runtime.logs"]["default"] = defaults["runtime"]["logs"]
     features["runtime.logs"]["active"] = False
+    from .runtime.browser import is_webbrowser_patch_active, is_webbrowser_patch_registered
+
+    features["runtime.browser"]["default"] = defaults["runtime"]["browser"]
+    features["runtime.browser"]["active"] = is_webbrowser_patch_active(state=state)
+    features["runtime.browser"]["registered"] = is_webbrowser_patch_registered(state=state)
     features["extensions.zluda"]["default"] = defaults["extensions"]["zluda"]
     features["extensions.zluda"]["active"] = False
     features["extensions.extension_index"]["default"] = defaults["extensions"]["extension_index"]

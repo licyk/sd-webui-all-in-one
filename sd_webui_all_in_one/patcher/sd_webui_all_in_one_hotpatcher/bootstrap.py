@@ -263,6 +263,8 @@ def _runtime_enabled_from_env() -> bool:
 
 def _services_apply_on_bootstrap(config: dict[str, Any]) -> bool:
     services = config.get("services")
-    if not isinstance(services, dict):
-        return False
-    return bool(services.get("apply_on_bootstrap"))
+    configured = isinstance(services, dict) and bool(services.get("apply_on_bootstrap"))
+    runtime = config.get("runtime")
+    browser = runtime.get("browser") if isinstance(runtime, dict) else None
+    browser_required = isinstance(browser, dict) and browser.get("enabled") is True
+    return configured or browser_required
