@@ -16,7 +16,7 @@ from typing import Any
 
 from ..exceptions import set_exception_reporter
 from ..state import HotpatcherState, get_default_state
-from .client import RuntimeClient
+from .interfaces import RuntimeEventSink
 
 _LOCAL_REPR_MAX_CHARS = 512
 _LOCAL_FRAME_LIMIT = 40
@@ -52,7 +52,7 @@ class ExceptionReporter:
     异常事件上报器
 
     Attributes:
-        client (RuntimeClient):
+        client (RuntimeEventSink):
             发送异常事件的运行时客户端
         include_locals (bool):
             是否包含脱敏后的局部变量摘要。
@@ -60,7 +60,7 @@ class ExceptionReporter:
             发送异常事件时使用的递归保护。
     """
 
-    client: RuntimeClient
+    client: RuntimeEventSink
     include_locals: bool = False
     guard: Any | None = None
 
@@ -101,7 +101,7 @@ class ErrorCapture:
     让 ComfyUI 等应用原有的控制台报错行为保持不变。
     """
 
-    client: RuntimeClient
+    client: RuntimeEventSink
     include_locals: bool = False
     sys_excepthook: bool = True
     threading_excepthook: bool = True
@@ -314,7 +314,7 @@ class ErrorCapture:
 
 
 def install_exception_reporter(
-    client: RuntimeClient,
+    client: RuntimeEventSink,
     *,
     include_locals: bool = False,
     state: HotpatcherState | None = None,
@@ -323,7 +323,7 @@ def install_exception_reporter(
     安装进程级异常上报器
 
     Args:
-        client (RuntimeClient):
+        client (RuntimeEventSink):
             发送异常事件的运行时客户端
         include_locals (bool):
             是否包含脱敏后的局部变量摘要。
@@ -353,7 +353,7 @@ def uninstall_exception_reporter(*, state: HotpatcherState | None = None) -> Non
 
 
 def install_error_capture(
-    client: RuntimeClient,
+    client: RuntimeEventSink,
     *,
     sys_excepthook: bool = True,
     threading_excepthook: bool = True,
@@ -371,7 +371,7 @@ def install_error_capture(
     安装全局 Python 运行时错误捕获
 
     Args:
-        client (RuntimeClient):
+        client (RuntimeEventSink):
             发送异常事件的运行时客户端
         sys_excepthook (bool):
             是否捕获主线程未处理异常
@@ -454,7 +454,7 @@ def is_error_capture_installed(*, state: HotpatcherState | None = None) -> bool:
 
 
 def configure_error_capture_from_env(
-    client: RuntimeClient,
+    client: RuntimeEventSink,
     config: dict[str, Any] | None = None,
     *,
     state: HotpatcherState | None = None,
@@ -466,7 +466,7 @@ def configure_error_capture_from_env(
     ``runtime.errors.enabled=true`` 时启用。
 
     Args:
-        client (RuntimeClient):
+        client (RuntimeEventSink):
             runtime 客户端
         config (dict[str, Any] | None):
             runtime 配置字典
@@ -602,7 +602,7 @@ def _frames_from_traceback(exc_tb: TracebackType | None, *, include_locals: bool
 
 
 def _send_exception_event(
-    client: RuntimeClient,
+    client: RuntimeEventSink,
     exc_type: type[BaseException],
     exc_value: BaseException,
     exc_tb: TracebackType | None,
@@ -704,7 +704,7 @@ class CaughtExceptionTracer:
     使用 ``sys.settrace`` 捕获 Python ``exception`` 事件, 因此会有明显性能成本。
     """
 
-    client: RuntimeClient
+    client: RuntimeEventSink
     include_locals: bool = False
     trace_threading: bool = True
     module_prefixes: tuple[str, ...] = ()

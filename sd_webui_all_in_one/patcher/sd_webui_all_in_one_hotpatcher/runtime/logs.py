@@ -14,7 +14,7 @@ from locale import getpreferredencoding
 from typing import Any, Iterable, TextIO, cast
 
 from ..state import HotpatcherState, get_default_state
-from .client import RuntimeClient
+from .interfaces import RuntimeEventSink
 
 DEFAULT_MAX_CHARS = 8192
 DEFAULT_QUEUE_SIZE = 1000
@@ -26,7 +26,7 @@ DEFAULT_FD_CAPTURE = "0"
 
 
 def install_log_capture(
-    client: RuntimeClient,
+    client: RuntimeEventSink,
     *,
     capture_logging: bool = True,
     streams: Iterable[str] | None = DEFAULT_STREAMS,
@@ -48,7 +48,7 @@ def install_log_capture(
     stdout/stderr tee 和 subprocess patch。
 
     Args:
-        client (RuntimeClient):
+        client (RuntimeEventSink):
             发送日志事件的运行时客户端
         capture_logging (bool):
             是否采集 Python logging
@@ -120,7 +120,7 @@ def uninstall_log_capture(*, state: HotpatcherState | None = None) -> None:
 
 
 def configure_log_capture_from_env(
-    client: RuntimeClient,
+    client: RuntimeEventSink,
     config: dict[str, Any] | None = None,
     *,
     state: HotpatcherState | None = None,
@@ -131,7 +131,7 @@ def configure_log_capture_from_env(
     ``SD_WEBUI_ALL_IN_ONE_HOTPATCHER_LOGS=1`` 或配置中的 ``logs`` 为真时启用。
 
     Args:
-        client (RuntimeClient):
+        client (RuntimeEventSink):
             发送日志事件的运行时客户端
         config (dict[str, Any] | None):
             已加载的运行时配置
@@ -837,7 +837,7 @@ class LogCapture:
     统一管理 logging handler、stdout/stderr tee、subprocess patch 和后台发送线程。
 
     Attributes:
-        client (RuntimeClient):
+        client (RuntimeEventSink):
             发送日志事件的运行时客户端
         capture_logging (bool):
             是否采集 Python logging
@@ -860,7 +860,7 @@ class LogCapture:
     def __init__(
         self,
         *,
-        client: RuntimeClient,
+        client: RuntimeEventSink,
         capture_logging: bool,
         streams: tuple[str, ...],
         subprocess_mode: str,

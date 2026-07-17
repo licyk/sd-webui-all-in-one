@@ -1,4 +1,4 @@
-"""Bounded asynchronous client for the Rust-owned desktop runtime broker."""
+"""连接 Rust 所有桌面运行时代理的有界异步客户端。"""
 
 from __future__ import annotations
 
@@ -56,15 +56,15 @@ HEARTBEAT_RESPONSE_STATUSES = {"connected", "degraded", "reconnecting", "disconn
 
 
 class DesktopBrokerConfigurationError(ValueError):
-    """The explicit desktop broker environment is incomplete or unsafe."""
+    """显式桌面代理环境不完整或不安全。"""
 
 
 class DesktopBrokerProtocolError(RuntimeError):
-    """The broker returned a response that violates protocol version 2."""
+    """代理返回违反第二版协议的响应。"""
 
 
 class DesktopBrokerCommandError(RuntimeError):
-    """A broker command produced a stable typed failure."""
+    """代理命令产生稳定的强类型故障。"""
 
     def __init__(self, code: str, message: str):
         super().__init__(message)
@@ -72,7 +72,7 @@ class DesktopBrokerCommandError(RuntimeError):
 
 
 class DesktopBrokerHttpError(RuntimeError):
-    """An HTTP operation failed with a classified broker diagnostic."""
+    """HTTP 操作失败并带有已分类的代理诊断。"""
 
     def __init__(self, code: str, message: str, *, retryable: bool = True):
         super().__init__(message)
@@ -81,7 +81,7 @@ class DesktopBrokerHttpError(RuntimeError):
 
 
 class DesktopTransportStatus(str, Enum):
-    """Desktop transport health independent from local interception state."""
+    """独立于本地拦截状态的桌面传输健康状态。"""
 
     STARTING = "starting"
     CONNECTED = "connected"
@@ -93,7 +93,7 @@ class DesktopTransportStatus(str, Enum):
 
 @dataclass(frozen=True)
 class DesktopBrokerSettings:
-    """Validated environment supplied by the Rust launch owner."""
+    """由 Rust 启动所有者提供并经过校验的环境。"""
 
     broker_url: str
     session_id: str
@@ -103,6 +103,17 @@ class DesktopBrokerSettings:
 
     @classmethod
     def from_env(cls, environ: Mapping[str, str] | None = None) -> "DesktopBrokerSettings":
+        """从环境变量创建并校验桌面代理设置。
+
+        Args:
+            environ (Mapping[str, str] | None): 可选环境变量映射。
+
+        Returns:
+            DesktopBrokerSettings: 校验后的桌面代理设置。
+
+        Raises:
+            DesktopBrokerConfigurationError: 必需设置缺失或环境不安全时抛出。
+        """
         source = os.environ if environ is None else environ
         required = {
             BROKER_URL_ENV: source.get(BROKER_URL_ENV, ""),
@@ -150,6 +161,11 @@ class DesktopBrokerSettings:
         )
 
     def headers(self) -> dict[str, str]:
+        """构建桌面代理请求头。
+
+        Returns:
+            dict[str, str]: 身份验证与协议请求头。
+        """
         return {
             "Authorization": f"Bearer {self.session_token}",
             "X-Runtime-Protocol-Version": self.protocol_version,
@@ -160,6 +176,8 @@ class DesktopBrokerSettings:
 
 @dataclass(frozen=True)
 class OutboundRuntimeEvent:
+    """等待发送到桌面代理的运行时事件。"""
+
     sequence: int
     eventType: str
     payload: dict[str, Any]
@@ -168,6 +186,8 @@ class OutboundRuntimeEvent:
 
 @dataclass
 class DesktopTransportDiagnostic:
+    """桌面传输诊断记录。"""
+
     sequence: int
     code: str
     message: str
@@ -176,7 +196,7 @@ class DesktopTransportDiagnostic:
 
 
 class BrokerHttpRequester(Protocol):
-    """Injectable bounded HTTP boundary used by deterministic tests."""
+    """供确定性测试注入的有界 HTTP 边界。"""
 
     def request(
         self,
@@ -187,15 +207,26 @@ class BrokerHttpRequester(Protocol):
         query: dict[str, str] | None = None,
         timeout: float,
     ) -> dict[str, Any]:
-        """Issue one broker request and return its JSON object response."""
+        """发送一次代理请求并返回其 JSON 对象响应。
+
+        Args:
+            method (str): HTTP 方法。
+            path (str): 请求路径。
+            body (dict[str, Any] | None): 可选 JSON 请求体。
+            query (dict[str, str] | None): 可选查询参数。
+            timeout (float): 请求超时秒数。
+
+        Returns:
+            dict[str, Any]: JSON 对象响应。
+        """
 
 
 class _RejectRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """Reject redirects before urllib can copy session headers elsewhere."""
+    """在 urllib 将会话请求头复制到其他位置前拒绝重定向。"""
 
-    def _reject(self, request: Any, response: Any, code: int, message: str, headers: Any) -> None:
-        del request, code, message, headers
-        response.close()
+    def _reject(self, req: Any, fp: Any, code: int, msg: str, headers: Any) -> None:
+        del req, code, msg, headers
+        fp.close()
         raise DesktopBrokerHttpError(
             "redirect_rejected",
             "runtime broker redirects are not permitted by protocol version 2",
@@ -210,12 +241,11 @@ class _RejectRedirectHandler(urllib.request.HTTPRedirectHandler):
 
 
 class StandardLibraryBrokerHttp:
-    """Short-request HTTP implementation with strict response bounds."""
+    """具有严格响应边界的短请求 HTTP 实现。"""
 
     def __init__(self, settings: DesktopBrokerSettings):
         self.settings = settings
-        # Broker credentials must never follow ambient HTTP(S)_PROXY settings.
-        # The validated destination is a literal loopback address.
+        # 代理凭据绝不能跟随环境中的 HTTP(S)_PROXY 设置；校验后的目标是字面回环地址。
         self._opener = urllib.request.build_opener(
             urllib.request.ProxyHandler({}),
             _RejectRedirectHandler(),
@@ -230,6 +260,22 @@ class StandardLibraryBrokerHttp:
         query: dict[str, str] | None = None,
         timeout: float,
     ) -> dict[str, Any]:
+        """发送一次有界桌面代理 HTTP 请求。
+
+        Args:
+            method (str): HTTP 方法。
+            path (str): 请求路径。
+            body (dict[str, Any] | None): 可选 JSON 请求体。
+            query (dict[str, str] | None): 可选查询参数。
+            timeout (float): 请求超时秒数。
+
+        Returns:
+            dict[str, Any]: JSON 对象响应。
+
+        Raises:
+            DesktopBrokerHttpError: HTTP 请求被拒绝或连接失败时抛出。
+            DesktopBrokerProtocolError: 请求或响应违反协议边界时抛出。
+        """
         url = self.settings.broker_url + path
         if query:
             url += "?" + urllib.parse.urlencode(query)
@@ -277,7 +323,7 @@ class StandardLibraryBrokerHttp:
 
 
 class DesktopBrokerClient:
-    """Independent desktop transport with bounded replay and command state."""
+    """具有有界重放和命令状态的独立桌面传输。"""
 
     def __init__(
         self,
@@ -345,10 +391,26 @@ class DesktopBrokerClient:
         environ: Mapping[str, str] | None = None,
         **kwargs: Any,
     ) -> "DesktopBrokerClient":
+        """从环境变量创建桌面代理客户端。
+
+        Args:
+            environ (Mapping[str, str] | None): 可选环境变量映射。
+            **kwargs (Any): 传递给客户端构造函数的参数。
+
+        Returns:
+            DesktopBrokerClient: 尚未启动的桌面代理客户端。
+        """
         return cls(DesktopBrokerSettings.from_env(environ), **kwargs)
 
     def start(self) -> "DesktopBrokerClient":
-        """Start one daemon worker; no network operation runs on this caller."""
+        """启动一个守护工作线程，且不在调用线程执行网络操作。
+
+        Returns:
+            DesktopBrokerClient: 当前桌面代理客户端。
+
+        Raises:
+            RuntimeError: 客户端已经关闭时抛出。
+        """
 
         with self._condition:
             if self._closed:
@@ -368,7 +430,15 @@ class DesktopBrokerClient:
         return self
 
     def emit_event(self, event_type: str, payload: dict[str, Any] | None = None) -> bool:
-        """Enqueue one event without performing network I/O or waiting."""
+        """在不执行网络 I/O 或等待的情况下将事件加入队列。
+
+        Args:
+            event_type (str): 事件类型。
+            payload (dict[str, Any] | None): 事件载荷。
+
+        Returns:
+            bool: 事件成功进入队列时返回 ``True``。
+        """
 
         if not isinstance(event_type, str) or not event_type or len(event_type) > 128:
             self._record_diagnostic("event_rejected", "event type must contain 1 to 128 characters")
@@ -389,9 +459,8 @@ class DesktopBrokerClient:
                 f"event payload exceeds {MAX_EVENT_PAYLOAD_BYTES} bytes",
             )
             return False
-        # Detach the queued event from caller-owned mutable dictionaries after
-        # validating it. The background worker must see the exact snapshot
-        # that was accepted here.
+        # 校验后将队列事件与调用方持有的可变字典分离，确保后台工作线程看到此处
+        # 接受的精确快照。
         payload_snapshot = _decode_json(encoded_payload)
         broker_event_type = _broker_event_type(event_type)
         if broker_event_type != event_type:
@@ -444,15 +513,30 @@ class DesktopBrokerClient:
             return True
 
     def event(self, event_type: str, payload: dict[str, Any] | None = None) -> None:
-        """Compatibility spelling shared with the legacy RuntimeClient."""
+        """提供与旧版 RuntimeClient 一致的兼容方法名。
+
+        Args:
+            event_type (str): 事件类型。
+            payload (dict[str, Any] | None): 事件载荷。
+        """
 
         self.emit_event(event_type, payload)
 
     def set_command_handler(self, handler: RuntimeCommandHandler) -> None:
+        """设置运行时命令处理器。
+
+        Args:
+            handler (RuntimeCommandHandler): 新命令处理器。
+        """
         with self._condition:
             self._command_handler = handler
 
     def status(self) -> dict[str, Any]:
+        """返回桌面代理客户端状态。
+
+        Returns:
+            dict[str, Any]: 传输、队列、确认与诊断状态。
+        """
         with self._condition:
             return {
                 "transport": "desktop_broker",
@@ -475,7 +559,11 @@ class DesktopBrokerClient:
             }
 
     def close(self, *, flush_timeout: float | None = None) -> None:
-        """Request shutdown and wait no longer than the bounded flush deadline."""
+        """请求关闭且等待时间不超过有界刷新截止时间。
+
+        Args:
+            flush_timeout (float | None): 最终刷新超时秒数。
+        """
 
         timeout = self._final_flush_seconds if flush_timeout is None else max(0.0, flush_timeout)
         with self._condition:
@@ -550,7 +638,7 @@ class DesktopBrokerClient:
                 self._condition.wait(timeout=wait_for)
 
     def _run_cycle(self, *, flushing: bool = False) -> None:
-        """Perform one deterministic protocol cycle (also used by tests)."""
+        """执行一次确定性协议循环，测试也会调用此方法。"""
 
         with self._condition:
             connected = self._status == DesktopTransportStatus.CONNECTED

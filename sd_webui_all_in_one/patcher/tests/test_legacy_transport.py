@@ -5,6 +5,7 @@ import socket
 import threading
 import time
 from types import SimpleNamespace
+from typing import cast
 
 import pytest
 
@@ -13,7 +14,7 @@ from sd_webui_all_in_one_hotpatcher.runtime import transport as transport_module
 from sd_webui_all_in_one_hotpatcher.runtime.client import RuntimeClient
 from sd_webui_all_in_one_hotpatcher.runtime.protocol import RuntimeProtocolError, encode_message
 from sd_webui_all_in_one_hotpatcher.runtime.transport import JsonlTcpTransport
-from sd_webui_all_in_one_hotpatcher.services import ServiceControlChannel
+from sd_webui_all_in_one_hotpatcher.services import PatchService, ServiceControlChannel
 
 
 class _ScriptedReader:
@@ -554,10 +555,10 @@ def _make_channel(
         return sock
 
     monkeypatch.setattr(socket, "create_connection", create_connection)
-    client = SimpleNamespace(host="127.0.0.1", port=8123, token="secret")
+    client = cast(RuntimeClient, SimpleNamespace(host="127.0.0.1", port=8123, token="secret"))
     channel = ServiceControlChannel(
         client,
-        service or _StaticService(),
+        cast(PatchService, service or _StaticService()),
         timeout=timeout,
         connect_timeout=connect_timeout,
         response_write_timeout=response_write_timeout,
@@ -659,9 +660,9 @@ def test_services_connect_and_close_failures_have_distinct_diagnostics(monkeypat
         raise ConnectionRefusedError("scripted connect failure")
 
     monkeypatch.setattr(socket, "create_connection", fail_connection)
-    client = SimpleNamespace(host="127.0.0.1", port=8123, token="")
+    client = cast(RuntimeClient, SimpleNamespace(host="127.0.0.1", port=8123, token=""))
     with caplog.at_level(logging.WARNING), pytest.raises(ConnectionRefusedError):
-        ServiceControlChannel(client, _StaticService())
+        ServiceControlChannel(client, cast(PatchService, _StaticService()))
     assert "services control channel connect failure: scripted connect failure" in caplog.text
 
     reader = _ScriptedReader(close_error=OSError("scripted reader close failure"))
@@ -764,15 +765,15 @@ def test_legacy_runtime_and_services_remain_usable_beyond_connect_deadline():
             timeout=0.05,
             default_request_timeout=0.2,
         )
-        channel = ServiceControlChannel(client, _StaticService(), timeout=0.05).start()
+        channel = ServiceControlChannel(client, cast(PatchService, _StaticService()), timeout=0.05).start()
         try:
             assert client.transport.sock.gettimeout() is None
             assert channel.sock is not None
             assert channel.sock.gettimeout() is None
             assert host.service_open.wait(timeout=1)
 
-            # One real soak covers the historical five-second inherited socket
-            # timeout; the remaining timeout tests use deterministic fakes.
+            # 一次真实耐久测试覆盖历史遗留的五秒套接字超时；其余超时测试使用
+            # 确定性的替身。
             time.sleep(5.1)
             host.send_service_request.set()
             assert host.service_response.wait(timeout=1)

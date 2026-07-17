@@ -49,7 +49,7 @@ def _require_str(params: dict[str, Any], name: str) -> str:
 
 
 def _resolved_mirror_options(params: dict[str, Any], supported: tuple[str, ...]) -> dict[str, Any]:
-    """Apply the existing Python automatic-mirror authority to API options."""
+    """将现有 Python 自动镜像决策应用到 API 选项。"""
     options = dict(_options(params))
     automatic = bool(options.pop("automatic_mirror", False))
     if not automatic:
@@ -221,6 +221,7 @@ def snapshot_delete(params: dict[str, Any], context: ApiTaskContext) -> dict[str
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 删除结果。
@@ -273,7 +274,17 @@ def extension_versions(params: dict[str, Any]) -> dict[str, Any]:
 
 
 def extension_commits(params: dict[str, Any]) -> dict[str, Any]:
-    """List the complete Git history for one installed extension by stable name."""
+    """按稳定名称列出已安装扩展的完整 Git 历史。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 扩展提交历史。
+
+    Raises:
+        ValueError: 扩展不存在或路径不可用时抛出。
+    """
     name = _require_str(params, "name")
     extensions = _adapter(params).list_extensions(_webui_path(params)).get("extensions", [])
     extension = next((item for item in extensions if item.get("name") == name), None)
@@ -348,7 +359,17 @@ def launch_prepare(params: dict[str, Any]) -> dict[str, Any]:
 
 
 def launch_arguments_catalog(params: dict[str, Any]) -> dict[str, Any]:
-    """Discover the installed WebUI's structured launch-argument catalog."""
+    """发现已安装 WebUI 的结构化启动参数目录。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 结构化启动参数目录。
+
+    Raises:
+        ValueError: 超时参数不是数字或 WebUI 类型不受支持时抛出。
+    """
     options = _options(params)
     timeout = options.get("timeout", 15.0)
     if not isinstance(timeout, (int, float)):
@@ -402,12 +423,26 @@ def pytorch_library(params: dict[str, Any]) -> dict[str, Any]:
 
 
 def pytorch_catalog(params: dict[str, Any]) -> dict[str, Any]:
-    """Return the stable aggregate PyTorch catalog for desktop clients."""
+    """返回供桌面客户端使用的稳定 PyTorch 聚合目录。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: PyTorch 聚合目录。
+    """
     return build_pytorch_catalog(_webui_type(params), _webui_path(params))
 
 
 def pytorch_resolve_selection(params: dict[str, Any]) -> dict[str, Any]:
-    """Resolve stable PyTorch selection to a closed CLI business descriptor."""
+    """将稳定 PyTorch 选择解析为闭合的命令行业务描述。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 命令行业务描述。
+    """
     return resolve_pytorch_selection(
         _webui_type(params), _webui_path(params), _require_object(params, "selection")
     )
@@ -421,6 +456,9 @@ def system_proxy(params: dict[str, Any]) -> dict[str, Any]:
 
     Returns:
         dict[str, Any]: 系统代理信息。
+
+    Raises:
+        ValueError: 连通性测试或超时参数无效时抛出。
     """
     options = _options(params)
     test_connectivity = options.get("test_connectivity", False)
@@ -459,14 +497,31 @@ def _proxy_address(params: dict[str, Any]) -> str:
 
 
 def system_proxy_set(params: dict[str, Any]) -> dict[str, Any]:
-    """Set the proxy environment for this API server process."""
+    """设置当前 API 服务进程的代理环境。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 启用后的代理信息。
+    """
     address = _proxy_address(params)
     set_proxy(address)
     return {"enabled": True, "address": address}
 
 
 def system_proxy_clear(params: dict[str, Any]) -> dict[str, Any]:
-    """Clear the proxy environment for this API server process."""
+    """清除当前 API 服务进程的代理环境。
+
+    Args:
+        params (dict[str, Any]): API 请求参数，必须为空。
+
+    Returns:
+        dict[str, Any]: 禁用后的代理信息。
+
+    Raises:
+        ValueError: 请求参数不为空时抛出。
+    """
     if params:
         raise ValueError("system.proxy.clear accepts only an empty object")
     clean_proxy()
@@ -824,13 +879,29 @@ def model_library(params: dict[str, Any]) -> dict[str, Any]:
 
 
 def pytorch_reinstall(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
-    """Run a stable, non-interactive PyTorch reinstall task."""
+    """运行稳定的非交互式 PyTorch 重装任务。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: PyTorch 重装结果。
+    """
     selection = _require_object(params, "selection")
     return reinstall_from_catalog(_webui_type(params), _webui_path(params), selection, _options(params), context)
 
 
 def model_install_library(params: dict[str, Any], context: ApiTaskContext) -> dict[str, Any]:
-    """Install a built-in model by stable catalog identity."""
+    """按稳定目录标识安装内置模型。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 模型安装结果。
+    """
     return install_model_from_catalog(
         _webui_type(params),
         _webui_path(params),
@@ -841,7 +912,14 @@ def model_install_library(params: dict[str, Any], context: ApiTaskContext) -> di
 
 
 def model_resolve_library_install(params: dict[str, Any]) -> dict[str, Any]:
-    """Resolve stable model selection to a closed CLI business descriptor."""
+    """将稳定模型选择解析为闭合的命令行业务描述。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 命令行业务描述。
+    """
     return resolve_model_library_install(
         _webui_type(params), _require_str(params, "model_id"), _options(params)
     )
@@ -984,7 +1062,17 @@ def hotpatcher_runtime_logs(params: dict[str, Any]) -> dict[str, Any]:
 
 
 def hotpatcher_runtime_browser_events(params: dict[str, Any]) -> dict[str, Any]:
-    """Read validated browser events retained by the runtime host."""
+    """读取运行时主机保留并校验过的浏览器事件。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 浏览器事件流。
+
+    Raises:
+        ValueError: 游标或数量参数无效时抛出。
+    """
 
     options = _options(params)
     since_cursor = options.get("since_cursor", 0)
@@ -1000,7 +1088,14 @@ def hotpatcher_runtime_browser_events(params: dict[str, Any]) -> dict[str, Any]:
 
 
 def hotpatcher_runtime_ensure(params: dict[str, Any]) -> dict[str, Any]:
-    """Ensure one launch-compatible runtime host without a task channel."""
+    """确保存在无需任务通道且兼容启动流程的运行时主机。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+
+    Returns:
+        dict[str, Any]: 运行时状态与启动环境。
+    """
 
     options = _options(params)
     return HOTPATCHER_API_ADAPTER.ensure_runtime(

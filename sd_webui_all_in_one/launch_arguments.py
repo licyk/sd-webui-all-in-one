@@ -1,4 +1,4 @@
-"""Read-only discovery of launch arguments supported by installed WebUIs."""
+"""只读发现已安装 WebUI 支持的启动参数。"""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ import threading
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, TypedDict
 
 
 CATALOG_SCHEMA_VERSION = 2
@@ -24,6 +24,8 @@ MAX_DIAGNOSTIC_OUTPUT = 4096
 
 
 class LaunchArgumentValueKind(str, Enum):
+    """启动参数值类型。"""
+
     BOOLEAN = "boolean"
     VALUE = "value"
     OPTIONAL_VALUE = "optional_value"
@@ -32,6 +34,8 @@ class LaunchArgumentValueKind(str, Enum):
 
 @dataclass(frozen=True, slots=True)
 class LaunchArgumentDiagnostic:
+    """启动参数发现诊断。"""
+
     severity: str
     code: str
     message: str
@@ -40,6 +44,8 @@ class LaunchArgumentDiagnostic:
 
 @dataclass(frozen=True, slots=True)
 class LaunchArgumentDefinition:
+    """一个规范化的启动参数定义。"""
+
     name: str
     flags: list[str]
     value_kind: LaunchArgumentValueKind
@@ -58,6 +64,8 @@ class LaunchArgumentDefinition:
 
 @dataclass(frozen=True, slots=True)
 class LaunchArgumentCatalog:
+    """指定 WebUI 的启动参数目录。"""
+
     schema_version: int
     webui_type: str
     catalog_revision: str
@@ -65,12 +73,18 @@ class LaunchArgumentCatalog:
     diagnostics: list[LaunchArgumentDiagnostic] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, object]:
-        """Serialize using the stable snake_case API shape."""
+        """按稳定的蛇形命名 API 结构序列化。
+
+        Returns:
+            dict[str, object]: 可序列化的参数目录。
+        """
         return asdict(self)
 
 
 @dataclass(frozen=True, slots=True)
 class LaunchArgumentDiscoveryContext:
+    """启动参数发现上下文。"""
+
     webui_type: str
     webui_path: Path
     python_executable: Path = Path(sys.executable)
@@ -78,18 +92,39 @@ class LaunchArgumentDiscoveryContext:
 
 
 class LaunchArgumentProvider(Protocol):
+    """启动参数提供器协议。"""
+
     def provider_identity(self) -> str:
-        """Return a stable identity for the normalized provider contract."""
+        """返回规范化提供器契约的稳定标识。
+
+        Returns:
+            str: 稳定提供器标识。
+        """
 
     def get_catalog(self, context: LaunchArgumentDiscoveryContext) -> LaunchArgumentCatalog:
-        """Discover and normalize the current installed argument contract."""
+        """发现并规范化当前安装实例的参数契约。
+
+        Args:
+            context (LaunchArgumentDiscoveryContext): 参数发现上下文。
+
+        Returns:
+            LaunchArgumentCatalog: 规范化后的参数目录。
+        """
 
 
 @dataclass(frozen=True, slots=True)
 class HelpCommand:
+    """用于提取帮助文档的子进程命令。"""
+
     argv: list[str]
     source_identity: str
     env: dict[str, str] | None = None
+
+
+class _UsageFrame(TypedDict):
+    opening: str
+    flags: list[str]
+    has_pipe: bool
 
 
 _ACTIVE_PROCESSES: set[subprocess.Popen[str]] = set()
@@ -117,7 +152,7 @@ def _terminate_process(process: subprocess.Popen[str]) -> None:
 
 
 def cancel_launch_argument_discovery() -> None:
-    """Terminate every in-flight discovery child during API/process shutdown."""
+    """在 API 或进程关闭时终止所有进行中的发现子进程。"""
     with _ACTIVE_PROCESSES_LOCK:
         processes = list(_ACTIVE_PROCESSES)
     for process in processes:
@@ -226,7 +261,7 @@ def _value_shape(
 
 
 def _split_option_declaration(line: str) -> tuple[str, str] | None:
-    """Split an argparse declaration from same-line help, if present."""
+    """拆分 argparse 参数声明及同一行中的帮助文本。"""
     stripped = line.lstrip()
     if not stripped.startswith("-") or _FLAG.match(stripped) is None:
         return None
@@ -334,8 +369,8 @@ def _coalesce_definitions(
 
 
 def _usage_metadata(usage: str) -> tuple[dict[str, tuple[str, bool]], set[str]]:
-    """Scan nested usage delimiters without confusing optional metavars."""
-    stack: list[dict[str, object]] = []
+    """扫描嵌套用法分隔符，同时避免混淆可选元变量。"""
+    stack: list[_UsageFrame] = []
     groups: list[tuple[str, list[str]]] = []
     required_flags: set[str] = set()
     index = 0
@@ -384,7 +419,16 @@ def parse_argparse_help(
     *,
     hidden_flags: frozenset[str] = frozenset(),
 ) -> tuple[list[LaunchArgumentDefinition], list[LaunchArgumentDiagnostic]]:
-    """Parse the stable subset common to argparse-style help formatters."""
+    """解析 argparse 风格帮助格式共有的稳定子集。
+
+    Args:
+        help_output (str): argparse 风格的帮助文本。
+        hidden_flags (frozenset[str]): 需要标记为隐藏的参数标志。
+
+    Returns:
+        tuple[list[LaunchArgumentDefinition], list[LaunchArgumentDiagnostic]]:
+            规范化参数定义和解析诊断。
+    """
     lines = help_output.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     usage, usage_indices = _usage_block(lines)
     parsed: list[tuple[str, str, str]] = []
@@ -397,7 +441,9 @@ def parse_argparse_help(
     ]
     for section_position, start in enumerate(section_starts):
         end = section_starts[section_position + 1] if section_position + 1 < len(section_starts) else len(lines)
-        category = _category(_HEADING.match(lines[start]).group("name"))
+        heading = _HEADING.match(lines[start])
+        assert heading is not None
+        category = _category(heading.group("name"))
         candidates = [
             (index, len(lines[index]) - len(lines[index].lstrip()))
             for index in range(start + 1, end)
@@ -565,11 +611,18 @@ def _select_help_document(
 
 
 class ScriptHelpProvider:
+    """通过 WebUI 启动脚本的帮助输出发现参数。"""
+
     def __init__(self, scripts: tuple[str, ...], *, hidden_flags: frozenset[str] = frozenset()) -> None:
         self.scripts = scripts
         self.hidden_flags = hidden_flags
 
     def provider_identity(self) -> str:
+        """返回脚本提供器的稳定标识。
+
+        Returns:
+            str: 包含脚本和隐藏参数的稳定标识。
+        """
         return json.dumps(
             {
                 "provider": type(self).__name__,
@@ -581,6 +634,14 @@ class ScriptHelpProvider:
         )
 
     def help_command(self, context: LaunchArgumentDiscoveryContext) -> HelpCommand | None:
+        """构建用于提取脚本帮助文本的命令。
+
+        Args:
+            context (LaunchArgumentDiscoveryContext): 参数发现上下文。
+
+        Returns:
+            HelpCommand | None: 帮助命令；未找到脚本时返回 ``None``。
+        """
         script = next((context.webui_path / item for item in self.scripts if (context.webui_path / item).is_file()), None)
         if script is None:
             return None
@@ -597,6 +658,14 @@ class ScriptHelpProvider:
         return HelpCommand([str(context.python_executable), str(script), "--help"], ":".join(source_parts))
 
     def get_catalog(self, context: LaunchArgumentDiscoveryContext) -> LaunchArgumentCatalog:
+        """发现并规范化脚本支持的启动参数。
+
+        Args:
+            context (LaunchArgumentDiscoveryContext): 参数发现上下文。
+
+        Returns:
+            LaunchArgumentCatalog: 启动参数目录及诊断。
+        """
         command = self.help_command(context)
         if command is None:
             source_identity = "missing:" + "|".join(self.scripts)
@@ -645,10 +714,20 @@ class ScriptHelpProvider:
 
 
 class InvokeAiHelpProvider(ScriptHelpProvider):
+    """通过 InvokeAI 内部参数解析器发现启动参数。"""
+
     def __init__(self) -> None:
         super().__init__((), hidden_flags=frozenset({"--disable-auto-launch"}))
 
     def help_command(self, context: LaunchArgumentDiscoveryContext) -> HelpCommand:
+        """构建 InvokeAI 参数解析器帮助命令。
+
+        Args:
+            context (LaunchArgumentDiscoveryContext): 参数发现上下文。
+
+        Returns:
+            HelpCommand: InvokeAI 参数解析器帮助命令。
+        """
         try:
             version = importlib.metadata.version("invokeai")
         except importlib.metadata.PackageNotFoundError:
@@ -716,7 +795,20 @@ def get_launch_argument_catalog(
     python_executable: str | Path | None = None,
     timeout_seconds: float = DEFAULT_DISCOVERY_TIMEOUT_SECONDS,
 ) -> LaunchArgumentCatalog:
-    """Discover the current installed catalog without persisting user data."""
+    """在不持久化用户数据的情况下发现当前安装实例的参数目录。
+
+    Args:
+        webui_type (str): WebUI 类型。
+        webui_path (str | Path): WebUI 安装路径。
+        python_executable (str | Path | None): 用于执行帮助命令的 Python。
+        timeout_seconds (float): 帮助命令超时秒数。
+
+    Returns:
+        LaunchArgumentCatalog: 当前安装实例的启动参数目录。
+
+    Raises:
+        ValueError: WebUI 类型不受支持时抛出。
+    """
     provider = PROVIDERS.get(webui_type)
     if provider is None:
         raise ValueError(f"Unsupported webui_type: {webui_type}")

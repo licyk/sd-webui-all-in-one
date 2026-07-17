@@ -1,4 +1,4 @@
-"""Hotpatcher 管理 API adapter。"""
+"""Hotpatcher 管理 API 适配器。"""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
 
 
 class HotpatcherApiAdapter:
-    """Hotpatcher 管理 API adapter。"""
+    """Hotpatcher 管理 API 适配器。"""
 
     def __init__(self) -> None:
         self._runtime_host: HotpatcherRuntimeHost | None = None
@@ -143,7 +143,18 @@ class HotpatcherApiAdapter:
             }
 
     def runtime_browser_events(self, since_cursor: int = 0, limit: int = 100) -> dict[str, Any]:
-        """Read the dedicated typed browser-event stream."""
+        """读取独立的强类型浏览器事件流。
+
+        Args:
+            since_cursor (int): 起始游标。
+            limit (int): 最多返回的事件数量。
+
+        Returns:
+            dict[str, Any]: 浏览器事件流及下一游标。
+
+        Raises:
+            ValueError: 游标或数量范围无效时抛出。
+        """
 
         if isinstance(since_cursor, bool) or not isinstance(since_cursor, int) or not 0 <= since_cursor <= 2**63 - 1:
             raise ValueError("since_cursor must be an integer between 0 and 2^63-1")
@@ -166,6 +177,7 @@ class HotpatcherApiAdapter:
 
         Args:
             limit (int | None): 最多返回的日志数量。
+            since_cursor (int): 起始游标。
 
         Returns:
             dict[str, Any]: runtime host 日志列表。
@@ -199,7 +211,20 @@ class HotpatcherApiAdapter:
             return self.runtime_status()
 
     def ensure_runtime(self, host: str = DEFAULT_RUNTIME_HOST, port: int = 0, token: str = "", config: dict[str, Any] | None = None) -> dict[str, Any]:
-        """Start or reuse one runtime host and return its private bootstrap env."""
+        """启动或复用运行时主机并返回其专用启动环境。
+
+        Args:
+            host (str): 运行时主机监听地址。
+            port (int): 运行时主机监听端口，零表示自动分配。
+            token (str): 运行时连接令牌。
+            config (dict[str, Any] | None): 提供给运行时的配置。
+
+        Returns:
+            dict[str, Any]: 运行时状态及专用环境变量。
+
+        Raises:
+            ValueError: 主机不是回环地址或端口无效时抛出。
+        """
 
         try:
             address = ipaddress.ip_address(host)

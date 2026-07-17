@@ -274,7 +274,10 @@ def test_webbrowser_future_import_and_fresh_passthrough(monkeypatch):
     browser.patch_webbrowser(client, state=state)
 
     module = SimpleNamespace()
-    original = lambda *_args, **_kwargs: False
+
+    def original(*_args, **_kwargs):
+        return False
+
     module.open = registered["hook"](original, module)
     assert registered["module"] == "webbrowser"
     assert registered["function"] == "open"
@@ -1190,6 +1193,7 @@ def test_bootstrap_installs_log_capture_from_env(monkeypatch):
 
         assert host.wait_for(lambda message: message.get("type") == "log.record" and message["payload"]["message"] == "from bootstrap")
         uninstall_log_capture()
+        assert state.runtime_client is not None
         state.runtime_client.close()
 
 
@@ -1230,4 +1234,5 @@ def test_bootstrap_installs_error_capture_from_config(monkeypatch):
             assert calls and calls[0][1] is captured_exc
         finally:
             uninstall_error_capture()
+            assert state.runtime_client is not None
             state.runtime_client.close()

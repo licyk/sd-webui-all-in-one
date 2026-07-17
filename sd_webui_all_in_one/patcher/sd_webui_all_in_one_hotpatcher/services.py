@@ -10,10 +10,11 @@ import math
 import socket
 import threading
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from .hook import install_import_hook, is_import_hook_installed, monkey_zoo
 from .runtime.client import RuntimeClient
+from .runtime.interfaces import RuntimeEventSink
 from .runtime.errors import (
     DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES,
     install_error_capture,
@@ -436,8 +437,8 @@ class ServiceControlChannel:
             提供 host、port、token 信息的运行时客户端
         service (PatchService):
             处理 services 请求的服务对象
-        sock (socket.socket):
-            独立控制通道 socket
+        sock (socket.socket | None):
+            独立控制通道套接字；尚未连接或连接失败时为 ``None``。
         closed (bool):
             控制通道是否已关闭
     """
@@ -465,7 +466,11 @@ class ServiceControlChannel:
                 TCP 连接建立超时。为 None 时使用 ``timeout``。
             response_write_timeout (float | None):
                 ``channel.open`` 和单次响应的写入超时。为 None 时使用
-                ``timeout``。idle read 始终保持 blocking。
+                ``timeout``。空闲读取始终保持阻塞。
+
+        Raises:
+            Exception:
+                建立控制通道或创建读取器失败时重新抛出原异常。
         """
 
         self.client = client
@@ -486,8 +491,7 @@ class ServiceControlChannel:
         try:
             sock = socket.create_connection((client.host, client.port), timeout=self.connect_timeout)
             self.sock = sock
-            # The timeout is a connect-establishment deadline, not an idle
-            # policy for this long-lived command channel.
+            # 此超时是建连截止时间，不是长连接命令通道的空闲策略。
             sock.settimeout(None)
             self.reader = sock.makefile("rb")
         except Exception as exc:
@@ -520,6 +524,10 @@ class ServiceControlChannel:
         Returns:
             ServiceControlChannel:
                 当前控制通道对象
+
+        Raises:
+            Exception:
+                发送通道握手或启动后台线程失败时重新抛出原异常。
         """
 
         try:
@@ -626,7 +634,7 @@ class ServiceControlChannel:
             self.close()
 
     def _send_error_response(self, response: dict[str, Any]) -> bool:
-        """Send a recoverable decode/handler error while the socket is healthy."""
+        """在套接字健康时发送可恢复的解码或处理器错误。"""
 
         if self.closed:
             return False
@@ -639,7 +647,7 @@ class ServiceControlChannel:
             return False
 
     def _terminate(self, stage: str, error: BaseException | str) -> None:
-        """Record the first terminal failure and close the channel."""
+        """记录第一个终止故障并关闭通道。"""
 
         self._set_terminal_failure(stage, error)
         self.close()
@@ -678,9 +686,8 @@ class ServiceControlChannel:
                 except Exception as restore_exc:
                     if operation_error is None:
                         raise
-                    # The caller will terminal-close this channel for the
-                    # primary write failure. Keep restoration diagnostics
-                    # without replacing that original exception.
+                    # 调用方会因主要写入故障终止并关闭通道。保留恢复诊断，
+                    # 但不覆盖原始异常。
                     self._record_diagnostic("close", restore_exc)
 
 
@@ -749,7 +756,7 @@ class PatchService:
         self,
         raw: str | dict[str, Any],
         *,
-        runtime_client: RuntimeClient | None = None,
+        runtime_client: RuntimeEventSink | None = None,
     ) -> dict[str, Any]:
         """
         处理 services JSON 请求
@@ -757,7 +764,7 @@ class PatchService:
         Args:
             raw (str | dict[str, Any]):
                 JSON 字符串或请求对象
-            runtime_client (RuntimeClient | None):
+            runtime_client (RuntimeEventSink | None):
                 可选运行时客户端
 
         Returns:
@@ -942,7 +949,7 @@ def save_config_file(path: str | Path, config: dict[str, Any]) -> None:
 def apply_config(
     config: dict[str, Any],
     *,
-    runtime_client: RuntimeClient | None = None,
+    runtime_client: RuntimeEventSink | None = None,
     state: HotpatcherState | None = None,
 ) -> dict[str, Any]:
     """
@@ -951,7 +958,7 @@ def apply_config(
     Args:
         config (dict[str, Any]):
             用户配置或完整配置
-        runtime_client (RuntimeClient | None):
+        runtime_client (RuntimeEventSink | None):
             可选运行时客户端, 用于启用日志采集
         state (HotpatcherState | None):
             可选状态对象。为 None 时使用默认状态。
@@ -976,7 +983,7 @@ def apply_config(
 def handle_request_json(
     raw: str | dict[str, Any],
     *,
-    runtime_client: RuntimeClient | None = None,
+    runtime_client: RuntimeEventSink | None = None,
     state: HotpatcherState | None = None,
 ) -> dict[str, Any]:
     """
@@ -985,7 +992,7 @@ def handle_request_json(
     Args:
         raw (str | dict[str, Any]):
             JSON 字符串或请求对象
-        runtime_client (RuntimeClient | None):
+        runtime_client (RuntimeEventSink | None):
             可选运行时客户端
         state (HotpatcherState | None):
             可选状态对象。为 None 时使用默认状态。
@@ -1081,18 +1088,18 @@ def _apply_core_config(config: dict[str, Any], result: dict[str, Any], state: Ho
 def _apply_runtime_config(
     config: dict[str, Any],
     result: dict[str, Any],
-    runtime_client: RuntimeClient | None,
+    runtime_client: RuntimeEventSink | None,
     state: HotpatcherState,
 ) -> None:
     runtime = _section(config, "runtime")
     browser = _section(runtime, "browser")
-    from .runtime.browser import is_webbrowser_patch_registered, patch_webbrowser
+    from .runtime.browser import BrowserMode, is_webbrowser_patch_registered, patch_webbrowser
 
     if browser.get("enabled"):
-        mode = str(browser.get("mode", "host"))
+        mode = cast(BrowserMode, str(browser.get("mode", "host")))
         _apply_step(
             "runtime.browser",
-            lambda: patch_webbrowser(runtime_client, mode=mode, state=state),  # type: ignore[arg-type]
+            lambda: patch_webbrowser(runtime_client, mode=mode, state=state),
             result,
         )
         if mode == "host" and runtime_client is None:

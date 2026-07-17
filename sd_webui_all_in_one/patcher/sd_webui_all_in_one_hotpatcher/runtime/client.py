@@ -208,7 +208,15 @@ class RuntimeClient:
         self.emit_event(message_type, payload)
 
     def emit_event(self, message_type: str, payload: dict[str, Any] | None = None) -> bool:
-        """Implement the transport-neutral best-effort event sink boundary."""
+        """实现与传输无关的尽力发送事件边界。
+
+        Args:
+            message_type (str): 事件类型。
+            payload (dict[str, Any] | None): 事件载荷。
+
+        Returns:
+            bool: 事件发送成功时返回 ``True``。
+        """
 
         try:
             self.transport.event(message_type, payload)
@@ -218,12 +226,20 @@ class RuntimeClient:
             return False
 
     def start(self) -> "RuntimeClient":
-        """Legacy connections are already started by :meth:`connect`."""
+        """返回已由 :meth:`connect` 启动的旧版连接。
+
+        Returns:
+            RuntimeClient: 当前运行时客户端。
+        """
 
         return self
 
     def status(self) -> dict[str, Any]:
-        """Return a minimal lifecycle snapshot without changing legacy APIs."""
+        """在不改变旧版 API 的情况下返回最小生命周期快照。
+
+        Returns:
+            dict[str, Any]: 传输状态、宿主和端口信息。
+        """
 
         return {
             "transport": "legacy",

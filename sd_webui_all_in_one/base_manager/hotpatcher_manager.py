@@ -454,7 +454,7 @@ class RuntimeMessage:
 
 @dataclass(slots=True)
 class RuntimeBrowserEvent:
-    """Validated browser request retained by the runtime host."""
+    """运行时主机保留的已校验浏览器请求。"""
 
     sequence: int
     url: str
@@ -711,7 +711,11 @@ class HotpatcherRuntimeHost:
 
     @property
     def browser_next_cursor(self) -> int:
-        """Return the next monotonic browser sequence for launch baselining."""
+        """返回用于启动基线的下一个单调递增浏览器序号。
+
+        Returns:
+            int: 下一个浏览器事件游标。
+        """
 
         with self._lock:
             return self._next_browser_sequence
@@ -966,7 +970,15 @@ class HotpatcherRuntimeHost:
                 del self.browser_events[:overflow]
 
     def read_browser_events(self, since_cursor: int = 0, limit: int = 100) -> dict[str, Any]:
-        """Read a bounded monotonic slice of validated browser events."""
+        """读取已校验浏览器事件的有界单调切片。
+
+        Args:
+            since_cursor (int): 起始游标。
+            limit (int): 最多返回的事件数量。
+
+        Returns:
+            dict[str, Any]: 浏览器事件切片及游标信息。
+        """
 
         bounded_limit = max(1, min(int(limit), 200))
         requested = max(0, int(since_cursor))
@@ -1011,7 +1023,15 @@ class HotpatcherRuntimeHost:
             self.on_log(entry)
 
     def read_logs(self, since_cursor: int = 0, limit: int = 200) -> dict[str, Any]:
-        """Read a bounded monotonic slice of retained runtime logs."""
+        """读取已保留运行时日志的有界单调切片。
+
+        Args:
+            since_cursor (int): 起始游标。
+            limit (int): 最多返回的日志数量。
+
+        Returns:
+            dict[str, Any]: 运行时日志切片及游标信息。
+        """
 
         bounded_limit = max(1, min(int(limit), 1000))
         requested = max(0, int(since_cursor))

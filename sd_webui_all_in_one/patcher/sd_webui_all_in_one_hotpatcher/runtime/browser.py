@@ -1,4 +1,4 @@
-"""Host-controlled standard-library browser interception."""
+"""由宿主控制的标准库浏览器拦截。"""
 
 from __future__ import annotations
 
@@ -17,12 +17,17 @@ _BROWSER_MODES = {"host", "suppress", "passthrough"}
 
 
 class ManagedBrowser:
-    """Send browser requests to the runtime host."""
+    """向运行时主机发送浏览器请求。"""
 
     def __init__(self, client: RuntimeEventSink | Any):
         self.client = client
 
     def open(self, url: str) -> None:
+        """请求运行时主机打开网址。
+
+        Args:
+            url (str): 要打开的网址。
+        """
         emit_runtime_event(self.client, "browser.open", {"url": url})
 
 
@@ -32,13 +37,19 @@ def patch_webbrowser(
     mode: BrowserMode = "host",
     state: HotpatcherState | None = None,
 ) -> None:
-    """Configure interception of :mod:`webbrowser` module-level opens.
+    """配置对 :mod:`webbrowser` 模块级打开函数的拦截。
 
-    ``host`` and ``suppress`` install one idempotent wrapper. ``host`` emits a
-    single event when a client is available; both modes always report success
-    without opening an operating-system browser. ``passthrough`` leaves an
-    unpatched process untouched and makes an existing wrapper delegate to the
-    original function.
+    ``host`` 和 ``suppress`` 会安装一个幂等包装器；``host`` 在客户端可用时
+    发送一次事件，两种模式都会在不打开系统浏览器的情况下报告成功。
+    ``passthrough`` 不修改尚未打补丁的进程，并让已有包装器调用原函数。
+
+    Args:
+        client (RuntimeEventSink | ManagedBrowser | Any | None): 运行时事件客户端。
+        mode (BrowserMode): 浏览器打开处理模式。
+        state (HotpatcherState | None): 可选热补丁状态。
+
+    Raises:
+        ValueError: 浏览器处理模式无效时抛出。
     """
 
     if mode not in _BROWSER_MODES:
@@ -80,7 +91,7 @@ def patch_webbrowser(
                         del active_state.browser_diagnostics[:-100]
             return True
 
-        wrapper.__sd_webui_aio_browser_state__ = active_state  # type: ignore[attr-defined]
+        setattr(wrapper, "__sd_webui_aio_browser_state__", active_state)
         return wrapper
 
     if not active_state.browser_patch_registered:
@@ -89,17 +100,31 @@ def patch_webbrowser(
 
     module = sys.modules.get("webbrowser")
     if module is not None and hasattr(module, "open"):
-        module.open = hook_open(module.open, module)  # type: ignore[attr-defined]
+        setattr(module, "open", hook_open(getattr(module, "open"), module))
 
 
 def is_webbrowser_patch_registered(*, state: HotpatcherState | None = None) -> bool:
-    """Return whether this process has installed the browser wrapper."""
+    """判断当前进程是否已安装浏览器包装器。
+
+    Args:
+        state (HotpatcherState | None): 可选热补丁状态。
+
+    Returns:
+        bool: 已安装浏览器包装器时返回 ``True``。
+    """
 
     return (state or get_default_state()).browser_patch_registered
 
 
 def is_webbrowser_patch_active(*, state: HotpatcherState | None = None) -> bool:
-    """Return whether the installed wrapper currently suppresses browser opens."""
+    """判断已安装的包装器当前是否抑制浏览器打开。
+
+    Args:
+        state (HotpatcherState | None): 可选热补丁状态。
+
+    Returns:
+        bool: 当前正在抑制浏览器打开时返回 ``True``。
+    """
 
     active_state = state or get_default_state()
     return active_state.browser_patch_registered and active_state.browser_patch_mode in {

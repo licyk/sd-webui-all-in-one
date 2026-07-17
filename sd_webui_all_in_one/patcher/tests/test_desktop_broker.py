@@ -3,6 +3,7 @@ import http.server
 import threading
 import time
 import types
+from typing import cast
 
 import pytest
 
@@ -80,13 +81,16 @@ class ScriptedRequester:
                 "acknowledgedDiagnosticSequence": self.acknowledged_diagnostic_sequence,
             }
         if path == "/v1/runtime/events":
+            assert body is not None
             events = body["events"]
             return {"acknowledgedSequence": events[-1]["sequence"]}
         if path == "/v1/runtime/commands":
             return {"commands": []}
         if path == "/v1/runtime/results":
+            assert body is not None
             return {"acceptedCommandIds": [item["commandId"] for item in body["results"]]}
         if path == "/v1/runtime/heartbeat":
+            assert body is not None
             diagnostics = body["diagnostics"]
             start = body["diagnosticsStartSequence"]
             if body["diagnosticsTruncated"] and start > self.acknowledged_diagnostic_sequence + 1:
@@ -156,8 +160,8 @@ class _ProtocolHandler(http.server.BaseHTTPRequestHandler):
         self._record()
         self._respond({"commands": []})
 
-    def log_message(self, _format, *_args):
-        return
+    def log_message(self, format, *args):
+        del format, args
 
 
 class _RedirectTargetHandler(http.server.BaseHTTPRequestHandler):
@@ -170,8 +174,8 @@ class _RedirectTargetHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"{}")
 
-    def log_message(self, _format, *_args):
-        return
+    def log_message(self, format, *args):
+        del format, args
 
 
 class _RedirectingBrokerHandler(http.server.BaseHTTPRequestHandler):
@@ -185,8 +189,8 @@ class _RedirectingBrokerHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Length", "0")
         self.end_headers()
 
-    def log_message(self, _format, *_args):
-        return
+    def log_message(self, format, *args):
+        del format, args
 
 
 def test_standard_library_http_uses_exact_protocol_and_ignores_proxy(monkeypatch):
@@ -865,7 +869,7 @@ def test_config_apply_command_uses_existing_service_with_selected_sink(monkeypat
     from sd_webui_all_in_one_hotpatcher import services
 
     state = HotpatcherState()
-    sink = object()
+    sink = cast(DesktopBrokerClient, object())
     state.bootstrap_runtime_client = sink
     calls = []
     monkeypatch.setattr(

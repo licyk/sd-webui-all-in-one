@@ -1,4 +1,4 @@
-"""Stable PyTorch and built-in model-library API operations."""
+"""稳定的 PyTorch 与内置模型库 API 操作。"""
 
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ from sd_webui_all_in_one.env_check import check_torch_version_status
 from sd_webui_all_in_one.model_downloader import SupportedWebUiType, export_model_list
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_CATEGORY_LIST,
+    PyTorchVersionInfo,
     auto_detect_available_pytorch_type,
     auto_detect_pytorch_device_category,
     export_pytorch_list,
@@ -84,7 +85,7 @@ def _unique(items: list[dict[str, Any]], kind: str) -> list[dict[str, Any]]:
     return items
 
 
-def _pytorch_item(webui_type: str, raw: dict[str, Any], recommended_id: str | None) -> dict[str, Any]:
+def _pytorch_item(webui_type: str, raw: PyTorchVersionInfo, recommended_id: str | None) -> dict[str, Any]:
     item_id = _stable_id(
         "pytorch-combination",
         webui_type,
@@ -108,7 +109,15 @@ def _pytorch_item(webui_type: str, raw: dict[str, Any], recommended_id: str | No
 
 
 def pytorch_catalog(webui_type: str, _webui_path: Path) -> dict[str, Any]:
-    """Build the complete GUI-oriented PyTorch catalog."""
+    """构建面向图形界面的完整 PyTorch 目录。
+
+    Args:
+        webui_type (str): WebUI 类型。
+        _webui_path (Path): WebUI 路径，当前仅为统一接口保留。
+
+    Returns:
+        dict[str, Any]: PyTorch 环境、自动选择结果与可用组合。
+    """
     versions = _package_versions()
     try:
         compatibility = check_torch_version_status()
@@ -185,8 +194,22 @@ def reinstall_from_catalog(
     options: dict[str, Any],
     context: ApiTaskContext,
 ) -> dict[str, Any]:
-    """Resolve and execute a non-interactive PyTorch reinstall."""
-    del webui_path  # The current family functions mutate the active standalone environment.
+    """解析并执行非交互式 PyTorch 重装。
+
+    Args:
+        webui_type (str): WebUI 类型。
+        webui_path (Path): WebUI 路径，当前仅为统一接口保留。
+        selection (dict[str, Any]): 自动或手动选择信息。
+        options (dict[str, Any]): 重装选项。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 重装选择、版本变化与验证结果。
+
+    Raises:
+        ValueError: 选择模式、目标或选项无效时抛出。
+    """
+    del webui_path  # 当前系列函数直接修改活动的独立环境。
     context.check_canceled()
     previous = _package_versions()
     context.log("Inspecting hardware and refreshing the PyTorch catalog")
@@ -221,7 +244,7 @@ def reinstall_from_catalog(
         if force_reinstall:
             raise ValueError("force_reinstall is not supported by InvokeAI")
         invokeai_base.reinstall_invokeai_pytorch(
-            device_type=cast(Any, item["device_category"]),
+            device_type=item["device_category"],
             use_pypi_mirror=use_pypi_mirror,
             use_uv=use_uv,
             interactive_mode=False,
@@ -258,7 +281,19 @@ def resolve_pytorch_selection(
     webui_path: Path,
     selection: dict[str, Any],
 ) -> dict[str, Any]:
-    """Resolve stable PyTorch intent without starting any mutation."""
+    """在不执行修改的情况下解析稳定的 PyTorch 操作意图。
+
+    Args:
+        webui_type (str): WebUI 类型。
+        webui_path (Path): WebUI 路径。
+        selection (dict[str, Any]): 自动或手动选择信息。
+
+    Returns:
+        dict[str, Any]: 可供命令行执行的闭合业务描述。
+
+    Raises:
+        ValueError: WebUI 类型或选择信息无效时抛出。
+    """
     if webui_type not in PYTORCH_CLI_PATHS:
         raise ValueError(f"Unsupported PyTorch webui_type: {webui_type}")
     catalog = pytorch_catalog(webui_type, webui_path)
@@ -302,7 +337,17 @@ def resolve_pytorch_selection(
 
 
 def model_library_catalog(webui_type: str) -> dict[str, Any]:
-    """Export public model metadata without URLs or destination paths."""
+    """导出模型库公共元数据。
+
+    Args:
+        webui_type (str): WebUI 类型。
+
+    Returns:
+        dict[str, Any]: 不暴露内部目标路径的模型目录。
+
+    Raises:
+        ValueError: WebUI 类型不支持内置模型库时抛出。
+    """
     if webui_type not in MODEL_INSTALLERS:
         raise ValueError(f"Unsupported model library webui_type: {webui_type}")
     raw_items = export_model_list(cast(SupportedWebUiType, webui_type))
@@ -326,7 +371,7 @@ def model_library_catalog(webui_type: str) -> dict[str, Any]:
                 "installable": installable,
                 "non_installable_reason": None if installable else "No source or destination is configured for this family",
                 "details": {"filename": raw["filename"]},
-                # Backward-compatible fields remain available to existing Python API callers.
+                # 为现有 Python API 调用方保留向后兼容字段。
                 "filename": raw["filename"],
                 "url": dict(raw["url"]),
                 "supported_webui": list(raw["supported_webui"]),
@@ -343,7 +388,21 @@ def install_model_from_catalog(
     options: dict[str, Any],
     context: ApiTaskContext,
 ) -> dict[str, Any]:
-    """Resolve a stable model ID and dispatch to the existing family installer."""
+    """解析稳定模型标识并调用对应系列的安装器。
+
+    Args:
+        webui_type (str): WebUI 类型。
+        webui_path (Path): WebUI 路径。
+        model_id (str): 稳定模型标识。
+        options (dict[str, Any]): 下载来源与下载器选项。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 模型安装结果。
+
+    Raises:
+        ValueError: 模型、来源或下载器无效时抛出。
+    """
     context.check_canceled()
     catalog = model_library_catalog(webui_type)
     matches = [item for item in catalog["models"] if item["id"] == model_id]
@@ -395,7 +454,19 @@ def resolve_model_library_install(
     model_id: str,
     options: dict[str, Any],
 ) -> dict[str, Any]:
-    """Resolve stable model intent without downloading or registering files."""
+    """在不下载或注册文件的情况下解析稳定模型操作意图。
+
+    Args:
+        webui_type (str): WebUI 类型。
+        model_id (str): 稳定模型标识。
+        options (dict[str, Any]): 下载来源与下载器选项。
+
+    Returns:
+        dict[str, Any]: 可供命令行执行的闭合业务描述。
+
+    Raises:
+        ValueError: 模型、来源或下载器无效时抛出。
+    """
     if webui_type not in MODEL_CLI_PATHS:
         raise ValueError(f"Unsupported model library webui_type: {webui_type}")
     catalog = model_library_catalog(webui_type)

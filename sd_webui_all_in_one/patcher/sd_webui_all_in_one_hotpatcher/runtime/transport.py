@@ -6,7 +6,7 @@ import math
 import socket
 import threading
 import time
-from typing import Any
+from typing import Any, Literal, Protocol
 
 from .protocol import (
     RuntimeProtocolError,
@@ -25,8 +25,51 @@ DEFAULT_EVENT_WRITE_TIMEOUT = 5.0
 READ_CHUNK_BYTES = 64 * 1024
 
 
+class SocketLike(Protocol):
+    """JSONL 传输所需的套接字操作。"""
+
+    def settimeout(self, value: float | None) -> None:
+        """设置套接字操作超时。
+
+        Args:
+            value (float | None): 超时秒数；``None`` 表示阻塞模式。
+        """
+        ...
+
+    def gettimeout(self) -> float | None:
+        """获取套接字操作超时。
+
+        Returns:
+            float | None: 超时秒数或阻塞模式的 ``None``。
+        """
+        ...
+
+    def makefile(self, mode: Literal["rb"]) -> Any:
+        """创建套接字二进制读取器。
+
+        Args:
+            mode (Literal["rb"]): 文件模式，固定为二进制读取。
+
+        Returns:
+            Any: 套接字二进制读取器。
+        """
+        ...
+
+    def sendall(self, data: bytes) -> None:
+        """发送全部字节。
+
+        Args:
+            data (bytes): 待发送的数据。
+        """
+        ...
+
+    def close(self) -> None:
+        """关闭套接字。"""
+        ...
+
+
 def _finite_timeout(name: str, value: float) -> float:
-    """Return a positive finite socket operation timeout."""
+    """返回正数且有限的套接字操作超时。"""
 
     timeout = float(value)
     if not math.isfinite(timeout) or timeout <= 0:
@@ -38,7 +81,7 @@ class JsonlTcpTransport:
     """
     同步 TCP JSONL 传输对象
 
-    负责 socket 读写、hello 握手、请求响应匹配和 best-effort 事件发送。
+    负责套接字读写、hello 握手、请求响应匹配和尽力发送事件。
 
     Attributes:
         sock (socket.socket):
@@ -55,7 +98,7 @@ class JsonlTcpTransport:
 
     def __init__(
         self,
-        sock: socket.socket,
+        sock: socket.socket | SocketLike,
         *,
         host: str,
         port: int,
@@ -77,9 +120,8 @@ class JsonlTcpTransport:
         self._reader = sock.makefile("rb")
         self._read_buffer = bytearray()
         self._write_lock = threading.Lock()
-        # The socket timeout is process-object state. Hold this reentrant lock
-        # for the complete request timeout scope and for every standalone send
-        # so an event cannot inherit a temporary request deadline.
+        # 套接字超时属于进程对象状态。完整请求超时范围和每次独立发送都持有
+        # 此可重入锁，避免事件继承临时请求截止时间。
         self._request_lock = threading.RLock()
         self._close_lock = threading.Lock()
         self.closed = False
@@ -121,6 +163,10 @@ class JsonlTcpTransport:
         Returns:
             JsonlTcpTransport:
                 已完成握手发送的传输对象
+
+        Raises:
+            Exception:
+                建立连接、创建传输或发送握手失败时重新抛出原异常。
         """
 
         compatibility_timeout = _finite_timeout("timeout", timeout)
@@ -131,9 +177,8 @@ class JsonlTcpTransport:
         sock = socket.create_connection((host, port), timeout=resolved_connect_timeout)
         transport: JsonlTcpTransport | None = None
         try:
-            # ``create_connection`` leaves its establishment deadline on the
-            # socket. Runtime connections are blocking while idle; each
-            # request or write applies its own bounded operation deadline.
+            # ``create_connection`` 会在套接字上保留建连截止时间。运行时连接在
+            # 空闲时采用阻塞模式，每个请求或写入操作单独应用有界截止时间。
             sock.settimeout(None)
             transport = cls(
                 sock,
@@ -144,9 +189,8 @@ class JsonlTcpTransport:
                 default_request_timeout=resolved_request_timeout,
                 event_write_timeout=resolved_event_timeout,
             )
-            # The initial hello is a write operation, not part of TCP
-            # establishment.  It uses the same bounded policy as other raw
-            # best-effort writes while idle mode remains blocking.
+            # 初始 hello 属于写入操作，而不是 TCP 建连的一部分。它与其他原始
+            # 尽力写入使用相同的有界策略，同时保持空闲模式为阻塞模式。
             transport.send_raw(hello_message(token, features))
             return transport
         except Exception:
@@ -221,6 +265,12 @@ class JsonlTcpTransport:
                 响应格式非法
             RuntimeRequestError:
                 宿主返回失败响应
+            TimeoutError:
+                请求写入或读取超时时抛出。
+            Exception:
+                恢复套接字状态失败且没有其他活动异常时抛出。
+            BaseException:
+                请求期间发生无法进一步收窄的基础异常时重新抛出。
         """
 
         message = request_message(message_type, payload)
@@ -235,23 +285,19 @@ class JsonlTcpTransport:
             request_error: BaseException | None = None
             deadline = time.monotonic() + operation_timeout
             try:
-                # CPython's sendall timeout is a total write budget. The
-                # monotonic deadline then carries the unused portion into all
-                # response reads, including frames for other request IDs.
+                # CPython 的 sendall 超时是总写入预算。单调截止时间会把未使用
+                # 的预算带入所有响应读取，包括属于其他请求标识的帧。
                 self.sock.settimeout(operation_timeout)
-                # One deadline covers both the complete request write and the
-                # response read.  Do not call ``send_raw`` here because its
-                # standalone write policy is intentionally separate.
+                # 一个截止时间同时覆盖完整请求写入和响应读取。此处不调用
+                # ``send_raw``，因为它有意采用独立的写入策略。
                 self._send_bytes_locked(encode_message(message))
                 while True:
                     try:
                         line = self._readline_before_deadline_locked(deadline)
                     except (TimeoutError, socket.timeout):
-                        # A buffered socket reader cannot be used reliably
-                        # after a timeout (CPython reports "cannot read from
-                        # timed out object" on subsequent reads).  The stream
-                        # may also be positioned in the middle of a JSON line,
-                        # so recreating the file object is not protocol-safe.
+                        # 缓冲套接字读取器在超时后无法可靠复用（CPython 后续读取
+                        # 会报告无法从已超时对象读取）。流也可能停在 JSON 行中间，
+                        # 因此重新创建文件对象不符合协议安全要求。
                         transport_timed_out = True
                         raise
                     if not line:
@@ -273,8 +319,8 @@ class JsonlTcpTransport:
                         error,
                     )
             except (TimeoutError, socket.timeout) as exc:
-                # A timed-out write may be partial too, so either read or write
-                # timeout makes the JSONL stream unsafe for another request.
+                # 超时写入也可能只完成一部分，因此读写任一超时都会使 JSONL 流
+                # 无法安全处理下一个请求。
                 transport_timed_out = True
                 request_error = exc
                 raise
@@ -285,9 +331,8 @@ class JsonlTcpTransport:
                 try:
                     self.sock.settimeout(old_timeout)
                 except Exception:
-                    # Failure to restore the prior mode also makes this
-                    # connection unsuitable for reuse.  Preserve an active
-                    # request error instead of masking it with cleanup.
+                    # 无法恢复先前模式也会使连接不适合复用。保留活动请求异常，
+                    # 避免清理异常将其覆盖。
                     self._invalidate()
                     if request_error is None:
                         raise
@@ -295,7 +340,7 @@ class JsonlTcpTransport:
                     self._invalidate()
 
     def _readline_before_deadline_locked(self, deadline: float) -> bytes:
-        """Read one JSONL frame without letting partial input renew the deadline."""
+        """读取一个 JSONL 帧且不允许部分输入延长截止时间。"""
 
         while True:
             remaining = deadline - time.monotonic()
@@ -311,23 +356,22 @@ class JsonlTcpTransport:
             self.sock.settimeout(remaining)
             read1 = getattr(self._reader, "read1", None)
             if read1 is not None:
-                # BufferedReader.read1() performs at most one raw read. This
-                # lets the loop recompute the absolute budget after every
-                # partial chunk instead of granting readline() a fresh socket
-                # inactivity timeout for each internal recv().
+                # BufferedReader.read1() 最多执行一次原始读取，使循环可在每个
+                # 部分数据块后重新计算绝对预算，而不是让 readline() 为每次内部
+                # recv() 重新获得套接字空闲超时。
                 chunk = read1(READ_CHUNK_BYTES)
             else:
-                # Deterministic legacy socket fakes expose only readline(). A
-                # real socket.makefile("rb") reader is a BufferedReader and
-                # therefore always follows the deadline-aware read1 path.
+                # 确定性的旧版套接字替身只公开 readline()。真实的
+                # socket.makefile("rb") 读取器是 BufferedReader，因此始终走
+                # 感知截止时间的 read1 路径。
                 chunk = self._reader.readline()
 
             if chunk:
                 self._read_buffer.extend(chunk)
                 continue
 
-            # EOF may arrive exactly as the operation budget expires. Preserve
-            # deadline precedence instead of returning late buffered data.
+            # EOF 可能恰好在操作预算耗尽时到达。优先遵守截止时间，不返回迟到的
+            # 缓冲数据。
             if deadline - time.monotonic() <= 0:
                 raise socket.timeout("Runtime request timed out")
             if self._read_buffer:
@@ -337,7 +381,7 @@ class JsonlTcpTransport:
             return b""
 
     def _send_raw_locked(self, data: bytes, timeout: float) -> None:
-        """Send one raw frame with a temporary deadline under the operation lock."""
+        """在操作锁内使用临时截止时间发送一个原始帧。"""
 
         if self.closed:
             raise RuntimeTransportError("Transport is closed")
@@ -362,12 +406,11 @@ class JsonlTcpTransport:
                 if operation_error is None:
                     raise
             if transport_timed_out:
-                # A timed-out send may have placed only part of the JSONL
-                # frame on the wire, so the stream cannot be reused.
+                # 超时发送可能只把部分 JSONL 帧写入线路，因此该流不能复用。
                 self._invalidate()
 
     def _send_bytes_locked(self, data: bytes) -> None:
-        """Write encoded bytes while the caller owns the complete operation lock."""
+        """在调用方持有完整操作锁时写入编码后的字节。"""
 
         if self.closed:
             raise RuntimeTransportError("Transport is closed")
@@ -375,13 +418,12 @@ class JsonlTcpTransport:
             self.sock.sendall(data)
 
     def _invalidate(self) -> None:
-        """Mark the transport unusable and close poisoned stream state."""
+        """将传输标记为不可用并关闭已损坏的流状态。"""
 
         try:
             self.close()
         except Exception:
-            # Invalidation is cleanup for an already-active transport error.
-            # It must not replace that primary failure.
+            # 失效处理是对已有传输错误的清理，不能覆盖主要故障。
             pass
 
     def close(self) -> None:
