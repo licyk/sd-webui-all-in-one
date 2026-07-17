@@ -415,6 +415,150 @@ def test_repo_manager_modelscope_file_listing_and_creation(monkeypatch):
     assert calls[-1][1]["visibility"] == "private"
 
 
+def test_repo_manager_modelscope_new_file_info_listing_and_metadata():
+    manager = _repo_manager_with_apis()
+    calls = []
+
+    class NewFileInfo:
+        __slots__ = ("path", "type", "size", "blob_id", "is_lfs")
+
+        def __init__(self, path, type, size, blob_id, is_lfs):
+            self.path = path
+            self.type = type
+            self.size = size
+            self.blob_id = blob_id
+            self.is_lfs = is_lfs
+
+    class ModernHubApi:
+        def list_repo_files(self, **kwargs):
+            calls.append(kwargs)
+            return [
+                NewFileInfo(
+                    path="weights",
+                    type="tree",
+                    size=0,
+                    blob_id="",
+                    is_lfs=False,
+                ),
+                NewFileInfo(
+                    path="weights/a.bin",
+                    type="blob",
+                    size=456,
+                    blob_id="new-sha256",
+                    is_lfs=True,
+                ),
+            ]
+
+    class CompatibilityHubApi:
+        def __init__(self):
+            self._api = ModernHubApi()
+
+        def get_model_files(self, **_kwargs):
+            raise AssertionError("新版 SDK 应使用保留完整元数据的 list_repo_files")
+
+    manager.ms_api = CompatibilityHubApi()
+
+    assert manager.get_ms_repo_files("owner/model", revision="dev") == ["weights/a.bin"]
+    assert calls[0] == {
+        "repo_id": "owner/model",
+        "repo_type": "model",
+        "recursive": True,
+        "revision": "dev",
+    }
+
+    assert manager.get_ms_repo_files_metadata(
+        "owner/model",
+        revision="dev",
+        include_dirs=True,
+        include_raw=True,
+    ) == [
+        {
+            "path": "weights",
+            "name": "weights",
+            "type": "directory",
+            "size": None,
+            "sha256": None,
+            "is_lfs": None,
+            "object_id": None,
+            "revision": "dev",
+            "raw": {
+                "path": "weights",
+                "type": "tree",
+                "size": 0,
+                "blob_id": "",
+                "is_lfs": False,
+            },
+        },
+        {
+            "path": "weights/a.bin",
+            "name": "a.bin",
+            "type": "file",
+            "size": 456,
+            "sha256": "new-sha256",
+            "is_lfs": True,
+            "object_id": "new-sha256",
+            "revision": "dev",
+            "raw": {
+                "path": "weights/a.bin",
+                "type": "blob",
+                "size": 456,
+                "blob_id": "new-sha256",
+                "is_lfs": True,
+            },
+        },
+    ]
+
+
+def test_repo_manager_modelscope_new_lossy_model_listing_infers_directories():
+    manager = _repo_manager_with_apis()
+
+    class CompatibilityHubApi:
+        def get_model_files(self, model_id, recursive=True):
+            assert model_id == "owner/model"
+            assert recursive is True
+            return [
+                {"Path": "weights", "Size": 0},
+                {"Path": "weights/a.bin", "Size": 123},
+                {"Path": "empty.bin", "Size": 0},
+            ]
+
+    manager.ms_api = CompatibilityHubApi()
+
+    assert manager.get_ms_repo_files("owner/model") == ["weights/a.bin", "empty.bin"]
+    assert manager.get_ms_repo_files_metadata("owner/model", include_dirs=True) == [
+        {
+            "path": "weights",
+            "name": "weights",
+            "type": "directory",
+            "size": None,
+            "sha256": None,
+            "is_lfs": None,
+            "object_id": None,
+            "revision": None,
+        },
+        {
+            "path": "weights/a.bin",
+            "name": "a.bin",
+            "type": "file",
+            "size": 123,
+            "sha256": None,
+            "is_lfs": None,
+            "object_id": None,
+            "revision": None,
+        },
+        {
+            "path": "empty.bin",
+            "name": "empty.bin",
+            "type": "file",
+            "size": 0,
+            "sha256": None,
+            "is_lfs": None,
+            "object_id": None,
+            "revision": None,
+        },
+    ]
+
+
 def test_repo_manager_files_metadata_normalizes_huggingface_and_modelscope():
     manager = _repo_manager_with_apis()
     hf_calls = []

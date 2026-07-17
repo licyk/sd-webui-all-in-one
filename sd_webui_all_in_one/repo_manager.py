@@ -96,10 +96,59 @@ def _get_mapping_or_attr(
     return getattr(value, key, default)
 
 
+def _get_first_mapping_or_attr(
+    value: Any,
+    keys: tuple[str, ...],
+    default: Any = None,
+) -> Any:
+    missing = object()
+    for key in keys:
+        result = _get_mapping_or_attr(value, key, missing)
+        if result is not missing:
+            return result
+    return default
+
+
 def _object_to_dict(value: Any) -> dict[str, Any]:
     if isinstance(value, dict):
         return dict(value)
-    return dict(getattr(value, "__dict__", {}))
+
+    attributes = getattr(value, "__dict__", None)
+    if attributes is not None:
+        return dict(attributes)
+
+    slots = getattr(type(value), "__slots__", ())
+    if isinstance(slots, str):
+        slots = (slots,)
+    return {slot: getattr(value, slot) for slot in slots if hasattr(value, slot)}
+
+
+def _ms_repo_file_path(item: Any) -> str:
+    return str(_get_first_mapping_or_attr(item, ("Path", "path"), "") or "")
+
+
+def _ms_repo_directory_paths(all_paths: list[str]) -> set[str]:
+    directory_paths = set()
+    for path in all_paths:
+        parent = path.rpartition("/")[0]
+        while parent:
+            directory_paths.add(parent)
+            parent = parent.rpartition("/")[0]
+    return directory_paths
+
+
+def _ms_repo_file_is_dir(item: Any, inferred_directory_paths: set[str]) -> bool:
+    entry_type = _get_first_mapping_or_attr(item, ("Type", "type"))
+    if entry_type is not None:
+        return str(entry_type).lower() in {"tree", "directory", "dir"}
+
+    is_dir = _get_first_mapping_or_attr(item, ("IsDir", "is_dir"))
+    if is_dir is not None:
+        return bool(is_dir)
+
+    # ModelScope 1.38 的兼容接口仅保留 Path / Size。Git 仓库中的目录
+    # 必然是其他条目的父路径，因此可在不把零字节文件误判为目录的前提下恢复类型。
+    return _ms_repo_file_path(item).rstrip("/") in inferred_directory_paths
 
 
 def _file_sha256(file_path: Path) -> str:
@@ -415,21 +464,14 @@ class RepoManager:
                 使用的 API 类型未知时或者不支持时
         """
 
-        def _get_file_path(
-            repo_files: list[dict[str, Any]],
-        ) -> list[str]:
+        def _get_file_path(repo_files: list[Any]) -> list[str]:
             """获取 ModelScope Api 返回的仓库列表中的模型路径"""
-            return [file["Path"] for file in repo_files if file["Type"] != "tree"]
+            all_paths = [_ms_repo_file_path(item) for item in repo_files]
+            directory_paths = _ms_repo_directory_paths(all_paths)
+            return [path for item, path in zip(repo_files, all_paths) if path and not _ms_repo_file_is_dir(item, directory_paths)]
 
         if repo_type == "model":
-            list_kwargs = _add_revision(
-                {
-                    "model_id": repo_id,
-                    "recursive": True,
-                },
-                revision,
-            )
-            repo_files = self.ms_api.get_model_files(**list_kwargs)
+            repo_files = self._get_ms_model_files(repo_id=repo_id, revision=revision)
             return _get_file_path(repo_files)
         if repo_type == "dataset":
             all_files = []
@@ -468,6 +510,42 @@ class RepoManager:
 
         logger.error("未知的 %s 仓库类型", repo_type)
         raise ValueError(f"未知的仓库类型: {repo_type}")
+
+    def _get_ms_model_files(
+        self,
+        repo_id: str,
+        revision: str | None = None,
+    ) -> list[Any]:
+        """兼容新旧 ModelScope SDK 获取模型仓库条目。"""
+        ms_api = self.ms_api
+
+        # 新版 modelscope.HubApi 是 modelscope_hub.HubApi 的兼容包装层。
+        # 包装层的 get_model_files 会丢弃 Type / Sha256，且不再接收 revision；
+        # 优先使用其通用接口可以保留完整的 FileInfo 数据。
+        for api in (ms_api, getattr(ms_api, "_api", None)):
+            list_repo_files = getattr(api, "list_repo_files", None)
+            if (
+                callable(list_repo_files)
+                and _callable_accepts_keyword(list_repo_files, "repo_id")
+                and _callable_accepts_keyword(list_repo_files, "repo_type")
+            ):
+                list_kwargs = _add_revision(
+                    {
+                        "repo_id": repo_id,
+                        "repo_type": "model",
+                        "recursive": True,
+                    },
+                    revision,
+                )
+                return list(list_repo_files(**list_kwargs))
+
+        list_kwargs: dict[str, Any] = {
+            "model_id": repo_id,
+            "recursive": True,
+        }
+        if revision is not None and _callable_accepts_keyword(ms_api.get_model_files, "revision"):
+            list_kwargs["revision"] = revision
+        return list(ms_api.get_model_files(**list_kwargs))
 
     @retryable(
         times=RETRY_TIMES,
@@ -631,39 +709,36 @@ class RepoManager:
                 使用的仓库类型未知时或者不支持时
         """
 
-        def _normalize_ms_files(repo_files: list[dict[str, Any]]) -> list[RepoFileMetadata]:
+        def _normalize_ms_files(repo_files: list[Any]) -> list[RepoFileMetadata]:
             entries = []
+            all_paths = [_ms_repo_file_path(item) for item in repo_files]
+            directory_paths = _ms_repo_directory_paths(all_paths)
             for item in repo_files:
-                is_dir = item.get("Type") == "tree"
+                is_dir = _ms_repo_file_is_dir(item, directory_paths)
                 if is_dir and not include_dirs:
                     continue
 
-                path = item.get("Path", "")
+                path = _ms_repo_file_path(item)
                 entry_type: RepoFileType = "directory" if is_dir else "file"
+                sha256 = _get_first_mapping_or_attr(item, ("Sha256", "sha256", "BlobId", "blob_id"))
+                is_lfs = _get_first_mapping_or_attr(item, ("IsLFS", "is_lfs"))
                 metadata: RepoFileMetadata = {
                     "path": path,
-                    "name": item.get("Name") or _repo_path_name(path),
+                    "name": _get_first_mapping_or_attr(item, ("Name", "name")) or _repo_path_name(path),
                     "type": entry_type,
-                    "size": None if is_dir else item.get("Size"),
-                    "sha256": item.get("Sha256"),
-                    "is_lfs": item.get("IsLFS") if "IsLFS" in item else None,
-                    "object_id": item.get("Sha256") if not is_dir else None,
-                    "revision": item.get("Revision") or revision,
+                    "size": None if is_dir else _get_first_mapping_or_attr(item, ("Size", "size")),
+                    "sha256": None if is_dir else sha256,
+                    "is_lfs": None if is_dir else is_lfs,
+                    "object_id": None if is_dir else sha256,
+                    "revision": _get_first_mapping_or_attr(item, ("Revision", "revision")) or revision,
                 }
                 if include_raw:
-                    metadata["raw"] = dict(item)
+                    metadata["raw"] = _object_to_dict(item)
                 entries.append(metadata)
             return entries
 
         if repo_type == "model":
-            list_kwargs = _add_revision(
-                {
-                    "model_id": repo_id,
-                    "recursive": True,
-                },
-                revision,
-            )
-            repo_files = self.ms_api.get_model_files(**list_kwargs)
+            repo_files = self._get_ms_model_files(repo_id=repo_id, revision=revision)
             return _normalize_ms_files(repo_files)
         if repo_type == "dataset":
             all_files = []
