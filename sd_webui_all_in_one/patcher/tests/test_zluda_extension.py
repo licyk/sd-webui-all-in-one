@@ -114,7 +114,8 @@ def test_apply_torch_zluda_timer_hotfix_rewrites_cpp_extension_source(tmp_path):
     module = importlib.import_module("torch.utils.cpp_extension")
 
     assert module.HIP_HOME == "rocm"
-    assert module.check() == "rocm"  # ty: ignore[unresolved-attribute]
+    check = getattr(module, "check")
+    assert check() == "rocm"
 
 
 def test_apply_from_config_enables_selected_zluda_patches(tmp_path):

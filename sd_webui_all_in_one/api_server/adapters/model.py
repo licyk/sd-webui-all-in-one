@@ -5,12 +5,11 @@ from __future__ import annotations
 from dataclasses import asdict
 from pathlib import Path
 from collections.abc import Iterable
-from typing import Any, cast
+from typing import Any
 
 from sd_webui_all_in_one.base_manager.model_manager import (
     FILE_MODEL_ROOT_DIRS,
     FileModelManager,
-    FileWebUiModelType,
     InvokeAIModelManager,
 )
 from sd_webui_all_in_one.base_manager.snapshot import json_safe
@@ -53,7 +52,7 @@ class ModelApiAdapter:
         """
         if webui_type not in FILE_MODEL_ROOT_DIRS:
             raise NotImplementedError(f"{webui_type} does not support file model management")
-        return FileModelManager(webui_type=cast(FileWebUiModelType, webui_type), webui_path=webui_path)
+        return FileModelManager(webui_type=webui_type, webui_path=webui_path)
 
     def invokeai_manager(self, webui_path: Path) -> InvokeAIModelManager:
         """获取 InvokeAI 模型管理器。
