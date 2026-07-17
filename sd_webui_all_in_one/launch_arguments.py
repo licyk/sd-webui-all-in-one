@@ -59,7 +59,6 @@ class LaunchArgumentDefinition:
     repeatable: bool
     exclusive_group: str | None
     exclusive_group_required: bool
-    hidden: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -212,7 +211,6 @@ def _run_help(
 _HEADING = re.compile(r"^(?P<name>\S[^:\n]*):\s*$")
 _FLAG = re.compile(r"-{1,2}[A-Za-z0-9][A-Za-z0-9_-]*")
 _CHOICES = re.compile(r"\{([^{}]+)\}")
-_HELP_FLAGS = frozenset({"-h", "--help"})
 
 
 def _category(value: str) -> str:
@@ -309,7 +307,6 @@ def _semantic_key(argument: LaunchArgumentDefinition) -> tuple[object, ...]:
         argument.repeatable,
         argument.exclusive_group,
         argument.exclusive_group_required,
-        argument.hidden,
     )
 
 
@@ -362,7 +359,6 @@ def _coalesce_definitions(
             repeatable=existing.repeatable,
             exclusive_group=existing.exclusive_group,
             exclusive_group_required=existing.exclusive_group_required,
-            hidden=existing.hidden,
         )
     normalized.sort(key=lambda argument: (argument.name, tuple(argument.flags)))
     return normalized, diagnostics
@@ -416,14 +412,11 @@ def _usage_metadata(usage: str) -> tuple[dict[str, tuple[str, bool]], set[str]]:
 
 def parse_argparse_help(
     help_output: str,
-    *,
-    hidden_flags: frozenset[str] = frozenset(),
 ) -> tuple[list[LaunchArgumentDefinition], list[LaunchArgumentDiagnostic]]:
     """解析 argparse 风格帮助格式共有的稳定子集。
 
     Args:
         help_output (str): argparse 风格的帮助文本。
-        hidden_flags (frozenset[str]): 需要标记为隐藏的参数标志。
 
     Returns:
         tuple[list[LaunchArgumentDefinition], list[LaunchArgumentDiagnostic]]:
@@ -492,7 +485,6 @@ def parse_argparse_help(
     group_by_flag, required_flags = _usage_metadata(usage)
 
     arguments: list[LaunchArgumentDefinition] = []
-    effective_hidden = hidden_flags | _HELP_FLAGS
     for spec, help_text, item_category in parsed:
         flags = _normalized_flags(_FLAG.findall(spec))
         kind, min_values, max_values, metavar, choices, repeatable = _value_shape(spec, help_text)
@@ -513,7 +505,6 @@ def parse_argparse_help(
                 repeatable=repeatable,
                 exclusive_group=group[0],
                 exclusive_group_required=group[1],
-                hidden=any(flag in effective_hidden for flag in flags),
             )
         )
     if not arguments:
@@ -548,13 +539,11 @@ def _has_option_section(document: str) -> bool:
 def _select_help_document(
     stdout: str,
     stderr: str,
-    *,
-    hidden_flags: frozenset[str],
 ) -> tuple[list[LaunchArgumentDefinition], list[LaunchArgumentDiagnostic]]:
     documents = [("stdout", stdout), ("stderr", stderr)]
     parsed = []
     for name, document in documents:
-        arguments, diagnostics = parse_argparse_help(document, hidden_flags=hidden_flags)
+        arguments, diagnostics = parse_argparse_help(document)
         viable = bool(arguments) and "usage:" in document and _has_option_section(document)
         parsed.append((name, document, arguments, diagnostics, viable))
 
@@ -613,21 +602,19 @@ def _select_help_document(
 class ScriptHelpProvider:
     """通过 WebUI 启动脚本的帮助输出发现参数。"""
 
-    def __init__(self, scripts: tuple[str, ...], *, hidden_flags: frozenset[str] = frozenset()) -> None:
+    def __init__(self, scripts: tuple[str, ...]) -> None:
         self.scripts = scripts
-        self.hidden_flags = hidden_flags
 
     def provider_identity(self) -> str:
         """返回脚本提供器的稳定标识。
 
         Returns:
-            str: 包含脚本和隐藏参数的稳定标识。
+            str: 包含脚本列表的稳定标识。
         """
         return json.dumps(
             {
                 "provider": type(self).__name__,
                 "scripts": list(self.scripts),
-                "hidden_flags": sorted(self.hidden_flags | _HELP_FLAGS),
             },
             sort_keys=True,
             separators=(",", ":"),
@@ -694,11 +681,7 @@ class ScriptHelpProvider:
                 ),
                 diagnostics=[failure],
             )
-        arguments, diagnostics = _select_help_document(
-            stdout,
-            stderr,
-            hidden_flags=self.hidden_flags,
-        )
+        arguments, diagnostics = _select_help_document(stdout, stderr)
         return LaunchArgumentCatalog(
             CATALOG_SCHEMA_VERSION,
             context.webui_type,
@@ -717,7 +700,7 @@ class InvokeAiHelpProvider(ScriptHelpProvider):
     """通过 InvokeAI 内部参数解析器发现启动参数。"""
 
     def __init__(self) -> None:
-        super().__init__((), hidden_flags=frozenset({"--disable-auto-launch"}))
+        super().__init__(())
 
     def help_command(self, context: LaunchArgumentDiscoveryContext) -> HelpCommand:
         """构建 InvokeAI 参数解析器帮助命令。
@@ -740,7 +723,7 @@ class InvokeAiHelpProvider(ScriptHelpProvider):
 
 
 PROVIDERS: dict[str, LaunchArgumentProvider] = {
-    "sd_webui": ScriptHelpProvider(("launch.py",), hidden_flags=frozenset({"--api-auth", "--api-server-stop"})),
+    "sd_webui": ScriptHelpProvider(("launch.py",)),
     "comfyui": ScriptHelpProvider(("main.py",)),
     "fooocus": ScriptHelpProvider(("launch.py",)),
     "invokeai": InvokeAiHelpProvider(),
@@ -769,7 +752,6 @@ def _contract_revision(
             "repeatable": argument.repeatable,
             "exclusive_group": argument.exclusive_group,
             "exclusive_group_required": argument.exclusive_group_required,
-            "hidden": argument.hidden,
         }
         for argument in sorted(arguments, key=lambda item: (item.name, tuple(sorted(item.flags))))
     ]

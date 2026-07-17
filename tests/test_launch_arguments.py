@@ -105,6 +105,7 @@ def test_catalog_models_serialize_stable_snake_case_shape(tmp_path: Path) -> Non
     assert payload["arguments"][0]["value_kind"] == "boolean"
     assert payload["arguments"][0]["min_values"] == 0
     assert payload["arguments"][0]["max_values"] == 0
+    assert "hidden" not in payload["arguments"][0]
     assert "catalogRevision" not in payload
     json.dumps(payload)
 
@@ -128,18 +129,10 @@ def test_argparse_parser_normalizes_value_kinds_choices_groups_and_categories(li
     assert by_name["port"].category == "network_options"
 
 
-def test_hidden_internal_flags_are_retained() -> None:
-    arguments, _ = parse_argparse_help(HELP_LF, hidden_flags=frozenset({"--listen"}))
-    listen = next(argument for argument in arguments if argument.name == "listen")
-    assert listen.hidden is True
-    assert listen.flags == ["--listen"]
-
-
-def test_help_aliases_are_always_known_and_hidden() -> None:
+def test_help_aliases_are_exposed_as_normal_arguments() -> None:
     arguments, _ = parse_argparse_help(HELP_LF)
     help_argument = next(argument for argument in arguments if argument.name == "help")
     assert help_argument.flags == ["-h", "--help"]
-    assert help_argument.hidden is True
 
 
 @pytest.mark.parametrize("line_ending", ["\n", "\r\n"])
@@ -229,7 +222,6 @@ def test_help_document_selection_is_stream_aware_and_conflict_safe() -> None:
     arguments, diagnostics = launch_arguments_module._select_help_document(
         LIVE_COMFYUI_HELP,
         "warning: optional import failed",
-        hidden_flags=frozenset(),
     )
     assert arguments
     assert any(diagnostic.code == "discovery_other_stream" for diagnostic in diagnostics)
@@ -237,7 +229,6 @@ def test_help_document_selection_is_stream_aware_and_conflict_safe() -> None:
     equivalent, diagnostics = launch_arguments_module._select_help_document(
         LIVE_COMFYUI_HELP,
         LIVE_COMFYUI_HELP,
-        hidden_flags=frozenset(),
     )
     assert equivalent == arguments
     assert not any(diagnostic.code == "discovery_conflict" for diagnostic in diagnostics)
@@ -246,7 +237,6 @@ def test_help_document_selection_is_stream_aware_and_conflict_safe() -> None:
     _, diagnostics = launch_arguments_module._select_help_document(
         LIVE_COMFYUI_HELP,
         conflicting,
-        hidden_flags=frozenset(),
     )
     assert any(
         diagnostic.severity == "error" and diagnostic.code == "discovery_conflict"
@@ -256,7 +246,6 @@ def test_help_document_selection_is_stream_aware_and_conflict_safe() -> None:
     stderr_only, _ = launch_arguments_module._select_help_document(
         "ordinary stdout noise",
         LIVE_COMFYUI_HELP,
-        hidden_flags=frozenset(),
     )
     assert stderr_only == arguments
 
