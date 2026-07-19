@@ -5,6 +5,25 @@ from sd_webui_all_in_one.pytorch_manager import version_manager
 
 
 @pytest.mark.parametrize(
+    ("suffix", "platform_tag", "expected"),
+    [
+        (" CU128 ", "linux", "cu128"),
+        ("rocm6.4", "win32", "rocm_win"),
+        ("rocm_win", "linux", "rocm_win"),
+        ("rocm9.0", "linux", None),
+    ],
+)
+def test_normalize_pytorch_version_suffix(suffix, platform_tag, expected):
+    assert mirror_selector.normalize_pytorch_version_suffix(suffix, platform_tag) == expected
+
+
+def test_infer_pytorch_device_type_from_versions():
+    versions = ["1.0.0", "2.9.0+rocm6.4"]
+
+    assert mirror_selector.infer_pytorch_device_type(versions, "linux") == "rocm6.4"
+
+
+@pytest.mark.parametrize(
     ("torch_ver", "cuda_version", "cuda_cap", "expected"),
     [
         ("2.3.0", 12.1, 8.9, "cu121"),

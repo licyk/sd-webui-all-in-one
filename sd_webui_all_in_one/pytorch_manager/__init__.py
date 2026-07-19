@@ -48,6 +48,8 @@ from sd_webui_all_in_one.pytorch_manager.gpu_detector import (
     auto_detect_pytorch_device_category,
 )
 from sd_webui_all_in_one.pytorch_manager.mirror_selector import (
+    normalize_pytorch_version_suffix,
+    infer_pytorch_device_type,
     get_pytorch_mirror_type_cuda,
     get_pytorch_mirror_type_rocm,
     get_pytorch_mirror_type_ipex,
@@ -109,6 +111,8 @@ __all__ = [
     "auto_detect_available_pytorch_type",
     "auto_detect_pytorch_device_category",
     # mirror_selector.py: 镜像选择逻辑
+    "normalize_pytorch_version_suffix",
+    "infer_pytorch_device_type",
     "get_pytorch_mirror_type_cuda",
     "get_pytorch_mirror_type_rocm",
     "get_pytorch_mirror_type_ipex",

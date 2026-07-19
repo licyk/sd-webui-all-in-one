@@ -18,6 +18,7 @@ from sd_webui_all_in_one.base_manager import (
 )
 from sd_webui_all_in_one.base_manager import snapshot as snapshot_utils
 from sd_webui_all_in_one.base_manager import snapshot_restore as restore_utils
+from sd_webui_all_in_one.pytorch_manager import mirror_selector
 from sd_webui_all_in_one.cli_manager import (
     comfyui_cli,
     fooocus_cli,
@@ -619,7 +620,7 @@ def test_preview_restore_plan_normalizes_rocm_pytorch_suffix(monkeypatch, tmp_pa
         mirror_calls.append((dtype, use_cn_mirror))
         return mirror_by_dtype[dtype]
 
-    monkeypatch.setattr(restore_utils.sys, "platform", platform_tag)
+    monkeypatch.setattr(mirror_selector.sys, "platform", platform_tag)
     monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [])
     monkeypatch.setattr(restore_utils, "get_pytorch_mirror", fake_get_pytorch_mirror)
 

@@ -8,7 +8,7 @@ import platform
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Literal, cast
+from typing import Callable, Literal
 from urllib.parse import unquote, urlparse
 
 from sd_webui_all_in_one import git_warpper
@@ -38,7 +38,7 @@ from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
 from sd_webui_all_in_one.package_analyzer import normalize_package_name
 from sd_webui_all_in_one.pkg_manager import pip_install
-from sd_webui_all_in_one.pytorch_manager import PYTORCH_DEVICE_LIST, PyTorchDeviceType, get_pytorch_mirror
+from sd_webui_all_in_one.pytorch_manager import infer_pytorch_device_type, get_pytorch_mirror
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
@@ -293,46 +293,12 @@ def _install_packages(packages: list[PackageSnapshot], custom_env: dict[str, str
     pip_install(*install_args, "--no-deps", use_uv=use_uv, custom_env=custom_env)
 
 
-def _is_windows_platform(platform_tag: str) -> bool:
-    return platform_tag.casefold().startswith("win")
-
-
-def _normalize_pytorch_version_suffix(
-    suffix: str,
-    platform_tag: str | None = None,
-) -> PyTorchDeviceType | None:
-    platform_tag = sys.platform if platform_tag is None else platform_tag
-    normalized_suffix = suffix.strip().casefold()
-
-    if normalized_suffix == "rocm_win":
-        return "rocm_win"
-    if _is_windows_platform(platform_tag) and normalized_suffix.startswith("rocm"):
-        return "rocm_win"
-    if normalized_suffix in PYTORCH_DEVICE_LIST:
-        return cast(PyTorchDeviceType, normalized_suffix)
-    return None
-
-
-def _infer_pytorch_device_type(
-    packages: list[PackageSnapshot],
-    platform_tag: str | None = None,
-) -> PyTorchDeviceType | None:
-    for package in packages:
-        if "+" not in package.version:
-            continue
-        suffix = package.version.split("+", 1)[1]
-        dtype = _normalize_pytorch_version_suffix(suffix, platform_tag=platform_tag)
-        if dtype is not None:
-            return dtype
-    return None
-
-
 def _pypi_env(use_pypi_mirror: bool) -> dict[str, str]:
     return get_pypi_mirror_config(use_cn_mirror=use_pypi_mirror)
 
 
 def _pytorch_env(packages: list[PackageSnapshot], use_pypi_mirror: bool) -> dict[str, str]:
-    dtype = _infer_pytorch_device_type(packages)
+    dtype = infer_pytorch_device_type(package.version for package in packages)
     if dtype is None:
         logger.info("未从 PyTorch 包版本推断出特殊源, 使用普通 PyPI 源安装")
         return _pypi_env(use_pypi_mirror=use_pypi_mirror)
@@ -360,7 +326,7 @@ def _pytorch_mirror_plan(
     packages: list[PackageSnapshot],
     use_pypi_mirror: bool,
 ) -> tuple[str | None, str | None, str | None, str | None]:
-    dtype = _infer_pytorch_device_type(packages)
+    dtype = infer_pytorch_device_type(package.version for package in packages)
     if dtype is None:
         return None, None, None, "未从 PyTorch 包版本推断出特殊源, 将使用普通 PyPI 源"
 

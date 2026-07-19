@@ -1,6 +1,8 @@
 """镜像选择处理"""
 
 import sys
+from collections.abc import Iterable
+from typing import cast
 
 from sd_webui_all_in_one.package_analyzer import CommonVersionComparison
 from sd_webui_all_in_one.pytorch_manager.gpu_detector import (
@@ -13,11 +15,66 @@ from sd_webui_all_in_one.pytorch_manager.mirror_data import (
     PYTORCH_ROCM_MIRROR_DICT,
 )
 from sd_webui_all_in_one.pytorch_manager.types import (
+    PYTORCH_DEVICE_LIST,
     PyTorchMirrorInfo,
     PyTorchDeviceTypeCategory,
     PyTorchDeviceType,
 )
 from sd_webui_all_in_one.utils import load_source_directly
+
+
+def normalize_pytorch_version_suffix(
+    suffix: str,
+    platform_tag: str | None = None,
+) -> PyTorchDeviceType | None:
+    """将 PyTorch 版本后缀规范化为设备类型。
+
+    Args:
+        suffix (str):
+            PyTorch 版本中的本地版本后缀。
+        platform_tag (str | None):
+            目标平台标识。为 None 时使用当前运行平台。
+
+    Returns:
+        PyTorchDeviceType | None:
+            可识别的 PyTorch 设备类型；后缀无法识别时返回 None。
+    """
+    platform_tag = sys.platform if platform_tag is None else platform_tag
+    normalized_suffix = suffix.strip().casefold()
+
+    if normalized_suffix == "rocm_win":
+        return "rocm_win"
+    if platform_tag.casefold().startswith("win") and normalized_suffix.startswith("rocm"):
+        return "rocm_win"
+    if normalized_suffix in PYTORCH_DEVICE_LIST:
+        return cast(PyTorchDeviceType, normalized_suffix)
+    return None
+
+
+def infer_pytorch_device_type(
+    versions: Iterable[str],
+    platform_tag: str | None = None,
+) -> PyTorchDeviceType | None:
+    """从 PyTorch 版本字符串推断设备类型。
+
+    Args:
+        versions (Iterable[str]):
+            待检查的 PyTorch 相关包版本字符串。
+        platform_tag (str | None):
+            目标平台标识。为 None 时使用当前运行平台。
+
+    Returns:
+        PyTorchDeviceType | None:
+            首个可识别的 PyTorch 设备类型；没有可识别的版本后缀时返回 None。
+    """
+    for version in versions:
+        if "+" not in version:
+            continue
+        suffix = version.split("+", 1)[1]
+        dtype = normalize_pytorch_version_suffix(suffix, platform_tag=platform_tag)
+        if dtype is not None:
+            return dtype
+    return None
 
 
 def get_pytorch_mirror_type_cuda(
