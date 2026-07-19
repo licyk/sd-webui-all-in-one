@@ -3,6 +3,7 @@
 from sd_webui_all_in_one.base_manager.base import (
     EnvCheckTask,
     WebUiLaunchInfo,
+    check_pytorch_version as check_pytorch_version,
     prepare_pytorch_install_info,
     install_pytorch_for_webui,
     reinstall_pytorch,

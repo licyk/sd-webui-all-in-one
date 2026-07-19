@@ -298,10 +298,7 @@ def _pypi_env(use_pypi_mirror: bool) -> dict[str, str]:
 
 
 def _pytorch_env(packages: list[PackageSnapshot], use_pypi_mirror: bool) -> dict[str, str]:
-    dtype = infer_pytorch_device_type(package.version for package in packages)
-    if dtype is None:
-        logger.info("未从 PyTorch 包版本推断出特殊源, 使用普通 PyPI 源安装")
-        return _pypi_env(use_pypi_mirror=use_pypi_mirror)
+    dtype = infer_pytorch_device_type(package.version for package in packages) or "all"
 
     try:
         url, kind = get_pytorch_mirror(dtype=dtype, use_cn_mirror=use_pypi_mirror)
@@ -326,9 +323,7 @@ def _pytorch_mirror_plan(
     packages: list[PackageSnapshot],
     use_pypi_mirror: bool,
 ) -> tuple[str | None, str | None, str | None, str | None]:
-    dtype = infer_pytorch_device_type(package.version for package in packages)
-    if dtype is None:
-        return None, None, None, "未从 PyTorch 包版本推断出特殊源, 将使用普通 PyPI 源"
+    dtype = infer_pytorch_device_type(package.version for package in packages) or "all"
 
     try:
         url, kind = get_pytorch_mirror(dtype=dtype, use_cn_mirror=use_pypi_mirror)

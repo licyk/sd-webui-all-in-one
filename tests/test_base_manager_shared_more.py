@@ -7,6 +7,45 @@ import pytest
 from sd_webui_all_in_one.base_manager import base as base_module
 
 
+@pytest.mark.parametrize(
+    ("current_version", "latest_spec", "expected_dtype", "expected"),
+    [
+        ("2.7.0+cu128", "torch==2.8.0+cu128 torchvision==0.23.0+cu128", "cu128", True),
+        ("2.8.0+cu128", "torch==2.8.0+cu128 torchvision==0.23.0+cu128", "cu128", False),
+        ("2.9.0", "torch==2.8.0 torchvision==0.23.0", "all", False),
+        ("2.7.0+custom", "torch==2.8.0 torchvision==0.23.0", "all", True),
+    ],
+)
+def test_check_pytorch_version(monkeypatch, current_version, latest_spec, expected_dtype, expected):
+    calls = []
+    monkeypatch.setattr(base_module.importlib.metadata, "version", lambda name: current_version if name == "torch" else "")
+    monkeypatch.setattr(
+        base_module,
+        "find_latest_pytorch_info",
+        lambda dtype: calls.append(dtype) or {"torch_ver": latest_spec},
+    )
+
+    assert base_module.check_pytorch_version() is expected
+    assert calls == [expected_dtype]
+
+
+def test_check_pytorch_version_treats_missing_torch_as_needing_update(monkeypatch):
+    def missing_torch(_name):
+        raise base_module.importlib.metadata.PackageNotFoundError
+
+    monkeypatch.setattr(base_module.importlib.metadata, "version", missing_torch)
+
+    assert base_module.check_pytorch_version() is True
+
+
+def test_check_pytorch_version_rejects_unversioned_latest_entry(monkeypatch):
+    monkeypatch.setattr(base_module.importlib.metadata, "version", lambda _name: "2.8.0+cpu")
+    monkeypatch.setattr(base_module, "find_latest_pytorch_info", lambda _dtype: {"torch_ver": "torch torchvision"})
+
+    with pytest.raises(ValueError, match="缺少可比较的 torch 版本"):
+        base_module.check_pytorch_version()
+
+
 def test_prepare_pytorch_install_info_auto_and_custom_packages(monkeypatch):
     calls = []
     latest = {

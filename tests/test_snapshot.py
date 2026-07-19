@@ -599,7 +599,7 @@ def test_preview_restore_plan_reports_package_actions_and_pytorch_source(monkeyp
         ("win32", "2.9.0+rocm9.0", "rocm_win", "https://torch.example/rocm-win"),
         ("win32", "2.9.0+rocm6.4", "rocm_win", "https://torch.example/rocm-win"),
         ("linux", "2.9.0+rocm6.4", "rocm6.4", "https://torch.example/rocm64"),
-        ("linux", "2.9.0+rocm9.0", None, None),
+        ("linux", "2.9.0+rocm9.0", "all", "https://torch.example/all"),
     ],
 )
 def test_preview_restore_plan_normalizes_rocm_pytorch_suffix(monkeypatch, tmp_path, platform_tag, torch_version, expected_dtype, expected_url):
@@ -611,6 +611,7 @@ def test_preview_restore_plan_normalizes_rocm_pytorch_suffix(monkeypatch, tmp_pa
     snapshot_utils.save_snapshot(snapshot, output)
 
     mirror_by_dtype = {
+        "all": ("https://torch.example/all", "index_url"),
         "rocm_win": ("https://torch.example/rocm-win", "find_links"),
         "rocm6.4": ("https://torch.example/rocm64", "index_url"),
     }
@@ -633,12 +634,8 @@ def test_preview_restore_plan_normalizes_rocm_pytorch_suffix(monkeypatch, tmp_pa
 
     assert plan.pytorch_device_type == expected_dtype
     assert plan.pytorch_mirror_url == expected_url
-    if expected_dtype is None:
-        assert mirror_calls == []
-        assert plan.warnings == ["未从 PyTorch 包版本推断出特殊源, 将使用普通 PyPI 源"]
-    else:
-        assert mirror_calls == [(expected_dtype, True)]
-        assert plan.warnings == []
+    assert mirror_calls == [(expected_dtype, True)]
+    assert plan.warnings == []
 
 
 def test_preview_restore_plan_blocks_dirty_kernel_without_force(monkeypatch, tmp_path):

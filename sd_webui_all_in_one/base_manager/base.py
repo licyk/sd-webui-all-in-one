@@ -27,11 +27,13 @@ from sd_webui_all_in_one.pytorch_manager import (
     display_pytorch_config,
     export_pytorch_list,
     find_latest_pytorch_info,
+    normalize_pytorch_version_suffix,
     PyTorchDeviceType,
     PyTorchDeviceTypeCategory,
 )
 from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
 from sd_webui_all_in_one.package_analyzer import (
+    PyWhlVersionComparison,
     get_package_name,
     is_package_has_version,
     get_package_version,
@@ -172,6 +174,45 @@ def run_env_check_tasks(
 
     if err:
         raise AggregateError(error_message, err)
+
+
+def check_pytorch_version() -> bool:
+    """检查当前环境中的 PyTorch 是否需要更新。
+
+    从已安装的 ``torch`` 版本后缀推断并规范化 PyTorch 类型。无法识别
+    类型时使用 ``all``，然后与版本表中该类型的最新受支持版本比较。
+
+    Returns:
+        bool:
+            未安装 PyTorch 或当前版本低于版本表中的最新版本时返回 True，
+            否则返回 False。
+
+    Raises:
+        ValueError:
+            找不到当前类型对应的受支持版本，或版本表中的 PyTorch 声明
+            未包含可比较的版本号时抛出。
+    """
+    try:
+        current_version = importlib.metadata.version("torch")
+    except importlib.metadata.PackageNotFoundError:
+        return True
+
+    _, separator, suffix = current_version.partition("+")
+    dtype = normalize_pytorch_version_suffix(suffix) if separator else None
+    latest_info = find_latest_pytorch_info(dtype or "all")
+    latest_torch_spec = next(
+        (
+            package
+            for package in (latest_info.get("torch_ver") or "").split()
+            if get_package_name(package) == "torch" and is_package_has_version(package)
+        ),
+        None,
+    )
+    if latest_torch_spec is None:
+        raise ValueError(f"PyTorch 版本表中的 '{dtype or 'all'}' 类型缺少可比较的 torch 版本")
+
+    latest_version = get_package_version(latest_torch_spec)
+    return PyWhlVersionComparison(current_version) < PyWhlVersionComparison(latest_version)
 
 
 def prepare_pytorch_install_info(
