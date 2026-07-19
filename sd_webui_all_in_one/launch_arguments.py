@@ -901,8 +901,10 @@ def discover_launch_argument_catalog(
         webui_type (str): WebUI 类型。
         webui_path (str | Path): WebUI 安装路径。
         provider_identity (str): 调用方定义的稳定发现器标识。
-        help_command_factory (Callable): 通用帮助命令构造函数。
-        parser_loader (Callable | None): 实际 ``ArgumentParser`` 对象加载函数。
+        help_command_factory (Callable[[LaunchArgumentDiscoveryContext], HelpCommand | None]):
+            通用帮助命令构造函数。
+        parser_loader (Callable[[], argparse.ArgumentParser] | None):
+            实际 ``ArgumentParser`` 对象加载函数。
         parser_source_identity (str | None): 参数对象来源的稳定标识。
         use_parser_object (bool): 是否优先解析实际参数对象。
         python_executable (str | Path | None): 用于执行帮助命令的 Python。
