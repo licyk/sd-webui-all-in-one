@@ -26,6 +26,7 @@ from sd_webui_all_in_one.base_manager.base import (
     run_env_check_tasks,
 )
 from sd_webui_all_in_one.base_manager.snapshot import WebUiSnapshot, build_webui_snapshot
+from sd_webui_all_in_one.base_manager.version_manager import WebUiUpdateOptions, WebUiUpdateStatus, check_webui_updates
 from sd_webui_all_in_one.downloader import (
     DownloadToolType,
     download_file,
@@ -479,6 +480,22 @@ def update_sd_scripts(
     git_warpper.update(sd_scripts_path)
 
     logger.info("更新 SD Scripts 完成")
+
+
+def check_sd_scripts_updates(
+    sd_scripts_path: Path,
+    options: WebUiUpdateOptions | None = None,
+) -> WebUiUpdateStatus:
+    """检查 SD Scripts 的内核和 PyTorch 更新。
+
+    Args:
+        sd_scripts_path (Path): SD Scripts 根目录。
+        options (WebUiUpdateOptions | None): 更新检查选项。
+
+    Returns:
+        WebUiUpdateStatus: 结构化更新检查结果。
+    """
+    return check_webui_updates("sd_scripts", "SD Scripts", sd_scripts_path, options=options)
 
 
 def get_sd_scripts_snapshot(

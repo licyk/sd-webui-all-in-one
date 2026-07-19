@@ -112,6 +112,19 @@ class WebUiLaunchInfo:
     """启动环境变量。"""
 
 
+@dataclass(frozen=True)
+class PyTorchUpdateStatus:
+    """PyTorch 更新检查状态。"""
+
+    installed: bool
+    current_version: str | None
+    device_type: PyTorchDeviceType
+    latest_version: str | None
+    latest_name: str | None
+    has_update: bool
+    error: str | None = None
+
+
 def select_env_check_tasks(
     tasks: list[EnvCheckTask],
     include_checks: list[str] | None = None,
@@ -176,30 +189,36 @@ def run_env_check_tasks(
         raise AggregateError(error_message, err)
 
 
-def check_pytorch_version() -> bool:
-    """检查当前环境中的 PyTorch 是否需要更新。
+def get_pytorch_update_status() -> PyTorchUpdateStatus:
+    """获取当前环境中 PyTorch 的详细更新状态。
 
     从已安装的 ``torch`` 版本后缀推断并规范化 PyTorch 类型。无法识别
     类型时使用 ``all``，然后与版本表中该类型的最新受支持版本比较。
 
     Returns:
-        bool:
-            未安装 PyTorch 或当前版本低于版本表中的最新版本时返回 True，
-            否则返回 False。
-
-    Raises:
-        ValueError:
-            找不到当前类型对应的受支持版本，或版本表中的 PyTorch 声明
-            未包含可比较的版本号时抛出。
+        PyTorchUpdateStatus:
+            PyTorch 安装状态、设备类型、当前版本、最新版本及错误信息。
     """
     try:
         current_version = importlib.metadata.version("torch")
     except importlib.metadata.PackageNotFoundError:
-        return True
+        current_version = None
 
-    _, separator, suffix = current_version.partition("+")
+    _, separator, suffix = (current_version or "").partition("+")
     dtype = normalize_pytorch_version_suffix(suffix) if separator else None
-    latest_info = find_latest_pytorch_info(dtype or "all")
+    resolved_dtype: PyTorchDeviceType = dtype or "all"
+    try:
+        latest_info = find_latest_pytorch_info(resolved_dtype)
+    except Exception as exc:
+        return PyTorchUpdateStatus(
+            installed=current_version is not None,
+            current_version=current_version,
+            device_type=resolved_dtype,
+            latest_version=None,
+            latest_name=None,
+            has_update=current_version is None,
+            error=str(exc),
+        )
     latest_torch_spec = next(
         (
             package
@@ -209,10 +228,43 @@ def check_pytorch_version() -> bool:
         None,
     )
     if latest_torch_spec is None:
-        raise ValueError(f"PyTorch 版本表中的 '{dtype or 'all'}' 类型缺少可比较的 torch 版本")
+        return PyTorchUpdateStatus(
+            installed=current_version is not None,
+            current_version=current_version,
+            device_type=resolved_dtype,
+            latest_version=None,
+            latest_name=latest_info.get("name"),
+            has_update=current_version is None,
+            error=f"PyTorch 版本表中的 '{resolved_dtype}' 类型缺少可比较的 torch 版本",
+        )
 
     latest_version = get_package_version(latest_torch_spec)
-    return PyWhlVersionComparison(current_version) < PyWhlVersionComparison(latest_version)
+    return PyTorchUpdateStatus(
+        installed=current_version is not None,
+        current_version=current_version,
+        device_type=resolved_dtype,
+        latest_version=latest_version,
+        latest_name=latest_info.get("name"),
+        has_update=current_version is None or PyWhlVersionComparison(current_version) < PyWhlVersionComparison(latest_version),
+    )
+
+
+def check_pytorch_version() -> bool:
+    """检查当前环境中的 PyTorch 是否需要更新。
+
+    Returns:
+        bool:
+            未安装 PyTorch 或当前版本低于版本表中的最新版本时返回 True，
+            否则返回 False。
+
+    Raises:
+        ValueError:
+            无法从版本表获取可比较的 PyTorch 版本时抛出。
+    """
+    status = get_pytorch_update_status()
+    if status.error is not None:
+        raise ValueError(status.error)
+    return status.has_update
 
 
 def prepare_pytorch_install_info(

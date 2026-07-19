@@ -599,7 +599,7 @@ def version_update(params: dict[str, Any], context: ApiTaskContext) -> dict[str,
 
 
 def webui_check_updates(params: dict[str, Any]) -> dict[str, Any]:
-    """检查 WebUI 内核和扩展更新。
+    """检查 WebUI 内核、扩展和 PyTorch 更新。
 
     Args:
         params (dict[str, Any]): API 请求参数。
@@ -1404,7 +1404,7 @@ def get_default_methods() -> ApiMethodRegistry:
     """
     return {
         "version.status": _sync_spec("version.status", version_status, "Inspect WebUI kernel repository status."),
-        "webui.check_updates": _sync_spec("webui.check_updates", webui_check_updates, "Check WebUI kernel and extension updates.", WEBUI_REQUEST_SCHEMA),
+        "webui.check_updates": _sync_spec("webui.check_updates", webui_check_updates, "Check WebUI kernel, extension, and PyTorch updates.", WEBUI_REQUEST_SCHEMA),
         "version.branches": _sync_spec("version.branches", version_branches, "List repository branches for a WebUI kernel."),
         "version.commits": _sync_spec("version.commits", version_commits, "List repository commits for a WebUI kernel."),
         "version.branch_presets": _sync_spec(

@@ -34,8 +34,8 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     DEFAULT_EXTENSION_INDEX_URL,
     ExtensionIndexItem,
     ExtensionManager,
-    WebUiUpdateSummary,
-    check_repository_update,
+    WebUiUpdateOptions,
+    WebUiUpdateStatus,
     fetch_comfyui_custom_node_index,
     fetch_extension_index,
     fetch_pypi_versions,
@@ -50,9 +50,9 @@ from sd_webui_all_in_one.base_manager.version_manager import (
 from sd_webui_all_in_one.downloader import download_archive_and_unpack, download_file
 from sd_webui_all_in_one.file_manager import move_files, remove_files
 from sd_webui_all_in_one.mirror_manager import PYPI_INDEX_MIRROR_OFFICIAL, PYPI_INDEX_MIRROR_TENCENT
-from sd_webui_all_in_one.package_analyzer import get_package_version_from_library
 
 SnapshotFactory = Callable[[Path, bool], WebUiSnapshot]
+UpdateChecker = Callable[[Path, WebUiUpdateOptions | None], WebUiUpdateStatus]
 
 WebUiApiType: TypeAlias = Literal[
     "sd_webui",
@@ -186,10 +186,17 @@ def _extension_index_item_from_params(data: dict[str, Any]) -> ExtensionIndexIte
 class WebUiApiAdapter:
     """统一 WebUI API adapter。"""
 
-    def __init__(self, webui_type: WebUiApiType, display_name: str, snapshot_factory: SnapshotFactory) -> None:
+    def __init__(
+        self,
+        webui_type: WebUiApiType,
+        display_name: str,
+        snapshot_factory: SnapshotFactory,
+        update_checker: UpdateChecker | None = None,
+    ) -> None:
         self.webui_type = webui_type
         self.display_name = display_name
         self._snapshot_factory = snapshot_factory
+        self._update_checker = update_checker
 
     def repository_status(self, webui_path: Path) -> dict[str, Any]:
         """读取内核仓库状态。
@@ -266,36 +273,8 @@ class WebUiApiAdapter:
         update_repository(webui_path)
         return {"updated": True}
 
-    def _check_invokeai_kernel_update(self, options: dict[str, Any]) -> dict[str, Any]:
-        """检查 InvokeAI PyPI 内核版本更新。"""
-        current_version = get_package_version_from_library("invokeai")
-        index_url = str(options.get("pypi_index_url") or options.get("index_url") or (PYPI_INDEX_MIRROR_TENCENT if bool(options.get("use_pypi_mirror", False)) else PYPI_INDEX_MIRROR_OFFICIAL))
-        timeout = options.get("timeout", 20)
-        try:
-            versions = fetch_pypi_versions("invokeai", current_version=current_version, index_url=index_url, timeout=timeout)
-            latest_version = versions[0].version if versions else None
-            return {
-                "source_type": "pypi",
-                "name": "InvokeAI",
-                "package_name": "invokeai",
-                "current_version": current_version,
-                "latest_version": latest_version,
-                "has_update": bool(current_version and latest_version and current_version != latest_version),
-                "error": None if versions else "未获取到 PyPI 版本列表",
-            }
-        except Exception as exc:
-            return {
-                "source_type": "pypi",
-                "name": "InvokeAI",
-                "package_name": "invokeai",
-                "current_version": current_version,
-                "latest_version": None,
-                "has_update": False,
-                "error": str(exc),
-            }
-
     def check_updates(self, webui_path: Path, options: dict[str, Any] | None = None) -> dict[str, Any]:
-        """检查 WebUI 内核和扩展更新。
+        """检查 WebUI 内核、扩展和 PyTorch 更新。
 
         Args:
             webui_path (Path): WebUI 根目录。
@@ -303,56 +282,24 @@ class WebUiApiAdapter:
 
         Returns:
             dict[str, Any]: 更新检查结果。
+
+        Raises:
+            NotImplementedError: Adapter 未配置更新检查函数时抛出。
         """
-        options = options or {}
-        include_kernel = bool(options.get("include_kernel", True))
-        include_extensions = bool(options.get("include_extensions", True))
-        fetch = bool(options.get("fetch", True))
-        use_github_mirror = bool(options.get("use_github_mirror", False))
-        custom_github_mirror = options.get("custom_github_mirror")
-
-        kernel: dict[str, Any] | None = None
-        extensions: list[dict[str, Any]] = []
-        if include_kernel:
-            if self.webui_type == "invokeai":
-                kernel = self._check_invokeai_kernel_update(options)
-            else:
-                kernel = _dataclass_dict(
-                    check_repository_update(
-                        webui_path,
-                        fetch=fetch,
-                        use_github_mirror=use_github_mirror,
-                        custom_github_mirror=custom_github_mirror,
-                    )
-                )
-
-        if include_extensions:
-            try:
-                extension_status = self.extension_manager(webui_path).check_updates(
-                    fetch=fetch,
-                    use_github_mirror=use_github_mirror,
-                    custom_github_mirror=custom_github_mirror,
-                )
-                extensions = _dataclass_list(extension_status)
-            except NotImplementedError:
-                extensions = []
-
-        kernel_has_update = bool(kernel and kernel.get("has_update"))
-        extension_update_count = sum(1 for item in extensions if item.get("has_update"))
-        skipped_count = sum(1 for item in extensions if not item.get("is_git_repo", True))
-        error_count = (1 if kernel and kernel.get("error") else 0) + sum(1 for item in extensions if item.get("error"))
-        summary = WebUiUpdateSummary(
-            has_update=kernel_has_update or extension_update_count > 0,
-            kernel_has_update=kernel_has_update,
-            extension_update_count=extension_update_count,
-            skipped_count=skipped_count,
-            error_count=error_count,
+        if self._update_checker is None:
+            raise NotImplementedError(f"{self.display_name} does not provide an update checker")
+        data = options or {}
+        update_options = WebUiUpdateOptions(
+            fetch=bool(data.get("fetch", True)),
+            include_kernel=bool(data.get("include_kernel", True)),
+            include_extensions=bool(data.get("include_extensions", True)),
+            include_pytorch=bool(data.get("include_pytorch", True)),
+            use_github_mirror=bool(data.get("use_github_mirror", False)),
+            custom_github_mirror=data.get("custom_github_mirror"),
+            pypi_index_url=str(data.get("pypi_index_url") or data.get("index_url") or (PYPI_INDEX_MIRROR_TENCENT if bool(data.get("use_pypi_mirror", False)) else PYPI_INDEX_MIRROR_OFFICIAL)),
+            timeout=int(data["timeout"]) if data.get("timeout") is not None else 20,
         )
-        return {
-            "kernel": kernel,
-            "extensions": extensions,
-            "summary": _dataclass_dict(summary),
-        }
+        return _dataclass_dict(self._update_checker(webui_path, update_options))
 
     def snapshot_dir(self, webui_path: Path, snapshot_dir: Path | None = None) -> Path:
         """获取快照目录。
@@ -932,13 +879,13 @@ class WebUiApiAdapter:
 
 
 WEBUI_API_ADAPTERS: dict[WebUiApiType, WebUiApiAdapter] = {
-    "sd_webui": WebUiApiAdapter("sd_webui", "Stable Diffusion WebUI", sd_webui_base.get_sd_webui_snapshot),
-    "comfyui": WebUiApiAdapter("comfyui", "ComfyUI", comfyui_base.get_comfyui_snapshot),
-    "fooocus": WebUiApiAdapter("fooocus", "Fooocus", fooocus_base.get_fooocus_snapshot),
-    "invokeai": WebUiApiAdapter("invokeai", "InvokeAI", invokeai_base.get_invokeai_snapshot),
-    "sd_trainer": WebUiApiAdapter("sd_trainer", "SD Trainer", sd_trainer_base.get_sd_trainer_snapshot),
-    "sd_scripts": WebUiApiAdapter("sd_scripts", "SD Scripts", sd_scripts_base.get_sd_scripts_snapshot),
-    "qwen_tts_webui": WebUiApiAdapter("qwen_tts_webui", "Qwen TTS WebUI", qwen_tts_webui_base.get_qwen_tts_webui_snapshot),
+    "sd_webui": WebUiApiAdapter("sd_webui", "Stable Diffusion WebUI", sd_webui_base.get_sd_webui_snapshot, sd_webui_base.check_sd_webui_updates),
+    "comfyui": WebUiApiAdapter("comfyui", "ComfyUI", comfyui_base.get_comfyui_snapshot, comfyui_base.check_comfyui_updates),
+    "fooocus": WebUiApiAdapter("fooocus", "Fooocus", fooocus_base.get_fooocus_snapshot, fooocus_base.check_fooocus_updates),
+    "invokeai": WebUiApiAdapter("invokeai", "InvokeAI", invokeai_base.get_invokeai_snapshot, invokeai_base.check_invokeai_updates),
+    "sd_trainer": WebUiApiAdapter("sd_trainer", "SD Trainer", sd_trainer_base.get_sd_trainer_snapshot, sd_trainer_base.check_sd_trainer_updates),
+    "sd_scripts": WebUiApiAdapter("sd_scripts", "SD Scripts", sd_scripts_base.get_sd_scripts_snapshot, sd_scripts_base.check_sd_scripts_updates),
+    "qwen_tts_webui": WebUiApiAdapter("qwen_tts_webui", "Qwen TTS WebUI", qwen_tts_webui_base.get_qwen_tts_webui_snapshot, qwen_tts_webui_base.check_qwen_tts_webui_updates),
 }
 
 

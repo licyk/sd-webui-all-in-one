@@ -41,6 +41,12 @@ from sd_webui_all_in_one.base_manager.snapshot import (
     build_webui_snapshot,
     collect_git_extensions,
 )
+from sd_webui_all_in_one.base_manager.version_manager import (
+    ManagedExtension,
+    WebUiUpdateOptions,
+    WebUiUpdateStatus,
+    check_webui_updates,
+)
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.custom_exceptions import (
     AggregateError,
@@ -1241,6 +1247,55 @@ def update_invokeai_custom_nodes(
         raise AggregateError("更新 InvokeAI 扩展时发生错误", err)
 
     logger.info("更新 InvokeAI 扩展完成")
+
+
+def check_invokeai_updates(
+    invokeai_path: Path,
+    options: WebUiUpdateOptions | None = None,
+) -> WebUiUpdateStatus:
+    """检查 InvokeAI 的内核、自定义节点和 PyTorch 更新。
+
+    Args:
+        invokeai_path (Path): InvokeAI 根目录。
+        options (WebUiUpdateOptions | None): 更新检查选项。
+
+    Returns:
+        WebUiUpdateStatus: 结构化更新检查结果。
+    """
+
+    def load_extensions() -> list[ManagedExtension]:
+        """加载 InvokeAI 自定义节点。"""
+        result: list[ManagedExtension] = []
+        for item in list_invokeai_custom_nodes(invokeai_path):
+            path = item.get("path")
+            if not isinstance(path, Path):
+                continue
+            state = inspect_repository(path)
+            result.append(
+                ManagedExtension(
+                    name=item.get("name") or path.name,
+                    path=path,
+                    enabled=bool(item.get("status")),
+                    is_git_repo=state.is_git_repo,
+                    url=state.url,
+                    branch=state.branch,
+                    commit=state.commit,
+                    commit_date=state.commit_date,
+                    message=state.message,
+                    error=state.error,
+                    source_type="git" if state.is_git_repo else "unknown",
+                )
+            )
+        return result
+
+    return check_webui_updates(
+        "invokeai",
+        "InvokeAI",
+        invokeai_path,
+        extension_loader=load_extensions,
+        kernel_package_name="invokeai",
+        options=options,
+    )
 
 
 def get_invokeai_snapshot(

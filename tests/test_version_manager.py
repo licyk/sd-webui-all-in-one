@@ -6,7 +6,7 @@ import pytest
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 import sd_webui_all_in_one.base_manager.repository_inspector as repository_inspector
 import sd_webui_all_in_one.base_manager.version_manager as version_manager
-from sd_webui_all_in_one.base_manager.base import apply_github_raw_file_mirror
+from sd_webui_all_in_one.base_manager.base import PyTorchUpdateStatus, apply_github_raw_file_mirror
 from sd_webui_all_in_one.base_manager.sd_webui_base import (
     list_sd_webui_extensions,
     set_sd_webui_extensions_status,
@@ -476,3 +476,75 @@ def test_extension_manager_lifecycle_delegates_and_aggregates(monkeypatch, tmp_p
     assert removed == [plain_ext]
     with pytest.raises(FileNotFoundError):
         manager.uninstall_extension("missing")
+
+
+def test_check_webui_updates_aggregates_kernel_extensions_and_pytorch(monkeypatch, tmp_path):
+    kernel = version_manager.RepositoryUpdateStatus(name="demo", path=tmp_path, is_git_repo=True, has_update=True, behind=2)
+    pytorch = PyTorchUpdateStatus(True, "2.7.0+cu128", "cu128", "2.8.0+cu128", "Torch CUDA", True)
+    extensions = [
+        version_manager.ManagedExtension("git-ext", tmp_path / "git-ext", True, True, commit="local", source_type="git"),
+        version_manager.ManagedExtension("file-ext", tmp_path / "file-ext.py", True, False, source_type="file"),
+    ]
+    monkeypatch.setattr(
+        version_manager,
+        "check_repository_update",
+        lambda path, **_kwargs: kernel
+        if path == tmp_path
+        else version_manager.RepositoryUpdateStatus(name=path.name, path=path, is_git_repo=True, current_commit="local", remote_commit="remote", has_update=True, behind=1),
+    )
+    monkeypatch.setattr(version_manager, "get_pytorch_update_status", lambda: pytorch)
+
+    result = version_manager.check_webui_updates(
+        "demo",
+        "Demo WebUI",
+        tmp_path,
+        extension_loader=lambda: extensions,
+        options=version_manager.WebUiUpdateOptions(fetch=False),
+    )
+
+    assert result.kernel is kernel
+    assert result.pytorch is pytorch
+    assert result.extensions_supported is True
+    assert result.extensions[0].latest_version == "remote"
+    assert result.extensions[1].skipped is True
+    assert result.summary == version_manager.WebUiUpdateSummary(
+        has_update=True,
+        kernel_has_update=True,
+        pytorch_has_update=True,
+        extension_update_count=1,
+        checked_extension_count=1,
+        skipped_count=1,
+        error_count=0,
+    )
+
+
+def test_check_package_update_records_versions(monkeypatch):
+    monkeypatch.setattr(version_manager, "get_package_version_from_library", lambda _name: "4.0.0")
+    monkeypatch.setattr(version_manager, "fetch_pypi_versions", lambda *_args, **_kwargs: [version_manager.PackageVersionInfo("5.0.0")])
+
+    status = version_manager.check_package_update("invokeai", "InvokeAI", "https://pypi.example")
+
+    assert status.installed is True
+    assert status.current_version == "4.0.0"
+    assert status.latest_version == "5.0.0"
+    assert status.has_update is True
+    assert status.error is None
+
+
+def test_check_extension_updates_resolves_registry_versions(tmp_path):
+    extension = version_manager.ManagedExtension(
+        "registry-node",
+        tmp_path / "registry-node",
+        True,
+        False,
+        source_type="comfy-registry",
+        registry_id="registry-node",
+        registry_version="1.0.0",
+    )
+
+    result = version_manager.check_extension_updates([extension], registry_version_resolver=lambda _extension: "1.1.0")
+
+    assert result[0].current_version == "1.0.0"
+    assert result[0].latest_version == "1.1.0"
+    assert result[0].has_update is True
+    assert result[0].skipped is False

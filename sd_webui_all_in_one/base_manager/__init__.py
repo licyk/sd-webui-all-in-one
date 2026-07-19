@@ -2,8 +2,10 @@
 
 from sd_webui_all_in_one.base_manager.base import (
     EnvCheckTask,
+    PyTorchUpdateStatus,
     WebUiLaunchInfo,
     check_pytorch_version as check_pytorch_version,
+    get_pytorch_update_status as get_pytorch_update_status,
     prepare_pytorch_install_info,
     install_pytorch_for_webui,
     reinstall_pytorch,
@@ -132,6 +134,7 @@ from sd_webui_all_in_one.base_manager.comfyui_base import (
     uninstall_comfyui_model,
     launch_comfyui_version_gui,
     launch_comfyui_snapshot_gui,
+    check_comfyui_updates,
     get_comfyui_snapshot,
 )
 
@@ -157,6 +160,7 @@ from sd_webui_all_in_one.base_manager.fooocus_base import (
     uninstall_fooocus_model,
     launch_fooocus_version_gui,
     launch_fooocus_snapshot_gui,
+    check_fooocus_updates,
     get_fooocus_snapshot,
 )
 
@@ -192,6 +196,7 @@ from sd_webui_all_in_one.base_manager.invokeai_base import (
     reinstall_invokeai_pytorch,
     launch_invokeai_version_gui,
     launch_invokeai_snapshot_gui,
+    check_invokeai_updates,
     get_invokeai_snapshot,
 )
 
@@ -208,6 +213,7 @@ from sd_webui_all_in_one.base_manager.qwen_tts_webui_base import (
     launch_qwen_tts_webui,
     launch_qwen_tts_webui_version_gui,
     launch_qwen_tts_webui_snapshot_gui,
+    check_qwen_tts_webui_updates,
     get_qwen_tts_webui_snapshot,
 )
 
@@ -227,6 +233,7 @@ from sd_webui_all_in_one.base_manager.sd_scripts_base import (
     uninstall_sd_scripts_model,
     launch_sd_scripts_version_gui,
     launch_sd_scripts_snapshot_gui,
+    check_sd_scripts_updates,
     get_sd_scripts_snapshot,
 )
 
@@ -248,6 +255,7 @@ from sd_webui_all_in_one.base_manager.sd_trainer_base import (
     uninstall_sd_trainer_model,
     launch_sd_trainer_version_gui,
     launch_sd_trainer_snapshot_gui,
+    check_sd_trainer_updates,
     get_sd_trainer_snapshot,
 )
 
@@ -281,14 +289,27 @@ from sd_webui_all_in_one.base_manager.sd_webui_base import (
     install_sd_webui_model_from_url,
     list_sd_webui_models,
     uninstall_sd_webui_model,
+    check_sd_webui_updates,
     get_sd_webui_snapshot,
+)
+from sd_webui_all_in_one.base_manager.version_manager import (
+    ExtensionUpdateStatus,
+    PackageUpdateStatus,
+    RepositoryUpdateStatus,
+    WebUiUpdateOptions,
+    WebUiUpdateStatus,
+    WebUiUpdateSummary,
+    check_repository_update as check_repository_update,
 )
 
 # 导出的公共 API 列表，按模块分类
 __all__ = [
     # base.py - 基础功能模块
     "EnvCheckTask",
+    "PyTorchUpdateStatus",
     "WebUiLaunchInfo",
+    "get_pytorch_update_status",
+    "check_pytorch_version",
     "prepare_pytorch_install_info",
     "install_pytorch_for_webui",
     "reinstall_pytorch",
@@ -412,6 +433,7 @@ __all__ = [
     "launch_comfyui_version_gui",
     "launch_comfyui_snapshot_gui",
     "get_comfyui_snapshot",
+    "check_comfyui_updates",
     # fooocus_base.py - Fooocus 管理模块
     # 类型定义
     "FooocusBranchType",
@@ -438,6 +460,7 @@ __all__ = [
     "launch_fooocus_version_gui",
     "launch_fooocus_snapshot_gui",
     "get_fooocus_snapshot",
+    "check_fooocus_updates",
     # invokeai_base.py - InvokeAI 管理模块
     # 类型定义
     "InvokeAILocalExtensionInfo",
@@ -473,6 +496,7 @@ __all__ = [
     "launch_invokeai_version_gui",
     "launch_invokeai_snapshot_gui",
     "get_invokeai_snapshot",
+    "check_invokeai_updates",
     # qwen_tts_webui_base.py - Qwen TTS WebUI 管理模块
     # 常量
     "QWEN_TTS_WEBUI_PRESET_HF_PATH",
@@ -489,6 +513,7 @@ __all__ = [
     "launch_qwen_tts_webui_version_gui",
     "launch_qwen_tts_webui_snapshot_gui",
     "get_qwen_tts_webui_snapshot",
+    "check_qwen_tts_webui_updates",
     # sd_scripts_base.py - SD Scripts 管理模块
     # 类型定义
     "SDScriptsBranchType",
@@ -509,6 +534,7 @@ __all__ = [
     "launch_sd_scripts_version_gui",
     "launch_sd_scripts_snapshot_gui",
     "get_sd_scripts_snapshot",
+    "check_sd_scripts_updates",
     # sd_trainer_base.py - SD Trainer 管理模块
     # 类型定义
     "SDTrainerBranchType",
@@ -531,6 +557,7 @@ __all__ = [
     "launch_sd_trainer_version_gui",
     "launch_sd_trainer_snapshot_gui",
     "get_sd_trainer_snapshot",
+    "check_sd_trainer_updates",
     # sd_webui_base.py - SD WebUI 管理模块
     # 类型定义
     "SDWebUiBranchType",
@@ -565,4 +592,13 @@ __all__ = [
     "list_sd_webui_models",
     "uninstall_sd_webui_model",
     "get_sd_webui_snapshot",
+    "check_sd_webui_updates",
+    # version_manager.py - 更新检查结构
+    "RepositoryUpdateStatus",
+    "PackageUpdateStatus",
+    "ExtensionUpdateStatus",
+    "WebUiUpdateOptions",
+    "WebUiUpdateSummary",
+    "WebUiUpdateStatus",
+    "check_repository_update",
 ]

@@ -9,9 +9,50 @@ from sd_webui_all_in_one.base_manager import comfyui_base
 from sd_webui_all_in_one.base_manager import fooocus_base
 from sd_webui_all_in_one.base_manager import invokeai_base
 from sd_webui_all_in_one.base_manager import qwen_tts_webui_base
+from sd_webui_all_in_one.base_manager import sd_scripts_base
+from sd_webui_all_in_one.base_manager import sd_trainer_base
 from sd_webui_all_in_one.base_manager import sd_webui_base
 from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryState
 from sd_webui_all_in_one.base_manager.version_manager import ManagedExtension
+
+
+@pytest.mark.parametrize(
+    ("module", "function_name", "webui_type", "display_name", "supports_extensions", "kernel_package"),
+    [
+        (sd_webui_base, "check_sd_webui_updates", "sd_webui", "Stable Diffusion WebUI", True, None),
+        (comfyui_base, "check_comfyui_updates", "comfyui", "ComfyUI", True, None),
+        (fooocus_base, "check_fooocus_updates", "fooocus", "Fooocus", False, None),
+        (invokeai_base, "check_invokeai_updates", "invokeai", "InvokeAI", True, "invokeai"),
+        (sd_trainer_base, "check_sd_trainer_updates", "sd_trainer", "SD Trainer", False, None),
+        (sd_scripts_base, "check_sd_scripts_updates", "sd_scripts", "SD Scripts", False, None),
+        (qwen_tts_webui_base, "check_qwen_tts_webui_updates", "qwen_tts_webui", "Qwen TTS WebUI", False, None),
+    ],
+)
+def test_product_update_checkers_delegate_with_product_capabilities(
+    monkeypatch,
+    tmp_path,
+    module,
+    function_name,
+    webui_type,
+    display_name,
+    supports_extensions,
+    kernel_package,
+):
+    calls = []
+    sentinel = object()
+
+    def fake_check(*args, **kwargs):
+        calls.append((args, kwargs))
+        return sentinel
+
+    monkeypatch.setattr(module, "check_webui_updates", fake_check)
+    result = getattr(module, function_name)(tmp_path)
+
+    assert result is sentinel
+    args, kwargs = calls[0]
+    assert args == (webui_type, display_name, tmp_path)
+    assert (kwargs.get("extension_loader") is not None) is supports_extensions
+    assert kwargs.get("kernel_package_name") == kernel_package
 
 
 def _fake_repository_state(path: Path) -> RepositoryState:

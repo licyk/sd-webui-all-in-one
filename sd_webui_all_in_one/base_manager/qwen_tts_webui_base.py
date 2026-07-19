@@ -18,6 +18,7 @@ from sd_webui_all_in_one.base_manager.base import (
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import DEFAULT_RUNTIME_PORT, apply_hotpatcher_launch_env
 from sd_webui_all_in_one.base_manager.snapshot import WebUiSnapshot, build_webui_snapshot
+from sd_webui_all_in_one.base_manager.version_manager import WebUiUpdateOptions, WebUiUpdateStatus, check_webui_updates
 from sd_webui_all_in_one.env_check import (
     check_torch_version,
     py_dependency_checker,
@@ -269,6 +270,22 @@ def update_qwen_tts_webui(
     git_warpper.update(qwen_tts_webui_path)
 
     logger.info("更新 Qwen TTS WebUI 完成")
+
+
+def check_qwen_tts_webui_updates(
+    qwen_tts_webui_path: Path,
+    options: WebUiUpdateOptions | None = None,
+) -> WebUiUpdateStatus:
+    """检查 Qwen TTS WebUI 的内核和 PyTorch 更新。
+
+    Args:
+        qwen_tts_webui_path (Path): Qwen TTS WebUI 根目录。
+        options (WebUiUpdateOptions | None): 更新检查选项。
+
+    Returns:
+        WebUiUpdateStatus: 结构化更新检查结果。
+    """
+    return check_webui_updates("qwen_tts_webui", "Qwen TTS WebUI", qwen_tts_webui_path, options=options)
 
 
 def get_qwen_tts_webui_snapshot(

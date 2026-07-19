@@ -67,6 +67,12 @@ from sd_webui_all_in_one.base_manager.base import (
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import DEFAULT_RUNTIME_PORT, apply_hotpatcher_launch_env
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
+from sd_webui_all_in_one.base_manager.version_manager import (
+    ManagedExtension,
+    WebUiUpdateOptions,
+    WebUiUpdateStatus,
+    check_webui_updates,
+)
 from sd_webui_all_in_one.base_manager.snapshot import (
     WebUiSnapshot,
     build_webui_snapshot,
@@ -1663,6 +1669,53 @@ def update_sd_webui_extensions(
         raise AggregateError("更新 Stable Diffusion WebUI 扩展时发生错误", err)
 
     logger.info("更新 Stable Diffusion WebUI 扩展完成")
+
+
+def check_sd_webui_updates(
+    sd_webui_path: Path,
+    options: WebUiUpdateOptions | None = None,
+) -> WebUiUpdateStatus:
+    """检查 Stable Diffusion WebUI 的内核、扩展和 PyTorch 更新。
+
+    Args:
+        sd_webui_path (Path): Stable Diffusion WebUI 根目录。
+        options (WebUiUpdateOptions | None): 更新检查选项。
+
+    Returns:
+        WebUiUpdateStatus: 结构化更新检查结果。
+    """
+
+    def load_extensions() -> list[ManagedExtension]:
+        result: list[ManagedExtension] = []
+        for item in list_sd_webui_extensions(sd_webui_path):
+            path = item.get("path")
+            if not isinstance(path, Path):
+                continue
+            state = inspect_repository(path)
+            result.append(
+                ManagedExtension(
+                    name=item.get("name") or path.name,
+                    path=path,
+                    enabled=bool(item.get("status")),
+                    is_git_repo=state.is_git_repo,
+                    url=state.url,
+                    branch=state.branch,
+                    commit=state.commit,
+                    commit_date=state.commit_date,
+                    message=state.message,
+                    error=state.error,
+                    source_type="git" if state.is_git_repo else "unknown",
+                )
+            )
+        return result
+
+    return check_webui_updates(
+        "sd_webui",
+        "Stable Diffusion WebUI",
+        sd_webui_path,
+        extension_loader=load_extensions,
+        options=options,
+    )
 
 
 def get_sd_webui_snapshot(

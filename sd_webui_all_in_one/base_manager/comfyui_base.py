@@ -29,6 +29,7 @@ from sd_webui_all_in_one.base_manager.base import (
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import DEFAULT_RUNTIME_PORT, apply_hotpatcher_launch_env
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
 from sd_webui_all_in_one.base_manager.comfy_registry import (
+    fetch_comfy_registry_versions,
     read_comfy_registry_info,
     read_comfy_registry_nightly_id,
     switch_comfy_registry_node_version,
@@ -40,7 +41,12 @@ from sd_webui_all_in_one.base_manager.snapshot import (
     build_webui_snapshot,
     collect_repository_snapshot,
 )
-from sd_webui_all_in_one.base_manager.version_manager import ManagedExtension
+from sd_webui_all_in_one.base_manager.version_manager import (
+    ManagedExtension,
+    WebUiUpdateOptions,
+    WebUiUpdateStatus,
+    check_webui_updates,
+)
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.downloader import (
     DownloadToolType,
@@ -1356,6 +1362,36 @@ class ComfyUiExtensionManager:
             raise ValueError(f"'{name}' 不是 Comfy Registry 节点")
         node_id = ext.registry_id or _normalize_custom_node_name(ext.name)
         switch_comfy_registry_node_version(self.root_path, node_id=node_id, version=version, target_path=ext.path, use_uv=use_uv)
+
+
+def check_comfyui_updates(
+    comfyui_path: Path,
+    options: WebUiUpdateOptions | None = None,
+) -> WebUiUpdateStatus:
+    """检查 ComfyUI 的内核、自定义节点和 PyTorch 更新。
+
+    Args:
+        comfyui_path (Path): ComfyUI 根目录。
+        options (WebUiUpdateOptions | None): 更新检查选项。
+
+    Returns:
+        WebUiUpdateStatus: 结构化更新检查结果。
+    """
+    manager = ComfyUiExtensionManager(comfyui_path, include_files=True)
+
+    def resolve_registry_version(extension: ManagedExtension) -> str | None:
+        node_id = extension.registry_id or extension.name.removesuffix(".disabled")
+        versions = fetch_comfy_registry_versions(node_id, timeout=(options or WebUiUpdateOptions()).timeout)
+        return versions[0].version if versions else None
+
+    return check_webui_updates(
+        "comfyui",
+        "ComfyUI",
+        comfyui_path,
+        extension_loader=manager.list_extensions,
+        registry_version_resolver=resolve_registry_version,
+        options=options,
+    )
 
 
 def get_comfyui_snapshot(

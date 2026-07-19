@@ -13,6 +13,7 @@ from sd_webui_all_in_one.api_server import registry
 from sd_webui_all_in_one.api_server import server as api_server_module
 from sd_webui_all_in_one.api_server.adapters import webui as webui_adapters
 from sd_webui_all_in_one.api_server.adapters.webui import WebUiApiType
+from sd_webui_all_in_one.base_manager.base import PyTorchUpdateStatus
 from sd_webui_all_in_one.base_manager import version_manager
 from sd_webui_all_in_one.cli_manager import auto_mirror
 
@@ -414,32 +415,34 @@ def test_get_webui_adapter_rejects_unknown_type():
         webui_adapters.get_webui_adapter(cast(WebUiApiType, "missing"))
 
 
-def test_webui_adapter_check_updates_returns_structured_summary(monkeypatch, tmp_path):
-    adapter = webui_adapters.WebUiApiAdapter("sd_webui", "Stable Diffusion WebUI", lambda _path, _include_packages: None)
-    extension_status = version_manager.RepositoryUpdateStatus(
-        name="demo-ext",
-        path=tmp_path / "extensions" / "demo-ext",
-        is_git_repo=True,
-        has_update=True,
-        behind=2,
+def test_webui_adapter_check_updates_returns_structured_summary(tmp_path):
+    update_status = version_manager.WebUiUpdateStatus(
+        webui_type="sd_webui",
+        name="Stable Diffusion WebUI",
+        path=tmp_path,
+        kernel=version_manager.RepositoryUpdateStatus(name="repo", path=tmp_path, is_git_repo=True, has_update=True, behind=1),
+        pytorch=PyTorchUpdateStatus(True, "2.7.0+cu128", "cu128", "2.8.0+cu128", "Torch CUDA", True),
+        extensions=[
+            version_manager.ExtensionUpdateStatus(
+                name="demo-ext",
+                path=tmp_path / "extensions" / "demo-ext",
+                enabled=True,
+                source_type="git",
+                is_git_repo=True,
+                has_update=True,
+                behind=2,
+            )
+        ],
+        extensions_supported=True,
+        summary=version_manager.WebUiUpdateSummary(True, True, True, 1, 1, 0, 0),
+        errors=[],
     )
-
-    class FakeExtensionManager:
-        def check_updates(self, **_kwargs):
-            return [extension_status]
-
-    monkeypatch.setattr(
-        webui_adapters,
-        "check_repository_update",
-        lambda path, **_kwargs: version_manager.RepositoryUpdateStatus(
-            name=path.name,
-            path=path,
-            is_git_repo=True,
-            has_update=True,
-            behind=1,
-        ),
+    adapter = webui_adapters.WebUiApiAdapter(
+        "sd_webui",
+        "Stable Diffusion WebUI",
+        lambda _path, _include_packages: None,
+        lambda _path, _options: update_status,
     )
-    monkeypatch.setattr(adapter, "extension_manager", lambda _path: FakeExtensionManager())
 
     result = adapter.check_updates(tmp_path, options={"fetch": False})
 
@@ -449,7 +452,9 @@ def test_webui_adapter_check_updates_returns_structured_summary(monkeypatch, tmp
     assert result["summary"] == {
         "has_update": True,
         "kernel_has_update": True,
+        "pytorch_has_update": True,
         "extension_update_count": 1,
+        "checked_extension_count": 1,
         "skipped_count": 0,
         "error_count": 0,
     }
