@@ -21,10 +21,10 @@ from sd_webui_all_in_one.api_server.adapters import (
     resolve_pytorch_selection,
 )
 from sd_webui_all_in_one.api_server.server import ApiMethodRegistry, ApiMethodSpec, ApiTaskContext, ApiTaskRegistry
-from sd_webui_all_in_one.base_manager import fooocus_base, sd_trainer_base, sd_webui_base
+from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, qwen_tts_webui_base, sd_trainer_base, sd_webui_base
 from sd_webui_all_in_one.cli_manager.auto_mirror import apply_auto_mirror
 from sd_webui_all_in_one.env_check import check_torch_version_status
-from sd_webui_all_in_one.launch_arguments import get_launch_argument_catalog
+from sd_webui_all_in_one.launch_arguments import LaunchArgumentCatalog
 from sd_webui_all_in_one.model_downloader import SUPPORTED_WEBUI_LIST
 from sd_webui_all_in_one.proxy import clean_proxy, get_system_proxy_address, set_proxy, test_proxy_connectivity
 from sd_webui_all_in_one.pytorch_manager import auto_detect_pytorch_device_category, export_pytorch_list, get_available_pytorch_device_type
@@ -38,6 +38,15 @@ WEBUI_REQUEST_SCHEMA: dict[str, Any] = {
         "options": {"type": "object"},
     },
     "required": ["webui_type", "webui_path"],
+}
+
+LAUNCH_ARGUMENT_CATALOG_FACTORIES: dict[WebUiApiType, Callable[..., LaunchArgumentCatalog]] = {
+    "sd_webui": sd_webui_base.get_sd_webui_launch_argument_catalog,
+    "comfyui": comfyui_base.get_comfyui_launch_argument_catalog,
+    "fooocus": fooocus_base.get_fooocus_launch_argument_catalog,
+    "invokeai": invokeai_base.get_invokeai_launch_argument_catalog,
+    "sd_trainer": sd_trainer_base.get_sd_trainer_launch_argument_catalog,
+    "qwen_tts_webui": qwen_tts_webui_base.get_qwen_tts_webui_launch_argument_catalog,
 }
 
 
@@ -374,9 +383,16 @@ def launch_arguments_catalog(params: dict[str, Any]) -> dict[str, Any]:
     timeout = options.get("timeout", 15.0)
     if not isinstance(timeout, (int, float)):
         raise ValueError("Field 'options.timeout' must be a number")
-    catalog = get_launch_argument_catalog(
-        _webui_type(params),
+    use_parser_object = options.get("use_parser_object", True)
+    if not isinstance(use_parser_object, bool):
+        raise ValueError("Field 'options.use_parser_object' must be a boolean")
+    webui_type = _webui_type(params)
+    factory = LAUNCH_ARGUMENT_CATALOG_FACTORIES.get(webui_type)
+    if factory is None:
+        raise ValueError(f"Launch argument discovery is unsupported for webui_type: {webui_type}")
+    catalog = factory(
         _webui_path(params),
+        use_parser_object=use_parser_object,
         timeout_seconds=float(timeout),
     )
     return {"catalog": catalog.to_dict()}

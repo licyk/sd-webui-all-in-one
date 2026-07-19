@@ -5,21 +5,20 @@ import json
 import sys
 import threading
 import time
+from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
 
 import sd_webui_all_in_one.launch_arguments as launch_arguments_module
 from sd_webui_all_in_one.api_server import registry
+from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, qwen_tts_webui_base, sd_trainer_base, sd_webui_base
 from sd_webui_all_in_one.launch_arguments import (
     CATALOG_SCHEMA_VERSION,
-    InvokeAiHelpProvider,
-    LaunchArgumentDiscoveryContext,
     LaunchArgumentValueKind,
-    PROVIDERS,
-    ScriptHelpProvider,
+    build_script_help_command,
     cancel_launch_argument_discovery,
-    get_launch_argument_catalog,
+    discover_launch_argument_catalog,
     parse_argparse_help,
     parse_argument_parser,
 )
@@ -96,13 +95,48 @@ Performance options:
 """
 
 
+def _write_comfyui_argument_parser(path: Path) -> None:
+    package = path / "comfy"
+    package.mkdir()
+    (package / "__init__.py").write_text("", encoding="utf-8")
+    (package / "cli_args.py").write_text(
+        """import argparse
+parser = argparse.ArgumentParser()
+network = parser.add_argument_group("Network options")
+network.add_argument("--listen", nargs="?", metavar="IP")
+network.add_argument("--port", type=int, default=8188)
+cache = parser.add_mutually_exclusive_group()
+cache.add_argument("--cache-classic", action="store_true")
+cache.add_argument("--cache-lru", type=int)
+""",
+        encoding="utf-8",
+    )
+
+
+def _get_script_catalog(
+    webui_type: str,
+    path: Path,
+    *,
+    timeout_seconds: float = 15.0,
+):
+    return discover_launch_argument_catalog(
+        webui_type,
+        path,
+        provider_identity="test:script-help",
+        help_command_factory=lambda context: build_script_help_command(context, ("launch.py",)),
+        use_parser_object=False,
+        python_executable=sys.executable,
+        timeout_seconds=timeout_seconds,
+    )
+
+
 def test_catalog_models_serialize_stable_snake_case_shape(tmp_path: Path) -> None:
     script = tmp_path / "launch.py"
     script.write_text("print('''" + HELP_LF + "''')", encoding="utf-8")
-    catalog = get_launch_argument_catalog("sd_webui", tmp_path, python_executable=sys.executable)
+    catalog = _get_script_catalog("demo", tmp_path)
     payload = catalog.to_dict()
     assert payload["schema_version"] == CATALOG_SCHEMA_VERSION
-    assert payload["webui_type"] == "sd_webui"
+    assert payload["webui_type"] == "demo"
     assert len(payload["catalog_revision"]) == 64
     assert payload["arguments"][0]["value_kind"] == "boolean"
     assert payload["arguments"][0]["min_values"] == 0
@@ -376,42 +410,6 @@ def test_missing_usage_and_malformed_help_return_typed_diagnostics() -> None:
     assert diagnostics[0].code == "parse_empty"
 
 
-def test_every_desktop_family_has_provider_and_selects_expected_help_command(tmp_path: Path) -> None:
-    expected_scripts = {
-        "sd_webui": "launch.py",
-        "comfyui": "main.py",
-        "fooocus": "launch.py",
-        "sd_trainer": "gui.py",
-        "qwen_tts_webui": "launch.py",
-    }
-    assert set(PROVIDERS) == {*expected_scripts, "invokeai"}
-    for webui_type, script_name in expected_scripts.items():
-        family = tmp_path / webui_type
-        family.mkdir()
-        (family / script_name).write_text("", encoding="utf-8")
-        provider = PROVIDERS[webui_type]
-        assert isinstance(provider, ScriptHelpProvider)
-        command = provider.help_command(LaunchArgumentDiscoveryContext(webui_type, family))
-        assert command is not None
-        assert command.argv[-2:] == [str(family / script_name), "--help"]
-
-    invoke = PROVIDERS["invokeai"]
-    assert isinstance(invoke, InvokeAiHelpProvider)
-    command = invoke.help_command(LaunchArgumentDiscoveryContext("invokeai", tmp_path))
-    assert command.argv[1] == "-c"
-    assert "invokeai.frontend.cli.arg_parser" in command.argv[2]
-    assert command.env and command.env["INVOKEAI_ROOT"] == str(tmp_path)
-
-
-def test_sd_trainer_provider_falls_back_to_kohya_script(tmp_path: Path) -> None:
-    (tmp_path / "kohya_gui.py").write_text("", encoding="utf-8")
-    provider = PROVIDERS["sd_trainer"]
-    assert isinstance(provider, ScriptHelpProvider)
-    command = provider.help_command(LaunchArgumentDiscoveryContext("sd_trainer", tmp_path))
-    assert command is not None
-    assert command.argv[-2:] == [str(tmp_path / "kohya_gui.py"), "--help"]
-
-
 def test_discovery_timeout_terminates_child_and_never_returns_empty_success(tmp_path: Path) -> None:
     marker = tmp_path / "completed"
     (tmp_path / "launch.py").write_text(
@@ -419,12 +417,7 @@ def test_discovery_timeout_terminates_child_and_never_returns_empty_success(tmp_
         encoding="utf-8",
     )
     started = time.monotonic()
-    catalog = get_launch_argument_catalog(
-        "sd_webui",
-        tmp_path,
-        python_executable=sys.executable,
-        timeout_seconds=0.1,
-    )
+    catalog = _get_script_catalog("demo", tmp_path, timeout_seconds=0.1)
     assert time.monotonic() - started < 3
     assert catalog.arguments == []
     assert catalog.diagnostics[0].code == "discovery_timeout"
@@ -441,12 +434,7 @@ def test_discovery_shutdown_cancellation_terminates_child(tmp_path: Path) -> Non
     result = []
     worker = threading.Thread(
         target=lambda: result.append(
-            get_launch_argument_catalog(
-                "sd_webui",
-                tmp_path,
-                python_executable=sys.executable,
-                timeout_seconds=10,
-            )
+            _get_script_catalog("demo", tmp_path, timeout_seconds=10)
         )
     )
     worker.start()
@@ -458,14 +446,14 @@ def test_discovery_shutdown_cancellation_terminates_child(tmp_path: Path) -> Non
     assert not marker.exists()
 
 
-def test_missing_script_returns_explicit_unavailable_catalog(tmp_path: Path) -> None:
-    catalog = get_launch_argument_catalog("comfyui", tmp_path)
+def test_missing_comfyui_parser_returns_explicit_unavailable_catalog(tmp_path: Path) -> None:
+    catalog = comfyui_base.get_comfyui_launch_argument_catalog(tmp_path)
     assert catalog.arguments == []
-    assert catalog.diagnostics[0].code == "discovery_unavailable"
+    assert any(diagnostic.code == "discovery_unavailable" for diagnostic in catalog.diagnostics)
 
 
 def test_api_registry_exposes_structured_catalog_and_validates_timeout(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    (tmp_path / "main.py").write_text("print('''" + HELP_LF + "''')", encoding="utf-8")
+    _write_comfyui_argument_parser(tmp_path)
     result = registry.launch_arguments_catalog({"webui_type": "comfyui", "webui_path": str(tmp_path)})
     assert result["catalog"]["webui_type"] == "comfyui"
     assert result["catalog"]["arguments"]
@@ -474,14 +462,141 @@ def test_api_registry_exposes_structured_catalog_and_validates_timeout(monkeypat
     assert "launch.arguments.catalog" in registry.get_default_methods()
     with pytest.raises(ValueError, match="timeout"):
         registry.launch_arguments_catalog({"webui_type": "comfyui", "webui_path": str(tmp_path), "options": {"timeout": "forever"}})
+    with pytest.raises(ValueError, match="use_parser_object"):
+        registry.launch_arguments_catalog({"webui_type": "comfyui", "webui_path": str(tmp_path), "options": {"use_parser_object": "yes"}})
+
+
+def test_comfyui_base_parses_actual_argument_parser_object(tmp_path: Path) -> None:
+    _write_comfyui_argument_parser(tmp_path)
+
+    catalog = comfyui_base.get_comfyui_launch_argument_catalog(tmp_path)
+
+    assert catalog.webui_type == "comfyui"
+    assert len(catalog.catalog_revision) == 64
+    assert catalog.diagnostics == []
+    by_name = {argument.name: argument for argument in catalog.arguments}
+    assert by_name["listen"].category == "network_options"
+    assert by_name["listen"].value_kind is LaunchArgumentValueKind.OPTIONAL_VALUE
+    assert by_name["cache_classic"].exclusive_group == by_name["cache_lru"].exclusive_group
+
+
+def test_migrated_base_managers_parse_their_actual_parser_objects(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    sd_webui_path = tmp_path / "sd_webui"
+    (sd_webui_path / "modules").mkdir(parents=True)
+    (sd_webui_path / "modules" / "__init__.py").write_text("", encoding="utf-8")
+    (sd_webui_path / "modules" / "cmd_args.py").write_text(
+        "import argparse\nparser = argparse.ArgumentParser()\nparser.add_argument('--api', action='store_true')\n",
+        encoding="utf-8",
+    )
+
+    fooocus_path = tmp_path / "fooocus"
+    fooocus_path.mkdir()
+    (fooocus_path / "args_manager.py").write_text(
+        """import argparse
+class ArgsParser:
+    def __init__(self):
+        self.parser = argparse.ArgumentParser()
+        self.parser.add_argument("--preset")
+args_parser = ArgsParser()
+""",
+        encoding="utf-8",
+    )
+
+    trainer_path = tmp_path / "trainer"
+    trainer_path.mkdir()
+    (trainer_path / "gui.py").write_text(
+        "import argparse\nparser = argparse.ArgumentParser()\nparser.add_argument('--listen', action='store_true')\n",
+        encoding="utf-8",
+    )
+
+    kohya_path = tmp_path / "kohya"
+    kohya_path.mkdir()
+    (kohya_path / "kohya_gui.py").write_text(
+        """import argparse
+def initialize_arg_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--headless", action="store_true")
+    return parser
+""",
+        encoding="utf-8",
+    )
+
+    qwen_path = tmp_path / "qwen"
+    (qwen_path / "qwen_tts_webui").mkdir(parents=True)
+    (qwen_path / "qwen_tts_webui" / "__init__.py").write_text("", encoding="utf-8")
+    (qwen_path / "qwen_tts_webui" / "cmd_args.py").write_text(
+        """import argparse
+def get_args_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--server-port", type=int)
+    return parser
+""",
+        encoding="utf-8",
+    )
+
+    invoke_parser = argparse.ArgumentParser()
+    invoke_parser.add_argument("--invoke-model")
+    original_import_module = invokeai_base.importlib.import_module
+    monkeypatch.setattr(
+        invokeai_base.importlib,
+        "import_module",
+        lambda name: SimpleNamespace(_parser=invoke_parser) if name == "invokeai.frontend.cli.arg_parser" else original_import_module(name),
+    )
+
+    catalogs = {
+        "sd_webui": sd_webui_base.get_sd_webui_launch_argument_catalog(sd_webui_path),
+        "fooocus": fooocus_base.get_fooocus_launch_argument_catalog(fooocus_path),
+        "trainer": sd_trainer_base.get_sd_trainer_launch_argument_catalog(trainer_path),
+        "kohya": sd_trainer_base.get_sd_trainer_launch_argument_catalog(kohya_path),
+        "qwen": qwen_tts_webui_base.get_qwen_tts_webui_launch_argument_catalog(qwen_path),
+        "invokeai": invokeai_base.get_invokeai_launch_argument_catalog(tmp_path / "invokeai"),
+    }
+
+    assert all(not catalog.diagnostics for catalog in catalogs.values())
+    assert {argument.name for argument in catalogs["sd_webui"].arguments} >= {"api", "help"}
+    assert {argument.name for argument in catalogs["fooocus"].arguments} >= {"preset", "help"}
+    assert {argument.name for argument in catalogs["trainer"].arguments} >= {"listen", "help"}
+    assert {argument.name for argument in catalogs["kohya"].arguments} >= {"headless", "help"}
+    assert {argument.name for argument in catalogs["qwen"].arguments} >= {"server_port", "help"}
+    assert {argument.name for argument in catalogs["invokeai"].arguments} >= {"invoke_model", "help"}
+    assert set(registry.LAUNCH_ARGUMENT_CATALOG_FACTORIES) >= {
+        "sd_webui",
+        "comfyui",
+        "fooocus",
+        "invokeai",
+        "sd_trainer",
+        "qwen_tts_webui",
+    }
+
+
+def test_base_manager_object_failure_falls_back_to_help_and_switch_can_disable_object(tmp_path: Path) -> None:
+    (tmp_path / "launch.py").write_text("print('''" + HELP_LF + "''')", encoding="utf-8")
+
+    fallback = sd_webui_base.get_sd_webui_launch_argument_catalog(
+        tmp_path,
+        python_executable=sys.executable,
+    )
+    help_only = sd_webui_base.get_sd_webui_launch_argument_catalog(
+        tmp_path,
+        use_parser_object=False,
+        python_executable=sys.executable,
+    )
+
+    assert fallback.arguments == help_only.arguments
+    assert any(diagnostic.code == "object_discovery_failed" for diagnostic in fallback.diagnostics)
+    assert not any(diagnostic.code.startswith("object_discovery") for diagnostic in help_only.diagnostics)
+
+    unavailable = sd_webui_base.get_sd_webui_launch_argument_catalog(tmp_path / "missing")
+    assert unavailable.arguments == []
+    assert any(diagnostic.severity == "error" for diagnostic in unavailable.diagnostics)
 
 
 def test_catalog_revision_changes_with_source_contract(tmp_path: Path) -> None:
     script = tmp_path / "launch.py"
     script.write_text("print('''" + HELP_LF + "''')", encoding="utf-8")
-    first = get_launch_argument_catalog("sd_webui", tmp_path, python_executable=sys.executable)
+    first = _get_script_catalog("demo", tmp_path)
     script.write_text("print('''" + HELP_LF.replace("--port PORT", "--port-number PORT") + "''')", encoding="utf-8")
-    second = get_launch_argument_catalog("sd_webui", tmp_path, python_executable=sys.executable)
+    second = _get_script_catalog("demo", tmp_path)
     assert first.catalog_revision != second.catalog_revision
 
 
@@ -504,7 +619,7 @@ def test_catalog_revision_is_stable_for_contract_and_ignores_transient_noise(
         lambda _command, _context: (next(outputs), "", None),
     )
     revisions = [
-        get_launch_argument_catalog("sd_webui", tmp_path, python_executable=sys.executable).catalog_revision
+        _get_script_catalog("demo", tmp_path).catalog_revision
         for _ in range(4)
     ]
     assert revisions[0] == revisions[1] == revisions[2]

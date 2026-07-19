@@ -479,8 +479,10 @@ def test_default_api_registry_includes_full_version_snapshot_extension_surface()
 
 
 def test_launch_argument_catalog_api_success_and_typed_failure_envelopes(tmp_path):
-    (tmp_path / "main.py").write_text(
-        "print('usage: demo [-h]\\n\\noptions:\\n  -h, --help  show help')",
+    (tmp_path / "comfy").mkdir()
+    (tmp_path / "comfy" / "__init__.py").write_text("", encoding="utf-8")
+    (tmp_path / "comfy" / "cli_args.py").write_text(
+        "import argparse\nparser = argparse.ArgumentParser()\n",
         encoding="utf-8",
     )
     server = create_api_server(port=0)

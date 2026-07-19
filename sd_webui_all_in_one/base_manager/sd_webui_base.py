@@ -1,5 +1,6 @@
 """Stable Diffusion WebUI 管理器模块"""
 
+import importlib
 import os
 import json
 import uuid
@@ -35,6 +36,12 @@ from sd_webui_all_in_one.optimize import (
 from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 from sd_webui_all_in_one.ansi_color import ANSIColor
 from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.launch_arguments import (
+    DEFAULT_DISCOVERY_TIMEOUT_SECONDS,
+    LaunchArgumentCatalog,
+    build_script_help_command,
+    discover_launch_argument_catalog,
+)
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
     LOGGER_COLOR,
@@ -85,12 +92,53 @@ from sd_webui_all_in_one.downloader import (
     download_file,
 )
 from sd_webui_all_in_one.pkg_manager import pip_install
+from sd_webui_all_in_one.utils import TemporaryModulePath
 
 logger = get_logger(
     name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+SD_WEBUI_LAUNCH_ARGUMENT_PROVIDER_IDENTITY = "modules.cmd_args:parser"
+"""Stable Diffusion WebUI 启动参数对象解析器的稳定标识。"""
+
+
+def get_sd_webui_launch_argument_catalog(
+    sd_webui_path: str | Path,
+    use_parser_object: bool = True,
+    *,
+    python_executable: str | Path | None = None,
+    timeout_seconds: float = DEFAULT_DISCOVERY_TIMEOUT_SECONDS,
+) -> LaunchArgumentCatalog:
+    """发现 SD WebUI 启动参数，对象解析失败时回退到 ``--help``。
+
+    Args:
+        sd_webui_path (str | Path): Stable Diffusion WebUI 根目录。
+        use_parser_object (bool): 是否优先解析实际参数对象。
+        python_executable (str | Path | None): 执行 ``--help`` 的 Python。
+        timeout_seconds (float): ``--help`` 命令超时秒数。
+
+    Returns:
+        LaunchArgumentCatalog: 规范化的启动参数目录。
+    """
+    path = Path(sd_webui_path)
+
+    def load_parser():
+        with TemporaryModulePath(path):
+            return importlib.import_module("modules.cmd_args").parser
+
+    return discover_launch_argument_catalog(
+        "sd_webui",
+        path,
+        provider_identity=SD_WEBUI_LAUNCH_ARGUMENT_PROVIDER_IDENTITY,
+        help_command_factory=lambda context: build_script_help_command(context, ("launch.py",)),
+        parser_loader=load_parser,
+        parser_source_identity="modules.cmd_args:parser",
+        use_parser_object=use_parser_object,
+        python_executable=python_executable,
+        timeout_seconds=timeout_seconds,
+    )
 
 SDWebUiBranchType: TypeAlias = Literal[
     "sd_webui_main",

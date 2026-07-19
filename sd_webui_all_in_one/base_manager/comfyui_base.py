@@ -1,5 +1,6 @@
 """ComfyUI 管理器模块"""
 
+import importlib
 import os
 from pathlib import Path
 from typing import TypedDict
@@ -53,6 +54,12 @@ from sd_webui_all_in_one.file_manager import (
     remove_files,
 )
 from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.launch_arguments import (
+    DEFAULT_DISCOVERY_TIMEOUT_SECONDS,
+    LaunchArgumentCatalog,
+    build_script_help_command,
+    discover_launch_argument_catalog,
+)
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
     LOGGER_COLOR,
@@ -71,6 +78,7 @@ from sd_webui_all_in_one.optimize import (
 )
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
+from sd_webui_all_in_one.utils import TemporaryModulePath
 from sd_webui_all_in_one.env_check import (
     ComfyUIConflictAnalysisResult,
     py_dependency_checker,
@@ -211,6 +219,46 @@ COMFYUI_CUSTOM_NODE_LIST_PATH = "Comfy-Org/ComfyUI-Manager/refs/heads/main/custo
 
 COMFYUI_CONFIG_PATH = ROOT_PATH / "base_manager" / "config" / "comfy.settings.json"
 """ComfyUI 预设配置文件路径"""
+
+COMFYUI_LAUNCH_ARGUMENT_PROVIDER_IDENTITY = "comfy.cli_args:parser"
+"""ComfyUI 启动参数对象解析器的稳定标识。"""
+
+
+def get_comfyui_launch_argument_catalog(
+    comfyui_path: str | Path,
+    use_parser_object: bool = True,
+    *,
+    python_executable: str | Path | None = None,
+    timeout_seconds: float = DEFAULT_DISCOVERY_TIMEOUT_SECONDS,
+) -> LaunchArgumentCatalog:
+    """发现 ComfyUI 启动参数，对象解析失败时回退到 ``--help``。
+
+    Args:
+        comfyui_path (str | Path): ComfyUI 根目录。
+        use_parser_object (bool): 是否优先解析实际参数对象。
+        python_executable (str | Path | None): 执行 ``--help`` 的 Python。
+        timeout_seconds (float): ``--help`` 命令超时秒数。
+
+    Returns:
+        LaunchArgumentCatalog: 规范化的 ComfyUI 启动参数目录。
+    """
+    path = Path(comfyui_path)
+
+    def load_parser():
+        with TemporaryModulePath(path):
+            return importlib.import_module("comfy.cli_args").parser
+
+    return discover_launch_argument_catalog(
+        "comfyui",
+        path,
+        provider_identity=COMFYUI_LAUNCH_ARGUMENT_PROVIDER_IDENTITY,
+        help_command_factory=lambda context: build_script_help_command(context, ("main.py",)),
+        parser_loader=load_parser,
+        parser_source_identity="comfy.cli_args:parser",
+        use_parser_object=use_parser_object,
+        python_executable=python_executable,
+        timeout_seconds=timeout_seconds,
+    )
 
 
 def set_comfyui_custom_node_list_mirror(

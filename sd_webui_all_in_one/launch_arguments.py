@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import atexit
 import hashlib
-import importlib.metadata
 import json
 import os
 import re
@@ -13,11 +12,11 @@ import signal
 import subprocess
 import sys
 import threading
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Protocol, TypedDict
+from typing import TypedDict
 
 
 CATALOG_SCHEMA_VERSION = 2
@@ -90,27 +89,6 @@ class LaunchArgumentDiscoveryContext:
     webui_path: Path
     python_executable: Path = Path(sys.executable)
     timeout_seconds: float = DEFAULT_DISCOVERY_TIMEOUT_SECONDS
-
-
-class LaunchArgumentProvider(Protocol):
-    """启动参数提供器协议。"""
-
-    def provider_identity(self) -> str:
-        """返回规范化提供器契约的稳定标识。
-
-        Returns:
-            str: 稳定提供器标识。
-        """
-
-    def get_catalog(self, context: LaunchArgumentDiscoveryContext) -> LaunchArgumentCatalog:
-        """发现并规范化当前安装实例的参数契约。
-
-        Args:
-            context (LaunchArgumentDiscoveryContext): 参数发现上下文。
-
-        Returns:
-            LaunchArgumentCatalog: 规范化后的参数目录。
-        """
 
 
 @dataclass(frozen=True, slots=True)
@@ -751,139 +729,6 @@ def _select_help_document(
     return selected[2], diagnostics
 
 
-class ScriptHelpProvider:
-    """通过 WebUI 启动脚本的帮助输出发现参数。"""
-
-    def __init__(self, scripts: tuple[str, ...]) -> None:
-        self.scripts = scripts
-
-    def provider_identity(self) -> str:
-        """返回脚本提供器的稳定标识。
-
-        Returns:
-            str: 包含脚本列表的稳定标识。
-        """
-        return json.dumps(
-            {
-                "provider": type(self).__name__,
-                "scripts": list(self.scripts),
-            },
-            sort_keys=True,
-            separators=(",", ":"),
-        )
-
-    def help_command(self, context: LaunchArgumentDiscoveryContext) -> HelpCommand | None:
-        """构建用于提取脚本帮助文本的命令。
-
-        Args:
-            context (LaunchArgumentDiscoveryContext): 参数发现上下文。
-
-        Returns:
-            HelpCommand | None: 帮助命令；未找到脚本时返回 ``None``。
-        """
-        script = next((context.webui_path / item for item in self.scripts if (context.webui_path / item).is_file()), None)
-        if script is None:
-            return None
-        digest = hashlib.sha256(script.read_bytes()).hexdigest()[:16]
-        source_parts = [script.name, digest]
-        head_path = context.webui_path / ".git" / "HEAD"
-        try:
-            head = head_path.read_text(encoding="utf-8").strip()
-            source_parts.append(head)
-            if head.startswith("ref: "):
-                source_parts.append((context.webui_path / ".git" / head[5:]).read_text(encoding="utf-8").strip())
-        except OSError:
-            pass
-        return HelpCommand([str(context.python_executable), str(script), "--help"], ":".join(source_parts))
-
-    def get_catalog(self, context: LaunchArgumentDiscoveryContext) -> LaunchArgumentCatalog:
-        """发现并规范化脚本支持的启动参数。
-
-        Args:
-            context (LaunchArgumentDiscoveryContext): 参数发现上下文。
-
-        Returns:
-            LaunchArgumentCatalog: 启动参数目录及诊断。
-        """
-        command = self.help_command(context)
-        if command is None:
-            source_identity = "missing:" + "|".join(self.scripts)
-            revision = _contract_revision(
-                context.webui_type,
-                self.provider_identity(),
-                source_identity,
-                [],
-            )
-            return LaunchArgumentCatalog(
-                CATALOG_SCHEMA_VERSION,
-                context.webui_type,
-                revision,
-                diagnostics=[LaunchArgumentDiagnostic("error", "discovery_unavailable", "No supported WebUI launch script exists in the installed core")],
-            )
-        stdout, stderr, failure = _run_help(command, context)
-        if failure is not None:
-            return LaunchArgumentCatalog(
-                CATALOG_SCHEMA_VERSION,
-                context.webui_type,
-                _contract_revision(
-                    context.webui_type,
-                    self.provider_identity(),
-                    command.source_identity,
-                    [],
-                ),
-                diagnostics=[failure],
-            )
-        arguments, diagnostics = _select_help_document(stdout, stderr)
-        return LaunchArgumentCatalog(
-            CATALOG_SCHEMA_VERSION,
-            context.webui_type,
-            _contract_revision(
-                context.webui_type,
-                self.provider_identity(),
-                command.source_identity,
-                arguments,
-            ),
-            arguments,
-            diagnostics,
-        )
-
-
-class InvokeAiHelpProvider(ScriptHelpProvider):
-    """通过 InvokeAI 内部参数解析器发现启动参数。"""
-
-    def __init__(self) -> None:
-        super().__init__(())
-
-    def help_command(self, context: LaunchArgumentDiscoveryContext) -> HelpCommand:
-        """构建 InvokeAI 参数解析器帮助命令。
-
-        Args:
-            context (LaunchArgumentDiscoveryContext): 参数发现上下文。
-
-        Returns:
-            HelpCommand: InvokeAI 参数解析器帮助命令。
-        """
-        try:
-            version = importlib.metadata.version("invokeai")
-        except importlib.metadata.PackageNotFoundError:
-            version = "unavailable"
-        source = f"invokeai.frontend.cli.arg_parser:_parser:{version}"
-        code = "from invokeai.frontend.cli.arg_parser import _parser; _parser.print_help()"
-        env = os.environ.copy()
-        env["INVOKEAI_ROOT"] = str(context.webui_path)
-        return HelpCommand([str(context.python_executable), "-c", code], source, env)
-
-
-PROVIDERS: dict[str, LaunchArgumentProvider] = {
-    "sd_webui": ScriptHelpProvider(("launch.py",)),
-    "comfyui": ScriptHelpProvider(("main.py",)),
-    "fooocus": ScriptHelpProvider(("launch.py",)),
-    "invokeai": InvokeAiHelpProvider(),
-    "sd_trainer": ScriptHelpProvider(("gui.py", "kohya_gui.py")),
-    "qwen_tts_webui": ScriptHelpProvider(("launch.py",)),
-}
-
-
 def _contract_revision(
     webui_type: str,
     provider_identity: str,
@@ -922,38 +767,218 @@ def _contract_revision(
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
-def get_launch_argument_catalog(
+def build_launch_argument_catalog(
+    webui_type: str,
+    arguments: Sequence[LaunchArgumentDefinition],
+    diagnostics: Sequence[LaunchArgumentDiagnostic] = (),
+    *,
+    provider_identity: str,
+    source_identity: str,
+) -> LaunchArgumentCatalog:
+    """由任意参数发现实现构建统一的启动参数目录。
+
+    Args:
+        webui_type (str): WebUI 类型。
+        arguments (Sequence[LaunchArgumentDefinition]): 规范化参数定义。
+        diagnostics (Sequence[LaunchArgumentDiagnostic]): 参数发现诊断。
+        provider_identity (str): 调用方提供的稳定解析器标识。
+        source_identity (str): 被解析参数源的稳定标识。
+
+    Returns:
+        LaunchArgumentCatalog: 包含稳定修订值的启动参数目录。
+    """
+    normalized_arguments = list(arguments)
+    return LaunchArgumentCatalog(
+        schema_version=CATALOG_SCHEMA_VERSION,
+        webui_type=webui_type,
+        catalog_revision=_contract_revision(
+            webui_type,
+            provider_identity,
+            source_identity,
+            normalized_arguments,
+        ),
+        arguments=normalized_arguments,
+        diagnostics=list(diagnostics),
+    )
+
+
+def build_launch_argument_catalog_from_parser(
+    webui_type: str,
+    parser: argparse.ArgumentParser,
+    *,
+    provider_identity: str,
+    source_identity: str,
+) -> LaunchArgumentCatalog:
+    """解析实际 ``ArgumentParser`` 对象并构建统一目录。
+
+    Args:
+        webui_type (str): WebUI 类型。
+        parser (argparse.ArgumentParser): 已完成参数注册的解析器对象。
+        provider_identity (str): 调用方提供的稳定解析器标识。
+        source_identity (str): 被解析参数源的稳定标识。
+
+    Returns:
+        LaunchArgumentCatalog: 规范化的启动参数目录。
+    """
+    arguments, diagnostics = parse_argument_parser(parser)
+    return build_launch_argument_catalog(
+        webui_type,
+        arguments,
+        diagnostics,
+        provider_identity=provider_identity,
+        source_identity=source_identity,
+    )
+
+
+def build_script_help_command(
+    context: LaunchArgumentDiscoveryContext,
+    scripts: Sequence[str],
+) -> HelpCommand | None:
+    """为候选启动脚本构建通用 ``--help`` 命令。
+
+    Args:
+        context (LaunchArgumentDiscoveryContext): 参数发现上下文。
+        scripts (Sequence[str]): 按优先级排列的启动脚本相对路径。
+
+    Returns:
+        HelpCommand | None: 帮助命令；没有候选脚本时返回 ``None``。
+    """
+    script = next((context.webui_path / item for item in scripts if (context.webui_path / item).is_file()), None)
+    if script is None:
+        return None
+    digest = hashlib.sha256(script.read_bytes()).hexdigest()[:16]
+    source_parts = [script.name, digest]
+    head_path = context.webui_path / ".git" / "HEAD"
+    try:
+        head = head_path.read_text(encoding="utf-8").strip()
+        source_parts.append(head)
+        if head.startswith("ref: "):
+            source_parts.append((context.webui_path / ".git" / head[5:]).read_text(encoding="utf-8").strip())
+    except OSError:
+        pass
+    return HelpCommand([str(context.python_executable), str(script), "--help"], ":".join(source_parts))
+
+
+def _catalog_from_help_command(
+    context: LaunchArgumentDiscoveryContext,
+    command: HelpCommand,
+    provider_identity: str,
+) -> LaunchArgumentCatalog:
+    stdout, stderr, failure = _run_help(command, context)
+    if failure is not None:
+        return build_launch_argument_catalog(
+            context.webui_type,
+            [],
+            [failure],
+            provider_identity=provider_identity,
+            source_identity=command.source_identity,
+        )
+    arguments, diagnostics = _select_help_document(stdout, stderr)
+    return build_launch_argument_catalog(
+        context.webui_type,
+        arguments,
+        diagnostics,
+        provider_identity=provider_identity,
+        source_identity=command.source_identity,
+    )
+
+
+def discover_launch_argument_catalog(
     webui_type: str,
     webui_path: str | Path,
     *,
+    provider_identity: str,
+    help_command_factory: Callable[[LaunchArgumentDiscoveryContext], HelpCommand | None],
+    parser_loader: Callable[[], argparse.ArgumentParser] | None = None,
+    parser_source_identity: str | None = None,
+    use_parser_object: bool = True,
     python_executable: str | Path | None = None,
     timeout_seconds: float = DEFAULT_DISCOVERY_TIMEOUT_SECONDS,
 ) -> LaunchArgumentCatalog:
-    """在不持久化用户数据的情况下发现当前安装实例的参数目录。
+    """使用对象优先、失败回退帮助文本的策略发现参数目录。
 
     Args:
         webui_type (str): WebUI 类型。
         webui_path (str | Path): WebUI 安装路径。
+        provider_identity (str): 调用方定义的稳定发现器标识。
+        help_command_factory (Callable): 通用帮助命令构造函数。
+        parser_loader (Callable | None): 实际 ``ArgumentParser`` 对象加载函数。
+        parser_source_identity (str | None): 参数对象来源的稳定标识。
+        use_parser_object (bool): 是否优先解析实际参数对象。
         python_executable (str | Path | None): 用于执行帮助命令的 Python。
         timeout_seconds (float): 帮助命令超时秒数。
 
     Returns:
         LaunchArgumentCatalog: 当前安装实例的启动参数目录。
-
-    Raises:
-        ValueError: WebUI 类型不受支持时抛出。
     """
-    provider = PROVIDERS.get(webui_type)
-    if provider is None:
-        raise ValueError(f"Unsupported webui_type: {webui_type}")
-    path = Path(webui_path)
     context = LaunchArgumentDiscoveryContext(
         webui_type=webui_type,
-        webui_path=path,
+        webui_path=Path(webui_path),
         python_executable=Path(python_executable or sys.executable),
         timeout_seconds=max(0.1, min(float(timeout_seconds), 30.0)),
     )
-    return provider.get_catalog(context)
+    parser_failure: LaunchArgumentDiagnostic | None = None
+    if use_parser_object:
+        if parser_loader is None:
+            parser_failure = LaunchArgumentDiagnostic("warning", "object_discovery_unavailable", "No ArgumentParser object loader was provided")
+        else:
+            try:
+                catalog = build_launch_argument_catalog_from_parser(
+                    webui_type,
+                    parser_loader(),
+                    provider_identity=f"{provider_identity}:object",
+                    source_identity=parser_source_identity or provider_identity,
+                )
+                errors = [diagnostic for diagnostic in catalog.diagnostics if diagnostic.severity == "error"]
+                if not errors:
+                    return catalog
+                parser_failure = LaunchArgumentDiagnostic(
+                    "warning",
+                    "object_discovery_failed",
+                    "ArgumentParser object parsing failed; falling back to --help",
+                    "; ".join(diagnostic.message for diagnostic in errors),
+                )
+            except Exception as error:
+                parser_failure = LaunchArgumentDiagnostic(
+                    "warning",
+                    "object_discovery_failed",
+                    "Unable to load ArgumentParser object; falling back to --help",
+                    str(error),
+                )
+
+    try:
+        command = help_command_factory(context)
+    except Exception as error:
+        diagnostics = [diagnostic for diagnostic in [parser_failure] if diagnostic is not None]
+        diagnostics.append(LaunchArgumentDiagnostic("error", "discovery_failed", "Unable to build WebUI help command", str(error)))
+        return build_launch_argument_catalog(
+            webui_type,
+            [],
+            diagnostics,
+            provider_identity=f"{provider_identity}:help",
+            source_identity="help-command:failed",
+        )
+    if command is None:
+        diagnostics = [diagnostic for diagnostic in [parser_failure] if diagnostic is not None]
+        diagnostics.append(LaunchArgumentDiagnostic("error", "discovery_unavailable", "No supported WebUI help command is available"))
+        return build_launch_argument_catalog(
+            webui_type,
+            [],
+            diagnostics,
+            provider_identity=f"{provider_identity}:help",
+            source_identity="help-command:missing",
+        )
+
+    catalog = _catalog_from_help_command(context, command, f"{provider_identity}:help")
+    if parser_failure is None:
+        return catalog
+    return build_launch_argument_catalog(
+        webui_type,
+        catalog.arguments,
+        [parser_failure, *catalog.diagnostics],
+        provider_identity=f"{provider_identity}:help-fallback",
+        source_identity=command.source_identity,
+    )
 
 
 __all__ = [
@@ -962,11 +987,13 @@ __all__ = [
     "LaunchArgumentDefinition",
     "LaunchArgumentDiagnostic",
     "LaunchArgumentDiscoveryContext",
-    "LaunchArgumentProvider",
     "LaunchArgumentValueKind",
-    "PROVIDERS",
+    "build_launch_argument_catalog",
+    "build_launch_argument_catalog_from_parser",
+    "build_script_help_command",
     "cancel_launch_argument_discovery",
-    "get_launch_argument_catalog",
+    "discover_launch_argument_catalog",
+    "HelpCommand",
     "parse_argparse_help",
     "parse_argument_parser",
 ]

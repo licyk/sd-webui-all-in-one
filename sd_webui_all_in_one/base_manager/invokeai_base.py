@@ -1,5 +1,6 @@
 """InvokeAI 管理器模块"""
 
+import importlib
 import importlib.metadata
 import os
 import sys
@@ -97,6 +98,13 @@ from sd_webui_all_in_one.config import (
     ROOT_PATH,
 )
 from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.launch_arguments import (
+    DEFAULT_DISCOVERY_TIMEOUT_SECONDS,
+    HelpCommand,
+    LaunchArgumentCatalog,
+    LaunchArgumentDiscoveryContext,
+    discover_launch_argument_catalog,
+)
 from sd_webui_all_in_one.utils import print_divider
 
 
@@ -107,6 +115,9 @@ logger = get_logger(
 )
 
 INVOKEAI_RUNNER_SCRIPT = ROOT_PATH / "base_manager" / "run_invokeai.py"
+
+INVOKEAI_LAUNCH_ARGUMENT_PROVIDER_IDENTITY = "invokeai.frontend.cli.arg_parser:_parser"
+"""InvokeAI 启动参数对象解析器的稳定标识。"""
 
 
 @contextmanager
@@ -127,6 +138,61 @@ def _temporary_invokeai_root(
             os.environ.pop("INVOKEAI_ROOT", None)
         else:
             os.environ["INVOKEAI_ROOT"] = old_root
+
+
+def _invokeai_help_command(
+    context: LaunchArgumentDiscoveryContext,
+) -> HelpCommand:
+    """构建 InvokeAI 参数解析器的 ``--help`` 等价命令。"""
+    try:
+        version = importlib.metadata.version("invokeai")
+    except importlib.metadata.PackageNotFoundError:
+        version = "unavailable"
+    code = "from invokeai.frontend.cli.arg_parser import _parser; _parser.print_help()"
+    env = os.environ.copy()
+    env["INVOKEAI_ROOT"] = str(context.webui_path)
+    return HelpCommand(
+        [str(context.python_executable), "-c", code],
+        f"invokeai.frontend.cli.arg_parser:_parser:{version}",
+        env,
+    )
+
+
+def get_invokeai_launch_argument_catalog(
+    invokeai_path: str | Path,
+    use_parser_object: bool = True,
+    *,
+    python_executable: str | Path | None = None,
+    timeout_seconds: float = DEFAULT_DISCOVERY_TIMEOUT_SECONDS,
+) -> LaunchArgumentCatalog:
+    """发现 InvokeAI 启动参数，对象解析失败时回退到帮助输出。
+
+    Args:
+        invokeai_path (str | Path): InvokeAI 根目录。
+        use_parser_object (bool): 是否优先解析实际参数对象。
+        python_executable (str | Path | None): 执行帮助命令的 Python。
+        timeout_seconds (float): 帮助命令超时秒数。
+
+    Returns:
+        LaunchArgumentCatalog: 规范化的启动参数目录。
+    """
+    path = Path(invokeai_path)
+
+    def load_parser():
+        with _temporary_invokeai_root(path):
+            return importlib.import_module("invokeai.frontend.cli.arg_parser")._parser
+
+    return discover_launch_argument_catalog(
+        "invokeai",
+        path,
+        provider_identity=INVOKEAI_LAUNCH_ARGUMENT_PROVIDER_IDENTITY,
+        help_command_factory=_invokeai_help_command,
+        parser_loader=load_parser,
+        parser_source_identity=INVOKEAI_LAUNCH_ARGUMENT_PROVIDER_IDENTITY,
+        use_parser_object=use_parser_object,
+        python_executable=python_executable,
+        timeout_seconds=timeout_seconds,
+    )
 
 
 def get_invokeai_require_torch_version() -> str:

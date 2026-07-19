@@ -1,5 +1,6 @@
 """SD Trainer 管理器模块"""
 
+import importlib
 import os
 from pathlib import Path
 from typing import (
@@ -59,17 +60,73 @@ from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 from sd_webui_all_in_one.ansi_color import ANSIColor
 from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.launch_arguments import (
+    DEFAULT_DISCOVERY_TIMEOUT_SECONDS,
+    LaunchArgumentCatalog,
+    build_script_help_command,
+    discover_launch_argument_catalog,
+)
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
     LOGGER_COLOR,
     LOGGER_NAME,
 )
+from sd_webui_all_in_one.utils import TemporaryModulePath
 
 logger = get_logger(
     name=LOGGER_NAME,
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+SD_TRAINER_LAUNCH_ARGUMENT_PROVIDER_IDENTITY = "gui:parser"
+KOHYA_GUI_LAUNCH_ARGUMENT_PROVIDER_IDENTITY = "kohya_gui:initialize_arg_parser"
+"""SD Trainer 系列启动参数对象解析器的稳定标识。"""
+
+
+def get_sd_trainer_launch_argument_catalog(
+    sd_trainer_path: str | Path,
+    use_parser_object: bool = True,
+    *,
+    python_executable: str | Path | None = None,
+    timeout_seconds: float = DEFAULT_DISCOVERY_TIMEOUT_SECONDS,
+) -> LaunchArgumentCatalog:
+    """发现 SD Trainer 系列参数，对象解析失败时回退到 ``--help``。
+
+    Args:
+        sd_trainer_path (str | Path): SD Trainer 系列 WebUI 根目录。
+        use_parser_object (bool): 是否优先解析实际参数对象。
+        python_executable (str | Path | None): 执行 ``--help`` 的 Python。
+        timeout_seconds (float): ``--help`` 命令超时秒数。
+
+    Returns:
+        LaunchArgumentCatalog: 规范化的启动参数目录。
+    """
+    path = Path(sd_trainer_path)
+    gui_source = path / "gui.py"
+    if gui_source.is_file():
+        module_name = "gui"
+        provider_identity = SD_TRAINER_LAUNCH_ARGUMENT_PROVIDER_IDENTITY
+    else:
+        module_name = "kohya_gui"
+        provider_identity = KOHYA_GUI_LAUNCH_ARGUMENT_PROVIDER_IDENTITY
+
+    def load_parser():
+        with TemporaryModulePath(path):
+            module = importlib.import_module(module_name)
+            return module.parser if module_name == "gui" else module.initialize_arg_parser()
+
+    return discover_launch_argument_catalog(
+        "sd_trainer",
+        path,
+        provider_identity=provider_identity,
+        help_command_factory=lambda context: build_script_help_command(context, ("gui.py", "kohya_gui.py")),
+        parser_loader=load_parser,
+        parser_source_identity=provider_identity,
+        use_parser_object=use_parser_object,
+        python_executable=python_executable,
+        timeout_seconds=timeout_seconds,
+    )
 
 
 SDTrainerBranchType: TypeAlias = Literal[
