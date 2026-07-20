@@ -872,6 +872,8 @@ def test_default_api_registry_includes_model_and_hotpatcher_surface():
     server = create_api_server(port=0)
     try:
         catalog = server.method_catalog()
+        # One registry: reads and mutations alike are listed under "methods".
+        assert catalog["tasks"] == []
         assert {
             "version.branch_presets",
             "system.pytorch_device_type",
@@ -886,8 +888,6 @@ def test_default_api_registry_includes_model_and_hotpatcher_surface():
             "hotpatcher.runtime_logs",
             "hotpatcher.runtime_browser_events",
             "hotpatcher.runtime_ensure",
-        }.issubset(catalog["methods"])
-        assert {
             "model.create_folder",
             "model.copy",
             "model.move",
@@ -899,7 +899,7 @@ def test_default_api_registry_includes_model_and_hotpatcher_surface():
             "hotpatcher.runtime_start",
             "hotpatcher.runtime_stop",
             "hotpatcher.runtime_apply_remote",
-        }.issubset(catalog["tasks"])
+        }.issubset(catalog["methods"])
     finally:
         server.server_close()
 

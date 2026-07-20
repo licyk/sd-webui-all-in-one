@@ -30,6 +30,38 @@ from sd_webui_all_in_one.proxy import clean_proxy, get_system_proxy_address, set
 from sd_webui_all_in_one.pytorch_manager import auto_detect_pytorch_device_category, export_pytorch_list, get_available_pytorch_device_type
 
 
+class _NullTaskContext(ApiTaskContext):
+    """A stateless no-op task context.
+
+    Every handler runs as a job and receives a real `ApiTaskContext` from the
+    server. This null object is the default only so a handler can be invoked
+    directly (e.g. in unit tests) without constructing a task; its progress,
+    logging and cancellation operations do nothing.
+    """
+
+    def __init__(self) -> None:
+        pass
+
+    @property
+    def task_id(self) -> str:
+        return ""
+
+    def set_progress(self, value: float | int | None = None, message: str = "") -> None:
+        return None
+
+    def log(self, message: str, level: str = "info") -> None:
+        return None
+
+    def is_canceled(self) -> bool:
+        return False
+
+    def check_canceled(self) -> None:
+        return None
+
+
+_NULL_TASK_CONTEXT = _NullTaskContext()
+
+
 WEBUI_REQUEST_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -127,7 +159,7 @@ def _require_str_list(params: dict[str, Any], name: str) -> list[str]:
     return value
 
 
-def version_status(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def version_status(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """读取 WebUI 内核仓库状态。
 
     Args:
@@ -139,7 +171,7 @@ def version_status(params: dict[str, Any], context: ApiTaskContext | None = None
     return _adapter(params).repository_status(_webui_path(params))
 
 
-def version_branches(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def version_branches(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """列出 WebUI 内核仓库分支。
 
     Args:
@@ -152,7 +184,7 @@ def version_branches(params: dict[str, Any], context: ApiTaskContext | None = No
     return _adapter(params).list_branches(_webui_path(params), fetch=bool(options.get("fetch", True)))
 
 
-def version_commits(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def version_commits(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """列出 WebUI 内核仓库提交。
 
     Args:
@@ -168,7 +200,7 @@ def version_commits(params: dict[str, Any], context: ApiTaskContext | None = Non
     return _adapter(params).list_commits(_webui_path(params), limit=limit)
 
 
-def version_branch_presets(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def version_branch_presets(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """列出 WebUI 内置分支预设。
 
     Args:
@@ -200,7 +232,7 @@ def version_branch_presets(params: dict[str, Any], context: ApiTaskContext | Non
     return result | {"supported": False, "branches": [], "types": []}
 
 
-def snapshot_list(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def snapshot_list(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """列出 WebUI 快照文件。
 
     Args:
@@ -213,7 +245,7 @@ def snapshot_list(params: dict[str, Any], context: ApiTaskContext | None = None)
     return _adapter(params).list_snapshots(_webui_path(params), snapshot_dir=_optional_path(options.get("snapshot_dir")))
 
 
-def snapshot_read(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def snapshot_read(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """读取快照文件。
 
     Args:
@@ -225,7 +257,7 @@ def snapshot_read(params: dict[str, Any], context: ApiTaskContext | None = None)
     return _adapter(params).read_snapshot(Path(_require_str(params, "snapshot_path")))
 
 
-def snapshot_delete(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def snapshot_delete(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """删除快照文件。
 
     Args:
@@ -242,7 +274,7 @@ def snapshot_delete(params: dict[str, Any], context: ApiTaskContext | None = Non
     return result
 
 
-def extension_list(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def extension_list(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """列出本地扩展或自定义节点。
 
     Args:
@@ -254,7 +286,7 @@ def extension_list(params: dict[str, Any], context: ApiTaskContext | None = None
     return _adapter(params).list_extensions(_webui_path(params))
 
 
-def extension_index(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def extension_index(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """获取可安装扩展源条目。
 
     Args:
@@ -268,7 +300,7 @@ def extension_index(params: dict[str, Any], context: ApiTaskContext | None = Non
     return _adapter(params).fetch_extension_index(_webui_path(params), options=_options(params))
 
 
-def extension_versions(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def extension_versions(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """获取 Comfy Registry 扩展版本。
 
     Args:
@@ -286,7 +318,7 @@ def extension_versions(params: dict[str, Any], context: ApiTaskContext | None = 
     return _adapter(params).fetch_extension_versions(_require_str(params, "node_id"), timeout=timeout)
 
 
-def extension_commits(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def extension_commits(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """按稳定名称列出已安装扩展的完整 Git 历史。
 
     Args:
@@ -313,7 +345,7 @@ def extension_commits(params: dict[str, Any], context: ApiTaskContext | None = N
     return _adapter(params).list_commits(Path(path), limit=limit)
 
 
-def environment_dependencies(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def environment_dependencies(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """检查环境依赖状态。
 
     Args:
@@ -325,7 +357,7 @@ def environment_dependencies(params: dict[str, Any], context: ApiTaskContext | N
     return _adapter(params).check_environment_dependencies(_webui_path(params))
 
 
-def environment_pytorch_version(_params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def environment_pytorch_version(_params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """检查当前环境中的 PyTorch 版本状态。
 
     Args:
@@ -337,7 +369,7 @@ def environment_pytorch_version(_params: dict[str, Any], context: ApiTaskContext
     return {"pytorch": check_torch_version_status()}
 
 
-def package_versions(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def package_versions(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """获取 PyPI 包版本列表。
 
     Args:
@@ -360,7 +392,7 @@ def package_versions(params: dict[str, Any], context: ApiTaskContext | None = No
     )
 
 
-def launch_prepare(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def launch_prepare(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """准备 WebUI 启动参数。
 
     Args:
@@ -373,7 +405,7 @@ def launch_prepare(params: dict[str, Any], context: ApiTaskContext | None = None
     return _adapter(params).prepare_launch(_webui_path(params), options=options)
 
 
-def launch_arguments_catalog(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def launch_arguments_catalog(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """发现已安装 WebUI 的结构化启动参数目录。
 
     Args:
@@ -406,7 +438,7 @@ def launch_arguments_catalog(params: dict[str, Any], context: ApiTaskContext | N
     return {"catalog": catalog.to_dict()}
 
 
-def pytorch_device_type(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def pytorch_device_type(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """获取当前设备支持的 PyTorch 类型。
 
     Args:
@@ -421,7 +453,7 @@ def pytorch_device_type(params: dict[str, Any], context: ApiTaskContext | None =
     return {"types": get_available_pytorch_device_type()}
 
 
-def pytorch_library(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def pytorch_library(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """列出内置 PyTorch 版本组合。
 
     Args:
@@ -446,7 +478,7 @@ def pytorch_library(params: dict[str, Any], context: ApiTaskContext | None = Non
     return {"count": len(items), "items": items}
 
 
-def pytorch_catalog(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def pytorch_catalog(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """返回供桌面客户端使用的稳定 PyTorch 聚合目录。
 
     Args:
@@ -458,7 +490,7 @@ def pytorch_catalog(params: dict[str, Any], context: ApiTaskContext | None = Non
     return build_pytorch_catalog(_webui_type(params), _webui_path(params))
 
 
-def pytorch_resolve_selection(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def pytorch_resolve_selection(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """将稳定 PyTorch 选择解析为闭合的命令行业务描述。
 
     Args:
@@ -472,7 +504,7 @@ def pytorch_resolve_selection(params: dict[str, Any], context: ApiTaskContext | 
     )
 
 
-def system_proxy(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def system_proxy(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """获取当前系统代理地址。
 
     Args:
@@ -520,7 +552,7 @@ def _proxy_address(params: dict[str, Any]) -> str:
     return address
 
 
-def system_proxy_set(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def system_proxy_set(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """设置当前 API 服务进程的代理环境。
 
     Args:
@@ -534,7 +566,7 @@ def system_proxy_set(params: dict[str, Any], context: ApiTaskContext | None = No
     return {"enabled": True, "address": address}
 
 
-def system_proxy_clear(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def system_proxy_clear(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """清除当前 API 服务进程的代理环境。
 
     Args:
@@ -552,7 +584,7 @@ def system_proxy_clear(params: dict[str, Any], context: ApiTaskContext | None = 
     return {"enabled": False, "address": None}
 
 
-def version_switch_branch(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def version_switch_branch(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """切换 WebUI 内核仓库分支。
 
     Args:
@@ -574,7 +606,7 @@ def version_switch_branch(params: dict[str, Any], context: ApiTaskContext | None
     return result
 
 
-def version_switch_commit(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def version_switch_commit(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """切换 WebUI 内核仓库提交。
 
     Args:
@@ -590,7 +622,7 @@ def version_switch_commit(params: dict[str, Any], context: ApiTaskContext | None
     return result
 
 
-def version_update(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def version_update(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """更新 WebUI 内核仓库。
 
     Args:
@@ -606,7 +638,7 @@ def version_update(params: dict[str, Any], context: ApiTaskContext | None = None
     return result
 
 
-def webui_check_updates(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def webui_check_updates(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """检查 WebUI 内核、扩展和 PyTorch 更新。
 
     Args:
@@ -623,7 +655,7 @@ def webui_check_updates(params: dict[str, Any], context: ApiTaskContext | None =
     )
 
 
-def snapshot_create(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def snapshot_create(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """创建 WebUI 快照。
 
     Args:
@@ -644,7 +676,7 @@ def snapshot_create(params: dict[str, Any], context: ApiTaskContext | None = Non
     return result
 
 
-def snapshot_preview_restore(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def snapshot_preview_restore(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """预览快照恢复计划。
 
     Args:
@@ -664,7 +696,7 @@ def snapshot_preview_restore(params: dict[str, Any], context: ApiTaskContext | N
     return result
 
 
-def snapshot_restore(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def snapshot_restore(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """恢复 WebUI 快照。
 
     Args:
@@ -684,7 +716,7 @@ def snapshot_restore(params: dict[str, Any], context: ApiTaskContext | None = No
     return result
 
 
-def extension_set_enabled(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def extension_set_enabled(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """启用或禁用扩展。
 
     Args:
@@ -700,7 +732,7 @@ def extension_set_enabled(params: dict[str, Any], context: ApiTaskContext | None
     return result
 
 
-def extension_install(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def extension_install(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """从 Git URL 安装扩展。
 
     Args:
@@ -722,7 +754,7 @@ def extension_install(params: dict[str, Any], context: ApiTaskContext | None = N
     return result
 
 
-def extension_install_index_item(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def extension_install_index_item(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """从扩展源条目安装扩展。
 
     Args:
@@ -750,7 +782,7 @@ def extension_install_index_item(params: dict[str, Any], context: ApiTaskContext
     return result
 
 
-def extension_update(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def extension_update(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """更新单个扩展。
 
     Args:
@@ -766,7 +798,7 @@ def extension_update(params: dict[str, Any], context: ApiTaskContext | None = No
     return result
 
 
-def extension_update_all(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def extension_update_all(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """更新所有扩展。
 
     Args:
@@ -782,7 +814,7 @@ def extension_update_all(params: dict[str, Any], context: ApiTaskContext | None 
     return result
 
 
-def extension_uninstall(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def extension_uninstall(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """卸载扩展。
 
     Args:
@@ -798,7 +830,7 @@ def extension_uninstall(params: dict[str, Any], context: ApiTaskContext | None =
     return result
 
 
-def extension_switch_commit(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def extension_switch_commit(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """切换扩展提交。
 
     Args:
@@ -814,7 +846,7 @@ def extension_switch_commit(params: dict[str, Any], context: ApiTaskContext | No
     return result
 
 
-def extension_switch_branch(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def extension_switch_branch(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """切换扩展分支。
 
     Args:
@@ -830,7 +862,7 @@ def extension_switch_branch(params: dict[str, Any], context: ApiTaskContext | No
     return result
 
 
-def extension_switch_registry_version(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def extension_switch_registry_version(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """切换 Comfy Registry 扩展版本。
 
     Args:
@@ -852,7 +884,7 @@ def extension_switch_registry_version(params: dict[str, Any], context: ApiTaskCo
     return result
 
 
-def invokeai_install_version(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def invokeai_install_version(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """安装或升级 InvokeAI PyPI 版本。
 
     Args:
@@ -874,7 +906,7 @@ def invokeai_install_version(params: dict[str, Any], context: ApiTaskContext | N
     return result
 
 
-def model_root(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_root(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """读取文件型模型根目录信息。
 
     Args:
@@ -886,7 +918,7 @@ def model_root(params: dict[str, Any], context: ApiTaskContext | None = None) ->
     return MODEL_API_ADAPTER.root(_require_str(params, "webui_type"), _webui_path(params))
 
 
-def model_library(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_library(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """列出内置模型库条目。
 
     Args:
@@ -904,7 +936,7 @@ def model_library(params: dict[str, Any], context: ApiTaskContext | None = None)
     return model_library_catalog(webui_type)
 
 
-def pytorch_reinstall(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def pytorch_reinstall(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """运行稳定的非交互式 PyTorch 重装任务。
 
     Args:
@@ -918,7 +950,7 @@ def pytorch_reinstall(params: dict[str, Any], context: ApiTaskContext | None = N
     return reinstall_from_catalog(_webui_type(params), _webui_path(params), selection, _options(params), context)
 
 
-def model_install_library(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_install_library(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """按稳定目录标识安装内置模型。
 
     Args:
@@ -937,7 +969,7 @@ def model_install_library(params: dict[str, Any], context: ApiTaskContext | None
     )
 
 
-def model_resolve_library_install(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_resolve_library_install(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """将稳定模型选择解析为闭合的命令行业务描述。
 
     Args:
@@ -951,7 +983,7 @@ def model_resolve_library_install(params: dict[str, Any], context: ApiTaskContex
     )
 
 
-def model_directories(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_directories(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """列出模型目录。
 
     Args:
@@ -963,7 +995,7 @@ def model_directories(params: dict[str, Any], context: ApiTaskContext | None = N
     return MODEL_API_ADAPTER.list_directories(_require_str(params, "webui_type"), _webui_path(params))
 
 
-def model_entries(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_entries(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """列出模型目录条目。
 
     Args:
@@ -976,7 +1008,7 @@ def model_entries(params: dict[str, Any], context: ApiTaskContext | None = None)
     return MODEL_API_ADAPTER.list_entries(_require_str(params, "webui_type"), _webui_path(params), relative_path=options.get("relative_path"))
 
 
-def model_invokeai_list(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_invokeai_list(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """列出 InvokeAI 已注册模型。
 
     Args:
@@ -988,7 +1020,7 @@ def model_invokeai_list(params: dict[str, Any], context: ApiTaskContext | None =
     return MODEL_API_ADAPTER.list_invokeai_models(_webui_path(params))
 
 
-def hotpatcher_default_config(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def hotpatcher_default_config(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """获取 Hotpatcher 默认配置。
 
     Args:
@@ -1001,7 +1033,7 @@ def hotpatcher_default_config(params: dict[str, Any], context: ApiTaskContext | 
     return HOTPATCHER_API_ADAPTER.default_config()
 
 
-def hotpatcher_catalog(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def hotpatcher_catalog(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """获取 Hotpatcher 功能目录。
 
     Args:
@@ -1014,7 +1046,7 @@ def hotpatcher_catalog(params: dict[str, Any], context: ApiTaskContext | None = 
     return HOTPATCHER_API_ADAPTER.catalog()
 
 
-def hotpatcher_load_config(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def hotpatcher_load_config(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """读取 Hotpatcher 配置文件。
 
     Args:
@@ -1027,7 +1059,7 @@ def hotpatcher_load_config(params: dict[str, Any], context: ApiTaskContext | Non
     return HOTPATCHER_API_ADAPTER.load_config(_optional_path(params.get("path")), normalize=bool(options.get("normalize", True)))
 
 
-def hotpatcher_normalize_config(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def hotpatcher_normalize_config(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """规范化 Hotpatcher 配置。
 
     Args:
@@ -1039,7 +1071,7 @@ def hotpatcher_normalize_config(params: dict[str, Any], context: ApiTaskContext 
     return HOTPATCHER_API_ADAPTER.normalize_config(_require_object(params, "config"))
 
 
-def hotpatcher_runtime_env(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def hotpatcher_runtime_env(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """构建 Hotpatcher runtime 环境变量。
 
     Args:
@@ -1057,7 +1089,7 @@ def hotpatcher_runtime_env(params: dict[str, Any], context: ApiTaskContext | Non
     )
 
 
-def hotpatcher_runtime_status(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def hotpatcher_runtime_status(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """获取 Hotpatcher runtime host 状态。
 
     Args:
@@ -1070,7 +1102,7 @@ def hotpatcher_runtime_status(params: dict[str, Any], context: ApiTaskContext | 
     return HOTPATCHER_API_ADAPTER.runtime_status()
 
 
-def hotpatcher_runtime_logs(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def hotpatcher_runtime_logs(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """获取 Hotpatcher runtime host 日志。
 
     Args:
@@ -1087,7 +1119,7 @@ def hotpatcher_runtime_logs(params: dict[str, Any], context: ApiTaskContext | No
     )
 
 
-def hotpatcher_runtime_browser_events(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def hotpatcher_runtime_browser_events(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """读取运行时主机保留并校验过的浏览器事件。
 
     Args:
@@ -1113,7 +1145,7 @@ def hotpatcher_runtime_browser_events(params: dict[str, Any], context: ApiTaskCo
     )
 
 
-def hotpatcher_runtime_ensure(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def hotpatcher_runtime_ensure(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """确保存在无需任务通道且兼容启动流程的运行时主机。
 
     Args:
@@ -1132,7 +1164,7 @@ def hotpatcher_runtime_ensure(params: dict[str, Any], context: ApiTaskContext | 
     )
 
 
-def model_create_folder(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_create_folder(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """创建模型文件夹。
 
     Args:
@@ -1148,7 +1180,7 @@ def model_create_folder(params: dict[str, Any], context: ApiTaskContext | None =
     return result
 
 
-def model_copy(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_copy(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """复制模型条目。
 
     Args:
@@ -1164,7 +1196,7 @@ def model_copy(params: dict[str, Any], context: ApiTaskContext | None = None) ->
     return result
 
 
-def model_move(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_move(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """移动模型条目。
 
     Args:
@@ -1180,7 +1212,7 @@ def model_move(params: dict[str, Any], context: ApiTaskContext | None = None) ->
     return result
 
 
-def model_delete(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_delete(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """删除模型条目。
 
     Args:
@@ -1196,7 +1228,7 @@ def model_delete(params: dict[str, Any], context: ApiTaskContext | None = None) 
     return result
 
 
-def model_import(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_import(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """导入本地模型文件或文件夹。
 
     Args:
@@ -1212,7 +1244,7 @@ def model_import(params: dict[str, Any], context: ApiTaskContext | None = None) 
     return result
 
 
-def model_download(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_download(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """下载模型到模型目录。
 
     Args:
@@ -1228,7 +1260,7 @@ def model_download(params: dict[str, Any], context: ApiTaskContext | None = None
     return result
 
 
-def model_invokeai_install_url(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_invokeai_install_url(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """通过 InvokeAI 从 URL 安装模型。
 
     Args:
@@ -1244,7 +1276,7 @@ def model_invokeai_install_url(params: dict[str, Any], context: ApiTaskContext |
     return result
 
 
-def model_invokeai_import(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_invokeai_import(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """导入本地模型到 InvokeAI。
 
     Args:
@@ -1260,7 +1292,7 @@ def model_invokeai_import(params: dict[str, Any], context: ApiTaskContext | None
     return result
 
 
-def model_invokeai_unregister(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_invokeai_unregister(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """注销 InvokeAI 模型。
 
     Args:
@@ -1276,7 +1308,7 @@ def model_invokeai_unregister(params: dict[str, Any], context: ApiTaskContext | 
     return result
 
 
-def model_invokeai_delete(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def model_invokeai_delete(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """删除 InvokeAI 模型。
 
     Args:
@@ -1292,7 +1324,7 @@ def model_invokeai_delete(params: dict[str, Any], context: ApiTaskContext | None
     return result
 
 
-def hotpatcher_save_config(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def hotpatcher_save_config(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """保存 Hotpatcher 配置文件。
 
     Args:
@@ -1308,7 +1340,7 @@ def hotpatcher_save_config(params: dict[str, Any], context: ApiTaskContext | Non
     return result
 
 
-def hotpatcher_export_default_config(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def hotpatcher_export_default_config(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """导出 Hotpatcher 默认配置文件。
 
     Args:
@@ -1324,7 +1356,7 @@ def hotpatcher_export_default_config(params: dict[str, Any], context: ApiTaskCon
     return result
 
 
-def hotpatcher_apply_config(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def hotpatcher_apply_config(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """应用 Hotpatcher 配置到当前 API 进程。
 
     Args:
@@ -1341,7 +1373,7 @@ def hotpatcher_apply_config(params: dict[str, Any], context: ApiTaskContext | No
     return result
 
 
-def hotpatcher_runtime_start(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def hotpatcher_runtime_start(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """启动 Hotpatcher runtime host。
 
     Args:
@@ -1359,7 +1391,7 @@ def hotpatcher_runtime_start(params: dict[str, Any], context: ApiTaskContext | N
     return result
 
 
-def hotpatcher_runtime_stop(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def hotpatcher_runtime_stop(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """停止 Hotpatcher runtime host。
 
     Args:
@@ -1376,7 +1408,7 @@ def hotpatcher_runtime_stop(params: dict[str, Any], context: ApiTaskContext | No
     return result
 
 
-def hotpatcher_runtime_apply_remote(params: dict[str, Any], context: ApiTaskContext | None = None) -> dict[str, Any]:
+def hotpatcher_runtime_apply_remote(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """应用配置到远端 Hotpatcher runtime。
 
     Args:
