@@ -145,10 +145,10 @@ def test_set_mirror_delegates_and_sets_git_config_env(monkeypatch, tmp_path):
 def test_set_github_mirror_writes_or_clears_config(monkeypatch, tmp_path):
     calls = []
 
-    def fake_run_cmd(command, **kwargs):
-        calls.append((command, kwargs))
+    def fake_run_git(*args, **kwargs):
+        calls.append((args, kwargs))
 
-    monkeypatch.setattr(mirror_manager, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(mirror_manager.git_warpper, "run_git", fake_run_git)
     config_path = tmp_path / ".gitconfig"
 
     result = mirror_manager.set_github_mirror("https://mirror.example/https://github.com", config_path=config_path)
@@ -156,14 +156,13 @@ def test_set_github_mirror_writes_or_clears_config(monkeypatch, tmp_path):
     assert result == config_path
     assert calls == [
         (
-            [
-                "git",
+            (
                 "config",
                 "--file",
                 config_path.as_posix(),
                 "url.https://mirror.example/https://github.com.insteadOf",
                 "https://github.com",
-            ],
+            ),
             {},
         )
     ]
