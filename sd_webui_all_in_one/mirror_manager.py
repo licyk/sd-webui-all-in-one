@@ -2,9 +2,7 @@
 
 import os
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
-from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.file_manager import remove_files
@@ -24,6 +22,7 @@ from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_FIND_LINKS_MIRROR_OFFICIAL,
 )
 from sd_webui_all_in_one.utils import network_gfw_test
+from sd_webui_all_in_one import git_warpper
 
 
 logger = get_logger(
@@ -125,28 +124,17 @@ def test_github_mirror(
     Returns:
         (str | None): 当有可用镜像源可用时则返回该镜像源地址
     """
-    with TemporaryDirectory() as tmp_dir:
-        tmp_dir = Path(tmp_dir)
-        mirror_test_path = tmp_dir / "__github_mirror_test__"
-        custon_env = os.environ.copy()
-        custon_env.pop("GIT_CONFIG_GLOBAL", None)
-        for gh in mirror:
-            logger.info("测试 Github 镜像源: %s", gh)
-            test_repo = f"{gh}/licyk/empty"
-            try:
-                if mirror_test_path.exists():
-                    remove_files(mirror_test_path)
-                run_cmd(
-                    ["git", "clone", "--depth", "1", test_repo, mirror_test_path.as_posix()],
-                    custom_env=custon_env,
-                    live=False,
-                )
-                if mirror_test_path.exists():
-                    remove_files(mirror_test_path)
-                logger.info("该镜像源可用")
-                return gh
-            except Exception:
-                logger.warning("镜像源不可用")
+    custon_env = os.environ.copy()
+    custon_env.pop("GIT_CONFIG_GLOBAL", None)
+    for gh in mirror:
+        logger.info("测试 Github 镜像源: %s", gh)
+        test_repo = f"{gh}/licyk/empty"
+        try:
+            git_warpper.run_git("ls-remote", test_repo, custom_env=custon_env, live=False)
+            logger.info("该镜像源可用")
+            return gh
+        except Exception:
+            logger.warning("镜像源不可用")
 
     logger.warning("无可用的 Github 镜像源")
     return None
@@ -166,8 +154,8 @@ def set_git_base_config(
             设置 Git 基本配置时发生错误
     """
     try:
-        run_cmd(["git", "config", "--file", config_path.as_posix(), "--add", "safe.directory", "'*'"], live=False)
-        run_cmd(["git", "config", "--file", config_path.as_posix(), "core.longpaths", "true"], live=False)
+        git_warpper.run_git("config", "--file", config_path.as_posix(), "--add", "safe.directory", "'*'", live=False)
+        git_warpper.run_git("config", "--file", config_path.as_posix(), "core.longpaths", "true", live=False)
     except RuntimeError as e:
         raise RuntimeError(f"设置 Git 基本配置时发生错误: {e}") from e
 
@@ -240,7 +228,7 @@ def set_github_mirror(
     ) -> None:
         logger.info("通过 GIT_CONFIG_GLOBAL 环境变量设置 Github 镜像源")
         try:
-            run_cmd(["git", "config", "--file", config_path.as_posix(), f"url.{mirror}.insteadOf", "https://github.com"])
+            git_warpper.run_git("config", "--file", config_path.as_posix(), f"url.{mirror}.insteadOf", "https://github.com")
         except RuntimeError as e:
             logger.error("设置 Github 镜像源时发生错误: %s", e)
             raise RuntimeError(f"设置 Github 镜像源时发生错误: {e}") from e
