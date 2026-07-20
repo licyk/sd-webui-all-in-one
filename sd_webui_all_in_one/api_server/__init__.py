@@ -1,7 +1,7 @@
 """标准库 API 服务。"""
 
 from sd_webui_all_in_one.api_server.client import ApiClient, ApiClientError
-from sd_webui_all_in_one.api_server.registry import get_default_methods, get_default_task_methods
+from sd_webui_all_in_one.api_server.registry import get_default_methods
 from sd_webui_all_in_one.api_server.server import (
     API_ERROR_CODES,
     API_TASK_STATUSES,
@@ -29,7 +29,6 @@ __all__ = [
     "ApiTaskRegistry",
     "create_api_server",
     "get_default_methods",
-    "get_default_task_methods",
     "serve_api",
     "validate_api_method_name",
 ]

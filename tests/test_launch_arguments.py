@@ -454,16 +454,17 @@ def test_missing_comfyui_parser_returns_explicit_unavailable_catalog(tmp_path: P
 
 def test_api_registry_exposes_structured_catalog_and_validates_timeout(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     _write_comfyui_argument_parser(tmp_path)
-    result = registry.launch_arguments_catalog({"webui_type": "comfyui", "webui_path": str(tmp_path)})
+    context = SimpleNamespace(check_canceled=lambda: None)
+    result = registry.launch_arguments_catalog({"webui_type": "comfyui", "webui_path": str(tmp_path)}, context)
     assert result["catalog"]["webui_type"] == "comfyui"
     assert result["catalog"]["arguments"]
     assert result["catalog"]["arguments"][0]["min_values"] == 0
     assert result["catalog"]["arguments"][0]["max_values"] == 0
     assert "launch.arguments.catalog" in registry.get_default_methods()
     with pytest.raises(ValueError, match="timeout"):
-        registry.launch_arguments_catalog({"webui_type": "comfyui", "webui_path": str(tmp_path), "options": {"timeout": "forever"}})
+        registry.launch_arguments_catalog({"webui_type": "comfyui", "webui_path": str(tmp_path), "options": {"timeout": "forever"}}, context)
     with pytest.raises(ValueError, match="use_parser_object"):
-        registry.launch_arguments_catalog({"webui_type": "comfyui", "webui_path": str(tmp_path), "options": {"use_parser_object": "yes"}})
+        registry.launch_arguments_catalog({"webui_type": "comfyui", "webui_path": str(tmp_path), "options": {"use_parser_object": "yes"}}, context)
 
 
 def test_comfyui_base_parses_actual_argument_parser_object(tmp_path: Path) -> None:

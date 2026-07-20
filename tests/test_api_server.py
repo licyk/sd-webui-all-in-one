@@ -18,6 +18,22 @@ from sd_webui_all_in_one.base_manager import version_manager
 from sd_webui_all_in_one.cli_manager import auto_mirror
 
 
+class _NoopTaskContext:
+    """Minimal ApiTaskContext stand-in for calling task handlers directly."""
+
+    def check_canceled(self):
+        return None
+
+    def is_canceled(self):
+        return False
+
+    def log(self, message, level="info"):
+        return None
+
+    def set_progress(self, value=None, message=""):
+        return None
+
+
 def _request(url, method="GET", data=None, token=""):
     body = None if data is None else json.dumps(data).encode("utf-8")
     headers = {}
@@ -86,14 +102,15 @@ def test_api_server_loads_default_business_methods():
     server = create_api_server(port=0)
     try:
         catalog = server.method_catalog()
+        # One registry: every method is a job listed under "methods"; "tasks" is empty.
         assert "version.branches" in catalog["methods"]
         assert "snapshot.read" in catalog["methods"]
-        assert "version.update" in catalog["tasks"]
-        assert "snapshot.create" in catalog["tasks"]
-        assert "snapshot.delete" in catalog["tasks"]
-        assert "snapshot.delete" not in catalog["methods"]
-        assert catalog["metadata"]["snapshot.create"]["kind"] == "task"
-        assert catalog["metadata"]["snapshot.delete"]["kind"] == "task"
+        assert "version.update" in catalog["methods"]
+        assert "snapshot.create" in catalog["methods"]
+        assert "snapshot.delete" in catalog["methods"]
+        assert catalog["tasks"] == []
+        assert catalog["metadata"]["snapshot.create"]["kind"] == "job"
+        assert catalog["metadata"]["snapshot.delete"]["kind"] == "job"
         assert catalog["metadata"]["snapshot.delete"]["params_schema"]["required"] == ["webui_type", "snapshot_path"]
     finally:
         server.server_close()
@@ -125,7 +142,7 @@ def test_api_server_health_methods_and_empty_task_method_registry():
 
 
 def test_api_server_sync_method_registry_call():
-    def echo(params):
+    def echo(params, context=None):
         return {"received": params}
 
     server, thread, base_url = _start_server(
@@ -166,7 +183,7 @@ def test_api_server_task_lifecycle_progress_logs_and_cancel():
         context.set_progress(100, "done")
         return {"done": True}
 
-    server, thread, base_url = _start_server(task_methods={"demo.wait": wait_task})
+    server, thread, base_url = _start_server(methods={"demo.wait": wait_task})
 
     try:
         status, payload = _request(f"{base_url}/api/v1/tasks", method="POST", data={"method": "demo.wait", "params": {"name": "job"}})
@@ -202,7 +219,7 @@ def test_api_server_task_success_result():
         context.set_progress(100, "complete")
         return {"value": params["value"]}
 
-    server, thread, base_url = _start_server(task_methods={"demo.complete": complete_task})
+    server, thread, base_url = _start_server(methods={"demo.complete": complete_task})
 
     try:
         _, payload = _request(f"{base_url}/api/v1/tasks", method="POST", data={"method": "demo.complete", "params": {"value": 7}})
@@ -287,21 +304,21 @@ def test_api_server_rejects_invalid_registered_method_names():
 
 
 def test_api_client_wraps_api_protocol():
-    def echo(params):
+    def echo(params, context=None):
         return {"received": params}
 
     def complete_task(params, context):
         context.log("done")
         return {"value": params["value"]}
 
-    server, thread, base_url = _start_server(methods={"demo.echo": echo}, task_methods={"demo.complete": complete_task})
+    server, thread, base_url = _start_server(methods={"demo.echo": echo, "demo.complete": complete_task})
     client = ApiClient(base_url=base_url, timeout=5)
 
     try:
         assert client.health() == {"status": "ok"}
         catalog = client.methods()
-        assert catalog["methods"] == ["demo.echo"]
-        assert catalog["tasks"] == ["demo.complete"]
+        assert catalog["methods"] == ["demo.complete", "demo.echo"]
+        assert catalog["tasks"] == []
         assert client.call("demo.echo", {"value": 3}) == {"received": {"value": 3}}
 
         task = client.create_task("demo.complete", {"value": 9})
@@ -338,7 +355,7 @@ def test_default_api_registry_dispatches_version_queries(monkeypatch, tmp_path):
     assert registry.version_branches({"webui_type": "sd_webui", "webui_path": str(tmp_path), "options": {"fetch": False}}) == {"branches": []}
     assert registry.version_commits({"webui_type": "sd_webui", "webui_path": str(tmp_path), "options": {"limit": 5}}) == {"commits": []}
     assert registry.version_commits({"webui_type": "sd_webui", "webui_path": str(tmp_path), "options": {"limit": None}}) == {"commits": []}
-    assert registry.webui_check_updates({"webui_type": "sd_webui", "webui_path": str(tmp_path), "options": {"include_extensions": False}}) == {"summary": {"has_update": False}}
+    assert registry.webui_check_updates({"webui_type": "sd_webui", "webui_path": str(tmp_path), "options": {"include_extensions": False}}, _NoopTaskContext()) == {"summary": {"has_update": False}}
     assert calls == [("branches", tmp_path, False), ("commits", tmp_path, 5), ("commits", tmp_path, None), ("check-updates", tmp_path, {"include_extensions": False})]
 
 
@@ -464,9 +481,22 @@ def test_default_api_registry_includes_full_version_snapshot_extension_surface()
     server = create_api_server(port=0)
     try:
         catalog = server.method_catalog()
-        assert {"version.status", "webui.check_updates", "snapshot.list", "extension.list", "extension.index", "extension.versions", "extension.commits", "environment.dependencies", "environment.pytorch_version", "package.versions", "launch.prepare", "launch.arguments.catalog", "system.proxy"}.issubset(catalog["methods"])
-        assert catalog["metadata"]["extension.commits"]["params_schema"]["required"] == ["webui_type", "webui_path", "name"]
+        # One registry: reads and mutations alike are listed under "methods".
+        assert catalog["tasks"] == []
         assert {
+            "version.status",
+            "snapshot.list",
+            "extension.list",
+            "extension.commits",
+            "environment.dependencies",
+            "environment.pytorch_version",
+            "launch.prepare",
+            "system.proxy",
+            "webui.check_updates",
+            "extension.index",
+            "extension.versions",
+            "package.versions",
+            "launch.arguments.catalog",
             "snapshot.delete",
             "extension.set_enabled",
             "extension.install",
@@ -478,7 +508,8 @@ def test_default_api_registry_includes_full_version_snapshot_extension_surface()
             "extension.switch_commit",
             "extension.switch_registry_version",
             "invokeai.install_version",
-        }.issubset(catalog["tasks"])
+        }.issubset(catalog["methods"])
+        assert catalog["metadata"]["extension.commits"]["params_schema"]["required"] == ["webui_type", "webui_path", "name"]
     finally:
         server.server_close()
 
@@ -496,29 +527,29 @@ def test_launch_argument_catalog_api_success_and_typed_failure_envelopes(tmp_pat
     base_url = f"http://127.0.0.1:{server.server_address[1]}"
     try:
         status, payload = _request(
-            f"{base_url}/api/v1/call",
+            f"{base_url}/api/v1/tasks",
             method="POST",
             data={
                 "method": "launch.arguments.catalog",
                 "params": {"webui_type": "comfyui", "webui_path": str(tmp_path)},
             },
         )
-        assert status == 200
-        assert payload["ok"] is True
-        assert payload["result"]["catalog"]["arguments"][0]["name"] == "help"
+        assert status == 202
+        task = _wait_for_task(base_url, payload["result"]["id"], "succeeded")
+        assert task["result"]["catalog"]["arguments"][0]["name"] == "help"
 
-        status, payload = _request_error(
-            f"{base_url}/api/v1/call",
+        status, payload = _request(
+            f"{base_url}/api/v1/tasks",
             method="POST",
             data={
                 "method": "launch.arguments.catalog",
                 "params": {"webui_type": "unknown", "webui_path": str(tmp_path)},
             },
         )
-        assert status == 500
-        assert payload["ok"] is False
-        assert payload["error"]["code"] == "method_failed"
-        assert "Unsupported webui_type" in payload["error"]["message"]
+        assert status == 202
+        task = _wait_for_task(base_url, payload["result"]["id"], "failed")
+        assert task["error"]["code"] == "task_failed"
+        assert "Unsupported webui_type" in task["error"]["message"]
     finally:
         _stop_server(server, thread)
 
@@ -806,9 +837,9 @@ def test_default_api_registry_exposes_proxy_mutation_schemas():
         "test_connectivity": {"type": "boolean"},
         "timeout": {"type": "integer", "minimum": 1, "maximum": 30},
     }
-    assert methods["system.proxy.set"].kind == "sync"
+    assert methods["system.proxy.set"].kind == "job"
     assert methods["system.proxy.set"].params_schema["required"] == ["address"]
-    assert methods["system.proxy.clear"].kind == "sync"
+    assert methods["system.proxy.clear"].kind == "job"
     assert methods["system.proxy.clear"].params_schema == {"type": "object", "properties": {}}
 
 

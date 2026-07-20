@@ -8,7 +8,9 @@ import secrets
 import threading
 import time
 import uuid
+from collections import deque
 from collections.abc import Callable, Mapping
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -25,13 +27,25 @@ logger = get_logger(
     color=LOGGER_COLOR,
 )
 
-ApiMethod = Callable[[dict[str, Any]], Any]
-ApiTaskHandler = Callable[[dict[str, Any], "ApiTaskContext"], Any]
-ApiMethodKind = Literal["sync", "task"]
+# Every API method is a job: one handler signature, one execution pipeline. The
+# handler receives the request params and a task context (progress/cancellation);
+# fast local methods simply ignore the context.
+ApiJobHandler = Callable[[dict[str, Any], "ApiTaskContext"], Any]
+# Retained aliases for the single handler signature.
+ApiMethod = ApiJobHandler
+ApiTaskHandler = ApiJobHandler
+ApiMethodKind = Literal["job"]
 MAX_REQUEST_BODY_SIZE = 1024 * 1024
 SUPPORTED_HTTP_METHODS = "GET,HEAD,POST,OPTIONS"
 API_METHOD_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$")
 API_TASK_STATUSES = ("pending", "running", "succeeded", "failed", "canceled")
+# How long a submit request waits for a job to finish before returning a pollable
+# handle instead. Keeps fast reads to a single round-trip without capping slow work.
+INLINE_WAIT_DEFAULT_MS = 500
+# Bounded worker pool and retained-task cap so high-frequency jobs neither churn
+# threads nor accumulate unbounded task records.
+TASK_POOL_MAX_WORKERS = 8
+TASK_RETENTION_LIMIT = 256
 API_ERROR_CODES = (
     "invalid_request",
     "invalid_json",
@@ -55,7 +69,7 @@ class ApiMethodSpec:
 
     name: str
     handler: Callable[..., Any]
-    kind: ApiMethodKind
+    kind: ApiMethodKind = "job"
     description: str = ""
     params_schema: dict[str, Any] = field(default_factory=lambda: dict(DEFAULT_OBJECT_SCHEMA))
     result_schema: dict[str, Any] | None = None
@@ -78,7 +92,8 @@ class ApiMethodSpec:
 
 
 ApiMethodRegistry = Mapping[str, ApiMethod | ApiMethodSpec]
-ApiTaskRegistry = Mapping[str, ApiTaskHandler | ApiMethodSpec]
+# Retained alias: there is one registry now; task methods are ordinary methods.
+ApiTaskRegistry = ApiMethodRegistry
 
 
 def validate_api_method_name(name: str) -> None:
@@ -94,40 +109,18 @@ def validate_api_method_name(name: str) -> None:
         raise ValueError(f"Invalid API method name: {name}")
 
 
-def _normalize_method_registry(methods: ApiMethodRegistry | None) -> tuple[dict[str, ApiMethod], dict[str, ApiMethodSpec]]:
-    handlers: dict[str, ApiMethod] = {}
+def _normalize_method_registry(methods: ApiMethodRegistry | None) -> tuple[dict[str, ApiJobHandler], dict[str, ApiMethodSpec]]:
+    handlers: dict[str, ApiJobHandler] = {}
     specs: dict[str, ApiMethodSpec] = {}
     for key, value in (methods or {}).items():
         if isinstance(value, ApiMethodSpec):
             name = value.name or key
-            if value.kind != "sync":
-                raise ValueError(f"API method spec kind mismatch for {name}: {value.kind}")
             handler = value.handler
             spec = value
         else:
             name = key
             handler = value
-            spec = ApiMethodSpec(name=name, handler=handler, kind="sync")
-        validate_api_method_name(name)
-        handlers[name] = handler  # type: ignore[assignment]
-        specs[name] = spec
-    return handlers, specs
-
-
-def _normalize_task_registry(task_methods: ApiTaskRegistry | None) -> tuple[dict[str, ApiTaskHandler], dict[str, ApiMethodSpec]]:
-    handlers: dict[str, ApiTaskHandler] = {}
-    specs: dict[str, ApiMethodSpec] = {}
-    for key, value in (task_methods or {}).items():
-        if isinstance(value, ApiMethodSpec):
-            name = value.name or key
-            if value.kind != "task":
-                raise ValueError(f"API task spec kind mismatch for {name}: {value.kind}")
-            handler = value.handler
-            spec = value
-        else:
-            name = key
-            handler = value
-            spec = ApiMethodSpec(name=name, handler=handler, kind="task")
+            spec = ApiMethodSpec(name=name, handler=handler)
         validate_api_method_name(name)
         handlers[name] = handler  # type: ignore[assignment]
         specs[name] = spec
@@ -207,8 +200,8 @@ class ApiTask:
         self.error: dict[str, str] | None = None
         self.logs: list[dict[str, Any]] = []
         self._cancel_event = threading.Event()
+        self._done_event = threading.Event()
         self._lock = threading.RLock()
-        self._thread: threading.Thread | None = None
 
     @property
     def is_canceled(self) -> bool:
@@ -219,10 +212,25 @@ class ApiTask:
         """
         return self._cancel_event.is_set()
 
-    def start(self) -> None:
-        """启动任务线程。"""
-        self._thread = threading.Thread(target=self._run, name=f"api-task-{self.task_id}", daemon=True)
-        self._thread.start()
+    @property
+    def is_terminal(self) -> bool:
+        """任务是否已进入终态。
+
+        Returns:
+            bool: 任务成功、失败或取消时返回 True。
+        """
+        return self.status in {"succeeded", "failed", "canceled"}
+
+    def wait_terminal(self, timeout: float | None = None) -> bool:
+        """等待任务进入终态。
+
+        Args:
+            timeout (float | None): 最长等待秒数，None 表示无限等待。
+
+        Returns:
+            bool: 在超时前进入终态时返回 True。
+        """
+        return self._done_event.wait(timeout)
 
     def cancel(self) -> bool:
         """请求取消任务。
@@ -319,17 +327,25 @@ class ApiTask:
         finally:
             with self._lock:
                 self.finished_at = time.time()
+            self._done_event.set()
 
 
 class ApiTaskManager:
-    """后台 API 任务管理器。"""
+    """后台 API 任务管理器。
 
-    def __init__(self) -> None:
+    使用有界线程池执行任务，并对已完成任务做有界保留，避免高频任务导致线程抖动或
+    任务记录无限增长。
+    """
+
+    def __init__(self, max_workers: int = TASK_POOL_MAX_WORKERS, max_retained: int = TASK_RETENTION_LIMIT) -> None:
         self._tasks: dict[str, ApiTask] = {}
+        self._order: deque[str] = deque()
         self._lock = threading.RLock()
+        self._executor = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="api-job")
+        self._max_retained = max_retained
 
     def create_task(self, method: str, params: dict[str, Any], handler: ApiTaskHandler) -> ApiTask:
-        """创建并启动后台任务。
+        """创建并调度后台任务。
 
         Args:
             method (str): 任务方法名。
@@ -342,7 +358,9 @@ class ApiTaskManager:
         task = ApiTask(uuid.uuid4().hex, method, params, handler)
         with self._lock:
             self._tasks[task.task_id] = task
-        task.start()
+            self._order.append(task.task_id)
+            self._evict_locked()
+        self._executor.submit(task._run)
         return task
 
     def get(self, task_id: str) -> ApiTask | None:
@@ -357,6 +375,15 @@ class ApiTaskManager:
         with self._lock:
             return self._tasks.get(task_id)
 
+    def remove(self, task_id: str) -> None:
+        """移除任务记录（用于已内联返回终态结果、客户端不会再轮询的任务）。
+
+        Args:
+            task_id (str): 任务 ID。
+        """
+        with self._lock:
+            self._tasks.pop(task_id, None)
+
     def snapshots(self) -> list[dict[str, Any]]:
         """列出任务快照。
 
@@ -365,6 +392,24 @@ class ApiTaskManager:
         """
         with self._lock:
             return [task.snapshot(include_result=False) for task in self._tasks.values()]
+
+    def shutdown(self) -> None:
+        """停止线程池，取消尚未开始的任务。"""
+        self._executor.shutdown(wait=False, cancel_futures=True)
+
+    def _evict_locked(self) -> None:
+        """在持有锁时按创建顺序淘汰最旧的终态任务，保持记录数量有界。"""
+        if len(self._tasks) <= self._max_retained:
+            return
+        excess = len(self._tasks) - self._max_retained
+        for task_id in list(self._order):
+            if excess <= 0:
+                break
+            task = self._tasks.get(task_id)
+            if task is not None and task.is_terminal:
+                del self._tasks[task_id]
+                excess -= 1
+        self._order = deque(task_id for task_id in self._order if task_id in self._tasks)
 
 
 class ApiServer(ThreadingHTTPServer):
@@ -377,7 +422,6 @@ class ApiServer(ThreadingHTTPServer):
         self,
         server_address: tuple[str, int],
         methods: ApiMethodRegistry | None = None,
-        task_methods: ApiTaskRegistry | None = None,
         token: str = "",
         max_request_body_size: int = MAX_REQUEST_BODY_SIZE,
         task_manager: ApiTaskManager | None = None,
@@ -385,7 +429,6 @@ class ApiServer(ThreadingHTTPServer):
         super().__init__(server_address, ApiRequestHandler)
         self.token = token
         self.methods, self.method_specs = _normalize_method_registry(methods)
-        self.task_methods, self.task_method_specs = _normalize_task_registry(task_methods)
         self.task_manager = task_manager or ApiTaskManager()
         self.max_request_body_size = max_request_body_size
 
@@ -393,12 +436,14 @@ class ApiServer(ThreadingHTTPServer):
         """导出方法目录和 API 规范信息。
 
         Returns:
-            dict[str, Any]: 同步方法、任务方法、元数据和错误码列表。
+            dict[str, Any]: 方法名、元数据、命名规则、任务状态和错误码列表。
         """
-        metadata = {name: spec.metadata() for name, spec in {**self.method_specs, **self.task_method_specs}.items()}
+        metadata = {name: spec.metadata() for name, spec in self.method_specs.items()}
         return {
             "methods": sorted(self.methods),
-            "tasks": sorted(self.task_methods),
+            # There is one registry; `tasks` is retained (empty) for client
+            # catalogs that union method/task lists.
+            "tasks": [],
             "metadata": metadata,
             "method_name_pattern": API_METHOD_NAME_PATTERN.pattern,
             "task_statuses": list(API_TASK_STATUSES),
@@ -406,10 +451,11 @@ class ApiServer(ThreadingHTTPServer):
         }
 
     def server_close(self) -> None:
-        """Close the listener and bound any in-flight discovery subprocess."""
+        """Close the listener, stop the task pool, and bind any in-flight discovery."""
         from sd_webui_all_in_one.launch_arguments import cancel_launch_argument_discovery
 
         cancel_launch_argument_discovery()
+        self.task_manager.shutdown()
         super().server_close()
 
 
@@ -488,11 +534,12 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/v1/call":
-            self._handle_call()
+            self._handle_submit(INLINE_WAIT_DEFAULT_MS)
             return
 
         if path == "/api/v1/tasks":
-            self._handle_create_task()
+            # Async submit: never wait inline, always return a pollable handle.
+            self._handle_submit(0)
             return
 
         task_id, suffix = self._parse_task_path(path)
@@ -506,38 +553,48 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
     def _path(self) -> str:
         return urlparse(self.path).path
 
-    def _handle_call(self) -> None:
-        data = self._read_method_request()
+    def _handle_submit(self, default_wait_ms: float) -> None:
+        """Submit a method as a job, optionally waiting for it inline.
+
+        Every method runs on the task pool. If it reaches a terminal state within
+        `wait_ms`, the response is the same single-round-trip shape as before:
+        `{ok:true, result:<value>}` (200) on success, or an error envelope on
+        failure/cancellation; the record is evicted since the client has the
+        result. Otherwise the response is a pollable handle snapshot (202). A slow
+        job's duration is thus decoupled from any request timeout.
+        """
+        data = self._read_json_body()
         if data is None:
             return
-        method, params = data
+
+        method = data.get("method")
+        params = data.get("params", {})
+        wait_ms = data.get("wait_ms", default_wait_ms)
+        if not isinstance(method, str) or not method:
+            self._send_error(HTTPStatus.BAD_REQUEST, "invalid_request", "Field 'method' must be a non-empty string")
+            return
+        if not isinstance(params, dict):
+            self._send_error(HTTPStatus.BAD_REQUEST, "invalid_request", "Field 'params' must be an object")
+            return
+        if isinstance(wait_ms, bool) or not isinstance(wait_ms, (int, float)) or wait_ms < 0:
+            self._send_error(HTTPStatus.BAD_REQUEST, "invalid_request", "Field 'wait_ms' must be a non-negative number")
+            return
 
         handler = self.server.methods.get(method)
         if handler is None:
             self._send_error(HTTPStatus.NOT_FOUND, "method_not_found", f"Method not found: {method}")
             return
 
-        try:
-            result = handler(params)
-        except Exception as exc:
-            logger.exception("API method failed: %s", method)
-            self._send_error(HTTPStatus.INTERNAL_SERVER_ERROR, "method_failed", str(exc))
-            return
-
-        self._send_success(result)
-
-    def _handle_create_task(self) -> None:
-        data = self._read_method_request()
-        if data is None:
-            return
-        method, params = data
-
-        handler = self.server.task_methods.get(method)
-        if handler is None:
-            self._send_error(HTTPStatus.NOT_FOUND, "task_method_not_found", f"Task method not found: {method}")
-            return
-
         task = self.server.task_manager.create_task(method, params, handler)
+        if wait_ms > 0 and task.wait_terminal(wait_ms / 1000.0):
+            self.server.task_manager.remove(task.task_id)
+            snapshot = task.snapshot()
+            if snapshot["status"] == "succeeded":
+                self._send_success(snapshot["result"])
+                return
+            error = snapshot["error"] or {"code": "task_failed", "message": f"API job {snapshot['status']}"}
+            self._send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(error["code"]), str(error["message"]))
+            return
         self._send_success(task.snapshot(include_result=False), status=HTTPStatus.ACCEPTED)
 
     def _handle_cancel_task(self, task_id: str) -> None:
@@ -546,22 +603,6 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             self._send_error(HTTPStatus.NOT_FOUND, "task_not_found", f"Task not found: {task_id}")
             return
         self._send_success({"canceled": task.cancel(), "task": task.snapshot(include_result=False)})
-
-    def _read_method_request(self) -> tuple[str, dict[str, Any]] | None:
-        data = self._read_json_body()
-        if data is None:
-            return None
-
-        method = data.get("method")
-        params = data.get("params", {})
-        if not isinstance(method, str) or not method:
-            self._send_error(HTTPStatus.BAD_REQUEST, "invalid_request", "Field 'method' must be a non-empty string")
-            return None
-        if not isinstance(params, dict):
-            self._send_error(HTTPStatus.BAD_REQUEST, "invalid_request", "Field 'params' must be an object")
-            return None
-
-        return method, params
 
     def _parse_task_path(self, path: str) -> tuple[str | None, str]:
         prefix = "/api/v1/tasks/"
@@ -664,7 +705,6 @@ def create_api_server(
     port: int = 8765,
     token: str = "",
     methods: ApiMethodRegistry | None = None,
-    task_methods: ApiTaskRegistry | None = None,
     task_manager: ApiTaskManager | None = None,
     include_default_methods: bool = True,
 ) -> ApiServer:
@@ -674,8 +714,7 @@ def create_api_server(
         host (str): API 服务监听地址。
         port (int): API 服务监听端口。
         token (str): Bearer token，空字符串表示不启用鉴权。
-        methods (ApiMethodRegistry | None): 额外同步方法注册表。
-        task_methods (ApiTaskRegistry | None): 额外后台任务方法注册表。
+        methods (ApiMethodRegistry | None): 额外方法注册表。
         task_manager (ApiTaskManager | None): 自定义任务管理器。
         include_default_methods (bool): 是否加载默认业务方法。
 
@@ -683,17 +722,14 @@ def create_api_server(
         ApiServer: 已创建但尚未启动的 API 服务实例。
     """
     if include_default_methods:
-        from sd_webui_all_in_one.api_server.registry import get_default_methods, get_default_task_methods
+        from sd_webui_all_in_one.api_server.registry import get_default_methods
 
         merged_methods = dict(get_default_methods())
         merged_methods.update(methods or {})
-        merged_task_methods = dict(get_default_task_methods())
-        merged_task_methods.update(task_methods or {})
     else:
         merged_methods = methods
-        merged_task_methods = task_methods
 
-    return ApiServer((host, port), methods=merged_methods, task_methods=merged_task_methods, token=token, task_manager=task_manager)
+    return ApiServer((host, port), methods=merged_methods, token=token, task_manager=task_manager)
 
 
 def serve_api(
@@ -701,7 +737,6 @@ def serve_api(
     port: int = 8765,
     token: str = "",
     methods: ApiMethodRegistry | None = None,
-    task_methods: ApiTaskRegistry | None = None,
     include_default_methods: bool = True,
 ) -> None:
     """启动阻塞式 API 服务。
@@ -710,11 +745,10 @@ def serve_api(
         host (str): API 服务监听地址。
         port (int): API 服务监听端口。
         token (str): Bearer token，空字符串表示不启用鉴权。
-        methods (ApiMethodRegistry | None): 额外同步方法注册表。
-        task_methods (ApiTaskRegistry | None): 额外后台任务方法注册表。
+        methods (ApiMethodRegistry | None): 额外方法注册表。
         include_default_methods (bool): 是否加载默认业务方法。
     """
-    server = create_api_server(host=host, port=port, token=token, methods=methods, task_methods=task_methods, include_default_methods=include_default_methods)
+    server = create_api_server(host=host, port=port, token=token, methods=methods, include_default_methods=include_default_methods)
     address_info = server.server_address
     address = str(address_info[0])
     actual_port = int(address_info[1])
