@@ -630,7 +630,7 @@ def get_available_pytorch_device_type() -> list[PyTorchDeviceType]:
     intel_xpu_available = has_intel_xpu(gpu_list)
     amd_gpu_available = has_amd_gpu(gpu_list)
 
-    if gpu_available:
+    if gpu_available and sys.platform == "win32":
         device_list.append("directml")
 
     if nvidia_gpu_available:
