@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from argparse import Namespace
-from typing import Any, Callable, cast
+from typing import Any, Callable
 from urllib.parse import urlparse
 
 from sd_webui_all_in_one.api_server.adapters import (
@@ -88,7 +88,7 @@ def _webui_type(params: dict[str, Any]) -> WebUiApiType:
     value = _require_str(params, "webui_type")
     if value not in WEBUI_API_ADAPTERS:
         raise ValueError(f"Unsupported webui_type: {value}")
-    return cast(WebUiApiType, value)
+    return value
 
 
 def _webui_path(params: dict[str, Any]) -> Path:
