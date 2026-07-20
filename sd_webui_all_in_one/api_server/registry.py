@@ -164,6 +164,7 @@ def version_status(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 仓库状态信息。
@@ -176,6 +177,7 @@ def version_branches(params: dict[str, Any], context: ApiTaskContext = _NULL_TAS
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 分支列表。
@@ -189,6 +191,7 @@ def version_commits(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 提交列表。
@@ -205,6 +208,7 @@ def version_branch_presets(params: dict[str, Any], context: ApiTaskContext = _NU
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 内置分支预设列表。
@@ -237,6 +241,7 @@ def snapshot_list(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_C
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 快照文件列表。
@@ -250,6 +255,7 @@ def snapshot_read(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_C
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 快照内容。
@@ -279,6 +285,7 @@ def extension_list(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 扩展列表。
@@ -323,6 +330,7 @@ def extension_commits(params: dict[str, Any], context: ApiTaskContext = _NULL_TA
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 扩展提交历史。
@@ -350,6 +358,7 @@ def environment_dependencies(params: dict[str, Any], context: ApiTaskContext = _
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 环境依赖检查结果。
@@ -362,6 +371,7 @@ def environment_pytorch_version(_params: dict[str, Any], context: ApiTaskContext
 
     Args:
         _params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: PyTorch 版本检查结果。
@@ -397,6 +407,7 @@ def launch_prepare(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: WebUI 启动参数信息。
@@ -443,6 +454,7 @@ def pytorch_device_type(params: dict[str, Any], context: ApiTaskContext = _NULL_
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: PyTorch 设备类型信息。
@@ -458,6 +470,7 @@ def pytorch_library(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: PyTorch 版本组合列表。
@@ -483,6 +496,7 @@ def pytorch_catalog(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: PyTorch 聚合目录。
@@ -495,6 +509,7 @@ def pytorch_resolve_selection(params: dict[str, Any], context: ApiTaskContext = 
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 命令行业务描述。
@@ -509,6 +524,7 @@ def system_proxy(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CO
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 系统代理信息。
@@ -557,6 +573,7 @@ def system_proxy_set(params: dict[str, Any], context: ApiTaskContext = _NULL_TAS
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 启用后的代理信息。
@@ -571,6 +588,7 @@ def system_proxy_clear(params: dict[str, Any], context: ApiTaskContext = _NULL_T
 
     Args:
         params (dict[str, Any]): API 请求参数，必须为空。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 禁用后的代理信息。
@@ -911,6 +929,7 @@ def model_root(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONT
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 模型根目录信息。
@@ -923,6 +942,7 @@ def model_library(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_C
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 内置模型库条目列表。
@@ -974,6 +994,7 @@ def model_resolve_library_install(params: dict[str, Any], context: ApiTaskContex
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 命令行业务描述。
@@ -988,6 +1009,7 @@ def model_directories(params: dict[str, Any], context: ApiTaskContext = _NULL_TA
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 模型目录列表。
@@ -1000,6 +1022,7 @@ def model_entries(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_C
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 模型条目列表。
@@ -1013,6 +1036,7 @@ def model_invokeai_list(params: dict[str, Any], context: ApiTaskContext = _NULL_
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: InvokeAI 模型列表。
@@ -1025,6 +1049,7 @@ def hotpatcher_default_config(params: dict[str, Any], context: ApiTaskContext = 
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 默认配置。
@@ -1038,6 +1063,7 @@ def hotpatcher_catalog(params: dict[str, Any], context: ApiTaskContext = _NULL_T
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 功能目录。
@@ -1051,6 +1077,7 @@ def hotpatcher_load_config(params: dict[str, Any], context: ApiTaskContext = _NU
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 配置对象。
@@ -1064,6 +1091,7 @@ def hotpatcher_normalize_config(params: dict[str, Any], context: ApiTaskContext 
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 规范化配置。
@@ -1076,6 +1104,7 @@ def hotpatcher_runtime_env(params: dict[str, Any], context: ApiTaskContext = _NU
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 环境变量映射。
@@ -1094,6 +1123,7 @@ def hotpatcher_runtime_status(params: dict[str, Any], context: ApiTaskContext = 
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: runtime host 状态。
@@ -1107,6 +1137,7 @@ def hotpatcher_runtime_logs(params: dict[str, Any], context: ApiTaskContext = _N
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: runtime host 日志。
@@ -1124,6 +1155,7 @@ def hotpatcher_runtime_browser_events(params: dict[str, Any], context: ApiTaskCo
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 浏览器事件流。
@@ -1150,6 +1182,7 @@ def hotpatcher_runtime_ensure(params: dict[str, Any], context: ApiTaskContext = 
 
     Args:
         params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
 
     Returns:
         dict[str, Any]: 运行时状态与启动环境。
