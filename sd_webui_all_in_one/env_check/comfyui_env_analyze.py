@@ -3,7 +3,7 @@
 import os
 import sys
 from pathlib import Path
-from typing import TypedDict
+from typing import TypedDict, Literal, TypeAlias
 
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.logger import get_logger
@@ -39,6 +39,11 @@ logger = get_logger(
     color=LOGGER_COLOR,
 )
 
+ComponentType: TypeAlias = Literal["core", "extension"]
+"""组件类型
+- core: 内核
+- extension: 扩展
+"""
 
 class ComponentEnvironmentDetails(TypedDict):
     """ComfyUI 组件的环境信息结构
@@ -46,6 +51,8 @@ class ComponentEnvironmentDetails(TypedDict):
     Attributes:
         requirement_path (Path | None):
             依赖文件路径
+        component_type (ComponentType):
+            组件类型
         is_disabled (bool):
             组件是否禁用
         requires (list[str]):
@@ -62,6 +69,9 @@ class ComponentEnvironmentDetails(TypedDict):
 
     requirement_path: Path | None
     """依赖文件路径"""
+
+    component_type: ComponentType | None
+    """组件类型"""
 
     is_disabled: bool
     """组件是否禁用"""
@@ -153,6 +163,7 @@ def create_comfyui_environment_dict(
     comfyui_env_data: ComfyUIEnvironmentComponent = {
         "ComfyUI": {
             "requirement_path": comfyui_path / "requirements.txt",
+            "component_type": "core",
             "is_disabled": False,
             "requires": [],
             "has_missing_requires": False,
@@ -172,6 +183,7 @@ def create_comfyui_environment_dict(
 
         comfyui_env_data[custom_node.name] = {
             "requirement_path": custom_node_requirement_path if custom_node_requirement_path.is_file() else None,
+            "component_type": "extension",
             "is_disabled": custom_node_is_disabled,
             "requires": [],
             "has_missing_requires": False,
@@ -187,6 +199,7 @@ def update_comfyui_environment_dict(
     env_data: ComfyUIEnvironmentComponent,
     component_name: str,
     requirement_path: Path | None = None,
+    component_type: ComponentType | None = None,
     is_disabled: bool | None = None,
     requires: list[str] | None = None,
     has_missing_requires: bool | None = None,
@@ -203,6 +216,8 @@ def update_comfyui_environment_dict(
             ComfyUI 组件名称
         requirement_path (Path | None):
             ComfyUI 组件依赖文件路径
+        component_type (ComponentType | None):
+            组件类型
         is_disabled (bool | None):
             ComfyUI 组件是否被禁用
         requires (list[str] | None):
@@ -221,6 +236,7 @@ def update_comfyui_environment_dict(
         {
             "requirement_path": None,
             "is_disabled": False,
+            "component_type": None,
             "requires": [],
             "has_missing_requires": False,
             "missing_requires": [],
@@ -230,6 +246,7 @@ def update_comfyui_environment_dict(
     )
     env_data[component_name] = {
         "requirement_path": requirement_path if requirement_path is not None else current.get("requirement_path"),
+        "component_type": component_type if component_type is not None else current.get("component_type", "core"),
         "is_disabled": is_disabled if is_disabled is not None else current.get("is_disabled", False),
         "requires": requires if requires is not None else current.get("requires", []),
         "has_missing_requires": has_missing_requires if has_missing_requires is not None else current.get("has_missing_requires", False),
