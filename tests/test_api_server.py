@@ -507,6 +507,7 @@ def test_default_api_registry_includes_full_version_snapshot_extension_surface()
             "extension.switch_branch",
             "extension.switch_commit",
             "extension.switch_registry_version",
+            "extension.branches",
             "invokeai.install_version",
         }.issubset(catalog["methods"])
         assert catalog["metadata"]["extension.commits"]["params_schema"]["required"] == ["webui_type", "webui_path", "name"]
@@ -623,6 +624,34 @@ def test_extension_commits_resolves_name_and_forwards_none_limit(monkeypatch, tm
 
     assert result == {"commits": [{"commit": "full-id"}]}
     assert calls == [("list", tmp_path), ("commits", extension_path, None)]
+
+
+def test_extension_branches_resolves_name_and_forwards_fetch(monkeypatch, tmp_path):
+    extension_path = tmp_path / "extensions" / "demo"
+    calls = []
+
+    class FakeAdapter:
+        def list_extensions(self, webui_path):
+            calls.append(("list", webui_path))
+            return {"extensions": [{"name": "demo", "path": str(extension_path)}]}
+
+        def list_branches(self, path, fetch=True):
+            calls.append(("branches", path, fetch))
+            return {"branches": [{"name": "main", "is_current": True}]}
+
+    monkeypatch.setattr(registry, "get_webui_adapter", lambda webui_type: FakeAdapter())
+
+    result = registry.extension_branches(
+        {
+            "webui_type": "sd_webui",
+            "webui_path": str(tmp_path),
+            "name": "demo",
+            "options": {"fetch": False},
+        }
+    )
+
+    assert result == {"branches": [{"name": "main", "is_current": True}]}
+    assert calls == [("list", tmp_path), ("branches", extension_path, False)]
 
 
 def test_default_api_registry_dispatches_launch_prepare(monkeypatch, tmp_path):

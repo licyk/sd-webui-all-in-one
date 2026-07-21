@@ -353,6 +353,32 @@ def extension_commits(params: dict[str, Any], context: ApiTaskContext = _NULL_TA
     return _adapter(params).list_commits(Path(path), limit=limit)
 
 
+def extension_branches(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
+    """按稳定名称列出已安装扩展的 Git 分支。
+
+    Args:
+        params (dict[str, Any]): API 请求参数。
+        context (ApiTaskContext): 后台任务上下文。
+
+    Returns:
+        dict[str, Any]: 扩展分支列表。
+
+    Raises:
+        ValueError: 扩展不存在或路径不可用时抛出。
+    """
+    name = _require_str(params, "name")
+    extensions = _adapter(params).list_extensions(_webui_path(params)).get("extensions", [])
+    extension = next((item for item in extensions if item.get("name") == name), None)
+    if extension is None:
+        raise ValueError(f"extension not found: {name}")
+    path = extension.get("path")
+    if not path:
+        raise ValueError(f"extension path is unavailable: {name}")
+    options = _options(params)
+    fetch = options.get("fetch", True)
+    return _adapter(params).list_branches(Path(path), fetch=bool(fetch))
+
+
 def environment_dependencies(params: dict[str, Any], context: ApiTaskContext = _NULL_TASK_CONTEXT) -> dict[str, Any]:
     """检查环境依赖状态。
 
@@ -1519,6 +1545,21 @@ def _default_core_methods() -> ApiMethodRegistry:
             "extension.commits",
             extension_commits,
             "List commits for an installed Git extension.",
+            {
+                "type": "object",
+                "properties": {
+                    "webui_type": {"type": "string", "enum": sorted(WEBUI_API_ADAPTERS)},
+                    "webui_path": {"type": "string"},
+                    "name": {"type": "string", "minLength": 1},
+                    "options": {"type": "object"},
+                },
+                "required": ["webui_type", "webui_path", "name"],
+            },
+        ),
+        "extension.branches": _sync_spec(
+            "extension.branches",
+            extension_branches,
+            "List Git branches for an installed Git extension.",
             {
                 "type": "object",
                 "properties": {
