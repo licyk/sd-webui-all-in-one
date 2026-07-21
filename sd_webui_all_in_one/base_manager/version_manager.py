@@ -575,10 +575,16 @@ def list_commits(path: Path, limit: int | None = 100) -> list[CommitInfo]:
         return []
     current_commit = _safe_git_value(git_warpper.get_current_commit, path)
     format_arg = "--format=%H%x1f%h%x1f%ci%x1f%an%x1f%at%x1f%D%x1f%s"
-    args = ["log", format_arg]
+    args = ["log", "HEAD", "@{u}", format_arg]
     if limit is not None:
         args.extend(["-n", str(limit)])
-    output = run_git_output(path, *args)
+    try:
+        output = run_git_output(path, *args)
+    except RuntimeError:
+        args = ["log", "HEAD", format_arg]
+        if limit is not None:
+            args.extend(["-n", str(limit)])
+        output = run_git_output(path, *args)
     commits: list[CommitInfo] = []
     for line in output.splitlines():
         parts = line.split("\x1f", 6)
