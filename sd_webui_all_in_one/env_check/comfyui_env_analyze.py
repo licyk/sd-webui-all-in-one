@@ -51,7 +51,7 @@ class ComponentEnvironmentDetails(TypedDict):
     Attributes:
         requirement_path (Path | None):
             依赖文件路径
-        component_type (ComponentType):
+        component_type (ComponentType | None):
             组件类型
         is_disabled (bool):
             组件是否禁用
@@ -438,7 +438,15 @@ def collect_conflict_components(
 def format_conflict_info(
     conflicts: list[ComfyUIConflictGroup],
 ) -> str:
-    """将结构化冲突组渲染为文本说明。"""
+    """将结构化冲突组渲染为文本说明。
+    
+    Args:
+        conflicts (list[ComfyUIConflictGroup]):
+            冲突组信息列表
+
+    Returns:
+        冲突信息文本
+    """
     content: list[str] = []
     for conflict in conflicts:
         content.append(f"{conflict['package']}:")
@@ -450,16 +458,6 @@ def format_conflict_info(
         content.pop()
 
     return "\n".join(content)
-
-
-def statistical_has_conflict_component(
-    env_data: ComfyUIEnvironmentComponent,
-    conflict_package_list: list[str],
-) -> str:
-    """(兼容) 返回冲突组件文本说明。"""
-    return format_conflict_info(
-        collect_conflict_components(env_data, conflict_package_list)
-    )
 
 
 def fitter_has_version_package(

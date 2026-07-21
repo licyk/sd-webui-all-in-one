@@ -38,7 +38,7 @@ def test_comfyui_environment_dict_updates_missing_and_conflict_lists(monkeypatch
             enabled / "requirements.txt",
         ]
     )
-    assert analyzer.statistical_has_conflict_component(env_data, ["shared", "Shared"]) == "shared:\n - ComfyUI: shared<1\n - enabled: shared==1.0"
+    assert analyzer.collect_conflict_components(env_data, ["shared", "Shared"]) == "shared:\n - ComfyUI: shared<1\n - enabled: shared==1.0"
 
 
 def test_process_comfyui_env_analysis_detects_conflicts_and_missing_paths(monkeypatch, tmp_path):
