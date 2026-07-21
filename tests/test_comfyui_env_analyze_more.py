@@ -38,7 +38,15 @@ def test_comfyui_environment_dict_updates_missing_and_conflict_lists(monkeypatch
             enabled / "requirements.txt",
         ]
     )
-    assert analyzer.collect_conflict_components(env_data, ["shared", "Shared"]) == "shared:\n - ComfyUI: shared<1\n - enabled: shared==1.0"
+    assert analyzer.collect_conflict_components(env_data, ["shared", "Shared"]) == [
+        {
+            "package": "shared",
+            "components": [
+                {"component": "ComfyUI", "component_type": "core", "requirement": "shared<1"},
+                {"component": "enabled", "component_type": "extension", "requirement": "shared==1.0"},
+            ],
+        }
+    ]
 
 
 def test_process_comfyui_env_analysis_detects_conflicts_and_missing_paths(monkeypatch, tmp_path):
@@ -55,8 +63,8 @@ def test_process_comfyui_env_analysis_detects_conflicts_and_missing_paths(monkey
     assert env_data["node"]["has_conflict_requires"] is True
     assert req_list == [comfyui / "requirements.txt", node / "requirements.txt"]
     conflict_info = analyzer.format_conflict_info(conflicts)
-    assert "ComfyUI: numpy<2" in conflict_info
-    assert "node: numpy>=2" in conflict_info
+    assert "ComfyUI (core): numpy<2" in conflict_info
+    assert "node (extension): numpy>=2" in conflict_info
 
     with pytest.raises(FileNotFoundError):
         analyzer.process_comfyui_env_analysis(tmp_path / "missing")
@@ -76,7 +84,7 @@ def test_check_comfyui_component_dependencies_returns_structured_result(monkeypa
     assert result["has_conflict_requires"] is True
     assert result["requirement_paths"] == [comfyui / "requirements.txt", node / "requirements.txt"]
     assert result["components"]["node"]["missing_requires"] == ["missing-demo"]
-    assert "node: numpy>=2" in result["conflict_info"]
+    assert " - node (extension): numpy>=2" in result["conflict_info"]
     assert len(result["conflicts"]) == 1
     assert result["conflicts"][0]["package"] == "numpy"
 

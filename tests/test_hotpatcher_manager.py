@@ -289,7 +289,12 @@ print(json.dumps({{
     result = json.loads(output)
 
     assert result["parent_marker"] == "1"
-    assert result["parent_result"] == {"applied": [], "warnings": [], "errors": []}
+    assert result["parent_result"]["applied"] == ["extensions.xformers_cutlass"]
+    assert result["parent_result"]["errors"] == []
+    assert any(
+        warning.get("feature") == "core.import_hook" and "already installed" in warning.get("message", "")
+        for warning in result["parent_result"].get("warnings", [])
+    )
     assert result["child"] == {"marker": "1", "result": None}
 
 
