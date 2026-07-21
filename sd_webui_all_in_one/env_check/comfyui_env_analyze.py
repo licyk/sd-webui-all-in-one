@@ -86,6 +86,20 @@ ComfyUIEnvironmentComponent = dict[str, ComponentEnvironmentDetails]
 """ComfyUI 环境组件表字典"""
 
 
+class ComfyUIConflictItem(TypedDict):
+    """单个冲突组件与其版本要求。"""
+
+    component: str
+    requirement: str
+
+
+class ComfyUIConflictGroup(TypedDict):
+    """单个软件包的冲突组。"""
+
+    package: str
+    components: list[ComfyUIConflictItem]
+
+
 class ComfyUIConflictAnalysisResult(TypedDict):
     """ComfyUI 组件依赖检查结果。
 
@@ -94,6 +108,8 @@ class ComfyUIConflictAnalysisResult(TypedDict):
             ComfyUI 组件环境信息。
         requirement_paths (list[Path]):
             需要安装或修复的依赖文件路径。
+        conflicts (list[ComfyUIConflictGroup]):
+            结构化的冲突依赖信息。
         conflict_info (str):
             冲突依赖文本说明。
         has_missing_requires (bool):
@@ -107,6 +123,9 @@ class ComfyUIConflictAnalysisResult(TypedDict):
 
     requirement_paths: list[Path]
     """需要安装或修复的依赖文件路径。"""
+
+    conflicts: list[ComfyUIConflictGroup]
+    """结构化的冲突依赖信息。"""
 
     conflict_info: str
     """冲突依赖文本说明。"""
@@ -355,11 +374,11 @@ def statistical_need_install_require_component(
     return requirement_list
 
 
-def statistical_has_conflict_component(
+def collect_conflict_components(
     env_data: ComfyUIEnvironmentComponent,
     conflict_package_list: list[str],
-) -> str:
-    """根据 ComfyUI 环境组件表字典中的 conflict_requires 字段统计冲突的组件信息
+) -> list[ComfyUIConflictGroup]:
+    """收集 ComfyUI 组件冲突信息并返回结构化数据。
 
     Args:
         env_data (ComfyUIEnvironmentComponent):
@@ -368,21 +387,62 @@ def statistical_has_conflict_component(
             冲突的软件包名称列表
 
     Returns:
-        str:
-            ComfyUI 环境冲突的组件信息列表
+        list[ComfyUIConflictGroup]:
+            结构化的冲突组列表
     """
-    content = []
-    conflict_package_list = remove_duplicate_object_from_list([normalize_package_name(x) for x in conflict_package_list])
+    conflict_package_list = remove_duplicate_object_from_list(
+        [normalize_package_name(x) for x in conflict_package_list]
+    )
+    conflicts: list[ComfyUIConflictGroup] = []
+
     for conflict_package in conflict_package_list:
-        content.append(get_package_name(f"{conflict_package}:"))
+        group_components: list[ComfyUIConflictItem] = []
         for component_name, details in env_data.items():
             for conflict_component_package in details.get("conflict_requires"):
-                conflict_component_package_format = normalize_package_name(get_package_name(conflict_component_package))
-                conflict_package_format = normalize_package_name(conflict_package)
-                if conflict_component_package_format == conflict_package_format:
-                    content.append(f" - {component_name}: {conflict_component_package}")
+                if normalize_package_name(get_package_name(conflict_component_package)) == normalize_package_name(conflict_package):
+                    group_components.append(
+                        {
+                            "component": component_name,
+                            "requirement": conflict_component_package,
+                        }
+                    )
+
+        if group_components:
+            conflicts.append(
+                {
+                    "package": get_package_name(conflict_package),
+                    "components": group_components,
+                }
+            )
+
+    return conflicts
+
+
+def format_conflict_info(
+    conflicts: list[ComfyUIConflictGroup],
+) -> str:
+    """将结构化冲突组渲染为文本说明。"""
+    content: list[str] = []
+    for conflict in conflicts:
+        content.append(f"{conflict['package']}:")
+        for item in conflict["components"]:
+            content.append(f" - {item['component']}: {item['requirement']}")
         content.append("")
-    return "\n".join([str(x) for x in (content[:-1] if len(content) > 0 and content[-1] == "" else content)])
+
+    if len(content) > 0 and content[-1] == "":
+        content.pop()
+
+    return "\n".join(content)
+
+
+def statistical_has_conflict_component(
+    env_data: ComfyUIEnvironmentComponent,
+    conflict_package_list: list[str],
+) -> str:
+    """(兼容) 返回冲突组件文本说明。"""
+    return format_conflict_info(
+        collect_conflict_components(env_data, conflict_package_list)
+    )
 
 
 def fitter_has_version_package(
@@ -629,15 +689,15 @@ def display_check_result(
 
 def process_comfyui_env_analysis(
     comfyui_root_path: Path,
-) -> tuple[dict[str, ComponentEnvironmentDetails], list[Path], str]:
+) -> tuple[dict[str, ComponentEnvironmentDetails], list[Path], list[ComfyUIConflictGroup]]:
     """分析 ComfyUI 环境
 
     Args:
         comfyui_root_path (Path):
             ComfyUI 根目录
     Returns:
-        (tuple[dict[str, ComponentEnvironmentDetails], list[Path], str]):
-            ComfyUI 环境组件信息, 缺失依赖的依赖表, 冲突组件信息
+        (tuple[dict[str, ComponentEnvironmentDetails], list[Path], list[ComfyUIConflictGroup]]):
+            ComfyUI 环境组件信息, 缺失依赖的依赖表, 结构化冲突信息
 
     Raises:
         FileNotFoundError:
@@ -659,8 +719,8 @@ def process_comfyui_env_analysis(
     conflict_pkg = detect_conflict_package_from_list(has_version_pkg)
     update_comfyui_component_conflict_requires_list(env_data, conflict_pkg)
     req_list = statistical_need_install_require_component(env_data)
-    conflict_info = statistical_has_conflict_component(env_data, conflict_pkg)
-    return env_data, req_list, conflict_info
+    conflicts = collect_conflict_components(env_data, conflict_pkg)
+    return env_data, req_list, conflicts
 
 
 def check_comfyui_component_dependencies(
@@ -678,12 +738,14 @@ def check_comfyui_component_dependencies(
     Raises:
         FileNotFoundError: ComfyUI 依赖文件缺失 / 自定义节点文件夹未找到时抛出。
     """
-    env_data, req_list, conflict_info = process_comfyui_env_analysis(comfyui_root_path)
+    env_data, req_list, conflicts = process_comfyui_env_analysis(comfyui_root_path)
+    conflict_info = format_conflict_info(conflicts)
     has_missing_requires = any(details.get("has_missing_requires", False) for details in env_data.values())
     has_conflict_requires = any(details.get("has_conflict_requires", False) for details in env_data.values())
     return {
         "components": env_data,
         "requirement_paths": req_list,
+        "conflicts": conflicts,
         "conflict_info": conflict_info,
         "has_missing_requires": has_missing_requires,
         "has_conflict_requires": has_conflict_requires,

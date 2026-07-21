@@ -49,11 +49,12 @@ def test_process_comfyui_env_analysis_detects_conflicts_and_missing_paths(monkey
     (node / "requirements.txt").write_text("numpy>=2\n", encoding="utf-8")
     monkeypatch.setattr(analyzer, "is_package_installed", lambda _package: True)
 
-    env_data, req_list, conflict_info = analyzer.process_comfyui_env_analysis(comfyui)
+    env_data, req_list, conflicts = analyzer.process_comfyui_env_analysis(comfyui)
 
     assert env_data["ComfyUI"]["has_conflict_requires"] is True
     assert env_data["node"]["has_conflict_requires"] is True
     assert req_list == [comfyui / "requirements.txt", node / "requirements.txt"]
+    conflict_info = analyzer.format_conflict_info(conflicts)
     assert "ComfyUI: numpy<2" in conflict_info
     assert "node: numpy>=2" in conflict_info
 
@@ -76,6 +77,8 @@ def test_check_comfyui_component_dependencies_returns_structured_result(monkeypa
     assert result["requirement_paths"] == [comfyui / "requirements.txt", node / "requirements.txt"]
     assert result["components"]["node"]["missing_requires"] == ["missing-demo"]
     assert "node: numpy>=2" in result["conflict_info"]
+    assert len(result["conflicts"]) == 1
+    assert result["conflicts"][0]["package"] == "numpy"
 
 
 def test_comfyui_conflict_analyzer_installs_needed_requirements_and_aggregates(monkeypatch, tmp_path):
@@ -87,7 +90,23 @@ def test_comfyui_conflict_analyzer_installs_needed_requirements_and_aggregates(m
 
     reqs = [node_a / "requirements.txt", node_b / "requirements.txt"]
     calls = []
-    monkeypatch.setattr(analyzer, "process_comfyui_env_analysis", lambda _path: ({}, reqs, "demo\n - node-a: demo<1\n - node-b: demo>=2"))
+    monkeypatch.setattr(
+        analyzer,
+        "process_comfyui_env_analysis",
+        lambda _path: (
+            {},
+            reqs,
+            [
+                {
+                    "package": "demo",
+                    "components": [
+                        {"component": "node-a", "requirement": "demo<1"},
+                        {"component": "node-b", "requirement": "demo>=2"},
+                    ],
+                }
+            ],
+        ),
+    )
 
     def fake_install_requirements(path, use_uv, cwd, custom_env):
         calls.append((path, use_uv, cwd, custom_env))
@@ -113,7 +132,15 @@ def test_comfyui_conflict_analyzer_installs_needed_requirements_and_aggregates(m
     assert not any(isinstance(call[0], list) for call in calls)
 
     calls.clear()
-    monkeypatch.setattr(analyzer, "process_comfyui_env_analysis", lambda _path: ({}, [], "conflict"))
+    monkeypatch.setattr(
+        analyzer,
+        "process_comfyui_env_analysis",
+        lambda _path: (
+            {},
+            [],
+            [],
+        ),
+    )
     analyzer.comfyui_conflict_analyzer(tmp_path, install_conflict_component_requirement=False)
     assert calls == []
 
@@ -128,7 +155,11 @@ def test_comfyui_conflict_analyzer_batches_non_conflicting_requirements(monkeypa
     req_paths = [(node_a / "requirements.txt").resolve(), (node_b / "requirements.txt").resolve()]
     calls = []
     info_messages = []
-    monkeypatch.setattr(analyzer, "process_comfyui_env_analysis", lambda _path: ({}, req_paths, ""))
+    monkeypatch.setattr(
+        analyzer,
+        "process_comfyui_env_analysis",
+        lambda _path: ({}, req_paths, []),
+    )
     monkeypatch.setattr(analyzer.logger, "info", lambda message, *args: info_messages.append(message % args if args else message))
 
     def fake_install_requirements(path, use_uv, cwd, custom_env):
@@ -156,7 +187,11 @@ def test_comfyui_conflict_analyzer_falls_back_to_sequential_when_batch_fails(mon
 
     req_paths = [(node_a / "requirements.txt").resolve(), (node_b / "requirements.txt").resolve()]
     calls = []
-    monkeypatch.setattr(analyzer, "process_comfyui_env_analysis", lambda _path: ({}, req_paths, ""))
+    monkeypatch.setattr(
+        analyzer,
+        "process_comfyui_env_analysis",
+        lambda _path: ({}, req_paths, []),
+    )
 
     def fake_install_requirements(path, use_uv, cwd, custom_env):
         calls.append((path, use_uv, cwd, custom_env))
