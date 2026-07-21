@@ -100,6 +100,7 @@ class ComfyUIConflictItem(TypedDict):
     """单个冲突组件与其版本要求。"""
 
     component: str
+    component_type: ComponentType | None
     requirement: str
 
 
@@ -420,6 +421,7 @@ def collect_conflict_components(
                     group_components.append(
                         {
                             "component": component_name,
+                            "component_type": details.get("component_type"),
                             "requirement": conflict_component_package,
                         }
                     )
@@ -451,7 +453,9 @@ def format_conflict_info(
     for conflict in conflicts:
         content.append(f"{conflict['package']}:")
         for item in conflict["components"]:
-            content.append(f" - {item['component']}: {item['requirement']}")
+            component_type = item.get("component_type")
+            type_suffix = f" ({component_type})" if component_type else ""
+            content.append(f" - {item['component']}{type_suffix}: {item['requirement']}")
         content.append("")
 
     if len(content) > 0 and content[-1] == "":
