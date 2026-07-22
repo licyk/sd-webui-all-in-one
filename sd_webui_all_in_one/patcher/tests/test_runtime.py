@@ -380,7 +380,7 @@ def test_format_exception_payload_includes_source_and_context():
     assert all("locals" not in frame for frame in payload["frames"])
 
 
-def test_format_exception_payload_includes_sanitized_locals():
+def test_format_exception_payload_includes_bounded_locals():
     try:
         _raise_with_locals("locals payload")
     except RuntimeError as exc:
@@ -394,18 +394,18 @@ def test_format_exception_payload_includes_sanitized_locals():
     }
     assert locals_payload["password_token"] == {
         "type": "builtins.str",
-        "redacted": True,
-        "reason": "sensitive_name",
+        "repr": "'secret value'",
+        "truncated": False,
     }
     assert locals_payload["long_local"]["type"] == "builtins.str"
     assert locals_payload["long_local"]["truncated"] is True
     assert len(locals_payload["long_local"]["repr"]) == 512
     assert locals_payload["broken_repr"]["type"].endswith(".BrokenLocalRepr")
     assert locals_payload["broken_repr"]["repr"] == "<unrepresentable BrokenLocalRepr>"
-    assert "secret value" not in json.dumps(payload)
+    assert "secret value" in json.dumps(payload)
 
 
-def test_exception_reporter_include_locals_sends_sanitized_locals():
+def test_exception_reporter_include_locals_sends_bounded_locals():
     with JsonlHost() as host:
         with RuntimeClient.connect(host.host, host.port) as client:
             install_exception_reporter(client, include_locals=True)
@@ -418,7 +418,7 @@ def test_exception_reporter_include_locals_sends_sanitized_locals():
         event = next(message for message in host.messages if message.get("type") == "error.exception")
         locals_payload = _locals_for_function(event["payload"], "_raise_with_locals")
         assert locals_payload["visible_local"]["repr"] == "'visible value'"
-        assert locals_payload["password_token"]["redacted"] is True
+        assert locals_payload["password_token"]["repr"] == "'secret value'"
 
 
 def test_error_capture_sys_excepthook_reports_and_chains(monkeypatch):

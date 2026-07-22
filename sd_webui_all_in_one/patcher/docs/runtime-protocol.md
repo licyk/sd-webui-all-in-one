@@ -341,14 +341,14 @@ payload 包含：
       "module": "app",
       "locals": {
         "value": {"type": "builtins.str", "repr": "'hello'", "truncated": false},
-        "api_token": {"type": "builtins.str", "redacted": true, "reason": "sensitive_name"}
+        "api_token": {"type": "builtins.str", "repr": "'local token'", "truncated": false}
       }
     }
   ]
 }
 ```
 
-局部变量采集默认关闭。启用后会自动按变量名脱敏 password/token/secret/cookie 等敏感值, 并限制单个 repr、单帧变量数量和整次事件的 locals 总大小；被截断的 frame 会包含 `__truncated__` 标记。
+局部变量采集默认关闭。启用后会保留所有变量的 `repr()` 摘要，并限制单个 repr、单帧变量数量和整次事件的 locals 总大小；被截断的 frame 会包含 `__truncated__` 标记。
 
 它和 fault channel 的区别：
 

@@ -28,24 +28,6 @@ DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES = (
     "sd_webui_all_in_one_hotpatcher",
     "sd_webui_all_in_one_hotpatcher_ext",
 )
-_SENSITIVE_LOCAL_NAME_PARTS = (
-    "password",
-    "passwd",
-    "pwd",
-    "secret",
-    "token",
-    "api_key",
-    "apikey",
-    "access_key",
-    "private_key",
-    "authorization",
-    "cookie",
-    "session",
-    "credential",
-    "bearer",
-)
-
-
 @dataclass
 class ExceptionReporter:
     """
@@ -908,22 +890,15 @@ def _locals_from_frame(frame: Any, budget: _LocalBudget) -> dict[str, Any]:
             locals_payload["__truncated__"] = {"reason": "locals_repr_budget"}
             break
 
-        locals_payload[str(name)] = _local_value_payload(str(name), value, budget)
+        locals_payload[str(name)] = _local_value_payload(value, budget)
         if budget.remaining <= 0:
             locals_payload["__truncated__"] = {"reason": "locals_repr_budget"}
             break
     return locals_payload
 
 
-def _local_value_payload(name: str, value: Any, budget: _LocalBudget) -> dict[str, Any]:
+def _local_value_payload(value: Any, budget: _LocalBudget) -> dict[str, Any]:
     type_name = _type_name(value)
-    if _is_sensitive_local_name(name):
-        return {
-            "type": type_name,
-            "redacted": True,
-            "reason": "sensitive_name",
-        }
-
     text, value_truncated = _safe_repr_with_truncation(value, max_chars=_LOCAL_REPR_MAX_CHARS)
     text, budget_truncated = budget.consume(text)
     return {
@@ -931,13 +906,6 @@ def _local_value_payload(name: str, value: Any, budget: _LocalBudget) -> dict[st
         "repr": text,
         "truncated": value_truncated or budget_truncated,
     }
-
-
-def _is_sensitive_local_name(name: str) -> bool:
-    lowered = name.lower()
-    return any(part in lowered for part in _SENSITIVE_LOCAL_NAME_PARTS)
-
-
 def _type_name(value: Any) -> str:
     value_type = type(value)
     return f"{value_type.__module__}.{value_type.__qualname__}"
