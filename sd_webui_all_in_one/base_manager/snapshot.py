@@ -241,6 +241,28 @@ class WebUiSnapshot:
         return cast(JsonObject, snapshot_to_dict(self))
 
 
+@dataclass(slots=True)
+class SnapshotSummary:
+    """快照文件摘要。"""
+
+    path: Path
+    filename: str
+    created_at: str | None = None
+    webui_type: str | None = None
+    webui_name: str | None = None
+    package_count: int | None = None
+    extension_count: int | None = None
+    error: str | None = None
+
+
+@dataclass(slots=True)
+class SavedSnapshot:
+    """已保存的 WebUI 快照。"""
+
+    path: Path
+    snapshot: WebUiSnapshot
+
+
 def utc_now_iso() -> str:
     """获取当前 UTC 时间
 
@@ -1030,3 +1052,85 @@ def resolve_snapshot_output(snapshot: WebUiSnapshot, output_dir: Path | None = N
     if output_dir is None:
         return default_snapshot_output(snapshot)
     return default_snapshot_output(snapshot, output_dir=output_dir)
+
+
+def list_webui_snapshots(
+    webui_path: Path,
+    snapshot_dir: Path | None = None,
+) -> list[SnapshotSummary]:
+    """列出 WebUI 的本地快照。
+
+    Args:
+        webui_path (Path): WebUI 根目录。
+        snapshot_dir (Path | None): 快照目录，默认使用 ``<webui_path>/snapshots``。
+
+    Returns:
+        list[SnapshotSummary]: 按修改时间倒序排列的快照摘要。
+    """
+    directory = snapshot_dir or webui_path / "snapshots"
+    if not directory.exists():
+        return []
+
+    summaries: list[SnapshotSummary] = []
+    for item in sorted(directory.glob("*.json"), key=lambda path: path.stat().st_mtime, reverse=True):
+        try:
+            snapshot = load_snapshot(item)
+        except Exception as exc:
+            summaries.append(SnapshotSummary(path=item, filename=item.name, error=str(exc)))
+            continue
+        summaries.append(
+            SnapshotSummary(
+                path=item,
+                filename=item.name,
+                created_at=snapshot.created_at,
+                webui_type=snapshot.webui.type,
+                webui_name=snapshot.webui.name,
+                package_count=len(snapshot.packages),
+                extension_count=len(snapshot.extensions),
+            )
+        )
+    return summaries
+
+
+def create_webui_snapshot(
+    webui_path: Path,
+    snapshot_factory: Callable[[Path, bool], WebUiSnapshot],
+    include_packages: bool = True,
+    snapshot_dir: Path | None = None,
+) -> SavedSnapshot:
+    """采集并保存 WebUI 快照。
+
+    ``snapshot_factory`` 由具体 WebUI 命名空间在注册时绑定，不对 API
+    调用方公开。
+
+    Args:
+        webui_path (Path): WebUI 根目录。
+        snapshot_factory (Callable): 对应 WebUI 的真实快照采集函数。
+        include_packages (bool): 是否采集 Python 包。
+        snapshot_dir (Path | None): 快照目录，默认使用 ``<webui_path>/snapshots``。
+
+    Returns:
+        SavedSnapshot: 保存路径和完整快照。
+    """
+    snapshot = snapshot_factory(webui_path, include_packages)
+    output = default_snapshot_output(snapshot, output_dir=snapshot_dir or webui_path / "snapshots")
+    save_snapshot(snapshot, output)
+    return SavedSnapshot(path=output, snapshot=snapshot)
+
+
+def delete_snapshot(snapshot_path: Path) -> Path:
+    """删除一个快照文件。
+
+    Args:
+        snapshot_path (Path): 快照文件路径。
+
+    Returns:
+        Path: 已删除的快照路径。
+
+    Raises:
+        FileNotFoundError: 快照文件不存在。
+    """
+    if not snapshot_path.is_file():
+        raise FileNotFoundError(f"Snapshot not found: {snapshot_path}")
+    snapshot_path.unlink()
+    return snapshot_path

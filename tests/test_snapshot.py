@@ -281,8 +281,16 @@ def test_product_snapshots_include_webui_identity_and_extension_state(monkeypatc
 
     def fake_sd_extensions(_path, enabled_resolver=None, **_kwargs):
         return [
-            _extension_snapshot("enabled-ext", _path / "enabled-ext", enabled_resolver("enabled-ext", _path / "enabled-ext")),
-            _extension_snapshot("disabled-ext", _path / "disabled-ext", enabled_resolver("disabled-ext", _path / "disabled-ext")),
+            _extension_snapshot(
+                "enabled-ext",
+                _path / "enabled-ext",
+                enabled_resolver("enabled-ext", _path / "enabled-ext"),
+            ),
+            _extension_snapshot(
+                "disabled-ext",
+                _path / "disabled-ext",
+                enabled_resolver("disabled-ext", _path / "disabled-ext"),
+            ),
         ]
 
     monkeypatch.setattr(sd_webui_base, "collect_git_extensions", fake_sd_extensions)
@@ -292,9 +300,7 @@ def test_product_snapshots_include_webui_identity_and_extension_state(monkeypatc
         "type": "sd_webui",
         "path": (tmp_path / "sd-webui").as_posix(),
     }
-    assert snapshot_utils.snapshot_to_dict(sd_snapshot)["system"] == snapshot_utils.snapshot_to_dict(
-        snapshot_utils.collect_system_info()
-    )
+    assert snapshot_utils.snapshot_to_dict(sd_snapshot)["system"] == snapshot_utils.snapshot_to_dict(snapshot_utils.collect_system_info())
     assert [item.enabled for item in sd_snapshot.extensions] == [True, False]
 
     monkeypatch.setattr(
@@ -363,6 +369,40 @@ def test_create_pre_operation_snapshot_failure_or_disabled_does_not_raise(tmp_pa
     assert create_pre_operation_snapshot(disabled_factory, "disabled demo", snapshot_enabled=False, snapshot_dir=tmp_path) is None
     assert called is False
     assert create_pre_operation_snapshot(failing_factory, "failing demo", snapshot_dir=tmp_path) is None
+
+
+def test_webui_snapshot_operations_share_the_same_default_directory(tmp_path):
+    webui_path = tmp_path / "demo"
+    webui_path.mkdir()
+
+    def factory(path: Path, include_packages: bool):
+        assert path == webui_path
+        assert include_packages is False
+        return _webui_snapshot(path)
+
+    saved = snapshot_utils.create_webui_snapshot(webui_path, factory, include_packages=False)
+
+    assert saved.path.parent == webui_path / "snapshots"
+    assert saved.snapshot.webui.path == webui_path
+    summaries = snapshot_utils.list_webui_snapshots(webui_path)
+    assert len(summaries) == 1
+    assert summaries[0].path == saved.path
+    assert summaries[0].webui_type == "demo"
+    assert snapshot_utils.delete_snapshot(saved.path) == saved.path
+    assert snapshot_utils.list_webui_snapshots(webui_path) == []
+
+
+def test_list_webui_snapshots_reports_invalid_files(tmp_path):
+    snapshot_dir = tmp_path / "snapshots"
+    snapshot_dir.mkdir()
+    invalid_path = snapshot_dir / "broken.json"
+    invalid_path.write_text("{", encoding="utf-8")
+
+    summaries = snapshot_utils.list_webui_snapshots(tmp_path)
+
+    assert len(summaries) == 1
+    assert summaries[0].path == invalid_path
+    assert summaries[0].error
 
 
 def test_format_snapshot_timestamp_uses_local_time_and_keeps_invalid_values():

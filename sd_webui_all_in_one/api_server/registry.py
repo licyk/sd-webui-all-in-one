@@ -10,8 +10,6 @@ from collections.abc import Callable
 from typing import Any
 
 from sd_webui_all_in_one.api_server.adapters import (
-    HOTPATCHER_API_ADAPTER,
-    WEBUI_API_ADAPTERS,
     install_model_from_catalog,
     model_library_catalog,
     pytorch_catalog,
@@ -34,7 +32,12 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
 )
 from sd_webui_all_in_one.base_manager.model_manager import FILE_MODEL_ROOT_DIRS, FileModelManager
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
-from sd_webui_all_in_one.base_manager.snapshot import load_snapshot
+from sd_webui_all_in_one.base_manager.snapshot import (
+    create_webui_snapshot,
+    delete_snapshot,
+    list_webui_snapshots,
+    load_snapshot,
+)
 from sd_webui_all_in_one.base_manager.snapshot_restore import preview_webui_snapshot_restore, restore_webui_snapshot
 from sd_webui_all_in_one.base_manager.version_manager import (
     fetch_pypi_versions,
@@ -123,7 +126,6 @@ _WEBUI_BASE_METHODS: dict[str, dict[str, Callable[..., Any]]] = {
 }
 
 _EXTENSION_WEBUIS = frozenset({"sd_webui", "comfyui", "invokeai"})
-_EXTENSION_INDEX_WEBUIS = frozenset({"sd_webui", "comfyui"})
 _MODEL_LIBRARY_WEBUIS = frozenset({"sd_webui", "comfyui", "invokeai", "fooocus", "sd_trainer", "sd_scripts"})
 
 
@@ -139,7 +141,7 @@ def _add(methods: dict[str, Callable[..., Any] | ApiMethodSpec], name: str, targ
 
 
 def _register_webui_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpec]) -> None:
-    for webui_type, operations in WEBUI_API_ADAPTERS.items():
+    for webui_type, base_methods in _WEBUI_BASE_METHODS.items():
         prefix = webui_type
         direct_methods: dict[str, Callable[..., Any]] = {
             "version.status": inspect_repository,
@@ -147,15 +149,19 @@ def _register_webui_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpe
             "version.commits": list_commits,
             "version.switch_branch": switch_repository_branch,
             "version.switch_commit": switch_repository_commit,
-            "snapshot.list": operations.list_snapshots,
+            "snapshot.list": list_webui_snapshots,
             "snapshot.read": load_snapshot,
-            "snapshot.create": operations.create_snapshot,
-            "snapshot.delete": operations.delete_snapshot,
+            "snapshot.delete": delete_snapshot,
         }
         for suffix, target in direct_methods.items():
             _add(methods, f"{prefix}.{suffix}", target)
+        _add(
+            methods,
+            f"{prefix}.snapshot.create",
+            _bound(create_webui_snapshot, snapshot_factory=base_methods["snapshot.collect"]),
+        )
 
-        for suffix, target in _WEBUI_BASE_METHODS[webui_type].items():
+        for suffix, target in base_methods.items():
             _add(methods, f"{prefix}.{suffix}", target)
 
         _add(
@@ -180,15 +186,36 @@ def _register_webui_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpe
                 "extension.update": update_repository,
                 "extension.switch_branch": switch_repository_branch,
                 "extension.switch_commit": switch_repository_commit,
-                "extension.install_index_item": operations.install_extension_index_item,
             }
             for suffix, target in extension_methods.items():
                 _add(methods, f"{prefix}.{suffix}", target)
-        if webui_type in _EXTENSION_INDEX_WEBUIS:
-            _add(methods, f"{prefix}.extension.index", operations.fetch_extension_index)
-        if webui_type == "comfyui":
+
+        if webui_type == "sd_webui":
+            _add(methods, "sd_webui.extension.index", sd_webui_base.fetch_sd_webui_extension_index)
+            _add(
+                methods,
+                "sd_webui.extension.install_index_item",
+                sd_webui_base.install_sd_webui_extension_index_item,
+            )
+        elif webui_type == "comfyui":
+            _add(methods, "comfyui.extension.index", comfyui_base.fetch_comfyui_extension_index)
+            _add(
+                methods,
+                "comfyui.extension.install_index_item",
+                comfyui_base.install_comfyui_extension_index_item,
+            )
             _add(methods, "comfyui.extension.versions", fetch_comfy_registry_versions)
-            _add(methods, "comfyui.extension.switch_registry_version", operations.switch_registry_extension_version)
+            _add(
+                methods,
+                "comfyui.extension.switch_registry_version",
+                comfyui_base.switch_comfyui_registry_extension_version,
+            )
+        elif webui_type == "invokeai":
+            _add(
+                methods,
+                "invokeai.extension.install_index_item",
+                invokeai_base.install_invokeai_extension_index_item,
+            )
 
         _add(methods, f"{prefix}.pytorch.catalog", _bound(pytorch_catalog, webui_type=webui_type))
         _add(methods, f"{prefix}.pytorch.resolve_selection", _bound(resolve_pytorch_selection, webui_type=webui_type))
@@ -251,13 +278,6 @@ def _register_shared_methods(methods: dict[str, Callable[..., Any] | ApiMethodSp
         "hotpatcher.export_default_config": export_hotpatcher_default_config,
         "hotpatcher.apply_config": apply_hotpatcher_config,
         "hotpatcher.runtime_env": build_hotpatcher_runtime_env,
-        "hotpatcher.runtime_status": HOTPATCHER_API_ADAPTER.runtime_status,
-        "hotpatcher.runtime_browser_events": HOTPATCHER_API_ADAPTER.runtime_browser_events,
-        "hotpatcher.runtime_logs": HOTPATCHER_API_ADAPTER.runtime_logs,
-        "hotpatcher.runtime_start": HOTPATCHER_API_ADAPTER.start_runtime,
-        "hotpatcher.runtime_ensure": HOTPATCHER_API_ADAPTER.ensure_runtime,
-        "hotpatcher.runtime_stop": HOTPATCHER_API_ADAPTER.stop_runtime,
-        "hotpatcher.runtime_apply_remote": HOTPATCHER_API_ADAPTER.apply_remote_config,
     }
     for name, target in shared.items():
         _add(methods, name, target)

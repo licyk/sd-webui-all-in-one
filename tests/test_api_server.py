@@ -94,9 +94,27 @@ def test_default_registry_uses_namespaced_real_callables():
     assert "sd_trainer.version.branch_presets" in methods
     assert "invokeai.model.list" in methods
     assert "system.proxy.get" in methods
+    assert "hotpatcher.catalog" in methods
+    assert "hotpatcher.default_config" in methods
+    assert "hotpatcher.normalize_config" in methods
+    assert "hotpatcher.apply_config" in methods
+    assert "hotpatcher.runtime_status" not in methods
+    assert "hotpatcher.runtime_start" not in methods
+    assert "hotpatcher.runtime_apply_remote" not in methods
+    assert all("adapters.webui" not in getattr(spec, "handler", spec).__module__ for spec in methods.values())
 
     server = create_api_server(port=0)
     try:
+        for method_name, target_name in {
+            "hotpatcher.catalog": "hotpatcher_manager.get_hotpatcher_catalog",
+            "hotpatcher.default_config": "hotpatcher_manager.get_hotpatcher_default_config",
+            "hotpatcher.normalize_config": "hotpatcher_manager.normalize_hotpatcher_config",
+            "hotpatcher.apply_config": "hotpatcher_manager.apply_hotpatcher_config",
+        }.items():
+            hotpatcher_details = server.method_details(method_name)
+            assert hotpatcher_details is not None
+            assert hotpatcher_details["target"].endswith(target_name)
+
         details = server.method_details("comfyui.version.branches")
         assert details is not None
         assert details["target"].endswith("version_manager.list_branches")
@@ -111,10 +129,19 @@ def test_default_registry_uses_namespaced_real_callables():
         assert pytorch_details["parameters"] == []
         extension_details = server.method_details("comfyui.extension.install_index_item")
         assert extension_details is not None
+        assert extension_details["target"].endswith("comfyui_base.install_comfyui_extension_index_item")
         extension_parameters = {item["name"]: item for item in extension_details["parameters"]}
         item_schema = extension_parameters["item"]["schema"]
         assert item_schema["required"] == ["name", "url"]
         assert item_schema["additionalProperties"] is False
+        snapshot_details = server.method_details("comfyui.snapshot.create")
+        assert snapshot_details is not None
+        assert snapshot_details["target"].endswith("snapshot.create_webui_snapshot")
+        assert [item["name"] for item in snapshot_details["parameters"]] == [
+            "webui_path",
+            "include_packages",
+            "snapshot_dir",
+        ]
         update_details = server.method_details("comfyui.extension.update")
         assert update_details is not None
         assert update_details["target"].endswith("version_manager.update_repository")

@@ -42,6 +42,7 @@ from sd_webui_all_in_one.base_manager.snapshot import (
     collect_git_extensions,
 )
 from sd_webui_all_in_one.base_manager.version_manager import (
+    ExtensionIndexItem,
     ManagedExtension,
     WebUiUpdateOptions,
     WebUiUpdateStatus,
@@ -1097,6 +1098,42 @@ def install_invokeai_custom_nodes(
         raise AggregateError("安装 InvokeAI 扩展时发生错误", err)
 
     logger.info("安装 InvokeAI 扩展完成")
+
+
+def install_invokeai_extension_index_item(
+    invokeai_path: Path,
+    item: ExtensionIndexItem,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> Path:
+    """安装 InvokeAI 扩展源条目。
+
+    Args:
+        invokeai_path (Path): InvokeAI 根目录。
+        item (ExtensionIndexItem): 扩展源条目。
+        use_github_mirror (bool): 是否使用 GitHub 镜像。
+        custom_github_mirror (str | list[str] | None): 自定义 GitHub 镜像。
+
+    Returns:
+        Path: 扩展安装目录。
+
+    Raises:
+        ValueError: 条目不可安装、不是 Git 仓库或缺少仓库地址。
+    """
+    if not item.installable:
+        raise ValueError(f"'{item.name}' is not installable: {item.install_status or 'not installable'}")
+    if item.install_type.lower() != "git-clone":
+        raise ValueError(f"Unsupported install_type for InvokeAI: {item.install_type}")
+    repository = (item.files[0] if item.files else "") or item.reference or item.url
+    if not repository:
+        raise ValueError(f"'{item.name}' does not provide a repository URL")
+    install_invokeai_custom_nodes(
+        invokeai_path=invokeai_path,
+        custom_node_url=repository,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+    return invokeai_path / "nodes" / get_repo_name_from_url(repository)
 
 
 def set_invokeai_custom_nodes_status(

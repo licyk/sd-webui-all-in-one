@@ -178,6 +178,7 @@ class ExtensionIndexItem:
     author: str = ""
     installable: bool = True
     install_status: str = ""
+    installed: bool = False
 
 
 @dataclass(slots=True)
