@@ -11,7 +11,6 @@ from typing import Any
 
 from sd_webui_all_in_one.api_server.adapters import (
     HOTPATCHER_API_ADAPTER,
-    MODEL_API_ADAPTER,
     WEBUI_API_ADAPTERS,
     install_model_from_catalog,
     model_library_catalog,
@@ -33,7 +32,7 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     normalize_hotpatcher_config,
     save_hotpatcher_config,
 )
-from sd_webui_all_in_one.base_manager.model_manager import FILE_MODEL_ROOT_DIRS
+from sd_webui_all_in_one.base_manager.model_manager import FILE_MODEL_ROOT_DIRS, FileModelManager
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
 from sd_webui_all_in_one.base_manager.snapshot import load_snapshot
 from sd_webui_all_in_one.base_manager.snapshot_restore import preview_webui_snapshot_restore, restore_webui_snapshot
@@ -206,21 +205,21 @@ def _register_webui_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpe
 
 
 def _register_model_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpec]) -> None:
-    targets: dict[str, Callable[..., Any]] = {
-        "model.root": MODEL_API_ADAPTER.root,
-        "model.directories": MODEL_API_ADAPTER.list_directories,
-        "model.entries": MODEL_API_ADAPTER.list_entries,
-        "model.create_folder": MODEL_API_ADAPTER.create_folder,
-        "model.copy": MODEL_API_ADAPTER.copy_entry,
-        "model.move": MODEL_API_ADAPTER.move_entry,
-        "model.delete": MODEL_API_ADAPTER.delete_entry,
-        "model.import": MODEL_API_ADAPTER.import_paths,
-        "model.download": MODEL_API_ADAPTER.download_url,
-    }
     for webui_type in FILE_MODEL_ROOT_DIRS:
+        manager = FileModelManager(webui_type)
+        targets: dict[str, Callable[..., Any]] = {
+            "model.root": manager.root,
+            "model.directories": manager.list_directories,
+            "model.entries": manager.list_entries,
+            "model.create_folder": manager.create_folder,
+            "model.copy": manager.copy_entry,
+            "model.move": manager.move_entry,
+            "model.delete": manager.delete_entry,
+            "model.import": manager.import_paths,
+            "model.download": manager.download_url,
+        }
         for suffix, target in targets.items():
-            name = f"{webui_type}.{suffix}"
-            _add(methods, name, _bound(target, webui_type=webui_type))
+            _add(methods, f"{webui_type}.{suffix}", target)
 
     invokeai_targets: dict[str, Callable[..., Any] | ApiMethodSpec] = {
         "invokeai.model.list": invokeai_base.get_invokeai_model_list,

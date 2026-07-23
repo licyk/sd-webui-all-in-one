@@ -90,48 +90,62 @@ def _path_size(path: Path) -> int:
 class FileModelManager:
     """基于 WebUI 模型目录的文件管理器"""
 
-    def __init__(
-        self,
-        webui_type: FileWebUiModelType,
-        webui_path: Path,
-    ) -> None:
+    def __init__(self, webui_type: FileWebUiModelType) -> None:
         if webui_type not in FILE_MODEL_ROOT_DIRS:
             raise ValueError(f"不支持按文件夹管理模型的 WebUI 类型: {webui_type}")
         self.webui_type = webui_type
-        self.webui_path = Path(webui_path)
-        self.root = ModelRoot(
-            webui_type=webui_type,
-            webui_path=self.webui_path,
-            root_path=self.webui_path / FILE_MODEL_ROOT_DIRS[webui_type],
-        )
 
-    @property
-    def root_path(self) -> Path:
-        """模型根目录
+    def root(self, webui_path: Path) -> ModelRoot:
+        """返回模型根目录信息。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
 
         Returns:
-            Path:
-                WebUI 模型根目录。
+            ModelRoot: WebUI 类型、根目录和模型目录。
         """
-        return self.root.root_path
+        path = Path(webui_path)
+        return ModelRoot(
+            webui_type=self.webui_type,
+            webui_path=path,
+            root_path=path / FILE_MODEL_ROOT_DIRS[self.webui_type],
+        )
 
-    def ensure_root(self) -> Path:
+    def root_path(self, webui_path: Path) -> Path:
+        """返回模型根目录路径。
+
+        Args:
+            webui_path (Path): WebUI 根目录。
+
+        Returns:
+            Path: WebUI 模型根目录。
+        """
+        return self.root(webui_path).root_path
+
+    def ensure_root(self, webui_path: Path) -> Path:
         """确保模型根目录存在并返回路径
+
+        Args:
+            webui_path (Path): WebUI 根目录。
 
         Returns:
             Path:
                 已创建或已存在的模型根目录。
         """
-        self.root_path.mkdir(parents=True, exist_ok=True)
-        return self.root_path
+        root = self.root_path(webui_path)
+        root.mkdir(parents=True, exist_ok=True)
+        return root
 
     def resolve_path(
         self,
+        webui_path: Path,
         relative_path: str | Path | None = None,
     ) -> Path:
         """解析模型根目录内路径，并拒绝越界路径
 
         Args:
+            webui_path (Path):
+                WebUI 根目录。
             relative_path (str | Path | None):
                 模型根目录内的相对路径，也可以是已位于模型根目录内的绝对路径。
 
@@ -143,14 +157,14 @@ class FileModelManager:
             ValueError:
                 路径不在模型根目录内时抛出。
         """
-        self.ensure_root()
+        root_path = self.ensure_root(webui_path)
         if relative_path is None or str(relative_path) in {"", "."}:
-            candidate = self.root_path
+            candidate = root_path
         else:
             path = Path(relative_path)
-            candidate = path if path.is_absolute() else self.root_path / path
+            candidate = path if path.is_absolute() else root_path / path
 
-        root = self.root_path.resolve()
+        root = root_path.resolve()
         resolved = candidate.resolve()
         if resolved != root and not resolved.is_relative_to(root):
             raise ValueError(f"路径不在模型目录内: {candidate}")
@@ -158,11 +172,14 @@ class FileModelManager:
 
     def relative_to_root(
         self,
+        webui_path: Path,
         path: str | Path,
     ) -> str:
         """将模型根目录内路径转为相对路径
 
         Args:
+            webui_path (Path):
+                WebUI 根目录。
             path (str | Path):
                 模型根目录内的路径。
 
@@ -170,8 +187,8 @@ class FileModelManager:
             str:
                 相对模型根目录的 POSIX 风格路径。
         """
-        resolved = self.resolve_path(path)
-        root = self.root_path.resolve()
+        resolved = self.resolve_path(webui_path, path)
+        root = self.root_path(webui_path).resolve()
         if resolved == root:
             return "."
         return resolved.relative_to(root).as_posix()
@@ -201,11 +218,14 @@ class FileModelManager:
 
     def list_entries(
         self,
+        webui_path: Path,
         relative_path: str | Path | None = None,
     ) -> list[ModelEntry]:
         """列出指定模型目录下的直接条目
 
         Args:
+            webui_path (Path):
+                WebUI 根目录。
             relative_path (str | Path | None):
                 要列出的模型目录相对路径。
 
@@ -217,7 +237,7 @@ class FileModelManager:
             NotADirectoryError:
                 指定路径存在但不是文件夹时抛出。
         """
-        path = self.resolve_path(relative_path)
+        path = self.resolve_path(webui_path, relative_path)
         if not path.exists():
             return []
         if not path.is_dir():
@@ -234,7 +254,7 @@ class FileModelManager:
                 ModelEntry(
                     name=item.name,
                     path=item,
-                    relative_path=self.relative_to_root(item),
+                    relative_path=self.relative_to_root(webui_path, item),
                     is_dir=item.is_dir(),
                     size=_path_size(item),
                     modified_time=modified_time,
@@ -242,14 +262,17 @@ class FileModelManager:
             )
         return sorted(entries, key=lambda entry: (not entry.is_dir, entry.name.lower()))
 
-    def list_directories(self) -> list[str]:
+    def list_directories(self, webui_path: Path) -> list[str]:
         """列出模型根目录内所有文件夹相对路径
+
+        Args:
+            webui_path (Path): WebUI 根目录。
 
         Returns:
             list[str]:
                 模型根目录内所有文件夹的相对路径。
         """
-        root = self.ensure_root().resolve()
+        root = self.ensure_root(webui_path).resolve()
         dirs = ["."]
         for current_root, dir_names, _file_names in os.walk(root):
             current = Path(current_root)
@@ -265,12 +288,15 @@ class FileModelManager:
 
     def create_folder(
         self,
+        webui_path: Path,
         parent_relative_path: str | Path | None,
         name: str,
     ) -> Path:
         """在指定目录下创建文件夹
 
         Args:
+            webui_path (Path):
+                WebUI 根目录。
             parent_relative_path (str | Path | None):
                 父级模型目录相对路径。
             name (str):
@@ -286,7 +312,7 @@ class FileModelManager:
             FileExistsError:
                 目标文件夹已存在时抛出。
         """
-        parent = self.resolve_path(parent_relative_path)
+        parent = self.resolve_path(webui_path, parent_relative_path)
         if not parent.is_dir():
             raise NotADirectoryError(f"不是文件夹: {parent}")
         target = parent / self.validate_name(name)
@@ -297,16 +323,17 @@ class FileModelManager:
 
     def _target_path(
         self,
+        webui_path: Path,
         source_path: Path,
         target_dir_relative_path: str | Path | None,
         new_name: str | None = None,
     ) -> Path:
-        target_dir = self.resolve_path(target_dir_relative_path)
+        target_dir = self.resolve_path(webui_path, target_dir_relative_path)
         if not target_dir.is_dir():
             raise NotADirectoryError(f"不是文件夹: {target_dir}")
         target_name = source_path.name if new_name is None else self.validate_name(new_name)
         target = (target_dir / target_name).resolve()
-        self.resolve_path(target)
+        self.resolve_path(webui_path, target)
         return target
 
     def _copy_to_target(
@@ -328,11 +355,12 @@ class FileModelManager:
 
     def _move_to_target(
         self,
+        webui_path: Path,
         source_path: Path,
         target_path: Path,
         overwrite: bool,
     ) -> Path:
-        if source_path == self.root_path.resolve():
+        if source_path == self.root_path(webui_path).resolve():
             raise ValueError("不能移动模型根目录")
         if target_path.exists() or target_path.is_symlink():
             if not overwrite:
@@ -347,6 +375,7 @@ class FileModelManager:
 
     def copy_entry(
         self,
+        webui_path: Path,
         source_relative_path: str | Path,
         target_dir_relative_path: str | Path | None,
         new_name: str | None = None,
@@ -355,6 +384,8 @@ class FileModelManager:
         """复制模型根目录内的条目到目标文件夹
 
         Args:
+            webui_path (Path):
+                WebUI 根目录。
             source_relative_path (str | Path):
                 要复制的源条目相对路径。
             target_dir_relative_path (str | Path | None):
@@ -372,14 +403,15 @@ class FileModelManager:
             FileNotFoundError:
                 源路径不存在时抛出。
         """
-        source = self.resolve_path(source_relative_path)
+        source = self.resolve_path(webui_path, source_relative_path)
         if not source.exists() and not source.is_symlink():
             raise FileNotFoundError(f"源路径不存在: {source}")
-        target = self._target_path(source, target_dir_relative_path, new_name)
+        target = self._target_path(webui_path, source, target_dir_relative_path, new_name)
         return self._copy_to_target(source, target, overwrite)
 
     def move_entry(
         self,
+        webui_path: Path,
         source_relative_path: str | Path,
         target_dir_relative_path: str | Path | None,
         new_name: str | None = None,
@@ -388,6 +420,8 @@ class FileModelManager:
         """移动模型根目录内的条目到目标文件夹
 
         Args:
+            webui_path (Path):
+                WebUI 根目录。
             source_relative_path (str | Path):
                 要移动的源条目相对路径。
             target_dir_relative_path (str | Path | None):
@@ -405,19 +439,22 @@ class FileModelManager:
             FileNotFoundError:
                 源路径不存在时抛出。
         """
-        source = self.resolve_path(source_relative_path)
+        source = self.resolve_path(webui_path, source_relative_path)
         if not source.exists() and not source.is_symlink():
             raise FileNotFoundError(f"源路径不存在: {source}")
-        target = self._target_path(source, target_dir_relative_path, new_name)
-        return self._move_to_target(source, target, overwrite)
+        target = self._target_path(webui_path, source, target_dir_relative_path, new_name)
+        return self._move_to_target(webui_path, source, target, overwrite)
 
     def delete_entry(
         self,
+        webui_path: Path,
         relative_path: str | Path,
     ) -> None:
         """永久删除模型根目录内条目
 
         Args:
+            webui_path (Path):
+                WebUI 根目录。
             relative_path (str | Path):
                 要删除的模型条目相对路径。
 
@@ -425,13 +462,14 @@ class FileModelManager:
             ValueError:
                 试图删除模型根目录时抛出。
         """
-        target = self.resolve_path(relative_path)
-        if target == self.root_path.resolve():
+        target = self.resolve_path(webui_path, relative_path)
+        if target == self.root_path(webui_path).resolve():
             raise ValueError("不能删除模型根目录")
         remove_files(target)
 
     def import_paths(
         self,
+        webui_path: Path,
         source_paths: list[Path],
         target_dir_relative_path: str | Path | None,
         overwrite: bool = False,
@@ -439,6 +477,8 @@ class FileModelManager:
         """复制导入本地模型文件或文件夹
 
         Args:
+            webui_path (Path):
+                WebUI 根目录。
             source_paths (list[Path]):
                 要复制导入的本地文件或文件夹路径。
             target_dir_relative_path (str | Path | None):
@@ -456,7 +496,7 @@ class FileModelManager:
             FileNotFoundError:
                 任一源路径不存在时抛出。
         """
-        target_dir = self.resolve_path(target_dir_relative_path)
+        target_dir = self.resolve_path(webui_path, target_dir_relative_path)
         if not target_dir.is_dir():
             raise NotADirectoryError(f"不是文件夹: {target_dir}")
 
@@ -465,12 +505,13 @@ class FileModelManager:
             source_path = Path(source).expanduser().resolve()
             if not source_path.exists() and not source_path.is_symlink():
                 raise FileNotFoundError(f"源路径不存在: {source_path}")
-            target_path = self._target_path(source_path, target_dir)
+            target_path = self._target_path(webui_path, source_path, target_dir)
             imported.append(self._copy_to_target(source_path, target_path, overwrite))
         return imported
 
     def download_url(
         self,
+        webui_path: Path,
         url: str,
         target_dir_relative_path: str | Path | None,
         save_name: str | None = None,
@@ -479,6 +520,8 @@ class FileModelManager:
         """下载模型到指定模型文件夹
 
         Args:
+            webui_path (Path):
+                WebUI 根目录。
             url (str):
                 模型下载链接。
             target_dir_relative_path (str | Path | None):
@@ -492,7 +535,7 @@ class FileModelManager:
             Path:
                 下载完成后的文件路径。
         """
-        target_dir = self.resolve_path(target_dir_relative_path)
+        target_dir = self.resolve_path(webui_path, target_dir_relative_path)
         target_dir.mkdir(parents=True, exist_ok=True)
         clean_save_name = self.validate_name(save_name) if save_name else None
         return download_file(

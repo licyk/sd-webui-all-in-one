@@ -122,6 +122,16 @@ def test_default_registry_uses_namespaced_real_callables():
         assert restore_details is not None
         assert restore_details["target"].endswith("snapshot_restore.restore_webui_snapshot")
         assert {item["name"] for item in restore_details["parameters"]} == {"snapshot_path", "webui_path", "options"}
+        model_details = server.method_details("comfyui.model.copy")
+        assert model_details is not None
+        assert model_details["target"].endswith("model_manager.FileModelManager.copy_entry")
+        assert [item["name"] for item in model_details["parameters"]] == [
+            "webui_path",
+            "source_relative_path",
+            "target_dir_relative_path",
+            "new_name",
+            "overwrite",
+        ]
     finally:
         server.server_close()
 

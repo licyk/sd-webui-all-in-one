@@ -69,10 +69,12 @@ class DownloadModelDialog(tk.Toplevel):
         self,
         master: tk.Misc,
         manager: FileModelManager,
+        webui_path: Path,
         target_dir: str,
     ) -> None:
         super().__init__(master)
         self.manager = manager
+        self.webui_path = webui_path
         self.result: DownloadDialogResult | None = None
         self.title("下载模型")
         apply_window_icon(self)
@@ -125,13 +127,13 @@ class DownloadModelDialog(tk.Toplevel):
     def _browse_target(self) -> None:
         selected = filedialog.askdirectory(
             title="选择模型保存文件夹",
-            initialdir=self.manager.resolve_path(self.target_var.get()).as_posix(),
+            initialdir=self.manager.resolve_path(self.webui_path, self.target_var.get()).as_posix(),
             parent=self,
         )
         if not selected:
             return
         try:
-            self.target_var.set(self.manager.relative_to_root(selected))
+            self.target_var.set(self.manager.relative_to_root(self.webui_path, selected))
         except Exception as exc:
             messagebox.showerror("路径无效", str(exc), parent=self)
 
@@ -141,7 +143,7 @@ class DownloadModelDialog(tk.Toplevel):
             messagebox.showwarning("请输入链接", "请先输入模型下载链接", parent=self)
             return
         try:
-            self.manager.resolve_path(self.target_var.get())
+            self.manager.resolve_path(self.webui_path, self.target_var.get())
             save_name = self.save_name_var.get().strip() or None
             if save_name is not None:
                 self.manager.validate_name(save_name)
@@ -169,7 +171,8 @@ class FileModelManagerApp(tk.Tk, BackgroundTaskMixin):
     ) -> None:
         tk.Tk.__init__(self)
         BackgroundTaskMixin.__init__(self)
-        self.manager = FileModelManager(webui_type=webui_type, webui_path=webui_path)
+        self.manager = FileModelManager(webui_type=webui_type)
+        self.webui_path = webui_path
         self.current_dir = "."
         self.dir_items: dict[str, str] = {}
         self.entry_items: dict[str, ModelEntry] = {}
@@ -194,7 +197,7 @@ class FileModelManagerApp(tk.Tk, BackgroundTaskMixin):
     def _create_widgets(self) -> None:
         top = ttk.Frame(self)
         top.pack(fill=tk.X)
-        ttk.Label(top, text=f"模型目录: {self.manager.root_path}").pack(side=tk.LEFT, padx=10, pady=8)
+        ttk.Label(top, text=f"模型目录: {self.manager.root_path(self.webui_path)}").pack(side=tk.LEFT, padx=10, pady=8)
         ttk.Button(top, text="刷新", command=self.refresh_all).pack(side=tk.RIGHT, padx=(0, 10), pady=8)
 
         toolbar = ttk.Frame(self)
@@ -283,14 +286,14 @@ class FileModelManagerApp(tk.Tk, BackgroundTaskMixin):
         """刷新模型目录树和当前目录条目"""
 
         def _load() -> tuple[list[str], list[ModelEntry]]:
-            return self.manager.list_directories(), self.manager.list_entries(self.current_dir)
+            return self.manager.list_directories(self.webui_path), self.manager.list_entries(self.webui_path, self.current_dir)
 
         self.run_background("刷新模型列表中...", _load, self._apply_state)
 
     def refresh_entries(self) -> None:
         """刷新当前模型目录条目"""
 
-        self.run_background("刷新当前目录中...", lambda: self.manager.list_entries(self.current_dir), self._apply_entries)
+        self.run_background("刷新当前目录中...", lambda: self.manager.list_entries(self.webui_path, self.current_dir), self._apply_entries)
 
     def _apply_state(self, state: tuple[list[str], list[ModelEntry]]) -> None:
         directories, entries = state
@@ -357,19 +360,19 @@ class FileModelManagerApp(tk.Tk, BackgroundTaskMixin):
     def _ask_target_directory(self) -> str | None:
         selected = filedialog.askdirectory(
             title="选择目标模型文件夹",
-            initialdir=self.manager.resolve_path(self.current_dir).as_posix(),
+            initialdir=self.manager.resolve_path(self.webui_path, self.current_dir).as_posix(),
             parent=self,
         )
         if not selected:
             return None
         try:
-            return self.manager.relative_to_root(selected)
+            return self.manager.relative_to_root(self.webui_path, selected)
         except Exception as exc:
             messagebox.showerror("目标无效", str(exc), parent=self)
             return None
 
     def _ask_overwrite(self, target_dir: str, names: list[str]) -> bool | None:
-        collisions = [name for name in names if (self.manager.resolve_path(target_dir) / name).exists()]
+        collisions = [name for name in names if (self.manager.resolve_path(self.webui_path, target_dir) / name).exists()]
         if not collisions:
             return False
         preview = "\n".join(collisions[:8])
@@ -387,7 +390,7 @@ class FileModelManagerApp(tk.Tk, BackgroundTaskMixin):
             return
         self.run_background(
             "创建文件夹中...",
-            lambda: self.manager.create_folder(self.current_dir, name),
+            lambda: self.manager.create_folder(self.webui_path, self.current_dir, name),
             lambda _value: self.refresh_all(),
         )
 
@@ -405,7 +408,7 @@ class FileModelManagerApp(tk.Tk, BackgroundTaskMixin):
             return
         self.run_background(
             "复制模型中...",
-            lambda: self.manager.copy_entry(entry.relative_path, target_dir, overwrite=overwrite),
+            lambda: self.manager.copy_entry(self.webui_path, entry.relative_path, target_dir, overwrite=overwrite),
             lambda _value: self.refresh_all(),
         )
 
@@ -423,7 +426,7 @@ class FileModelManagerApp(tk.Tk, BackgroundTaskMixin):
             return
         self.run_background(
             "移动模型中...",
-            lambda: self.manager.move_entry(entry.relative_path, target_dir, overwrite=overwrite),
+            lambda: self.manager.move_entry(self.webui_path, entry.relative_path, target_dir, overwrite=overwrite),
             lambda _value: self.refresh_all(),
         )
 
@@ -437,7 +440,7 @@ class FileModelManagerApp(tk.Tk, BackgroundTaskMixin):
             return
         self.run_background(
             "删除模型中...",
-            lambda: self.manager.delete_entry(entry.relative_path),
+            lambda: self.manager.delete_entry(self.webui_path, entry.relative_path),
             lambda _value: self.refresh_all(),
         )
 
@@ -453,7 +456,7 @@ class FileModelManagerApp(tk.Tk, BackgroundTaskMixin):
             return
         self.run_background(
             "导入模型文件中...",
-            lambda: self.manager.import_paths(paths, self.current_dir, overwrite=overwrite),
+            lambda: self.manager.import_paths(self.webui_path, paths, self.current_dir, overwrite=overwrite),
             lambda _value: self.refresh_all(),
         )
 
@@ -469,14 +472,14 @@ class FileModelManagerApp(tk.Tk, BackgroundTaskMixin):
             return
         self.run_background(
             "导入模型文件夹中...",
-            lambda: self.manager.import_paths([path], self.current_dir, overwrite=overwrite),
+            lambda: self.manager.import_paths(self.webui_path, [path], self.current_dir, overwrite=overwrite),
             lambda _value: self.refresh_all(),
         )
 
     def download_model(self) -> None:
         """下载模型到当前选择的模型目录"""
 
-        dialog = DownloadModelDialog(self, self.manager, self.current_dir)
+        dialog = DownloadModelDialog(self, self.manager, self.webui_path, self.current_dir)
         self.wait_window(dialog)
         if dialog.result is None:
             return
@@ -484,6 +487,7 @@ class FileModelManagerApp(tk.Tk, BackgroundTaskMixin):
         self.run_background(
             "下载模型中...",
             lambda: self.manager.download_url(
+                webui_path=self.webui_path,
                 url=str(data["url"]),
                 target_dir_relative_path=str(data["target"] or "."),
                 save_name=str(data["save_name"]) if data["save_name"] else None,

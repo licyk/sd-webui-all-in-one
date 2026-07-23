@@ -10,56 +10,59 @@ from sd_webui_all_in_one.base_manager.model_manager import FileModelManager, Inv
 
 
 def test_file_model_manager_resolves_roots_and_rejects_escape(tmp_path: Path) -> None:
-    manager = FileModelManager("sd_webui", tmp_path / "webui")
+    manager = FileModelManager("sd_webui")
+    webui_path = tmp_path / "webui"
 
-    assert manager.root_path == tmp_path / "webui" / "models"
-    assert manager.resolve_path(".") == manager.root_path.resolve()
-    assert manager.list_entries(".") == []
+    assert manager.root_path(webui_path) == webui_path / "models"
+    assert manager.resolve_path(webui_path, ".") == manager.root_path(webui_path).resolve()
+    assert manager.list_entries(webui_path, ".") == []
 
     with pytest.raises(ValueError):
-        manager.resolve_path("../outside")
+        manager.resolve_path(webui_path, "../outside")
 
 
 def test_file_model_manager_file_operations(tmp_path: Path) -> None:
-    manager = FileModelManager("sd_trainer", tmp_path / "trainer")
-    manager.create_folder(".", "checkpoints")
-    manager.create_folder(".", "loras")
-    model = manager.root_path / "checkpoints" / "a.safetensors"
+    manager = FileModelManager("sd_trainer")
+    webui_path = tmp_path / "trainer"
+    manager.create_folder(webui_path, ".", "checkpoints")
+    manager.create_folder(webui_path, ".", "loras")
+    model = manager.root_path(webui_path) / "checkpoints" / "a.safetensors"
     model.write_text("model", encoding="utf-8")
 
-    entries = manager.list_entries("checkpoints")
+    entries = manager.list_entries(webui_path, "checkpoints")
     assert [entry.name for entry in entries] == ["a.safetensors"]
     assert entries[0].relative_path == "checkpoints/a.safetensors"
 
-    manager.copy_entry("checkpoints/a.safetensors", "loras")
-    copied = manager.root_path / "loras" / "a.safetensors"
+    manager.copy_entry(webui_path, "checkpoints/a.safetensors", "loras")
+    copied = manager.root_path(webui_path) / "loras" / "a.safetensors"
     assert copied.read_text(encoding="utf-8") == "model"
 
     with pytest.raises(FileExistsError):
-        manager.copy_entry("checkpoints/a.safetensors", "loras")
+        manager.copy_entry(webui_path, "checkpoints/a.safetensors", "loras")
 
     model.write_text("new", encoding="utf-8")
-    manager.copy_entry("checkpoints/a.safetensors", "loras", overwrite=True)
+    manager.copy_entry(webui_path, "checkpoints/a.safetensors", "loras", overwrite=True)
     assert copied.read_text(encoding="utf-8") == "new"
 
-    manager.move_entry("loras/a.safetensors", "checkpoints", new_name="b.safetensors")
+    manager.move_entry(webui_path, "loras/a.safetensors", "checkpoints", new_name="b.safetensors")
     assert not copied.exists()
-    assert (manager.root_path / "checkpoints" / "b.safetensors").read_text(encoding="utf-8") == "new"
+    assert (manager.root_path(webui_path) / "checkpoints" / "b.safetensors").read_text(encoding="utf-8") == "new"
 
-    manager.delete_entry("checkpoints/b.safetensors")
-    assert not (manager.root_path / "checkpoints" / "b.safetensors").exists()
+    manager.delete_entry(webui_path, "checkpoints/b.safetensors")
+    assert not (manager.root_path(webui_path) / "checkpoints" / "b.safetensors").exists()
 
 
 def test_file_model_manager_import_copies_and_download_passes_save_name(monkeypatch, tmp_path: Path) -> None:
-    manager = FileModelManager("comfyui", tmp_path / "comfy")
-    manager.create_folder(".", "checkpoints")
+    manager = FileModelManager("comfyui")
+    webui_path = tmp_path / "comfy"
+    manager.create_folder(webui_path, ".", "checkpoints")
 
     source = tmp_path / "source.safetensors"
     source.write_text("source", encoding="utf-8")
-    imported = manager.import_paths([source], "checkpoints")
+    imported = manager.import_paths(webui_path, [source], "checkpoints")
 
     assert source.read_text(encoding="utf-8") == "source"
-    assert imported == [manager.root_path / "checkpoints" / "source.safetensors"]
+    assert imported == [manager.root_path(webui_path) / "checkpoints" / "source.safetensors"]
     assert imported[0].read_text(encoding="utf-8") == "source"
 
     calls = []
@@ -73,14 +76,15 @@ def test_file_model_manager_import_copies_and_download_passes_save_name(monkeypa
     monkeypatch.setattr(model_manager_module, "download_file", fake_download_file)
 
     downloaded = manager.download_url(
+        webui_path,
         "https://example.test/model.safetensors",
         "checkpoints",
         save_name="custom.safetensors",
         downloader="urllib",
     )
 
-    assert downloaded == manager.root_path / "checkpoints" / "custom.safetensors"
-    assert calls == [("https://example.test/model.safetensors", manager.root_path / "checkpoints", "custom.safetensors", "urllib")]
+    assert downloaded == manager.root_path(webui_path) / "checkpoints" / "custom.safetensors"
+    assert calls == [("https://example.test/model.safetensors", manager.root_path(webui_path) / "checkpoints", "custom.safetensors", "urllib")]
 
 
 def test_invokeai_model_manager_delegates_to_invokeai_helpers(monkeypatch, tmp_path: Path) -> None:
