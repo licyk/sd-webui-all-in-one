@@ -31,9 +31,9 @@ def test_pytorch_catalog_stable_ids_and_family_identity(monkeypatch):
     monkeypatch.setattr(ops, "check_torch_version_status", lambda: {"installed_type": "cu121", "is_compatible": True, "message": "ok"})
     monkeypatch.setattr(ops, "_package_versions", lambda: {name: None for name in ("torch", "torchvision", "torchaudio", "xformers")})
 
-    comfy = ops.pytorch_catalog("comfyui", Path("/tmp/a"))
-    comfy_again = ops.pytorch_catalog("comfyui", Path("/tmp/b"))
-    fooocus = ops.pytorch_catalog("fooocus", Path("/tmp/a"))
+    comfy = ops.pytorch_catalog("comfyui")
+    comfy_again = ops.pytorch_catalog("comfyui")
+    fooocus = ops.pytorch_catalog("fooocus")
     assert comfy["items"][0]["id"] == comfy_again["items"][0]["id"]
     assert comfy["items"][0]["id"] != fooocus["items"][0]["id"]
     assert comfy["automatic_selection_preview"]["selection_id"] == comfy["items"][0]["id"]
@@ -45,7 +45,7 @@ def test_invokeai_catalog_keeps_installed_type_separate_from_detected_category(m
     monkeypatch.setattr(ops, "check_torch_version_status", lambda: {"installed_type": "cu124", "is_compatible": True, "message": "ok"})
     monkeypatch.setattr(ops, "auto_detect_pytorch_device_category", lambda: "cpu")
     monkeypatch.setattr(ops, "_package_versions", lambda: {name: None for name in ("torch", "torchvision", "torchaudio", "xformers")})
-    catalog = ops.pytorch_catalog("invokeai", Path("/instance"))
+    catalog = ops.pytorch_catalog("invokeai")
     assert catalog["current"]["installed_type"] == "cu124"
     assert catalog["detected_device_type"] is None
     assert catalog["detected_device_category"] == "cpu"
@@ -71,12 +71,16 @@ def test_model_install_requeries_validates_and_dispatches(monkeypatch):
     item = {"id": "model-library:test", "name": "demo", "webui_type": "comfyui", "model_type": "checkpoint", "description": "", "tags": [], "size": None, "preview": None, "sources": ["modelscope"], "downloaders": ["aria2"], "installable": True, "non_installable_reason": None, "details": {"filename": "demo.safetensors"}}
     monkeypatch.setattr(ops, "model_library_catalog", lambda _family: {"webui_type": "comfyui", "count": 1, "models": [item]})
     monkeypatch.setitem(ops.MODEL_INSTALLERS, "comfyui", lambda **kwargs: calls.append(kwargs))
-    result = ops.install_model_from_catalog("comfyui", Path("/instance"), item["id"], {"source": "modelscope", "downloader": "aria2"}, Context())
+    result = ops.install_model_from_catalog(
+        "comfyui", Path("/instance"), item["id"], Context(), source="modelscope", downloader="aria2"
+    )
     assert calls[0]["comfyui_path"] == Path("/instance")
     assert calls[0]["interactive_mode"] is False
     assert result["installed_files"] == ["demo.safetensors"]
     with pytest.raises(ValueError, match="Source is not available"):
-        ops.install_model_from_catalog("comfyui", Path("/instance"), item["id"], {"source": "huggingface", "downloader": "aria2"}, Context())
+        ops.install_model_from_catalog(
+            "comfyui", Path("/instance"), item["id"], Context(), source="huggingface", downloader="aria2"
+        )
 
 
 def test_pytorch_reinstall_manual_is_noninteractive(monkeypatch):
@@ -86,7 +90,15 @@ def test_pytorch_reinstall_manual_is_noninteractive(monkeypatch):
     monkeypatch.setattr(ops, "_package_versions", lambda: {name: "1" for name in ("torch", "torchvision", "torchaudio", "xformers")})
     monkeypatch.setattr(ops, "check_torch_version_status", lambda: {"compatible": True})
     monkeypatch.setattr(ops, "reinstall_pytorch", lambda **kwargs: calls.append(kwargs))
-    result = ops.reinstall_from_catalog("comfyui", Path("/instance"), {"mode": "manual", "selection_id": item["id"]}, {"use_uv": False, "use_pypi_mirror": False, "force_reinstall": True}, Context())
+    result = ops.reinstall_from_catalog(
+        "comfyui",
+        "manual",
+        Context(),
+        selection_id=item["id"],
+        use_uv=False,
+        use_pypi_mirror=False,
+        force_reinstall=True,
+    )
     assert calls == [{"pytorch_name": "CPU", "use_pypi_mirror": False, "use_uv": False, "interactive_mode": False, "list_only": False, "force_reinstall": True}]
     assert result["selected_id"] == item["id"]
 
@@ -99,7 +111,7 @@ def test_pytorch_auto_uses_fresh_preview_and_logs_reason(monkeypatch):
     monkeypatch.setattr(ops, "_package_versions", lambda: {name: None for name in ("torch", "torchvision", "torchaudio", "xformers")})
     monkeypatch.setattr(ops, "check_torch_version_status", lambda: {"compatible": True})
     monkeypatch.setattr(ops.invokeai_base, "reinstall_invokeai_pytorch", lambda **kwargs: calls.append(kwargs))
-    result = ops.reinstall_from_catalog("invokeai", Path("/instance"), {"mode": "auto"}, {}, context)
+    result = ops.reinstall_from_catalog("invokeai", "auto", context)
     assert calls[0]["device_type"] == "cpu"
     assert calls[0]["interactive_mode"] is False
     assert result["selection_explanation"] == "fresh CPU detection"
@@ -110,7 +122,7 @@ def test_pytorch_resolution_is_read_only_and_uses_closed_command_path(monkeypatc
     item = {"id": "pytorch-combination:test", "name": "CPU", "supported": True, "device_type": "cpu", "device_category": None}
     monkeypatch.setattr(ops, "pytorch_catalog", lambda *_args: {"items": [item], "automatic_selection_available": True, "automatic_selection_preview": {"selection_id": item["id"], "explanation": "fresh detection"}})
     monkeypatch.setattr(ops, "reinstall_pytorch", lambda **_kwargs: pytest.fail("resolver must not reinstall"))
-    result = ops.resolve_pytorch_selection("comfyui", Path("/instance"), {"mode": "auto"})
+    result = ops.resolve_pytorch_selection("comfyui", "auto")
     assert result == {
         "webui_type": "comfyui", "requested_mode": "auto", "selected_id": item["id"],
         "selection_kind": "name", "selection_value": "CPU", "device_type": "cpu",
@@ -122,7 +134,7 @@ def test_pytorch_resolution_is_read_only_and_uses_closed_command_path(monkeypatc
 def test_invokeai_resolution_preserves_category_semantics(monkeypatch):
     item = {"id": "invokeai-category:cpu", "name": "CPU", "supported": True, "device_type": None, "device_category": "cpu"}
     monkeypatch.setattr(ops, "pytorch_catalog", lambda *_args: {"items": [item], "automatic_selection_available": True, "automatic_selection_preview": None})
-    result = ops.resolve_pytorch_selection("invokeai", Path("/instance"), {"mode": "manual", "selection_id": item["id"]})
+    result = ops.resolve_pytorch_selection("invokeai", "manual", selection_id=item["id"])
     assert result["selection_kind"] == "device_category"
     assert result["selection_value"] == "cpu"
     assert result["cli_command_path"] == ["invokeai", "reinstall-pytorch"]
@@ -132,7 +144,7 @@ def test_model_resolution_manual_policy_is_strict_and_read_only(monkeypatch):
     item = {"id": "model-library:test", "name": "demo", "sources": ["modelscope"], "downloaders": ["requests"], "installable": True, "non_installable_reason": None}
     monkeypatch.setattr(ops, "model_library_catalog", lambda family: {"webui_type": family, "count": 1, "models": [item] if family == "comfyui" else []})
     monkeypatch.setitem(ops.MODEL_INSTALLERS, "comfyui", lambda **_kwargs: pytest.fail("resolver must not install"))
-    result = ops.resolve_model_library_install("comfyui", item["id"], {"source": "modelscope", "downloader": "requests"})
+    result = ops.resolve_model_library_install("comfyui", item["id"], source="modelscope", downloader="requests")
     assert result["model_name"] == "demo"
     assert result["source"] == "modelscope"
     assert result["configured_source"] == "modelscope"
@@ -141,9 +153,9 @@ def test_model_resolution_manual_policy_is_strict_and_read_only(monkeypatch):
     assert result["cli_command_path"] == ["comfyui", "model", "install-library"]
     assert "url" not in result and "path" not in result
     with pytest.raises(ValueError, match="Unknown or ambiguous"):
-        ops.resolve_model_library_install("fooocus", item["id"], {"source": "modelscope", "downloader": "requests"})
+        ops.resolve_model_library_install("fooocus", item["id"], source="modelscope", downloader="requests")
     with pytest.raises(ValueError, match="Source is not available"):
-        ops.resolve_model_library_install("comfyui", item["id"], {"source": "huggingface", "downloader": "requests"})
+        ops.resolve_model_library_install("comfyui", item["id"], source="huggingface", downloader="requests")
 
 
 def test_model_resolution_automatic_policy_uses_deterministic_catalog_fallback(monkeypatch):
@@ -153,7 +165,9 @@ def test_model_resolution_automatic_policy_uses_deterministic_catalog_fallback(m
     result = ops.resolve_model_library_install(
         "comfyui",
         item["id"],
-        {"source": "huggingface", "downloader": "requests", "automatic_mirror": True},
+        source="huggingface",
+        downloader="requests",
+        automatic_mirror=True,
     )
 
     assert result["source"] == "modelscope"
@@ -169,7 +183,9 @@ def test_model_resolution_automatic_policy_still_requires_source_and_downloader(
         ops.resolve_model_library_install(
             "comfyui",
             item["id"],
-            {"source": "huggingface", "downloader": "requests", "automatic_mirror": True},
+            source="huggingface",
+            downloader="requests",
+            automatic_mirror=True,
         )
 
     item["sources"] = ["modelscope"]
@@ -177,5 +193,7 @@ def test_model_resolution_automatic_policy_still_requires_source_and_downloader(
         ops.resolve_model_library_install(
             "comfyui",
             item["id"],
-            {"source": "huggingface", "downloader": "aria2", "automatic_mirror": True},
+            source="huggingface",
+            downloader="aria2",
+            automatic_mirror=True,
         )

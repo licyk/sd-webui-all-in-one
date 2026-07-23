@@ -7,6 +7,7 @@ import time
 import urllib.error
 import urllib.request
 from typing import Any
+from urllib.parse import quote
 
 
 _TERMINAL_STATUSES = frozenset({"succeeded", "failed", "canceled"})
@@ -43,7 +44,18 @@ class ApiClient:
         Returns:
             dict[str, Any]: 方法目录和元数据。
         """
-        return self.request("GET", "/api/v1/methods")
+        return self.request("GET", "/api/v2/methods")
+
+    def get_method(self, method: str) -> dict[str, Any]:
+        """获取单个 API 方法的元数据和参数说明。
+
+        Args:
+            method (str): API 方法名。
+
+        Returns:
+            dict[str, Any]: 方法元数据、参数类型、必填状态和默认值信息。
+        """
+        return self.request("GET", f"/api/v2/methods/{quote(method, safe='')}")
 
     def call(self, method: str, params: dict[str, Any] | None = None, wait_ms: float | None = None) -> Any:
         """调用 API 方法作业，等待其完成并返回结果。
@@ -65,7 +77,7 @@ class ApiClient:
         body: dict[str, Any] = {"method": method, "params": params or {}}
         if wait_ms is not None:
             body["wait_ms"] = wait_ms
-        status, result = self._request_status("POST", "/api/v1/call", body)
+        status, result = self._request_status("POST", "/api/v2/call", body)
         # 200 carries the inline result directly; 202 carries a handle to poll.
         if status == 202:
             return self._await_result(result)
@@ -81,7 +93,7 @@ class ApiClient:
         Returns:
             dict[str, Any]: 已创建作业的状态快照。
         """
-        return self.request("POST", "/api/v1/tasks", {"method": method, "params": params or {}})
+        return self.request("POST", "/api/v2/tasks", {"method": method, "params": params or {}})
 
     def _await_result(self, snapshot: dict[str, Any], poll_interval: float = 0.05, poll_timeout: float = 600.0) -> Any:
         """轮询作业快照至终态并返回结果。
@@ -117,7 +129,7 @@ class ApiClient:
         Returns:
             dict[str, Any]: 后台任务列表。
         """
-        return self.request("GET", "/api/v1/tasks")
+        return self.request("GET", "/api/v2/tasks")
 
     def get_task(self, task_id: str) -> dict[str, Any]:
         """获取任务状态。
@@ -128,7 +140,7 @@ class ApiClient:
         Returns:
             dict[str, Any]: 任务状态快照。
         """
-        return self.request("GET", f"/api/v1/tasks/{task_id}")
+        return self.request("GET", f"/api/v2/tasks/{task_id}")
 
     def get_task_logs(self, task_id: str) -> dict[str, Any]:
         """获取任务日志。
@@ -139,7 +151,7 @@ class ApiClient:
         Returns:
             dict[str, Any]: 任务日志列表。
         """
-        return self.request("GET", f"/api/v1/tasks/{task_id}/logs")
+        return self.request("GET", f"/api/v2/tasks/{task_id}/logs")
 
     def cancel_task(self, task_id: str) -> dict[str, Any]:
         """请求取消任务。
@@ -150,7 +162,7 @@ class ApiClient:
         Returns:
             dict[str, Any]: 取消请求结果。
         """
-        return self.request("POST", f"/api/v1/tasks/{task_id}/cancel")
+        return self.request("POST", f"/api/v2/tasks/{task_id}/cancel")
 
     def request(self, http_method: str, path: str, payload: dict[str, Any] | None = None) -> Any:
         """发送原始 API 请求并返回 result。

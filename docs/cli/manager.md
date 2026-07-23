@@ -132,7 +132,7 @@ sd-webui-all-in-one self-manager get pytorch-device-type --category
 ```
 
 ### API 服务
-启动基于 Python 标准库的轻量 HTTP JSON API 服务。当前提供 API 基础设施、同步方法注册表、后台任务系统，并默认挂载版本管理和快照管理方法。
+启动基于 Python 标准库的轻量 HTTP JSON API 服务。服务只提供 `/api/v2`，并统一使用真实 Python callable 的运行时签名进行方法发现、参数校验和调用。
 
 ```bash
 sd-webui-all-in-one self-manager api serve [选项]
@@ -165,28 +165,40 @@ Authorization: Bearer <令牌>
 基础端点：
 
 - `GET /health`：健康检查，不需要鉴权。
-- `GET /api/v1/methods`：获取已注册同步方法、任务方法、方法元数据、任务状态列表和错误码列表。
-- `POST /api/v1/call`：调用已注册同步 API 方法。
-- `POST /api/v1/tasks`：创建后台任务。
-- `GET /api/v1/tasks`：获取后台任务列表。
-- `GET /api/v1/tasks/<task_id>`：获取后台任务状态、进度、结果和错误。
-- `GET /api/v1/tasks/<task_id>/logs`：获取后台任务日志。
-- `POST /api/v1/tasks/<task_id>/cancel`：请求取消后台任务。
+- `GET /api/v2/methods`：获取已注册方法、方法元数据、任务状态列表和错误码列表。
+- `GET /api/v2/methods/<method>`：获取单个方法的元数据和结构化参数说明。
+- `POST /api/v2/call`：调用已注册 API 方法。
+- `POST /api/v2/tasks`：创建后台任务。
+- `GET /api/v2/tasks`：获取后台任务列表。
+- `GET /api/v2/tasks/<task_id>`：获取后台任务状态、进度、结果和错误。
+- `GET /api/v2/tasks/<task_id>/logs`：获取后台任务日志。
+- `POST /api/v2/tasks/<task_id>/cancel`：请求取消后台任务。
 
 `HEAD /health` 和 `OPTIONS` 可用于外部 GUI 进行连通性和能力探测。
 
 方法命名规范：
 
-- 使用点号分隔的小写命名空间，例如 `model.list`、`snapshot.create`、`version.switch_branch`。
+- 使用点号分隔的小写命名空间，例如 `comfyui.extension.list`、`invokeai.snapshot.create`、`sd_webui.version.switch_branch`。
 - 每段只能使用小写字母、数字和下划线，并且必须以小写字母开头。
 
-方法元数据由 `GET /api/v1/methods` 的 `metadata` 字段返回，每个方法可包含：
+方法元数据由 `GET /api/v2/methods` 的 `metadata` 字段返回，每个方法可包含：
 
 - `name`：方法名。
-- `kind`：`sync` 或 `task`。
+- `kind`：当前统一为 `job`。
 - `description`：方法说明。
+- `target`：实际调用的 Python callable 完整名称。
 - `params_schema`：参数 JSON schema。
-- `result_schema`：结果 JSON schema，可选。
+
+方法元数据同时返回 `parameters` 数组。每个参数包含：
+
+- `name`：参数名。
+- `type`：JSON Schema 类型；可空等联合类型以数组表示。
+- `required`：是否必填。
+- `has_default`：schema 是否明确声明了默认值。
+- `default`：默认值，仅在 `has_default=true` 时返回；默认值为 `null` 时也会保留。
+- `schema`：参数的完整 JSON Schema，包含枚举、格式和约束等信息。
+
+`has_default=false` 只表示 API 规范没有声明默认值，不会把“可选参数”自动视为具有默认值。
 
 任务状态固定为：
 
@@ -194,75 +206,45 @@ Authorization: Bearer <令牌>
 pending,running,succeeded,failed,canceled
 ```
 
-默认挂载的同步方法：
+默认方法直接注册真实 Python callable，并按能力分为以下命名空间：
 
-- `version.status`：读取 WebUI 内核仓库状态。
-- `version.branches`：列出 WebUI 内核仓库分支。
-- `version.commits`：列出 WebUI 内核仓库提交。
-- `version.branch_presets`：列出 WebUI 内置分支预设；未定义预设表的 WebUI 返回 `supported=false` 和空列表。
-- `webui.check_updates`：检查 WebUI 内核和扩展是否存在可用更新；CLI 使用文本输出，API 返回结构化结果。
-- `snapshot.list`：列出快照文件。
-- `snapshot.read`：读取快照文件。
-- `snapshot.delete`：删除快照文件。
-- `extension.list`：列出本地扩展或自定义节点。
-- `extension.index`：读取可安装扩展源；SD WebUI 使用扩展源列表，ComfyUI 同时合并 ComfyUI-Manager 列表和 Comfy Registry。
-- `extension.versions`：读取 Comfy Registry 节点可安装版本。
-- `environment.dependencies`：检查本地环境依赖状态；目前用于 ComfyUI 内核和组件依赖缺失、冲突分析，不执行依赖安装。
-- `environment.pytorch_version`：检查当前 Python 环境中的 PyTorch 版本是否匹配当前设备，不执行重装。
-- `package.versions`：读取 PyPI 包版本列表，供 InvokeAI 等 PyPI 版本管理使用。
-- `launch.prepare`：准备 WebUI 启动脚本、启动参数和环境变量，不实际启动进程。
-- `system.pytorch_device_type`：读取当前设备支持的 PyTorch 类型；`options.category=true` 时返回设备大类，否则返回细分类型列表。
-- `system.pytorch_library`：读取内置 PyTorch 版本组合列表；可用 `options.dtype` 和 `options.supported` 过滤。
-- `system.proxy`：读取当前系统代理地址；`options.test_connectivity=true` 时额外测试代理连通性。
-- `model.root`：读取文件型 WebUI 的模型根目录信息。
-- `model.library`：按 WebUI 类型读取内置模型下载库条目。
-- `model.directories`：列出模型根目录内的文件夹。
-- `model.entries`：列出指定模型目录中的文件和文件夹。
-- `model.invokeai.list`：列出 InvokeAI 已注册模型。
-- `hotpatcher.default_config`：读取 Hotpatcher 默认配置。
-- `hotpatcher.catalog`：读取 Hotpatcher 功能目录。
-- `hotpatcher.load_config`：读取 Hotpatcher 配置文件。
-- `hotpatcher.normalize_config`：规范化 Hotpatcher 配置对象。
-- `hotpatcher.runtime_env`：生成连接 runtime host 所需的环境变量。
-- `hotpatcher.runtime_status`：读取 runtime host 状态。
-- `hotpatcher.runtime_logs`：读取 runtime host 日志。
+- `<webui>.version.*`：各 WebUI 的版本、更新检查和仓库操作。
+- `<webui>.snapshot.*`：各 WebUI 的快照操作。
+- `<webui>.extension.*`：SD WebUI、ComfyUI 和 InvokeAI 的扩展操作。
+- `<webui>.launch.*`：各 WebUI 的启动准备和参数发现。
+- `<webui>.model.*`：各 WebUI 的文件模型、InvokeAI 注册模型和内置模型库操作。
+- `<webui>.pytorch.*`：各 WebUI 的 PyTorch 目录、选择解析和重装操作。
+- `package.*`、`pytorch.*`、`system.*`：与具体 WebUI 无关的公共能力。
+- `hotpatcher.*`：Hotpatcher 配置和 runtime 操作。
 
-默认挂载的后台任务方法：
+其中 `<webui>` 是 `sd_webui`、`comfyui`、`fooocus`、`invokeai`、`sd_trainer`、`sd_scripts` 或 `qwen_tts_webui`。只注册对应实现实际支持的能力；例如扩展 Registry 方法只存在于 `comfyui.extension.*`。
 
-- `version.switch_branch`：切换 WebUI 内核仓库分支。
-- `version.switch_commit`：切换 WebUI 内核仓库提交。
-- `version.update`：更新 WebUI 内核仓库。
-- `snapshot.create`：创建 WebUI 快照。
-- `snapshot.preview_restore`：预览快照恢复计划。
-- `snapshot.restore`：恢复 WebUI 快照。
-- `extension.set_enabled`：启用或禁用扩展。
-- `extension.install`：从 Git URL 安装扩展。
-- `extension.install_index_item`：安装扩展源条目；ComfyUI 支持 Git、copy、zip/unzip 和 Comfy Registry 条目。
-- `extension.update`：更新单个扩展。
-- `extension.update_all`：更新全部可更新扩展。
-- `extension.uninstall`：卸载扩展。
-- `extension.switch_branch`：切换扩展分支。
-- `extension.switch_commit`：切换扩展提交。
-- `extension.switch_registry_version`：切换 Comfy Registry 扩展版本。
-- `invokeai.install_version`：安装或升级 InvokeAI PyPI 版本。
-- `model.create_folder`：在模型目录中新建文件夹。
-- `model.copy`：复制模型文件或文件夹。
-- `model.move`：移动模型文件或文件夹。
-- `model.delete`：删除模型文件或文件夹。
-- `model.import`：导入本地模型文件或文件夹。
-- `model.download`：从 URL 下载模型到模型目录。
-- `model.invokeai.install_url`：通过 InvokeAI 从 URL 安装模型。
-- `model.invokeai.import`：导入本地模型到 InvokeAI。
-- `model.invokeai.unregister`：注销 InvokeAI 模型。
-- `model.invokeai.delete`：删除 InvokeAI 模型。
-- `hotpatcher.save_config`：保存 Hotpatcher 配置文件。
-- `hotpatcher.export_default_config`：导出 Hotpatcher 默认配置文件。
-- `hotpatcher.apply_config`：将 Hotpatcher 配置应用到 API 进程。
-- `hotpatcher.runtime_start`：启动 Hotpatcher runtime host。
-- `hotpatcher.runtime_stop`：停止 Hotpatcher runtime host。
-- `hotpatcher.runtime_apply_remote`：通过 services channel 将配置应用到远端 runtime。
+方法名已经确定具体 WebUI，因此不再传递 `webui_type`。参数结构完全跟随真实函数签名：普通参数直接平铺，真实函数本身使用 dataclass 等结构化对象时则由 schema 展示其子字段。
 
-这些方法统一使用 `webui_type` 和 `webui_path` 参数，并通过内部 adapter 适配不同 WebUI 的实现差异。不支持某类能力的 WebUI 会返回错误，例如 Fooocus 没有扩展管理时调用 `extension.list` 会失败。模型管理中，SD WebUI、ComfyUI、Fooocus、SD Trainer 和 SD Scripts 使用文件目录管理；InvokeAI 使用专用的注册模型管理方法。
+```json
+{
+  "method": "comfyui.version.branches",
+  "params": {
+    "path": "/path/to/ComfyUI",
+    "fetch": true
+  }
+}
+```
+
+方法的 `target`、参数类型、默认值和 schema 均在启动时从实际 callable 签名生成。服务器会在创建任务前拒绝缺失参数、未知参数及类型错误。完整方法集合以 `GET /api/v2/methods` 的运行时结果为准。
+
+启动服务后可直接用 `curl` 查询和调用：
+
+```bash
+curl http://127.0.0.1:8765/health
+curl http://127.0.0.1:8765/api/v2/methods
+curl http://127.0.0.1:8765/api/v2/methods/comfyui.version.branches
+curl -X POST http://127.0.0.1:8765/api/v2/call \
+  -H 'Content-Type: application/json' \
+  -d '{"method":"comfyui.version.branches","params":{"path":"/path/to/ComfyUI","fetch":true}}'
+```
+
+启用 `--token` 后，在每条受保护的请求中增加 `-H 'Authorization: Bearer <令牌>'`。
 
 外部 Python GUI 可以使用内置客户端：
 

@@ -1,9 +1,10 @@
 """WebUI 更新检查命令行输出工具。"""
 
-from pathlib import Path
+from dataclasses import asdict
 from typing import Any
 
-from sd_webui_all_in_one.api_server.adapters import WebUiApiType, get_webui_adapter
+from sd_webui_all_in_one.base_manager.snapshot import json_safe
+from sd_webui_all_in_one.base_manager.version_manager import WebUiUpdateStatus
 
 
 def _short_value(value: Any) -> str:
@@ -52,7 +53,7 @@ def format_update_check_result(result: dict[str, Any]) -> str:
 
     Args:
         result (dict[str, Any]):
-            API adapter 返回的更新检查结果。
+            WebUI 更新检查函数返回的结果。
 
     Returns:
         str: 命令行显示文本。
@@ -91,49 +92,18 @@ def format_update_check_result(result: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def check_webui_updates(
-    webui_type: WebUiApiType,
-    webui_path: Path,
-    include_kernel: bool = True,
-    include_extensions: bool = True,
-    use_github_mirror: bool = False,
-    custom_github_mirror: str | list[str] | None = None,
-    use_pypi_mirror: bool = False,
-    fetch: bool = True,
-) -> dict[str, Any]:
-    """检查 WebUI 内核和扩展更新并输出文本结果。
+def output_update_check_result(status: WebUiUpdateStatus) -> dict[str, Any]:
+    """输出 WebUI 更新检查结果。
 
     Args:
-        webui_type (WebUiApiType):
-            WebUI 类型。
-        webui_path (Path):
-            WebUI 根目录。
-        include_kernel (bool):
-            是否检查内核。
-        include_extensions (bool):
-            是否检查扩展。
-        use_github_mirror (bool):
-            是否启用 GitHub 镜像源。
-        custom_github_mirror (str | list[str] | None):
-            自定义 GitHub 镜像源。
-        use_pypi_mirror (bool):
-            是否启用 PyPI 镜像源。
-        fetch (bool):
-            是否拉取远程引用。
+        status (WebUiUpdateStatus): 真实 WebUI 更新检查函数的返回值。
 
     Returns:
         dict[str, Any]: 结构化更新检查结果。
     """
-    result = get_webui_adapter(webui_type).check_updates(
-        webui_path,
-        options={
-            "include_kernel": include_kernel,
-            "include_extensions": include_extensions,
-            "use_github_mirror": use_github_mirror,
-            "custom_github_mirror": custom_github_mirror,
-            "use_pypi_mirror": use_pypi_mirror,
-            "fetch": fetch,
-        },
-    )
+    serialized = json_safe(asdict(status))
+    if not isinstance(serialized, dict):
+        raise TypeError("Expected update status object")
+    result = serialized
     print(format_update_check_result(result))
     return result

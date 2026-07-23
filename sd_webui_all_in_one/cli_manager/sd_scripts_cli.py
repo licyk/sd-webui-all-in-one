@@ -6,6 +6,7 @@ from pathlib import Path
 from sd_webui_all_in_one.base_manager import (
     SD_SCRIPTS_BRANCH_LIST,
     SDScriptsBranchType,
+    check_sd_scripts_updates,
     install_sd_scripts,
     update_sd_scripts,
     check_sd_scripts_env,
@@ -40,7 +41,8 @@ from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     restore_snapshot,
 )
 from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
-from sd_webui_all_in_one.cli_manager.update_status import check_webui_updates
+from sd_webui_all_in_one.cli_manager.update_status import output_update_check_result
+from sd_webui_all_in_one.base_manager.version_manager import WebUiUpdateOptions
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
@@ -647,12 +649,15 @@ def register_sd_scripts(
     add_auto_mirror_argument(check_update_p)
     check_update_p.set_defaults(
         func=with_auto_mirror(
-            lambda args: check_webui_updates(
-                webui_type="sd_scripts",
-                webui_path=args.sd_scripts_path,
-                include_extensions=False,
-                use_github_mirror=args.use_github_mirror,
-                custom_github_mirror=args.custom_github_mirror,
+            lambda args: output_update_check_result(
+                check_sd_scripts_updates(
+                    args.sd_scripts_path,
+                    WebUiUpdateOptions(
+                        include_extensions=False,
+                        use_github_mirror=args.use_github_mirror,
+                        custom_github_mirror=args.custom_github_mirror,
+                    ),
+                )
             )
         )
     )

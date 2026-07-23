@@ -8,6 +8,7 @@ from pathlib import Path
 
 from sd_webui_all_in_one.base_manager import (
     DEFAULT_RUNTIME_PORT,
+    check_qwen_tts_webui_updates,
     install_qwen_tts_webui,
     update_qwen_tts_webui,
     check_qwen_tts_webui_env,
@@ -40,7 +41,8 @@ from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     restore_snapshot,
 )
 from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
-from sd_webui_all_in_one.cli_manager.update_status import check_webui_updates
+from sd_webui_all_in_one.cli_manager.update_status import output_update_check_result
+from sd_webui_all_in_one.base_manager.version_manager import WebUiUpdateOptions
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
@@ -591,12 +593,15 @@ def register_qwen_tts_webui(
     add_auto_mirror_argument(check_update_p)
     check_update_p.set_defaults(
         func=with_auto_mirror(
-            lambda args: check_webui_updates(
-                webui_type="qwen_tts_webui",
-                webui_path=args.qwen_tts_webui_path,
-                include_extensions=False,
-                use_github_mirror=args.use_github_mirror,
-                custom_github_mirror=args.custom_github_mirror,
+            lambda args: output_update_check_result(
+                check_qwen_tts_webui_updates(
+                    args.qwen_tts_webui_path,
+                    WebUiUpdateOptions(
+                        include_extensions=False,
+                        use_github_mirror=args.use_github_mirror,
+                        custom_github_mirror=args.custom_github_mirror,
+                    ),
+                )
             )
         )
     )

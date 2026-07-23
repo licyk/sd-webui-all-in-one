@@ -10,6 +10,7 @@ from sd_webui_all_in_one.base_manager import (
     DEFAULT_RUNTIME_PORT,
     SD_WEBUI_BRANCH_LIST,
     SDWebUiBranchType,
+    check_sd_webui_updates,
     install_sd_webui,
     update_sd_webui,
     switch_sd_webui_branch,
@@ -57,7 +58,8 @@ from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     restore_snapshot,
 )
 from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
-from sd_webui_all_in_one.cli_manager.update_status import check_webui_updates
+from sd_webui_all_in_one.cli_manager.update_status import output_update_check_result
+from sd_webui_all_in_one.base_manager.version_manager import WebUiUpdateOptions
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
@@ -902,11 +904,14 @@ def register_sd_webui(
     add_auto_mirror_argument(check_update_p)
     check_update_p.set_defaults(
         func=with_auto_mirror(
-            lambda args: check_webui_updates(
-                webui_type="sd_webui",
-                webui_path=args.sd_webui_path,
-                use_github_mirror=args.use_github_mirror,
-                custom_github_mirror=args.custom_github_mirror,
+            lambda args: output_update_check_result(
+                check_sd_webui_updates(
+                    args.sd_webui_path,
+                    WebUiUpdateOptions(
+                        use_github_mirror=args.use_github_mirror,
+                        custom_github_mirror=args.custom_github_mirror,
+                    ),
+                )
             )
         )
     )
@@ -1141,12 +1146,15 @@ def register_sd_webui(
     add_auto_mirror_argument(ext_check_update_p)
     ext_check_update_p.set_defaults(
         func=with_auto_mirror(
-            lambda args: check_webui_updates(
-                webui_type="sd_webui",
-                webui_path=args.sd_webui_path,
-                include_kernel=False,
-                use_github_mirror=args.use_github_mirror,
-                custom_github_mirror=args.custom_github_mirror,
+            lambda args: output_update_check_result(
+                check_sd_webui_updates(
+                    args.sd_webui_path,
+                    WebUiUpdateOptions(
+                        include_kernel=False,
+                        use_github_mirror=args.use_github_mirror,
+                        custom_github_mirror=args.custom_github_mirror,
+                    ),
+                )
             )
         )
     )

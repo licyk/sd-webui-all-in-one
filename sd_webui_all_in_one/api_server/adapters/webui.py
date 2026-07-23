@@ -66,19 +66,6 @@ WebUiApiType: TypeAlias = Literal[
 """API 支持的 WebUI 类型。"""
 
 
-def _snapshot_restore_options(data: dict[str, Any] | None = None) -> SnapshotRestoreOptions:
-    data = data or {}
-    return SnapshotRestoreOptions(
-        prune_packages=bool(data.get("prune_packages", False)),
-        prune_extensions=bool(data.get("prune_extensions", False)),
-        force_git_reset=bool(data.get("force_git_reset", False)),
-        use_uv=bool(data.get("use_uv", True)),
-        use_pypi_mirror=bool(data.get("use_pypi_mirror", True)),
-        use_github_mirror=bool(data.get("use_github_mirror", False)),
-        custom_github_mirror=data.get("custom_github_mirror"),
-    )
-
-
 def _dataclass_list(items: Iterable[Any]) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
     for item in items:
@@ -160,27 +147,6 @@ def _download_name_from_url(url: str) -> str:
     parsed = urlparse(url)
     filename = Path(parsed.path).name
     return filename or get_repo_name_from_url(url)
-
-
-def _extension_index_item_from_params(data: dict[str, Any]) -> ExtensionIndexItem:
-    return ExtensionIndexItem(
-        name=str(data.get("name") or get_repo_name_from_url(str(data.get("reference") or data.get("url") or "extension"))),
-        url=str(data.get("url") or ""),
-        description=str(data.get("description") or ""),
-        tags=tuple(str(item) for item in data.get("tags", ()) if str(item)),
-        install_type=str(data.get("install_type") or "git-clone"),
-        files=tuple(str(item) for item in data.get("files", ()) if str(item)),
-        reference=str(data.get("reference") or ""),
-        source_type=data.get("source_type") or "git",
-        registry_id=data.get("registry_id"),
-        registry_version=data.get("registry_version"),
-        repository=data.get("repository"),
-        download_url=data.get("download_url"),
-        dependencies=tuple(str(item) for item in data.get("dependencies", ()) if str(item)),
-        author=str(data.get("author") or ""),
-        installable=bool(data.get("installable", True)),
-        install_status=str(data.get("install_status") or ""),
-    )
 
 
 class WebUiApiAdapter:
@@ -273,12 +239,32 @@ class WebUiApiAdapter:
         update_repository(webui_path)
         return {"updated": True}
 
-    def check_updates(self, webui_path: Path, options: dict[str, Any] | None = None) -> dict[str, Any]:
+    def check_updates(
+        self,
+        webui_path: Path,
+        fetch: bool = True,
+        include_kernel: bool = True,
+        include_extensions: bool = True,
+        include_pytorch: bool = True,
+        use_github_mirror: bool = False,
+        custom_github_mirror: str | list[str] | None = None,
+        use_pypi_mirror: bool = False,
+        pypi_index_url: str | None = None,
+        timeout: int | None = 20,
+    ) -> dict[str, Any]:
         """检查 WebUI 内核、扩展和 PyTorch 更新。
 
         Args:
             webui_path (Path): WebUI 根目录。
-            options (dict[str, Any] | None): 检查选项。
+            fetch (bool): 是否拉取远程引用。
+            include_kernel (bool): 是否检查内核。
+            include_extensions (bool): 是否检查扩展。
+            include_pytorch (bool): 是否检查 PyTorch。
+            use_github_mirror (bool): 是否使用 GitHub 镜像。
+            custom_github_mirror (str | list[str] | None): 自定义 GitHub 镜像。
+            use_pypi_mirror (bool): 是否使用 PyPI 镜像。
+            pypi_index_url (str | None): 自定义 PyPI 索引地址。
+            timeout (int | None): 网络请求超时秒数。
 
         Returns:
             dict[str, Any]: 更新检查结果。
@@ -288,16 +274,15 @@ class WebUiApiAdapter:
         """
         if self._update_checker is None:
             raise NotImplementedError(f"{self.display_name} does not provide an update checker")
-        data = options or {}
         update_options = WebUiUpdateOptions(
-            fetch=bool(data.get("fetch", True)),
-            include_kernel=bool(data.get("include_kernel", True)),
-            include_extensions=bool(data.get("include_extensions", True)),
-            include_pytorch=bool(data.get("include_pytorch", True)),
-            use_github_mirror=bool(data.get("use_github_mirror", False)),
-            custom_github_mirror=data.get("custom_github_mirror"),
-            pypi_index_url=str(data.get("pypi_index_url") or data.get("index_url") or (PYPI_INDEX_MIRROR_TENCENT if bool(data.get("use_pypi_mirror", False)) else PYPI_INDEX_MIRROR_OFFICIAL)),
-            timeout=int(data["timeout"]) if data.get("timeout") is not None else 20,
+            fetch=fetch,
+            include_kernel=include_kernel,
+            include_extensions=include_extensions,
+            include_pytorch=include_pytorch,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            pypi_index_url=pypi_index_url or (PYPI_INDEX_MIRROR_TENCENT if use_pypi_mirror else PYPI_INDEX_MIRROR_OFFICIAL),
+            timeout=timeout,
         )
         return _dataclass_dict(self._update_checker(webui_path, update_options))
 
@@ -390,13 +375,30 @@ class WebUiApiAdapter:
         remove_files(snapshot_path)
         return {"deleted": True, "path": snapshot_path.as_posix()}
 
-    def preview_restore_snapshot(self, webui_path: Path, snapshot_path: Path, options: dict[str, Any] | None = None) -> dict[str, Any]:
+    def preview_restore_snapshot(
+        self,
+        webui_path: Path,
+        snapshot_path: Path,
+        prune_packages: bool = False,
+        prune_extensions: bool = False,
+        force_git_reset: bool = False,
+        use_uv: bool = True,
+        use_pypi_mirror: bool = True,
+        use_github_mirror: bool = False,
+        custom_github_mirror: str | list[str] | None = None,
+    ) -> dict[str, Any]:
         """预览快照恢复计划。
 
         Args:
             webui_path (Path): WebUI 根目录。
             snapshot_path (Path): 快照文件路径。
-            options (dict[str, Any] | None): 恢复选项。
+            prune_packages (bool): 是否移除快照外的包。
+            prune_extensions (bool): 是否移除快照外的扩展。
+            force_git_reset (bool): 是否强制重置 Git 工作树。
+            use_uv (bool): 是否使用 uv。
+            use_pypi_mirror (bool): 是否使用 PyPI 镜像。
+            use_github_mirror (bool): 是否使用 GitHub 镜像。
+            custom_github_mirror (str | list[str] | None): 自定义 GitHub 镜像。
 
         Returns:
             dict[str, Any]: 恢复计划。
@@ -405,17 +407,42 @@ class WebUiApiAdapter:
             snapshot_path=snapshot_path,
             webui_path=webui_path,
             expected_webui_type=self.webui_type,
-            options=_snapshot_restore_options(options),
+            options=SnapshotRestoreOptions(
+                prune_packages=prune_packages,
+                prune_extensions=prune_extensions,
+                force_git_reset=force_git_reset,
+                use_uv=use_uv,
+                use_pypi_mirror=use_pypi_mirror,
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+            ),
         )
         return {"plan": json_safe(asdict(plan))}
 
-    def restore_snapshot(self, webui_path: Path, snapshot_path: Path, options: dict[str, Any] | None = None) -> dict[str, Any]:
+    def restore_snapshot(
+        self,
+        webui_path: Path,
+        snapshot_path: Path,
+        prune_packages: bool = False,
+        prune_extensions: bool = False,
+        force_git_reset: bool = False,
+        use_uv: bool = True,
+        use_pypi_mirror: bool = True,
+        use_github_mirror: bool = False,
+        custom_github_mirror: str | list[str] | None = None,
+    ) -> dict[str, Any]:
         """恢复快照。
 
         Args:
             webui_path (Path): WebUI 根目录。
             snapshot_path (Path): 快照文件路径。
-            options (dict[str, Any] | None): 恢复选项。
+            prune_packages (bool): 是否移除快照外的包。
+            prune_extensions (bool): 是否移除快照外的扩展。
+            force_git_reset (bool): 是否强制重置 Git 工作树。
+            use_uv (bool): 是否使用 uv。
+            use_pypi_mirror (bool): 是否使用 PyPI 镜像。
+            use_github_mirror (bool): 是否使用 GitHub 镜像。
+            custom_github_mirror (str | list[str] | None): 自定义 GitHub 镜像。
 
         Returns:
             dict[str, Any]: 恢复结果。
@@ -424,7 +451,15 @@ class WebUiApiAdapter:
             snapshot_path=snapshot_path,
             webui_path=webui_path,
             expected_webui_type=self.webui_type,
-            options=_snapshot_restore_options(options),
+            options=SnapshotRestoreOptions(
+                prune_packages=prune_packages,
+                prune_extensions=prune_extensions,
+                force_git_reset=force_git_reset,
+                use_uv=use_uv,
+                use_pypi_mirror=use_pypi_mirror,
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+            ),
         )
         return {"restored": True}
 
@@ -564,12 +599,30 @@ class WebUiApiAdapter:
         self.extension_manager(webui_path).switch_extension_branch(name, branch)
         return {"changed": True}
 
-    def fetch_extension_index(self, webui_path: Path, options: dict[str, Any] | None = None) -> dict[str, Any]:
+    def fetch_extension_index(
+        self,
+        webui_path: Path,
+        query: str = "",
+        tags: list[str] | None = None,
+        index_url: str | None = None,
+        timeout: int | None = 20,
+        registry_search: str | None = None,
+        registry_limit: int | None = None,
+        registry_page_size: int = 500,
+        force_refresh: bool = False,
+    ) -> dict[str, Any]:
         """获取扩展源。
 
         Args:
             webui_path (Path): WebUI 根目录。
-            options (dict[str, Any] | None): 扩展源查询选项。
+            query (str): 本地过滤关键词。
+            tags (list[str] | None): 本地标签过滤。
+            index_url (str | None): 扩展索引地址。
+            timeout (int | None): 请求超时秒数。
+            registry_search (str | None): Comfy Registry 搜索词。
+            registry_limit (int | None): Registry 最大结果数。
+            registry_page_size (int): Registry 每页数量。
+            force_refresh (bool): 是否强制刷新 Registry 缓存。
 
         Returns:
             dict[str, Any]: 可安装扩展列表。
@@ -577,24 +630,22 @@ class WebUiApiAdapter:
         Raises:
             NotImplementedError: 当前 WebUI 类型不支持扩展源。
         """
-        options = options or {}
-        query = str(options.get("query") or "")
-        tags = tuple(str(item) for item in options.get("tags", ()) if str(item))
+        normalized_tags = tuple(tags or ())
         installed_names = {item.name for item in self.extension_manager(webui_path).list_extensions()}
         if self.webui_type == "sd_webui":
-            items = fetch_extension_index(str(options.get("index_url") or DEFAULT_EXTENSION_INDEX_URL), timeout=options.get("timeout", 20))
+            items = fetch_extension_index(index_url or DEFAULT_EXTENSION_INDEX_URL, timeout=timeout)
         elif self.webui_type == "comfyui":
-            manager_items = fetch_comfyui_custom_node_index(str(options.get("index_url") or "https://raw.githubusercontent.com/Comfy-Org/ComfyUI-Manager/refs/heads/main/custom-node-list.json"), timeout=options.get("timeout", 20))
+            manager_items = fetch_comfyui_custom_node_index(index_url or "https://raw.githubusercontent.com/Comfy-Org/ComfyUI-Manager/refs/heads/main/custom-node-list.json", timeout=timeout)
             registry_items = fetch_comfy_registry_extension_index(
-                search=options.get("registry_search") or None,
-                limit=options.get("registry_limit"),
-                page_size=int(options.get("registry_page_size", 500)),
-                force_refresh=bool(options.get("force_refresh", False)),
+                search=registry_search,
+                limit=registry_limit,
+                page_size=registry_page_size,
+                force_refresh=force_refresh,
             )
             items = [*manager_items, *registry_items]
         else:
             raise NotImplementedError(f"{self.display_name} does not support extension index")
-        filtered_items = _dataclass_list(filter_extension_index(items, keyword=query, tags=tags))
+        filtered_items = _dataclass_list(filter_extension_index(items, keyword=query, tags=normalized_tags))
         for item in filtered_items:
             name = item.get("name")
             registry_id = item.get("registry_id")
@@ -604,12 +655,18 @@ class WebUiApiAdapter:
             item["installed"] = name in installed_names or registry_id in installed_names or repo_name in installed_names
         return {"extensions": filtered_items}
 
-    def install_extension_index_item(self, webui_path: Path, item_data: dict[str, Any], use_github_mirror: bool = False, custom_github_mirror: str | list[str] | None = None) -> dict[str, Any]:
+    def install_extension_index_item(
+        self,
+        webui_path: Path,
+        item: ExtensionIndexItem,
+        use_github_mirror: bool = False,
+        custom_github_mirror: str | list[str] | None = None,
+    ) -> dict[str, Any]:
         """安装扩展源条目。
 
         Args:
             webui_path (Path): WebUI 根目录。
-            item_data (dict[str, Any]): 扩展源条目。
+            item (ExtensionIndexItem): 扩展源条目。
             use_github_mirror (bool): 是否使用 GitHub 镜像。
             custom_github_mirror (str | list[str] | None): 自定义 GitHub 镜像。
 
@@ -619,7 +676,6 @@ class WebUiApiAdapter:
         Raises:
             ValueError: 条目不可安装或安装类型不受支持。
         """
-        item = _extension_index_item_from_params(item_data)
         if not item.installable:
             raise ValueError(f"'{item.name}' is not installable: {item.install_status or 'not installable'}")
         install_type = item.install_type.lower()
@@ -740,12 +796,36 @@ class WebUiApiAdapter:
         invokeai_base.install_invokeai_component(invokeai_version=version, upgrade=upgrade, use_pypi_mirror=use_pypi_mirror, use_uv=use_uv)
         return {"installed": True}
 
-    def prepare_launch(self, webui_path: Path, options: dict[str, Any] | None = None) -> dict[str, Any]:
+    def prepare_launch(
+        self,
+        webui_path: Path,
+        launch_args: list[str] | None = None,
+        use_hf_mirror: bool = False,
+        custom_hf_mirror: str | None = None,
+        use_github_mirror: bool = False,
+        custom_github_mirror: str | None = None,
+        use_pypi_mirror: bool = False,
+        use_cuda_malloc: bool = True,
+        enable_hotpatcher: bool = False,
+        hotpatcher_config_path: str | None = None,
+        hotpatcher_port: int = DEFAULT_RUNTIME_PORT,
+        enable_hotpatcher_runtime: bool = False,
+    ) -> dict[str, Any]:
         """准备 WebUI 启动参数。
 
         Args:
             webui_path (Path): WebUI 根目录。
-            options (dict[str, Any] | None): 启动选项。
+            launch_args (list[str] | None): 额外启动参数。
+            use_hf_mirror (bool): 是否使用 Hugging Face 镜像。
+            custom_hf_mirror (str | None): 自定义 Hugging Face 镜像。
+            use_github_mirror (bool): 是否使用 GitHub 镜像。
+            custom_github_mirror (str | None): 自定义 GitHub 镜像。
+            use_pypi_mirror (bool): 是否使用 PyPI 镜像。
+            use_cuda_malloc (bool): 是否启用 CUDA malloc 优化。
+            enable_hotpatcher (bool): 是否启用 Hotpatcher。
+            hotpatcher_config_path (str | None): Hotpatcher 配置路径。
+            hotpatcher_port (int): Hotpatcher runtime 端口。
+            enable_hotpatcher_runtime (bool): 是否启用 Hotpatcher runtime。
 
         Returns:
             dict[str, Any]: 启动参数信息。
@@ -755,32 +835,7 @@ class WebUiApiAdapter:
             TypeError: 启动信息序列化结果无效时抛出。
             NotImplementedError: 当前 WebUI 类型不支持启动。
         """
-        options = options or {}
-        launch_args = options.get("launch_args")
-        if isinstance(launch_args, str):
-            launch_args = [launch_args]
-        elif launch_args is None:
-            launch_args = []
-        elif not isinstance(launch_args, list) or not all(isinstance(item, str) for item in launch_args):
-            raise ValueError("Field 'options.launch_args' must be a string list")
-
-        custom_hf_mirror = options.get("custom_hf_mirror")
-        if custom_hf_mirror is not None and not isinstance(custom_hf_mirror, str):
-            raise ValueError("Field 'options.custom_hf_mirror' must be a string")
-        custom_github_mirror = options.get("custom_github_mirror")
-        if custom_github_mirror is not None and not isinstance(custom_github_mirror, str):
-            raise ValueError("Field 'options.custom_github_mirror' must be a string")
-        hotpatcher_config_path = options.get("hotpatcher_config_path")
-        if hotpatcher_config_path is not None and not isinstance(hotpatcher_config_path, str):
-            raise ValueError("Field 'options.hotpatcher_config_path' must be a string")
-
-        use_hf_mirror = bool(options.get("use_hf_mirror", False))
-        use_pypi_mirror = bool(options.get("use_pypi_mirror", False))
-        use_cuda_malloc = bool(options.get("use_cuda_malloc", True))
-        enable_hotpatcher = bool(options.get("enable_hotpatcher", False))
-        hotpatcher_port = int(options.get("hotpatcher_port", DEFAULT_RUNTIME_PORT))
-        enable_hotpatcher_runtime = bool(options.get("enable_hotpatcher_runtime", False))
-        use_github_mirror = bool(options.get("use_github_mirror", False))
+        launch_args = launch_args or []
 
         if self.webui_type == "sd_webui":
             launch_info = sd_webui_base.prepare_sd_webui_launch(
@@ -887,21 +942,3 @@ WEBUI_API_ADAPTERS: dict[WebUiApiType, WebUiApiAdapter] = {
     "sd_scripts": WebUiApiAdapter("sd_scripts", "SD Scripts", sd_scripts_base.get_sd_scripts_snapshot, sd_scripts_base.check_sd_scripts_updates),
     "qwen_tts_webui": WebUiApiAdapter("qwen_tts_webui", "Qwen TTS WebUI", qwen_tts_webui_base.get_qwen_tts_webui_snapshot, qwen_tts_webui_base.check_qwen_tts_webui_updates),
 }
-
-
-def get_webui_adapter(webui_type: WebUiApiType) -> WebUiApiAdapter:
-    """获取 WebUI API adapter。
-
-    Args:
-        webui_type (WebUiApiType): WebUI 类型。
-
-    Returns:
-        WebUiApiAdapter: 对应类型的 API adapter。
-
-    Raises:
-        ValueError: WebUI 类型不受支持。
-    """
-    try:
-        return WEBUI_API_ADAPTERS[webui_type]
-    except KeyError as exc:
-        raise ValueError(f"Unsupported webui_type: {webui_type}") from exc

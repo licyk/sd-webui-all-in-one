@@ -8,6 +8,7 @@ from pathlib import Path
 
 from sd_webui_all_in_one.base_manager import (
     DEFAULT_RUNTIME_PORT,
+    check_invokeai_updates,
     install_invokeai,
     update_invokeai,
     check_invokeai_env,
@@ -54,7 +55,9 @@ from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     restore_snapshot,
 )
 from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
-from sd_webui_all_in_one.cli_manager.update_status import check_webui_updates
+from sd_webui_all_in_one.cli_manager.update_status import output_update_check_result
+from sd_webui_all_in_one.base_manager.version_manager import WebUiUpdateOptions
+from sd_webui_all_in_one.mirror_manager import PYPI_INDEX_MIRROR_OFFICIAL, PYPI_INDEX_MIRROR_TENCENT
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_CATEGORY_LIST,
     PyTorchDeviceTypeCategory,
@@ -818,12 +821,15 @@ def register_invokeai(
     add_auto_mirror_argument(check_update_p)
     check_update_p.set_defaults(
         func=with_auto_mirror(
-            lambda args: check_webui_updates(
-                webui_type="invokeai",
-                webui_path=args.invokeai_path,
-                use_pypi_mirror=args.use_pypi_mirror,
-                use_github_mirror=args.use_github_mirror,
-                custom_github_mirror=args.custom_github_mirror,
+            lambda args: output_update_check_result(
+                check_invokeai_updates(
+                    args.invokeai_path,
+                    WebUiUpdateOptions(
+                        use_github_mirror=args.use_github_mirror,
+                        custom_github_mirror=args.custom_github_mirror,
+                        pypi_index_url=PYPI_INDEX_MIRROR_TENCENT if args.use_pypi_mirror else PYPI_INDEX_MIRROR_OFFICIAL,
+                    ),
+                )
             )
         )
     )
@@ -1035,12 +1041,15 @@ def register_invokeai(
     add_auto_mirror_argument(node_check_update_p)
     node_check_update_p.set_defaults(
         func=with_auto_mirror(
-            lambda args: check_webui_updates(
-                webui_type="invokeai",
-                webui_path=args.invokeai_path,
-                include_kernel=False,
-                use_github_mirror=args.use_github_mirror,
-                custom_github_mirror=args.custom_github_mirror,
+            lambda args: output_update_check_result(
+                check_invokeai_updates(
+                    args.invokeai_path,
+                    WebUiUpdateOptions(
+                        include_kernel=False,
+                        use_github_mirror=args.use_github_mirror,
+                        custom_github_mirror=args.custom_github_mirror,
+                    ),
+                )
             )
         )
     )

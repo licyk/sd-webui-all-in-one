@@ -452,19 +452,16 @@ def test_missing_comfyui_parser_returns_explicit_unavailable_catalog(tmp_path: P
     assert any(diagnostic.code == "discovery_unavailable" for diagnostic in catalog.diagnostics)
 
 
-def test_api_registry_exposes_structured_catalog_and_validates_timeout(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_api_registry_exposes_structured_catalog(tmp_path: Path) -> None:
     _write_comfyui_argument_parser(tmp_path)
-    context = SimpleNamespace(check_canceled=lambda: None)
-    result = registry.launch_arguments_catalog({"webui_type": "comfyui", "webui_path": str(tmp_path)}, context)
-    assert result["catalog"]["webui_type"] == "comfyui"
-    assert result["catalog"]["arguments"]
-    assert result["catalog"]["arguments"][0]["min_values"] == 0
-    assert result["catalog"]["arguments"][0]["max_values"] == 0
-    assert "launch.arguments.catalog" in registry.get_default_methods()
-    with pytest.raises(ValueError, match="timeout"):
-        registry.launch_arguments_catalog({"webui_type": "comfyui", "webui_path": str(tmp_path), "options": {"timeout": "forever"}}, context)
-    with pytest.raises(ValueError, match="use_parser_object"):
-        registry.launch_arguments_catalog({"webui_type": "comfyui", "webui_path": str(tmp_path), "options": {"use_parser_object": "yes"}}, context)
+    methods = registry.get_default_methods()
+    target = methods["comfyui.launch.arguments_catalog"]
+    assert callable(target)
+    result = target(tmp_path)
+    assert result.webui_type == "comfyui"
+    assert result.arguments
+    assert result.arguments[0].min_values == 0
+    assert result.arguments[0].max_values == 0
 
 
 def test_comfyui_base_parses_actual_argument_parser_object(tmp_path: Path) -> None:
@@ -560,14 +557,15 @@ def get_args_parser():
     assert {argument.name for argument in catalogs["kohya"].arguments} >= {"headless", "help"}
     assert {argument.name for argument in catalogs["qwen"].arguments} >= {"server_port", "help"}
     assert {argument.name for argument in catalogs["invokeai"].arguments} >= {"invoke_model", "help"}
-    assert set(registry.LAUNCH_ARGUMENT_CATALOG_FACTORIES) >= {
-        "sd_webui",
-        "comfyui",
-        "fooocus",
-        "invokeai",
-        "sd_trainer",
-        "qwen_tts_webui",
-    }
+    methods = registry.get_default_methods()
+    assert {
+        "sd_webui.launch.arguments_catalog",
+        "comfyui.launch.arguments_catalog",
+        "fooocus.launch.arguments_catalog",
+        "invokeai.launch.arguments_catalog",
+        "sd_trainer.launch.arguments_catalog",
+        "qwen_tts_webui.launch.arguments_catalog",
+    }.issubset(methods)
 
 
 def test_base_manager_object_failure_falls_back_to_help_and_switch_can_disable_object(tmp_path: Path) -> None:

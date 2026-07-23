@@ -179,6 +179,11 @@ FOOOCUS_BRANCH_INFO_DICT: list[FooocusBranchInfo] = [
 ]
 """Fooocus 分支信息字典"""
 
+
+def get_fooocus_branch_presets() -> dict[str, object]:
+    """返回 Fooocus 内置分支预设。"""
+    return {"branches": list(FOOOCUS_BRANCH_INFO_DICT), "types": list(FOOOCUS_BRANCH_LIST)}
+
 FOOOCUS_PRESET_HF_PATH = ROOT_PATH / "base_manager" / "config" / "fooocus_config_huggingface.json"
 """Fooocus 预设配置文件路径, 使用 HuggingFace 下载源"""
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import inspect
 import re
 import secrets
 import threading
@@ -14,9 +15,10 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Literal
-from urllib.parse import urlparse
+from typing import Any, get_type_hints
+from urllib.parse import unquote, urlparse
 
+from sd_webui_all_in_one.api_server.introspection import CallablePlan, compile_callable, to_json_value
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from sd_webui_all_in_one.logger import get_logger
 
@@ -27,11 +29,9 @@ logger = get_logger(
     color=LOGGER_COLOR,
 )
 
-# Every API method is a job: one handler signature, one execution pipeline. The
-# handler receives the request params and a task context (progress/cancellation);
-# fast local methods simply ignore the context.
+# 真实 callable 会在注册时编译成统一的内部作业处理器；公开参数始终来自
+# callable 自身签名，内部处理器只负责接入任务上下文和执行流水线。
 ApiJobHandler = Callable[[dict[str, Any], "ApiTaskContext"], Any]
-ApiMethodKind = Literal["job"]
 MAX_REQUEST_BODY_SIZE = 1024 * 1024
 SUPPORTED_HTTP_METHODS = "GET,HEAD,POST,OPTIONS"
 API_METHOD_NAME_PATTERN = re.compile(r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$")
@@ -57,38 +57,38 @@ API_ERROR_CODES = (
     "task_not_found",
     "unauthorized",
 )
-DEFAULT_OBJECT_SCHEMA: dict[str, Any] = {"type": "object"}
-
-
 @dataclass(frozen=True, slots=True)
 class ApiMethodSpec:
-    """API 方法元数据和处理器。"""
+    """真实 callable 的 API 注册信息，不保存重复参数 schema。"""
+
+    handler: Callable[..., Any]
+    description: str = ""
+    bound_arguments: Mapping[str, Any] = field(default_factory=dict)
+
+@dataclass(frozen=True, slots=True)
+class RegisteredMethod:
+    """已完成反射编译、可直接发现和调用的方法。"""
 
     name: str
-    handler: Callable[..., Any]
-    kind: ApiMethodKind = "job"
-    description: str = ""
-    params_schema: dict[str, Any] = field(default_factory=lambda: dict(DEFAULT_OBJECT_SCHEMA))
-    result_schema: dict[str, Any] | None = None
+    plan: CallablePlan
 
     def metadata(self) -> dict[str, Any]:
-        """导出给客户端消费的方法元数据。
-
-        Returns:
-            dict[str, Any]: 方法名称、类型、描述和 schema 元数据。
-        """
-        data: dict[str, Any] = {
+        """导出真实 callable 的方法和参数元数据。"""
+        return {
             "name": self.name,
-            "kind": self.kind,
-            "description": self.description,
-            "params_schema": self.params_schema,
+            "kind": "job",
+            "description": self.plan.description,
+            "target": self.plan.target_name,
+            "params_schema": self.plan.params_schema,
+            "parameters": [parameter.metadata() for parameter in self.plan.parameters],
         }
-        if self.result_schema is not None:
-            data["result_schema"] = self.result_schema
-        return data
+
+    def invoke(self, params: Mapping[str, Any], context: "ApiTaskContext") -> Any:
+        """使用通用调用计划直接执行真实 callable。"""
+        return to_json_value(self.plan.invoke(params, {"context": context}))
 
 
-ApiMethodRegistry = Mapping[str, ApiJobHandler | ApiMethodSpec]
+ApiMethodRegistry = Mapping[str, Callable[..., Any] | ApiMethodSpec]
 
 
 def validate_api_method_name(name: str) -> None:
@@ -104,22 +104,36 @@ def validate_api_method_name(name: str) -> None:
         raise ValueError(f"Invalid API method name: {name}")
 
 
-def _normalize_method_registry(methods: ApiMethodRegistry | None) -> tuple[dict[str, ApiJobHandler], dict[str, ApiMethodSpec]]:
+def _normalize_method_registry(methods: ApiMethodRegistry | None) -> tuple[dict[str, ApiJobHandler], dict[str, RegisteredMethod]]:
     handlers: dict[str, ApiJobHandler] = {}
-    specs: dict[str, ApiMethodSpec] = {}
+    registered: dict[str, RegisteredMethod] = {}
     for key, value in (methods or {}).items():
         if isinstance(value, ApiMethodSpec):
-            name = value.name or key
-            handler = value.handler
+            name = key
             spec = value
         else:
             name = key
-            handler = value
-            spec = ApiMethodSpec(name=name, handler=handler)
+            spec = ApiMethodSpec(handler=value)
         validate_api_method_name(name)
-        handlers[name] = handler  # type: ignore[assignment]
-        specs[name] = spec
-    return handlers, specs
+        injected: set[str] = set()
+        context_parameter = inspect.signature(spec.handler).parameters.get("context")
+        if context_parameter is not None and "context" not in spec.bound_arguments:
+            try:
+                context_annotation = get_type_hints(spec.handler).get("context", context_parameter.annotation)
+            except (NameError, TypeError):
+                context_annotation = context_parameter.annotation
+            if context_annotation is ApiTaskContext:
+                injected.add("context")
+        plan = compile_callable(
+            spec.handler,
+            bound_arguments=spec.bound_arguments,
+            injected_parameters=frozenset(injected),
+            description=spec.description,
+        )
+        method = RegisteredMethod(name=name, plan=plan)
+        registered[name] = method
+        handlers[name] = method.invoke
+    return handlers, registered
 
 
 class ApiTaskCanceled(RuntimeError):
@@ -421,9 +435,11 @@ class ApiServer(ThreadingHTTPServer):
         max_request_body_size: int = MAX_REQUEST_BODY_SIZE,
         task_manager: ApiTaskManager | None = None,
     ) -> None:
+        normalized_methods, method_specs = _normalize_method_registry(methods)
         super().__init__(server_address, ApiRequestHandler)
         self.token = token
-        self.methods, self.method_specs = _normalize_method_registry(methods)
+        self.methods = normalized_methods
+        self.method_specs = method_specs
         self.task_manager = task_manager or ApiTaskManager()
         self.max_request_body_size = max_request_body_size
 
@@ -444,6 +460,13 @@ class ApiServer(ThreadingHTTPServer):
             "task_statuses": list(API_TASK_STATUSES),
             "error_codes": list(API_ERROR_CODES),
         }
+
+    def method_details(self, name: str) -> dict[str, Any] | None:
+        """导出单个方法的元数据及结构化参数说明。"""
+        spec = self.method_specs.get(name)
+        if spec is None:
+            return None
+        return spec.metadata()
 
     def server_close(self) -> None:
         """Close the listener, stop the task pool, and bind any in-flight discovery."""
@@ -469,11 +492,21 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
         if not self._authorize():
             return
 
-        if path == "/api/v1/methods":
+        if path == "/api/v2/methods":
             self._send_success(self.server.method_catalog())
             return
 
-        if path == "/api/v1/tasks":
+        method_prefix = "/api/v2/methods/"
+        if path.startswith(method_prefix):
+            method = unquote(path.removeprefix(method_prefix))
+            details = self.server.method_details(method)
+            if details is None:
+                self._send_error(HTTPStatus.NOT_FOUND, "method_not_found", f"Method not found: {method}")
+                return
+            self._send_success(details)
+            return
+
+        if path == "/api/v2/tasks":
             self._send_success({"tasks": self.server.task_manager.snapshots()})
             return
 
@@ -521,18 +554,18 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         """处理 POST 请求。"""
         path = self._path
-        if path not in {"/api/v1/call", "/api/v1/tasks"} and not path.endswith("/cancel"):
+        if path not in {"/api/v2/call", "/api/v2/tasks"} and not path.endswith("/cancel"):
             self._send_error(HTTPStatus.NOT_FOUND, "not_found", "Endpoint not found")
             return
 
         if not self._authorize():
             return
 
-        if path == "/api/v1/call":
+        if path == "/api/v2/call":
             self._handle_submit(INLINE_WAIT_DEFAULT_MS)
             return
 
-        if path == "/api/v1/tasks":
+        if path == "/api/v2/tasks":
             # Async submit: never wait inline, always return a pollable handle.
             self._handle_submit(0)
             return
@@ -579,6 +612,11 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
         if handler is None:
             self._send_error(HTTPStatus.NOT_FOUND, "method_not_found", f"Method not found: {method}")
             return
+        try:
+            self.server.method_specs[method].plan.prepare(params)
+        except ValueError as exc:
+            self._send_error(HTTPStatus.BAD_REQUEST, "invalid_request", str(exc))
+            return
 
         task = self.server.task_manager.create_task(method, params, handler)
         if wait_ms > 0 and task.wait_terminal(wait_ms / 1000.0):
@@ -600,7 +638,7 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
         self._send_success({"canceled": task.cancel(), "task": task.snapshot(include_result=False)})
 
     def _parse_task_path(self, path: str) -> tuple[str | None, str]:
-        prefix = "/api/v1/tasks/"
+        prefix = "/api/v2/tasks/"
         if not path.startswith(prefix):
             return None, ""
         rest = path.removeprefix(prefix)
@@ -660,7 +698,7 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
         self._send_error(HTTPStatus.METHOD_NOT_ALLOWED, "method_not_allowed", f"HTTP method is not allowed: {self.command}")
 
     def _send_json(self, status: HTTPStatus, payload: dict[str, Any], write_body: bool = True) -> None:
-        data = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        data = json.dumps(to_json_value(payload), ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         self.send_response(status.value)
         self._send_common_headers(len(data))
         self.end_headers()

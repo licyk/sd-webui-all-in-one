@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.metadata
 from pathlib import Path
-from typing import Any, Callable, cast
+from typing import Any, Callable, Literal, cast
 
 from sd_webui_all_in_one.api_server.server import ApiTaskContext
 from sd_webui_all_in_one.base_manager import (
@@ -108,13 +108,11 @@ def _pytorch_item(webui_type: str, raw: PyTorchVersionInfo, recommended_id: str 
     }
 
 
-def pytorch_catalog(webui_type: str, _webui_path: Path) -> dict[str, Any]:
+def pytorch_catalog(webui_type: str) -> dict[str, Any]:
     """构建面向图形界面的完整 PyTorch 目录。
 
     Args:
         webui_type (str): WebUI 类型。
-        _webui_path (Path): WebUI 路径，当前仅为统一接口保留。
-
     Returns:
         dict[str, Any]: PyTorch 环境、自动选择结果与可用组合。
     """
@@ -189,19 +187,23 @@ def pytorch_catalog(webui_type: str, _webui_path: Path) -> dict[str, Any]:
 
 def reinstall_from_catalog(
     webui_type: str,
-    webui_path: Path,
-    selection: dict[str, Any],
-    options: dict[str, Any],
+    mode: Literal["auto", "manual"],
     context: ApiTaskContext,
+    selection_id: str | None = None,
+    use_uv: bool = True,
+    use_pypi_mirror: bool = True,
+    force_reinstall: bool = False,
 ) -> dict[str, Any]:
     """解析并执行非交互式 PyTorch 重装。
 
     Args:
         webui_type (str): WebUI 类型。
-        webui_path (Path): WebUI 路径，当前仅为统一接口保留。
-        selection (dict[str, Any]): 自动或手动选择信息。
-        options (dict[str, Any]): 重装选项。
+        mode (Literal["auto", "manual"]): 自动或手动选择模式。
         context (ApiTaskContext): 后台任务上下文。
+        selection_id (str | None): 手动选择时的稳定标识。
+        use_uv (bool): 是否使用 uv。
+        use_pypi_mirror (bool): 是否使用 PyPI 镜像。
+        force_reinstall (bool): 是否强制重装。
 
     Returns:
         dict[str, Any]: 重装选择、版本变化与验证结果。
@@ -209,20 +211,18 @@ def reinstall_from_catalog(
     Raises:
         ValueError: 选择模式、目标或选项无效时抛出。
     """
-    del webui_path  # 当前系列函数直接修改活动的独立环境。
     context.check_canceled()
     previous = _package_versions()
     context.log("Inspecting hardware and refreshing the PyTorch catalog")
-    catalog = pytorch_catalog(webui_type, Path("."))
-    mode = selection.get("mode")
+    catalog = pytorch_catalog(webui_type)
     explanation: str | None = None
     if mode == "auto":
         preview = catalog["automatic_selection_preview"]
         selected_id = preview["selection_id"]
         explanation = preview["explanation"]
     elif mode == "manual":
-        selected_id = selection.get("selection_id")
-        if not isinstance(selected_id, str) or not selected_id:
+        selected_id = selection_id
+        if not selected_id:
             raise ValueError("Manual PyTorch selection requires selection_id")
     else:
         raise ValueError("PyTorch selection mode must be 'auto' or 'manual'")
@@ -237,9 +237,6 @@ def reinstall_from_catalog(
         context.log(explanation)
     context.check_canceled()
     context.set_progress(20, "installing")
-    use_uv = bool(options.get("use_uv", True))
-    use_pypi_mirror = bool(options.get("use_pypi_mirror", True))
-    force_reinstall = bool(options.get("force_reinstall", False))
     if webui_type == "invokeai":
         if force_reinstall:
             raise ValueError("force_reinstall is not supported by InvokeAI")
@@ -278,15 +275,15 @@ def reinstall_from_catalog(
 
 def resolve_pytorch_selection(
     webui_type: str,
-    webui_path: Path,
-    selection: dict[str, Any],
+    mode: Literal["auto", "manual"],
+    selection_id: str | None = None,
 ) -> dict[str, Any]:
     """在不执行修改的情况下解析稳定的 PyTorch 操作意图。
 
     Args:
         webui_type (str): WebUI 类型。
-        webui_path (Path): WebUI 路径。
-        selection (dict[str, Any]): 自动或手动选择信息。
+        mode (Literal["auto", "manual"]): 自动或手动选择模式。
+        selection_id (str | None): 手动选择时的稳定标识。
 
     Returns:
         dict[str, Any]: 可供命令行执行的闭合业务描述。
@@ -296,8 +293,7 @@ def resolve_pytorch_selection(
     """
     if webui_type not in PYTORCH_CLI_PATHS:
         raise ValueError(f"Unsupported PyTorch webui_type: {webui_type}")
-    catalog = pytorch_catalog(webui_type, webui_path)
-    mode = selection.get("mode")
+    catalog = pytorch_catalog(webui_type)
     explanation: str | None = None
     if mode == "auto":
         if not catalog["automatic_selection_available"]:
@@ -308,8 +304,8 @@ def resolve_pytorch_selection(
         selected_id = preview["selection_id"]
         explanation = preview["explanation"]
     elif mode == "manual":
-        selected_id = selection.get("selection_id")
-        if not isinstance(selected_id, str) or not selected_id:
+        selected_id = selection_id
+        if not selected_id:
             raise ValueError("Manual PyTorch selection requires selection_id")
     else:
         raise ValueError("PyTorch selection mode must be 'auto' or 'manual'")
@@ -371,11 +367,6 @@ def model_library_catalog(webui_type: str) -> dict[str, Any]:
                 "installable": installable,
                 "non_installable_reason": None if installable else "No source or destination is configured for this family",
                 "details": {"filename": raw["filename"]},
-                # 为现有 Python API 调用方保留向后兼容字段。
-                "filename": raw["filename"],
-                "url": dict(raw["url"]),
-                "supported_webui": list(raw["supported_webui"]),
-                "save_dir": dict(raw["save_dir"]),
             }
         )
     return {"webui_type": webui_type, "count": len(items), "models": _unique(items, "model")}
@@ -385,8 +376,9 @@ def install_model_from_catalog(
     webui_type: str,
     webui_path: Path,
     model_id: str,
-    options: dict[str, Any],
     context: ApiTaskContext,
+    source: str | None = None,
+    downloader: DownloadToolType = "requests",
 ) -> dict[str, Any]:
     """解析稳定模型标识并调用对应系列的安装器。
 
@@ -394,8 +386,9 @@ def install_model_from_catalog(
         webui_type (str): WebUI 类型。
         webui_path (Path): WebUI 路径。
         model_id (str): 稳定模型标识。
-        options (dict[str, Any]): 下载来源与下载器选项。
         context (ApiTaskContext): 后台任务上下文。
+        source (str | None): 下载来源；为空时选择首个可用来源。
+        downloader (DownloadToolType): 下载器。
 
     Returns:
         dict[str, Any]: 模型安装结果。
@@ -411,8 +404,7 @@ def install_model_from_catalog(
     item = matches[0]
     if not item["installable"]:
         raise ValueError(item["non_installable_reason"] or "Model is not installable")
-    source = options.get("source") or item["sources"][0]
-    downloader = options.get("downloader") or "requests"
+    source = source or item["sources"][0]
     if source not in item["sources"]:
         raise ValueError(f"Source is not available for {model_id}: {source}")
     if downloader not in item["downloaders"]:
@@ -427,7 +419,7 @@ def install_model_from_catalog(
         **{f"{webui_type}_path" if webui_type != "sd_webui" else "sd_webui_path": webui_path},
         download_resource_type=source,
         model_name=item["name"],
-        downloader=cast(DownloadToolType, downloader),
+        downloader=downloader,
         interactive_mode=False,
         list_only=False,
     )
@@ -452,14 +444,18 @@ def install_model_from_catalog(
 def resolve_model_library_install(
     webui_type: str,
     model_id: str,
-    options: dict[str, Any],
+    source: str | None = None,
+    downloader: DownloadToolType = "requests",
+    automatic_mirror: bool = False,
 ) -> dict[str, Any]:
     """在不下载或注册文件的情况下解析稳定模型操作意图。
 
     Args:
         webui_type (str): WebUI 类型。
         model_id (str): 稳定模型标识。
-        options (dict[str, Any]): 下载来源与下载器选项。
+        source (str | None): 下载来源。
+        downloader (DownloadToolType): 下载器。
+        automatic_mirror (bool): 是否允许自动选择下载源。
 
     Returns:
         dict[str, Any]: 可供命令行执行的闭合业务描述。
@@ -476,9 +472,6 @@ def resolve_model_library_install(
     item = matches[0]
     if not item["installable"]:
         raise ValueError(item["non_installable_reason"] or "Model is not installable")
-    source = options.get("source")
-    downloader = options.get("downloader")
-    automatic_mirror = bool(options.get("automatic_mirror", False))
     available_sources = list(item["sources"])
     if not available_sources:
         raise ValueError(f"No source is available for {model_id}")
