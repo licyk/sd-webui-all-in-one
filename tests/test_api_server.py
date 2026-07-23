@@ -101,6 +101,8 @@ def test_default_registry_uses_namespaced_real_callables():
     assert "hotpatcher.runtime_status" not in methods
     assert "hotpatcher.runtime_start" not in methods
     assert "hotpatcher.runtime_apply_remote" not in methods
+    assert "comfyui.pytorch.reinstall" not in methods
+    assert "comfyui.model.install_library" not in methods
     assert all("adapters.webui" not in getattr(spec, "handler", spec).__module__ for spec in methods.values())
 
     server = create_api_server(port=0)
@@ -126,7 +128,11 @@ def test_default_registry_uses_namespaced_real_callables():
         assert parameters["fetch"]["default"] is True
         pytorch_details = server.method_details("comfyui.pytorch.catalog")
         assert pytorch_details is not None
+        assert pytorch_details["target"].endswith("library_catalog.pytorch_catalog")
         assert pytorch_details["parameters"] == []
+        model_library_details = server.method_details("comfyui.model.library")
+        assert model_library_details is not None
+        assert model_library_details["target"].endswith("library_catalog.model_library_catalog")
         extension_details = server.method_details("comfyui.extension.install_index_item")
         assert extension_details is not None
         assert extension_details["target"].endswith("comfyui_base.install_comfyui_extension_index_item")

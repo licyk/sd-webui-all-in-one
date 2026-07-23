@@ -9,11 +9,9 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from sd_webui_all_in_one.api_server.adapters import (
-    install_model_from_catalog,
+from sd_webui_all_in_one.base_manager.library_catalog import (
     model_library_catalog,
     pytorch_catalog,
-    reinstall_from_catalog,
     resolve_model_library_install,
     resolve_pytorch_selection,
 )
@@ -219,7 +217,6 @@ def _register_webui_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpe
 
         _add(methods, f"{prefix}.pytorch.catalog", _bound(pytorch_catalog, webui_type=webui_type))
         _add(methods, f"{prefix}.pytorch.resolve_selection", _bound(resolve_pytorch_selection, webui_type=webui_type))
-        _add(methods, f"{prefix}.pytorch.reinstall", _bound(reinstall_from_catalog, webui_type=webui_type))
 
         if webui_type in _MODEL_LIBRARY_WEBUIS:
             _add(methods, f"{prefix}.model.library", _bound(model_library_catalog, webui_type=webui_type))
@@ -228,7 +225,6 @@ def _register_webui_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpe
                 f"{prefix}.model.resolve_library_install",
                 _bound(resolve_model_library_install, webui_type=webui_type),
             )
-            _add(methods, f"{prefix}.model.install_library", _bound(install_model_from_catalog, webui_type=webui_type))
 
 
 def _register_model_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpec]) -> None:
