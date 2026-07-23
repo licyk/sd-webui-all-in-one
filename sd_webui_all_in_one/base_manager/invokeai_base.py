@@ -10,6 +10,7 @@ from typing import (
     Any,
     Iterator,
     TypedDict,
+    cast,
 )
 from pathlib import Path
 
@@ -1897,7 +1898,7 @@ def reinstall_invokeai_pytorch(
                     user_input = None
                 logger.info("重装 PyTorch 中")
                 _uninstall()
-                _install(user_input)
+                _install(cast(PyTorchDeviceTypeCategory, user_input))
                 logger.info("PyTorch 重装完成")
                 return
             else:
