@@ -20,7 +20,7 @@ from sd_webui_all_in_one.api_server.adapters import (
     resolve_model_library_install,
     resolve_pytorch_selection,
 )
-from sd_webui_all_in_one.api_server.server import ApiMethodRegistry, ApiMethodSpec, ApiTaskContext, ApiTaskRegistry
+from sd_webui_all_in_one.api_server.server import ApiMethodRegistry, ApiMethodSpec, ApiTaskContext
 from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, qwen_tts_webui_base, sd_trainer_base, sd_webui_base
 from sd_webui_all_in_one.cli_manager.auto_mirror import apply_auto_mirror
 from sd_webui_all_in_one.env_check import check_torch_version_status
@@ -1493,12 +1493,6 @@ def _spec(
     return ApiMethodSpec(name=name, handler=handler, description=description, params_schema=schema or WEBUI_REQUEST_SCHEMA)
 
 
-# Every method is a job with a `(params, context)` handler; these aliases keep the
-# two grouped builders readable while producing a single registry.
-_sync_spec = _spec
-_task_spec = _spec
-
-
 def get_default_methods() -> ApiMethodRegistry:
     """获取默认 API 方法注册表（单一注册表，所有方法均为任务作业）。
 
@@ -1515,10 +1509,10 @@ def _default_core_methods() -> ApiMethodRegistry:
         ApiMethodRegistry: 核心方法注册表。
     """
     return {
-        "version.status": _sync_spec("version.status", version_status, "Inspect WebUI kernel repository status."),
-        "version.branches": _sync_spec("version.branches", version_branches, "List repository branches for a WebUI kernel."),
-        "version.commits": _sync_spec("version.commits", version_commits, "List repository commits for a WebUI kernel."),
-        "version.branch_presets": _sync_spec(
+        "version.status": _spec("version.status", version_status, "Inspect WebUI kernel repository status."),
+        "version.branches": _spec("version.branches", version_branches, "List repository branches for a WebUI kernel."),
+        "version.commits": _spec("version.commits", version_commits, "List repository commits for a WebUI kernel."),
+        "version.branch_presets": _spec(
             "version.branch_presets",
             version_branch_presets,
             "List built-in WebUI branch presets.",
@@ -1533,15 +1527,15 @@ def _default_core_methods() -> ApiMethodRegistry:
                 "required": ["webui_type"],
             },
         ),
-        "snapshot.list": _sync_spec("snapshot.list", snapshot_list, "List WebUI snapshot files."),
-        "snapshot.read": _sync_spec(
+        "snapshot.list": _spec("snapshot.list", snapshot_list, "List WebUI snapshot files."),
+        "snapshot.read": _spec(
             "snapshot.read",
             snapshot_read,
             "Read a snapshot file.",
             {"type": "object", "properties": {"webui_type": {"type": "string"}, "snapshot_path": {"type": "string"}}, "required": ["webui_type", "snapshot_path"]},
         ),
-        "extension.list": _sync_spec("extension.list", extension_list, "List local extensions or custom nodes."),
-        "extension.commits": _sync_spec(
+        "extension.list": _spec("extension.list", extension_list, "List local extensions or custom nodes."),
+        "extension.commits": _spec(
             "extension.commits",
             extension_commits,
             "List commits for an installed Git extension.",
@@ -1556,7 +1550,7 @@ def _default_core_methods() -> ApiMethodRegistry:
                 "required": ["webui_type", "webui_path", "name"],
             },
         ),
-        "extension.branches": _sync_spec(
+        "extension.branches": _spec(
             "extension.branches",
             extension_branches,
             "List Git branches for an installed Git extension.",
@@ -1571,20 +1565,20 @@ def _default_core_methods() -> ApiMethodRegistry:
                 "required": ["webui_type", "webui_path", "name"],
             },
         ),
-        "environment.dependencies": _sync_spec("environment.dependencies", environment_dependencies, "Check local environment dependency status."),
-        "environment.pytorch_version": _sync_spec("environment.pytorch_version", environment_pytorch_version, "Check current PyTorch version compatibility."),
-        "launch.prepare": _sync_spec("launch.prepare", launch_prepare, "Prepare WebUI launch arguments and environment."),
-        "system.pytorch_device_type": _sync_spec("system.pytorch_device_type", pytorch_device_type, "Get available PyTorch device types."),
-        "system.pytorch_library": _sync_spec(
+        "environment.dependencies": _spec("environment.dependencies", environment_dependencies, "Check local environment dependency status."),
+        "environment.pytorch_version": _spec("environment.pytorch_version", environment_pytorch_version, "Check current PyTorch version compatibility."),
+        "launch.prepare": _spec("launch.prepare", launch_prepare, "Prepare WebUI launch arguments and environment."),
+        "system.pytorch_device_type": _spec("system.pytorch_device_type", pytorch_device_type, "Get available PyTorch device types."),
+        "system.pytorch_library": _spec(
             "system.pytorch_library",
             pytorch_library,
             "List built-in PyTorch version combinations.",
         ),
-        "pytorch.device_type": _sync_spec("pytorch.device_type", pytorch_device_type, "Get available PyTorch device types."),
-        "pytorch.library": _sync_spec("pytorch.library", pytorch_library, "List built-in PyTorch version combinations."),
-        "pytorch.catalog": _sync_spec("pytorch.catalog", pytorch_catalog, "Get the stable aggregate PyTorch catalog."),
-        "pytorch.resolve_selection": _sync_spec("pytorch.resolve_selection", pytorch_resolve_selection, "Resolve a stable PyTorch selection without mutation."),
-        "system.proxy": _sync_spec(
+        "pytorch.device_type": _spec("pytorch.device_type", pytorch_device_type, "Get available PyTorch device types."),
+        "pytorch.library": _spec("pytorch.library", pytorch_library, "List built-in PyTorch version combinations."),
+        "pytorch.catalog": _spec("pytorch.catalog", pytorch_catalog, "Get the stable aggregate PyTorch catalog."),
+        "pytorch.resolve_selection": _spec("pytorch.resolve_selection", pytorch_resolve_selection, "Resolve a stable PyTorch selection without mutation."),
+        "system.proxy": _spec(
             "system.proxy",
             system_proxy,
             "Get current system proxy address.",
@@ -1601,7 +1595,7 @@ def _default_core_methods() -> ApiMethodRegistry:
                 },
             },
         ),
-        "system.proxy.set": _sync_spec(
+        "system.proxy.set": _spec(
             "system.proxy.set",
             system_proxy_set,
             "Set proxy environment for this API server process.",
@@ -1611,14 +1605,14 @@ def _default_core_methods() -> ApiMethodRegistry:
                 "required": ["address"],
             },
         ),
-        "system.proxy.clear": _sync_spec(
+        "system.proxy.clear": _spec(
             "system.proxy.clear",
             system_proxy_clear,
             "Clear proxy environment for this API server process.",
             {"type": "object", "properties": {}},
         ),
-        "model.root": _sync_spec("model.root", model_root, "Inspect file model root."),
-        "model.library": _sync_spec(
+        "model.root": _spec("model.root", model_root, "Inspect file model root."),
+        "model.library": _spec(
             "model.library",
             model_library,
             "List built-in downloadable models.",
@@ -1633,39 +1627,39 @@ def _default_core_methods() -> ApiMethodRegistry:
                 "required": ["webui_type"],
             },
         ),
-        "model.resolve_library_install": _sync_spec("model.resolve_library_install", model_resolve_library_install, "Resolve a built-in model selection without mutation."),
-        "model.directories": _sync_spec("model.directories", model_directories, "List model directories."),
-        "model.entries": _sync_spec("model.entries", model_entries, "List model directory entries."),
-        "model.invokeai.list": _sync_spec("model.invokeai.list", model_invokeai_list, "List InvokeAI registered models."),
-        "hotpatcher.default_config": _sync_spec("hotpatcher.default_config", hotpatcher_default_config, "Get hotpatcher default config."),
-        "hotpatcher.catalog": _sync_spec("hotpatcher.catalog", hotpatcher_catalog, "Get hotpatcher feature catalog."),
-        "hotpatcher.load_config": _sync_spec("hotpatcher.load_config", hotpatcher_load_config, "Load hotpatcher config file."),
-        "hotpatcher.normalize_config": _sync_spec("hotpatcher.normalize_config", hotpatcher_normalize_config, "Normalize hotpatcher config."),
-        "hotpatcher.runtime_env": _sync_spec("hotpatcher.runtime_env", hotpatcher_runtime_env, "Build hotpatcher runtime environment variables."),
-        "hotpatcher.runtime_status": _sync_spec("hotpatcher.runtime_status", hotpatcher_runtime_status, "Get hotpatcher runtime host status."),
-        "hotpatcher.runtime_logs": _sync_spec("hotpatcher.runtime_logs", hotpatcher_runtime_logs, "Get hotpatcher runtime logs."),
-        "hotpatcher.runtime_browser_events": _sync_spec("hotpatcher.runtime_browser_events", hotpatcher_runtime_browser_events, "Read typed browser events from the hotpatcher runtime host."),
-        "hotpatcher.runtime_ensure": _sync_spec("hotpatcher.runtime_ensure", hotpatcher_runtime_ensure, "Ensure the launch-owned hotpatcher runtime host."),
+        "model.resolve_library_install": _spec("model.resolve_library_install", model_resolve_library_install, "Resolve a built-in model selection without mutation."),
+        "model.directories": _spec("model.directories", model_directories, "List model directories."),
+        "model.entries": _spec("model.entries", model_entries, "List model directory entries."),
+        "model.invokeai.list": _spec("model.invokeai.list", model_invokeai_list, "List InvokeAI registered models."),
+        "hotpatcher.default_config": _spec("hotpatcher.default_config", hotpatcher_default_config, "Get hotpatcher default config."),
+        "hotpatcher.catalog": _spec("hotpatcher.catalog", hotpatcher_catalog, "Get hotpatcher feature catalog."),
+        "hotpatcher.load_config": _spec("hotpatcher.load_config", hotpatcher_load_config, "Load hotpatcher config file."),
+        "hotpatcher.normalize_config": _spec("hotpatcher.normalize_config", hotpatcher_normalize_config, "Normalize hotpatcher config."),
+        "hotpatcher.runtime_env": _spec("hotpatcher.runtime_env", hotpatcher_runtime_env, "Build hotpatcher runtime environment variables."),
+        "hotpatcher.runtime_status": _spec("hotpatcher.runtime_status", hotpatcher_runtime_status, "Get hotpatcher runtime host status."),
+        "hotpatcher.runtime_logs": _spec("hotpatcher.runtime_logs", hotpatcher_runtime_logs, "Get hotpatcher runtime logs."),
+        "hotpatcher.runtime_browser_events": _spec("hotpatcher.runtime_browser_events", hotpatcher_runtime_browser_events, "Read typed browser events from the hotpatcher runtime host."),
+        "hotpatcher.runtime_ensure": _spec("hotpatcher.runtime_ensure", hotpatcher_runtime_ensure, "Ensure the launch-owned hotpatcher runtime host."),
     }
 
 
-def _default_job_methods() -> ApiTaskRegistry:
+def _default_job_methods() -> ApiMethodRegistry:
     """网络/子进程或状态变更方法；通过轮询运行至完成。
 
     Returns:
-        ApiTaskRegistry: 作业方法注册表。
+        ApiMethodRegistry: 作业方法注册表。
     """
     return {
-        "webui.check_updates": _task_spec("webui.check_updates", webui_check_updates, "Check WebUI kernel, extension, and PyTorch updates.", WEBUI_REQUEST_SCHEMA),
-        "extension.index": _task_spec("extension.index", extension_index, "Fetch installable extension index items."),
-        "extension.versions": _task_spec("extension.versions", extension_versions, "List Comfy Registry extension versions."),
-        "package.versions": _task_spec("package.versions", package_versions, "List PyPI package versions."),
-        "launch.arguments.catalog": _task_spec("launch.arguments.catalog", launch_arguments_catalog, "Discover the installed WebUI launch-argument catalog."),
-        "version.switch_branch": _task_spec("version.switch_branch", version_switch_branch, "Switch repository branch."),
-        "version.switch_commit": _task_spec("version.switch_commit", version_switch_commit, "Switch repository commit."),
-        "version.update": _task_spec("version.update", version_update, "Update repository."),
-        "snapshot.create": _task_spec("snapshot.create", snapshot_create, "Create a WebUI snapshot."),
-        "snapshot.delete": _task_spec(
+        "webui.check_updates": _spec("webui.check_updates", webui_check_updates, "Check WebUI kernel, extension, and PyTorch updates.", WEBUI_REQUEST_SCHEMA),
+        "extension.index": _spec("extension.index", extension_index, "Fetch installable extension index items."),
+        "extension.versions": _spec("extension.versions", extension_versions, "List Comfy Registry extension versions."),
+        "package.versions": _spec("package.versions", package_versions, "List PyPI package versions."),
+        "launch.arguments.catalog": _spec("launch.arguments.catalog", launch_arguments_catalog, "Discover the installed WebUI launch-argument catalog."),
+        "version.switch_branch": _spec("version.switch_branch", version_switch_branch, "Switch repository branch."),
+        "version.switch_commit": _spec("version.switch_commit", version_switch_commit, "Switch repository commit."),
+        "version.update": _spec("version.update", version_update, "Update repository."),
+        "snapshot.create": _spec("snapshot.create", snapshot_create, "Create a WebUI snapshot."),
+        "snapshot.delete": _spec(
             "snapshot.delete",
             snapshot_delete,
             "Delete a snapshot file.",
@@ -1678,34 +1672,34 @@ def _default_job_methods() -> ApiTaskRegistry:
                 "required": ["webui_type", "snapshot_path"],
             },
         ),
-        "snapshot.preview_restore": _task_spec("snapshot.preview_restore", snapshot_preview_restore, "Preview WebUI snapshot restore plan."),
-        "snapshot.restore": _task_spec("snapshot.restore", snapshot_restore, "Restore a WebUI snapshot."),
-        "extension.set_enabled": _task_spec("extension.set_enabled", extension_set_enabled, "Enable or disable an extension."),
-        "extension.install": _task_spec("extension.install", extension_install, "Install an extension from Git URL."),
-        "extension.install_index_item": _task_spec("extension.install_index_item", extension_install_index_item, "Install an extension from an index item."),
-        "extension.update": _task_spec("extension.update", extension_update, "Update one extension."),
-        "extension.update_all": _task_spec("extension.update_all", extension_update_all, "Update all extensions."),
-        "extension.uninstall": _task_spec("extension.uninstall", extension_uninstall, "Uninstall an extension."),
-        "extension.switch_branch": _task_spec("extension.switch_branch", extension_switch_branch, "Switch extension branch."),
-        "extension.switch_commit": _task_spec("extension.switch_commit", extension_switch_commit, "Switch extension commit."),
-        "extension.switch_registry_version": _task_spec("extension.switch_registry_version", extension_switch_registry_version, "Switch Comfy Registry extension version."),
-        "invokeai.install_version": _task_spec("invokeai.install_version", invokeai_install_version, "Install or upgrade InvokeAI from PyPI."),
-        "model.create_folder": _task_spec("model.create_folder", model_create_folder, "Create model folder."),
-        "model.copy": _task_spec("model.copy", model_copy, "Copy model entry."),
-        "model.move": _task_spec("model.move", model_move, "Move model entry."),
-        "model.delete": _task_spec("model.delete", model_delete, "Delete model entry."),
-        "model.import": _task_spec("model.import", model_import, "Import local model files or folders."),
-        "model.download": _task_spec("model.download", model_download, "Download model from URL."),
-        "model.invokeai.install_url": _task_spec("model.invokeai.install_url", model_invokeai_install_url, "Install InvokeAI model from URL."),
-        "model.invokeai.import": _task_spec("model.invokeai.import", model_invokeai_import, "Import local models into InvokeAI."),
-        "model.invokeai.unregister": _task_spec("model.invokeai.unregister", model_invokeai_unregister, "Unregister InvokeAI model."),
-        "model.invokeai.delete": _task_spec("model.invokeai.delete", model_invokeai_delete, "Delete InvokeAI model."),
-        "pytorch.reinstall": _task_spec("pytorch.reinstall", pytorch_reinstall, "Reinstall PyTorch from a stable catalog selection."),
-        "model.install_library": _task_spec("model.install_library", model_install_library, "Install a built-in model by stable ID."),
-        "hotpatcher.save_config": _task_spec("hotpatcher.save_config", hotpatcher_save_config, "Save hotpatcher config file."),
-        "hotpatcher.export_default_config": _task_spec("hotpatcher.export_default_config", hotpatcher_export_default_config, "Export hotpatcher default config file."),
-        "hotpatcher.apply_config": _task_spec("hotpatcher.apply_config", hotpatcher_apply_config, "Apply hotpatcher config locally."),
-        "hotpatcher.runtime_start": _task_spec("hotpatcher.runtime_start", hotpatcher_runtime_start, "Start hotpatcher runtime host."),
-        "hotpatcher.runtime_stop": _task_spec("hotpatcher.runtime_stop", hotpatcher_runtime_stop, "Stop hotpatcher runtime host."),
-        "hotpatcher.runtime_apply_remote": _task_spec("hotpatcher.runtime_apply_remote", hotpatcher_runtime_apply_remote, "Apply config to remote hotpatcher runtime."),
+        "snapshot.preview_restore": _spec("snapshot.preview_restore", snapshot_preview_restore, "Preview WebUI snapshot restore plan."),
+        "snapshot.restore": _spec("snapshot.restore", snapshot_restore, "Restore a WebUI snapshot."),
+        "extension.set_enabled": _spec("extension.set_enabled", extension_set_enabled, "Enable or disable an extension."),
+        "extension.install": _spec("extension.install", extension_install, "Install an extension from Git URL."),
+        "extension.install_index_item": _spec("extension.install_index_item", extension_install_index_item, "Install an extension from an index item."),
+        "extension.update": _spec("extension.update", extension_update, "Update one extension."),
+        "extension.update_all": _spec("extension.update_all", extension_update_all, "Update all extensions."),
+        "extension.uninstall": _spec("extension.uninstall", extension_uninstall, "Uninstall an extension."),
+        "extension.switch_branch": _spec("extension.switch_branch", extension_switch_branch, "Switch extension branch."),
+        "extension.switch_commit": _spec("extension.switch_commit", extension_switch_commit, "Switch extension commit."),
+        "extension.switch_registry_version": _spec("extension.switch_registry_version", extension_switch_registry_version, "Switch Comfy Registry extension version."),
+        "invokeai.install_version": _spec("invokeai.install_version", invokeai_install_version, "Install or upgrade InvokeAI from PyPI."),
+        "model.create_folder": _spec("model.create_folder", model_create_folder, "Create model folder."),
+        "model.copy": _spec("model.copy", model_copy, "Copy model entry."),
+        "model.move": _spec("model.move", model_move, "Move model entry."),
+        "model.delete": _spec("model.delete", model_delete, "Delete model entry."),
+        "model.import": _spec("model.import", model_import, "Import local model files or folders."),
+        "model.download": _spec("model.download", model_download, "Download model from URL."),
+        "model.invokeai.install_url": _spec("model.invokeai.install_url", model_invokeai_install_url, "Install InvokeAI model from URL."),
+        "model.invokeai.import": _spec("model.invokeai.import", model_invokeai_import, "Import local models into InvokeAI."),
+        "model.invokeai.unregister": _spec("model.invokeai.unregister", model_invokeai_unregister, "Unregister InvokeAI model."),
+        "model.invokeai.delete": _spec("model.invokeai.delete", model_invokeai_delete, "Delete InvokeAI model."),
+        "pytorch.reinstall": _spec("pytorch.reinstall", pytorch_reinstall, "Reinstall PyTorch from a stable catalog selection."),
+        "model.install_library": _spec("model.install_library", model_install_library, "Install a built-in model by stable ID."),
+        "hotpatcher.save_config": _spec("hotpatcher.save_config", hotpatcher_save_config, "Save hotpatcher config file."),
+        "hotpatcher.export_default_config": _spec("hotpatcher.export_default_config", hotpatcher_export_default_config, "Export hotpatcher default config file."),
+        "hotpatcher.apply_config": _spec("hotpatcher.apply_config", hotpatcher_apply_config, "Apply hotpatcher config locally."),
+        "hotpatcher.runtime_start": _spec("hotpatcher.runtime_start", hotpatcher_runtime_start, "Start hotpatcher runtime host."),
+        "hotpatcher.runtime_stop": _spec("hotpatcher.runtime_stop", hotpatcher_runtime_stop, "Stop hotpatcher runtime host."),
+        "hotpatcher.runtime_apply_remote": _spec("hotpatcher.runtime_apply_remote", hotpatcher_runtime_apply_remote, "Apply config to remote hotpatcher runtime."),
     }

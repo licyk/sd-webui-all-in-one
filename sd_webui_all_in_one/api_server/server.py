@@ -31,9 +31,6 @@ logger = get_logger(
 # handler receives the request params and a task context (progress/cancellation);
 # fast local methods simply ignore the context.
 ApiJobHandler = Callable[[dict[str, Any], "ApiTaskContext"], Any]
-# Retained aliases for the single handler signature.
-ApiMethod = ApiJobHandler
-ApiTaskHandler = ApiJobHandler
 ApiMethodKind = Literal["job"]
 MAX_REQUEST_BODY_SIZE = 1024 * 1024
 SUPPORTED_HTTP_METHODS = "GET,HEAD,POST,OPTIONS"
@@ -91,9 +88,7 @@ class ApiMethodSpec:
         return data
 
 
-ApiMethodRegistry = Mapping[str, ApiMethod | ApiMethodSpec]
-# Retained alias: there is one registry now; task methods are ordinary methods.
-ApiTaskRegistry = ApiMethodRegistry
+ApiMethodRegistry = Mapping[str, ApiJobHandler | ApiMethodSpec]
 
 
 def validate_api_method_name(name: str) -> None:
@@ -185,7 +180,7 @@ class ApiTaskContext:
 class ApiTask:
     """后台 API 任务状态。"""
 
-    def __init__(self, task_id: str, method: str, params: dict[str, Any], handler: ApiTaskHandler) -> None:
+    def __init__(self, task_id: str, method: str, params: dict[str, Any], handler: ApiJobHandler) -> None:
         self.task_id = task_id
         self.method = method
         self.params = params
@@ -344,13 +339,13 @@ class ApiTaskManager:
         self._executor = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="api-job")
         self._max_retained = max_retained
 
-    def create_task(self, method: str, params: dict[str, Any], handler: ApiTaskHandler) -> ApiTask:
+    def create_task(self, method: str, params: dict[str, Any], handler: ApiJobHandler) -> ApiTask:
         """创建并调度后台任务。
 
         Args:
             method (str): 任务方法名。
             params (dict[str, Any]): 任务参数。
-            handler (ApiTaskHandler): 任务处理器。
+            handler (ApiJobHandler): 任务处理器。
 
         Returns:
             ApiTask: 已创建的后台任务。
