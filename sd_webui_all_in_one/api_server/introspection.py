@@ -339,7 +339,7 @@ def convert_value(value: Any, annotation: Any, path: str) -> Any:
             raise ValueError(f"Parameter '{path}' must be an object")
         hints = get_type_hints(annotation, include_extras=True)
         known = {field_info.name for field_info in fields(annotation)}
-        unknown = sorted(set(value) - known)
+        unknown = sorted(map(str, set(value) - known))
         if unknown:
             raise ValueError(f"Unexpected field(s) in '{path}': {', '.join(unknown)}")
         kwargs: dict[str, Any] = {}

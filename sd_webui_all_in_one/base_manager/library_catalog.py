@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import importlib.metadata
-from typing import Any, cast
+from typing import Any
 
 from sd_webui_all_in_one.downloader import DOWNLOAD_TOOL_TYPE_LIST
 from sd_webui_all_in_one.env_check import check_torch_version_status
 from sd_webui_all_in_one.model_downloader import SUPPORTED_WEBUI_LIST, export_model_list
-from sd_webui_all_in_one.model_downloader.types import SupportedWebUiType
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_CATEGORY_LIST,
     PyTorchVersionInfo,
@@ -160,7 +159,7 @@ def model_library_catalog(webui_type: str) -> dict[str, Any]:
     """
     if webui_type not in SUPPORTED_WEBUI_LIST:
         raise ValueError(f"Unsupported model library webui_type: {webui_type}")
-    raw_items = export_model_list(cast(SupportedWebUiType, webui_type))
+    raw_items = export_model_list(webui_type)
     items: list[dict[str, Any]] = []
     for raw in raw_items:
         sources = [source for source in ("modelscope", "huggingface") if raw.get("url", {}).get(source)]
