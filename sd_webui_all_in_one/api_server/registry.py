@@ -12,8 +12,6 @@ from typing import Any
 from sd_webui_all_in_one.base_manager.library_catalog import (
     model_library_catalog,
     pytorch_catalog,
-    resolve_model_library_install,
-    resolve_pytorch_selection,
 )
 from sd_webui_all_in_one.api_server.server import ApiMethodRegistry, ApiMethodSpec
 from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, qwen_tts_webui_base, sd_scripts_base, sd_trainer_base, sd_webui_base
@@ -216,15 +214,9 @@ def _register_webui_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpe
             )
 
         _add(methods, f"{prefix}.pytorch.catalog", _bound(pytorch_catalog, webui_type=webui_type))
-        _add(methods, f"{prefix}.pytorch.resolve_selection", _bound(resolve_pytorch_selection, webui_type=webui_type))
 
         if webui_type in _MODEL_LIBRARY_WEBUIS:
             _add(methods, f"{prefix}.model.library", _bound(model_library_catalog, webui_type=webui_type))
-            _add(
-                methods,
-                f"{prefix}.model.resolve_library_install",
-                _bound(resolve_model_library_install, webui_type=webui_type),
-            )
 
 
 def _register_model_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpec]) -> None:

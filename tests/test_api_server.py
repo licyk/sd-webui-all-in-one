@@ -103,6 +103,8 @@ def test_default_registry_uses_namespaced_real_callables():
     assert "hotpatcher.runtime_apply_remote" not in methods
     assert "comfyui.pytorch.reinstall" not in methods
     assert "comfyui.model.install_library" not in methods
+    assert "comfyui.pytorch.resolve_selection" not in methods
+    assert "comfyui.model.resolve_library_install" not in methods
     assert all("adapters.webui" not in getattr(spec, "handler", spec).__module__ for spec in methods.values())
 
     server = create_api_server(port=0)

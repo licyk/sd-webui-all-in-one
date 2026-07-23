@@ -49,8 +49,6 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
 from sd_webui_all_in_one.base_manager.library_catalog import (
     model_library_catalog,
     pytorch_catalog,
-    resolve_model_library_install,
-    resolve_pytorch_selection,
 )
 
 from sd_webui_all_in_one.base_manager.snapshot import (
@@ -363,11 +361,9 @@ __all__ = [
     "load_hotpatcher_config",
     "normalize_hotpatcher_config",
     "save_hotpatcher_config",
-    # library_catalog.py - 只读目录和选择解析
+    # library_catalog.py - 只读目录查询
     "model_library_catalog",
     "pytorch_catalog",
-    "resolve_model_library_install",
-    "resolve_pytorch_selection",
     # snapshot.py - 环境快照类型
     "DirectUrlArchiveInfo",
     "DirectUrlDirInfo",

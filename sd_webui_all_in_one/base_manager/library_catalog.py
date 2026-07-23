@@ -1,14 +1,14 @@
-"""PyTorch 与内置模型库的只读目录和选择解析。"""
+"""PyTorch 与内置模型库的只读目录查询。"""
 
 from __future__ import annotations
 
 import hashlib
 import importlib.metadata
-from typing import Any, Literal, cast
+from typing import Any
 
-from sd_webui_all_in_one.downloader import DOWNLOAD_TOOL_TYPE_LIST, DownloadToolType
+from sd_webui_all_in_one.downloader import DOWNLOAD_TOOL_TYPE_LIST
 from sd_webui_all_in_one.env_check import check_torch_version_status
-from sd_webui_all_in_one.model_downloader import SupportedWebUiType, export_model_list
+from sd_webui_all_in_one.model_downloader import SUPPORTED_WEBUI_LIST, export_model_list
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_CATEGORY_LIST,
     PyTorchVersionInfo,
@@ -18,29 +18,6 @@ from sd_webui_all_in_one.pytorch_manager import (
     find_latest_pytorch_info,
     get_available_pytorch_device_type,
 )
-
-
-PYTORCH_CLI_PATHS: dict[str, tuple[str, ...]] = {
-    "sd_webui": ("sd-webui", "reinstall-pytorch"),
-    "comfyui": ("comfyui", "reinstall-pytorch"),
-    "invokeai": ("invokeai", "reinstall-pytorch"),
-    "fooocus": ("fooocus", "reinstall-pytorch"),
-    "sd_trainer": ("sd-trainer", "reinstall-pytorch"),
-    "sd_scripts": ("sd-scripts", "reinstall-pytorch"),
-    "qwen_tts_webui": ("qwen-tts-webui", "reinstall-pytorch"),
-}
-"""各 WebUI 的 PyTorch CLI 命令路径。"""
-
-MODEL_CLI_PATHS: dict[str, tuple[str, ...]] = {
-    "sd_webui": ("sd-webui", "model", "install-library"),
-    "comfyui": ("comfyui", "model", "install-library"),
-    "invokeai": ("invokeai", "model", "install-library"),
-    "fooocus": ("fooocus", "model", "install-library"),
-    "sd_trainer": ("sd-trainer", "model", "install-library"),
-    "sd_scripts": ("sd-scripts", "model", "install-library"),
-}
-"""支持内置模型库的 WebUI 及其 CLI 命令路径。"""
-
 
 def _stable_id(namespace: str, *parts: object) -> str:
     digest = hashlib.sha256("\0".join(str(part) for part in parts).encode()).hexdigest()[:20]
@@ -168,65 +145,6 @@ def pytorch_catalog(webui_type: str) -> dict[str, Any]:
     }
 
 
-def resolve_pytorch_selection(
-    webui_type: str,
-    mode: Literal["auto", "manual"],
-    selection_id: str | None = None,
-) -> dict[str, Any]:
-    """在不修改环境的情况下解析 PyTorch 操作意图。
-
-    Args:
-        webui_type (str): WebUI 类型。
-        mode (Literal["auto", "manual"]): 自动或手动选择模式。
-        selection_id (str | None): 手动选择时的稳定标识。
-
-    Returns:
-        dict[str, Any]: 可供 CLI 使用的闭合业务描述。
-
-    Raises:
-        ValueError: WebUI 类型或选择信息无效。
-    """
-    if webui_type not in PYTORCH_CLI_PATHS:
-        raise ValueError(f"Unsupported PyTorch webui_type: {webui_type}")
-    catalog = pytorch_catalog(webui_type)
-    explanation: str | None = None
-    if mode == "auto":
-        if not catalog["automatic_selection_available"]:
-            raise ValueError(f"Automatic PyTorch selection is unavailable for {webui_type}")
-        preview = catalog["automatic_selection_preview"]
-        if not isinstance(preview, dict):
-            raise ValueError(f"Automatic PyTorch selection returned no candidate for {webui_type}")
-        selected_id = preview["selection_id"]
-        explanation = preview["explanation"]
-    elif mode == "manual":
-        selected_id = selection_id
-        if not selected_id:
-            raise ValueError("Manual PyTorch selection requires selection_id")
-    else:
-        raise ValueError("PyTorch selection mode must be 'auto' or 'manual'")
-    matches = [item for item in catalog["items"] if item["id"] == selected_id]
-    if len(matches) != 1:
-        raise ValueError(f"Unknown or ambiguous PyTorch selection_id for {webui_type}: {selected_id}")
-    item = matches[0]
-    if not item["supported"]:
-        raise ValueError(f"PyTorch selection is unsupported on this platform: {selected_id}")
-    invokeai = webui_type == "invokeai"
-    value = item["device_category"] if invokeai else item["name"]
-    if not isinstance(value, str) or not value:
-        raise ValueError(f"PyTorch selection has no CLI value: {selected_id}")
-    return {
-        "webui_type": webui_type,
-        "requested_mode": mode,
-        "selected_id": selected_id,
-        "selection_kind": "device_category" if invokeai else "name",
-        "selection_value": value,
-        "device_type": item.get("device_type"),
-        "device_category": item.get("device_category"),
-        "explanation": explanation,
-        "cli_command_path": list(PYTORCH_CLI_PATHS[webui_type]),
-    }
-
-
 def model_library_catalog(webui_type: str) -> dict[str, Any]:
     """导出模型库公共元数据。
 
@@ -239,9 +157,9 @@ def model_library_catalog(webui_type: str) -> dict[str, Any]:
     Raises:
         ValueError: WebUI 类型不支持内置模型库。
     """
-    if webui_type not in MODEL_CLI_PATHS:
+    if webui_type not in SUPPORTED_WEBUI_LIST:
         raise ValueError(f"Unsupported model library webui_type: {webui_type}")
-    raw_items = export_model_list(cast(SupportedWebUiType, webui_type))
+    raw_items = export_model_list(webui_type)
     items: list[dict[str, Any]] = []
     for raw in raw_items:
         sources = [source for source in ("modelscope", "huggingface") if raw.get("url", {}).get(source)]
@@ -265,55 +183,3 @@ def model_library_catalog(webui_type: str) -> dict[str, Any]:
             }
         )
     return {"webui_type": webui_type, "count": len(items), "models": _unique(items, "model")}
-
-
-def resolve_model_library_install(
-    webui_type: str,
-    model_id: str,
-    source: str | None = None,
-    downloader: DownloadToolType = "requests",
-    automatic_mirror: bool = False,
-) -> dict[str, Any]:
-    """在不下载或注册文件的情况下解析模型安装意图。
-
-    Args:
-        webui_type (str): WebUI 类型。
-        model_id (str): 稳定模型标识。
-        source (str | None): 下载来源。
-        downloader (DownloadToolType): 下载器。
-        automatic_mirror (bool): 是否允许自动选择下载源。
-
-    Returns:
-        dict[str, Any]: 可供 CLI 使用的闭合业务描述。
-
-    Raises:
-        ValueError: 模型、来源或下载器无效。
-    """
-    if webui_type not in MODEL_CLI_PATHS:
-        raise ValueError(f"Unsupported model library webui_type: {webui_type}")
-    catalog = model_library_catalog(webui_type)
-    matches = [item for item in catalog["models"] if item["id"] == model_id]
-    if len(matches) != 1:
-        raise ValueError(f"Unknown or ambiguous model_id for {webui_type}: {model_id}")
-    item = matches[0]
-    if not item["installable"]:
-        raise ValueError(item["non_installable_reason"] or "Model is not installable")
-    available_sources = list(item["sources"])
-    if not available_sources:
-        raise ValueError(f"No source is available for {model_id}")
-    if not automatic_mirror and source not in available_sources:
-        raise ValueError(f"Source is not available for {model_id}: {source}")
-    if downloader not in item["downloaders"]:
-        raise ValueError(f"Downloader is not supported for {model_id}: {downloader}")
-    validation_source = source if source in available_sources else available_sources[0]
-    return {
-        "webui_type": webui_type,
-        "model_id": model_id,
-        "model_name": item["name"],
-        "source": validation_source,
-        "configured_source": source,
-        "available_sources": available_sources,
-        "automatic_mirror": automatic_mirror,
-        "downloader": downloader,
-        "cli_command_path": list(MODEL_CLI_PATHS[webui_type]),
-    }
