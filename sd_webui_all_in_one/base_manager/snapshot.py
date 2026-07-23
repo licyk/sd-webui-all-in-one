@@ -1105,7 +1105,7 @@ def create_webui_snapshot(
 
     Args:
         webui_path (Path): WebUI 根目录。
-        snapshot_factory (Callable): 对应 WebUI 的真实快照采集函数。
+        snapshot_factory (Callable[[Path, bool], WebUiSnapshot]): 对应 WebUI 的真实快照采集函数。
         include_packages (bool): 是否采集 Python 包。
         snapshot_dir (Path | None): 快照目录，默认使用 ``<webui_path>/snapshots``。
 

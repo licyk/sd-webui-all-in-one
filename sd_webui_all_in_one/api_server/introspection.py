@@ -23,7 +23,11 @@ class ParameterInfo:
     schema: dict[str, Any]
 
     def metadata(self) -> dict[str, Any]:
-        """返回适合方法发现接口的参数元数据。"""
+        """返回适合方法发现接口的参数元数据。
+
+        Returns:
+            dict[str, Any]: 参数的元数据信息。
+        """
         result: dict[str, Any] = {
             "name": self.name,
             "type": _display_type(self.annotation),
@@ -50,7 +54,19 @@ class CallablePlan:
     description: str
 
     def prepare(self, raw_params: Mapping[str, Any], injections: Mapping[str, Any] | None = None) -> dict[str, Any]:
-        """校验并转换 JSON 参数，返回真实 callable 的关键字参数。"""
+        """校验并转换 JSON 参数，返回真实 callable 的关键字参数。
+
+        Args:
+            raw_params (Mapping[str, Any]): 来自外部调用的原始 JSON 参数映射。
+            injections (Mapping[str, Any] | None): 注入参数映射，用于向目标 callable 传递上下文或额外依赖。
+
+        Raises:
+            ValueError: 当存在未知参数或缺少必需参数时。
+            RuntimeError: 当需要注入参数但未提供时。
+
+        Returns:
+            dict[str, Any]: 可直接传递给目标 callable 的关键字参数字典。
+        """
         known = {parameter.name for parameter in self.parameters}
         unknown = sorted(set(raw_params) - known)
         if unknown:
@@ -70,7 +86,15 @@ class CallablePlan:
         return kwargs
 
     def invoke(self, raw_params: Mapping[str, Any], injections: Mapping[str, Any]) -> Any:
-        """校验并转换 JSON 参数，然后直接调用真实 callable。"""
+        """校验并转换 JSON 参数，然后直接调用真实 callable。
+
+        Args:
+            raw_params (Mapping[str, Any]): 来自外部调用的原始 JSON 参数映射。
+            injections (Mapping[str, Any]): 注入参数映射，用于传递上下文或额外依赖。
+
+        Returns:
+            Any: 目标 callable 的返回值，经过 JSON 可序列化转换前的原始结果。
+        """
         kwargs = self.prepare(raw_params, injections)
         return self.target(**kwargs)
 
@@ -82,7 +106,21 @@ def compile_callable(
     injected_parameters: frozenset[str] = frozenset(),
     description: str = "",
 ) -> CallablePlan:
-    """从真实 callable 编译调用计划和 JSON Schema。"""
+    """从真实 callable 编译调用计划和 JSON Schema。
+
+    Args:
+        target (Callable[..., Any]): 需要编译的目标 callable。
+        bound_arguments (Mapping[str, Any] | None): 预绑定的参数值映射。
+        injected_parameters (frozenset[str]): 需要从调用上下文注入的参数名称集合。
+        description (str): 覆盖目标 callable 文档摘要的描述文本。
+
+    Raises:
+        TypeError: 当目标 callable 的公开参数缺少类型注解或参数类型不受支持时。
+        ValueError: 当提供了未知绑定参数或未知注入参数时。
+
+    Returns:
+        CallablePlan: 包含参数 schema、参数列表和调用元数据的调用计划对象。
+    """
     signature = inspect.signature(target)
     try:
         type_hints = get_type_hints(target, include_extras=True)
@@ -145,7 +183,14 @@ def compile_callable(
 
 
 def schema_for_type(annotation: Any) -> dict[str, Any]:
-    """将常用 Python 类型转换成 JSON Schema。"""
+    """将常用 Python 类型转换成 JSON Schema。
+
+    Args:
+        annotation (Any): 要转换为 JSON Schema 的 Python 类型注解。
+
+    Returns:
+        dict[str, Any]: 对应的 JSON Schema 字典。
+    """
     annotation = _unwrap_annotated(annotation)
     if annotation in {Any, object}:
         return {}
@@ -211,7 +256,19 @@ def schema_for_type(annotation: Any) -> dict[str, Any]:
 
 
 def convert_value(value: Any, annotation: Any, path: str) -> Any:
-    """按类型注解严格转换一个 JSON 值。"""
+    """按类型注解严格转换一个 JSON 值。
+
+    Args:
+        value (Any): 需要转换的 JSON 值。
+        annotation (Any): 目标类型注解。
+        path (str): 当前值在请求参数树中的路径，用于构建错误消息。
+
+    Raises:
+        ValueError: 当值与目标类型注解不匹配时。
+
+    Returns:
+        Any: 转换后的 Python 值。
+    """
     annotation = _unwrap_annotated(annotation)
     if annotation in {Any, object}:
         return value
@@ -296,7 +353,14 @@ def convert_value(value: Any, annotation: Any, path: str) -> Any:
 
 
 def to_json_value(value: Any) -> Any:
-    """将默认值或调用结果递归转换为 JSON 可序列化值。"""
+    """将默认值或调用结果递归转换为 JSON 可序列化值。
+
+    Args:
+        value (Any): 要转换的值。
+
+    Returns:
+        Any: JSON 可序列化版本的值。
+    """
     if value is inspect.Parameter.empty:
         return None
     if isinstance(value, Path):

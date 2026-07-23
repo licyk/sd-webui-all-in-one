@@ -100,6 +100,9 @@ def output_update_check_result(status: WebUiUpdateStatus) -> dict[str, Any]:
 
     Returns:
         dict[str, Any]: 结构化更新检查结果。
+
+    Raises:
+        TypeError: 当序列化结果不是字典时。
     """
     serialized = json_safe(asdict(status))
     if not isinstance(serialized, dict):

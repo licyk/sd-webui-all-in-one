@@ -181,7 +181,11 @@ FOOOCUS_BRANCH_INFO_DICT: list[FooocusBranchInfo] = [
 
 
 def get_fooocus_branch_presets() -> dict[str, object]:
-    """返回 Fooocus 内置分支预设。"""
+    """返回 Fooocus 内置分支预设。
+
+    Returns:
+        dict[str, object]: 包含可用 Fooocus 分支列表和类型列表的字典。
+    """
     return {"branches": list(FOOOCUS_BRANCH_INFO_DICT), "types": list(FOOOCUS_BRANCH_LIST)}
 
 FOOOCUS_PRESET_HF_PATH = ROOT_PATH / "base_manager" / "config" / "fooocus_config_huggingface.json"

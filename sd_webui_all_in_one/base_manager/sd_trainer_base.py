@@ -187,7 +187,11 @@ SD_TRAINER_BRANCH_INFO_DICT: list[SDTrainerBranchInfo] = [
 
 
 def get_sd_trainer_branch_presets() -> dict[str, object]:
-    """返回 SD Trainer 内置分支预设。"""
+    """返回 SD Trainer 内置分支预设。
+
+    Returns:
+        dict[str, object]: 包含可用 SD Trainer 分支列表和类型列表的字典。
+    """
     return {"branches": list(SD_TRAINER_BRANCH_INFO_DICT), "types": list(SD_TRAINER_BRANCH_LIST)}
 
 

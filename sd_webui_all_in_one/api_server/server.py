@@ -73,7 +73,11 @@ class RegisteredMethod:
     plan: CallablePlan
 
     def metadata(self) -> dict[str, Any]:
-        """导出真实 callable 的方法和参数元数据。"""
+        """导出真实 callable 的方法和参数元数据。
+
+        Returns:
+            dict[str, Any]: 方法元数据字典。
+        """
         return {
             "name": self.name,
             "kind": "job",
@@ -84,7 +88,15 @@ class RegisteredMethod:
         }
 
     def invoke(self, params: Mapping[str, Any], context: "ApiTaskContext") -> Any:
-        """使用通用调用计划直接执行真实 callable。"""
+        """使用通用调用计划直接执行真实 callable。
+
+        Args:
+            params (Mapping[str, Any]): 调用参数映射。
+            context (ApiTaskContext): 当前 API 任务上下文。
+
+        Returns:
+            Any: 目标 callable 的返回结果，原始 Python 对象。
+        """
         return to_json_value(self.plan.invoke(params, {"context": context}))
 
 
@@ -462,7 +474,14 @@ class ApiServer(ThreadingHTTPServer):
         }
 
     def method_details(self, name: str) -> dict[str, Any] | None:
-        """导出单个方法的元数据及结构化参数说明。"""
+        """导出单个方法的元数据及结构化参数说明。
+
+        Args:
+            name (str): API 方法名。
+
+        Returns:
+            dict[str, Any] | None: 方法元数据，若方法不存在则返回 None。
+        """
         spec = self.method_specs.get(name)
         if spec is None:
             return None

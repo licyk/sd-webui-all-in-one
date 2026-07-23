@@ -392,7 +392,11 @@ def _register_shared_methods(methods: dict[str, Callable[..., Any] | ApiMethodSp
 
 
 def get_default_methods() -> ApiMethodRegistry:
-    """返回 API v2 真实 callable 注册表。"""
+    """返回 API v2 真实 callable 注册表。
+
+    Returns:
+        ApiMethodRegistry: 默认注册的 API 方法映射。
+    """
     methods: dict[str, Callable[..., Any] | ApiMethodSpec] = {}
     _register_shared_methods(methods)
     _register_webui_methods(methods)

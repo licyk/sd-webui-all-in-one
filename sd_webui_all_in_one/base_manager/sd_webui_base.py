@@ -263,7 +263,11 @@ SD_WEBUI_BRANCH_INFO_DICT: list[SDWebUiBranchInfo] = [
 
 
 def get_sd_webui_branch_presets() -> dict[str, object]:
-    """返回 Stable Diffusion WebUI 内置分支预设。"""
+    """返回 Stable Diffusion WebUI 内置分支预设。
+
+    Returns:
+        dict[str, object]: 包含可用 Stable Diffusion WebUI 分支列表和类型列表的字典。
+    """
     return {"branches": list(SD_WEBUI_BRANCH_INFO_DICT), "types": list(SD_WEBUI_BRANCH_LIST)}
 
 
