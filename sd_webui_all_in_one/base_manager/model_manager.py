@@ -445,6 +445,56 @@ class FileModelManager:
         target = self._target_path(webui_path, source, target_dir_relative_path, new_name)
         return self._move_to_target(webui_path, source, target, overwrite)
 
+    def rename_entry(
+        self,
+        webui_path: Path,
+        source_relative_path: str | Path,
+        new_name: str,
+        overwrite: bool = False,
+    ) -> Path:
+        """重命名模型根目录内的文件或文件夹
+
+        Args:
+            webui_path (Path):
+                WebUI 根目录。
+            source_relative_path (str | Path):
+                要重命名的源条目相对路径。
+            new_name (str):
+                新文件或文件夹名称。
+            overwrite (bool):
+                同级目录中已有同名目标时是否覆盖。
+
+        Returns:
+            Path:
+                重命名后的目标路径。
+
+        Raises:
+            FileNotFoundError:
+                源路径不存在时抛出。
+            ValueError:
+                试图重命名模型根目录时抛出。
+            FileExistsError:
+                目标已存在且未允许覆盖时抛出。
+        """
+        source = self.resolve_path(webui_path, source_relative_path)
+        if not source.exists() and not source.is_symlink():
+            raise FileNotFoundError(f"源路径不存在: {source}")
+        if source == self.root_path(webui_path).resolve():
+            raise ValueError("不能重命名模型根目录")
+
+        target = (source.parent / self.validate_name(new_name)).resolve()
+        self.resolve_path(webui_path, target)
+        if source == target:
+            return source
+
+        if target.exists() or target.is_symlink():
+            if not overwrite:
+                raise FileExistsError(f"目标已存在: {target}")
+            remove_files(target)
+
+        move_files(source, target)
+        return target
+
     def delete_entry(
         self,
         webui_path: Path,

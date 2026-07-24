@@ -167,6 +167,15 @@ def test_default_registry_uses_namespaced_real_callables():
             "new_name",
             "overwrite",
         ]
+        rename_details = server.method_details("comfyui.model.rename")
+        assert rename_details is not None
+        assert rename_details["target"].endswith("model_manager.FileModelManager.rename_entry")
+        assert [item["name"] for item in rename_details["parameters"]] == [
+            "webui_path",
+            "source_relative_path",
+            "new_name",
+            "overwrite",
+        ]
     finally:
         server.server_close()
 

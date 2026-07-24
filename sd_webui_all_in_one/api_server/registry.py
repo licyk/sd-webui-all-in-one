@@ -349,6 +349,7 @@ def _register_model_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpe
             "model.create_folder": manager.create_folder,
             "model.copy": manager.copy_entry,
             "model.move": manager.move_entry,
+            "model.rename": manager.rename_entry,
             "model.delete": manager.delete_entry,
             "model.import": manager.import_paths,
             "model.download": manager.download_url,

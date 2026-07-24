@@ -52,6 +52,65 @@ def test_file_model_manager_file_operations(tmp_path: Path) -> None:
     assert not (manager.root_path(webui_path) / "checkpoints" / "b.safetensors").exists()
 
 
+def test_file_model_manager_renames_files_and_directories(tmp_path: Path) -> None:
+    manager = FileModelManager("comfyui")
+    webui_path = tmp_path / "comfyui"
+    manager.create_folder(webui_path, ".", "checkpoints")
+    source_file = manager.root_path(webui_path) / "checkpoints" / "old.safetensors"
+    source_file.write_text("model", encoding="utf-8")
+
+    renamed_file = manager.rename_entry(
+        webui_path,
+        "checkpoints/old.safetensors",
+        "new.safetensors",
+    )
+    assert renamed_file == manager.root_path(webui_path) / "checkpoints" / "new.safetensors"
+    assert renamed_file.read_text(encoding="utf-8") == "model"
+    assert not source_file.exists()
+
+    source_dir = manager.create_folder(webui_path, ".", "old-folder")
+    (source_dir / "nested.txt").write_text("nested", encoding="utf-8")
+    renamed_dir = manager.rename_entry(webui_path, "old-folder", "new-folder")
+    assert renamed_dir == manager.root_path(webui_path) / "new-folder"
+    assert (renamed_dir / "nested.txt").read_text(encoding="utf-8") == "nested"
+    assert not source_dir.exists()
+
+
+def test_file_model_manager_rename_handles_same_name_overwrite_and_root(tmp_path: Path) -> None:
+    manager = FileModelManager("sd_webui")
+    webui_path = tmp_path / "webui"
+    manager.create_folder(webui_path, ".", "models-a")
+    source = manager.root_path(webui_path) / "models-a" / "source.bin"
+    source.write_text("source", encoding="utf-8")
+
+    assert manager.rename_entry(
+        webui_path,
+        "models-a/source.bin",
+        "source.bin",
+        overwrite=True,
+    ) == source
+    assert source.read_text(encoding="utf-8") == "source"
+
+    target = source.with_name("target.bin")
+    target.write_text("target", encoding="utf-8")
+    with pytest.raises(FileExistsError):
+        manager.rename_entry(webui_path, "models-a/source.bin", "target.bin")
+    assert source.read_text(encoding="utf-8") == "source"
+    assert target.read_text(encoding="utf-8") == "target"
+
+    assert manager.rename_entry(
+        webui_path,
+        "models-a/source.bin",
+        "target.bin",
+        overwrite=True,
+    ) == target
+    assert not source.exists()
+    assert target.read_text(encoding="utf-8") == "source"
+
+    with pytest.raises(ValueError, match="不能重命名模型根目录"):
+        manager.rename_entry(webui_path, ".", "renamed-root")
+
+
 def test_file_model_manager_import_copies_and_download_passes_save_name(monkeypatch, tmp_path: Path) -> None:
     manager = FileModelManager("comfyui")
     webui_path = tmp_path / "comfy"
