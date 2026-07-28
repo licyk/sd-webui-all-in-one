@@ -90,6 +90,127 @@ RegistryRestoreAction = Literal[
 ]
 ExtensionCleanupAction = Literal["keep", "uninstall"]
 
+DiffStatus = Literal[
+    "added",
+    "removed",
+    "modified",
+    "unchanged",
+    "skipped",
+    "blocked",
+]
+RestoreOptionFlag = Literal[
+    "prune_packages",
+    "prune_extensions",
+    "force_git_reset",
+]
+RestoreBlockerCode = Literal[
+    "webui_type_mismatch",
+    "kernel_missing",
+    "kernel_dirty",
+    "extension_dirty",
+]
+RestoreBlockerScope = Literal["snapshot", "kernel", "package", "extension"]
+
+PACKAGE_DIFF_STATUS: dict[PackageRestoreAction, DiffStatus] = {
+    "install": "added",
+    "update": "modified",
+    "uninstall": "removed",
+    "skip_same_version": "unchanged",
+    "skip_protected": "skipped",
+    "skip_missing_local_path": "skipped",
+}
+GIT_DIFF_STATUS: dict[GitRestoreAction, DiffStatus] = {
+    "clone": "added",
+    "switch_commit": "modified",
+    "skip_same_commit": "unchanged",
+    "skip_non_git_snapshot": "skipped",
+    "skip_non_git_target": "skipped",
+    "skip_missing_url": "skipped",
+    "skip_missing_commit": "skipped",
+    "blocked_dirty": "blocked",
+    "blocked_missing_target": "blocked",
+}
+REGISTRY_DIFF_STATUS: dict[RegistryRestoreAction, DiffStatus] = {
+    "install_registry": "added",
+    "switch_registry_version": "modified",
+    "skip_same_registry_version": "unchanged",
+    "skip_registry_missing_id": "skipped",
+    "skip_registry_unavailable": "skipped",
+}
+CHANGED_DIFF_STATUSES: frozenset[DiffStatus] = frozenset({"added", "removed", "modified"})
+
+
+@dataclass(slots=True)
+class DiffField:
+    """恢复项中单个字段的前后对比"""
+
+    key: str
+    current: str | None = None
+    target: str | None = None
+
+
+@dataclass(slots=True)
+class RestoreDiff:
+    """恢复项的结构化差异
+
+    `status` 描述该项在恢复后相对当前环境的变化类别, `fields` 给出参与对比的
+    具体字段, 供调用方以类似 git diff 的方式呈现。
+    """
+
+    status: DiffStatus
+    fields: list[DiffField] = field(default_factory=list)
+
+
+@dataclass(slots=True)
+class RestoreDiffCounts:
+    """按差异类别统计的恢复项数量"""
+
+    added: int = 0
+    removed: int = 0
+    modified: int = 0
+    unchanged: int = 0
+    skipped: int = 0
+    blocked: int = 0
+
+    def count(self, status: DiffStatus) -> None:
+        """累加一个差异类别的计数
+
+        Args:
+            status (DiffStatus):
+                需要累加的差异类别。
+        """
+        setattr(self, status, getattr(self, status) + 1)
+
+    @property
+    def changed(self) -> int:
+        """需要实际写入的恢复项数量。"""
+        return self.added + self.removed + self.modified
+
+
+@dataclass(slots=True)
+class RestoreDiffSummary:
+    """整个快照恢复计划的差异统计"""
+
+    packages: RestoreDiffCounts = field(default_factory=RestoreDiffCounts)
+    kernel: RestoreDiffCounts = field(default_factory=RestoreDiffCounts)
+    extensions: RestoreDiffCounts = field(default_factory=RestoreDiffCounts)
+    total_changes: int = 0
+
+
+@dataclass(slots=True)
+class RestoreBlocker:
+    """阻止快照恢复的前置条件
+
+    `required_options` 列出启用后可以解除该阻断的恢复选项开关; 为空表示该阻断
+    无法通过开关绕过, 必须先修复环境或更换快照。
+    """
+
+    code: RestoreBlockerCode
+    scope: RestoreBlockerScope
+    message: str
+    target: str | None = None
+    required_options: list[RestoreOptionFlag] = field(default_factory=list)
+
 
 @dataclass(slots=True)
 class SnapshotRestoreOptions:
@@ -128,6 +249,10 @@ class PackageRestorePlanItem:
     editable: bool = False
     local_path: Path | None = None
     pytorch_device_type: str | None = None
+    diff: RestoreDiff = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.diff = _package_diff(self)
 
 
 @dataclass(slots=True)
@@ -142,6 +267,10 @@ class GitRestorePlanItem:
     current_commit: str | None = None
     dirty: bool | None = None
     url: str | None = None
+    diff: RestoreDiff = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.diff = _git_diff(self)
 
 
 @dataclass(slots=True)
@@ -161,6 +290,10 @@ class ExtensionRestorePlanItem:
     current_version: str | None = None
     target_version: str | None = None
     reason: str = ""
+    diff: RestoreDiff = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.diff = _extension_diff(self)
 
 
 @dataclass(slots=True)
@@ -181,7 +314,113 @@ class SnapshotRestorePlan:
     pytorch_mirror_url: str | None = None
     pytorch_mirror_kind: str | None = None
     warnings: list[str] = field(default_factory=list)
-    errors: list[str] = field(default_factory=list)
+    blockers: list[RestoreBlocker] = field(default_factory=list)
+    diff_summary: RestoreDiffSummary = field(default_factory=RestoreDiffSummary)
+    required_options: list[RestoreOptionFlag] = field(default_factory=list)
+    restorable: bool = False
+
+
+def _finalize_plan(plan: SnapshotRestorePlan) -> SnapshotRestorePlan:
+    """补全恢复计划的派生字段
+
+    汇总差异统计, 收集可解除阻断的恢复选项开关, 并给出当前选项下是否可以恢复。
+
+    Args:
+        plan (SnapshotRestorePlan):
+            已经填充完变更项和阻断项的恢复计划。
+
+    Returns:
+        SnapshotRestorePlan: 补全派生字段后的同一个恢复计划。
+    """
+    plan.diff_summary = _build_diff_summary(plan)
+    required: list[RestoreOptionFlag] = []
+    for blocker in plan.blockers:
+        for flag in blocker.required_options:
+            if flag not in required:
+                required.append(flag)
+    plan.required_options = required
+    plan.restorable = plan.webui_type_match and not plan.blockers
+    return plan
+
+
+def _diff_bool(value: bool | None) -> str | None:
+    return None if value is None else ("true" if value else "false")
+
+
+def _package_diff(item: PackageRestorePlanItem) -> RestoreDiff:
+    if item.action == "install_pytorch_special":
+        # PyTorch 走特殊安装源, 同一个动作同时覆盖新装和升级两种情况。
+        status: DiffStatus = "modified" if item.current_version is not None else "added"
+    else:
+        status = PACKAGE_DIFF_STATUS[item.action]
+    return RestoreDiff(
+        status=status,
+        fields=[
+            DiffField(
+                key="version",
+                current=item.current_version,
+                target=item.target_version,
+            )
+        ],
+    )
+
+
+def _git_diff(item: GitRestorePlanItem) -> RestoreDiff:
+    return RestoreDiff(
+        status=GIT_DIFF_STATUS[item.action],
+        fields=[
+            DiffField(
+                key="commit",
+                current=item.current_commit,
+                target=item.target_commit,
+            )
+        ],
+    )
+
+
+def _extension_diff(item: ExtensionRestorePlanItem) -> RestoreDiff:
+    fields: list[DiffField] = []
+    if item.cleanup_action == "uninstall":
+        status: DiffStatus = "removed"
+    elif item.registry_action is not None:
+        status = REGISTRY_DIFF_STATUS[item.registry_action]
+        fields.append(
+            DiffField(
+                key="registry_version",
+                current=item.current_version,
+                target=item.target_version,
+            )
+        )
+    elif item.git is not None:
+        status = item.git.diff.status
+        fields.extend(item.git.diff.fields)
+    else:
+        status = "unchanged"
+
+    if item.target_enabled is not None and item.current_enabled != item.target_enabled:
+        fields.append(
+            DiffField(
+                key="enabled",
+                current=_diff_bool(item.current_enabled),
+                target=_diff_bool(item.target_enabled),
+            )
+        )
+        if status == "unchanged":
+            # 仓库内容一致但启用状态需要切换, 恢复仍会写入该扩展。
+            status = "modified"
+    return RestoreDiff(status=status, fields=fields)
+
+
+def _build_diff_summary(plan: SnapshotRestorePlan) -> RestoreDiffSummary:
+    summary = RestoreDiffSummary()
+    for item in plan.package_changes:
+        summary.packages.count(item.diff.status)
+    if plan.kernel_change is not None:
+        summary.kernel.count(plan.kernel_change.diff.status)
+    for extension in plan.extension_changes:
+        summary.extensions.count(extension.diff.status)
+    summary.total_changes = summary.packages.changed + summary.kernel.changed + summary.extensions.changed
+    return summary
 
 
 def normalize_extension_name(
@@ -748,7 +987,7 @@ def _build_extension_restore_plan(
     webui_path: Path,
     options: SnapshotRestoreOptions,
     warnings: list[str],
-    errors: list[str],
+    blockers: list[RestoreBlocker],
 ) -> list[ExtensionRestorePlanItem]:
     tools = _extension_tools(snapshot.webui.type)
     if tools is None:
@@ -787,7 +1026,15 @@ def _build_extension_restore_plan(
         )
         items.append(item)
         if git_plan is not None and git_plan.action == "blocked_dirty":
-            errors.append(f"扩展 '{extension.name}' 存在未提交变更")
+            blockers.append(
+                RestoreBlocker(
+                    code="extension_dirty",
+                    scope="extension",
+                    message=f"扩展 '{extension.name}' 存在未提交变更",
+                    target=extension.name,
+                    required_options=["force_git_reset"],
+                )
+            )
 
     if options.prune_extensions:
         extension_root = webui_path / tools.directory_name
@@ -1014,8 +1261,15 @@ def preview_webui_snapshot_restore(
     )
 
     if not webui_type_match:
-        plan.errors.append(f"快照 WebUI 类型不匹配: 期望 '{expected_webui_type}', 实际 '{snapshot.webui.type}'")
-        return plan
+        plan.blockers.append(
+            RestoreBlocker(
+                code="webui_type_mismatch",
+                scope="snapshot",
+                message=f"快照 WebUI 类型不匹配: 期望 '{expected_webui_type}', 实际 '{snapshot.webui.type}'",
+                target=snapshot.webui.type,
+            )
+        )
+        return _finalize_plan(plan)
 
     current_python_version = platform.python_version()
     if snapshot.python.version != current_python_version:
@@ -1023,8 +1277,15 @@ def preview_webui_snapshot_restore(
 
     if _requires_existing_kernel_target(snapshot) and not webui_path.exists():
         plan.kernel_change = _build_missing_kernel_plan(snapshot, webui_path)
-        plan.errors.append(f"内核目录不存在: {webui_path}")
-        return plan
+        plan.blockers.append(
+            RestoreBlocker(
+                code="kernel_missing",
+                scope="kernel",
+                message=f"内核目录不存在: {webui_path}",
+                target=webui_path.as_posix(),
+            )
+        )
+        return _finalize_plan(plan)
 
     package_changes, dtype, mirror_url, mirror_kind = _build_package_restore_plan(snapshot, options, plan.warnings)
     plan.package_changes = package_changes
@@ -1035,16 +1296,24 @@ def preview_webui_snapshot_restore(
     if snapshot.kernel is not None and not _uses_package_kernel(snapshot):
         plan.kernel_change = _build_git_restore_plan(snapshot.kernel, webui_path, options)
         if plan.kernel_change.action == "blocked_dirty":
-            plan.errors.append("内核仓库存在未提交变更")
+            plan.blockers.append(
+                RestoreBlocker(
+                    code="kernel_dirty",
+                    scope="kernel",
+                    message="内核仓库存在未提交变更",
+                    target=webui_path.as_posix(),
+                    required_options=["force_git_reset"],
+                )
+            )
 
     plan.extension_changes = _build_extension_restore_plan(
         snapshot=snapshot,
         webui_path=webui_path,
         options=options,
         warnings=plan.warnings,
-        errors=plan.errors,
+        blockers=plan.blockers,
     )
-    return plan
+    return _finalize_plan(plan)
 
 
 def restore_webui_snapshot(

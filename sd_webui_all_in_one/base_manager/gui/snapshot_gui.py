@@ -140,9 +140,10 @@ def build_restore_blocking_guidance(plan: SnapshotRestorePlan) -> list[str]:
         list[str]: 面向用户的恢复阻塞处理建议。
     """
     guidance: list[str] = []
-    if not plan.webui_type_match:
+    codes = {blocker.code for blocker in plan.blockers}
+    if "webui_type_mismatch" in codes:
         guidance.append(f"请使用 {plan.snapshot_webui_type} 对应的快照管理器恢复该快照, 或选择 {plan.expected_webui_type} 类型的快照。跨 WebUI 类型恢复会被终止, 避免写错内核和扩展目录。")
-    if plan.kernel_change is not None and plan.kernel_change.action == "blocked_missing_target":
+    if "kernel_missing" in codes and plan.kernel_change is not None:
         guidance.append(
             f"请先通过 installer 准备对应的 WebUI kernel, 确认内核目录存在后再恢复: {format_snapshot_path(plan.kernel_change.path)}。该问题不能通过强制恢复开关绕过, 因为扩展恢复依赖 kernel 目录。"
         )
@@ -157,7 +158,7 @@ def build_restore_blocking_guidance(plan: SnapshotRestorePlan) -> list[str]:
         guidance.append(f"存在 Git 未提交变更: {'; '.join(dirty_targets)}。建议先提交、stash 或备份这些变更后再恢复。")
         guidance.append("如果确认要丢弃这些未提交变更, 可以勾选“允许覆盖 Git 未提交变更”后再次恢复。风险: 该开关会强制恢复上述 Git 仓库, 未提交的文件修改可能被永久覆盖。")
 
-    if plan.errors and not guidance:
+    if plan.blockers and not guidance:
         guidance.append("请根据阻断信息处理当前环境或更换快照文件后再次恢复。")
     return guidance
 
@@ -172,7 +173,7 @@ def format_restore_blocking_message(plan: SnapshotRestorePlan) -> str:
     Returns:
         str: 恢复阻塞提示文本。
     """
-    lines = [*plan.errors]
+    lines = [blocker.message for blocker in plan.blockers]
     guidance = build_restore_blocking_guidance(plan)
     if guidance:
         lines.extend(("", "处理建议:"))
@@ -552,7 +553,7 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
 
     def _confirm_restore_plan(self, snapshot_path: Path, options: SnapshotRestoreOptions, plan: SnapshotRestorePlan) -> None:
         self._show_restore_plan(plan)
-        if plan.errors:
+        if not plan.restorable:
             messagebox.showwarning("无法恢复", format_restore_blocking_message(plan))
             return
         confirm_message = "将按结果框中的变更恢复快照, 是否继续?"
@@ -592,14 +593,25 @@ class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):
             lines.extend(("", "Python:", f"- {plan.python_version_note}"))
         if plan.pytorch_device_type:
             lines.extend(("", "PyTorch 源:", f"- 类型: {plan.pytorch_device_type}", f"- {plan.pytorch_mirror_kind or '普通 PyPI'}: {plan.pytorch_mirror_url or '-'}"))
+        summary = plan.diff_summary
+        lines.extend(
+            (
+                "",
+                "变更统计:",
+                f"- 合计: {summary.total_changes}",
+                f"- Python 包: +{summary.packages.added} ~{summary.packages.modified} -{summary.packages.removed}",
+                f"- 内核: +{summary.kernel.added} ~{summary.kernel.modified} -{summary.kernel.removed}",
+                f"- 扩展: +{summary.extensions.added} ~{summary.extensions.modified} -{summary.extensions.removed}",
+            )
+        )
         if plan.warnings:
             lines.append("")
             lines.append("警告:")
             lines.extend(f"- {item}" for item in plan.warnings)
-        if plan.errors:
+        if plan.blockers:
             lines.append("")
             lines.append("阻断:")
-            lines.extend(f"- {item}" for item in plan.errors)
+            lines.extend(f"- {blocker.message}" for blocker in plan.blockers)
             guidance = build_restore_blocking_guidance(plan)
             if guidance:
                 lines.append("")

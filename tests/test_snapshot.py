@@ -630,7 +630,54 @@ def test_preview_restore_plan_reports_package_actions_and_pytorch_source(monkeyp
     assert plan.pytorch_device_type == "cu128"
     assert plan.pytorch_mirror_url == "https://torch.example/cu128"
     assert plan.pytorch_mirror_kind == "index_url"
-    assert plan.errors == []
+    assert plan.blockers == []
+    assert plan.restorable is True
+
+    diffs = {item.name: item.diff for item in plan.package_changes}
+    assert diffs["sd-webui-all-in-one"].status == "skipped"
+    assert diffs["Torch"].status == "added"
+    assert diffs["demo-pkg"].status == "modified"
+    assert diffs["editable-local"].status == "skipped"
+    assert diffs["already"].status == "unchanged"
+    assert diffs["old-pkg"].status == "removed"
+    assert diffs["demo-pkg"].fields == [
+        restore_utils.DiffField(key="version", current="1.0.0", target="2.0.0")
+    ]
+    assert diffs["old-pkg"].fields == [
+        restore_utils.DiffField(key="version", current="0.1.0", target=None)
+    ]
+    assert plan.diff_summary.packages.added == 1
+    assert plan.diff_summary.packages.modified == 1
+    assert plan.diff_summary.packages.removed == 1
+    assert plan.diff_summary.packages.unchanged == 1
+    assert plan.diff_summary.packages.skipped == 2
+    assert plan.diff_summary.total_changes == 3
+
+
+def test_preview_restore_plan_reports_pytorch_upgrade_as_modified(monkeypatch, tmp_path):
+    webui_path = tmp_path / "demo"
+    webui_path.mkdir()
+    snapshot = _webui_snapshot(webui_path)
+    snapshot.packages = [_package_snapshot("Torch", "2.7.0+cu128")]
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+
+    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [_package_snapshot("torch", "2.5.0+cu124")])
+    monkeypatch.setattr(restore_utils, "get_pytorch_mirror", lambda dtype, use_cn_mirror: ("https://torch.example/cu128", "index_url"))
+
+    plan = restore_utils.preview_webui_snapshot_restore(
+        snapshot_path=output,
+        webui_path=webui_path,
+        expected_webui_type="demo",
+    )
+
+    item = plan.package_changes[0]
+    assert item.action == "install_pytorch_special"
+    # 同一个 PyTorch 动作同时覆盖新装和升级, 差异状态由当前版本是否存在决定。
+    assert item.diff.status == "modified"
+    assert item.diff.fields == [
+        restore_utils.DiffField(key="version", current="2.5.0+cu124", target="2.7.0+cu128")
+    ]
 
 
 @pytest.mark.parametrize(
@@ -704,7 +751,13 @@ def test_preview_restore_plan_blocks_dirty_kernel_without_force(monkeypatch, tmp
 
     assert blocked.kernel_change is not None
     assert blocked.kernel_change.action == "blocked_dirty"
-    assert blocked.errors == ["内核仓库存在未提交变更"]
+    assert [blocker.message for blocker in blocked.blockers] == ["内核仓库存在未提交变更"]
+    assert blocked.blockers[0].code == "kernel_dirty"
+    assert blocked.blockers[0].scope == "kernel"
+    assert blocked.blockers[0].required_options == ["force_git_reset"]
+    assert blocked.required_options == ["force_git_reset"]
+    assert blocked.restorable is False
+    assert blocked.kernel_change.diff.status == "blocked"
     blocking_message = format_restore_blocking_message(blocked)
     assert "允许覆盖 Git 未提交变更" in blocking_message
     assert "风险" in blocking_message
@@ -719,7 +772,12 @@ def test_preview_restore_plan_blocks_dirty_kernel_without_force(monkeypatch, tmp
 
     assert forced.kernel_change is not None
     assert forced.kernel_change.action == "switch_commit"
-    assert forced.errors == []
+    assert forced.blockers == []
+    assert forced.required_options == []
+    assert forced.restorable is True
+    assert forced.kernel_change.diff.status == "modified"
+    assert forced.diff_summary.kernel.modified == 1
+    assert forced.diff_summary.total_changes == 1
 
 
 def test_restore_blocking_guidance_explains_webui_type_mismatch(tmp_path):
@@ -735,7 +793,12 @@ def test_restore_blocking_guidance_explains_webui_type_mismatch(tmp_path):
 
     guidance = "\n".join(build_restore_blocking_guidance(plan))
 
-    assert plan.errors == ["快照 WebUI 类型不匹配: 期望 'other_webui', 实际 'demo'"]
+    assert [blocker.message for blocker in plan.blockers] == ["快照 WebUI 类型不匹配: 期望 'other_webui', 实际 'demo'"]
+    assert plan.blockers[0].code == "webui_type_mismatch"
+    # 类型不匹配无法通过任何恢复选项开关绕过。
+    assert plan.blockers[0].required_options == []
+    assert plan.required_options == []
+    assert plan.restorable is False
     assert "对应的快照管理器" in guidance
     assert "跨 WebUI 类型恢复会被终止" in guidance
 
@@ -762,7 +825,11 @@ def test_preview_restore_plan_blocks_missing_kernel_with_guidance(tmp_path):
 
     assert plan.kernel_change is not None
     assert plan.kernel_change.action == "blocked_missing_target"
-    assert plan.errors == [f"内核目录不存在: {webui_path}"]
+    assert [blocker.message for blocker in plan.blockers] == [f"内核目录不存在: {webui_path}"]
+    assert plan.blockers[0].code == "kernel_missing"
+    # 缺少内核目录必须先安装 kernel, 没有可以绕过的开关。
+    assert plan.required_options == []
+    assert plan.restorable is False
     assert "通过 installer 准备对应的 WebUI kernel" in guidance
     assert "不能通过强制恢复开关绕过" in guidance
 
@@ -799,7 +866,8 @@ def test_preview_restore_plan_allows_missing_path_for_package_kernel_webui(monke
         expected_webui_type="invokeai",
     )
 
-    assert plan.errors == []
+    assert plan.blockers == []
+    assert plan.restorable is True
     assert plan.kernel_change is None
     assert len(plan.extension_changes) == 1
     assert plan.extension_changes[0].git is not None
@@ -847,6 +915,104 @@ def test_preview_restore_plan_prunes_comfyui_extensions_with_disabled_name(monke
     assert keep.git is not None
     assert keep.git.action == "switch_commit"
     assert extra.cleanup_action == "uninstall"
+    assert keep.diff.status == "modified"
+    assert extra.diff.status == "removed"
+    assert plan.diff_summary.extensions.modified == 1
+    assert plan.diff_summary.extensions.removed == 1
+
+
+def test_preview_restore_plan_marks_enabled_only_extension_change_as_modified(monkeypatch, tmp_path):
+    webui_path = tmp_path / "ComfyUI"
+    custom_nodes = webui_path / "custom_nodes"
+    (custom_nodes / "DemoNode").mkdir(parents=True)
+    snapshot = _webui_snapshot(webui_path)
+    snapshot.webui.type = "comfyui"
+    snapshot.extensions = [
+        snapshot_utils.ExtensionSnapshot(
+            name="DemoNode",
+            path=custom_nodes / "DemoNode",
+            enabled=False,
+            is_git_repo=True,
+            url="https://example.test/demo",
+            commit="abcdef",
+        )
+    ]
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+
+    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_utils.git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(restore_utils, "repository_dirty", lambda _path, _include_untracked: False)
+    monkeypatch.setattr(restore_utils.git_warpper, "get_current_commit", lambda _path: "abcdef")
+
+    plan = restore_utils.preview_webui_snapshot_restore(
+        snapshot_path=output,
+        webui_path=webui_path,
+        expected_webui_type="comfyui",
+    )
+
+    item = plan.extension_changes[0]
+    assert item.git is not None
+    # 仓库 commit 已一致, 只有启用状态需要切换。
+    assert item.git.action == "skip_same_commit"
+    assert item.current_enabled is True
+    assert item.target_enabled is False
+    assert item.diff.status == "modified"
+    assert restore_utils.DiffField(key="enabled", current="true", target="false") in item.diff.fields
+    assert plan.diff_summary.total_changes == 1
+
+
+def test_preview_restore_plan_reports_dirty_extension_blocker(monkeypatch, tmp_path):
+    webui_path = tmp_path / "ComfyUI"
+    custom_nodes = webui_path / "custom_nodes"
+    (custom_nodes / "DemoNode").mkdir(parents=True)
+    snapshot = _webui_snapshot(webui_path)
+    snapshot.webui.type = "comfyui"
+    snapshot.extensions = [
+        snapshot_utils.ExtensionSnapshot(
+            name="DemoNode",
+            path=custom_nodes / "DemoNode",
+            enabled=True,
+            is_git_repo=True,
+            url="https://example.test/demo",
+            commit="abcdef",
+        )
+    ]
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+
+    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_utils.git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(restore_utils, "repository_dirty", lambda _path, _include_untracked: True)
+    monkeypatch.setattr(restore_utils.git_warpper, "get_current_commit", lambda _path: "123456")
+
+    blocked = restore_utils.preview_webui_snapshot_restore(
+        snapshot_path=output,
+        webui_path=webui_path,
+        expected_webui_type="comfyui",
+    )
+
+    assert [blocker.code for blocker in blocked.blockers] == ["extension_dirty"]
+    assert blocked.blockers[0].scope == "extension"
+    assert blocked.blockers[0].target == "DemoNode"
+    assert blocked.blockers[0].required_options == ["force_git_reset"]
+    assert blocked.required_options == ["force_git_reset"]
+    assert blocked.restorable is False
+    assert blocked.extension_changes[0].diff.status == "blocked"
+    assert blocked.diff_summary.extensions.blocked == 1
+
+    forced = restore_utils.preview_webui_snapshot_restore(
+        snapshot_path=output,
+        webui_path=webui_path,
+        expected_webui_type="comfyui",
+        options=restore_utils.SnapshotRestoreOptions(force_git_reset=True),
+    )
+
+    # 启用 required_options 指出的开关后, 同一份快照不再有阻断项。
+    assert forced.blockers == []
+    assert forced.required_options == []
+    assert forced.restorable is True
+    assert forced.extension_changes[0].diff.status == "modified"
 
 
 def test_preview_restore_plan_keeps_comfyui_registry_extensions_when_pruning(monkeypatch, tmp_path):
