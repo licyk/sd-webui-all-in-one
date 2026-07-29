@@ -77,6 +77,7 @@ def run_git(
     shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
+    timeout: float | None = None,
 ) -> str:
     """
     执行 Git 命令并返回标准输出。
@@ -96,6 +97,8 @@ def run_git(
             执行进程时的起始路径
         check (bool):
             是否检查进程退出状态
+        timeout (float | None):
+            子进程执行超时时间（秒）
 
     Returns:
         str: 命令输出
@@ -112,6 +115,7 @@ def run_git(
     shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
+    timeout: float | None = None,
 ) -> str | None:
     """
     执行 Git 命令并实时输出日志。
@@ -131,6 +135,8 @@ def run_git(
             执行进程时的起始路径
         check (bool):
             是否检查进程退出状态
+        timeout (float | None):
+            子进程执行超时时间（秒）
 
     Returns:
         str | None: 命令输出
@@ -147,6 +153,7 @@ def run_git(
     shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
+    timeout: float | None = None,
 ) -> str | None:
     """
     执行 Git 命令。
@@ -166,6 +173,8 @@ def run_git(
             执行进程时的起始路径
         check (bool):
             是否检查进程退出状态
+        timeout (float | None):
+            子进程执行超时时间（秒）
 
     Returns:
         str | None: 命令输出
@@ -181,6 +190,7 @@ def run_git(
     shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
+    timeout: float | None = None,
 ) -> str | None:
     """
     执行 Git 命令
@@ -200,16 +210,18 @@ def run_git(
             执行进程时的起始路径
         check (bool):
             是否检查进程退出状态
+        timeout (float | None):
+            子进程执行超时时间（秒）
 
     Returns:
         str | None: 命令输出
     """
     command = build_git_command(*args, path=path)
-    if custom_env is None and live is True and shell == DEFAULT_SUBPROCESS_SHELL and cwd is None and check is True:
+    if custom_env is None and live is True and shell == DEFAULT_SUBPROCESS_SHELL and cwd is None and check is True and timeout is None:
         return run_cmd(command)
-    if custom_env is None and shell == DEFAULT_SUBPROCESS_SHELL and cwd is None and check is True:
+    if custom_env is None and shell == DEFAULT_SUBPROCESS_SHELL and cwd is None and check is True and timeout is None:
         return run_cmd(command, live=live)
-    return run_cmd(command, custom_env=custom_env, live=live, shell=shell, cwd=cwd, check=check)
+    return run_cmd(command, custom_env=custom_env, live=live, shell=shell, cwd=cwd, check=check, timeout=timeout)
 
 
 def clone(

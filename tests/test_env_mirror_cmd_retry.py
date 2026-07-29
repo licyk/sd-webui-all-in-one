@@ -1,11 +1,13 @@
 import os
 import shlex
 import subprocess
+import sys
 
 import pytest
 
 from sd_webui_all_in_one import cmd as cmd_module
 from sd_webui_all_in_one import env_manager
+from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one import mirror_manager
 from sd_webui_all_in_one import retry_decorator
 from sd_webui_all_in_one.pytorch_manager.types import (
@@ -173,6 +175,43 @@ def test_set_github_mirror_writes_or_clears_config(monkeypatch, tmp_path):
     assert not config_path.exists()
 
 
+def test_github_mirror_timeout_continues_to_next_mirror(monkeypatch):
+    calls = []
+
+    def fake_run_git(*args, **kwargs):
+        calls.append((args, kwargs))
+        if len(calls) == 1:
+            raise subprocess.TimeoutExpired(args, kwargs["timeout"])
+
+    monkeypatch.setattr(mirror_manager.git_warpper, "run_git", fake_run_git)
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", "/tmp/ignored-gitconfig")
+
+    selected = mirror_manager.test_github_mirror(
+        ["https://slow.example/github.com", "https://fast.example/github.com"],
+        timeout=3.5,
+    )
+
+    assert selected == "https://fast.example/github.com"
+    assert [call[0] for call in calls] == [
+        ("ls-remote", "https://slow.example/github.com/licyk/empty"),
+        ("ls-remote", "https://fast.example/github.com/licyk/empty"),
+    ]
+    for _, kwargs in calls:
+        assert kwargs["live"] is False
+        assert kwargs["shell"] is False
+        assert kwargs["timeout"] == 3.5
+        assert "GIT_CONFIG_GLOBAL" not in kwargs["custom_env"]
+
+
+def test_github_mirror_returns_none_when_all_mirrors_timeout(monkeypatch):
+    def fake_run_git(*args, **kwargs):
+        raise subprocess.TimeoutExpired(args, kwargs["timeout"])
+
+    monkeypatch.setattr(mirror_manager.git_warpper, "run_git", fake_run_git)
+
+    assert mirror_manager.test_github_mirror(["https://slow-a.example", "https://slow-b.example"], timeout=1.0) is None
+
+
 def test_get_auto_pypi_mirror_config_selects_by_network(monkeypatch):
     monkeypatch.setattr(mirror_manager, "network_gfw_test", lambda: True)
     official = mirror_manager.get_auto_pypi_mirror_config({})
@@ -206,9 +245,10 @@ def test_run_cmd_returns_output_and_raises_on_nonzero(monkeypatch):
 
     monkeypatch.setattr(cmd_module.subprocess, "run", fake_run)
 
-    assert cmd_module.run_cmd(["python", "-V"], live=False, shell=False) == "ok\n"
+    assert cmd_module.run_cmd(["python", "-V"], live=False, shell=False, timeout=4.0) == "ok\n"
     assert calls[0]["stdout"] == subprocess.PIPE
     assert calls[0]["stderr"] == subprocess.PIPE
+    assert calls[0]["timeout"] == 4.0
 
     def fake_fail(**kwargs):
         return subprocess.CompletedProcess(args=kwargs["args"], returncode=7, stdout="bad out", stderr="bad err")
@@ -220,6 +260,38 @@ def test_run_cmd_returns_output_and_raises_on_nonzero(monkeypatch):
 
     assert "bad out" in str(exc.value)
     assert "bad err" in str(exc.value)
+
+
+def test_run_git_passes_timeout_to_run_cmd(monkeypatch):
+    calls = []
+
+    monkeypatch.setattr(git_warpper, "build_git_command", lambda *args, path=None: ["git", *args])
+    monkeypatch.setattr(git_warpper, "run_cmd", lambda command, **kwargs: calls.append((command, kwargs)) or "")
+
+    assert git_warpper.run_git("ls-remote", "https://example.test/repo", live=False, shell=False, timeout=2.5) == ""
+    assert calls == [
+        (
+            ["git", "ls-remote", "https://example.test/repo"],
+            {
+                "custom_env": None,
+                "live": False,
+                "shell": False,
+                "cwd": None,
+                "check": True,
+                "timeout": 2.5,
+            },
+        )
+    ]
+
+
+def test_run_cmd_enforces_subprocess_timeout():
+    with pytest.raises(subprocess.TimeoutExpired):
+        cmd_module.run_cmd(
+            [sys.executable, "-c", "import time; time.sleep(1)"],
+            live=False,
+            shell=False,
+            timeout=0.05,
+        )
 
 
 def test_retryable_retries_none_and_unretryable(monkeypatch):

@@ -1,6 +1,7 @@
 """PyPI / Github / HuggingFace 镜像管理工具"""
 
 import os
+import subprocess
 from pathlib import Path
 
 from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
@@ -55,6 +56,9 @@ HUGGINGFACE_MIRROR_LIST = [
     "https://hf-mirror.com",
 ]
 """HuggingFace 镜像源列表"""
+
+GITHUB_MIRROR_TEST_TIMEOUT = 10.0
+"""单个 Github 镜像源的测试超时时间（秒）"""
 
 
 def set_pypi_index_mirror(
@@ -114,12 +118,15 @@ def set_pypi_find_links_mirror(
 
 def test_github_mirror(
     mirror: list[str],
+    timeout: float = GITHUB_MIRROR_TEST_TIMEOUT,
 ) -> str | None:
     """测试 Github 镜像源可用性, 当有一个可用的 Github 镜像源则直接返回该镜像源地址
 
     Args:
         mirror (list[str]):
             Github 镜像源列表
+        timeout (float):
+            单个 Github 镜像源的测试超时时间（秒）
 
     Returns:
         (str | None): 当有可用镜像源可用时则返回该镜像源地址
@@ -130,9 +137,18 @@ def test_github_mirror(
         logger.info("测试 Github 镜像源: %s", gh)
         test_repo = f"{gh}/licyk/empty"
         try:
-            git_warpper.run_git("ls-remote", test_repo, custom_env=custon_env, live=False)
+            git_warpper.run_git(
+                "ls-remote",
+                test_repo,
+                custom_env=custon_env,
+                live=False,
+                shell=False,
+                timeout=timeout,
+            )
             logger.info("该镜像源可用")
             return gh
+        except subprocess.TimeoutExpired:
+            logger.warning("镜像源测试超时（%s 秒）", timeout)
         except Exception:
             logger.warning("镜像源不可用")
 

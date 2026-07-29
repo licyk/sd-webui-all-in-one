@@ -100,6 +100,7 @@ def run_cmd(
     shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
+    timeout: float | None = None,
 ) -> str:
     """执行 Shell 命令并返回标准输出。
 
@@ -116,6 +117,8 @@ def run_cmd(
             执行进程时的起始路径
         check (bool):
             检查进程退出状态
+        timeout (float | None):
+            子进程执行超时时间（秒）
 
     Returns:
         str:
@@ -132,6 +135,7 @@ def run_cmd(
     shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
+    timeout: float | None = None,
 ) -> str | None:
     """执行 Shell 命令并实时输出日志。
 
@@ -148,6 +152,8 @@ def run_cmd(
             执行进程时的起始路径
         check (bool):
             检查进程退出状态
+        timeout (float | None):
+            子进程执行超时时间（秒）
 
     Returns:
         str | None:
@@ -164,6 +170,7 @@ def run_cmd(
     shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
+    timeout: float | None = None,
 ) -> str | None:
     """执行 Shell 命令。
 
@@ -180,6 +187,8 @@ def run_cmd(
             执行进程时的起始路径
         check (bool):
             检查进程退出状态
+        timeout (float | None):
+            子进程执行超时时间（秒）
 
     Returns:
         str | None:
@@ -195,6 +204,7 @@ def run_cmd(
     shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
+    timeout: float | None = None,
 ) -> str | None:
     """执行 Shell 命令
 
@@ -211,6 +221,8 @@ def run_cmd(
             执行进程时的起始路径
         check (bool):
             检查进程退出状态, 当异常退出时引发 RuntimeError
+        timeout (float | None):
+            子进程执行超时时间（秒）
     Returns:
         (str | None):
             命令执行时输出的内容, 当 live=True / 执行命令发生错误时输出内容为 None
@@ -264,10 +276,12 @@ def run_cmd(
 
     if not live:
         kwargs["stdout"] = kwargs["stderr"] = subprocess.PIPE
+    if timeout is not None:
+        kwargs["timeout"] = timeout
 
     logger.debug("执行命令的参数: %s", kwargs)
 
-    if live and in_jupyter():
+    if live and in_jupyter() and timeout is None:
         logger.debug("使用 _run_in_jupyter() 执行命令")
         result = _run_in_jupyter(
             command=command_to_exec,
