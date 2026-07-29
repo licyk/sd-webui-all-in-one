@@ -478,6 +478,105 @@ def test_comfyui_base_parses_actual_argument_parser_object(tmp_path: Path) -> No
     assert by_name["cache_classic"].exclusive_group == by_name["cache_lru"].exclusive_group
 
 
+def test_parser_loader_hides_host_arguments_and_restores_argv(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    sd_webui_path = tmp_path / "sd_webui"
+    (sd_webui_path / "modules").mkdir(parents=True)
+    (sd_webui_path / "modules" / "__init__.py").write_text("", encoding="utf-8")
+    (sd_webui_path / "modules" / "cmd_args.py").write_text(
+        """import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("--api", action="store_true")
+parser.parse_args()
+""",
+        encoding="utf-8",
+    )
+    original_argv = ["manager", "--desktop-only"]
+    monkeypatch.setattr(sys, "argv", original_argv)
+
+    catalog = sd_webui_base.get_sd_webui_launch_argument_catalog(sd_webui_path)
+
+    assert not catalog.diagnostics
+    assert {argument.name for argument in catalog.arguments} >= {"api", "help"}
+    assert sys.argv is original_argv
+
+
+def test_parser_loader_system_exit_falls_back_to_help(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    (tmp_path / "launch.py").write_text("print('''" + HELP_LF + "''')", encoding="utf-8")
+    original_argv = ["manager", "--desktop-only"]
+    monkeypatch.setattr(sys, "argv", original_argv)
+
+    def load_parser():
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--token", required=True)
+        parser.parse_args()
+        return parser
+
+    catalog = discover_launch_argument_catalog(
+        "demo",
+        tmp_path,
+        provider_identity="test:system-exit",
+        help_command_factory=lambda context: build_script_help_command(context, ("launch.py",)),
+        parser_loader=load_parser,
+        python_executable=sys.executable,
+    )
+
+    assert catalog.arguments
+    diagnostic = next(item for item in catalog.diagnostics if item.code == "object_discovery_failed")
+    assert diagnostic.message == "ArgumentParser loader exited; falling back to --help"
+    assert diagnostic.detail == "exit code: 2"
+    assert sys.argv is original_argv
+
+
+def test_parser_loaders_are_serialized(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    original_argv = ["manager", "--desktop-only"]
+    monkeypatch.setattr(sys, "argv", original_argv)
+    barrier = threading.Barrier(3)
+    state_lock = threading.Lock()
+    active_loaders = 0
+    max_active_loaders = 0
+    seen_argv: list[list[str]] = []
+    catalogs = []
+
+    def load_parser():
+        nonlocal active_loaders, max_active_loaders
+        with state_lock:
+            active_loaders += 1
+            max_active_loaders = max(max_active_loaders, active_loaders)
+            seen_argv.append(list(sys.argv))
+        time.sleep(0.05)
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--listen", action="store_true")
+        with state_lock:
+            active_loaders -= 1
+        return parser
+
+    def discover() -> None:
+        barrier.wait()
+        catalogs.append(
+            discover_launch_argument_catalog(
+                "demo",
+                tmp_path,
+                provider_identity="test:serialized-loader",
+                help_command_factory=lambda _context: None,
+                parser_loader=load_parser,
+            )
+        )
+
+    workers = [threading.Thread(target=discover) for _ in range(2)]
+    for worker in workers:
+        worker.start()
+    barrier.wait()
+    for worker in workers:
+        worker.join(timeout=2)
+
+    assert all(not worker.is_alive() for worker in workers)
+    assert len(catalogs) == 2
+    assert all(not catalog.diagnostics for catalog in catalogs)
+    assert max_active_loaders == 1
+    assert seen_argv == [["manager"], ["manager"]]
+    assert sys.argv is original_argv
+
+
 def test_migrated_base_managers_parse_their_actual_parser_objects(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     sd_webui_path = tmp_path / "sd_webui"
     (sd_webui_path / "modules").mkdir(parents=True)

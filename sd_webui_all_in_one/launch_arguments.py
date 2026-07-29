@@ -12,7 +12,8 @@ import signal
 import subprocess
 import sys
 import threading
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -108,6 +109,19 @@ class _UsageFrame(TypedDict):
 
 _ACTIVE_PROCESSES: set[subprocess.Popen[str]] = set()
 _ACTIVE_PROCESSES_LOCK = threading.Lock()
+_PARSER_LOAD_LOCK = threading.RLock()
+
+
+@contextmanager
+def _temporary_parser_argv() -> Iterator[None]:
+    """加载第三方参数模块时隐藏宿主进程的命令行参数。"""
+    original_argv = sys.argv
+    program = original_argv[0] if original_argv else str(sys.executable)
+    sys.argv = [program]
+    try:
+        yield
+    finally:
+        sys.argv = original_argv
 
 
 def _terminate_process(process: subprocess.Popen[str]) -> None:
@@ -925,9 +939,11 @@ def discover_launch_argument_catalog(
             parser_failure = LaunchArgumentDiagnostic("warning", "object_discovery_unavailable", "No ArgumentParser object loader was provided")
         else:
             try:
+                with _PARSER_LOAD_LOCK, _temporary_parser_argv():
+                    parser = parser_loader()
                 catalog = build_launch_argument_catalog_from_parser(
                     webui_type,
-                    parser_loader(),
+                    parser,
                     provider_identity=f"{provider_identity}:object",
                     source_identity=parser_source_identity or provider_identity,
                 )
@@ -939,6 +955,13 @@ def discover_launch_argument_catalog(
                     "object_discovery_failed",
                     "ArgumentParser object parsing failed; falling back to --help",
                     "; ".join(diagnostic.message for diagnostic in errors),
+                )
+            except SystemExit as error:
+                parser_failure = LaunchArgumentDiagnostic(
+                    "warning",
+                    "object_discovery_failed",
+                    "ArgumentParser loader exited; falling back to --help",
+                    f"exit code: {error.code!r}",
                 )
             except Exception as error:
                 parser_failure = LaunchArgumentDiagnostic(
