@@ -18,6 +18,7 @@ from sd_webui_all_in_one.pytorch_manager.types import (
     PyTorchVersionInfoList,
 )
 
+
 PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
     {
         "name": "Torch",

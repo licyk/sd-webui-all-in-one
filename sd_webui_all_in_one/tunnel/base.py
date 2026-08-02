@@ -15,6 +15,7 @@ from sd_webui_all_in_one.config import (
 )
 from sd_webui_all_in_one.logger import get_logger
 
+
 logger = get_logger(
     name=LOGGER_NAME,
     level=LOGGER_LEVEL,

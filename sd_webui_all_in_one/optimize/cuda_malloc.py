@@ -1,16 +1,17 @@
 """CUDA Malloc 配置工具"""
 
-import ctypes
-import importlib.util
 import os
+import ctypes
 import subprocess
+import importlib.util
 
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
     LOGGER_LEVEL,
+    LOGGER_COLOR,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.logger import get_logger
+
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -232,7 +233,7 @@ def apply_pytorch_alloc_conf(
     def _add_var(
         var: str,
     ) -> None:
-        if custom_env.get(var):
+        if var in custom_env and custom_env[var]:
             custom_env[var] = config + "," + custom_env[var]
         else:
             custom_env[var] = config

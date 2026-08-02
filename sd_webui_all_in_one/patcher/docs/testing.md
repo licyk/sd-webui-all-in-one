@@ -98,7 +98,6 @@ module = importlib.import_module("hp_target")
 def patch_source(source, filename):
     return source.replace('"before"', '"after"')
 
-
 monkey.patch_sources(patch_source)
 module = importlib.import_module("hp_target_source")
 assert module.VALUE == "after"
@@ -177,7 +176,12 @@ assert host.wait_for(lambda message: message.get("type") == "progress.update")
 取消响应：
 
 ```python
-{"file.delete": {"ok": False, "error": {"code": "cancelled", "message": "user cancelled"}}}
+{
+    "file.delete": {
+        "ok": False,
+        "error": {"code": "cancelled", "message": "user cancelled"}
+    }
+}
 ```
 
 客户端应抛 `UserCanceledException`。

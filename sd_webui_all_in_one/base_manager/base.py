@@ -1,37 +1,16 @@
 """管理器基类"""
 
-import importlib.metadata
 import os
 import sys
+import importlib.metadata
 import urllib.parse
 import urllib.request
-from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any, cast
+from typing import Any, Callable, cast
 
-from sd_webui_all_in_one import git_warpper
-from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
-    HOTPATCHER_ENV_PREFIX,
-    ensure_hotpatcher_pythonpath_first,
-)
-from sd_webui_all_in_one.cmd import run_cmd
-from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
-    LOGGER_LEVEL,
-    LOGGER_NAME,
-    SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH,
-)
-from sd_webui_all_in_one.custom_exceptions import AggregateError, WebUiRuntimeError
 from sd_webui_all_in_one.downloader import DownloadToolType
-from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
-from sd_webui_all_in_one.file_manager import (
-    copy_files,
-    is_folder_empty,
-    remove_files,
-)
-from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.mirror_manager import (
     GITHUB_MIRROR_LIST,
     HUGGINGFACE_MIRROR_LIST,
@@ -39,37 +18,57 @@ from sd_webui_all_in_one.mirror_manager import (
     set_git_base_config,
     set_github_mirror,
 )
-from sd_webui_all_in_one.model_downloader import (
-    ModelDownloadUrlType,
-    SupportedWebUiType,
-    display_model_table,
-    download_model,
-    export_model_list,
-    search_models_from_library,
-)
-from sd_webui_all_in_one.package_analyzer import (
-    PyWhlVersionComparison,
-    get_package_name,
-    get_package_version,
-    is_package_has_version,
-)
-from sd_webui_all_in_one.pkg_manager import install_pytorch
 from sd_webui_all_in_one.pytorch_manager import (
-    PyTorchDeviceType,
-    PyTorchDeviceTypeCategory,
+    query_pytorch_info_from_library,
     auto_detect_available_pytorch_type,
     auto_detect_pytorch_device_category,
+    get_pytorch_mirror,
+    get_pytorch_mirror_type,
     display_pytorch_config,
     export_pytorch_list,
     find_latest_pytorch_info,
-    get_pytorch_mirror,
-    get_pytorch_mirror_type,
     normalize_pytorch_version_suffix,
-    query_pytorch_info_from_library,
+    PyTorchDeviceType,
+    PyTorchDeviceTypeCategory,
 )
+from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
+from sd_webui_all_in_one.package_analyzer import (
+    PyWhlVersionComparison,
+    get_package_name,
+    is_package_has_version,
+    get_package_version,
+)
+from sd_webui_all_in_one import git_warpper
+from sd_webui_all_in_one.file_manager import (
+    is_folder_empty,
+    copy_files,
+    remove_files,
+)
+from sd_webui_all_in_one.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+    LOGGER_NAME,
+    SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH,
+)
+from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.pkg_manager import install_pytorch
+from sd_webui_all_in_one.model_downloader import (
+    download_model,
+    export_model_list,
+    display_model_table,
+    search_models_from_library,
+    SupportedWebUiType,
+    ModelDownloadUrlType,
+)
+from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.utils import (
-    append_python_path,
     print_divider,
+    append_python_path,
+)
+from sd_webui_all_in_one.custom_exceptions import AggregateError, WebUiRuntimeError
+from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
+    HOTPATCHER_ENV_PREFIX,
+    ensure_hotpatcher_pythonpath_first,
 )
 
 logger = get_logger(
@@ -221,7 +220,11 @@ def get_pytorch_update_status() -> PyTorchUpdateStatus:
             error=str(exc),
         )
     latest_torch_spec = next(
-        (package for package in (latest_info.get("torch_ver") or "").split() if get_package_name(package) == "torch" and is_package_has_version(package)),
+        (
+            package
+            for package in (latest_info.get("torch_ver") or "").split()
+            if get_package_name(package) == "torch" and is_package_has_version(package)
+        ),
         None,
     )
     if latest_torch_spec is None:
@@ -425,7 +428,6 @@ def reinstall_pytorch(
         force_reinstall (bool):
             是否强制重装 PyTorch
     """
-
     def _install(
         input_name: str | None = None,
         input_index: int | None = None,
@@ -715,7 +717,8 @@ def get_repo_name_from_url(
     repo_name = os.path.basename(path)
 
     # 4. 移除 .git 后缀
-    repo_name = repo_name.removesuffix(".git")
+    if repo_name.endswith(".git"):
+        repo_name = repo_name[:-4]
 
     return repo_name
 

@@ -11,11 +11,10 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -23,14 +22,14 @@ else:
     from sd_webui_all_in_one import toml_parser as tomllib
 
 from sd_webui_all_in_one.cmd import run_cmd
+from sd_webui_all_in_one.downloader import download_file
+from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.downloader import download_file
-from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.pkg_manager import install_requirements
 
 if TYPE_CHECKING:
     from sd_webui_all_in_one.base_manager.version_manager import ExtensionIndexItem
@@ -60,7 +59,7 @@ logger = get_logger(
 ComfyRegistryProgressCallback = Callable[[int, int | None], object]
 """Registry 节点加载进度回调。"""
 
-_COMFY_REGISTRY_NODE_CACHE: dict[tuple[str, int | None], tuple[float, tuple[ComfyRegistryNode, ...]]] = {}
+_COMFY_REGISTRY_NODE_CACHE: dict[tuple[str, int | None], tuple[float, tuple["ComfyRegistryNode", ...]]] = {}
 
 
 class ComfyRegistryInstallUnavailableError(ValueError):
@@ -78,7 +77,10 @@ class ComfyRegistryInstallUnavailableError(ValueError):
         self.reason = reason
         self.http_status = http_status
         status_text = f"HTTP {http_status}, " if http_status is not None else ""
-        super().__init__(f"Comfy Registry 节点不可安装: {node_id}@{version or 'latest'}; {status_text}{reason}。Registry 中存在节点记录，但没有可安装 CNR 版本。")
+        super().__init__(
+            f"Comfy Registry 节点不可安装: {node_id}@{version or 'latest'}; "
+            f"{status_text}{reason}。Registry 中存在节点记录，但没有可安装 CNR 版本。"
+        )
 
 
 @dataclass(slots=True)

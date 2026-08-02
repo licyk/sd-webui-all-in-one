@@ -527,7 +527,7 @@ class AliasLoader(Loader):
                 已创建的模块对象
         """
 
-        return
+        return None
 
 
 class HookedMetaPathFinder(MetaPathFinder):

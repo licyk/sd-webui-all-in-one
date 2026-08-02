@@ -1,10 +1,10 @@
 """日志工具"""
 
+import sys
 import copy
-import importlib
 import inspect
 import logging
-import sys
+import importlib
 
 
 class LoggingColoredFormatter(logging.Formatter):

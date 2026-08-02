@@ -5,17 +5,15 @@ import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import (
-    Literal,
+    cast,
     TypeAlias,
     TypedDict,
-    cast,
+    Literal,
     get_args,
 )
 
 from sd_webui_all_in_one import git_warpper
-from sd_webui_all_in_one.ansi_color import ANSIColor
 from sd_webui_all_in_one.base_manager.base import (
-    EnvCheckTask,
     apply_git_base_config_and_github_mirror,
     apply_git_config_global_to_process,
     clone_repo,
@@ -24,6 +22,7 @@ from sd_webui_all_in_one.base_manager.base import (
     pre_download_model_for_webui,
     prepare_pytorch_install_info,
     print_divider,
+    EnvCheckTask,
     run_env_check_tasks,
 )
 from sd_webui_all_in_one.base_manager.snapshot import WebUiSnapshot, build_webui_snapshot
@@ -33,11 +32,11 @@ from sd_webui_all_in_one.downloader import (
     download_file,
 )
 from sd_webui_all_in_one.env_check import (
-    check_numpy,
-    check_onnxruntime_gpu,
     check_torch_version,
-    fix_torch_libomp,
     py_dependency_checker,
+    check_numpy,
+    fix_torch_libomp,
+    check_onnxruntime_gpu,
 )
 from sd_webui_all_in_one.file_manager import (
     generate_dir_tree,
@@ -51,18 +50,19 @@ from sd_webui_all_in_one.mirror_manager import (
 from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
+from sd_webui_all_in_one.ansi_color import ANSIColor
 
 if sys.version_info >= (3, 11):
     import tomllib
 else:
     from sd_webui_all_in_one import toml_parser as tomllib
 
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
     LOGGER_LEVEL,
+    LOGGER_COLOR,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.logger import get_logger
 
 logger = get_logger(
     name=LOGGER_NAME,

@@ -1,6 +1,5 @@
 """Zrok 内网穿透实现"""
 
-import platform
 import queue
 import re
 import shutil
@@ -10,6 +9,7 @@ import tarfile
 import threading
 import time
 import uuid
+import platform
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -25,6 +25,7 @@ from sd_webui_all_in_one.config import (
 from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.tunnel.base import BaseTunnel
+
 
 logger = get_logger(
     name=LOGGER_NAME,

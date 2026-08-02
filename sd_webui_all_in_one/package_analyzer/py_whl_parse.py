@@ -8,8 +8,8 @@
 """
 
 import os
-import platform
 import sys
+import platform
 from typing import (
     Any,
     NamedTuple,

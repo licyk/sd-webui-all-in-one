@@ -6,6 +6,7 @@ import subprocess
 import threading
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Optional
 
 from sd_webui_all_in_one.cmd import preprocess_command
 from sd_webui_all_in_one.config import (
@@ -16,6 +17,7 @@ from sd_webui_all_in_one.config import (
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.tunnel.base import BaseTunnel
 from sd_webui_all_in_one.tunnel.utils import gen_ssh_key
+
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -64,8 +66,8 @@ class SSHTunnel(BaseTunnel):
         self.ssh_args = ssh_args
         self.url_pattern = url_pattern
         self.line_limit = line_limit
-        self._ssh_key_path: Path | None = None
-        self._temp_dir: TemporaryDirectory | None = None
+        self._ssh_key_path: Optional[Path] = None
+        self._temp_dir: Optional[TemporaryDirectory] = None
 
     def _get_or_create_ssh_key(
         self,

@@ -330,7 +330,10 @@ def convert_value(value: Any, annotation: Any, path: str) -> Any:
             raise ValueError(f"Parameter '{path}' must be an object")
         key_type = args[0] if args else str
         value_type = args[1] if len(args) == 2 else Any
-        return {convert_value(key, key_type, f"{path}.<key>"): convert_value(item, value_type, f"{path}.{key}") for key, item in value.items()}
+        return {
+            convert_value(key, key_type, f"{path}.<key>"): convert_value(item, value_type, f"{path}.{key}")
+            for key, item in value.items()
+        }
     if inspect.isclass(annotation) and is_dataclass(annotation):
         if not isinstance(value, dict):
             raise ValueError(f"Parameter '{path}' must be an object")

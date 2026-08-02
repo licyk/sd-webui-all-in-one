@@ -1,6 +1,7 @@
 import subprocess
 
 import pytest
+
 from sd_webui_all_in_one_hotpatcher_ext.uv_pip import (
     apply_from_config,
     is_uv_patch_installed,

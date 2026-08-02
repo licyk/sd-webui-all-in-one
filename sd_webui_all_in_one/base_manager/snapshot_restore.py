@@ -2,18 +2,20 @@
 
 from __future__ import annotations
 
-import json
 import os
+import json
 import platform
 import sys
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Callable, Literal
 from urllib.parse import unquote, urlparse
 
 from sd_webui_all_in_one import git_warpper
-from sd_webui_all_in_one.base_manager import comfy_registry, comfyui_base, invokeai_base, sd_webui_base
+import sd_webui_all_in_one.base_manager.comfy_registry as comfy_registry
+import sd_webui_all_in_one.base_manager.comfyui_base as comfyui_base
+import sd_webui_all_in_one.base_manager.invokeai_base as invokeai_base
+import sd_webui_all_in_one.base_manager.sd_webui_base as sd_webui_base
 from sd_webui_all_in_one.base_manager.base import (
     apply_git_base_config_and_github_mirror,
     clone_repo,
@@ -30,18 +32,19 @@ from sd_webui_all_in_one.base_manager.snapshot import (
 )
 from sd_webui_all_in_one.base_manager.version_manager import fetch_repository
 from sd_webui_all_in_one.cmd import run_cmd
-from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
-    LOGGER_LEVEL,
-    LOGGER_NAME,
-)
 from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
 from sd_webui_all_in_one.file_manager import is_folder_empty
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
 from sd_webui_all_in_one.package_analyzer import normalize_package_name
 from sd_webui_all_in_one.pkg_manager import pip_install
-from sd_webui_all_in_one.pytorch_manager import get_pytorch_mirror, infer_pytorch_device_type
+from sd_webui_all_in_one.pytorch_manager import infer_pytorch_device_type, get_pytorch_mirror
+from sd_webui_all_in_one.config import (
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+)
+
 
 logger = get_logger(
     name=LOGGER_NAME,

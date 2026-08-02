@@ -85,11 +85,13 @@ def patch_webbrowser(
                     try:
                         browser.open(url)
                     except Exception as exc:
-                        active_state.browser_diagnostics.append(f"browser host event failed; opening remained suppressed: {exc}")
+                        active_state.browser_diagnostics.append(
+                            f"browser host event failed; opening remained suppressed: {exc}"
+                        )
                         del active_state.browser_diagnostics[:-100]
             return True
 
-        wrapper.__sd_webui_aio_browser_state__ = active_state
+        setattr(wrapper, "__sd_webui_aio_browser_state__", active_state)
         return wrapper
 
     if not active_state.browser_patch_registered:
@@ -98,7 +100,7 @@ def patch_webbrowser(
 
     module = sys.modules.get("webbrowser")
     if module is not None and hasattr(module, "open"):
-        module.open = hook_open(module.open, module)
+        setattr(module, "open", hook_open(getattr(module, "open"), module))
 
 
 def is_webbrowser_patch_registered(*, state: HotpatcherState | None = None) -> bool:

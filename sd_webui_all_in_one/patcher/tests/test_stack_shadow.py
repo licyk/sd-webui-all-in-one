@@ -5,6 +5,7 @@ import traceback
 import zipfile
 
 import pytest
+
 from sd_webui_all_in_one_hotpatcher.bootstrap import configure_from_env
 from sd_webui_all_in_one_hotpatcher.stack_shadow import (
     install_stack_shadower,

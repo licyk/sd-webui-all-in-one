@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import inspect
 import json
+import inspect
 import re
 import secrets
 import threading
@@ -21,6 +21,7 @@ from urllib.parse import unquote, urlparse
 from sd_webui_all_in_one.api_server.introspection import CallablePlan, compile_callable, to_json_value
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from sd_webui_all_in_one.logger import get_logger
+
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -56,8 +57,6 @@ API_ERROR_CODES = (
     "task_not_found",
     "unauthorized",
 )
-
-
 @dataclass(frozen=True, slots=True)
 class ApiMethodSpec:
     """真实 callable 的 API 注册信息，不保存重复参数 schema。"""
@@ -65,7 +64,6 @@ class ApiMethodSpec:
     handler: Callable[..., Any]
     description: str = ""
     bound_arguments: Mapping[str, Any] = field(default_factory=dict)
-
 
 @dataclass(frozen=True, slots=True)
 class RegisteredMethod:
@@ -89,7 +87,7 @@ class RegisteredMethod:
             "parameters": [parameter.metadata() for parameter in self.plan.parameters],
         }
 
-    def invoke(self, params: Mapping[str, Any], context: ApiTaskContext) -> Any:
+    def invoke(self, params: Mapping[str, Any], context: "ApiTaskContext") -> Any:
         """使用通用调用计划直接执行真实 callable。
 
         Args:
@@ -157,7 +155,7 @@ class ApiTaskCanceled(RuntimeError):
 class ApiTaskContext:
     """API 后台任务上下文。"""
 
-    def __init__(self, task: ApiTask) -> None:
+    def __init__(self, task: "ApiTask") -> None:
         self._task = task
 
     @property
@@ -169,7 +167,7 @@ class ApiTaskContext:
         """
         return self._task.task_id
 
-    def set_progress(self, value: float | None = None, message: str = "") -> None:
+    def set_progress(self, value: float | int | None = None, message: str = "") -> None:
         """设置任务进度。
 
         Args:
@@ -268,7 +266,7 @@ class ApiTask:
             self.add_log("Cancel requested", level="warning")
             return True
 
-    def set_progress(self, value: float | None = None, message: str = "") -> None:
+    def set_progress(self, value: float | int | None = None, message: str = "") -> None:
         """设置任务进度。
 
         Args:

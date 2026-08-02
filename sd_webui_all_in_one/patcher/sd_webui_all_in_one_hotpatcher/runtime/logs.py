@@ -9,10 +9,9 @@ import subprocess
 import sys
 import threading
 import time
-from collections.abc import Iterable
 from dataclasses import dataclass
 from locale import getpreferredencoding
-from typing import Any, TextIO, cast
+from typing import Any, Iterable, TextIO, cast
 
 from ..state import HotpatcherState, get_default_state
 from .interfaces import RuntimeEventSink
@@ -38,10 +37,10 @@ def install_log_capture(
     logger_include: Iterable[str] | None = None,
     logger_exclude: Iterable[str] | None = DEFAULT_LOGGER_EXCLUDE,
     hook_policy: str = DEFAULT_HOOK_POLICY,
-    hook_check_interval: float = DEFAULT_HOOK_CHECK_INTERVAL,
+    hook_check_interval: int | float = DEFAULT_HOOK_CHECK_INTERVAL,
     fd_capture: str | None = DEFAULT_FD_CAPTURE,
     state: HotpatcherState | None = None,
-) -> LogCapture:
+) -> "LogCapture":
     """
     安装进程级日志采集
 
@@ -125,7 +124,7 @@ def configure_log_capture_from_env(
     config: dict[str, Any] | None = None,
     *,
     state: HotpatcherState | None = None,
-) -> LogCapture | None:
+) -> "LogCapture | None":
     """
     根据环境变量和配置安装日志采集
 
@@ -222,7 +221,7 @@ class RuntimeLogHandler(logging.Handler):
             接收结构化日志记录的采集器
     """
 
-    def __init__(self, capture: LogCapture):
+    def __init__(self, capture: "LogCapture"):
         super().__init__()
         self.capture = capture
         self._formatter = logging.Formatter()
@@ -273,7 +272,7 @@ class StreamTee:
             原始标准流对象
     """
 
-    def __init__(self, capture: LogCapture, stream_name: str, original: TextIO):
+    def __init__(self, capture: "LogCapture", stream_name: str, original: TextIO):
         self.capture = capture
         self.stream_name = stream_name
         self.original = original
@@ -397,7 +396,7 @@ class FdWritebackStream:
             原始 fallback stream。
     """
 
-    def __init__(self, fd_capture: FdStreamCapture, fallback: TextIO):
+    def __init__(self, fd_capture: "FdStreamCapture", fallback: TextIO):
         self.fd_capture = fd_capture
         self.fallback = fallback
 
@@ -462,7 +461,7 @@ class FdStreamCapture:
             fd 捕获是否已安装。
     """
 
-    def __init__(self, capture: LogCapture, stream_name: str, stream: TextIO):
+    def __init__(self, capture: "LogCapture", stream_name: str, stream: TextIO):
         self.capture = capture
         self.stream_name = stream_name
         self.stream = stream
@@ -597,7 +596,7 @@ class SubprocessCapture:
 
     def __init__(
         self,
-        capture: LogCapture,
+        capture: "LogCapture",
         mode: str,
         stdout_stream: TextIO,
         stderr_stream: TextIO,
@@ -871,7 +870,7 @@ class LogCapture:
         logger_include: tuple[str, ...],
         logger_exclude: tuple[str, ...],
         hook_policy: str,
-        hook_check_interval: float,
+        hook_check_interval: int | float,
         fd_capture: str,
         guard: Any | None = None,
     ):

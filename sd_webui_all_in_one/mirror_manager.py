@@ -4,26 +4,27 @@ import os
 import subprocess
 from pathlib import Path
 
-from sd_webui_all_in_one import git_warpper
+from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
+from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.file_manager import remove_files
 from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
     LOGGER_LEVEL,
-    LOGGER_NAME,
+    LOGGER_COLOR,
     SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR,
+    LOGGER_NAME,
     SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH,
 )
-from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
-from sd_webui_all_in_one.file_manager import remove_files
-from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pytorch_manager import (
+    PYTORCH_FIND_LINKS_MIRROR_ALIYUN,
     PYPI_EXTRA_INDEX_MIRROR_CERNET,
     PYPI_EXTRA_INDEX_MIRROR_LICYK,
     PYPI_INDEX_MIRROR_OFFICIAL,
     PYPI_INDEX_MIRROR_TENCENT,
-    PYTORCH_FIND_LINKS_MIRROR_ALIYUN,
     PYTORCH_FIND_LINKS_MIRROR_OFFICIAL,
 )
 from sd_webui_all_in_one.utils import network_gfw_test
+from sd_webui_all_in_one import git_warpper
+
 
 logger = get_logger(
     name=LOGGER_NAME,

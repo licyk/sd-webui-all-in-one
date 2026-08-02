@@ -11,10 +11,9 @@ import sys
 import threading
 import time
 import uuid
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any, Callable, TYPE_CHECKING
 
 from sd_webui_all_in_one.config import ROOT_PATH, SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH
 
@@ -43,7 +42,7 @@ def ensure_hotpatcher_import_path() -> Path:
     return HOTPATCHER_PATH
 
 
-def _services_module() -> services:  # ty: ignore[invalid-type-form]
+def _services_module() -> "services":  # ty: ignore[invalid-type-form]
     ensure_hotpatcher_import_path()
     from sd_webui_all_in_one_hotpatcher import services
 
@@ -504,7 +503,7 @@ class RuntimeServiceChannel:
         self,
         writer: Any,
         *,
-        on_close: Callable[[RuntimeServiceChannel], None] | None = None,
+        on_close: Callable[["RuntimeServiceChannel"], None] | None = None,
     ) -> None:
         self.writer = writer
         self.on_close = on_close
@@ -721,7 +720,7 @@ class HotpatcherRuntimeHost:
         with self._lock:
             return self._next_browser_sequence
 
-    def start(self) -> HotpatcherRuntimeHost:
+    def start(self) -> "HotpatcherRuntimeHost":
         """
         启动 runtime host
 
@@ -742,7 +741,7 @@ class HotpatcherRuntimeHost:
         outer = self
 
         class Handler(socketserver.StreamRequestHandler):
-            def handle(self) -> None:
+            def handle(self) -> None:  # noqa: D401
                 outer._handle_client(self)
 
         self._server = _RuntimeServer((self.host, self.port), Handler)
@@ -848,7 +847,7 @@ class HotpatcherRuntimeHost:
 
         self.stop()
 
-    def __enter__(self) -> HotpatcherRuntimeHost:
+    def __enter__(self) -> "HotpatcherRuntimeHost":
         return self.start()
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
@@ -984,9 +983,17 @@ class HotpatcherRuntimeHost:
         bounded_limit = max(1, min(int(limit), 200))
         requested = max(0, int(since_cursor))
         with self._lock:
-            first_cursor = self.browser_events[0].sequence if self.browser_events else self._next_browser_sequence
+            first_cursor = (
+                self.browser_events[0].sequence
+                if self.browser_events
+                else self._next_browser_sequence
+            )
             start_cursor = max(requested, first_cursor)
-            selected = [event for event in self.browser_events if event.sequence >= start_cursor][:bounded_limit]
+            selected = [
+                event
+                for event in self.browser_events
+                if event.sequence >= start_cursor
+            ][:bounded_limit]
             next_cursor = selected[-1].sequence + 1 if selected else start_cursor
             return {
                 "runtime_identity": self.runtime_identity,

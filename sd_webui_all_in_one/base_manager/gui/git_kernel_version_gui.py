@@ -5,24 +5,14 @@
 from __future__ import annotations
 
 import tkinter as tk
-from collections.abc import Mapping, Sequence
 from pathlib import Path
 from tkinter import (
     messagebox,
     ttk,
 )
+from collections.abc import Mapping, Sequence
 from typing import Any
 
-from sd_webui_all_in_one.base_manager.gui.version_gui import (
-    BackgroundTaskMixin,
-    BranchSwitchDialog,
-    CommitSwitchDialog,
-    SearchableTree,
-    apply_gui_theme,
-    apply_window_icon,
-    commit_matches_keyword,
-    configure_gui_fonts,
-)
 from sd_webui_all_in_one.base_manager.version_manager import (
     BranchInfo,
     CommitInfo,
@@ -34,6 +24,16 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     switch_repository_branch,
     switch_repository_commit,
     update_repository,
+)
+from sd_webui_all_in_one.base_manager.gui.version_gui import (
+    BackgroundTaskMixin,
+    BranchSwitchDialog,
+    CommitSwitchDialog,
+    SearchableTree,
+    apply_gui_theme,
+    apply_window_icon,
+    commit_matches_keyword,
+    configure_gui_fonts,
 )
 
 

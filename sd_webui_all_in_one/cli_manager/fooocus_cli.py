@@ -10,60 +10,58 @@ from sd_webui_all_in_one.base_manager import (
     DEFAULT_RUNTIME_PORT,
     FOOOCUS_BRANCH_LIST,
     FooocusBranchType,
-    check_fooocus_env,
     check_fooocus_updates,
-    get_fooocus_snapshot,
     install_fooocus,
+    update_fooocus,
+    check_fooocus_env,
+    switch_fooocus_branch,
+    launch_fooocus,
     install_fooocus_model_from_library,
     install_fooocus_model_from_url,
-    launch_fooocus,
-    launch_fooocus_model_manager_gui,
-    launch_fooocus_snapshot_gui,
-    launch_fooocus_version_gui,
     list_fooocus_models,
-    switch_fooocus_branch,
     uninstall_fooocus_model,
-    update_fooocus,
-)
-from sd_webui_all_in_one.base_manager import (
+    launch_fooocus_version_gui,
+    launch_fooocus_snapshot_gui,
+    launch_fooocus_model_manager_gui,
     reinstall_pytorch as reinstall_base_pytorch,
+    get_fooocus_snapshot,
 )
-from sd_webui_all_in_one.base_manager.version_manager import WebUiUpdateOptions
+from sd_webui_all_in_one.config import (
+    FOOOCUS_ROOT_PATH,
+    SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR,
+    SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH,
+    LOGGER_NAME,
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+)
+from sd_webui_all_in_one.downloader import (
+    DOWNLOAD_TOOL_TYPE_LIST,
+    DownloadToolType,
+)
+from sd_webui_all_in_one.model_downloader import (
+    MODEL_DOWNLOAD_URL_TYPE_LIST,
+    ModelDownloadUrlType,
+)
 from sd_webui_all_in_one.cli_manager.auto_mirror import (
     add_auto_mirror_argument,
     with_auto_mirror,
 )
 from sd_webui_all_in_one.cli_manager.env_check import add_env_check_selection_arguments
 from sd_webui_all_in_one.cli_manager.snapshot import add_pre_operation_snapshot_arguments, create_pre_operation_snapshot, output_snapshot
-from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
 from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     add_restore_arguments,
     restore_snapshot,
 )
+from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
 from sd_webui_all_in_one.cli_manager.update_status import output_update_check_result
-from sd_webui_all_in_one.config import (
-    FOOOCUS_ROOT_PATH,
-    LOGGER_COLOR,
-    LOGGER_LEVEL,
-    LOGGER_NAME,
-    SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH,
-    SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR,
-)
-from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
-from sd_webui_all_in_one.downloader import (
-    DOWNLOAD_TOOL_TYPE_LIST,
-    DownloadToolType,
-)
-from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.model_downloader import (
-    MODEL_DOWNLOAD_URL_TYPE_LIST,
-    ModelDownloadUrlType,
-)
+from sd_webui_all_in_one.base_manager.version_manager import WebUiUpdateOptions
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
 )
 from sd_webui_all_in_one.utils import normalized_filepath
+from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
+from sd_webui_all_in_one.logger import get_logger
 
 logger = get_logger(
     name=LOGGER_NAME,

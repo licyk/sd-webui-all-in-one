@@ -71,7 +71,6 @@ spec.loader.exec_module(module)
 
 ```python
 with monkey_zoo("target") as monkey:
-
     def patch_source(source, filename):
         return source.replace("old", "new")
 
@@ -96,9 +95,8 @@ with monkey_zoo("target") as monkey:
 ```python
 import ast
 
-
-class Transformer(ast.NodeTransformer): ...
-
+class Transformer(ast.NodeTransformer):
+    ...
 
 with monkey_zoo("target") as monkey:
     monkey.patch_ast(Transformer())
@@ -120,7 +118,6 @@ with monkey_zoo("target") as monkey:
 
 ```python
 with monkey_zoo("target") as monkey:
-
     def patch_code(code):
         code.co_consts.replace_primitive("old", "new")
 
@@ -150,7 +147,6 @@ with monkey_zoo("target") as monkey:
 
 ```python
 with monkey_zoo("target") as monkey:
-
     def before_exec(module):
         module.SOMETHING = 1
 
@@ -189,11 +185,9 @@ target.__dict__["sqrt"] = math.sqrt
 
 ```python
 with monkey_zoo("target") as monkey:
-
     def patch_run(func, module):
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
-
         return wrapper
 
     monkey.patch_function("run", patch_run)
@@ -212,7 +206,6 @@ with monkey_zoo("target") as monkey:
 
 ```python
 with monkey_zoo("target") as monkey:
-
     def patch_module(module):
         module.FLAG = True
 

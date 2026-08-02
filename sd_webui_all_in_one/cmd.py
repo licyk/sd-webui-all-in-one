@@ -39,19 +39,20 @@ Case 8: {'cmd': '"/opt/homebrew/bin/git" --version', 'shell': True} -> Success
 """
 
 import os
+import sys
 import shlex
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any, Literal, overload
 
+from sd_webui_all_in_one.utils import in_jupyter
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.utils import in_jupyter
+
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -123,6 +124,7 @@ def run_cmd(
         str:
             命令执行时输出的内容
     """
+    ...
 
 
 @overload
@@ -157,6 +159,7 @@ def run_cmd(
         str | None:
             命令执行时输出的内容
     """
+    ...
 
 
 @overload
@@ -191,6 +194,7 @@ def run_cmd(
         str | None:
             命令执行时输出的内容
     """
+    ...
 
 
 def run_cmd(

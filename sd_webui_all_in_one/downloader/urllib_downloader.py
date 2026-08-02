@@ -4,13 +4,15 @@ import urllib.request
 from pathlib import Path
 from urllib.parse import urlparse
 
-from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
-    LOGGER_LEVEL,
-    LOGGER_NAME,
-)
+
 from sd_webui_all_in_one.downloader.hash_utils import compare_sha256
 from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+    LOGGER_NAME,
+)
+
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -78,13 +80,14 @@ def download_file_from_url_urllib(
                 unit_scale=True,
                 desc=file_name,
                 disable=not progress,
-            ) as progress_bar, open(temp_file, "wb") as file:
-                while True:
-                    chunk = response.read(1024)
-                    if not chunk:
-                        break
-                    file.write(chunk)
-                    progress_bar.update(len(chunk))
+            ) as progress_bar:
+                with open(temp_file, "wb") as file:
+                    while True:
+                        chunk = response.read(1024)
+                        if not chunk:
+                            break
+                        file.write(chunk)
+                        progress_bar.update(len(chunk))
 
         if hash_prefix and not compare_sha256(temp_file, hash_prefix):
             logger.error("'%s' 的哈希值不匹配, 正在删除临时文件", temp_file)

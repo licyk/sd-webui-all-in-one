@@ -6,14 +6,17 @@ import sys
 import threading
 import time
 import unicodedata
-from collections.abc import Iterable, Iterator, Mapping, Sized
+from collections.abc import Mapping, Sized
 from typing import (
     Any,
     ClassVar,
-    Generic,
-    TextIO,
+    Iterable,
     TypeVar,
+    Generic,
+    Iterator,
+    TextIO,
 )
+
 
 T = TypeVar("T")
 """泛型类型变量"""
@@ -416,7 +419,7 @@ class SimpleTqdm(Generic[T]):
 
     def _format_amount(
         self,
-        value: float,
+        value: int | float,
     ) -> str:
         """格式化进度数量"""
         amount = float(value)

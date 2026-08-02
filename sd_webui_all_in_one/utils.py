@@ -1,23 +1,24 @@
 """其他工具合集"""
 
+import shutil
+import sys
+import os
+import socket
+import urllib.request
+import urllib.error
 import gc
 import importlib
-import os
-import shutil
-import socket
-import sys
-import urllib.error
-import urllib.request
-from pathlib import Path
 from types import TracebackType
 from typing import Any
+from pathlib import Path
 
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.logger import get_logger
+
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -210,7 +211,7 @@ def append_python_path(
     else:
         custom_env = origin_env.copy()
 
-    if custom_env.get("PYTHONPATH"):
+    if "PYTHONPATH" in custom_env and custom_env["PYTHONPATH"]:
         custom_env["PYTHONPATH"] = new_path.as_posix() + os.pathsep + custom_env["PYTHONPATH"]
     else:
         custom_env["PYTHONPATH"] = new_path.as_posix()

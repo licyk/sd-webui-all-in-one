@@ -76,7 +76,7 @@ def emit_runtime_event(
         return legacy_emitter(event_type, payload)
     # 一些既有采集测试和嵌入方只在轻量客户端外观上公开形似
     # JsonlTcpTransport 的成员。
-    return sink.transport.event(event_type, payload)
+    return getattr(sink, "transport").event(event_type, payload)
 
 
 __all__ = [

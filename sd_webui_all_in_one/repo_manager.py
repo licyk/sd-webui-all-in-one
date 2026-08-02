@@ -1,8 +1,8 @@
 """HuggingFace / Modelscope 仓库管理工具"""
 
 import hashlib
-import importlib
 import inspect
+import importlib
 import os
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
@@ -10,22 +10,22 @@ from pathlib import Path
 from threading import Lock
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast
 
+from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.file_manager import get_file_list
 from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
     LOGGER_LEVEL,
-    LOGGER_NAME,
+    LOGGER_COLOR,
     RETRY_TIMES,
+    LOGGER_NAME,
 )
-from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.downloader import (
     DownloadToolType,
     MultiThreadDownloader,
     download_file,
 )
-from sd_webui_all_in_one.file_manager import get_file_list
-from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.optional_dependency import install_optional_dependency
 from sd_webui_all_in_one.retry_decorator import retryable
+from sd_webui_all_in_one.custom_exceptions import AggregateError
 
 if TYPE_CHECKING:
     from huggingface_hub import HfApi
@@ -253,8 +253,8 @@ class RepoManager:
             ms_token (str | None):
                 ModelScope Token, 不为`None`时配置`MODELSCOPE_API_TOKEN`环境变量
         """
-        self._hf_api: HfApi | object = _API_NOT_INITIALIZED
-        self._ms_api: HubApi | object = _API_NOT_INITIALIZED
+        self._hf_api: "HfApi | object" = _API_NOT_INITIALIZED
+        self._ms_api: "HubApi | object" = _API_NOT_INITIALIZED
         self._hf_api_lock = Lock()
         self._ms_api_lock = Lock()
         self.hf_token: str | None = hf_token

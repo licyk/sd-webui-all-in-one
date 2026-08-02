@@ -30,7 +30,7 @@ class ProcessTracker:
         self,
     ) -> None:
         """初始化进程追踪器"""
-        self._tunnels: list[BaseTunnel] = []
+        self._tunnels: list["BaseTunnel"] = []
 
     def register(
         self,

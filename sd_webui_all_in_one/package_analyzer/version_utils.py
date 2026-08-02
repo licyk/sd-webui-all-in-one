@@ -14,6 +14,7 @@ from sd_webui_all_in_one.package_analyzer.py_whl_parse import (
     RequirementParser,
 )
 
+
 # PEP 440 Appendix B: canonical version regex (含 local version)
 _CANONICAL_VERSION_REGEX = re.compile(
     r"^([1-9][0-9]*!)?"  # epoch

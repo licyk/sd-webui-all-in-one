@@ -1,17 +1,17 @@
 """文件操作工具"""
 
 import os
-import shutil
-import stat
 import uuid
+import stat
+import shutil
 from pathlib import Path
 
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
     LOGGER_LEVEL,
+    LOGGER_COLOR,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.logger import get_logger
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -419,34 +419,35 @@ def get_file_list(
     base_depth = len(path.resolve().parts)
 
     file_list: list[Path] = []
-    with tqdm(desc=f"扫描目录 {path}", position=0, leave=True, disable=not show_progress) as dir_pbar, tqdm(desc="发现条目数", position=1, leave=True, disable=not show_progress) as file_pbar:
-        for root, dirs, files in os.walk(path):
-            root_path = Path(root)
-            current_depth = len(root_path.resolve().parts) - base_depth
+    with tqdm(desc=f"扫描目录 {path}", position=0, leave=True, disable=not show_progress) as dir_pbar:
+        with tqdm(desc="发现条目数", position=1, leave=True, disable=not show_progress) as file_pbar:
+            for root, dirs, files in os.walk(path):
+                root_path = Path(root)
+                current_depth = len(root_path.resolve().parts) - base_depth
 
-            # 超过最大深度则阻止继续向下遍历
-            if max_depth is not None and max_depth != -1 and current_depth >= max_depth:
-                # 如果需要包含目录, 虽然停止深挖, 但当前层的目录仍可加入
-                if include_dirs:
-                    for d in dirs:
-                        dir_path = root_path / d
-                        file_list.append(dir_path.resolve() if resolve else dir_path.absolute())
-                        file_pbar.update(1)
-                dirs.clear()
-            else:
-                # 如果启用，将当前层级的目录加入列表
-                if include_dirs:
-                    for d in dirs:
-                        dir_path = root_path / d
-                        file_list.append(dir_path.resolve() if resolve else dir_path.absolute())
-                        file_pbar.update(1)
+                # 超过最大深度则阻止继续向下遍历
+                if max_depth is not None and max_depth != -1 and current_depth >= max_depth:
+                    # 如果需要包含目录, 虽然停止深挖, 但当前层的目录仍可加入
+                    if include_dirs:
+                        for d in dirs:
+                            dir_path = root_path / d
+                            file_list.append(dir_path.resolve() if resolve else dir_path.absolute())
+                            file_pbar.update(1)
+                    dirs.clear()
+                else:
+                    # 如果启用，将当前层级的目录加入列表
+                    if include_dirs:
+                        for d in dirs:
+                            dir_path = root_path / d
+                            file_list.append(dir_path.resolve() if resolve else dir_path.absolute())
+                            file_pbar.update(1)
 
-            for file in files:
-                file_path = root_path / file
-                file_list.append(file_path.resolve() if resolve else file_path.absolute())
-                file_pbar.update(1)
+                for file in files:
+                    file_path = root_path / file
+                    file_list.append(file_path.resolve() if resolve else file_path.absolute())
+                    file_pbar.update(1)
 
-            dir_pbar.update(1)
+                dir_pbar.update(1)
 
     return file_list
 

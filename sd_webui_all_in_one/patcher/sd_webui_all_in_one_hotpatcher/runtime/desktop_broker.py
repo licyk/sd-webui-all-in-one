@@ -14,10 +14,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections import OrderedDict, deque
-from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Any, Protocol
+from typing import Any, Callable, Mapping, Protocol
 
 from .interfaces import RuntimeCommandHandler
 
@@ -103,7 +102,7 @@ class DesktopBrokerSettings:
     protocol_version: str = PROTOCOL_VERSION
 
     @classmethod
-    def from_env(cls, environ: Mapping[str, str] | None = None) -> DesktopBrokerSettings:
+    def from_env(cls, environ: Mapping[str, str] | None = None) -> "DesktopBrokerSettings":
         """从环境变量创建并校验桌面代理设置。
 
         Args:
@@ -391,7 +390,7 @@ class DesktopBrokerClient:
         *,
         environ: Mapping[str, str] | None = None,
         **kwargs: Any,
-    ) -> DesktopBrokerClient:
+    ) -> "DesktopBrokerClient":
         """从环境变量创建桌面代理客户端。
 
         Args:
@@ -403,7 +402,7 @@ class DesktopBrokerClient:
         """
         return cls(DesktopBrokerSettings.from_env(environ), **kwargs)
 
-    def start(self) -> DesktopBrokerClient:
+    def start(self) -> "DesktopBrokerClient":
         """启动一个守护工作线程，且不在调用线程执行网络操作。
 
         Returns:
@@ -1102,11 +1101,6 @@ def _unavailable_command_handler(command_type: str, payload: dict[str, Any]) -> 
 
 __all__ = [
     "BROKER_URL_ENV",
-    "PROTOCOL_VERSION",
-    "PROTOCOL_VERSION_ENV",
-    "RUNTIME_IDENTITY_ENV",
-    "SESSION_ID_ENV",
-    "SESSION_TOKEN_ENV",
     "DesktopBrokerClient",
     "DesktopBrokerCommandError",
     "DesktopBrokerConfigurationError",
@@ -1114,4 +1108,9 @@ __all__ = [
     "DesktopBrokerProtocolError",
     "DesktopBrokerSettings",
     "DesktopTransportStatus",
+    "PROTOCOL_VERSION",
+    "PROTOCOL_VERSION_ENV",
+    "RUNTIME_IDENTITY_ENV",
+    "SESSION_ID_ENV",
+    "SESSION_TOKEN_ENV",
 ]

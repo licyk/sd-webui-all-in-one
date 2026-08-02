@@ -12,11 +12,13 @@ PROTOCOL_VERSION = 1
 class RuntimeProtocolError(Exception):
     """运行时协议错误"""
 
+    pass
 
 
 class RuntimeTransportError(RuntimeProtocolError):
     """运行时传输错误"""
 
+    pass
 
 
 class RuntimeRequestError(RuntimeProtocolError):

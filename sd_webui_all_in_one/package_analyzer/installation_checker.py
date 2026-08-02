@@ -11,17 +11,18 @@ import importlib.metadata
 import re
 from pathlib import Path
 
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
     LOGGER_LEVEL,
+    LOGGER_COLOR,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.package_analyzer.dependency_categorizer import get_categorized_dependencies
 from sd_webui_all_in_one.package_analyzer.py_ver_cmp import PyWhlVersionComparison
+from sd_webui_all_in_one.package_analyzer.dependency_categorizer import get_categorized_dependencies
+from sd_webui_all_in_one.package_analyzer.version_utils import _try_parse_requirement
 from sd_webui_all_in_one.package_analyzer.requirement_normalizer import parse_requirement_list
 from sd_webui_all_in_one.package_analyzer.requirement_parser import read_packages_from_requirements_file
-from sd_webui_all_in_one.package_analyzer.version_utils import _try_parse_requirement
+
 
 logger = get_logger(
     name=LOGGER_NAME,

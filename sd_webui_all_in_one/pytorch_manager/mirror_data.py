@@ -8,6 +8,7 @@ from sd_webui_all_in_one.pytorch_manager.types import (
     PyTorchMirrorMap,
 )
 
+
 PYTORCH_MIRROR_DICT: PyTorchMirrorMap = {
     "all": ("https://download.pytorch.org/whl", "index_url"),
     "cpu": ("https://download.pytorch.org/whl/cpu", "index_url"),

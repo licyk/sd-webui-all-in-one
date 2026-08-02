@@ -6,15 +6,16 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.colab_tools import is_colab_environment
 from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
     LOGGER_LEVEL,
+    LOGGER_COLOR,
     LOGGER_NAME,
     ROOT_PATH,
 )
-from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.package_analyzer import CommonVersionComparison
+
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -239,7 +240,7 @@ def apply_tcmalloc_preload(
         custom_env = origin_env.copy()
 
     tcmalloc_path = Path(path).as_posix()
-    if custom_env.get("LD_PRELOAD"):
+    if "LD_PRELOAD" in custom_env and custom_env["LD_PRELOAD"]:
         custom_env["LD_PRELOAD"] = custom_env["LD_PRELOAD"] + ":" + tcmalloc_path
     else:
         custom_env["LD_PRELOAD"] = tcmalloc_path

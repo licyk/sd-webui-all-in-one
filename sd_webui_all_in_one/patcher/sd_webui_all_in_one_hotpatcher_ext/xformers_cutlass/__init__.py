@@ -91,7 +91,7 @@ def apply_cutlass_cuda_capability_patch(module: ModuleType) -> None:
     for class_name in ("FwOp", "BwOp"):
         op_class = getattr(module, class_name, None)
         if op_class is not None:
-            op_class.CUDA_MAXIMUM_COMPUTE_CAPABILITY = TARGET_CAPABILITY
+            setattr(op_class, "CUDA_MAXIMUM_COMPUTE_CAPABILITY", TARGET_CAPABILITY)
 
 
 def is_xformers_cutlass_patch_active() -> bool:

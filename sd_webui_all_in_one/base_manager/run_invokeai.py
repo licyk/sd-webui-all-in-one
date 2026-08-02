@@ -56,10 +56,10 @@ def _open_browser_later(url: str) -> None:
 
 def main() -> None:
     """启动 InvokeAI"""
-    import invokeai.frontend.cli.arg_parser  # ty: ignore[unresolved-import]
     import uvicorn
+    import invokeai.frontend.cli.arg_parser  # ty: ignore[unresolved-import]
+    from invokeai.frontend.cli.arg_parser import _parser, InvokeAIArgs  # ty: ignore[unresolved-import]
     from invokeai.app.run_app import run_app  # ty: ignore[unresolved-import]
-    from invokeai.frontend.cli.arg_parser import InvokeAIArgs, _parser  # ty: ignore[unresolved-import]
 
     original_parser = copy.deepcopy(_parser)
     original_uvicorn_serve = uvicorn.Server.serve

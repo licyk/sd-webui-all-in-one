@@ -5,30 +5,31 @@ import sys
 from pathlib import Path
 from typing import Literal
 
-from sd_webui_all_in_one.base_manager import (
-    SDWebUiBranchType,
-    check_sd_webui_env,
-    install_sd_webui,
-    install_sd_webui_extension,
-    update_sd_webui,
-    update_sd_webui_extensions,
-)
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
     LOGGER_NAME,
 )
+from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
+from sd_webui_all_in_one.mirror_manager import set_mirror
+from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
+from sd_webui_all_in_one.utils import warning_unexpected_params
+from sd_webui_all_in_one.optimize import set_cuda_malloc
 from sd_webui_all_in_one.env_manager import (
     configure_env_var,
     configure_pip,
 )
-from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.mirror_manager import set_mirror
-from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
-from sd_webui_all_in_one.optimize import set_cuda_malloc
 from sd_webui_all_in_one.pkg_manager import install_manager_depend
-from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
-from sd_webui_all_in_one.utils import warning_unexpected_params
+from sd_webui_all_in_one.base_manager import (
+    SDWebUiBranchType,
+    install_sd_webui_extension,
+    update_sd_webui_extensions,
+    update_sd_webui,
+    check_sd_webui_env,
+    install_sd_webui,
+)
+
 
 logger = get_logger(
     name=LOGGER_NAME,

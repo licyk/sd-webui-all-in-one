@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from typing import cast
 
 import pytest
+
 from sd_webui_all_in_one_hotpatcher.runtime import client as runtime_client_module
 from sd_webui_all_in_one_hotpatcher.runtime import transport as transport_module
 from sd_webui_all_in_one_hotpatcher.runtime.client import RuntimeClient
@@ -325,7 +326,7 @@ def test_concurrent_event_waits_for_request_timeout_scope():
 def test_timed_out_buffered_reader_is_invalidated_after_timeout_restoration(monkeypatch):
     clock = _FakeClock()
     monkeypatch.setattr(transport_module.time, "monotonic", clock)
-    reader = _ScriptedReader([TimeoutError("scripted request timeout")])
+    reader = _ScriptedReader([socket.timeout("scripted request timeout")])
     sock = _FakeSocket(reader, timeout=None)
     transport = JsonlTcpTransport(sock, host="127.0.0.1", port=8123)
 
@@ -452,7 +453,7 @@ def test_blocked_event_write_uses_finite_deadline_and_invalidates_transport():
     sock = _FakeSocket(
         reader,
         timeout=None,
-        send_errors={1: TimeoutError("scripted event write timeout")},
+        send_errors={1: socket.timeout("scripted event write timeout")},
     )
     transport = JsonlTcpTransport(
         sock,
@@ -479,7 +480,7 @@ def test_timeout_cleanup_failure_does_not_replace_primary_write_timeout():
     sock = RestoreFailingSocket(
         _ScriptedReader(close_error=OSError("scripted reader close failure")),
         timeout=None,
-        send_errors={1: TimeoutError("primary write timeout")},
+        send_errors={1: socket.timeout("primary write timeout")},
         close_error=OSError("scripted socket close failure"),
     )
     transport = JsonlTcpTransport(
@@ -501,7 +502,7 @@ def test_emit_event_reports_failure_without_raising(monkeypatch):
     sock = _FakeSocket(
         _ScriptedReader(),
         timeout=None,
-        send_errors={1: TimeoutError("scripted best-effort timeout")},
+        send_errors={1: socket.timeout("scripted best-effort timeout")},
     )
     client = RuntimeClient(
         JsonlTcpTransport(
@@ -520,7 +521,7 @@ def test_emit_event_reports_failure_without_raising(monkeypatch):
 def test_get_config_uses_default_deadline_on_nonresponsive_connected_host(monkeypatch):
     clock = _FakeClock()
     monkeypatch.setattr(transport_module.time, "monotonic", clock)
-    reader = _ScriptedReader([TimeoutError("scripted non-responsive host")])
+    reader = _ScriptedReader([socket.timeout("scripted non-responsive host")])
     sock = _FakeSocket(reader, timeout=None)
     client = RuntimeClient(
         JsonlTcpTransport(
@@ -611,7 +612,7 @@ def test_services_response_write_has_deadline_but_idle_reader_is_blocking(monkey
     sock = _FakeSocket(
         reader,
         timeout=1.0,
-        send_errors={2: TimeoutError("scripted services write timeout")},
+        send_errors={2: socket.timeout("scripted services write timeout")},
     )
     channel = _make_channel(
         monkeypatch,

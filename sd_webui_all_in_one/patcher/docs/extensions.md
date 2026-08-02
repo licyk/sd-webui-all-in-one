@@ -101,13 +101,12 @@ apply_from_config(config)
 ```python
 from sd_webui_all_in_one_hotpatcher import install_import_hook, monkey_zoo
 
-
 def apply_feature_patch():
     install_import_hook()
 
     with monkey_zoo("target.module") as monkey:
-
-        def patch_func(func, module): ...
+        def patch_func(func, module):
+            ...
 
         monkey.patch_function("run", patch_func)
 ```
@@ -116,8 +115,8 @@ def apply_feature_patch():
 
 ```python
 with monkey_zoo("target") as monkey:
-
-    def before_exec(module): ...
+    def before_exec(module):
+        ...
 
     monkey.patch_premodule(before_exec)
 ```
@@ -179,7 +178,11 @@ from sd_webui_all_in_one_hotpatcher_ext.zluda import (
 支持配置：
 
 ```python
-{"compat": True, "path": "C:/path/to/zluda", "torch_zluda_timer": True}
+{
+    "compat": True,
+    "path": "C:/path/to/zluda",
+    "torch_zluda_timer": True
+}
 ```
 
 扩展配置入口应保持简单，不要把 runtime config 读取逻辑塞进扩展本身。配置从哪里来由调用方决定。
@@ -380,7 +383,10 @@ uv pip ...
 支持配置：
 
 ```python
-{"enabled": True, "symlink": False}
+{
+    "enabled": True,
+    "symlink": False
+}
 ```
 
 services catalog 中对应功能路径是 `extensions.uv_pip`。
@@ -415,7 +421,9 @@ from sd_webui_all_in_one_hotpatcher_ext.xformers_cutlass import (
 支持配置：
 
 ```python
-{"enabled": True}
+{
+    "enabled": True
+}
 ```
 
 services catalog 中对应功能路径是 `extensions.xformers_cutlass`。即使配置启用，版本条件不满足时也会安静跳过。

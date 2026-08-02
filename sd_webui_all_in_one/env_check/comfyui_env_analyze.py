@@ -3,16 +3,21 @@
 import os
 import sys
 from pathlib import Path
-from typing import Literal, TypeAlias, TypedDict
+from typing import TypedDict, Literal, TypeAlias
 
 from sd_webui_all_in_one.cmd import run_cmd
+from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
     LOGGER_LEVEL,
+    LOGGER_COLOR,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.custom_exceptions import AggregateError
-from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.utils import (
+    remove_duplicate_object_from_list,
+    print_divider,
+    append_python_path,
+)
 from sd_webui_all_in_one.package_analyzer import (
     PyWhlVersionComparison,
     check_version_constraint,
@@ -25,12 +30,8 @@ from sd_webui_all_in_one.package_analyzer import (
     read_packages_from_requirements_file,
     validate_requirements,
 )
-from sd_webui_all_in_one.pkg_manager import install_requirements
-from sd_webui_all_in_one.utils import (
-    append_python_path,
-    print_divider,
-    remove_duplicate_object_from_list,
-)
+from sd_webui_all_in_one.custom_exceptions import AggregateError
+
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -43,7 +44,6 @@ ComponentType: TypeAlias = Literal["core", "extension"]
 - core: 内核
 - extension: 扩展
 """
-
 
 class ComponentEnvironmentDetails(TypedDict):
     """ComfyUI 组件的环境信息结构
@@ -408,7 +408,9 @@ def collect_conflict_components(
         list[ComfyUIConflictGroup]:
             结构化的冲突组列表
     """
-    conflict_package_list = remove_duplicate_object_from_list([normalize_package_name(x) for x in conflict_package_list])
+    conflict_package_list = remove_duplicate_object_from_list(
+        [normalize_package_name(x) for x in conflict_package_list]
+    )
     conflicts: list[ComfyUIConflictGroup] = []
 
     for conflict_package in conflict_package_list:
@@ -439,7 +441,7 @@ def format_conflict_info(
     conflicts: list[ComfyUIConflictGroup],
 ) -> str:
     """将结构化冲突组渲染为文本说明。
-
+    
     Args:
         conflicts (list[ComfyUIConflictGroup]):
             冲突组信息列表

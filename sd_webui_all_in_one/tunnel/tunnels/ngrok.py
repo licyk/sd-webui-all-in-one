@@ -11,6 +11,7 @@ from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.optional_dependency import install_optional_dependency
 from sd_webui_all_in_one.tunnel.base import BaseTunnel
 
+
 logger = get_logger(
     name=LOGGER_NAME,
     level=LOGGER_LEVEL,

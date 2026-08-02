@@ -6,6 +6,7 @@ import types
 from typing import cast
 
 import pytest
+
 from sd_webui_all_in_one_hotpatcher import monkey_zoo, uninstall_import_hook
 from sd_webui_all_in_one_hotpatcher.bootstrap import configure_from_env
 from sd_webui_all_in_one_hotpatcher.runtime import RuntimeClient
@@ -202,9 +203,9 @@ def test_apply_config_browser_modes_are_idempotent_and_open_variants_emit_once(m
         original_calls.append((url, args, kwargs))
         return False
 
-    module.open = original
-    module.open_new = lambda url: module.open(url, 1)
-    module.open_new_tab = lambda url: module.open(url, 2)
+    setattr(module, "open", original)
+    setattr(module, "open_new", lambda url: getattr(module, "open")(url, 1))
+    setattr(module, "open_new_tab", lambda url: getattr(module, "open")(url, 2))
     monkeypatch.setitem(sys.modules, "webbrowser", module)
     monkeypatch.setattr(browser, "install_import_hook", lambda **_kwargs: None)
     registered = []
@@ -213,13 +214,13 @@ def test_apply_config_browser_modes_are_idempotent_and_open_variants_emit_once(m
 
     host_config = {"runtime": {"browser": {"enabled": True, "mode": "host"}}}
     first = apply_config(host_config, runtime_client=cast(RuntimeClient, Client()), state=state)
-    wrapper = module.open
+    wrapper = getattr(module, "open")
     second = apply_config(host_config, runtime_client=cast(RuntimeClient, Client()), state=state)
     assert first["errors"] == second["errors"] == []
-    assert module.open is wrapper
+    assert getattr(module, "open") is wrapper
     assert len(registered) == 1
-    assert module.open_new("http://127.0.0.1:7860") is True
-    assert module.open_new_tab("http://localhost:8188") is True
+    assert getattr(module, "open_new")("http://127.0.0.1:7860") is True
+    assert getattr(module, "open_new_tab")("http://localhost:8188") is True
     assert [event[0] for event in calls] == ["browser.open", "browser.open"]
 
     apply_config(
@@ -227,7 +228,7 @@ def test_apply_config_browser_modes_are_idempotent_and_open_variants_emit_once(m
         runtime_client=cast(RuntimeClient, Client()),
         state=state,
     )
-    assert module.open("http://localhost:3000", autoraise=False) is True
+    assert getattr(module, "open")("http://localhost:3000", autoraise=False) is True
     assert len(calls) == 2
 
     apply_config(
@@ -235,7 +236,7 @@ def test_apply_config_browser_modes_are_idempotent_and_open_variants_emit_once(m
         runtime_client=cast(RuntimeClient, Client()),
         state=state,
     )
-    assert module.open("https://example.test", 0, autoraise=True) is False
+    assert getattr(module, "open")("https://example.test", 0, autoraise=True) is False
     assert original_calls == [("https://example.test", (0,), {"autoraise": True})]
 
 
@@ -243,7 +244,7 @@ def test_host_mode_without_runtime_client_suppresses_and_reports_diagnostics(mon
     from sd_webui_all_in_one_hotpatcher.runtime import browser
 
     module = types.ModuleType("webbrowser")
-    module.open = lambda *_args, **_kwargs: pytest.fail("system browser must stay suppressed")
+    setattr(module, "open", lambda *_args, **_kwargs: pytest.fail("system browser must stay suppressed"))
     monkeypatch.setitem(sys.modules, "webbrowser", module)
     monkeypatch.setattr(browser, "install_import_hook", lambda **_kwargs: None)
     monkeypatch.setattr(browser, "register_hook", lambda *_args, **_kwargs: None)
@@ -253,7 +254,7 @@ def test_host_mode_without_runtime_client_suppresses_and_reports_diagnostics(mon
             {"runtime": {"browser": {"enabled": True, "mode": "host"}}},
             state=state,
         )
-    assert module.open("http://localhost:7860") is True
+    assert getattr(module, "open")("http://localhost:7860") is True
     assert result["warnings"][0]["feature"] == "runtime.browser"
     assert state.browser_diagnostics
 

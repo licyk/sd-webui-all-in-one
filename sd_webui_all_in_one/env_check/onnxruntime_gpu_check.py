@@ -1,23 +1,24 @@
 """ONNXRuntime GPU 检查工具"""
 
-import importlib.metadata
-import multiprocessing
 import os
 import sys
-from enum import Enum
+import multiprocessing
+import importlib.metadata
 from multiprocessing.queues import Queue
+from enum import Enum
 from pathlib import Path
 
 from sd_webui_all_in_one.cmd import run_cmd
+from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.pkg_manager import pip_install
 from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
     LOGGER_LEVEL,
+    LOGGER_COLOR,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.package_analyzer import CommonVersionComparison
-from sd_webui_all_in_one.pkg_manager import pip_install
 from sd_webui_all_in_one.utils import load_source_directly
+
 
 logger = get_logger(
     name=LOGGER_NAME,

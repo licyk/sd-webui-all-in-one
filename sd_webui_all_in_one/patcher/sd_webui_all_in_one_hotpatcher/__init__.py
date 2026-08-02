@@ -12,13 +12,13 @@ from .hook import (
 )
 from .logger import get_hotpatcher_logger
 from .mutable import CodeWrapper, TupleWrapper
+from .state import HotpatcherState, get_default_state
 from .stack_shadow import (
     configure_stack_shadower_from_env,
     install_stack_shadower,
     is_stack_shadower_installed,
     uninstall_stack_shadower,
 )
-from .state import HotpatcherState, get_default_state
 
 __all__ = [
     "CodeWrapper",

@@ -104,7 +104,7 @@ class Progress:
         self._right: str | None = None
         self._value = 0.0
 
-    def __enter__(self) -> Progress:
+    def __enter__(self) -> "Progress":
         if self.manager is not None:
             self.manager.create(
                 id(self),

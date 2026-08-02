@@ -2,17 +2,18 @@
 
 import os
 import shutil
-from functools import cache
 from pathlib import Path
+from functools import cache
 from typing import Literal, overload
 
-from sd_webui_all_in_one.cmd import DEFAULT_SUBPROCESS_SHELL, run_cmd
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
     LOGGER_LEVEL,
+    LOGGER_COLOR,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.cmd import DEFAULT_SUBPROCESS_SHELL, run_cmd
+
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -102,6 +103,7 @@ def run_git(
     Returns:
         str: 命令输出
     """
+    ...
 
 
 @overload
@@ -139,6 +141,7 @@ def run_git(
     Returns:
         str | None: 命令输出
     """
+    ...
 
 
 @overload
@@ -176,6 +179,7 @@ def run_git(
     Returns:
         str | None: 命令输出
     """
+    ...
 
 
 def run_git(

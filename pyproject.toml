@@ -158,8 +158,7 @@ exclude = [
     ".github",
 ]
 lint.ignore = [
-    "E402", # module-import-not-at-top-of-file
-    "BLE001", # blind-except
+    "E402" # module-import-not-at-top-of-file
 ]
 
 [tool.ruff.format]

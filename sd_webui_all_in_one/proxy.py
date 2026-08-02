@@ -1,21 +1,21 @@
 """系统代理工具"""
 
-import configparser
 import os
-import re
-import socket
 import sys
+import re
+import configparser
+import socket
+from urllib.parse import urlparse
 from pathlib import Path
 from typing import Any, cast
-from urllib.parse import urlparse
 
-from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
     LOGGER_LEVEL,
+    LOGGER_COLOR,
     LOGGER_NAME,
 )
 from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.cmd import run_cmd
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -227,7 +227,7 @@ def test_proxy_connectivity(
             sock.close()
             logger.debug("代理服务器 %s 连接成功", proxy_addr)
             return True
-        except (TimeoutError, OSError) as e:
+        except (socket.timeout, socket.error) as e:
             logger.debug("代理服务器 %s 连接失败: %s", proxy_addr, e)
             return False
 

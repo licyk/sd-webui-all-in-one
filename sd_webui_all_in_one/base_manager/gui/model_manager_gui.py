@@ -688,7 +688,10 @@ class InvokeAIModelManagerApp(tk.Tk, BackgroundTaskMixin):
             return
         if not messagebox.askyesno(
             "确认注销",
-            (f"将通过 InvokeAI 移除模型记录并保留模型文件。\n\n模型 ID: {model_id}\n\n是否继续？"),
+            (
+                "将通过 InvokeAI 移除模型记录并保留模型文件。\n\n"
+                f"模型 ID: {model_id}\n\n是否继续？"
+            ),
             parent=self,
         ):
             return

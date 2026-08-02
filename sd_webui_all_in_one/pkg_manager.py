@@ -1,24 +1,24 @@
 """依赖环境管理工具"""
 
 import os
-import shutil
 import sys
-from pathlib import Path
+import shutil
 from typing import Any
+from pathlib import Path
 
 from sd_webui_all_in_one.cmd import run_cmd
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
     LOGGER_LEVEL,
+    LOGGER_COLOR,
     LOGGER_NAME,
     SD_WEBUI_ALL_IN_ONE_IGNORE_INSTALL_DEP_TYPE,
 )
-from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.package_analyzer import get_categorized_dependencies
 from sd_webui_all_in_one.updater import (
-    check_and_update_pip,
     check_and_update_uv,
+    check_and_update_pip,
 )
+from sd_webui_all_in_one.package_analyzer import get_categorized_dependencies
 
 logger = get_logger(
     name=LOGGER_NAME,

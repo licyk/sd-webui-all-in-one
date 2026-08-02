@@ -18,13 +18,12 @@
 import os
 import re
 
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
     LOGGER_LEVEL,
+    LOGGER_COLOR,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.package_analyzer.requirement_parser import parse_requirement_to_list
 from sd_webui_all_in_one.package_analyzer.version_utils import (
     get_correct_package_name,
     get_package_version_specs,
@@ -33,6 +32,8 @@ from sd_webui_all_in_one.package_analyzer.version_utils import (
     version_string_is_canonical,
 )
 from sd_webui_all_in_one.package_analyzer.wheel_parser import parse_wheel_to_package_name
+from sd_webui_all_in_one.package_analyzer.requirement_parser import parse_requirement_to_list
+
 
 logger = get_logger(
     name=LOGGER_NAME,

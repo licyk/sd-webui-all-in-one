@@ -20,7 +20,7 @@ class CommonVersionComparison:
 
     def __init__(
         self,
-        version: str | float,
+        version: str | int | float,
     ) -> None:
         """常规版本号比较工具初始化
 
@@ -89,7 +89,7 @@ class CommonVersionComparison:
             return NotImplemented
         return self.compare_versions(self.version, other.version) != 0
 
-    def compare_versions(self, version1: str | float, version2: str | float) -> int:
+    def compare_versions(self, version1: str | int | float, version2: str | int | float) -> int:
         """对比两个版本号大小
 
         Args:

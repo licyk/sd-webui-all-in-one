@@ -19,7 +19,6 @@ from sd_webui_all_in_one.pytorch_manager import (
     get_available_pytorch_device_type,
 )
 
-
 def _stable_id(namespace: str, *parts: object) -> str:
     digest = hashlib.sha256("\0".join(str(part) for part in parts).encode()).hexdigest()[:20]
     return f"{namespace}:{digest}"

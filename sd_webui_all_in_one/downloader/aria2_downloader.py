@@ -5,11 +5,6 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
-    LOGGER_LEVEL,
-    LOGGER_NAME,
-)
 from sd_webui_all_in_one.downloader.aria2_server import Aria2RpcServer
 from sd_webui_all_in_one.downloader.requests_downloader import (
     DEFAULT_MAX_CONNECTION_PER_SERVER,
@@ -21,6 +16,11 @@ from sd_webui_all_in_one.downloader.requests_downloader import (
     _normalize_urls,
 )
 from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.config import (
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+    LOGGER_NAME,
+)
 
 logger = get_logger(
     name=LOGGER_NAME,

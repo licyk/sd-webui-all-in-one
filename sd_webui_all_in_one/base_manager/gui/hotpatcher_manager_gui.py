@@ -16,14 +16,6 @@ from tkinter import (
 )
 from typing import Any
 
-from sd_webui_all_in_one.base_manager.gui.version_gui import (
-    BackgroundTaskMixin,
-    EnhancedEntry,
-    apply_gui_theme,
-    apply_window_icon,
-    configure_gui_fonts,
-    install_text_context_menu,
-)
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     DEFAULT_HOTPATCHER_CONFIG_PATH,
     DEFAULT_RUNTIME_HOST,
@@ -38,6 +30,14 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     load_hotpatcher_config,
     normalize_hotpatcher_config,
     save_hotpatcher_config,
+)
+from sd_webui_all_in_one.base_manager.gui.version_gui import (
+    BackgroundTaskMixin,
+    EnhancedEntry,
+    apply_gui_theme,
+    apply_window_icon,
+    configure_gui_fonts,
+    install_text_context_menu,
 )
 
 
