@@ -223,10 +223,7 @@ def _callable_accepts_keyword(
     except (TypeError, ValueError):
         return True
 
-    return any(
-        parameter.name == keyword or parameter.kind == inspect.Parameter.VAR_KEYWORD
-        for parameter in signature.parameters.values()
-    )
+    return any(parameter.name == keyword or parameter.kind == inspect.Parameter.VAR_KEYWORD for parameter in signature.parameters.values())
 
 
 class RepoManager:
@@ -304,6 +301,18 @@ class RepoManager:
         ms_api = HubApi()
         ms_api.login(self.ms_token)
         return ms_api
+
+    def get_ms_git_token(self) -> str | None:
+        """获取 ModelScope 持久化的 Git access token
+
+        Returns:
+            (str | None):
+                ModelScope 的 Git Token
+        """
+        _ensure_modelscope("modelscope.hub.api")
+        from modelscope.hub.api import ModelScopeConfig
+
+        return ModelScopeConfig.get_git_token()
 
     def configure_tokens(
         self,
@@ -524,11 +533,7 @@ class RepoManager:
         # 优先使用其通用接口可以保留完整的 FileInfo 数据。
         for api in (ms_api, getattr(ms_api, "_api", None)):
             list_repo_files = getattr(api, "list_repo_files", None)
-            if (
-                callable(list_repo_files)
-                and _callable_accepts_keyword(list_repo_files, "repo_id")
-                and _callable_accepts_keyword(list_repo_files, "repo_type")
-            ):
+            if callable(list_repo_files) and _callable_accepts_keyword(list_repo_files, "repo_id") and _callable_accepts_keyword(list_repo_files, "repo_type"):
                 list_kwargs = _add_revision(
                     {
                         "repo_id": repo_id,

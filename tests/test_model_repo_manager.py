@@ -222,6 +222,35 @@ def test_repo_manager_modelscope_api_prefers_constructor_token(monkeypatch):
     assert import_calls == ["modelscope"]
 
 
+def test_repo_manager_get_ms_git_token_delegates_without_initializing_api(monkeypatch):
+    ensure_calls = []
+    token_calls = []
+
+    class FakeModelScopeConfig:
+        @staticmethod
+        def get_git_token():
+            token_calls.append(True)
+            return "git-token"
+
+    modelscope_module = types.ModuleType("modelscope")
+    modelscope_module.__path__ = []
+    hub_module = types.ModuleType("modelscope.hub")
+    hub_module.__path__ = []
+    api_module = types.ModuleType("modelscope.hub.api")
+    api_module.ModelScopeConfig = FakeModelScopeConfig
+    monkeypatch.setitem(sys.modules, "modelscope", modelscope_module)
+    monkeypatch.setitem(sys.modules, "modelscope.hub", hub_module)
+    monkeypatch.setitem(sys.modules, "modelscope.hub.api", api_module)
+    monkeypatch.setattr(repo_module, "_ensure_modelscope", lambda module_name="modelscope": ensure_calls.append(module_name))
+
+    manager = RepoManager()
+    monkeypatch.setattr(manager, "_init_ms_api", lambda: pytest.fail("get_ms_git_token should not initialize HubApi"))
+
+    assert manager.get_ms_git_token() == "git-token"
+    assert ensure_calls == ["modelscope.hub.api"]
+    assert token_calls == [True]
+
+
 def test_repo_manager_configure_tokens_updates_environment_and_invalidates_cached_apis(monkeypatch):
     monkeypatch.delenv("HF_TOKEN", raising=False)
     monkeypatch.delenv("MODELSCOPE_API_TOKEN", raising=False)
