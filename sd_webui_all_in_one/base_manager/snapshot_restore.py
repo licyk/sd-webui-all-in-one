@@ -183,7 +183,11 @@ class RestoreDiffCounts:
 
     @property
     def changed(self) -> int:
-        """需要实际写入的恢复项数量。"""
+        """需要实际写入的恢复项数量。
+
+        Returns:
+            int: 恢复项数量
+        """
         return self.added + self.removed + self.modified
 
 
