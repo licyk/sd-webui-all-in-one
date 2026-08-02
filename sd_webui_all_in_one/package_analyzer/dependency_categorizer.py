@@ -3,18 +3,17 @@
 from importlib.metadata import requires
 from typing import Any, TypedDict
 
+from sd_webui_all_in_one.config import (
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+)
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.package_analyzer import (
     evaluate_marker,
     parse_requirement,
 )
 from sd_webui_all_in_one.package_analyzer.py_whl_parse import get_parse_bindings
-from sd_webui_all_in_one.config import (
-    LOGGER_NAME,
-    LOGGER_LEVEL,
-    LOGGER_COLOR,
-)
-from sd_webui_all_in_one.logger import get_logger
-
 
 logger = get_logger(
     name=LOGGER_NAME,

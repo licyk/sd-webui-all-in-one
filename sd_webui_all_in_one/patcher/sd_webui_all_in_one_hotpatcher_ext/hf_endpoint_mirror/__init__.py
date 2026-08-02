@@ -201,12 +201,11 @@ def load_file_from_url(
                 unit_scale=True,
                 desc=file_name,
                 disable=not progress,
-            ) as progress_bar:
-                with open(temp_file, "wb") as file:
-                    for chunk in response.iter_content(chunk_size=1024):
-                        if chunk:
-                            file.write(chunk)
-                            progress_bar.update(len(chunk))
+            ) as progress_bar, open(temp_file, "wb") as file:
+                for chunk in response.iter_content(chunk_size=1024):
+                    if chunk:
+                        file.write(chunk)
+                        progress_bar.update(len(chunk))
 
             if hash_prefix and not compare_sha256(temp_file, hash_prefix):
                 print(f"Hash mismatch for {temp_file}. Deleting the temporary file.")

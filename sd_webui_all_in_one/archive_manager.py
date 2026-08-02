@@ -1,16 +1,17 @@
 """压缩 / 解压工具"""
 
-import os
-import zipfile
-import tarfile
 import lzma
+import os
+import tarfile
 import time
+import zipfile
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Any, Iterable, Literal
+from typing import Any, Literal
 
 from sd_webui_all_in_one.config import (
-    LOGGER_LEVEL,
     LOGGER_COLOR,
+    LOGGER_LEVEL,
     LOGGER_NAME,
 )
 from sd_webui_all_in_one.logger import get_logger
@@ -351,13 +352,12 @@ def _extract_tar_lzma(
     progress: bool = True,
 ) -> None:
     """安全解压 lzma 压缩的 tar 包"""
-    with lzma.open(archive_path, "rb") as f:
-        with tarfile.open(fileobj=f) as tar_ref:
-            members = tar_ref.getmembers()
-            for member in members:
-                _check_tar_member(member, extract_to)
+    with lzma.open(archive_path, "rb") as f, tarfile.open(fileobj=f) as tar_ref:
+        members = tar_ref.getmembers()
+        for member in members:
+            _check_tar_member(member, extract_to)
 
-            _extract_tar_members(tar_ref, members, extract_to, archive_path.name, progress)
+        _extract_tar_members(tar_ref, members, extract_to, archive_path.name, progress)
 
 
 def _extract_tar_zst(
@@ -378,13 +378,12 @@ def _extract_tar_zst(
 
     with open(archive_path, "rb") as fh:
         dctx = zstd.ZstdDecompressor()
-        with dctx.stream_reader(fh) as reader:
-            with tarfile.open(fileobj=reader) as tar_ref:
-                members = tar_ref.getmembers()
-                for member in members:
-                    _check_tar_member(member, extract_to)
+        with dctx.stream_reader(fh) as reader, tarfile.open(fileobj=reader) as tar_ref:
+            members = tar_ref.getmembers()
+            for member in members:
+                _check_tar_member(member, extract_to)
 
-                _extract_tar_members(tar_ref, members, extract_to, archive_path.name, progress)
+            _extract_tar_members(tar_ref, members, extract_to, archive_path.name, progress)
 
 
 def _get_archive_members_size(
@@ -525,9 +524,8 @@ def _create_tar_lzma(
     progress: bool = True,
 ) -> None:
     """创建 lzma 压缩的 tar 包"""
-    with lzma.open(archive_path, "wb") as f:
-        with tarfile.open(fileobj=f, mode="w") as tar_ref:
-            _add_sources_to_tar(tar_ref, sources, progress=progress, desc=archive_path.name)
+    with lzma.open(archive_path, "wb") as f, tarfile.open(fileobj=f, mode="w") as tar_ref:
+        _add_sources_to_tar(tar_ref, sources, progress=progress, desc=archive_path.name)
 
 
 def _create_tar_zst(
@@ -548,9 +546,8 @@ def _create_tar_zst(
 
     with open(archive_path, "wb") as fh:
         cctx = zstd.ZstdCompressor()
-        with cctx.stream_writer(fh) as compressor:
-            with tarfile.open(fileobj=compressor, mode="w") as tar_ref:
-                _add_sources_to_tar(tar_ref, sources, progress=progress, desc=archive_path.name)
+        with cctx.stream_writer(fh) as compressor, tarfile.open(fileobj=compressor, mode="w") as tar_ref:
+            _add_sources_to_tar(tar_ref, sources, progress=progress, desc=archive_path.name)
 
 
 def is_supported_archive_format(
@@ -616,12 +613,11 @@ def extract_archive(
                 logger.error("安装 py7zr 模块失败: %s", e)
                 raise RuntimeError(f"安装 py7zr 模块失败: {e}") from e
 
-        with py7zr.SevenZipFile(archive_path, mode="r") as archive:
-            with _progress_bar(total=_get_archive_members_size(archive), desc=archive_path.name, progress=progress) as pbar:
-                archive.extractall(
-                    path=extract_to,
-                    callback=_create_py7zr_extract_callback(py7zr, pbar) if progress else None,
-                )
+        with py7zr.SevenZipFile(archive_path, mode="r") as archive, _progress_bar(total=_get_archive_members_size(archive), desc=archive_path.name, progress=progress) as pbar:
+            archive.extractall(
+                path=extract_to,
+                callback=_create_py7zr_extract_callback(py7zr, pbar) if progress else None,
+            )
         return
 
     if archive_format == ".rar":
@@ -699,14 +695,13 @@ def create_archive(
                 logger.error("安装 py7zr 模块失败: %s", e)
                 raise RuntimeError(f"安装 py7zr 模块失败: {e}") from e
 
-        with py7zr.SevenZipFile(archive_path, mode="w") as archive:
-            with _progress_bar(total=len(sources), desc=archive_path.name, progress=progress) as pbar:
-                for src in sources:
-                    if src.is_dir():
-                        archive.writeall(str(src), arcname=src.name)
-                    else:
-                        archive.write(str(src), arcname=src.name)
-                    pbar.update(1)
+        with py7zr.SevenZipFile(archive_path, mode="w") as archive, _progress_bar(total=len(sources), desc=archive_path.name, progress=progress) as pbar:
+            for src in sources:
+                if src.is_dir():
+                    archive.writeall(str(src), arcname=src.name)
+                else:
+                    archive.write(str(src), arcname=src.name)
+                pbar.update(1)
         return
 
     if archive_format in TAR_CREATE_MODES:

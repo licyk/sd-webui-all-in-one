@@ -1,7 +1,6 @@
 import ast
 from pathlib import Path
 
-
 HOTPATCHER_PACKAGE = Path(__file__).resolve().parents[1] / "sd_webui_all_in_one_hotpatcher"
 
 

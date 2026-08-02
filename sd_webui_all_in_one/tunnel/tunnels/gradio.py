@@ -12,7 +12,6 @@ from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.optional_dependency import install_optional_dependency
 from sd_webui_all_in_one.tunnel.base import BaseTunnel
 
-
 logger = get_logger(
     name=LOGGER_NAME,
     level=LOGGER_LEVEL,
@@ -57,13 +56,13 @@ class GradioTunnel(BaseTunnel):
 
         # 导入或安装 gradio-tunneling
         try:
-            from gradio_tunneling.main import Tunnel, GRADIO_API_SERVER
             import requests
+            from gradio_tunneling.main import GRADIO_API_SERVER, Tunnel
         except ImportError:
             try:
                 install_optional_dependency("gradio-tunneling")
-                from gradio_tunneling.main import Tunnel, GRADIO_API_SERVER
                 import requests
+                from gradio_tunneling.main import GRADIO_API_SERVER, Tunnel
             except (RuntimeError, ImportError) as e:
                 logger.error("安装 Gradio Tunneling 内网穿透时出现了错误: %s", e)
                 raise RuntimeError(f"安装 Gradio Tunneling 内网穿透模块失败: {e}") from e

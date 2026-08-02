@@ -2,7 +2,6 @@
 
 from sd_webui_all_in_one.model_downloader.types import ModelCardList
 
-
 MODEL_DOWNLOAD_DICT: ModelCardList = [
     # SD 1.5
     {

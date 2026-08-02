@@ -12,7 +12,6 @@ from .protocol import RuntimeRequestError
 class UserCanceledException(Exception):
     """用户取消文件操作"""
 
-    pass
 
 
 class FileOperation:
@@ -33,7 +32,7 @@ class FileOperation:
         self.operation_id = uuid.uuid4().hex
         self._active = False
 
-    def __enter__(self) -> "FileOperation":
+    def __enter__(self) -> FileOperation:
         """
         开始文件操作事务
 

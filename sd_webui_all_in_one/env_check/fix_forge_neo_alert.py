@@ -1,18 +1,17 @@
 """修复 Stable Diffusion WebUI Forge Neo 的错误警告"""
 
-import sys
 import json
 import multiprocessing
+import sys
 from pathlib import Path
 
-from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
-    LOGGER_LEVEL,
     LOGGER_COLOR,
+    LOGGER_LEVEL,
     LOGGER_NAME,
 )
 from sd_webui_all_in_one.file_manager import move_files
-
+from sd_webui_all_in_one.logger import get_logger
 
 logger = get_logger(
     name=LOGGER_NAME,

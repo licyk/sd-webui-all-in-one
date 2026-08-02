@@ -1,7 +1,7 @@
 """自定义异常类"""
 
-import traceback
 import os
+import traceback
 
 from sd_webui_all_in_one.ansi_color import ANSIColor
 
@@ -59,10 +59,10 @@ class AggregateError(Exception):
 class WebUiRuntimeError(Exception):
     """运行 WebUI 进程异常类"""
 
-    pass  # pylint: disable=unnecessary-pass
+    # pylint: disable=unnecessary-pass
 
 
 class RetrySignalError(Exception):
     """仅供装饰器内部使用的重试信号异常"""
 
-    pass  # pylint: disable=unnecessary-pass
+    # pylint: disable=unnecessary-pass

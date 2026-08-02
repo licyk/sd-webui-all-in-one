@@ -16,9 +16,9 @@ from sd_webui_all_in_one.pytorch_manager.mirror_data import (
 )
 from sd_webui_all_in_one.pytorch_manager.types import (
     PYTORCH_DEVICE_LIST,
-    PyTorchMirrorInfo,
-    PyTorchDeviceTypeCategory,
     PyTorchDeviceType,
+    PyTorchDeviceTypeCategory,
+    PyTorchMirrorInfo,
 )
 from sd_webui_all_in_one.utils import load_source_directly
 

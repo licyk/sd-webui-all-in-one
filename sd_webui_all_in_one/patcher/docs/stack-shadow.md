@@ -114,6 +114,7 @@ import my_patches.foo
 
 ```python
 import my_patches.foo
+
 install_stack_shadower("my_patches")
 ```
 

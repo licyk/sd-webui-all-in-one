@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from _thread import RLock as RLockType
@@ -69,25 +70,25 @@ class HotpatcherState:
             日志事件发送递归保护。
     """
 
-    monkey_zoo: "MonkeyZoo | None" = None
-    import_hook_finder: "HookedMetaPathFinder | None" = None
-    import_hook_wrapped_spec_from_file_location: "Callable[..., ModuleSpec | None] | None" = None
-    stack_shadow_finder: "StackShadowFinder | None" = None
+    monkey_zoo: MonkeyZoo | None = None
+    import_hook_finder: HookedMetaPathFinder | None = None
+    import_hook_wrapped_spec_from_file_location: Callable[..., ModuleSpec | None] | None = None
+    stack_shadow_finder: StackShadowFinder | None = None
     exception_reporter: ExceptionReporterCallback | None = None
     current_config: dict[str, Any] | None = None
-    current_config_lock: "RLockType" = field(default_factory=threading.RLock)
-    bootstrap_runtime_client: "RuntimeClient | DesktopBrokerClient | None" = None
+    current_config_lock: RLockType = field(default_factory=threading.RLock)
+    bootstrap_runtime_client: RuntimeClient | DesktopBrokerClient | None = None
     bootstrap_transport_mode: str = "legacy"
     bootstrap_transport_diagnostics: list[str] = field(default_factory=list)
     bootstrap_runtime_config: dict[str, Any] = field(default_factory=dict)
-    bootstrap_error_capture: "ErrorCapture | None" = None
-    bootstrap_log_capture: "LogCapture | None" = None
-    bootstrap_service_control_channel: "ServiceControlChannel | None" = None
+    bootstrap_error_capture: ErrorCapture | None = None
+    bootstrap_log_capture: LogCapture | None = None
+    bootstrap_service_control_channel: ServiceControlChannel | None = None
     bootstrap_service_apply_result: dict[str, Any] | None = None
-    error_capture: "ErrorCapture | None" = None
-    error_guard: "ThreadLocal" = field(default_factory=threading.local)
-    log_capture: "LogCapture | None" = None
-    log_guard: "ThreadLocal" = field(default_factory=threading.local)
+    error_capture: ErrorCapture | None = None
+    error_guard: ThreadLocal = field(default_factory=threading.local)
+    log_capture: LogCapture | None = None
+    log_guard: ThreadLocal = field(default_factory=threading.local)
     browser_patch_registered: bool = False
     browser_patch_mode: str = "passthrough"
     browser_runtime_client: Any = None

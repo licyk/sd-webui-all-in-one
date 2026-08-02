@@ -28,6 +28,8 @@ DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES = (
     "sd_webui_all_in_one_hotpatcher",
     "sd_webui_all_in_one_hotpatcher_ext",
 )
+
+
 @dataclass
 class ExceptionReporter:
     """
@@ -110,7 +112,7 @@ class ErrorCapture:
         self._asyncio_wrapper: Any = None
         self.caught_exception_tracer: CaughtExceptionTracer | None = None
 
-    def install(self) -> "ErrorCapture":
+    def install(self) -> ErrorCapture:
         """安装已配置的全局异常 hook
 
         Returns:
@@ -713,7 +715,7 @@ class CaughtExceptionTracer:
         setattr(trace_function, _CAUGHT_TRACE_MARKER, True)
         self._trace_function = trace_function
 
-    def install(self) -> "CaughtExceptionTracer":
+    def install(self) -> CaughtExceptionTracer:
         """安装 caught exception trace 捕获
 
         Returns:
@@ -906,6 +908,8 @@ def _local_value_payload(value: Any, budget: _LocalBudget) -> dict[str, Any]:
         "repr": text,
         "truncated": value_truncated or budget_truncated,
     }
+
+
 def _type_name(value: Any) -> str:
     value_type = type(value)
     return f"{value_type.__module__}.{value_type.__qualname__}"

@@ -3,7 +3,6 @@ import sys
 import textwrap
 
 import pytest
-
 from sd_webui_all_in_one_hotpatcher import monkey_zoo, uninstall_import_hook
 from sd_webui_all_in_one_hotpatcher_ext.zluda import (
     apply_from_config,
@@ -114,7 +113,7 @@ def test_apply_torch_zluda_timer_hotfix_rewrites_cpp_extension_source(tmp_path):
     module = importlib.import_module("torch.utils.cpp_extension")
 
     assert module.HIP_HOME == "rocm"
-    check = getattr(module, "check")
+    check = module.check
     assert check() == "rocm"
 
 

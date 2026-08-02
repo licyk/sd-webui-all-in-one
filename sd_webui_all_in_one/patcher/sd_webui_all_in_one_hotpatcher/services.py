@@ -14,13 +14,13 @@ from typing import Any, cast
 
 from .hook import install_import_hook, is_import_hook_installed, monkey_zoo
 from .runtime.client import RuntimeClient
-from .runtime.interfaces import RuntimeEventSink
 from .runtime.errors import (
     DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES,
     install_error_capture,
     is_error_capture_installed,
     uninstall_error_capture,
 )
+from .runtime.interfaces import RuntimeEventSink
 from .runtime.logs import (
     DEFAULT_FD_CAPTURE,
     DEFAULT_HOOK_CHECK_INTERVAL,
@@ -32,12 +32,12 @@ from .runtime.logs import (
     install_log_capture,
 )
 from .runtime.protocol import RuntimeProtocolError, decode_message, encode_message
-from .state import HotpatcherState, get_default_state
 from .stack_shadow import (
     DEFAULT_FILENAME_TEMPLATE,
     install_stack_shadower,
     is_stack_shadower_installed,
 )
+from .state import HotpatcherState, get_default_state
 
 _MISSING = object()
 _LOGGER = logging.getLogger(__name__)
@@ -446,7 +446,7 @@ class ServiceControlChannel:
     def __init__(
         self,
         client: RuntimeClient,
-        service: "PatchService | None" = None,
+        service: PatchService | None = None,
         *,
         timeout: float = DEFAULT_SERVICE_CONTROL_TIMEOUT,
         connect_timeout: float | None = None,
@@ -517,7 +517,7 @@ class ServiceControlChannel:
             daemon=True,
         )
 
-    def start(self) -> "ServiceControlChannel":
+    def start(self) -> ServiceControlChannel:
         """
         发送通道握手并启动后台线程
 

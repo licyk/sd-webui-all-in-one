@@ -4,18 +4,18 @@ import sys
 from collections.abc import Sequence
 from typing import Literal, TypedDict
 
-from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
-    LOGGER_LEVEL,
     LOGGER_COLOR,
+    LOGGER_LEVEL,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.utils import load_source_directly
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pytorch_manager import (
     get_available_pytorch_device_type,
     get_gpu_list,
     has_gpus,
 )
+from sd_webui_all_in_one.utils import load_source_directly
 
 logger = get_logger(
     name=LOGGER_NAME,

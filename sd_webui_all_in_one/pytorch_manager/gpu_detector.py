@@ -1,10 +1,10 @@
 """硬件检测"""
 
-import re
 import json
+import re
 import shutil
-import sys
 import subprocess
+import sys
 from typing import (
     TypedDict,
 )

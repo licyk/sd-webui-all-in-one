@@ -80,7 +80,7 @@ class RuntimeClient:
         default_request_timeout: float | None = None,
         event_write_timeout: float | None = None,
         features: list[str] | None = None,
-    ) -> "RuntimeClient":
+    ) -> RuntimeClient:
         """
         连接运行时宿主
 
@@ -120,7 +120,7 @@ class RuntimeClient:
         return cls(transport)
 
     @classmethod
-    def connect_from_env(cls, *, required: bool = False) -> "RuntimeClient | None":
+    def connect_from_env(cls, *, required: bool = False) -> RuntimeClient | None:
         """
         从环境变量读取连接参数并连接宿主
 
@@ -225,7 +225,7 @@ class RuntimeClient:
             capture_exception()
             return False
 
-    def start(self) -> "RuntimeClient":
+    def start(self) -> RuntimeClient:
         """返回已由 :meth:`connect` 启动的旧版连接。
 
         Returns:
@@ -266,7 +266,7 @@ class RuntimeClient:
 
         self.transport.close()
 
-    def __enter__(self) -> "RuntimeClient":
+    def __enter__(self) -> RuntimeClient:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:

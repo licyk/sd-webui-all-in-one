@@ -12,7 +12,6 @@ from sd_webui_all_in_one.config import (
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.utils import network_gfw_test
 
-
 logger = get_logger(
     name=LOGGER_NAME,
     level=LOGGER_LEVEL,

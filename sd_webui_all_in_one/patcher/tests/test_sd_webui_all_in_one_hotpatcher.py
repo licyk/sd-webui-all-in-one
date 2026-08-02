@@ -4,7 +4,6 @@ import sys
 import textwrap
 
 import pytest
-
 from sd_webui_all_in_one_hotpatcher import install_import_hook, monkey_zoo, uninstall_import_hook
 
 

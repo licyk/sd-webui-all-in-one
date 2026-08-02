@@ -5,27 +5,27 @@ import sys
 from pathlib import Path
 from typing import Literal
 
-from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
-from sd_webui_all_in_one.mirror_manager import set_mirror
-from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
-from sd_webui_all_in_one.utils import warning_unexpected_params
+from sd_webui_all_in_one.base_manager import (
+    check_qwen_tts_webui_env,
+    install_qwen_tts_webui,
+    update_qwen_tts_webui,
+)
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.optimize import set_cuda_malloc
 from sd_webui_all_in_one.env_manager import (
     configure_env_var,
     configure_pip,
 )
+from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.mirror_manager import set_mirror
+from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
+from sd_webui_all_in_one.optimize import set_cuda_malloc
 from sd_webui_all_in_one.pkg_manager import install_manager_depend
-from sd_webui_all_in_one.base_manager import (
-    install_qwen_tts_webui,
-    update_qwen_tts_webui,
-    check_qwen_tts_webui_env,
-)
+from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
+from sd_webui_all_in_one.utils import warning_unexpected_params
 
 logger = get_logger(
     name=LOGGER_NAME,

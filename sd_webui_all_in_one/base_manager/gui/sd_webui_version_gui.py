@@ -13,14 +13,26 @@ from tkinter import (
     ttk,
 )
 
+from sd_webui_all_in_one.base_manager.gui.version_gui import (
+    AdaptiveIndexList,
+    BackgroundTaskMixin,
+    BranchSwitchDialog,
+    CommitSwitchDialog,
+    EnhancedEntry,
+    SearchableTree,
+    apply_gui_theme,
+    apply_window_icon,
+    commit_matches_keyword,
+    configure_gui_fonts,
+)
 from sd_webui_all_in_one.base_manager.sd_webui_base import (
     SD_WEBUI_BRANCH_INFO_DICT,
     set_sd_webui_extension_download_list_mirror,
 )
 from sd_webui_all_in_one.base_manager.version_manager import (
+    DEFAULT_EXTENSION_INDEX_URL,
     BranchInfo,
     CommitInfo,
-    DEFAULT_EXTENSION_INDEX_URL,
     ExtensionIndexItem,
     ExtensionManager,
     ManagedExtension,
@@ -34,18 +46,6 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     switch_repository_branch,
     switch_repository_commit,
     update_repository,
-)
-from sd_webui_all_in_one.base_manager.gui.version_gui import (
-    AdaptiveIndexList,
-    BackgroundTaskMixin,
-    BranchSwitchDialog,
-    CommitSwitchDialog,
-    EnhancedEntry,
-    SearchableTree,
-    apply_gui_theme,
-    apply_window_icon,
-    commit_matches_keyword,
-    configure_gui_fonts,
 )
 
 

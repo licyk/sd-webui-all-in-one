@@ -5,12 +5,11 @@
 import json
 import os
 import urllib.request
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import (
     Any,
-    Callable,
-    Iterable,
     Literal,
 )
 
@@ -25,6 +24,8 @@ from sd_webui_all_in_one.base_manager.base import (
 )
 from sd_webui_all_in_one.base_manager.repository_inspector import (
     RepositoryState as RepositoryState,
+)
+from sd_webui_all_in_one.base_manager.repository_inspector import (
     inspect_repository,
     run_git_output,
 )
@@ -32,7 +33,6 @@ from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.file_manager import remove_files
 from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST
 from sd_webui_all_in_one.package_analyzer import CommonVersionComparison, PyWhlVersionComparison, get_package_version_from_library
-
 
 DEFAULT_EXTENSION_INDEX_URL = "https://raw.githubusercontent.com/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json"
 """AUTOMATIC1111 扩展源地址"""
@@ -1286,9 +1286,7 @@ def check_package_update(
         )
         latest_version = versions[0].version if versions else None
         error = None if latest_version is not None else "未获取到 PyPI 版本列表"
-        has_update = latest_version is not None and (
-            current_version is None or PyWhlVersionComparison(current_version) < PyWhlVersionComparison(latest_version)
-        )
+        has_update = latest_version is not None and (current_version is None or PyWhlVersionComparison(current_version) < PyWhlVersionComparison(latest_version))
     except Exception as exc:
         latest_version = None
         has_update = False

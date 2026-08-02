@@ -1,72 +1,50 @@
 """Stable Diffusion WebUI 管理器模块"""
 
 import importlib
-import os
-import json
-import uuid
 import importlib.metadata
+import json
+import os
+import uuid
 from concurrent.futures import (
     ThreadPoolExecutor,
     as_completed,
 )
+from pathlib import Path
 from typing import (
-    cast,
     Any,
-    TypedDict,
     Literal,
     TypeAlias,
+    TypedDict,
+    cast,
     get_args,
 )
-from pathlib import Path
 
-from sd_webui_all_in_one.env_check import (
-    check_torch_version,
-    py_dependency_checker,
-    fix_torch_libomp,
-    check_onnxruntime_gpu,
-    install_extension_requirements,
-    fix_stable_diffusion_invaild_repo_url,
-    fix_forge_neo_alert,
-)
-from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
-from sd_webui_all_in_one.optimize import (
-    get_cuda_malloc_var,
-    apply_pytorch_alloc_conf,
-)
-from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
+from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.ansi_color import ANSIColor
-from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.launch_arguments import (
-    DEFAULT_DISCOVERY_TIMEOUT_SECONDS,
-    LaunchArgumentCatalog,
-    build_script_help_command,
-    discover_launch_argument_catalog,
-)
-from sd_webui_all_in_one.config import (
-    LOGGER_LEVEL,
-    LOGGER_COLOR,
-    ROOT_PATH,
-    LOGGER_NAME,
-)
 from sd_webui_all_in_one.base_manager.base import (
-    apply_github_raw_file_mirror,
+    EnvCheckTask,
+    WebUiLaunchInfo,
     apply_git_base_config_and_github_mirror,
     apply_git_config_global_to_process,
+    apply_github_raw_file_mirror,
     apply_hf_mirror,
-    prepare_pytorch_install_info,
     clone_repo,
-    install_pytorch_for_webui,
-    pre_download_model_for_webui,
-    launch_webui,
     get_repo_name_from_url,
+    install_pytorch_for_webui,
     install_webui_model_from_library,
+    launch_webui,
+    pre_download_model_for_webui,
+    prepare_pytorch_install_info,
     print_divider,
-    EnvCheckTask,
     run_env_check_tasks,
-    WebUiLaunchInfo,
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import DEFAULT_RUNTIME_PORT, apply_hotpatcher_launch_env
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
+from sd_webui_all_in_one.base_manager.snapshot import (
+    WebUiSnapshot,
+    build_webui_snapshot,
+    collect_git_extensions,
+)
 from sd_webui_all_in_one.base_manager.version_manager import (
     DEFAULT_EXTENSION_INDEX_URL,
     ExtensionIndexItem,
@@ -77,31 +55,52 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     fetch_extension_index,
     filter_extension_index,
 )
-from sd_webui_all_in_one.base_manager.snapshot import (
-    WebUiSnapshot,
-    build_webui_snapshot,
-    collect_git_extensions,
+from sd_webui_all_in_one.config import (
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+    ROOT_PATH,
 )
-from sd_webui_all_in_one.pkg_manager import install_requirements
-from sd_webui_all_in_one import git_warpper
+from sd_webui_all_in_one.custom_exceptions import AggregateError
+from sd_webui_all_in_one.downloader import (
+    DownloadToolType,
+    download_file,
+)
+from sd_webui_all_in_one.env_check import (
+    check_onnxruntime_gpu,
+    check_torch_version,
+    fix_forge_neo_alert,
+    fix_stable_diffusion_invaild_repo_url,
+    fix_torch_libomp,
+    install_extension_requirements,
+    py_dependency_checker,
+)
+from sd_webui_all_in_one.file_manager import (
+    copy_files,
+    generate_dir_tree,
+    get_file_list,
+    move_files,
+    remove_files,
+)
+from sd_webui_all_in_one.launch_arguments import (
+    DEFAULT_DISCOVERY_TIMEOUT_SECONDS,
+    LaunchArgumentCatalog,
+    build_script_help_command,
+    discover_launch_argument_catalog,
+)
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.mirror_manager import (
     GITHUB_MIRROR_LIST,
     HUGGINGFACE_MIRROR_LIST,
     get_pypi_mirror_config,
 )
-from sd_webui_all_in_one.custom_exceptions import AggregateError
-from sd_webui_all_in_one.file_manager import (
-    copy_files,
-    move_files,
-    remove_files,
-    generate_dir_tree,
-    get_file_list,
+from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
+from sd_webui_all_in_one.optimize import (
+    apply_pytorch_alloc_conf,
+    get_cuda_malloc_var,
 )
-from sd_webui_all_in_one.downloader import (
-    DownloadToolType,
-    download_file,
-)
-from sd_webui_all_in_one.pkg_manager import pip_install
+from sd_webui_all_in_one.pkg_manager import install_requirements, pip_install
+from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 from sd_webui_all_in_one.utils import TemporaryModulePath
 
 logger = get_logger(
@@ -149,6 +148,7 @@ def get_sd_webui_launch_argument_catalog(
         python_executable=python_executable,
         timeout_seconds=timeout_seconds,
     )
+
 
 SDWebUiBranchType: TypeAlias = Literal[
     "sd_webui_main",

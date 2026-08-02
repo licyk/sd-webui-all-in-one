@@ -5,43 +5,42 @@ import warnings
 from pathlib import Path
 
 from sd_webui_all_in_one import git_warpper
-from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager, ModelDownloadList
-from sd_webui_all_in_one.mirror_manager import set_mirror
-from sd_webui_all_in_one.git_warpper import set_git_config
-from sd_webui_all_in_one.env_check import (
-    fix_torch_libomp,
-    check_numpy,
-    py_dependency_checker,
-    check_onnxruntime_gpu,
+from sd_webui_all_in_one.base_manager import (
+    clone_repo,
+    install_pytorch_with_fallback,
 )
-from sd_webui_all_in_one.repo_manager import (
-    ApiType,
-    RepoType,
-)
-from sd_webui_all_in_one.utils import warning_unexpected_params
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
     LOGGER_NAME,
 )
-from sd_webui_all_in_one.optimize import set_cuda_malloc
+from sd_webui_all_in_one.env_check import (
+    check_numpy,
+    check_onnxruntime_gpu,
+    fix_torch_libomp,
+    py_dependency_checker,
+)
 from sd_webui_all_in_one.env_manager import (
     config_wandb_token,
     configure_env_var,
     configure_pip,
     generate_uv_and_pip_env_mirror_config,
 )
+from sd_webui_all_in_one.git_warpper import set_git_config
+from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.mirror_manager import set_mirror
+from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager, ModelDownloadList
+from sd_webui_all_in_one.optimize import set_cuda_malloc
 from sd_webui_all_in_one.pkg_manager import (
     install_manager_depend,
     install_requirements,
     pip_install,
 )
-from sd_webui_all_in_one.base_manager import (
-    clone_repo,
-    install_pytorch_with_fallback,
+from sd_webui_all_in_one.repo_manager import (
+    ApiType,
+    RepoType,
 )
-
+from sd_webui_all_in_one.utils import warning_unexpected_params
 
 logger = get_logger(
     name=LOGGER_NAME,

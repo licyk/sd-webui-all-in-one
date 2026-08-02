@@ -21,6 +21,18 @@ from sd_webui_all_in_one.base_manager.comfyui_base import (
     ComfyUiExtensionManager,
     set_comfyui_custom_node_list_mirror,
 )
+from sd_webui_all_in_one.base_manager.gui.version_gui import (
+    AdaptiveIndexList,
+    BackgroundTaskMixin,
+    BranchSwitchDialog,
+    CommitSwitchDialog,
+    EnhancedEntry,
+    SearchableTree,
+    apply_gui_theme,
+    apply_window_icon,
+    commit_matches_keyword,
+    configure_gui_fonts,
+)
 from sd_webui_all_in_one.base_manager.version_manager import (
     BranchInfo,
     CommitInfo,
@@ -41,20 +53,7 @@ from sd_webui_all_in_one.downloader import (
     download_archive_and_unpack,
     download_file,
 )
-from sd_webui_all_in_one.base_manager.gui.version_gui import (
-    AdaptiveIndexList,
-    BackgroundTaskMixin,
-    BranchSwitchDialog,
-    CommitSwitchDialog,
-    EnhancedEntry,
-    SearchableTree,
-    apply_gui_theme,
-    apply_window_icon,
-    commit_matches_keyword,
-    configure_gui_fonts,
-)
 from sd_webui_all_in_one.file_manager import move_files
-
 
 COMFYUI_CUSTOM_NODE_INDEX_URL = "https://raw.githubusercontent.com/Comfy-Org/ComfyUI-Manager/refs/heads/main/custom-node-list.json"
 

@@ -16,27 +16,27 @@
 设置日志器的名称可通过环境变量`SD_WEBUI_ALL_IN_ONE_LOGGER_NAME=<日志器名称>`进行设置
 """
 
-import os
 import atexit
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
-    LOGGER_NAME,
-    LOGGER_LEVEL,
+    DEFAULT_ENV_VARS,
+    DEFAULT_GIT_CONFIG,
     LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+    SD_WEBUI_ALL_IN_ONE_CACHE_PATH,
+    SD_WEBUI_ALL_IN_ONE_DESKTOP_MODE,
     SD_WEBUI_ALL_IN_ONE_PROXY,
     SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH,
     SD_WEBUI_ALL_IN_ONE_SET_CONFIG,
-    SD_WEBUI_ALL_IN_ONE_CACHE_PATH,
-    SD_WEBUI_ALL_IN_ONE_DESKTOP_MODE,
-    DEFAULT_ENV_VARS,
-    DEFAULT_GIT_CONFIG,
 )
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.proxy import (
-    set_proxy,
     get_system_proxy_address,
+    set_proxy,
     test_proxy_connectivity,
 )
 
@@ -111,29 +111,29 @@ _apply_env_vars()
 _apply_config_file()
 
 # pylint: disable=wrong-import-position
-from sd_webui_all_in_one.version import VERSION
 from sd_webui_all_in_one.notebook_manager import (
     BaseManager,
-    SDWebUIManager,
     ComfyUIManager,
     FooocusManager,
     InvokeAIManager,
-    SDTrainerManager,
-    SDScriptsManager,
-    SDTrainerScriptsManager,
     QwenTTSWebUIManager,
+    SDScriptsManager,
+    SDTrainerManager,
+    SDTrainerScriptsManager,
+    SDWebUIManager,
 )
+from sd_webui_all_in_one.version import VERSION
 
 __all__ = [
+    "VERSION",
     "BaseManager",
-    "SDWebUIManager",
     "ComfyUIManager",
     "FooocusManager",
     "InvokeAIManager",
-    "SDTrainerManager",
-    "SDScriptsManager",
-    "SDTrainerScriptsManager",
     "QwenTTSWebUIManager",
-    "VERSION",
+    "SDScriptsManager",
+    "SDTrainerManager",
+    "SDTrainerScriptsManager",
+    "SDWebUIManager",
     "logger",
 ]

@@ -4,6 +4,12 @@ import shutil
 from collections.abc import Sequence
 from pathlib import Path
 
+from sd_webui_all_in_one.config import (
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+    RETRY_TIMES,
+)
 from sd_webui_all_in_one.downloader.aria2_downloader import aria2
 from sd_webui_all_in_one.downloader.requests_downloader import (
     DEFAULT_MAX_CONNECTION_PER_SERVER,
@@ -12,18 +18,11 @@ from sd_webui_all_in_one.downloader.requests_downloader import (
     DEFAULT_SPLIT,
     download_file_from_url,
 )
-from sd_webui_all_in_one.downloader.urllib_downloader import download_file_from_url_urllib
-from sd_webui_all_in_one.retry_decorator import retryable
 from sd_webui_all_in_one.downloader.types import DownloadToolType
-from sd_webui_all_in_one.optional_dependency import try_install_optional_dependency
+from sd_webui_all_in_one.downloader.urllib_downloader import download_file_from_url_urllib
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.config import (
-    LOGGER_LEVEL,
-    LOGGER_COLOR,
-    LOGGER_NAME,
-    RETRY_TIMES,
-)
-
+from sd_webui_all_in_one.optional_dependency import try_install_optional_dependency
+from sd_webui_all_in_one.retry_decorator import retryable
 
 logger = get_logger(
     name=LOGGER_NAME,

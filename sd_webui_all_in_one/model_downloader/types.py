@@ -2,11 +2,10 @@
 
 from typing import (
     Literal,
-    TypedDict,
     TypeAlias,
+    TypedDict,
     get_args,
 )
-
 
 SupportedWebUiType: TypeAlias = Literal[
     "sd_webui",

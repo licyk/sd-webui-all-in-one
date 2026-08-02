@@ -10,7 +10,6 @@ from typing import Literal, TypeAlias
 from sd_webui_all_in_one.downloader import DownloadToolType, download_file
 from sd_webui_all_in_one.file_manager import copy_files, copy_files_merge, move_files, move_files_merge, remove_files
 
-
 WebUiModelType: TypeAlias = Literal[
     "sd_webui",
     "comfyui",

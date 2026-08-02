@@ -2,25 +2,17 @@
 
 import argparse
 import json
-import sys
 import os
+import sys
 import time
 from pathlib import Path
 from typing import cast
 
-from sd_webui_all_in_one.proxy import (
-    get_system_proxy_address,
-    test_proxy_connectivity,
-)
 from sd_webui_all_in_one import config as app_config
-from sd_webui_all_in_one.updater import (
-    check_aria2_version,
-    check_and_update_uv,
-    check_and_update_pip,
-)
-from sd_webui_all_in_one.cli_manager.auto_mirror import (
-    add_auto_mirror_argument,
-    with_auto_mirror,
+from sd_webui_all_in_one.api_server import serve_api
+from sd_webui_all_in_one.archive_manager import (
+    create_archive,
+    extract_archive,
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     DEFAULT_HOTPATCHER_CONFIG_PATH,
@@ -32,27 +24,33 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     load_hotpatcher_config,
     save_hotpatcher_config,
 )
-from sd_webui_all_in_one.downloader import download_file
-from sd_webui_all_in_one.downloader.types import (
-    DOWNLOAD_TOOL_TYPE_LIST,
-    DownloadToolType,
+from sd_webui_all_in_one.cli_manager.auto_mirror import (
+    add_auto_mirror_argument,
+    with_auto_mirror,
 )
+from sd_webui_all_in_one.config import (
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+    SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH,
+)
+from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.downloader.requests_downloader import (
     DEFAULT_MAX_CONNECTION_PER_SERVER,
     DEFAULT_MIN_SPLIT_SIZE,
     DEFAULT_PIECE_LENGTH,
     DEFAULT_SPLIT,
 )
-from sd_webui_all_in_one.api_server import serve_api
-from sd_webui_all_in_one.archive_manager import (
-    create_archive,
-    extract_archive,
+from sd_webui_all_in_one.downloader.types import (
+    DOWNLOAD_TOOL_TYPE_LIST,
+    DownloadToolType,
 )
+from sd_webui_all_in_one.logger import get_logger, silence_logger_output
 from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
-from sd_webui_all_in_one.repo_manager import (
-    ApiType,
-    RepoManager,
-    RepoType,
+from sd_webui_all_in_one.optimize import (
+    get_cuda_malloc_var,
+    get_tcmalloc_path,
+    get_tcmalloc_var,
 )
 from sd_webui_all_in_one.portable_manager import (
     DEFAULT_PORTABLE_PATH_IN_REPO,
@@ -62,26 +60,28 @@ from sd_webui_all_in_one.portable_manager import (
     save_portable_list,
     upload_portable_package_to_repositories,
 )
-from sd_webui_all_in_one.config import (
-    LOGGER_NAME,
-    LOGGER_COLOR,
-    LOGGER_LEVEL,
-    SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH,
-)
-from sd_webui_all_in_one.optimize import (
-    get_cuda_malloc_var,
-    get_tcmalloc_path,
-    get_tcmalloc_var,
+from sd_webui_all_in_one.proxy import (
+    get_system_proxy_address,
+    test_proxy_connectivity,
 )
 from sd_webui_all_in_one.pytorch_manager import (
     auto_detect_pytorch_device_category,
     get_available_pytorch_device_type,
 )
+from sd_webui_all_in_one.repo_manager import (
+    ApiType,
+    RepoManager,
+    RepoType,
+)
 from sd_webui_all_in_one.tunnel import TunnelManager
-from sd_webui_all_in_one.logger import get_logger, silence_logger_output
+from sd_webui_all_in_one.updater import (
+    check_and_update_pip,
+    check_and_update_uv,
+    check_aria2_version,
+)
 from sd_webui_all_in_one.utils import (
-    print_divider,
     normalized_filepath,
+    print_divider,
 )
 
 logger = get_logger(

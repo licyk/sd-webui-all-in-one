@@ -2,19 +2,21 @@
 
 import importlib
 import os
-from pathlib import Path
-from typing import TypedDict
-from urllib.parse import urlparse
 from concurrent.futures import (
     ThreadPoolExecutor,
     as_completed,
 )
+from pathlib import Path
+from typing import TypedDict
+from urllib.parse import urlparse
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
-    apply_github_raw_file_mirror,
+    EnvCheckTask,
+    WebUiLaunchInfo,
     apply_git_base_config_and_github_mirror,
     apply_git_config_global_to_process,
+    apply_github_raw_file_mirror,
     apply_hf_mirror,
     clone_repo,
     get_repo_name_from_url,
@@ -23,20 +25,18 @@ from sd_webui_all_in_one.base_manager.base import (
     launch_webui,
     pre_download_model_for_webui,
     prepare_pytorch_install_info,
-    EnvCheckTask,
     run_env_check_tasks,
-    WebUiLaunchInfo,
 )
-from sd_webui_all_in_one.base_manager.hotpatcher_manager import DEFAULT_RUNTIME_PORT, apply_hotpatcher_launch_env
-from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
 from sd_webui_all_in_one.base_manager.comfy_registry import (
     fetch_comfy_registry_extension_index,
     fetch_comfy_registry_versions,
+    install_comfy_registry_node,
     read_comfy_registry_info,
     read_comfy_registry_nightly_id,
     switch_comfy_registry_node_version,
-    install_comfy_registry_node,
 )
+from sd_webui_all_in_one.base_manager.hotpatcher_manager import DEFAULT_RUNTIME_PORT, apply_hotpatcher_launch_env
+from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
 from sd_webui_all_in_one.base_manager.snapshot import (
     ExtensionSnapshot,
     WebUiSnapshot,
@@ -52,11 +52,27 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     fetch_comfyui_custom_node_index,
     filter_extension_index,
 )
+from sd_webui_all_in_one.config import (
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+    ROOT_PATH,
+)
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.downloader import (
     DownloadToolType,
     download_archive_and_unpack,
     download_file,
+)
+from sd_webui_all_in_one.env_check import (
+    ComfyUIConflictAnalysisResult,
+    check_comfyui_component_dependencies,
+    check_comfyui_manager_dependence,
+    check_onnxruntime_gpu,
+    check_torch_version,
+    comfyui_conflict_analyzer,
+    fix_torch_libomp,
+    py_dependency_checker,
 )
 from sd_webui_all_in_one.file_manager import (
     copy_files,
@@ -65,19 +81,13 @@ from sd_webui_all_in_one.file_manager import (
     move_files,
     remove_files,
 )
-from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.launch_arguments import (
     DEFAULT_DISCOVERY_TIMEOUT_SECONDS,
     LaunchArgumentCatalog,
     build_script_help_command,
     discover_launch_argument_catalog,
 )
-from sd_webui_all_in_one.config import (
-    LOGGER_LEVEL,
-    LOGGER_COLOR,
-    ROOT_PATH,
-    LOGGER_NAME,
-)
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.mirror_manager import (
     GITHUB_MIRROR_LIST,
     HUGGINGFACE_MIRROR_LIST,
@@ -85,22 +95,12 @@ from sd_webui_all_in_one.mirror_manager import (
 )
 from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
 from sd_webui_all_in_one.optimize import (
-    get_cuda_malloc_var,
     apply_pytorch_alloc_conf,
+    get_cuda_malloc_var,
 )
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 from sd_webui_all_in_one.utils import TemporaryModulePath
-from sd_webui_all_in_one.env_check import (
-    ComfyUIConflictAnalysisResult,
-    py_dependency_checker,
-    fix_torch_libomp,
-    check_onnxruntime_gpu,
-    comfyui_conflict_analyzer,
-    check_comfyui_component_dependencies,
-    check_comfyui_manager_dependence,
-    check_torch_version,
-)
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -832,9 +832,7 @@ def _iter_comfyui_custom_node_paths(
     for path in sorted(custom_nodes_path.iterdir(), key=lambda item: item.name.lower()):
         if path.name in {".disabled", "__pycache__"}:
             continue
-        if path.is_dir():
-            result.append((path.name, path, not path.name.endswith(".disabled")))
-        elif include_files and path.is_file() and (path.suffix == ".py" or path.name.endswith(".py.disabled")):
+        if path.is_dir() or include_files and path.is_file() and (path.suffix == ".py" or path.name.endswith(".py.disabled")):
             result.append((path.name, path, not path.name.endswith(".disabled")))
 
     disabled_root = custom_nodes_path / ".disabled"

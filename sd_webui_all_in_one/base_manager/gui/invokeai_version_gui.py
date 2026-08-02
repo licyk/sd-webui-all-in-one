@@ -13,6 +13,17 @@ from tkinter import (
     ttk,
 )
 
+from sd_webui_all_in_one.base_manager.gui.version_gui import (
+    BackgroundTaskMixin,
+    BranchSwitchDialog,
+    CommitSwitchDialog,
+    EnhancedEntry,
+    SearchableTree,
+    apply_gui_theme,
+    apply_window_icon,
+    configure_gui_fonts,
+    package_version_matches_keyword,
+)
 from sd_webui_all_in_one.base_manager.invokeai_base import install_invokeai_component
 from sd_webui_all_in_one.base_manager.version_manager import (
     CommitInfo,
@@ -25,17 +36,6 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     list_commits,
     switch_repository_branch,
     switch_repository_commit,
-)
-from sd_webui_all_in_one.base_manager.gui.version_gui import (
-    BackgroundTaskMixin,
-    BranchSwitchDialog,
-    CommitSwitchDialog,
-    EnhancedEntry,
-    SearchableTree,
-    apply_gui_theme,
-    apply_window_icon,
-    configure_gui_fonts,
-    package_version_matches_keyword,
 )
 from sd_webui_all_in_one.file_manager import move_files
 from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config

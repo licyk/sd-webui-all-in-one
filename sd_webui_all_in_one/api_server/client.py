@@ -9,7 +9,6 @@ import urllib.request
 from typing import Any
 from urllib.parse import quote
 
-
 _TERMINAL_STATUSES = frozenset({"succeeded", "failed", "canceled"})
 
 

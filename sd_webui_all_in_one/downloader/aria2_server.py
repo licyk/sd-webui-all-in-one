@@ -16,21 +16,19 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-from sd_webui_all_in_one.downloader.requests_downloader import _filename_from_url
-from sd_webui_all_in_one.downloader.requests_downloader import _normalize_urls
+from sd_webui_all_in_one.config import (
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+    ROOT_PATH,
+)
+from sd_webui_all_in_one.downloader.requests_downloader import _filename_from_url, _normalize_urls
+from sd_webui_all_in_one.downloader.types import DEFAULT_USER_AGENT
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.utils import (
     find_port,
     is_port_in_use,
 )
-from sd_webui_all_in_one.downloader.types import DEFAULT_USER_AGENT
-from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.config import (
-    LOGGER_LEVEL,
-    LOGGER_COLOR,
-    LOGGER_NAME,
-    ROOT_PATH,
-)
-
 
 logger = get_logger(
     name=LOGGER_NAME,

@@ -94,9 +94,7 @@ class TupleWrapper:
             wrapped = TupleWrapper(wrapped) if isinstance(wrapped, tuple) else wrapped
             result = replacement(wrapped)
 
-            if isinstance(result, TupleWrapper):
-                self[i] = result.conclude()
-            elif isinstance(result, CodeWrapper):
+            if isinstance(result, TupleWrapper) or isinstance(result, CodeWrapper):
                 self[i] = result.conclude()
             else:
                 self[i] = result
@@ -151,9 +149,7 @@ class TupleWrapper:
             try:
                 yield wrapped
             finally:
-                if isinstance(wrapped, TupleWrapper):
-                    self[i] = wrapped.conclude()
-                elif isinstance(wrapped, CodeWrapper):
+                if isinstance(wrapped, TupleWrapper) or isinstance(wrapped, CodeWrapper):
                     self[i] = wrapped.conclude()
 
             if only_first:

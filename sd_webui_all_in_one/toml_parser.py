@@ -18,7 +18,6 @@ from typing import (
     TypeAlias,
 )
 
-
 TomlDict: TypeAlias = dict[str, Any]
 """TOML 内容字典"""
 
@@ -154,8 +153,7 @@ class TomlParser:
         normalized = content.replace("\r\n", "\n")
         if "\r" in normalized:
             raise TomlDecodeError("TOML 只支持 LF 或 CRLF 换行")
-        if normalized.startswith("\ufeff"):
-            normalized = normalized[1:]
+        normalized = normalized.removeprefix("\ufeff")
         for ch in normalized:
             code = ord(ch)
             if 0xD800 <= code <= 0xDFFF:
@@ -664,9 +662,7 @@ class TomlParser:
     def _skip_ws(self, allow_newline: bool) -> None:
         while True:
             ch = self._peek()
-            if ch and ch in " \t":
-                self._advance()
-            elif allow_newline and ch == "\n":
+            if ch and ch in " \t" or allow_newline and ch == "\n":
                 self._advance()
             else:
                 return

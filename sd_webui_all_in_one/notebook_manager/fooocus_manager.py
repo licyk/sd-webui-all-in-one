@@ -1,40 +1,40 @@
 """Fooocus 管理工具"""
 
-import os
-import sys
-import shlex
 import argparse
 import json
+import os
+import shlex
+import sys
 from pathlib import Path
 from typing import Any, Literal
 
-from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
-from sd_webui_all_in_one.mirror_manager import set_mirror
-from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
-from sd_webui_all_in_one.utils import warning_unexpected_params
+from sd_webui_all_in_one.base_manager import (
+    FooocusBranchType,
+    check_fooocus_env,
+    install_fooocus,
+    update_fooocus,
+)
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
     LOGGER_NAME,
-)
-from sd_webui_all_in_one.optimize import set_cuda_malloc
-from sd_webui_all_in_one.env_manager import (
-    configure_env_var,
-    configure_pip,
-)
-from sd_webui_all_in_one.pkg_manager import install_manager_depend
-from sd_webui_all_in_one.base_manager import (
-    FooocusBranchType,
-    check_fooocus_env,
-    update_fooocus,
-    install_fooocus,
 )
 from sd_webui_all_in_one.downloader import (
     DownloadToolType,
     MultiThreadDownloader,
     download_file,
 )
+from sd_webui_all_in_one.env_manager import (
+    configure_env_var,
+    configure_pip,
+)
+from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.mirror_manager import set_mirror
+from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager
+from sd_webui_all_in_one.optimize import set_cuda_malloc
+from sd_webui_all_in_one.pkg_manager import install_manager_depend
+from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
+from sd_webui_all_in_one.utils import warning_unexpected_params
 
 logger = get_logger(
     name=LOGGER_NAME,

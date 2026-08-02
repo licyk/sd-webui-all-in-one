@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from enum import Enum
-from typing import Mapping
 
 TRANSPORT_MODE_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TRANSPORT_MODE"
 

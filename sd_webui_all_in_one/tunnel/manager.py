@@ -1,7 +1,8 @@
 """内网穿透管理器"""
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Optional, cast
+from typing import Any, cast
 
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
@@ -21,7 +22,6 @@ from sd_webui_all_in_one.tunnel.tunnels import (
     ZrokTunnel,
 )
 from sd_webui_all_in_one.tunnel.types import TunnelUrl
-
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -75,7 +75,7 @@ class TunnelManager:
         self.workspace = workspace
         self.port = port
         self._tracker = ProcessTracker()
-        self._tunnel_url: Optional[TunnelUrl] = None
+        self._tunnel_url: TunnelUrl | None = None
 
     def __enter__(
         self,

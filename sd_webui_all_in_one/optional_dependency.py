@@ -1,8 +1,8 @@
 """可选 Python 依赖安装工具"""
 
 from sd_webui_all_in_one.config import (
-    LOGGER_LEVEL,
     LOGGER_COLOR,
+    LOGGER_LEVEL,
     LOGGER_NAME,
 )
 from sd_webui_all_in_one.logger import get_logger

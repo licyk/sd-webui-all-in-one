@@ -5,19 +5,18 @@ import re
 import sys
 from pathlib import Path
 
-from sd_webui_all_in_one.mirror_manager import get_auto_pypi_mirror_config
 from sd_webui_all_in_one.cmd import run_cmd
-from sd_webui_all_in_one.package_analyzer import PyWhlVersionComparison
-from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
-    LOGGER_LEVEL,
-    LOGGER_COLOR,
-    UV_MINIMUM_VER,
-    PIP_MINIMUM_VER,
     ARIA2_MINIMUM_VER,
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
     LOGGER_NAME,
+    PIP_MINIMUM_VER,
+    UV_MINIMUM_VER,
 )
-
+from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.mirror_manager import get_auto_pypi_mirror_config
+from sd_webui_all_in_one.package_analyzer import PyWhlVersionComparison
 
 logger = get_logger(
     name=LOGGER_NAME,

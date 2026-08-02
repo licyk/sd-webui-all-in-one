@@ -1,18 +1,18 @@
 """Stable Diffusion WebUI 扩展依赖安装工具"""
 
+import json
 import os
 import sys
-import json
 import traceback
 from pathlib import Path
 
 from sd_webui_all_in_one.cmd import run_cmd
-from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
     LOGGER_NAME,
 )
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.utils import append_python_path
 
 logger = get_logger(

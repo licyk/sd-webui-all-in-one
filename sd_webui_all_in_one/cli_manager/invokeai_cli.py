@@ -8,63 +8,65 @@ from pathlib import Path
 
 from sd_webui_all_in_one.base_manager import (
     DEFAULT_RUNTIME_PORT,
-    check_invokeai_updates,
-    install_invokeai,
-    update_invokeai,
     check_invokeai_env,
-    launch_invokeai,
+    check_invokeai_updates,
+    get_invokeai_snapshot,
+    install_invokeai,
     install_invokeai_custom_nodes,
-    set_invokeai_custom_nodes_status,
-    list_invokeai_custom_nodes,
-    update_invokeai_custom_nodes,
-    uninstall_invokeai_custom_node,
     install_invokeai_model_from_library,
     install_invokeai_model_from_url,
-    list_invokeai_models,
-    uninstall_invokeai_model,
-    reinstall_invokeai_pytorch as reinstall_base_invokeai_pytorch,
-    launch_invokeai_version_gui,
-    launch_invokeai_snapshot_gui,
+    launch_invokeai,
     launch_invokeai_model_manager_gui,
-    get_invokeai_snapshot,
+    launch_invokeai_snapshot_gui,
+    launch_invokeai_version_gui,
+    list_invokeai_custom_nodes,
+    list_invokeai_models,
+    set_invokeai_custom_nodes_status,
+    uninstall_invokeai_custom_node,
+    uninstall_invokeai_model,
+    update_invokeai,
+    update_invokeai_custom_nodes,
 )
-from sd_webui_all_in_one.config import (
-    INVOKEAI_ROOT_PATH,
-    SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR,
-    SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH,
-    LOGGER_NAME,
-    LOGGER_LEVEL,
-    LOGGER_COLOR,
+from sd_webui_all_in_one.base_manager import (
+    reinstall_invokeai_pytorch as reinstall_base_invokeai_pytorch,
 )
-from sd_webui_all_in_one.downloader import (
-    DOWNLOAD_TOOL_TYPE_LIST,
-    DownloadToolType,
-)
-from sd_webui_all_in_one.model_downloader import (
-    MODEL_DOWNLOAD_URL_TYPE_LIST,
-    ModelDownloadUrlType,
-)
+from sd_webui_all_in_one.base_manager.version_manager import WebUiUpdateOptions
 from sd_webui_all_in_one.cli_manager.auto_mirror import (
     add_auto_mirror_argument,
     with_auto_mirror,
 )
 from sd_webui_all_in_one.cli_manager.env_check import add_env_check_selection_arguments
 from sd_webui_all_in_one.cli_manager.snapshot import add_pre_operation_snapshot_arguments, create_pre_operation_snapshot, output_snapshot
+from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
 from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     add_restore_arguments,
     restore_snapshot,
 )
-from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
 from sd_webui_all_in_one.cli_manager.update_status import output_update_check_result
-from sd_webui_all_in_one.base_manager.version_manager import WebUiUpdateOptions
+from sd_webui_all_in_one.config import (
+    INVOKEAI_ROOT_PATH,
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+    SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH,
+    SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR,
+)
+from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
+from sd_webui_all_in_one.downloader import (
+    DOWNLOAD_TOOL_TYPE_LIST,
+    DownloadToolType,
+)
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.mirror_manager import PYPI_INDEX_MIRROR_OFFICIAL, PYPI_INDEX_MIRROR_TENCENT
+from sd_webui_all_in_one.model_downloader import (
+    MODEL_DOWNLOAD_URL_TYPE_LIST,
+    ModelDownloadUrlType,
+)
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_CATEGORY_LIST,
     PyTorchDeviceTypeCategory,
 )
 from sd_webui_all_in_one.utils import normalized_filepath
-from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
-from sd_webui_all_in_one.logger import get_logger
 
 logger = get_logger(
     name=LOGGER_NAME,

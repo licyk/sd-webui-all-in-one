@@ -3,35 +3,34 @@
 import os
 from pathlib import Path
 
-from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager, ModelDownloadList
-from sd_webui_all_in_one.mirror_manager import set_mirror
-from sd_webui_all_in_one.git_warpper import set_git_config
-from sd_webui_all_in_one.env_check import check_numpy
-from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
-from sd_webui_all_in_one.utils import warning_unexpected_params
-from sd_webui_all_in_one.config import (
-    LOGGER_COLOR,
-    LOGGER_LEVEL,
-    LOGGER_NAME,
-)
-from sd_webui_all_in_one.optimize import set_cuda_malloc
-from sd_webui_all_in_one.env_manager import (
-    config_wandb_token,
-    configure_env_var,
-    configure_pip,
-)
-from sd_webui_all_in_one.pkg_manager import (
-    install_manager_depend,
-    pip_install,
-)
 from sd_webui_all_in_one.base_manager import (
     SDScriptsBranchType,
     check_sd_scripts_env,
     install_sd_scripts,
     update_sd_scripts,
 )
-
+from sd_webui_all_in_one.config import (
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+)
+from sd_webui_all_in_one.env_check import check_numpy
+from sd_webui_all_in_one.env_manager import (
+    config_wandb_token,
+    configure_env_var,
+    configure_pip,
+)
+from sd_webui_all_in_one.git_warpper import set_git_config
+from sd_webui_all_in_one.logger import get_logger
+from sd_webui_all_in_one.mirror_manager import set_mirror
+from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager, ModelDownloadList
+from sd_webui_all_in_one.optimize import set_cuda_malloc
+from sd_webui_all_in_one.pkg_manager import (
+    install_manager_depend,
+    pip_install,
+)
+from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
+from sd_webui_all_in_one.utils import warning_unexpected_params
 
 logger = get_logger(
     name=LOGGER_NAME,

@@ -4,17 +4,17 @@ import copy
 import re
 from pathlib import Path
 
-from sd_webui_all_in_one.downloader import (
-    download_file,
-    DownloadToolType,
-)
+from sd_webui_all_in_one.ansi_color import ANSIColor
 from sd_webui_all_in_one.config import (
-    LOGGER_LEVEL,
     LOGGER_COLOR,
+    LOGGER_LEVEL,
     LOGGER_NAME,
 )
+from sd_webui_all_in_one.downloader import (
+    DownloadToolType,
+    download_file,
+)
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.ansi_color import ANSIColor
 from sd_webui_all_in_one.model_downloader.model_data import MODEL_DOWNLOAD_DICT
 from sd_webui_all_in_one.model_downloader.types import (
     SUPPORTED_WEBUI_LIST,

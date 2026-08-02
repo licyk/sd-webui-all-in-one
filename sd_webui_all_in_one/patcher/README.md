@@ -32,6 +32,7 @@ from sd_webui_all_in_one_hotpatcher import install_import_hook, monkey_zoo
 install_import_hook()
 
 with monkey_zoo("some_package.some_module") as monkey:
+
     def patch_func(func, module):
         def wrapper(*args, **kwargs):
             result = func(*args, **kwargs)
@@ -101,6 +102,7 @@ with monkey_zoo("package.module") as monkey:
 
 ```python
 with monkey_zoo("target") as monkey:
+
     def patch_run(func, module):
         def wrapper(*args, **kwargs):
             print("before")
@@ -119,6 +121,7 @@ with monkey_zoo("target") as monkey:
 
 ```python
 with monkey_zoo("target") as monkey:
+
     def patch_module(module):
         module.ENABLED = True
 
@@ -131,6 +134,7 @@ with monkey_zoo("target") as monkey:
 
 ```python
 with monkey_zoo("target") as monkey:
+
     def patch_source(source, filename):
         return source.replace("OLD_VALUE", "NEW_VALUE")
 
@@ -144,11 +148,13 @@ with monkey_zoo("target") as monkey:
 ```python
 import ast
 
+
 class Transformer(ast.NodeTransformer):
     def visit_Constant(self, node):
         if node.value == "old":
             return ast.copy_location(ast.Constant("new"), node)
         return node
+
 
 with monkey_zoo("target") as monkey:
     monkey.patch_ast(Transformer())
@@ -160,6 +166,7 @@ AST 补丁比源码字符串替换更结构化，但实现成本更高。
 
 ```python
 with monkey_zoo("target") as monkey:
+
     def patch_code(code):
         code.co_consts.replace_primitive("old", "new")
 
@@ -245,11 +252,13 @@ import torch
 ```python
 from sd_webui_all_in_one_hotpatcher_ext.zluda import apply_from_config
 
-apply_from_config({
-    "compat": True,
-    "path": "C:/path/to/zluda",
-    "torch_zluda_timer": True,
-})
+apply_from_config(
+    {
+        "compat": True,
+        "path": "C:/path/to/zluda",
+        "torch_zluda_timer": True,
+    }
+)
 ```
 
 能力：
@@ -279,10 +288,12 @@ patch_extension_index_comfyui_manager()
 ```python
 from sd_webui_all_in_one_hotpatcher_ext.extension_index import apply_from_config
 
-apply_from_config({
-    "webui": {"enabled": True, "url": "auto"},
-    "comfyui_manager": {"enabled": True, "url": "auto"},
-})
+apply_from_config(
+    {
+        "webui": {"enabled": True, "url": "auto"},
+        "comfyui_manager": {"enabled": True, "url": "auto"},
+    }
+)
 ```
 
 能力：
@@ -347,10 +358,12 @@ patch_uv_to_subprocess()
 ```python
 from sd_webui_all_in_one_hotpatcher_ext.uv_pip import apply_from_config
 
-apply_from_config({
-    "enabled": True,
-    "symlink": False,
-})
+apply_from_config(
+    {
+        "enabled": True,
+        "symlink": False,
+    }
+)
 ```
 
 能力：

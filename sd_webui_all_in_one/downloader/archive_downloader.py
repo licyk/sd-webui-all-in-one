@@ -6,13 +6,13 @@ from tempfile import TemporaryDirectory
 from urllib.parse import urlparse
 
 from sd_webui_all_in_one.archive_manager import extract_archive
-from sd_webui_all_in_one.downloader.downloader import download_file
-from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
-    LOGGER_LEVEL,
     LOGGER_COLOR,
+    LOGGER_LEVEL,
     LOGGER_NAME,
 )
+from sd_webui_all_in_one.downloader.downloader import download_file
+from sd_webui_all_in_one.logger import get_logger
 
 logger = get_logger(
     name=LOGGER_NAME,

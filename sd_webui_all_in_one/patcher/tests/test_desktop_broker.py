@@ -1,26 +1,25 @@
-import json
 import http.server
+import json
 import threading
 import time
 import types
 from typing import cast
 
 import pytest
-
 from sd_webui_all_in_one_hotpatcher import bootstrap
 from sd_webui_all_in_one_hotpatcher.runtime import browser
 from sd_webui_all_in_one_hotpatcher.runtime import desktop_broker as desktop_broker_module
 from sd_webui_all_in_one_hotpatcher.runtime.desktop_broker import (
     BROKER_URL_ENV,
     BROWSER_RESERVED_EVENT_CAPACITY,
-    MAX_EVENT_BATCH_COUNT,
-    MAX_EVENT_COUNT,
-    MAX_EVENT_PAYLOAD_BYTES,
     MAX_DIAGNOSTIC_BATCH_BYTES,
     MAX_DIAGNOSTIC_BATCH_COUNT,
     MAX_DIAGNOSTIC_COUNT,
     MAX_DIAGNOSTIC_HISTORY_BYTES,
     MAX_DIAGNOSTIC_MESSAGE_BYTES,
+    MAX_EVENT_BATCH_COUNT,
+    MAX_EVENT_COUNT,
+    MAX_EVENT_PAYLOAD_BYTES,
     MAX_REQUEST_BYTES,
     PROTOCOL_VERSION_ENV,
     RUNTIME_IDENTITY_ENV,

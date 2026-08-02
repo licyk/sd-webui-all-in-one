@@ -9,10 +9,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from sd_webui_all_in_one.base_manager.library_catalog import (
-    model_library_catalog,
-    pytorch_catalog,
-)
 from sd_webui_all_in_one.api_server.server import ApiMethodRegistry, ApiMethodSpec
 from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, qwen_tts_webui_base, sd_scripts_base, sd_trainer_base, sd_webui_base
 from sd_webui_all_in_one.base_manager.comfy_registry import fetch_comfy_registry_versions
@@ -25,6 +21,10 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     load_hotpatcher_config,
     normalize_hotpatcher_config,
     save_hotpatcher_config,
+)
+from sd_webui_all_in_one.base_manager.library_catalog import (
+    model_library_catalog,
+    pytorch_catalog,
 )
 from sd_webui_all_in_one.base_manager.model_manager import FILE_MODEL_ROOT_DIRS, FileModelManager
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository

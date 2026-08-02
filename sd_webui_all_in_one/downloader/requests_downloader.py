@@ -12,24 +12,19 @@ from collections import Counter
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from email.utils import formatdate
-from email.utils import parsedate_to_datetime
+from email.utils import formatdate, parsedate_to_datetime
 from pathlib import Path
-from typing import Any
-from typing import cast
-from urllib.parse import unquote
-from urllib.parse import unquote_to_bytes
-from urllib.parse import urlparse
+from typing import Any, cast
+from urllib.parse import unquote, unquote_to_bytes, urlparse
 
-from sd_webui_all_in_one.downloader.hash_utils import compare_sha256
-from sd_webui_all_in_one.downloader.types import DEFAULT_USER_AGENT
-from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
     LOGGER_NAME,
 )
-
+from sd_webui_all_in_one.downloader.hash_utils import compare_sha256
+from sd_webui_all_in_one.downloader.types import DEFAULT_USER_AGENT
+from sd_webui_all_in_one.logger import get_logger
 
 DEFAULT_SPLIT = 32
 """aria2 风格的单文件最大分割数"""
@@ -1118,8 +1113,7 @@ class _PieceStorage:
             piece_start = self._piece_start_unlocked(index)
             piece_size = self._piece_size_unlocked(index)
             in_flight_length = max(0, min(next_offset - piece_start, piece_size))
-            if in_flight_length > self.in_flight_lengths[index]:
-                self.in_flight_lengths[index] = in_flight_length
+            self.in_flight_lengths[index] = max(self.in_flight_lengths[index], in_flight_length)
 
     def refresh_segment(
         self,
@@ -1439,7 +1433,7 @@ def _download_stream_once(
                         partial_reported_size = 0
 
         if current_segment is not None:
-            raise IOError(f"分片大小不匹配: 期望 {current_segment.size}, 实际 {partial_reported_size}")
+            raise OSError(f"分片大小不匹配: 期望 {current_segment.size}, 实际 {partial_reported_size}")
     except _RangeDownloadNotSupported:
         raise
     except _SegmentOwnershipLost:
@@ -1515,7 +1509,7 @@ def _download_stream_with_retries(
         finally:
             uri_pool.release(url)
     segment_manager.release(segment)
-    raise IOError(f"分片 {segment.byte_range} 下载失败: {last_error}") from last_error
+    raise OSError(f"分片 {segment.byte_range} 下载失败: {last_error}") from last_error
 
 
 def _download_file_with_ranges(
@@ -1681,9 +1675,9 @@ def _download_file_with_ranges(
             _flush_state()
         if range_ignored_event.is_set():
             raise _RangeDownloadNotSupported("远端忽略 Range 请求")
-        raise IOError("分片下载未完成")
+        raise OSError("分片下载未完成")
     if temp_file.stat().st_size != remote_info.total_size:
-        raise IOError(f"下载文件大小不匹配: 期望 {remote_info.total_size}, 实际 {temp_file.stat().st_size}")
+        raise OSError(f"下载文件大小不匹配: 期望 {remote_info.total_size}, 实际 {temp_file.stat().st_size}")
 
 
 def _download_file_single_stream_once(
@@ -1712,12 +1706,11 @@ def _download_file_single_stream_once(
             unit_scale=True,
             desc=file_name,
             disable=not progress,
-        ) as progress_bar:
-            with open(temp_file, "wb") as file:
-                for chunk in response.iter_content(chunk_size=STREAM_CHUNK_SIZE):
-                    if chunk:
-                        file.write(chunk)
-                        progress_bar.update(len(chunk))
+        ) as progress_bar, open(temp_file, "wb") as file:
+            for chunk in response.iter_content(chunk_size=STREAM_CHUNK_SIZE):
+                if chunk:
+                    file.write(chunk)
+                    progress_bar.update(len(chunk))
         return total_size
     finally:
         _close_response(response)
@@ -1751,7 +1744,7 @@ def _download_file_single_stream(
             logger.warning("从 %s 单流下载失败 [%s/%s]: %s, %.1fs 后重试", url, attempt, max_tries, e, delay)
             time.sleep(delay)
 
-    raise IOError(f"单流下载失败: {last_error}") from last_error
+    raise OSError(f"单流下载失败: {last_error}") from last_error
 
 
 def _apply_remote_time(
@@ -1790,7 +1783,7 @@ def _finalize_download(
         if actual_size < expected_size:
             logger.error("'%s' 下载大小不足, 正在删除临时文件", temp_file)
             _cleanup_resume_files(temp_file, state_file)
-            raise IOError(f"下载文件大小不足: 期望 {expected_size}, 实际 {actual_size}")
+            raise OSError(f"下载文件大小不足: 期望 {expected_size}, 实际 {actual_size}")
         if actual_size > expected_size:
             logger.warning("'%s' 包含多余尾部数据, 将截断到 %s 字节", temp_file, expected_size)
             with temp_file.open("r+b") as file:
@@ -1991,7 +1984,7 @@ def download_file_from_url(
                 )
             except _RangeDownloadNotSupported as e:
                 logger.error("无法使用 HTTP Range 继续下载 '%s': %s, 已保留临时文件和断点状态", file_name, e)
-                raise IOError(f"无法使用 HTTP Range 继续下载 '{file_name}': {e}") from e
+                raise OSError(f"无法使用 HTTP Range 继续下载 '{file_name}': {e}") from e
         else:
             _cleanup_resume_files(temp_file, state_file)
             expected_size = _download_file_single_stream(

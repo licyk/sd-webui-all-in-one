@@ -4,7 +4,6 @@ import sys
 import textwrap
 
 import pytest
-
 import sd_webui_all_in_one_hotpatcher_ext.extension_index as extension_index_module
 from sd_webui_all_in_one_hotpatcher import monkey_zoo, uninstall_import_hook
 from sd_webui_all_in_one_hotpatcher_ext.extension_index import (

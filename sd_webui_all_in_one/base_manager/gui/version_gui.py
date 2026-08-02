@@ -11,8 +11,9 @@ import subprocess
 import sys
 import threading
 import time
-import traceback
 import tkinter as tk
+import traceback
+from collections.abc import Callable
 from dataclasses import dataclass
 from tkinter import font as tkfont
 from tkinter import (
@@ -21,7 +22,6 @@ from tkinter import (
 )
 from typing import (
     Any,
-    Callable,
     Generic,
     TypeVar,
 )
@@ -32,7 +32,6 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     PackageVersionInfo,
 )
 from sd_webui_all_in_one.config import ROOT_PATH
-
 
 T = TypeVar("T")
 
@@ -183,7 +182,7 @@ def apply_window_icon(root: tk.Tk | tk.Toplevel) -> bool:
     try:
         icon = tk.PhotoImage(file=icon_path.as_posix())
         root.iconphoto(True, icon)
-        setattr(root, "_version_manager_icon", icon)
+        root._version_manager_icon = icon
         return True
     except tk.TclError:
         return False
@@ -798,8 +797,8 @@ def install_text_context_menu(widget: tk.Text, editable: bool = True) -> tk.Menu
     menu.add_command(label="粘贴", command=_paste_clipboard)
     widget.bind("<Button-3>", _show_menu, add="+")
     widget.bind("<Control-Button-1>", _show_menu, add="+")
-    setattr(widget, "_text_context_menu", menu)
-    setattr(widget, "_refresh_text_context_menu", _refresh_menu)
+    widget._text_context_menu = menu
+    widget._refresh_text_context_menu = _refresh_menu
     return menu
 
 

@@ -18,40 +18,6 @@
 """
 
 # 版本字符串工具
-from sd_webui_all_in_one.package_analyzer.version_utils import (
-    version_string_is_canonical,
-    is_package_has_version,
-    get_package_name,
-    get_package_version,
-    get_package_version_specs,
-    remove_optional_dependence_from_package,
-    get_correct_package_name,
-    normalize_package_name,
-)
-
-# Wheel 文件名解析
-from sd_webui_all_in_one.package_analyzer.wheel_parser import (
-    parse_wheel_filename,
-    parse_wheel_version,
-    parse_wheel_to_package_name,
-)
-
-# Requirements 解析
-from sd_webui_all_in_one.package_analyzer.py_whl_parse import (
-    ParsedPyWhlRequirement,
-    RequirementParser,
-    get_parse_bindings,
-)
-from sd_webui_all_in_one.package_analyzer.requirement_parser import (
-    parse_requirement,
-    evaluate_marker,
-    parse_requirement_to_list,
-    read_packages_from_requirements_file,
-)
-from sd_webui_all_in_one.package_analyzer.requirement_normalizer import (
-    parse_requirement_list,
-)
-
 # 依赖分类
 from sd_webui_all_in_one.package_analyzer.dependency_categorizer import (
     PackageDependencies,
@@ -61,13 +27,13 @@ from sd_webui_all_in_one.package_analyzer.dependency_categorizer import (
 
 # 安装状态检查
 from sd_webui_all_in_one.package_analyzer.installation_checker import (
+    check_version_constraint,
+    get_missing_package_metadata_dependencies,
     get_package_version_from_library,
     is_package_installed,
-    get_missing_package_metadata_dependencies,
+    parse_package_spec,
     validate_package_metadata_dependencies,
     validate_requirements,
-    parse_package_spec,
-    check_version_constraint,
 )
 
 # PEP 440 版本比较
@@ -76,11 +42,44 @@ from sd_webui_all_in_one.package_analyzer.py_ver_cmp import (
     PyWhlVersionMatcher,
 )
 
+# Requirements 解析
+from sd_webui_all_in_one.package_analyzer.py_whl_parse import (
+    ParsedPyWhlRequirement,
+    RequirementParser,
+    get_parse_bindings,
+)
+from sd_webui_all_in_one.package_analyzer.requirement_normalizer import (
+    parse_requirement_list,
+)
+from sd_webui_all_in_one.package_analyzer.requirement_parser import (
+    evaluate_marker,
+    parse_requirement,
+    parse_requirement_to_list,
+    read_packages_from_requirements_file,
+)
+
 # 通用版本比较
 from sd_webui_all_in_one.package_analyzer.ver_cmp import (
     CommonVersionComparison,
-    version_increment,
     version_decrement,
+    version_increment,
+)
+from sd_webui_all_in_one.package_analyzer.version_utils import (
+    get_correct_package_name,
+    get_package_name,
+    get_package_version,
+    get_package_version_specs,
+    is_package_has_version,
+    normalize_package_name,
+    remove_optional_dependence_from_package,
+    version_string_is_canonical,
+)
+
+# Wheel 文件名解析
+from sd_webui_all_in_one.package_analyzer.wheel_parser import (
+    parse_wheel_filename,
+    parse_wheel_to_package_name,
+    parse_wheel_version,
 )
 
 __all__ = [

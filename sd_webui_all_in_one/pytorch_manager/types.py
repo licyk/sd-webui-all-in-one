@@ -8,7 +8,6 @@ from typing import (
     get_args,
 )
 
-
 PYPI_INDEX_MIRROR_OFFICIAL = "https://pypi.python.org/simple"
 """PyPI 主镜像源"""
 

@@ -8,7 +8,6 @@ import types
 from typing import Any, Protocol, cast
 
 import pytest
-
 from sd_webui_all_in_one_hotpatcher import monkey_zoo, uninstall_import_hook
 from sd_webui_all_in_one_hotpatcher_ext.hf_endpoint_mirror import (
     apply_from_config,
@@ -20,7 +19,6 @@ from sd_webui_all_in_one_hotpatcher_ext.hf_endpoint_mirror import (
     patch_torchvision,
     rewrite_huggingface_url,
 )
-
 
 HF_URL = "https://huggingface.co/user/repo/resolve/main/model.bin"
 MIRROR_URL = "https://hf.example/user/repo/resolve/main/model.bin"

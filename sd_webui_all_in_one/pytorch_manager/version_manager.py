@@ -13,8 +13,8 @@ from sd_webui_all_in_one.package_analyzer import (
 )
 from sd_webui_all_in_one.pytorch_manager.gpu_detector import get_available_pytorch_device_type
 from sd_webui_all_in_one.pytorch_manager.types import (
-    PyTorchVersionInfo,
     PyTorchDeviceType,
+    PyTorchVersionInfo,
 )
 from sd_webui_all_in_one.pytorch_manager.version_data import (
     PYTORCH_DOWNLOAD_DICT,
@@ -37,9 +37,7 @@ def export_pytorch_list() -> PyTorchVersionInfoList:
         item: PyTorchVersionInfo = copy.deepcopy(i)
         supported = False
         if current_platform in item["platform"]:
-            if SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY:
-                supported = True
-            elif item["dtype"] in device_list:
+            if SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY or item["dtype"] in device_list:
                 supported = True
 
         item["supported"] = supported

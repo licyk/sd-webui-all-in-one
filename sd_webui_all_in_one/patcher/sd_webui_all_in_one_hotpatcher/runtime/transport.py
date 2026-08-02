@@ -138,7 +138,7 @@ class JsonlTcpTransport:
         default_request_timeout: float | None = None,
         event_write_timeout: float | None = None,
         features: list[str] | None = None,
-    ) -> "JsonlTcpTransport":
+    ) -> JsonlTcpTransport:
         """
         建立 TCP 连接并发送 hello 消息
 
@@ -294,7 +294,7 @@ class JsonlTcpTransport:
                 while True:
                     try:
                         line = self._readline_before_deadline_locked(deadline)
-                    except (TimeoutError, socket.timeout):
+                    except TimeoutError:
                         # 缓冲套接字读取器在超时后无法可靠复用（CPython 后续读取
                         # 会报告无法从已超时对象读取）。流也可能停在 JSON 行中间，
                         # 因此重新创建文件对象不符合协议安全要求。
@@ -318,7 +318,7 @@ class JsonlTcpTransport:
                         str(error.get("message", "")),
                         error,
                     )
-            except (TimeoutError, socket.timeout) as exc:
+            except TimeoutError as exc:
                 # 超时写入也可能只完成一部分，因此读写任一超时都会使 JSONL 流
                 # 无法安全处理下一个请求。
                 transport_timed_out = True
@@ -345,7 +345,7 @@ class JsonlTcpTransport:
         while True:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
-                raise socket.timeout("Runtime request timed out")
+                raise TimeoutError("Runtime request timed out")
 
             newline = self._read_buffer.find(b"\n")
             if newline >= 0:
@@ -373,7 +373,7 @@ class JsonlTcpTransport:
             # EOF 可能恰好在操作预算耗尽时到达。优先遵守截止时间，不返回迟到的
             # 缓冲数据。
             if deadline - time.monotonic() <= 0:
-                raise socket.timeout("Runtime request timed out")
+                raise TimeoutError("Runtime request timed out")
             if self._read_buffer:
                 line = bytes(self._read_buffer)
                 self._read_buffer.clear()
@@ -391,7 +391,7 @@ class JsonlTcpTransport:
         try:
             self.sock.settimeout(timeout)
             self._send_bytes_locked(data)
-        except (TimeoutError, socket.timeout) as exc:
+        except TimeoutError as exc:
             transport_timed_out = True
             operation_error = exc
             raise
@@ -438,7 +438,7 @@ class JsonlTcpTransport:
             finally:
                 self.sock.close()
 
-    def __enter__(self) -> "JsonlTcpTransport":
+    def __enter__(self) -> JsonlTcpTransport:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
