@@ -314,6 +314,24 @@ class RepoManager:
 
         return ModelScopeConfig.get_git_token()
 
+    def get_hf_token(self) -> str | None:
+        """获取当前配置的 HuggingFace Token
+
+        Returns:
+            (str | None):
+                HuggingFace Token
+        """
+        return self.hf_token
+
+    def get_ms_token(self) -> str | None:
+        """获取当前配置的 ModelScope Token
+
+        Returns:
+            (str | None):
+                ModelScope Token
+        """
+        return self.ms_token
+
     def configure_tokens(
         self,
         hf_token: str | None = None,

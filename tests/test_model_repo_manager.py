@@ -251,6 +251,18 @@ def test_repo_manager_get_ms_git_token_delegates_without_initializing_api(monkey
     assert token_calls == [True]
 
 
+def test_repo_manager_token_accessors_return_current_tokens():
+    manager = RepoManager(hf_token="hf-token", ms_token="ms-token")
+
+    assert manager.get_hf_token() == "hf-token"
+    assert manager.get_ms_token() == "ms-token"
+
+    manager.configure_tokens(hf_token="updated-hf-token", ms_token="updated-ms-token")
+
+    assert manager.get_hf_token() == "updated-hf-token"
+    assert manager.get_ms_token() == "updated-ms-token"
+
+
 def test_repo_manager_configure_tokens_updates_environment_and_invalidates_cached_apis(monkeypatch):
     monkeypatch.delenv("HF_TOKEN", raising=False)
     monkeypatch.delenv("MODELSCOPE_API_TOKEN", raising=False)
