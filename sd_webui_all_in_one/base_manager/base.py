@@ -1,6 +1,7 @@
 """管理器基类"""
 
 import os
+import platform
 import sys
 import importlib.metadata
 import urllib.parse
@@ -27,10 +28,12 @@ from sd_webui_all_in_one.pytorch_manager import (
     display_pytorch_config,
     export_pytorch_list,
     find_latest_pytorch_info,
+    get_gpu_list,
     normalize_pytorch_version_suffix,
     PyTorchDeviceType,
     PyTorchDeviceTypeCategory,
 )
+from sd_webui_all_in_one.env_check import check_torch_version_status
 from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
 from sd_webui_all_in_one.package_analyzer import (
     PyWhlVersionComparison,
@@ -70,6 +73,7 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     HOTPATCHER_ENV_PREFIX,
     ensure_hotpatcher_pythonpath_first,
 )
+from sd_webui_all_in_one.version import VERSION
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -123,6 +127,201 @@ class PyTorchUpdateStatus:
     latest_name: str | None
     has_update: bool
     error: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class EnvironmentCollectionError:
+    """单个环境信息采集项的错误。"""
+
+    component: str
+    """采集项稳定名称。"""
+
+    message: str
+    """错误说明。"""
+
+
+@dataclass(frozen=True, slots=True)
+class ManagerEnvironmentInfo:
+    """管理器版本信息。"""
+
+    name: str
+    """管理器包名称。"""
+
+    version: str
+    """管理器版本。"""
+
+
+@dataclass(frozen=True, slots=True)
+class OperatingSystemEnvironmentInfo:
+    """操作系统环境信息。"""
+
+    platform: str
+    """完整平台描述。"""
+
+    system: str
+    """操作系统名称。"""
+
+    release: str
+    """操作系统发行版本。"""
+
+    version: str
+    """操作系统详细版本。"""
+
+    machine: str
+    """机器架构。"""
+
+
+@dataclass(frozen=True, slots=True)
+class CpuEnvironmentInfo:
+    """CPU 环境信息。"""
+
+    name: str
+    """CPU 或处理器名称。"""
+
+    logical_cores: int | None
+    """逻辑核心数。"""
+
+
+@dataclass(frozen=True, slots=True)
+class GpuEnvironmentInfo:
+    """GPU 环境信息。"""
+
+    name: str
+    """GPU 名称。"""
+
+    vendor: str | None = None
+    """GPU 厂商。"""
+
+    memory_bytes: int | None = None
+    """显存字节数。"""
+
+    driver_version: str | None = None
+    """驱动版本。"""
+
+
+@dataclass(frozen=True, slots=True)
+class PyTorchEnvironmentInfo:
+    """PyTorch 安装和硬件兼容信息。"""
+
+    installed_version: str | None
+    """已安装的 PyTorch 版本。"""
+
+    installed_type: str | None
+    """已安装的 PyTorch 设备类型。"""
+
+    available_types: list[str]
+    """当前设备可使用的 PyTorch 类型。"""
+
+    status: str
+    """兼容性状态；探测失败时为 ``unknown``。"""
+
+    is_compatible: bool | None
+    """当前 PyTorch 是否兼容硬件；探测失败时为 ``None``。"""
+
+    message: str
+    """兼容性说明。"""
+
+
+@dataclass(frozen=True, slots=True)
+class HostEnvironmentInfo:
+    """与具体 WebUI 无关的主机环境信息。"""
+
+    manager: ManagerEnvironmentInfo
+    """管理器版本信息。"""
+
+    operating_system: OperatingSystemEnvironmentInfo
+    """操作系统信息。"""
+
+    cpu: CpuEnvironmentInfo
+    """CPU 信息。"""
+
+    gpus: list[GpuEnvironmentInfo]
+    """GPU 信息列表。"""
+
+    pytorch: PyTorchEnvironmentInfo
+    """PyTorch 兼容信息。"""
+
+    collection_errors: list[EnvironmentCollectionError]
+    """未能完成的采集项。"""
+
+
+def _gpu_memory_bytes(value: object) -> int | None:
+    """将 GPU 探测器返回的显存值规范化为字节数。"""
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value if value >= 0 else None
+    if isinstance(value, str):
+        normalized = value.strip()
+        if normalized.isdigit():
+            return int(normalized)
+    return None
+
+
+def collect_host_environment_info() -> HostEnvironmentInfo:
+    """采集与具体 WebUI 无关的主机、硬件和 PyTorch 信息。
+
+    各个探测项按尽力而为原则执行。GPU 或 PyTorch 探测失败不会阻止
+    其余环境信息导出，失败详情会写入 ``collection_errors``。
+
+    Returns:
+        HostEnvironmentInfo: 结构化主机环境信息。
+    """
+    errors: list[EnvironmentCollectionError] = []
+    gpus: list[GpuEnvironmentInfo] = []
+    try:
+        for gpu in get_gpu_list():
+            name = gpu.get("Name")
+            if not name:
+                continue
+            gpus.append(
+                GpuEnvironmentInfo(
+                    name=name,
+                    vendor=gpu.get("AdapterCompatibility"),
+                    memory_bytes=_gpu_memory_bytes(gpu.get("AdapterRAM")),
+                    driver_version=gpu.get("DriverVersion"),
+                )
+            )
+    except Exception as exc:
+        errors.append(EnvironmentCollectionError(component="gpu", message=str(exc)))
+
+    try:
+        torch_status = check_torch_version_status()
+        pytorch = PyTorchEnvironmentInfo(
+            installed_version=torch_status["installed_version"],
+            installed_type=torch_status["installed_type"],
+            available_types=list(torch_status["available_types"]),
+            status=torch_status["status"],
+            is_compatible=torch_status["is_compatible"],
+            message=torch_status["message"],
+        )
+    except Exception as exc:
+        errors.append(EnvironmentCollectionError(component="pytorch", message=str(exc)))
+        pytorch = PyTorchEnvironmentInfo(
+            installed_version=None,
+            installed_type=None,
+            available_types=[],
+            status="unknown",
+            is_compatible=None,
+            message="PyTorch 环境信息采集失败",
+        )
+
+    machine = platform.machine() or "unknown"
+    return HostEnvironmentInfo(
+        manager=ManagerEnvironmentInfo(name="sd-webui-all-in-one", version=VERSION),
+        operating_system=OperatingSystemEnvironmentInfo(
+            platform=platform.platform(),
+            system=platform.system() or sys.platform,
+            release=platform.release(),
+            version=platform.version(),
+            machine=machine,
+        ),
+        cpu=CpuEnvironmentInfo(
+            name=platform.processor() or machine,
+            logical_cores=os.cpu_count(),
+        ),
+        gpus=gpus,
+        pytorch=pytorch,
+        collection_errors=errors,
+    )
 
 
 def select_env_check_tasks(

@@ -335,6 +335,54 @@ def test_webui_cli_registers_product_update_checker(monkeypatch, tmp_path, modul
 
 
 @pytest.mark.parametrize(
+    ("module", "register", "command", "path_arg", "path_key"),
+    [
+        (sd_webui_cli, sd_webui_cli.register_sd_webui, "sd-webui", "--sd-webui-path", "sd_webui_path"),
+        (comfyui_cli, comfyui_cli.register_comfyui, "comfyui", "--comfyui-path", "comfyui_path"),
+        (fooocus_cli, fooocus_cli.register_fooocus, "fooocus", "--fooocus-path", "fooocus_path"),
+        (invokeai_cli, invokeai_cli.register_invokeai, "invokeai", "--invokeai-path", "invokeai_path"),
+        (sd_trainer_cli, sd_trainer_cli.register_sd_trainer, "sd-trainer", "--sd-trainer-path", "sd_trainer_path"),
+        (sd_scripts_cli, sd_scripts_cli.register_sd_scripts, "sd-scripts", "--sd-scripts-path", "sd_scripts_path"),
+        (
+            qwen_tts_webui_cli,
+            qwen_tts_webui_cli.register_qwen_tts_webui,
+            "qwen-tts-webui",
+            "--qwen-tts-webui-path",
+            "qwen_tts_webui_path",
+        ),
+    ],
+)
+def test_webui_cli_exports_environment_info(monkeypatch, tmp_path, module, register, command, path_arg, path_key):
+    parser = _parser(register)
+    calls = []
+    output = tmp_path / "environment.json"
+    monkeypatch.setattr(module, "export_environment", lambda **kwargs: calls.append(kwargs))
+
+    args = parser.parse_args(
+        [
+            command,
+            "export-environment",
+            path_arg,
+            str(tmp_path),
+            "--output",
+            str(output),
+            "--no-packages",
+            "--force",
+        ]
+    )
+    args.func(args)
+
+    assert calls == [
+        {
+            path_key: tmp_path,
+            "output": output,
+            "include_packages": False,
+            "overwrite": True,
+        }
+    ]
+
+
+@pytest.mark.parametrize(
     ("module", "register", "command", "group", "path_arg", "checker_name"),
     [
         (sd_webui_cli, sd_webui_cli.register_sd_webui, "sd-webui", "extension", "--sd-webui-path", "check_sd_webui_updates"),

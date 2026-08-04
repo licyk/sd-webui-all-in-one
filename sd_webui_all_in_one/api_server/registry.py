@@ -68,6 +68,7 @@ def _register_sd_webui_methods(methods: dict[str, Callable[..., Any] | ApiMethod
     _add(methods, "sd_webui.version.branch_presets", sd_webui_base.get_sd_webui_branch_presets)
     _add(methods, "sd_webui.version.update", sd_webui_base.update_sd_webui)
     _add(methods, "sd_webui.version.check_updates", sd_webui_base.check_sd_webui_updates)
+    _add(methods, "sd_webui.environment.collect", sd_webui_base.get_sd_webui_environment_info)
     _add(methods, "sd_webui.snapshot.list", list_webui_snapshots)
     _add(methods, "sd_webui.snapshot.read", load_snapshot)
     _add(
@@ -113,6 +114,7 @@ def _register_comfyui_methods(methods: dict[str, Callable[..., Any] | ApiMethodS
     _add(methods, "comfyui.version.switch_commit", switch_repository_commit)
     _add(methods, "comfyui.version.update", comfyui_base.update_comfyui)
     _add(methods, "comfyui.version.check_updates", comfyui_base.check_comfyui_updates)
+    _add(methods, "comfyui.environment.collect", comfyui_base.get_comfyui_environment_info)
     _add(methods, "comfyui.snapshot.list", list_webui_snapshots)
     _add(methods, "comfyui.snapshot.read", load_snapshot)
     _add(
@@ -162,6 +164,7 @@ def _register_fooocus_methods(methods: dict[str, Callable[..., Any] | ApiMethodS
     _add(methods, "fooocus.version.branch_presets", fooocus_base.get_fooocus_branch_presets)
     _add(methods, "fooocus.version.update", fooocus_base.update_fooocus)
     _add(methods, "fooocus.version.check_updates", fooocus_base.check_fooocus_updates)
+    _add(methods, "fooocus.environment.collect", fooocus_base.get_fooocus_environment_info)
     _add(methods, "fooocus.snapshot.list", list_webui_snapshots)
     _add(methods, "fooocus.snapshot.read", load_snapshot)
     _add(
@@ -195,6 +198,7 @@ def _register_invokeai_methods(methods: dict[str, Callable[..., Any] | ApiMethod
     _add(methods, "invokeai.version.switch_commit", switch_repository_commit)
     _add(methods, "invokeai.version.update", invokeai_base.update_invokeai)
     _add(methods, "invokeai.version.check_updates", invokeai_base.check_invokeai_updates)
+    _add(methods, "invokeai.environment.collect", invokeai_base.get_invokeai_environment_info)
     _add(methods, "invokeai.version.install", invokeai_base.install_invokeai_component)
     _add(methods, "invokeai.snapshot.list", list_webui_snapshots)
     _add(methods, "invokeai.snapshot.read", load_snapshot)
@@ -241,6 +245,7 @@ def _register_sd_trainer_methods(methods: dict[str, Callable[..., Any] | ApiMeth
     _add(methods, "sd_trainer.version.branch_presets", sd_trainer_base.get_sd_trainer_branch_presets)
     _add(methods, "sd_trainer.version.update", sd_trainer_base.update_sd_trainer)
     _add(methods, "sd_trainer.version.check_updates", sd_trainer_base.check_sd_trainer_updates)
+    _add(methods, "sd_trainer.environment.collect", sd_trainer_base.get_sd_trainer_environment_info)
     _add(methods, "sd_trainer.snapshot.list", list_webui_snapshots)
     _add(methods, "sd_trainer.snapshot.read", load_snapshot)
     _add(
@@ -274,6 +279,7 @@ def _register_sd_scripts_methods(methods: dict[str, Callable[..., Any] | ApiMeth
     _add(methods, "sd_scripts.version.switch_commit", switch_repository_commit)
     _add(methods, "sd_scripts.version.update", sd_scripts_base.update_sd_scripts)
     _add(methods, "sd_scripts.version.check_updates", sd_scripts_base.check_sd_scripts_updates)
+    _add(methods, "sd_scripts.environment.collect", sd_scripts_base.get_sd_scripts_environment_info)
     _add(methods, "sd_scripts.snapshot.list", list_webui_snapshots)
     _add(methods, "sd_scripts.snapshot.read", load_snapshot)
     _add(
@@ -305,6 +311,7 @@ def _register_qwen_tts_webui_methods(methods: dict[str, Callable[..., Any] | Api
     _add(methods, "qwen_tts_webui.version.switch_commit", switch_repository_commit)
     _add(methods, "qwen_tts_webui.version.update", qwen_tts_webui_base.update_qwen_tts_webui)
     _add(methods, "qwen_tts_webui.version.check_updates", qwen_tts_webui_base.check_qwen_tts_webui_updates)
+    _add(methods, "qwen_tts_webui.environment.collect", qwen_tts_webui_base.get_qwen_tts_webui_environment_info)
     _add(methods, "qwen_tts_webui.snapshot.list", list_webui_snapshots)
     _add(methods, "qwen_tts_webui.snapshot.read", load_snapshot)
     _add(

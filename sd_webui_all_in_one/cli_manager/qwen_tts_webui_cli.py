@@ -16,6 +16,7 @@ from sd_webui_all_in_one.base_manager import (
     launch_qwen_tts_webui_version_gui,
     launch_qwen_tts_webui_snapshot_gui,
     reinstall_pytorch as reinstall_base_pytorch,
+    get_qwen_tts_webui_environment_info,
     get_qwen_tts_webui_snapshot,
 )
 from sd_webui_all_in_one.config import (
@@ -35,6 +36,7 @@ from sd_webui_all_in_one.cli_manager.auto_mirror import (
     with_auto_mirror,
 )
 from sd_webui_all_in_one.cli_manager.env_check import add_env_check_selection_arguments
+from sd_webui_all_in_one.cli_manager.environment_info import output_environment_info
 from sd_webui_all_in_one.cli_manager.snapshot import add_pre_operation_snapshot_arguments, create_pre_operation_snapshot, output_snapshot
 from sd_webui_all_in_one.cli_manager.snapshot_restore import (
     add_restore_arguments,
@@ -179,6 +181,30 @@ def snapshot(
             include_packages=include_packages,
         ),
         output=output,
+    )
+
+
+def export_environment(
+    qwen_tts_webui_path: Path,
+    output: Path,
+    include_packages: bool = True,
+    overwrite: bool = False,
+) -> Path:
+    """导出 Qwen TTS WebUI 环境信息。
+
+    Args:
+        qwen_tts_webui_path (Path): Qwen TTS WebUI 根目录。
+        output (Path): 精确输出文件路径。
+        include_packages (bool): 是否采集当前 Python 包列表。
+        overwrite (bool): 是否允许覆盖已有文件。
+
+    Returns:
+        Path: 已写入的环境信息文件路径。
+    """
+    return output_environment_info(
+        lambda: get_qwen_tts_webui_environment_info(qwen_tts_webui_path, include_packages),
+        output,
+        overwrite=overwrite,
     )
 
 
@@ -616,6 +642,21 @@ def register_qwen_tts_webui(
             qwen_tts_webui_path=args.qwen_tts_webui_path,
             output=args.output,
             include_packages=args.include_packages,
+        )
+    )
+
+    # export-environment
+    environment_p = qwen_tts_webui_sub.add_parser("export-environment", help="导出 Qwen TTS WebUI 环境信息")
+    environment_p.add_argument("--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录")
+    environment_p.add_argument("--output", type=normalized_filepath, required=True, help="环境信息 JSON 输出文件路径")
+    environment_p.add_argument("--no-packages", action="store_false", dest="include_packages", help="不记录当前 Python 环境已安装软件包")
+    environment_p.add_argument("--force", action="store_true", dest="overwrite", help="覆盖已有输出文件")
+    environment_p.set_defaults(
+        func=lambda args: export_environment(
+            qwen_tts_webui_path=args.qwen_tts_webui_path,
+            output=args.output,
+            include_packages=args.include_packages,
+            overwrite=args.overwrite,
         )
     )
 

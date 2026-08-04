@@ -82,6 +82,7 @@ from sd_webui_all_in_one.base_manager.snapshot import (
     build_webui_snapshot,
     collect_git_extensions,
 )
+from sd_webui_all_in_one.base_manager.environment_info import WebUiEnvironmentInfo, build_webui_environment_info
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.mirror_manager import (
@@ -1774,6 +1775,22 @@ def get_sd_webui_snapshot(
             enabled_resolver=_extension_enabled,
         ),
     )
+
+
+def get_sd_webui_environment_info(
+    sd_webui_path: Path,
+    include_packages: bool = True,
+) -> WebUiEnvironmentInfo:
+    """获取 Stable Diffusion WebUI 环境信息报告。
+
+    Args:
+        sd_webui_path (Path): Stable Diffusion WebUI 根目录。
+        include_packages (bool): 是否记录当前 Python 环境已安装软件包。
+
+    Returns:
+        WebUiEnvironmentInfo: 主机信息和 WebUI 快照组成的环境报告。
+    """
+    return build_webui_environment_info(get_sd_webui_snapshot(sd_webui_path, include_packages))
 
 
 def uninstall_sd_webui_extension(

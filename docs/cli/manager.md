@@ -131,6 +131,22 @@ sd-webui-all-in-one self-manager get pytorch-device-type
 sd-webui-all-in-one self-manager get pytorch-device-type --category
 ```
 
+### 导出 WebUI 环境信息
+
+各 WebUI 管理命令都可以将主机、硬件、PyTorch 状态和现有 WebUI 快照组合为独立 JSON 报告：
+
+```bash
+sd-webui-all-in-one <webui> export-environment --output <文件路径> [选项]
+```
+
+其中 `<webui>` 可以是 `sd-webui`、`comfyui`、`fooocus`、`invokeai`、`sd-trainer`、`sd-scripts` 或 `qwen-tts-webui`。高级选项：
+
+- 对应的 `--*-path <路径>`：指定 WebUI 根目录；未传时使用该产品的默认目录。
+- `--no-packages`：不在嵌套快照中记录当前 Python 包列表。
+- `--force`：覆盖已有输出文件；默认拒绝覆盖。
+
+报告保留现有快照中的原始绝对路径和来源 URL，分享前应自行确认内容。
+
 ### API 服务
 启动基于 Python 标准库的轻量 HTTP JSON API 服务。服务只提供 `/api/v2`，并统一使用真实 Python callable 的运行时签名进行方法发现、参数校验和调用。
 
@@ -209,6 +225,7 @@ pending,running,succeeded,failed,canceled
 默认方法直接注册真实 Python callable，并按能力分为以下命名空间：
 
 - `<webui>.version.*`：各 WebUI 的版本、更新检查和仓库操作。
+- `<webui>.environment.collect`：返回各 WebUI 的结构化环境信息报告，不在服务端写文件。
 - `<webui>.snapshot.*`：各 WebUI 的快照操作。
 - `<webui>.extension.*`：SD WebUI、ComfyUI 和 InvokeAI 的扩展操作。
 - `<webui>.launch.*`：各 WebUI 的启动准备和参数发现。
@@ -220,6 +237,18 @@ pending,running,succeeded,failed,canceled
 其中 `<webui>` 是 `sd_webui`、`comfyui`、`fooocus`、`invokeai`、`sd_trainer`、`sd_scripts` 或 `qwen_tts_webui`。只注册对应实现实际支持的能力；例如扩展 Registry 方法只存在于 `comfyui.extension.*`。
 
 方法名已经确定具体 WebUI，因此不再传递 `webui_type`。参数结构完全跟随真实函数签名：普通参数直接平铺，真实函数本身使用 dataclass 等结构化对象时则由 schema 展示其子字段。
+
+环境信息调用示例：
+
+```json
+{
+  "method": "comfyui.environment.collect",
+  "params": {
+    "comfyui_path": "/path/to/ComfyUI",
+    "include_packages": true
+  }
+}
+```
 
 ```json
 {

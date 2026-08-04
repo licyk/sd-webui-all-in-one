@@ -1,8 +1,15 @@
 """基础管理模块导出"""
 
 from sd_webui_all_in_one.base_manager.base import (
+    CpuEnvironmentInfo,
+    EnvironmentCollectionError,
     EnvCheckTask,
+    GpuEnvironmentInfo,
+    HostEnvironmentInfo,
+    ManagerEnvironmentInfo,
+    OperatingSystemEnvironmentInfo,
     PyTorchUpdateStatus,
+    PyTorchEnvironmentInfo,
     WebUiLaunchInfo,
     check_pytorch_version as check_pytorch_version,
     get_pytorch_update_status as get_pytorch_update_status,
@@ -21,6 +28,14 @@ from sd_webui_all_in_one.base_manager.base import (
     install_pytorch_with_fallback,
     select_env_check_tasks,
     run_env_check_tasks,
+    collect_host_environment_info,
+)
+
+from sd_webui_all_in_one.base_manager.environment_info import (
+    ENVIRONMENT_INFO_SCHEMA_VERSION,
+    WebUiEnvironmentInfo,
+    build_webui_environment_info,
+    save_webui_environment_info,
 )
 
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
@@ -156,6 +171,7 @@ from sd_webui_all_in_one.base_manager.comfyui_base import (
     launch_comfyui_version_gui,
     launch_comfyui_snapshot_gui,
     check_comfyui_updates,
+    get_comfyui_environment_info,
     get_comfyui_snapshot,
 )
 
@@ -182,6 +198,7 @@ from sd_webui_all_in_one.base_manager.fooocus_base import (
     launch_fooocus_version_gui,
     launch_fooocus_snapshot_gui,
     check_fooocus_updates,
+    get_fooocus_environment_info,
     get_fooocus_snapshot,
 )
 
@@ -219,6 +236,7 @@ from sd_webui_all_in_one.base_manager.invokeai_base import (
     launch_invokeai_version_gui,
     launch_invokeai_snapshot_gui,
     check_invokeai_updates,
+    get_invokeai_environment_info,
     get_invokeai_snapshot,
 )
 
@@ -236,6 +254,7 @@ from sd_webui_all_in_one.base_manager.qwen_tts_webui_base import (
     launch_qwen_tts_webui_version_gui,
     launch_qwen_tts_webui_snapshot_gui,
     check_qwen_tts_webui_updates,
+    get_qwen_tts_webui_environment_info,
     get_qwen_tts_webui_snapshot,
 )
 
@@ -256,6 +275,7 @@ from sd_webui_all_in_one.base_manager.sd_scripts_base import (
     launch_sd_scripts_version_gui,
     launch_sd_scripts_snapshot_gui,
     check_sd_scripts_updates,
+    get_sd_scripts_environment_info,
     get_sd_scripts_snapshot,
 )
 
@@ -278,6 +298,7 @@ from sd_webui_all_in_one.base_manager.sd_trainer_base import (
     launch_sd_trainer_version_gui,
     launch_sd_trainer_snapshot_gui,
     check_sd_trainer_updates,
+    get_sd_trainer_environment_info,
     get_sd_trainer_snapshot,
 )
 
@@ -313,6 +334,7 @@ from sd_webui_all_in_one.base_manager.sd_webui_base import (
     list_sd_webui_models,
     uninstall_sd_webui_model,
     check_sd_webui_updates,
+    get_sd_webui_environment_info,
     get_sd_webui_snapshot,
 )
 from sd_webui_all_in_one.base_manager.version_manager import (
@@ -328,7 +350,14 @@ from sd_webui_all_in_one.base_manager.version_manager import (
 # 导出的公共 API 列表，按模块分类
 __all__ = [
     # base.py - 基础功能模块
+    "CpuEnvironmentInfo",
+    "EnvironmentCollectionError",
     "EnvCheckTask",
+    "GpuEnvironmentInfo",
+    "HostEnvironmentInfo",
+    "ManagerEnvironmentInfo",
+    "OperatingSystemEnvironmentInfo",
+    "PyTorchEnvironmentInfo",
     "PyTorchUpdateStatus",
     "WebUiLaunchInfo",
     "get_pytorch_update_status",
@@ -348,6 +377,12 @@ __all__ = [
     "install_pytorch_with_fallback",
     "select_env_check_tasks",
     "run_env_check_tasks",
+    "collect_host_environment_info",
+    # environment_info.py - 环境信息报告
+    "ENVIRONMENT_INFO_SCHEMA_VERSION",
+    "WebUiEnvironmentInfo",
+    "build_webui_environment_info",
+    "save_webui_environment_info",
     # hotpatcher_manager.py - Hotpatcher 配置管理
     "HOTPATCHER_PATH",
     "DEFAULT_HOTPATCHER_CONFIG_PATH",
@@ -476,6 +511,7 @@ __all__ = [
     "launch_comfyui_version_gui",
     "launch_comfyui_snapshot_gui",
     "get_comfyui_snapshot",
+    "get_comfyui_environment_info",
     "check_comfyui_updates",
     # fooocus_base.py - Fooocus 管理模块
     # 类型定义
@@ -503,6 +539,7 @@ __all__ = [
     "launch_fooocus_version_gui",
     "launch_fooocus_snapshot_gui",
     "get_fooocus_snapshot",
+    "get_fooocus_environment_info",
     "check_fooocus_updates",
     # invokeai_base.py - InvokeAI 管理模块
     # 类型定义
@@ -540,6 +577,7 @@ __all__ = [
     "launch_invokeai_version_gui",
     "launch_invokeai_snapshot_gui",
     "get_invokeai_snapshot",
+    "get_invokeai_environment_info",
     "check_invokeai_updates",
     # qwen_tts_webui_base.py - Qwen TTS WebUI 管理模块
     # 常量
@@ -557,6 +595,7 @@ __all__ = [
     "launch_qwen_tts_webui_version_gui",
     "launch_qwen_tts_webui_snapshot_gui",
     "get_qwen_tts_webui_snapshot",
+    "get_qwen_tts_webui_environment_info",
     "check_qwen_tts_webui_updates",
     # sd_scripts_base.py - SD Scripts 管理模块
     # 类型定义
@@ -578,6 +617,7 @@ __all__ = [
     "launch_sd_scripts_version_gui",
     "launch_sd_scripts_snapshot_gui",
     "get_sd_scripts_snapshot",
+    "get_sd_scripts_environment_info",
     "check_sd_scripts_updates",
     # sd_trainer_base.py - SD Trainer 管理模块
     # 类型定义
@@ -601,6 +641,7 @@ __all__ = [
     "launch_sd_trainer_version_gui",
     "launch_sd_trainer_snapshot_gui",
     "get_sd_trainer_snapshot",
+    "get_sd_trainer_environment_info",
     "check_sd_trainer_updates",
     # sd_webui_base.py - SD WebUI 管理模块
     # 类型定义
@@ -637,6 +678,7 @@ __all__ = [
     "list_sd_webui_models",
     "uninstall_sd_webui_model",
     "get_sd_webui_snapshot",
+    "get_sd_webui_environment_info",
     "check_sd_webui_updates",
     # version_manager.py - 更新检查结构
     "RepositoryUpdateStatus",

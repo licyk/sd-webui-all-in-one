@@ -29,6 +29,7 @@ from sd_webui_all_in_one.base_manager.base import (
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import DEFAULT_RUNTIME_PORT, apply_hotpatcher_launch_env
 from sd_webui_all_in_one.base_manager.snapshot import WebUiSnapshot, build_webui_snapshot
+from sd_webui_all_in_one.base_manager.environment_info import WebUiEnvironmentInfo, build_webui_environment_info
 from sd_webui_all_in_one.base_manager.version_manager import WebUiUpdateOptions, WebUiUpdateStatus, check_webui_updates
 from sd_webui_all_in_one.downloader import (
     DownloadToolType,
@@ -517,6 +518,22 @@ def get_sd_trainer_snapshot(
         webui_path=sd_trainer_path,
         include_packages=include_packages,
     )
+
+
+def get_sd_trainer_environment_info(
+    sd_trainer_path: Path,
+    include_packages: bool = True,
+) -> WebUiEnvironmentInfo:
+    """获取 SD Trainer 环境信息报告。
+
+    Args:
+        sd_trainer_path (Path): SD Trainer 根目录。
+        include_packages (bool): 是否记录当前 Python 环境已安装软件包。
+
+    Returns:
+        WebUiEnvironmentInfo: 主机信息和 WebUI 快照组成的环境报告。
+    """
+    return build_webui_environment_info(get_sd_trainer_snapshot(sd_trainer_path, include_packages))
 
 
 def check_sd_trainer_env(

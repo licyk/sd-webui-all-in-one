@@ -90,6 +90,10 @@ def test_default_registry_uses_namespaced_real_callables():
     assert "comfyui.extension.commits" in methods
     assert "sd_webui.extension.list" in methods
     assert "sd_webui.version.branch_presets" in methods
+    assert all(
+        f"{webui_type}.environment.collect" in methods
+        for webui_type in ("sd_webui", "comfyui", "fooocus", "invokeai", "sd_trainer", "sd_scripts", "qwen_tts_webui")
+    )
     assert "fooocus.version.branch_presets" in methods
     assert "sd_trainer.version.branch_presets" in methods
     assert "invokeai.model.list" in methods
@@ -150,6 +154,10 @@ def test_default_registry_uses_namespaced_real_callables():
             "include_packages",
             "snapshot_dir",
         ]
+        environment_details = server.method_details("comfyui.environment.collect")
+        assert environment_details is not None
+        assert environment_details["target"].endswith("comfyui_base.get_comfyui_environment_info")
+        assert [item["name"] for item in environment_details["parameters"]] == ["comfyui_path", "include_packages"]
         update_details = server.method_details("comfyui.extension.update")
         assert update_details is not None
         assert update_details["target"].endswith("version_manager.update_repository")

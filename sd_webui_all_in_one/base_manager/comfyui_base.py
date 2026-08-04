@@ -43,6 +43,7 @@ from sd_webui_all_in_one.base_manager.snapshot import (
     build_webui_snapshot,
     collect_repository_snapshot,
 )
+from sd_webui_all_in_one.base_manager.environment_info import WebUiEnvironmentInfo, build_webui_environment_info
 from sd_webui_all_in_one.base_manager.version_manager import (
     ExtensionIndexItem,
     ManagedExtension,
@@ -1548,6 +1549,22 @@ def get_comfyui_snapshot(
         include_packages=include_packages,
         extensions=collect_comfyui_extensions(comfyui_path),
     )
+
+
+def get_comfyui_environment_info(
+    comfyui_path: Path,
+    include_packages: bool = True,
+) -> WebUiEnvironmentInfo:
+    """获取 ComfyUI 环境信息报告。
+
+    Args:
+        comfyui_path (Path): ComfyUI 根目录。
+        include_packages (bool): 是否记录当前 Python 环境已安装软件包。
+
+    Returns:
+        WebUiEnvironmentInfo: 主机信息和 WebUI 快照组成的环境报告。
+    """
+    return build_webui_environment_info(get_comfyui_snapshot(comfyui_path, include_packages))
 
 
 def uninstall_comfyui_custom_node(

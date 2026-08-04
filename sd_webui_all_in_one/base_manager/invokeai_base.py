@@ -42,6 +42,7 @@ from sd_webui_all_in_one.base_manager.snapshot import (
     build_webui_snapshot,
     collect_git_extensions,
 )
+from sd_webui_all_in_one.base_manager.environment_info import WebUiEnvironmentInfo, build_webui_environment_info
 from sd_webui_all_in_one.base_manager.version_manager import (
     ExtensionIndexItem,
     ManagedExtension,
@@ -1362,6 +1363,22 @@ def get_invokeai_snapshot(
             enabled_resolver=lambda _name, path: (path / "__init__.py").is_file(),
         ),
     )
+
+
+def get_invokeai_environment_info(
+    invokeai_path: Path,
+    include_packages: bool = True,
+) -> WebUiEnvironmentInfo:
+    """获取 InvokeAI 环境信息报告。
+
+    Args:
+        invokeai_path (Path): InvokeAI 根目录。
+        include_packages (bool): 是否记录当前 Python 环境已安装软件包。
+
+    Returns:
+        WebUiEnvironmentInfo: 主机信息和 WebUI 快照组成的环境报告。
+    """
+    return build_webui_environment_info(get_invokeai_snapshot(invokeai_path, include_packages))
 
 
 def uninstall_invokeai_custom_node(

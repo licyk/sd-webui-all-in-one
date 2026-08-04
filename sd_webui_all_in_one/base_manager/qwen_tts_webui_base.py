@@ -18,6 +18,7 @@ from sd_webui_all_in_one.base_manager.base import (
 )
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import DEFAULT_RUNTIME_PORT, apply_hotpatcher_launch_env
 from sd_webui_all_in_one.base_manager.snapshot import WebUiSnapshot, build_webui_snapshot
+from sd_webui_all_in_one.base_manager.environment_info import WebUiEnvironmentInfo, build_webui_environment_info
 from sd_webui_all_in_one.base_manager.version_manager import WebUiUpdateOptions, WebUiUpdateStatus, check_webui_updates
 from sd_webui_all_in_one.env_check import (
     check_torch_version,
@@ -310,6 +311,22 @@ def get_qwen_tts_webui_snapshot(
         webui_path=qwen_tts_webui_path,
         include_packages=include_packages,
     )
+
+
+def get_qwen_tts_webui_environment_info(
+    qwen_tts_webui_path: Path,
+    include_packages: bool = True,
+) -> WebUiEnvironmentInfo:
+    """获取 Qwen TTS WebUI 环境信息报告。
+
+    Args:
+        qwen_tts_webui_path (Path): Qwen TTS WebUI 根目录。
+        include_packages (bool): 是否记录当前 Python 环境已安装软件包。
+
+    Returns:
+        WebUiEnvironmentInfo: 主机信息和 WebUI 快照组成的环境报告。
+    """
+    return build_webui_environment_info(get_qwen_tts_webui_snapshot(qwen_tts_webui_path, include_packages))
 
 
 def check_qwen_tts_webui_env(

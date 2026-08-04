@@ -26,6 +26,7 @@ from sd_webui_all_in_one.base_manager.base import (
     run_env_check_tasks,
 )
 from sd_webui_all_in_one.base_manager.snapshot import WebUiSnapshot, build_webui_snapshot
+from sd_webui_all_in_one.base_manager.environment_info import WebUiEnvironmentInfo, build_webui_environment_info
 from sd_webui_all_in_one.base_manager.version_manager import WebUiUpdateOptions, WebUiUpdateStatus, check_webui_updates
 from sd_webui_all_in_one.downloader import (
     DownloadToolType,
@@ -520,6 +521,22 @@ def get_sd_scripts_snapshot(
         webui_path=sd_scripts_path,
         include_packages=include_packages,
     )
+
+
+def get_sd_scripts_environment_info(
+    sd_scripts_path: Path,
+    include_packages: bool = True,
+) -> WebUiEnvironmentInfo:
+    """获取 SD Scripts 环境信息报告。
+
+    Args:
+        sd_scripts_path (Path): SD Scripts 根目录。
+        include_packages (bool): 是否记录当前 Python 环境已安装软件包。
+
+    Returns:
+        WebUiEnvironmentInfo: 主机信息和 WebUI 快照组成的环境报告。
+    """
+    return build_webui_environment_info(get_sd_scripts_snapshot(sd_scripts_path, include_packages))
 
 
 def check_sd_scripts_env(
