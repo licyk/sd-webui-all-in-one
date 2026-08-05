@@ -1164,7 +1164,7 @@ def fetch_pypi_versions(
         package_name (str):
             PyPI 软件包名称
         current_version (str | None):
-            当前安装版本
+            当前安装版本; 为 None 时从当前运行环境解析已安装版本
         index_url (str):
             PyPI 或 PyPI 镜像源地址
         timeout (int | None):
@@ -1173,6 +1173,9 @@ def fetch_pypi_versions(
     Returns:
         list[PackageVersionInfo]: 软件包版本信息列表
     """
+    # 未显式传入当前版本时按运行环境解析, 否则调用方无法得到 is_current 标记。
+    if current_version is None:
+        current_version = get_package_version_from_library(package_name)
     base_url = index_url.rstrip("/")
     if base_url.endswith("/simple"):
         base_url = base_url.removesuffix("/simple")

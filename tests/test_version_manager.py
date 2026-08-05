@@ -531,6 +531,50 @@ def test_check_package_update_records_versions(monkeypatch):
     assert status.error is None
 
 
+def _stub_pypi_payload(monkeypatch):
+    payload = json.dumps(
+        {
+            "info": {"summary": "InvokeAI"},
+            "releases": {
+                "6.7.0": [{"upload_time": "2025-10-05T00:00:00"}],
+                "6.8.1": [{"upload_time": "2025-12-01T00:00:00"}],
+                "6.9.0": [{"upload_time": "2026-01-02T00:00:00"}],
+            },
+        }
+    ).encode("utf-8")
+
+    class _Response:
+        def read(self):
+            return payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc):
+            return False
+
+    monkeypatch.setattr(version_manager.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response())
+
+
+def test_fetch_pypi_versions_resolves_the_installed_release_when_not_given_one(monkeypatch):
+    _stub_pypi_payload(monkeypatch)
+    monkeypatch.setattr(version_manager, "get_package_version_from_library", lambda _name: "6.8.1")
+
+    versions = version_manager.fetch_pypi_versions("invokeai")
+
+    assert [item.version for item in versions] == ["6.9.0", "6.8.1", "6.7.0"]
+    assert [item.is_current for item in versions] == [False, True, False]
+
+
+def test_fetch_pypi_versions_keeps_an_explicitly_supplied_current_version(monkeypatch):
+    _stub_pypi_payload(monkeypatch)
+    monkeypatch.setattr(version_manager, "get_package_version_from_library", lambda _name: "6.8.1")
+
+    versions = version_manager.fetch_pypi_versions("invokeai", current_version="6.7.0")
+
+    assert [item.is_current for item in versions] == [False, False, True]
+
+
 def test_check_extension_updates_resolves_registry_versions(tmp_path):
     extension = version_manager.ManagedExtension(
         "registry-node",
