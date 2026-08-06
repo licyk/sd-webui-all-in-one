@@ -31,7 +31,7 @@ from sd_webui_all_in_one.base_manager.repository_inspector import (
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.file_manager import remove_files
 from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST
-from sd_webui_all_in_one.package_analyzer import CommonVersionComparison, PyWhlVersionComparison, get_package_version_from_library
+from sd_webui_all_in_one.package_analyzer import CommonVersionComparison, PyWhlVersionComparison, get_package_version_from_library, is_prerelease_version, parse_version_component
 
 
 DEFAULT_EXTENSION_INDEX_URL = "https://raw.githubusercontent.com/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json"
@@ -195,12 +195,15 @@ class PackageVersionInfo:
             软件包简介
         is_current (bool):
             是否为当前版本
+        is_prerelease (bool):
+            是否为预发布版本 (``a``/``b``/``rc``/``dev``); 正式发布版本为 ``False``
     """
 
     version: str
     upload_time: str = ""
     summary: str = ""
     is_current: bool = False
+    is_prerelease: bool = False
 
 
 @dataclass(slots=True)
@@ -251,7 +254,16 @@ class RepositoryUpdateStatus:
 
 @dataclass(slots=True)
 class PackageUpdateStatus:
-    """PyPI 内核包更新状态。"""
+    """PyPI 内核包更新状态。
+
+    Attributes:
+        latest_version (str | None):
+            更新检查采用的最新版本。默认只统计正式发布版本, 预发布版本不参与,
+            因此比当前版本新的预发布版本不会产生 ``has_update``。
+        latest_prerelease (str | None):
+            比 ``latest_version`` 更新的最新预发布版本; 没有则为 ``None``。
+            仅用于展示预发布通道的进展, 不影响 ``has_update``。
+    """
 
     name: str
     package_name: str
@@ -262,6 +274,7 @@ class PackageUpdateStatus:
     index_url: str
     source_type: Literal["pypi"] = "pypi"
     error: str | None = None
+    latest_prerelease: str | None = None
 
 
 @dataclass(slots=True)
@@ -345,6 +358,8 @@ class WebUiUpdateOptions:
     custom_github_mirror: str | list[str] | None = None
     pypi_index_url: str = "https://pypi.org/pypi"
     timeout: int | None = 20
+    allow_prerelease: bool = False
+    """PyPI 内核包是否把预发布版本也作为更新目标"""
 
 
 def configure_git_env(
@@ -1151,6 +1166,30 @@ def fetch_comfyui_custom_node_index(index_url: str, timeout: int | None = 20) ->
     return parse_comfyui_custom_node_index(json.loads(payload))
 
 
+def _pypi_version_sort_key(
+    version: str,
+) -> tuple[int, PyWhlVersionComparison | CommonVersionComparison]:
+    """构造 PyPI 版本号排序键
+
+    PyPI 发布的版本号遵循 PEP 440, 用 PEP 440 比较器排序才能把 ``1.0.post1`` 排在
+    ``1.0`` 之后、把 ``1.0rc1`` 排在 ``1.0`` 之前; 通用比较器无法正确处理这两种后缀.
+    镜像源可能返回不符合 PEP 440 的版本号, 这类版本号回退到通用比较器, 并统一排在
+    可解析版本号之后, 避免解析异常中断整个版本列表.
+
+    Args:
+        version (str):
+            版本号字符串
+
+    Returns:
+        tuple[int, PyWhlVersionComparison | CommonVersionComparison]:
+            排序键. 第 1 项区分可解析与不可解析版本号, 保证两类版本号之间不会
+            跨比较器比较.
+    """
+    if parse_version_component(version) is None:
+        return (0, CommonVersionComparison(version))
+    return (1, PyWhlVersionComparison(version))
+
+
 def fetch_pypi_versions(
     package_name: str,
     current_version: str | None = None,
@@ -1171,7 +1210,9 @@ def fetch_pypi_versions(
             网络请求超时时间
 
     Returns:
-        list[PackageVersionInfo]: 软件包版本信息列表
+        list[PackageVersionInfo]: 软件包版本信息列表, 按版本号从新到旧排序.
+            每项的 ``is_prerelease`` 标记该版本是预发布版本还是正式发布版本,
+            调用方据此区分发布通道, 无需自行解析版本号字符串.
     """
     # 未显式传入当前版本时按运行环境解析, 否则调用方无法得到 is_current 标记。
     if current_version is None:
@@ -1213,10 +1254,11 @@ def fetch_pypi_versions(
                 upload_time=upload_time,
                 summary=summary,
                 is_current=version == current_version,
+                is_prerelease=is_prerelease_version(str(version)),
             )
         )
 
-    return sorted(versions, key=lambda item: CommonVersionComparison(item.version), reverse=True)
+    return sorted(versions, key=lambda item: _pypi_version_sort_key(item.version), reverse=True)
 
 
 def filter_extension_index(
@@ -1267,19 +1309,26 @@ def check_package_update(
     display_name: str,
     index_url: str,
     timeout: int | None = 20,
+    allow_prerelease: bool = False,
 ) -> PackageUpdateStatus:
     """检查作为 WebUI 内核安装的 PyPI 包是否有更新。
+
+    默认只把正式发布版本作为更新目标。PyPI 上新发布的预发布版本 (如 ``6.10.0rc1``)
+    版本号高于当前正式版本, 若直接取版本列表的第一项会误报 "有更新", 并把预发布
+    版本显示成最新版本。
 
     Args:
         package_name (str): PyPI 包名。
         display_name (str): 内核显示名称。
         index_url (str): PyPI JSON API 或镜像地址。
         timeout (int | None): 请求超时时间。
+        allow_prerelease (bool): 是否把预发布版本也作为更新目标, 默认为 ``False``。
 
     Returns:
         PackageUpdateStatus: PyPI 内核包的详细更新状态。
     """
     current_version = get_package_version_from_library(package_name)
+    latest_prerelease: str | None = None
     try:
         versions = fetch_pypi_versions(
             package_name,
@@ -1287,8 +1336,19 @@ def check_package_update(
             index_url=index_url,
             timeout=timeout,
         )
-        latest_version = versions[0].version if versions else None
-        error = None if latest_version is not None else "未获取到 PyPI 版本列表"
+        # 版本列表已按版本号从新到旧排序, 取符合发布通道的第一项即为最新版本。
+        candidates = versions if allow_prerelease else [item for item in versions if not item.is_prerelease]
+        latest_version = candidates[0].version if candidates else None
+        newest_prerelease = next((item.version for item in versions if item.is_prerelease), None)
+        # 预发布通道只在走在正式通道前面时才值得单独报告。
+        if newest_prerelease is not None and (latest_version is None or PyWhlVersionComparison(latest_version) < PyWhlVersionComparison(newest_prerelease)):
+            latest_prerelease = newest_prerelease
+        if latest_version is not None:
+            error = None
+        elif versions:
+            error = "未获取到 PyPI 正式发布版本"
+        else:
+            error = "未获取到 PyPI 版本列表"
         has_update = latest_version is not None and (
             current_version is None or PyWhlVersionComparison(current_version) < PyWhlVersionComparison(latest_version)
         )
@@ -1305,6 +1365,7 @@ def check_package_update(
         has_update=has_update,
         index_url=index_url,
         error=error,
+        latest_prerelease=latest_prerelease,
     )
 
 
@@ -1412,7 +1473,13 @@ def check_webui_updates(
                 custom_github_mirror=options.custom_github_mirror,
             )
         else:
-            kernel = check_package_update(kernel_package_name, display_name, options.pypi_index_url, timeout=options.timeout)
+            kernel = check_package_update(
+                kernel_package_name,
+                display_name,
+                options.pypi_index_url,
+                timeout=options.timeout,
+                allow_prerelease=options.allow_prerelease,
+            )
 
     pytorch = get_pytorch_update_status() if options.include_pytorch else None
     extensions: list[ExtensionUpdateStatus] = []

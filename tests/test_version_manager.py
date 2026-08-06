@@ -531,15 +531,18 @@ def test_check_package_update_records_versions(monkeypatch):
     assert status.error is None
 
 
-def _stub_pypi_payload(monkeypatch):
+_DEFAULT_PYPI_RELEASES = {
+    "6.7.0": [{"upload_time": "2025-10-05T00:00:00"}],
+    "6.8.1": [{"upload_time": "2025-12-01T00:00:00"}],
+    "6.9.0": [{"upload_time": "2026-01-02T00:00:00"}],
+}
+
+
+def _stub_pypi_payload(monkeypatch, releases=None):
     payload = json.dumps(
         {
             "info": {"summary": "InvokeAI"},
-            "releases": {
-                "6.7.0": [{"upload_time": "2025-10-05T00:00:00"}],
-                "6.8.1": [{"upload_time": "2025-12-01T00:00:00"}],
-                "6.9.0": [{"upload_time": "2026-01-02T00:00:00"}],
-            },
+            "releases": _DEFAULT_PYPI_RELEASES if releases is None else releases,
         }
     ).encode("utf-8")
 
@@ -573,6 +576,78 @@ def test_fetch_pypi_versions_keeps_an_explicitly_supplied_current_version(monkey
     versions = version_manager.fetch_pypi_versions("invokeai", current_version="6.7.0")
 
     assert [item.is_current for item in versions] == [False, False, True]
+
+
+# PyPI 上正式版本与预发布版本混排, 且 post-release 排在同号正式版本之后。
+_MIXED_CHANNEL_RELEASES = {
+    "6.9.0": [{"upload_time": "2026-01-02T00:00:00"}],
+    "6.9.0rc1": [{"upload_time": "2025-12-20T00:00:00"}],
+    "6.9.0.post1": [{"upload_time": "2026-01-09T00:00:00"}],
+    "6.10.0rc1": [{"upload_time": "2026-02-01T00:00:00"}],
+    "6.11.0.dev1": [{"upload_time": "2026-02-10T00:00:00"}],
+}
+
+
+def test_fetch_pypi_versions_flags_prereleases(monkeypatch):
+    _stub_pypi_payload(monkeypatch, _MIXED_CHANNEL_RELEASES)
+    monkeypatch.setattr(version_manager, "get_package_version_from_library", lambda _name: "6.9.0")
+
+    versions = version_manager.fetch_pypi_versions("invokeai")
+
+    # PEP 440 顺序: dev/rc 归入各自 release 段, post-release 排在同号正式版本之后。
+    assert [item.version for item in versions] == [
+        "6.11.0.dev1",
+        "6.10.0rc1",
+        "6.9.0.post1",
+        "6.9.0",
+        "6.9.0rc1",
+    ]
+    # 预发布标记是每个版本自带的结构化字段, 调用方无需再解析版本号字符串。
+    assert [item.is_prerelease for item in versions] == [True, True, False, False, True]
+
+
+def test_check_package_update_ignores_prereleases(monkeypatch):
+    _stub_pypi_payload(monkeypatch, _MIXED_CHANNEL_RELEASES)
+    monkeypatch.setattr(version_manager, "get_package_version_from_library", lambda _name: "6.9.0.post1")
+
+    status = version_manager.check_package_update("invokeai", "InvokeAI", "https://pypi.example")
+
+    # 已安装的是最新正式版本, 更高版本号的 rc/dev 不构成更新。
+    assert status.latest_version == "6.9.0.post1"
+    assert status.has_update is False
+    assert status.error is None
+    # 预发布通道单独报告, 不参与更新判定。
+    assert status.latest_prerelease == "6.11.0.dev1"
+
+
+def test_check_package_update_can_target_prereleases(monkeypatch):
+    _stub_pypi_payload(monkeypatch, _MIXED_CHANNEL_RELEASES)
+    monkeypatch.setattr(version_manager, "get_package_version_from_library", lambda _name: "6.9.0.post1")
+
+    status = version_manager.check_package_update(
+        "invokeai",
+        "InvokeAI",
+        "https://pypi.example",
+        allow_prerelease=True,
+    )
+
+    assert status.latest_version == "6.11.0.dev1"
+    assert status.has_update is True
+    # 最新版本本身就是预发布版本时, 预发布通道没有额外进展可报告。
+    assert status.latest_prerelease is None
+
+
+def test_check_package_update_reports_a_package_without_a_release(monkeypatch):
+    _stub_pypi_payload(monkeypatch, {"1.0.0rc1": [{"upload_time": "2026-01-02T00:00:00"}]})
+    monkeypatch.setattr(version_manager, "get_package_version_from_library", lambda _name: None)
+
+    status = version_manager.check_package_update("invokeai", "InvokeAI", "https://pypi.example")
+
+    # 只发布过预发布版本时没有可更新到的正式版本, 这与取不到版本列表是两回事。
+    assert status.latest_version is None
+    assert status.has_update is False
+    assert status.error == "未获取到 PyPI 正式发布版本"
+    assert status.latest_prerelease == "1.0.0rc1"
 
 
 def test_check_extension_updates_resolves_registry_versions(tmp_path):

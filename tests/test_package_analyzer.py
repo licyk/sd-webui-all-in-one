@@ -23,6 +23,8 @@ from sd_webui_all_in_one.package_analyzer.requirement_parser import (
 )
 from sd_webui_all_in_one.package_analyzer.version_utils import (
     version_string_is_canonical,
+    is_prerelease_version,
+    parse_version_component,
     is_package_has_version,
     get_package_name,
     get_package_version,
@@ -595,6 +597,34 @@ class TestVersionUtils:
         assert version_string_is_canonical("1.0alpha1") is False
         assert version_string_is_canonical("1.0-1") is False
         assert version_string_is_canonical("v1.0") is False
+
+    def test_parse_version_component(self):
+        component = parse_version_component("1.0rc2")
+        assert component is not None
+        assert component.release == (1, 0)
+        assert component.pre_l == "rc"
+        assert component.pre_n == 2
+        # 不符合 PEP 440 的版本号只是无法解析, 不应抛出异常
+        assert parse_version_component("not-a-version") is None
+
+    def test_is_prerelease_version(self):
+        # pre-release 段的三种规范标签及其别名
+        assert is_prerelease_version("1.0a1") is True
+        assert is_prerelease_version("1.0b1") is True
+        assert is_prerelease_version("1.0rc1") is True
+        assert is_prerelease_version("1.0alpha1") is True
+        assert is_prerelease_version("1.0preview1") is True
+        # dev-release 也是预发布版本, 包括与 pre-release 段组合的形式
+        assert is_prerelease_version("1.0.dev1") is True
+        assert is_prerelease_version("1.0rc1.dev1") is True
+
+    def test_release_version_is_not_prerelease(self):
+        assert is_prerelease_version("1.0") is False
+        # post-release 和 local version 都属于正式发布版本
+        assert is_prerelease_version("1.0.post1") is False
+        assert is_prerelease_version("1.0+cu118") is False
+        # 无法解析的版本号没有可判断的预发布标签, 按正式版本处理
+        assert is_prerelease_version("not-a-version") is False
 
     def test_is_package_has_version(self):
         assert is_package_has_version("torch==2.3.0") is True

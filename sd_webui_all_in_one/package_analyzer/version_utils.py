@@ -9,10 +9,19 @@
 
 import re
 
+from sd_webui_all_in_one.package_analyzer.py_ver_cmp import (
+    PyWhlVersionComparison,
+    PyWhlVersionComponent,
+)
 from sd_webui_all_in_one.package_analyzer.py_whl_parse import (
     ParsedPyWhlRequirement,
     RequirementParser,
 )
+
+
+# PEP 440 版本号解析器. PyWhlVersionComparison.parse_version 不依赖实例状态,
+# 这里持有一个空实例复用其解析规则, 避免在此模块重新实现一遍 PEP 440 正则.
+_VERSION_PARSER = PyWhlVersionComparison("")
 
 
 # PEP 440 Appendix B: canonical version regex (含 local version)
@@ -60,6 +69,59 @@ def version_string_is_canonical(
         bool: 如果版本号标识符符合 PEP 440 canonical 格式则返回 ``True``
     """
     return _CANONICAL_VERSION_REGEX.match(version) is not None
+
+
+def parse_version_component(
+    version: str,
+) -> PyWhlVersionComponent | None:
+    """按 PEP 440 解析版本号, 解析失败时返回 ``None``
+
+    ``PyWhlVersionComparison.parse_version`` 在版本号不符合 PEP 440 时抛出
+    ``ValueError``. 版本号来自 PyPI 索引或用户输入时, 调用方通常只需要知道
+    "能否解析", 不希望为此包一层 ``try``.
+
+    Args:
+        version (str):
+            版本号字符串
+
+    Returns:
+        PyWhlVersionComponent | None: 解析后的版本号组件, 无法解析时为 ``None``
+    """
+    try:
+        return _VERSION_PARSER.parse_version(version)
+    except ValueError:
+        return None
+
+
+def is_prerelease_version(
+    version: str,
+) -> bool:
+    """判断版本号是否为预发布版本 (https://peps.python.org/pep-0440/#pre-releases)
+
+    带 pre-release 段 (``a``/``b``/``rc``, 含 ``alpha``/``beta``/``c``/``pre``/``preview``
+    等别名) 或 dev-release 段的版本号为预发布版本. post-release (``1.0.post1``) 和带
+    local version 的版本号 (``1.0+cu118``) 都是正式发布版本.
+
+    使用示例:
+        ```python
+        is_prerelease_version("6.9.0")  # False
+        is_prerelease_version("6.9.0rc1")  # True
+        is_prerelease_version("6.9.0.dev1")  # True
+        is_prerelease_version("6.9.0.post1")  # False
+        ```
+
+    Args:
+        version (str):
+            版本号字符串
+
+    Returns:
+        bool: 如果版本号为预发布版本则返回 ``True``.
+            无法按 PEP 440 解析的版本号无从判断预发布标签, 按正式版本处理并返回 ``False``.
+    """
+    component = parse_version_component(version)
+    if component is None:
+        return False
+    return component.pre_l is not None or component.dev_n is not None
 
 
 def _try_parse_requirement(

@@ -20,6 +20,8 @@
 # 版本字符串工具
 from sd_webui_all_in_one.package_analyzer.version_utils import (
     version_string_is_canonical,
+    parse_version_component,
+    is_prerelease_version,
     is_package_has_version,
     get_package_name,
     get_package_version,
@@ -73,6 +75,7 @@ from sd_webui_all_in_one.package_analyzer.installation_checker import (
 # PEP 440 版本比较
 from sd_webui_all_in_one.package_analyzer.py_ver_cmp import (
     PyWhlVersionComparison,
+    PyWhlVersionComponent,
     PyWhlVersionMatcher,
 )
 
@@ -86,6 +89,8 @@ from sd_webui_all_in_one.package_analyzer.ver_cmp import (
 __all__ = [
     # version_utils
     "version_string_is_canonical",
+    "parse_version_component",
+    "is_prerelease_version",
     "is_package_has_version",
     "get_package_name",
     "get_package_version",
@@ -120,6 +125,7 @@ __all__ = [
     "check_version_constraint",
     # py_ver_cmp
     "PyWhlVersionComparison",
+    "PyWhlVersionComponent",
     "PyWhlVersionMatcher",
     # ver_cmp
     "CommonVersionComparison",
