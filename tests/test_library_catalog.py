@@ -55,3 +55,38 @@ def test_model_catalog_metadata_has_no_install_authority():
     assert item["downloaders"]
     assert "save_dir" not in item["details"]
     assert "url" not in item["details"]
+
+
+def test_model_catalog_exports_relative_install_path_for_every_family():
+    """安装路径是相对 WebUI 根目录的展示信息，不得暴露主机绝对路径。"""
+    for webui_type in ("comfyui", "sd_webui"):
+        for item in catalog.model_library_catalog(webui_type)["models"]:
+            install_path = item["install_path"]
+            if install_path is None:
+                # 该家族没有配置目标目录时不可安装。
+                assert not item["installable"]
+                continue
+            assert not install_path.startswith("/")
+            assert ":" not in install_path
+            assert ".." not in install_path.split("/")
+
+
+def test_model_catalog_marks_family_without_destination_uninstallable(monkeypatch):
+    monkeypatch.setattr(
+        catalog,
+        "export_model_list",
+        lambda _webui_type: [
+            {
+                "name": "Demo",
+                "dtype": "checkpoint",
+                "filename": "demo.safetensors",
+                "url": {"modelscope": "https://example.test/demo"},
+                "save_dir": {"sd_webui": "models/Stable-diffusion"},
+            }
+        ],
+    )
+
+    item = catalog.model_library_catalog("comfyui")["models"][0]
+
+    assert item["install_path"] is None
+    assert not item["installable"]

@@ -152,7 +152,7 @@ def model_library_catalog(webui_type: str) -> dict[str, Any]:
         webui_type (str): WebUI 类型。
 
     Returns:
-        dict[str, Any]: 不暴露内部目标路径的模型目录。
+        dict[str, Any]: 模型目录，安装路径为相对 WebUI 根目录的路径，不包含主机绝对路径。
 
     Raises:
         ValueError: WebUI 类型不支持内置模型库。
@@ -164,13 +164,15 @@ def model_library_catalog(webui_type: str) -> dict[str, Any]:
     for raw in raw_items:
         sources = [source for source in ("modelscope", "huggingface") if raw.get("url", {}).get(source)]
         item_id = _stable_id("model-library", webui_type, raw["dtype"], raw["name"], raw["filename"])
-        installable = bool(sources and raw.get("save_dir", {}).get(webui_type))
+        install_path = raw.get("save_dir", {}).get(webui_type)
+        installable = bool(sources and install_path)
         items.append(
             {
                 "id": item_id,
                 "name": raw["name"],
                 "webui_type": webui_type,
                 "model_type": raw["dtype"],
+                "install_path": install_path,
                 "description": raw.get("description") or "",
                 "tags": list(raw.get("tags") or [raw["dtype"]]),
                 "size": raw.get("size"),
