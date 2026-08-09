@@ -40,8 +40,14 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: 1
         continue-on-error: true
         run: |
-          Set-Location -Path "${{ github.workspace }}/comfyui/core"
-          & "${{ github.workspace }}/comfyui/core/python/python.exe" "${{ github.workspace }}/comfyui/core/main.py" --quick-test-for-ci --cpu
+          python "${{ github.workspace }}/.github/run_bounded_process.py" `
+            --timeout 600 `
+            --cwd "${{ github.workspace }}/comfyui/core" `
+            -- `
+            "${{ github.workspace }}/comfyui/core/python/python.exe" `
+            "${{ github.workspace }}/comfyui/core/main.py" `
+            --quick-test-for-ci `
+            --cpu
 
       - name: Launch to complete dependencies
         shell: pwsh

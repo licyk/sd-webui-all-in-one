@@ -6,12 +6,14 @@ on:
       - "sd_webui_all_in_one/**"
       - "tests/**"
       - "pyproject.toml"
+      - ".github/run_bounded_process.py"
       - ".github/workflows/pytest.yml"
   pull_request:
     paths:
       - "sd_webui_all_in_one/**"
       - "tests/**"
       - "pyproject.toml"
+      - ".github/run_bounded_process.py"
       - ".github/workflows/pytest.yml"
   workflow_dispatch:
 

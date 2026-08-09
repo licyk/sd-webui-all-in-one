@@ -49,8 +49,11 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: 1
         continue-on-error: true
         run: |
-          Set-Location -Path "${{ github.workspace }}/sd_webui_forge_neo/core"
-          & "${{ github.workspace }}/sd_webui_forge_neo/core/python/python.exe" `
+          python "${{ github.workspace }}/.github/run_bounded_process.py" `
+            --timeout 600 `
+            --cwd "${{ github.workspace }}/sd_webui_forge_neo/core" `
+            -- `
+            "${{ github.workspace }}/sd_webui_forge_neo/core/python/python.exe" `
             "${{ github.workspace }}/sd_webui_forge_neo/core/launch.py" `
             --exit `
             --skip-torch-cuda-test `
