@@ -3,6 +3,7 @@
 import argparse
 from pathlib import Path
 
+from sd_webui_all_in_one.cli_manager.argparse_helpers import add_subparsers_with_help
 from sd_webui_all_in_one.base_manager import (
     SD_SCRIPTS_BRANCH_LIST,
     SDScriptsBranchType,
@@ -585,7 +586,7 @@ def register_sd_scripts(
             子命令行解析器
     """
     scripts_parser: argparse.ArgumentParser = subparsers.add_parser("sd-scripts", help="SD Scripts 相关命令")
-    scripts_sub = scripts_parser.add_subparsers(dest="sd_scripts_action", required=True)
+    scripts_sub = add_subparsers_with_help(scripts_parser, dest="sd_scripts_action")
 
     # reinstall-pytorch
     reinstall_pytorch_p = scripts_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
@@ -785,7 +786,7 @@ def register_sd_scripts(
 
     # gui
     gui_parser = scripts_sub.add_parser("gui", help="图形界面工具")
-    gui_sub = gui_parser.add_subparsers(dest="gui_action", required=True)
+    gui_sub = add_subparsers_with_help(gui_parser, dest="gui_action")
 
     version_gui_p = gui_sub.add_parser("version-manager", help="启动 SD Scripts 版本管理 GUI")
     version_gui_p.add_argument("--sd-scripts-path", type=normalized_filepath, required=False, default=SD_SCRIPTS_ROOT_PATH, dest="sd_scripts_path", help="SD Scripts 根目录")
@@ -826,7 +827,7 @@ def register_sd_scripts(
 
     # model
     model_parser = scripts_sub.add_parser("model", help="模型管理")
-    model_sub = model_parser.add_subparsers(dest="model_action", required=True)
+    model_sub = add_subparsers_with_help(model_parser, dest="model_action")
 
     # model install-library
     model_lib_p = model_sub.add_parser("install-library", help="从模型库安装模型")

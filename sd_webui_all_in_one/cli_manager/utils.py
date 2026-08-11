@@ -8,6 +8,7 @@ import time
 from pathlib import Path
 from typing import cast
 
+from sd_webui_all_in_one.cli_manager.argparse_helpers import add_subparsers_with_help
 from sd_webui_all_in_one.proxy import (
     get_system_proxy_address,
     test_proxy_connectivity,
@@ -1031,10 +1032,10 @@ def register_manager(
             子命令行解析器
     """
     sd_webui_all_in_one_parser: argparse.ArgumentParser = subparsers.add_parser("self-manager", help="SD WebUI All In One 相关命令")
-    sd_webui_all_in_one_sub = sd_webui_all_in_one_parser.add_subparsers(dest="sd_webui_all_in_one_action", required=True)
+    sd_webui_all_in_one_sub = add_subparsers_with_help(sd_webui_all_in_one_parser, dest="sd_webui_all_in_one_action")
 
     check_p = sd_webui_all_in_one_sub.add_parser("check", help="检查并更新组件")
-    check_sub = check_p.add_subparsers(dest="check_action", required=True)
+    check_sub = add_subparsers_with_help(check_p, dest="check_action")
 
     # check aria2
     check_aria2_p = check_sub.add_parser("aria2", help="检查 Aria2 是否需要更新 (当退出代码非 0 时则说明需要更新)")
@@ -1065,7 +1066,7 @@ def register_manager(
     )
 
     patcher_p = sd_webui_all_in_one_sub.add_parser("patcher", help="Hotpatcher 配置管理")
-    patcher_sub = patcher_p.add_subparsers(dest="patcher_action", required=True)
+    patcher_sub = add_subparsers_with_help(patcher_p, dest="patcher_action")
 
     patcher_export_p = patcher_sub.add_parser("export-config", help="导出 Hotpatcher 默认配置")
     patcher_export_p.add_argument("--output", type=normalized_filepath, default=DEFAULT_HOTPATCHER_CONFIG_PATH, help="输出配置文件路径")
@@ -1116,7 +1117,7 @@ def register_manager(
     )
 
     get_p = sd_webui_all_in_one_sub.add_parser("get", help="获取配置或环境信息")
-    get_sub = get_p.add_subparsers(dest="get_action", required=True)
+    get_sub = add_subparsers_with_help(get_p, dest="get_action")
 
     # get proxy
     get_proxy_p = get_sub.add_parser("proxy", help="获取系统代理地址")
@@ -1145,7 +1146,7 @@ def register_manager(
     )
 
     portable_p = sd_webui_all_in_one_sub.add_parser("portable", help="整合包资源管理")
-    portable_sub = portable_p.add_subparsers(dest="portable_action", required=True)
+    portable_sub = add_subparsers_with_help(portable_p, dest="portable_action")
 
     portable_list_p = portable_sub.add_parser("list", help="生成整合包资源列表")
     portable_list_p.add_argument("--output", type=normalized_filepath, default=_default_portable_list_output(), help="输出 JSON 文件路径")
@@ -1200,7 +1201,7 @@ def register_manager(
     )
 
     repo_p = sd_webui_all_in_one_sub.add_parser("repo", help="HuggingFace / ModelScope 仓库管理")
-    repo_sub = repo_p.add_subparsers(dest="repo_action", required=True)
+    repo_sub = add_subparsers_with_help(repo_p, dest="repo_action")
 
     repo_list_p = repo_sub.add_parser("list", help="获取仓库文件列表")
     repo_list_p.add_argument("api_type", choices=REPO_API_TYPE_LIST, help="仓库 API 类型")
@@ -1403,7 +1404,7 @@ def register_manager(
     )
 
     archive_p = sd_webui_all_in_one_sub.add_parser("archive", help="压缩包解压和压缩")
-    archive_sub = archive_p.add_subparsers(dest="archive_action", required=True)
+    archive_sub = add_subparsers_with_help(archive_p, dest="archive_action")
 
     archive_extract_p = archive_sub.add_parser("extract", help="解压压缩包")
     archive_extract_p.add_argument("archive_path", type=normalized_filepath, help="压缩包路径")
@@ -1430,7 +1431,7 @@ def register_manager(
     )
 
     api_p = sd_webui_all_in_one_sub.add_parser("api", help="API 服务")
-    api_sub = api_p.add_subparsers(dest="api_action", required=True)
+    api_sub = add_subparsers_with_help(api_p, dest="api_action")
 
     api_serve_p = api_sub.add_parser("serve", help="启动 API 服务")
     api_serve_p.add_argument("--host", type=str, default="127.0.0.1", help="监听地址")

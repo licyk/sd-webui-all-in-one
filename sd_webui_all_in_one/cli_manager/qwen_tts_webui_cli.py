@@ -6,6 +6,7 @@ import sys
 import traceback
 from pathlib import Path
 
+from sd_webui_all_in_one.cli_manager.argparse_helpers import add_subparsers_with_help
 from sd_webui_all_in_one.base_manager import (
     DEFAULT_RUNTIME_PORT,
     check_qwen_tts_webui_updates,
@@ -531,7 +532,7 @@ def register_qwen_tts_webui(
             子命令行解析器
     """
     qwen_tts_webui_parser: argparse.ArgumentParser = subparsers.add_parser("qwen-tts-webui", help="Qwen TTS WebUI 相关命令")
-    qwen_tts_webui_sub = qwen_tts_webui_parser.add_subparsers(dest="qwen_tts_webui_action", required=True)
+    qwen_tts_webui_sub = add_subparsers_with_help(qwen_tts_webui_parser, dest="qwen_tts_webui_action")
 
     # reinstall-pytorch
     reinstall_pytorch_p = qwen_tts_webui_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
@@ -745,7 +746,7 @@ def register_qwen_tts_webui(
 
     # gui
     gui_parser = qwen_tts_webui_sub.add_parser("gui", help="图形界面工具")
-    gui_sub = gui_parser.add_subparsers(dest="gui_action", required=True)
+    gui_sub = add_subparsers_with_help(gui_parser, dest="gui_action")
 
     version_gui_p = gui_sub.add_parser("version-manager", help="启动 Qwen TTS WebUI 版本管理 GUI")
     version_gui_p.add_argument("--qwen-tts-webui-path", type=normalized_filepath, required=False, default=QWEN_TTS_WEBUI_ROOT_PATH, dest="qwen_tts_webui_path", help="Qwen TTS WebUI 根目录")

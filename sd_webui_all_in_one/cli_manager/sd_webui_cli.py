@@ -6,6 +6,7 @@ import sys
 import traceback
 from pathlib import Path
 
+from sd_webui_all_in_one.cli_manager.argparse_helpers import add_subparsers_with_help
 from sd_webui_all_in_one.base_manager import (
     DEFAULT_RUNTIME_PORT,
     SD_WEBUI_BRANCH_LIST,
@@ -838,7 +839,7 @@ def register_sd_webui(
             子命令行解析器
     """
     sd_parser: argparse.ArgumentParser = subparsers.add_parser("sd-webui", help="Stable Diffusion WebUI 相关命令")
-    sd_sub = sd_parser.add_subparsers(dest="sd_webui_action", required=True)
+    sd_sub = add_subparsers_with_help(sd_parser, dest="sd_webui_action")
 
     # reinstall-pytorch
     reinstall_pytorch_p = sd_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
@@ -1039,7 +1040,7 @@ def register_sd_webui(
 
     # gui
     gui_parser = sd_sub.add_parser("gui", help="图形界面工具")
-    gui_sub = gui_parser.add_subparsers(dest="gui_action", required=True)
+    gui_sub = add_subparsers_with_help(gui_parser, dest="gui_action")
 
     version_gui_p = gui_sub.add_parser("version-manager", help="启动 Stable Diffusion WebUI 版本管理 GUI")
     version_gui_p.add_argument("--sd-webui-path", type=normalized_filepath, required=False, default=SD_WEBUI_ROOT_PATH, dest="sd_webui_path", help="Stable Diffusion WebUI 根目录")
@@ -1121,7 +1122,7 @@ def register_sd_webui(
 
     # extension
     ext_parser = sd_sub.add_parser("extension", help="扩展管理")
-    ext_sub = ext_parser.add_subparsers(dest="ext_action", required=True)
+    ext_sub = add_subparsers_with_help(ext_parser, dest="ext_action")
 
     # extension install
     ext_install_p = ext_sub.add_parser("install", help="安装扩展")
@@ -1213,7 +1214,7 @@ def register_sd_webui(
 
     # model
     model_parser = sd_sub.add_parser("model", help="模型管理")
-    model_sub = model_parser.add_subparsers(dest="model_action", required=True)
+    model_sub = add_subparsers_with_help(model_parser, dest="model_action")
 
     # model install-library
     model_lib_p = model_sub.add_parser("install-library", help="从模型库安装模型")

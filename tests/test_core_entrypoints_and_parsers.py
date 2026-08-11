@@ -450,3 +450,30 @@ def test_cli_main_prints_help_without_subcommand(monkeypatch, capsys):
     output = capsys.readouterr().out
     assert "SD WebUI All In One" in output
     assert "usage:" in output
+
+
+@pytest.mark.parametrize(
+    ("arguments", "usage"),
+    [
+        (["sd-webui"], "usage: sd-webui-all-in-one sd-webui [-h]"),
+        (["sd-trainer"], "usage: sd-webui-all-in-one sd-trainer [-h]"),
+        (["sd-scripts"], "usage: sd-webui-all-in-one sd-scripts [-h]"),
+        (["invokeai"], "usage: sd-webui-all-in-one invokeai [-h]"),
+        (["fooocus"], "usage: sd-webui-all-in-one fooocus [-h]"),
+        (["comfyui"], "usage: sd-webui-all-in-one comfyui [-h]"),
+        (["qwen-tts-webui"], "usage: sd-webui-all-in-one qwen-tts-webui [-h]"),
+        (["self-manager"], "usage: sd-webui-all-in-one self-manager [-h]"),
+        (["sd-webui", "extension"], "usage: sd-webui-all-in-one sd-webui extension [-h]"),
+        (["self-manager", "check"], "usage: sd-webui-all-in-one self-manager check [-h]"),
+    ],
+)
+def test_cli_main_prints_current_help_without_nested_action(monkeypatch, capsys, arguments, usage):
+    from sd_webui_all_in_one.cli_manager import cli
+
+    monkeypatch.setattr(sys, "argv", ["sd-webui-all-in-one", *arguments])
+
+    cli.main()
+
+    captured = capsys.readouterr()
+    assert usage in captured.out
+    assert captured.err == ""

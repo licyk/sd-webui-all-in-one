@@ -6,6 +6,7 @@ import sys
 import traceback
 from pathlib import Path
 
+from sd_webui_all_in_one.cli_manager.argparse_helpers import add_subparsers_with_help
 from sd_webui_all_in_one.base_manager import (
     DEFAULT_RUNTIME_PORT,
     SD_TRAINER_BRANCH_LIST,
@@ -710,7 +711,7 @@ def register_sd_trainer(
             子命令行解析器
     """
     trainer_parser: argparse.ArgumentParser = subparsers.add_parser("sd-trainer", help="SD Trainer 相关命令")
-    trainer_sub = trainer_parser.add_subparsers(dest="sd_trainer_action", required=True)
+    trainer_sub = add_subparsers_with_help(trainer_parser, dest="sd_trainer_action")
 
     # reinstall-pytorch
     reinstall_pytorch_p = trainer_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
@@ -951,7 +952,7 @@ def register_sd_trainer(
 
     # gui
     gui_parser = trainer_sub.add_parser("gui", help="图形界面工具")
-    gui_sub = gui_parser.add_subparsers(dest="gui_action", required=True)
+    gui_sub = add_subparsers_with_help(gui_parser, dest="gui_action")
 
     version_gui_p = gui_sub.add_parser("version-manager", help="启动 SD Trainer 版本管理 GUI")
     version_gui_p.add_argument("--sd-trainer-path", type=normalized_filepath, required=False, default=SD_TRAINER_ROOT_PATH, dest="sd_trainer_path", help="SD Trainer 根目录")
@@ -992,7 +993,7 @@ def register_sd_trainer(
 
     # model
     model_parser = trainer_sub.add_parser("model", help="模型管理")
-    model_sub = model_parser.add_subparsers(dest="model_action", required=True)
+    model_sub = add_subparsers_with_help(model_parser, dest="model_action")
 
     # model install-library
     model_lib_p = model_sub.add_parser("install-library", help="从模型库安装模型")

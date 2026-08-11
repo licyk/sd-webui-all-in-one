@@ -6,6 +6,7 @@ import sys
 import traceback
 from pathlib import Path
 
+from sd_webui_all_in_one.cli_manager.argparse_helpers import add_subparsers_with_help
 from sd_webui_all_in_one.base_manager import (
     DEFAULT_RUNTIME_PORT,
     check_invokeai_updates,
@@ -764,7 +765,7 @@ def register_invokeai(
             子命令行解析器
     """
     invoke_parser: argparse.ArgumentParser = subparsers.add_parser("invokeai", help="InvokeAI 相关命令")
-    invoke_sub = invoke_parser.add_subparsers(dest="invokeai_action", required=True)
+    invoke_sub = add_subparsers_with_help(invoke_parser, dest="invokeai_action")
 
     # reinstall-pytorch
     reinstall_pytorch_p = invoke_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
@@ -971,7 +972,7 @@ def register_invokeai(
 
     # gui
     gui_parser = invoke_sub.add_parser("gui", help="图形界面工具")
-    gui_sub = gui_parser.add_subparsers(dest="gui_action", required=True)
+    gui_sub = add_subparsers_with_help(gui_parser, dest="gui_action")
 
     version_gui_p = gui_sub.add_parser("version-manager", help="启动 InvokeAI 版本管理 GUI")
     version_gui_p.add_argument("--invokeai-path", type=normalized_filepath, required=False, default=INVOKEAI_ROOT_PATH, dest="invokeai_path", help="InvokeAI 根目录")
@@ -1016,7 +1017,7 @@ def register_invokeai(
 
     # custom-node
     node_parser = invoke_sub.add_parser("custom-node", help="扩展管理")
-    node_sub = node_parser.add_subparsers(dest="node_action", required=True)
+    node_sub = add_subparsers_with_help(node_parser, dest="node_action")
 
     # custom-node install
     node_install_p = node_sub.add_parser("install", help="安装扩展")
@@ -1108,7 +1109,7 @@ def register_invokeai(
 
     # model
     model_parser = invoke_sub.add_parser("model", help="模型管理")
-    model_sub = model_parser.add_subparsers(dest="model_action", required=True)
+    model_sub = add_subparsers_with_help(model_parser, dest="model_action")
 
     # model install-library
     model_lib_p = model_sub.add_parser("install-library", help="从模型库安装模型")
