@@ -321,6 +321,9 @@ def test_apply_config_enables_core_and_extension_patches(monkeypatch):
     def fake_extension_index(config):
         calls.append(("extension_index", config["comfyui_manager"]["enabled"]))
 
+    def fake_comfyui_auto_port(config):
+        calls.append(("comfyui_auto_port", config["enabled"]))
+
     def fake_hf_endpoint(config):
         calls.append(("hf_endpoint_mirror", config["enabled"]))
 
@@ -332,6 +335,7 @@ def test_apply_config_enables_core_and_extension_patches(monkeypatch):
         return True
 
     monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.zluda.apply_from_config", fake_zluda)
+    monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.comfyui_auto_port.apply_from_config", fake_comfyui_auto_port)
     monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.extension_index.apply_from_config", fake_extension_index)
     monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.hf_endpoint_mirror.apply_from_config", fake_hf_endpoint)
     monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.xformers_cutlass.apply_from_config", fake_xformers_cutlass)
@@ -345,6 +349,7 @@ def test_apply_config_enables_core_and_extension_patches(monkeypatch):
             },
             "extensions": {
                 "zluda": {"enabled": True, "compat": True},
+                "comfyui_auto_port": {"enabled": True},
                 "extension_index": {"comfyui_manager": {"enabled": True}},
                 "hf_endpoint_mirror": {"enabled": True},
                 "xformers_cutlass": {"enabled": True},
@@ -356,6 +361,7 @@ def test_apply_config_enables_core_and_extension_patches(monkeypatch):
     assert "core.import_hook" in result["applied"]
     assert "core.stack_shadow" in result["applied"]
     assert ("zluda", True) in calls
+    assert ("comfyui_auto_port", True) in calls
     assert ("extension_index", True) in calls
     assert ("hf_endpoint_mirror", True) in calls
     assert ("xformers_cutlass", True) in calls
@@ -478,6 +484,9 @@ def test_catalog_reports_registered_patches():
     assert browser_feature["settings"]["mode"]["choices"] == ["host", "suppress", "passthrough"]
     assert browser_feature["registered"] is False
     extension_index_settings = features["extensions.extension_index"]["settings"]
+    comfyui_auto_port_settings = features["extensions.comfyui_auto_port"]["settings"]
+    assert comfyui_auto_port_settings["enabled"]["type"] == "bool"
+    assert comfyui_auto_port_settings["enabled"]["default"] is True
     assert extension_index_settings["webui.enabled"]["type"] == "bool"
     assert extension_index_settings["webui.enabled"]["default"] is False
     assert extension_index_settings["webui.url"]["type"] == "str"

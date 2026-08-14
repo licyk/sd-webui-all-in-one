@@ -227,6 +227,18 @@ PYTHONPATH=src python -m examples.runtime_client
 
 可选扩展放在 `src/sd_webui_all_in_one_hotpatcher_ext`，用于承载从原项目抽出的具体补丁配方。核心 `sd_webui_all_in_one_hotpatcher` 只负责补丁机制，扩展模块负责“补谁、怎么补”。
 
+### ComfyUI 默认端口自动避让
+
+`comfyui_auto_port` 扩展会补丁 `comfy.cli_args`。当解析后的 `args.port` 仍等于 parser 默认端口 8188 时，它调用 `sd_webui_all_in_one.utils.find_port()`；如果 8188 已被占用，就把 `args.port` 改为后续可用端口。显式指定其它端口时保持原值。
+
+```python
+from sd_webui_all_in_one_hotpatcher_ext.comfyui_auto_port import apply_from_config
+
+apply_from_config({"enabled": True})
+```
+
+该扩展必须在 `main.py` 导入 `comfy.cli_args` 前注册。通过 Hotpatcher bootstrap 加载配置时会满足这个时序；目标模块已经导入时，扩展也会立即调整现有参数对象。
+
 ### ZLUDA 扩展
 
 ZLUDA 扩展位于 `sd_webui_all_in_one_hotpatcher_ext.zluda`，抽自原来的 `swlpatches/zluda_companion.py`，并额外包含原 `torch_zluda_timer` hotfix。

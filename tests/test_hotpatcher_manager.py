@@ -60,6 +60,7 @@ def test_hotpatcher_catalog_schema_is_json_serializable():
     assert services["title"] == "服务控制"
     assert services["settings"]["apply_on_bootstrap"]["type"] == "bool"
     assert "default" in services["settings"]["apply_on_bootstrap"]
+    assert catalog["features"]["extensions.comfyui_auto_port"]["settings"]["enabled"]["default"] is True
     assert catalog["features"]["extensions.uv_pip"]["settings"]["symlink"]["type"] == "bool"
 
 
@@ -292,13 +293,10 @@ print(json.dumps({{
     result = json.loads(output)
 
     assert result["parent_marker"] == "1"
-    assert result["parent_result"]["applied"] == []
+    assert result["parent_result"]["applied"] == ["extensions.comfyui_auto_port"]
     assert result["parent_result"]["errors"] == []
     assert (
-        any(
-            warning.get("feature") == "core.import_hook" and "already installed" in warning.get("message", "")
-            for warning in result["parent_result"].get("warnings", [])
-        )
+        any(warning.get("feature") == "core.import_hook" and "already installed" in warning.get("message", "") for warning in result["parent_result"].get("warnings", []))
         or result["parent_result"]["warnings"] == []
     )
     assert result["child"] == {"marker": "1", "result": None}

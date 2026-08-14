@@ -26,7 +26,22 @@ src/sd_webui_all_in_one_hotpatcher_ext/zluda/__init__.py
 src/sd_webui_all_in_one_hotpatcher_ext/extension_index/__init__.py
 src/sd_webui_all_in_one_hotpatcher_ext/hf_endpoint_mirror/__init__.py
 src/sd_webui_all_in_one_hotpatcher_ext/uv_pip/__init__.py
+src/sd_webui_all_in_one_hotpatcher_ext/comfyui_auto_port/__init__.py
 ```
+
+## ComfyUI Auto Port 扩展
+
+`comfyui_auto_port` 在 `comfy.cli_args` 执行完成后检查 `args.port`。仅当它仍等于 parser 的默认端口时调用 `sd_webui_all_in_one.utils.find_port()`，因此显式指定其它端口不会被改写。ComfyUI 的 `main.py` 随后通过 `run(..., port=args.port)` 使用调整后的端口。
+
+配置形式：
+
+```python
+{
+    "enabled": True,
+}
+```
+
+扩展会同时注册 import-time module patch，并在 `comfy.cli_args` 已经导入时立即处理现有模块。
 
 ## 扩展模块推荐结构
 

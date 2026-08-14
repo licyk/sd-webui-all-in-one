@@ -106,6 +106,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
         },
     },
     "extensions": {
+        "comfyui_auto_port": {
+            "enabled": True,
+        },
         "zluda": {
             "enabled": False,
             "compat": False,
@@ -355,6 +358,17 @@ SETTING_SCHEMA: dict[str, Any] = {
                 "type": "bool",
                 "title": "Torch 编译热修复",
                 "description": "修复 torch.utils.cpp_extension 中不兼容 ZLUDA 的 HIP_HOME 判断。",
+            },
+        },
+    },
+    "extensions.comfyui_auto_port": {
+        "title": "ComfyUI 端口自动避让",
+        "description": "ComfyUI 使用默认端口时，自动避开已经被占用的端口。",
+        "settings": {
+            "enabled": {
+                "type": "bool",
+                "title": "启用",
+                "description": "检测 ComfyUI 默认端口 8188，并在被占用时自动选择后续可用端口。",
             },
         },
     },
@@ -1179,6 +1193,18 @@ def _apply_runtime_config(
 
 def _apply_extension_config(config: dict[str, Any], result: dict[str, Any]) -> None:
     extensions = _section(config, "extensions")
+    comfyui_auto_port = _section(extensions, "comfyui_auto_port")
+    if comfyui_auto_port.get("enabled"):
+        from sd_webui_all_in_one_hotpatcher_ext.comfyui_auto_port import (
+            apply_from_config as apply_comfyui_auto_port,
+        )
+
+        _apply_step(
+            "extensions.comfyui_auto_port",
+            lambda: apply_comfyui_auto_port(comfyui_auto_port),
+            result,
+        )
+
     zluda = _section(extensions, "zluda")
     if zluda.get("enabled"):
         from sd_webui_all_in_one_hotpatcher_ext.zluda import apply_from_config as apply_zluda
@@ -1294,6 +1320,13 @@ def _warn_disabled_but_active(config: dict[str, Any], result: dict[str, Any], st
         )
 
     extensions = _section(config, "extensions")
+    if not _section(extensions, "comfyui_auto_port").get("enabled") and _is_comfyui_auto_port_patch_registered():
+        result["warnings"].append(
+            {
+                "feature": "extensions.comfyui_auto_port",
+                "message": "ComfyUI auto-port patch remains registered; process restart is required to remove it",
+            }
+        )
     if not _section(extensions, "uv_pip").get("enabled") and _is_uv_pip_patch_installed():
         result["warnings"].append(
             {
@@ -1319,6 +1352,8 @@ def _attach_feature_state(features: dict[str, Any], defaults: dict[str, Any], st
     features["runtime.browser"]["default"] = defaults["runtime"]["browser"]
     features["runtime.browser"]["active"] = is_webbrowser_patch_active(state=state)
     features["runtime.browser"]["registered"] = is_webbrowser_patch_registered(state=state)
+    features["extensions.comfyui_auto_port"]["default"] = defaults["extensions"]["comfyui_auto_port"]
+    features["extensions.comfyui_auto_port"]["active"] = _is_comfyui_auto_port_patch_registered()
     features["extensions.zluda"]["default"] = defaults["extensions"]["zluda"]
     features["extensions.zluda"]["active"] = False
     features["extensions.extension_index"]["default"] = defaults["extensions"]["extension_index"]
@@ -1337,6 +1372,17 @@ def _is_uv_pip_patch_installed() -> bool:
         from sd_webui_all_in_one_hotpatcher_ext.uv_pip import is_uv_patch_installed
 
         return is_uv_patch_installed()
+    except Exception:
+        return False
+
+
+def _is_comfyui_auto_port_patch_registered() -> bool:
+    try:
+        from sd_webui_all_in_one_hotpatcher_ext.comfyui_auto_port import (
+            is_comfyui_auto_port_patch_registered,
+        )
+
+        return is_comfyui_auto_port_patch_registered()
     except Exception:
         return False
 
