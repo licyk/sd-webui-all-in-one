@@ -68,7 +68,7 @@
     |ComfyUI 扩展|
     |---|
     |[Comfy-Org/ComfyUI-Manager](https://github.com/Comfy-Org/ComfyUI-Manager)|
-    |[Fannovel16/comfyui_controlnet_aux](https://github.com/Fannovel16/comfyui_controlnet_aux)|
+    |[licyk/comfyui_controlnet_aux](https://github.com/licyk/comfyui_controlnet_aux)|
     |[Kosinkadink/ComfyUI-Advanced-ControlNet](https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet)|
     |[cubiq/ComfyUI_IPAdapter_plus](https://github.com/cubiq/ComfyUI_IPAdapter_plus)|
     |[kijai/ComfyUI-Marigold](https://github.com/kijai/ComfyUI-Marigold)|

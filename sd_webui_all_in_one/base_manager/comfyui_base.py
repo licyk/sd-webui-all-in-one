@@ -134,7 +134,7 @@ COMFYUI_CUSTOM_NODES_INFO_DICT: ComfyUiCustomNodeInfoList = [
     },
     {
         "name": "comfyui_controlnet_aux",
-        "url": "https://github.com/Fannovel16/comfyui_controlnet_aux",
+        "url": "https://github.com/licyk/comfyui_controlnet_aux",
         "save_dir": "custom_nodes/comfyui_controlnet_aux",
     },
     {
