@@ -2,6 +2,7 @@
 
 import os
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 
 from sd_webui_all_in_one.logger import get_logger
@@ -18,6 +19,40 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+
+def generate_cache_path_env_vars(
+    cache_path: Path,
+    origin_env: Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    """生成缓存路径相关环境变量"""
+    env = os.environ if origin_env is None else origin_env
+    defaults = {
+        "CACHE_HOME": cache_path.as_posix(),
+        "HF_HOME": (cache_path / "huggingface").as_posix(),
+        "MATPLOTLIBRC": cache_path.as_posix(),
+        "MODELSCOPE_CACHE": (cache_path / "modelscope" / "hub").as_posix(),
+        "MS_CACHE_HOME": (cache_path / "modelscope" / "hub").as_posix(),
+        "SYCL_CACHE_DIR": (cache_path / "libsycl_cache").as_posix(),
+        "TORCH_HOME": (cache_path / "torch").as_posix(),
+        "U2NET_HOME": (cache_path / "u2net").as_posix(),
+        "XDG_CACHE_HOME": cache_path.as_posix(),
+        "PIP_CACHE_DIR": (cache_path / "pip").as_posix(),
+        "PYTHONPYCACHEPREFIX": (cache_path / "pycache").as_posix(),
+        "TORCHINDUCTOR_CACHE_DIR": (cache_path / "torchinductor").as_posix(),
+        "TRITON_CACHE_DIR": (cache_path / "triton").as_posix(),
+        "UV_CACHE_DIR": (cache_path / "uv").as_posix(),
+    }
+    return {key: env.get(key, value) for key, value in defaults.items()}
+
+
+def generate_config_file_env_vars(config_dir: Path) -> dict[str, str]:
+    """生成 Pip、uv 和 Git 配置文件相关环境变量"""
+    return {
+        "PIP_CONFIG_FILE": (config_dir / "pip.ini").as_posix(),
+        "UV_CONFIG_FILE": (config_dir / "uv.toml").as_posix(),
+        "GIT_CONFIG_GLOBAL": (config_dir / ".gitconfig").as_posix(),
+    }
 
 
 def configure_pip() -> None:

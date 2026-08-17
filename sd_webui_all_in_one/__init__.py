@@ -39,6 +39,10 @@ from sd_webui_all_in_one.proxy import (
     get_system_proxy_address,
     test_proxy_connectivity,
 )
+from sd_webui_all_in_one.env_manager import (
+    generate_cache_path_env_vars,
+    generate_config_file_env_vars,
+)
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -67,20 +71,7 @@ def _apply_proxy() -> None:
 def _apply_cache_path() -> None:
     if SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH:
         _logger.debug("设置缓存路径")
-        os.environ["CACHE_HOME"] = os.getenv("CACHE_HOME", SD_WEBUI_ALL_IN_ONE_CACHE_PATH.as_posix())
-        os.environ["HF_HOME"] = os.getenv("HF_HOME", (SD_WEBUI_ALL_IN_ONE_CACHE_PATH / "huggingface").as_posix())
-        os.environ["MATPLOTLIBRC"] = os.getenv("MATPLOTLIBRC", SD_WEBUI_ALL_IN_ONE_CACHE_PATH.as_posix())
-        os.environ["MODELSCOPE_CACHE"] = os.getenv("MODELSCOPE_CACHE", (SD_WEBUI_ALL_IN_ONE_CACHE_PATH / "modelscope" / "hub").as_posix())
-        os.environ["MS_CACHE_HOME"] = os.getenv("MS_CACHE_HOME", (SD_WEBUI_ALL_IN_ONE_CACHE_PATH / "modelscope" / "hub").as_posix())
-        os.environ["SYCL_CACHE_DIR"] = os.getenv("SYCL_CACHE_DIR", (SD_WEBUI_ALL_IN_ONE_CACHE_PATH / "libsycl_cache").as_posix())
-        os.environ["TORCH_HOME"] = os.getenv("TORCH_HOME", (SD_WEBUI_ALL_IN_ONE_CACHE_PATH / "torch").as_posix())
-        os.environ["U2NET_HOME"] = os.getenv("U2NET_HOME", (SD_WEBUI_ALL_IN_ONE_CACHE_PATH / "u2net").as_posix())
-        os.environ["XDG_CACHE_HOME"] = os.getenv("XDG_CACHE_HOME", SD_WEBUI_ALL_IN_ONE_CACHE_PATH.as_posix())
-        os.environ["PIP_CACHE_DIR"] = os.getenv("PIP_CACHE_DIR", (SD_WEBUI_ALL_IN_ONE_CACHE_PATH / "pip").as_posix())
-        os.environ["PYTHONPYCACHEPREFIX"] = os.getenv("PYTHONPYCACHEPREFIX", (SD_WEBUI_ALL_IN_ONE_CACHE_PATH / "pycache").as_posix())
-        os.environ["TORCHINDUCTOR_CACHE_DIR"] = os.getenv("TORCHINDUCTOR_CACHE_DIR", (SD_WEBUI_ALL_IN_ONE_CACHE_PATH / "torchinductor").as_posix())
-        os.environ["TRITON_CACHE_DIR"] = os.getenv("TRITON_CACHE_DIR", (SD_WEBUI_ALL_IN_ONE_CACHE_PATH / "triton").as_posix())
-        os.environ["UV_CACHE_DIR"] = os.getenv("UV_CACHE_DIR", (SD_WEBUI_ALL_IN_ONE_CACHE_PATH / "uv").as_posix())
+        os.environ.update(generate_cache_path_env_vars(SD_WEBUI_ALL_IN_ONE_CACHE_PATH))
 
 
 def _apply_env_vars() -> None:
@@ -92,17 +83,13 @@ def _apply_env_vars() -> None:
 
 def _apply_config_file() -> None:
     tmp_dir = Path(_temp_dir.name)
-    pip_config_file = tmp_dir / "pip.ini"
-    uv_config_file = tmp_dir / "uv.toml"
-    git_config_file = tmp_dir / ".gitconfig"
     if SD_WEBUI_ALL_IN_ONE_DESKTOP_MODE:
         _logger.debug("在 %s 配置默认的 uv / Pip / Git 配置文件", tmp_dir)
-        os.environ["PIP_CONFIG_FILE"] = pip_config_file.as_posix()
-        os.environ["UV_CONFIG_FILE"] = uv_config_file.as_posix()
-        os.environ["GIT_CONFIG_GLOBAL"] = git_config_file.as_posix()
-        pip_config_file.write_text("", encoding="utf-8")
-        uv_config_file.write_text("", encoding="utf-8")
-        git_config_file.write_text(DEFAULT_GIT_CONFIG, encoding="utf-8")
+        config_env = generate_config_file_env_vars(tmp_dir)
+        os.environ.update(config_env)
+        Path(config_env["PIP_CONFIG_FILE"]).write_text("", encoding="utf-8")
+        Path(config_env["UV_CONFIG_FILE"]).write_text("", encoding="utf-8")
+        Path(config_env["GIT_CONFIG_GLOBAL"]).write_text(DEFAULT_GIT_CONFIG, encoding="utf-8")
 
 
 _apply_proxy()
