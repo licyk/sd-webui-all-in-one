@@ -17,6 +17,7 @@ from sd_webui_all_in_one.api_server import ApiClient, ApiClientError, ApiMethodS
 from sd_webui_all_in_one.api_server import server as api_server_module
 from sd_webui_all_in_one.api_server.registry import get_default_methods
 from sd_webui_all_in_one.api_server.server import ApiTaskCanceled
+from sd_webui_all_in_one.base_manager import base as base_module
 
 
 def _request(url, method="GET", data=None, token=""):
@@ -98,6 +99,7 @@ def test_default_registry_uses_namespaced_real_callables():
     assert "sd_trainer.version.branch_presets" in methods
     assert "invokeai.model.list" in methods
     assert "system.proxy.get" in methods
+    assert "mirror.resolve" in methods
     assert "hotpatcher.catalog" in methods
     assert "hotpatcher.default_config" in methods
     assert "hotpatcher.normalize_config" in methods
@@ -272,6 +274,39 @@ def test_real_callable_is_invoked_with_converted_flat_parameters():
             "target": None,
             "mode": "fast",
             "options": {"enabled": False, "labels": ["one"]},
+        }
+    finally:
+        _stop_server(server, thread)
+
+
+def test_mirror_resolve_method_is_invoked(monkeypatch):
+    monkeypatch.setattr(base_module, "network_gfw_test", lambda: False)
+    server, thread, base_url = _start_server(methods=get_default_methods())
+    try:
+        status, payload = _request(
+            f"{base_url}/api/v2/call",
+            method="POST",
+            data={
+                "method": "mirror.resolve",
+                "params": {
+                    "auto_mirror": True,
+                    "use_pypi_mirror": False,
+                    "use_github_mirror": False,
+                    "custom_github_mirror": "https://github.example",
+                    "use_hf_mirror": False,
+                    "custom_hf_mirror": None,
+                    "model_download_resource_type": "huggingface",
+                },
+            },
+        )
+        assert status == 200
+        assert payload["result"] == {
+            "use_pypi_mirror": True,
+            "use_github_mirror": True,
+            "custom_github_mirror": None,
+            "use_hf_mirror": True,
+            "custom_hf_mirror": None,
+            "model_download_resource_type": "modelscope",
         }
     finally:
         _stop_server(server, thread)

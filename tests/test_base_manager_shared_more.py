@@ -451,3 +451,75 @@ def test_apply_hf_mirror_string_list_disabled_and_invalid(monkeypatch):
 
     with pytest.raises(ValueError):
         base_module.apply_hf_mirror(use_hf_mirror=True, custom_hf_mirror=cast(Any, {"bad": "type"}), origin_env={})
+
+
+def test_resolve_auto_mirror_settings_uses_official_sources(monkeypatch):
+    monkeypatch.setattr(base_module, "network_gfw_test", lambda: True)
+
+    resolved = base_module.resolve_auto_mirror_settings(
+        auto_mirror=True,
+        use_pypi_mirror=True,
+        use_github_mirror=True,
+        use_hf_mirror=True,
+        custom_github_mirror="https://github.example",
+        custom_hf_mirror="https://hf.example",
+        model_download_resource_type="modelscope",
+    )
+
+    assert resolved == {
+        "use_pypi_mirror": False,
+        "use_github_mirror": False,
+        "custom_github_mirror": None,
+        "use_hf_mirror": False,
+        "custom_hf_mirror": None,
+        "model_download_resource_type": "huggingface",
+    }
+
+
+def test_resolve_auto_mirror_settings_uses_mirror_sources(monkeypatch):
+    monkeypatch.setattr(base_module, "network_gfw_test", lambda: False)
+
+    resolved = base_module.resolve_auto_mirror_settings(
+        auto_mirror=True,
+        use_pypi_mirror=False,
+        use_github_mirror=False,
+        use_hf_mirror=False,
+        custom_github_mirror=["https://github.example"],
+        custom_hf_mirror=["https://hf.example"],
+        model_download_resource_type="huggingface",
+    )
+
+    assert resolved == {
+        "use_pypi_mirror": True,
+        "use_github_mirror": True,
+        "custom_github_mirror": None,
+        "use_hf_mirror": True,
+        "custom_hf_mirror": None,
+        "model_download_resource_type": "modelscope",
+    }
+
+
+def test_resolve_auto_mirror_settings_can_be_disabled(monkeypatch):
+    def fail_network_probe():
+        raise AssertionError("network probe should not run")
+
+    monkeypatch.setattr(base_module, "network_gfw_test", fail_network_probe)
+
+    resolved = base_module.resolve_auto_mirror_settings(
+        auto_mirror=False,
+        use_pypi_mirror=False,
+        use_github_mirror=True,
+        custom_github_mirror="https://github.example",
+        use_hf_mirror=False,
+        custom_hf_mirror=None,
+        model_download_resource_type="huggingface",
+    )
+
+    assert resolved == {
+        "use_pypi_mirror": False,
+        "use_github_mirror": True,
+        "custom_github_mirror": "https://github.example",
+        "use_hf_mirror": False,
+        "custom_hf_mirror": None,
+        "model_download_resource_type": "huggingface",
+    }

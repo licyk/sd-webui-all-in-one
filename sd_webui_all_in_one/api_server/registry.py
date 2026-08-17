@@ -15,6 +15,7 @@ from sd_webui_all_in_one.base_manager.library_catalog import (
 )
 from sd_webui_all_in_one.api_server.server import ApiMethodRegistry, ApiMethodSpec
 from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, qwen_tts_webui_base, sd_scripts_base, sd_trainer_base, sd_webui_base
+from sd_webui_all_in_one.base_manager import resolve_auto_mirror_settings
 from sd_webui_all_in_one.base_manager.comfy_registry import fetch_comfy_registry_versions
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     apply_hotpatcher_config,
@@ -386,6 +387,7 @@ def _register_shared_methods(methods: dict[str, Callable[..., Any] | ApiMethodSp
         "system.proxy.test": test_proxy_connectivity,
         "system.proxy.set": set_proxy,
         "system.proxy.clear": clean_proxy,
+        "mirror.resolve": resolve_auto_mirror_settings,
         "hotpatcher.default_config": get_hotpatcher_default_config,
         "hotpatcher.catalog": get_hotpatcher_catalog,
         "hotpatcher.load_config": load_hotpatcher_config,

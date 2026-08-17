@@ -2,6 +2,7 @@ import argparse
 
 import pytest
 
+from sd_webui_all_in_one.base_manager import base as base_manager
 from sd_webui_all_in_one.cli_manager import comfyui_cli
 from sd_webui_all_in_one.cli_manager import auto_mirror
 from sd_webui_all_in_one.cli_manager import fooocus_cli
@@ -21,7 +22,7 @@ def _parser(*register_funcs):
 
 
 def test_apply_auto_mirror_uses_official_sources(monkeypatch):
-    monkeypatch.setattr(auto_mirror, "network_gfw_test", lambda: True)
+    monkeypatch.setattr(base_manager, "network_gfw_test", lambda: True)
     args = argparse.Namespace(
         auto_mirror=True,
         use_pypi_mirror=True,
@@ -45,7 +46,7 @@ def test_apply_auto_mirror_uses_official_sources(monkeypatch):
 
 
 def test_apply_auto_mirror_uses_mirror_sources(monkeypatch):
-    monkeypatch.setattr(auto_mirror, "network_gfw_test", lambda: False)
+    monkeypatch.setattr(base_manager, "network_gfw_test", lambda: False)
     args = argparse.Namespace(
         auto_mirror=True,
         use_pypi_mirror=False,
@@ -72,7 +73,7 @@ def test_apply_auto_mirror_can_be_disabled(monkeypatch):
     def fail_network_probe():
         raise AssertionError("network probe should not run")
 
-    monkeypatch.setattr(auto_mirror, "network_gfw_test", fail_network_probe)
+    monkeypatch.setattr(base_manager, "network_gfw_test", fail_network_probe)
     args = argparse.Namespace(
         auto_mirror=False,
         use_pypi_mirror=False,
@@ -748,7 +749,7 @@ def test_product_cli_auto_mirror_overrides_install_options(monkeypatch, tmp_path
     parser = _parser(comfyui_cli.register_comfyui)
     calls = []
 
-    monkeypatch.setattr(auto_mirror, "network_gfw_test", lambda: False)
+    monkeypatch.setattr(base_manager, "network_gfw_test", lambda: False)
     monkeypatch.setattr(comfyui_cli, "install", lambda **kwargs: calls.append(kwargs))
 
     args = parser.parse_args(
@@ -777,7 +778,7 @@ def test_product_cli_auto_mirror_overrides_launch_options(monkeypatch, tmp_path)
     parser = _parser(comfyui_cli.register_comfyui)
     calls = []
 
-    monkeypatch.setattr(auto_mirror, "network_gfw_test", lambda: True)
+    monkeypatch.setattr(base_manager, "network_gfw_test", lambda: True)
     monkeypatch.setattr(comfyui_cli, "launch", lambda **kwargs: calls.append(kwargs))
 
     args = parser.parse_args(

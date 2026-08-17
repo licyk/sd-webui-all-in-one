@@ -4,13 +4,13 @@ import argparse
 from collections.abc import Callable
 from typing import Any
 
+from sd_webui_all_in_one.base_manager import resolve_auto_mirror_settings
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
     LOGGER_LEVEL,
     LOGGER_NAME,
 )
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.utils import network_gfw_test
 
 
 logger = get_logger(
@@ -51,29 +51,31 @@ def apply_auto_mirror(
         argparse.Namespace:
             应用自动镜像选择后的 CLI 参数命名空间
     """
-    if not getattr(args, "auto_mirror", True):
-        logger.info("已禁用 CLI 自动镜像源选择, 将遵守手动镜像源参数设置")
-        return args
+    model_source = getattr(args, "model_download_resource_type", None) or getattr(args, "source", None)
+    resolved = resolve_auto_mirror_settings(
+        auto_mirror=getattr(args, "auto_mirror", True),
+        use_pypi_mirror=getattr(args, "use_pypi_mirror", True),
+        use_github_mirror=getattr(args, "use_github_mirror", False),
+        custom_github_mirror=getattr(args, "custom_github_mirror", None),
+        use_hf_mirror=getattr(args, "use_hf_mirror", False),
+        custom_hf_mirror=getattr(args, "custom_hf_mirror", None),
+        model_download_resource_type=model_source,
+    )
 
-    logger.info("启用 CLI 自动镜像源选择, 将根据网络检测结果强制覆盖镜像源相关参数")
-    use_mirror = not network_gfw_test()
-    model_resource = "modelscope" if use_mirror else "huggingface"
-    if use_mirror:
-        logger.info("网络检测结果: 将强制使用镜像源, 模型下载源设置为 ModelScope")
-    else:
-        logger.info("网络检测结果: 将强制使用官方源, 模型下载源设置为 HuggingFace")
-
-    for attr in ("use_pypi_mirror", "use_github_mirror", "use_hf_mirror"):
+    for attr in (
+        "use_pypi_mirror",
+        "use_github_mirror",
+        "custom_github_mirror",
+        "use_hf_mirror",
+        "custom_hf_mirror",
+    ):
         if hasattr(args, attr):
-            setattr(args, attr, use_mirror)
+            setattr(args, attr, resolved[attr])
 
-    for attr in ("custom_github_mirror", "custom_hf_mirror"):
-        if hasattr(args, attr):
-            setattr(args, attr, None)
-
-    for attr in ("model_download_resource_type", "source"):
-        if hasattr(args, attr):
-            setattr(args, attr, model_resource)
+    if getattr(args, "auto_mirror", True):
+        for attr in ("model_download_resource_type", "source"):
+            if hasattr(args, attr):
+                setattr(args, attr, resolved["model_download_resource_type"])
 
     return args
 
