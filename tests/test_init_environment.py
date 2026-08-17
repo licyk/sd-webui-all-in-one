@@ -5,6 +5,42 @@ import sd_webui_all_in_one as package
 from sd_webui_all_in_one import env_manager
 
 
+def test_generate_proxy_env_vars():
+    assert env_manager.generate_proxy_env_vars() == {
+        "NO_PROXY": "localhost,127.0.0.1,::1",
+    }
+    assert env_manager.generate_proxy_env_vars("http://proxy.local:8080") == {
+        "NO_PROXY": "localhost,127.0.0.1,::1",
+        "HTTP_PROXY": "http://proxy.local:8080",
+        "HTTPS_PROXY": "http://proxy.local:8080",
+    }
+
+
+def test_apply_proxy_uses_generated_environment(monkeypatch):
+    calls = []
+
+    def generate_proxy_env_vars(proxy_address=None):
+        calls.append(proxy_address)
+        if proxy_address is None:
+            return {"TEST_NO_PROXY": "localhost"}
+        return {"TEST_HTTP_PROXY": proxy_address, "TEST_HTTPS_PROXY": proxy_address}
+
+    monkeypatch.setattr(package, "SD_WEBUI_ALL_IN_ONE_PROXY", True)
+    monkeypatch.setattr(package, "generate_proxy_env_vars", generate_proxy_env_vars)
+    monkeypatch.setattr(package, "get_system_proxy_address", lambda: "http://proxy.local:8080")
+    monkeypatch.setattr(package, "test_proxy_connectivity", lambda proxy_address: True)
+    monkeypatch.delenv("TEST_NO_PROXY", raising=False)
+    monkeypatch.delenv("TEST_HTTP_PROXY", raising=False)
+    monkeypatch.delenv("TEST_HTTPS_PROXY", raising=False)
+
+    package._apply_proxy()
+
+    assert calls == [None, "http://proxy.local:8080"]
+    assert package.os.environ["TEST_NO_PROXY"] == "localhost"
+    assert package.os.environ["TEST_HTTP_PROXY"] == "http://proxy.local:8080"
+    assert package.os.environ["TEST_HTTPS_PROXY"] == "http://proxy.local:8080"
+
+
 def test_generate_cache_path_env_vars_preserves_existing_values():
     cache_path = Path("C:/cache")
     origin_env = {"HF_HOME": "/custom/huggingface"}

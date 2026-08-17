@@ -21,6 +21,15 @@ logger = get_logger(
 )
 
 
+def generate_proxy_env_vars(proxy_address: str | None = None) -> dict[str, str]:
+    """生成代理相关环境变量"""
+    env = {"NO_PROXY": "localhost,127.0.0.1,::1"}
+    if proxy_address is not None:
+        env["HTTP_PROXY"] = proxy_address
+        env["HTTPS_PROXY"] = proxy_address
+    return env
+
+
 def generate_cache_path_env_vars(
     cache_path: Path,
     origin_env: Mapping[str, str] | None = None,

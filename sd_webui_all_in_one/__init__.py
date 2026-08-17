@@ -35,11 +35,11 @@ from sd_webui_all_in_one.config import (
     DEFAULT_GIT_CONFIG,
 )
 from sd_webui_all_in_one.proxy import (
-    set_proxy,
     get_system_proxy_address,
     test_proxy_connectivity,
 )
 from sd_webui_all_in_one.env_manager import (
+    generate_proxy_env_vars,
     generate_cache_path_env_vars,
     generate_config_file_env_vars,
 )
@@ -56,14 +56,14 @@ atexit.register(_temp_dir.cleanup)
 
 
 def _apply_proxy() -> None:
-    os.environ["NO_PROXY"] = "localhost,127.0.0.1,::1"
+    os.environ.update(generate_proxy_env_vars())
     if SD_WEBUI_ALL_IN_ONE_PROXY:
         proxy_address = get_system_proxy_address()
         if proxy_address is not None:
             _logger.debug("检测到系统代理: %s", proxy_address)
             if test_proxy_connectivity(proxy_address):
                 _logger.debug("代理连通性测试成功，配置系统代理: %s", proxy_address)
-                set_proxy(proxy_address)
+                os.environ.update(generate_proxy_env_vars(proxy_address))
             else:
                 _logger.debug("代理 %s 连通性测试失败，跳过代理配置", proxy_address)
 
