@@ -38,6 +38,7 @@
     主要类和函数:
     - Get-Aria2-Executable: 获取或下载Aria2可执行文件
     - Get-7za-Executable: 获取或下载7-Zip可执行文件
+    - Install-HanafubukiLauncherInstaller: 下载 Hanafubuki NSIS 安装包并自动启动安装程序
     - Invoke-DownloadTask: 执行单个下载任务
     - Start-ExtractionTask: 执行解压任务
     - Invoke-Refresh: 从云端刷新可用资源列表
@@ -453,6 +454,67 @@ function Start-ExtractionTask {
     }
 }
 
+function Install-HanafubukiLauncherInstaller {
+    param(
+        [Parameter(Mandatory = $true)][string]$DownloadDir
+    )
+
+    $manifest_urls = @(
+        "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/hanafubuki/latest.json",
+        "https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/hanafubuki/latest.json"
+    )
+
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+    if (-not (Test-Path $DownloadDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $DownloadDir -Force | Out-Null
+    }
+
+    foreach ($manifest_url in $manifest_urls) {
+        try {
+            Write-Host "[启动器] 正在获取 Hanafubuki 最新版本信息: $manifest_url" -ForegroundColor Cyan
+            $manifest_response = Invoke-WebRequest -UseBasicParsing -Uri $manifest_url -TimeoutSec 15 -ErrorAction Stop
+            $manifest = $manifest_response.Content | ConvertFrom-Json -ErrorAction Stop
+            if ([string]::IsNullOrWhiteSpace([string]$manifest.version)) {
+                throw "Hanafubuki 版本清单缺少 version"
+            }
+
+            $asset = $manifest.platforms.PSObject.Properties["windows-x86_64-nsis"]
+            if ($null -eq $asset -or $null -eq $asset.Value) {
+                throw "Hanafubuki $($manifest.version) 不支持当前平台/架构 (windows-x86_64-nsis)"
+            }
+            $download_url = [string]$asset.Value.url
+            [System.Uri]$parsed_download_url = $null
+            if ([string]::IsNullOrWhiteSpace($download_url) -or
+                !([System.Uri]::TryCreate($download_url, [System.UriKind]::Absolute, [ref]$parsed_download_url)) -or
+                ($parsed_download_url.Scheme -notin @("http", "https"))) {
+                throw "Hanafubuki 版本清单中的下载链接无效"
+            }
+
+            $file_name = "Hanafubuki-$($manifest.version)-windows-x86_64-setup.exe"
+            $installer_path = Join-Path $DownloadDir $file_name
+
+            Write-Host "[启动器] 正在下载 Hanafubuki $($manifest.version) NSIS 安装包..." -ForegroundColor Cyan
+            Invoke-WebRequest-Async -Uri $download_url -OutFile $installer_path
+            if (!(Test-Path -LiteralPath $installer_path -PathType Leaf) -or ((Get-Item -LiteralPath $installer_path).Length -le 0)) {
+                throw "下载的 Hanafubuki 安装包为空"
+            }
+
+            Write-Host "[启动器] Hanafubuki $($manifest.version) 安装包下载完成: $installer_path" -ForegroundColor Green
+            Show-Async-MsgBox -Message "Hanafubuki $($manifest.version) 安装包已下载完成：`n$installer_path`n`n即将启动安装程序。" -Title "下载完成"
+            Write-Host "[启动器] 正在启动 Hanafubuki NSIS 安装程序..." -ForegroundColor Cyan
+            Start-Process -FilePath $installer_path
+            return $true
+        }
+        catch {
+            Write-Host "[启动器] 通过 $manifest_url 获取 Hanafubuki 安装包失败: $($_.Exception.Message)" -ForegroundColor Red
+        }
+    }
+
+    Show-Async-MsgBox -Message "所有下载源均无法获取 Hanafubuki 安装包。`n`n报告问题与寻求帮助请前往: `nhttps://github.com/licyk/sd-webui-all-in-one/issues" -Title "下载失败" -Icon "Error"
+    return $false
+}
+
 function Find-Visual-Element {
     param([System.Windows.DependencyObject]$Parent, [string]$Name)
     if ($null -eq $Parent) { return $null }
@@ -622,7 +684,7 @@ function Resolve-PortableCompatibility {
 function Export-PortableDownloaderEventFunctions {
     $names = @(
         "Find-Visual-Element", "Format-Portable-UpdateTime", "Get-Aria2-Executable", "Get-7za-Executable",
-        "Get-PortableGpuCompatibility", "Get-PortablePackageGpuVendor", "Normalize-PortableGpuName",
+        "Get-PortableGpuCompatibility", "Get-PortablePackageGpuVendor", "Install-HanafubukiLauncherInstaller", "Normalize-PortableGpuName",
         "Invoke-DownloadAction", "Invoke-DownloadTask", "Invoke-Refresh", "Invoke-Update-Async", "Invoke-WebRequest-Async",
         "Open-Url", "Resolve-PortableCompatibility", "Set-Proxy", "Show-Async-MsgBox", "Show-Update-Popup", "Start-ExtractionTask",
         "Sync-PortableDataGrid", "Update-PortableDiskInfo", "Update-PortableQueueUi", "Update-PortableStatistics",
@@ -1794,7 +1856,17 @@ function Start-App {
     $UI.ProjBtn.Add_Click({ Open-Url -Url "https://github.com/licyk/sd-webui-all-in-one" })
     $UI.DocBtn.Add_Click({ Open-Url -Url "https://licyk.github.io/sd-webui-all-in-one/portable/portable" })
     $UI.TutorialBtn.Add_Click({ Open-Url -Url "https://sdnote.netlify.app" })
-    $UI.LauncherBtn.Add_Click({ Open-Url -Url "https://licyk.github.io/sd-webui-all-in-one/tools/launcher-gui" })
+    $UI.LauncherBtn.Add_Click({
+        $savePath = $UI.PathInput.Text
+        if (-not (Test-Path $savePath -PathType Container)) {
+            Write-Host "[UI] 拦截启动器下载请求：保存路径无效 [$savePath]" -ForegroundColor Red
+            Show-Async-MsgBox -Message "下载路径无效。" -Title "错误" -Icon "Error"
+            return
+        }
+        Write-Host "[UI] 用户点击启动器下载，目标路径: $savePath" -ForegroundColor Cyan
+        Show-Async-MsgBox -Message "正在下载 Hanafubuki 启动器安装包，下载完成后将自动启动安装程序，请稍候..." -Title "启动器下载"
+        Install-HanafubukiLauncherInstaller -DownloadDir $savePath
+    })
     $UI.IssueBtn.Add_Click({ Open-Url -Url "https://github.com/licyk/sd-webui-all-in-one/issues" })
 
     $UI.ToggleQueueBtn.Tag = $true
