@@ -1294,6 +1294,21 @@ function Invoke-Installation {
 }
 
 
+
+# 内联函数内容到模块脚本中
+function Get-InlinedFunctionContent {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true, Position = 0)]
+        [string[]]$FunctionName
+    )
+
+    $inlined_content = foreach ($function_name in $FunctionName) {
+        "function $function_name {`n$((Get-Command $function_name -CommandType Function).Definition)`n}"
+    }
+    return ($inlined_content -join "`n`n")
+}
+
 # 通用模块脚本
 function Write-ModulesScript {
     $content = "
@@ -1328,6 +1343,26 @@ param (
 `$script:UPDATE_TIME_SPAN = $script:UPDATE_TIME_SPAN
 # SD WebUI All In One 内核最低版本
 `$script:CORE_MINIMUM_VER = `"$script:CORE_MINIMUM_VER`"
+
+$(Get-InlinedFunctionContent -FunctionName @(
+    "Write-Log",
+    "Write-CoreCliFailureCommand",
+    "Format-CommandLineArgumentForLog",
+    "Format-CoreCliCommandForLog",
+    "Get-NativeCommandExitCode",
+    "Join-NormalizedPath",
+    "Get-TrimmedTextFile",
+    "Get-NormalizedFilePath",
+    "Get-CurrentPlatform",
+    "Get-CurrentArchitecture",
+    "Get-Version",
+    "Update-SDWebUiAllInOne",
+    "Set-AutoMirror",
+    "Write-FileWithStreamWriter",
+    "Resolve-CorePrefix",
+    "Set-uv",
+    "Set-PyPIMirror"
+))
 
 
 # 初始化环境变量
@@ -1374,262 +1409,11 @@ function Initialize-EnvPath {
 }
 
 
-# 日志输出
-function Write-Log {
-    [CmdletBinding()]
-    param(
-        [string]`$Message,
-        [ValidateSet(`"DEBUG`", `"INFO`", `"WARNING`", `"ERROR`", `"CRITICAL`")]
-        [string]`$Level = `"INFO`",
-        [string]`$Name = `"SD Trainer Script Installer`"
-    )
-    Write-Host `"[`" -NoNewline
-    Write-Host `$Name -ForegroundColor Blue -NoNewline
-    Write-Host `"]-|`" -NoNewline
-    Write-Host (Get-Date -Format `"HH:mm:ss`") -ForegroundColor Gray -NoNewline
-    Write-Host `"|-`" -NoNewline
-    switch (`$Level) {
-        `"DEBUG`"    { Write-Host `"DEBUG`" -ForegroundColor Cyan -NoNewline }
-        `"INFO`"     { Write-Host `"INFO`" -ForegroundColor Green -NoNewline }
-        `"WARNING`"  { Write-Host `"WARNING`" -ForegroundColor Yellow -NoNewline }
-        `"ERROR`"    { Write-Host `"ERROR`" -ForegroundColor Red -NoNewline }
-        `"CRITICAL`" { Write-Host `"CRITICAL`" -ForegroundColor White -BackgroundColor Red -NoNewline }
-    }
-    Write-Host `": `$Message`"
-}
-
-
-# 将文本写入文件
-function Write-FileWithStreamWriter {
-    [CmdletBinding()]
-    param (
-        [Parameter(Mandatory = `$true)][AllowEmptyString()][string]`$Value,
-        [Parameter(Mandatory = `$true)][string]`$Path,
-        [Parameter(Mandatory = `$false)][ValidateSet(`"GBK`", `"UTF8`", `"UTF8BOM`")][string]`$Encoding = `"UTF8`"
-    )
-    process {
-        try {
-            `$encode = `$null
-            switch (`$Encoding.ToLower()) {
-                `"GBK`" {
-                    if (`$PSVersionTable.PSVersion.Major -ge 6) {
-                        [System.Text.Encoding]::RegisterProvider([System.Text.CodePagesEncodingProvider]::Instance)
-                    }
-                    `$encode = [System.Text.Encoding]::GetEncoding(`"GBK`")
-                }
-                `"UTF8`" {
-                    `$encode = New-Object System.Text.UTF8Encoding(`$false)
-                }
-                `"UTF8BOM`" {
-                    `$encode = New-Object System.Text.UTF8Encoding(`$true)
-                }
-            }
-            `$absolute_path = Get-NormalizedFilePath `$Path
-            `$writer = New-Object System.IO.StreamWriter(`$absolute_path, `$false, `$encode)
-            try {
-                `$writer.Write(`$Value)
-            }
-            finally {
-                if (`$null -ne `$writer) {
-                    `$writer.Close()
-                    `$writer.Dispose()
-                }
-            }
-        }
-        catch {
-            Write-Log `"写入文件时发生错误: `$(`$_.Exception.Message)`" -Level ERROR
-        }
-    }
-}
-
-
-# 路径拼接并规范化
-function Join-NormalizedPath {
-    `$joined = `$args[0]
-    for (`$i = 1; `$i -lt `$args.Count; `$i++) { `$joined = Join-Path `$joined `$args[`$i] }
-    return `$ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath(`$joined).TrimEnd('\', '/')
-}
-
-
-function Get-TrimmedTextFile {
-    param (
-        [Parameter(Mandatory = `$true)][string]`$Path,
-        [string]`$Encoding
-    )
-    if (!(Test-Path `$Path)) {
-        return `$null
-    }
-    if ([string]::IsNullOrWhiteSpace(`$Encoding)) {
-        `$content = Get-Content -Path `$Path -Raw
-    } else {
-        `$content = Get-Content -Path `$Path -Raw -Encoding `$Encoding
-    }
-    if ([string]::IsNullOrWhiteSpace(`$content)) {
-        return `$null
-    }
-    return `$content.Trim()
-}
-
-
-function Resolve-CorePrefix {
-    param (
-        [Parameter(Mandatory = `$true)][string]`$BasePath,
-        [Parameter(Mandatory = `$true)][string[]]`$PrefixList,
-        [AllowNull()][string]`$ConfiguredPrefix
-    )
-    `$target_prefix = `$null
-    if (-not [string]::IsNullOrWhiteSpace(`$ConfiguredPrefix)) {
-        `$origin_core_prefix = `$ConfiguredPrefix.TrimEnd('\', '/')
-        if ([System.IO.Path]::IsPathRooted(`$origin_core_prefix)) {
-            `$from_uri = New-Object System.Uri(`$BasePath.Replace('\', '/') + '/')
-            `$to_uri = New-Object System.Uri(`$origin_core_prefix.Replace('\', '/'))
-            `$target_prefix = `$from_uri.MakeRelativeUri(`$to_uri).ToString().Trim('/')
-        } else {
-            `$target_prefix = `$origin_core_prefix
-        }
-    }
-    if ([string]::IsNullOrWhiteSpace(`$target_prefix)) {
-        foreach (`$i in `$PrefixList) {
-            `$found_dir = Get-ChildItem -Path `$BasePath -Directory -Filter `$i -ErrorAction SilentlyContinue | Select-Object -First 1
-            if (`$found_dir) {
-                `$target_prefix = `$found_dir.Name
-                break
-            }
-        }
-    }
-    if ([string]::IsNullOrWhiteSpace(`$target_prefix)) {
-        `$target_prefix = 'core'
-    }
-    return `$target_prefix
-}
-
-
-# 格式化命令行参数日志
-function Format-CommandLineArgumentForLog {
-    param ([AllowNull()][object]`$Argument)
-    if (`$null -eq `$Argument) {
-        return `"''`"
-    }
-    `$value = [string]`$Argument
-    if (`$value.Length -eq 0) {
-        return `"''`"
-    }
-    if (`$value -match '[\s''`"]') {
-        return ([string][char]39) + (`$value -replace ([string][char]39), ([string][char]39 + [string][char]39)) + ([string][char]39)
-    }
-    return `$value
-}
-
-
-# 格式化 SD WebUI All In One CLI 命令日志
-function Format-CoreCliCommandForLog {
-    param (
-        [Parameter(Mandatory = `$true)][object]`$CommandPrefix,
-        [object]`$Arguments
-    )
-    `$parts = New-Object System.Collections.ArrayList
-    foreach (`$item in `$CommandPrefix) {
-        `$parts.Add((Format-CommandLineArgumentForLog `$item)) | Out-Null
-    }
-    if (`$null -ne `$Arguments) {
-        foreach (`$item in `$Arguments) {
-            `$parts.Add((Format-CommandLineArgumentForLog `$item)) | Out-Null
-        }
-    }
-    return (`$parts -join ' ')
-}
-
-
-# 输出 SD WebUI All In One CLI 失败命令
-function Write-CoreCliFailureCommand {
-    param (
-        [Parameter(Mandatory = `$true)][object]`$CommandPrefix,
-        [object]`$Arguments,
-        [Parameter(Mandatory = `$true)][int]`$ExitCode
-    )
-    Write-Log `"SD WebUI All In One CLI 执行失败, 退出码: `$ExitCode`" -Level ERROR
-    `$command_line = Format-CoreCliCommandForLog -CommandPrefix `$CommandPrefix -Arguments `$Arguments
-    Write-Log `"失败命令: `$command_line`" -Level ERROR
-}
-
-
-# 获取原生命令退出码
-function Get-NativeCommandExitCode {
-    param ([bool]`$Success)
-    if (`$Success) {
-        return 0
-    }
-    if ((`$null -ne `$global:LASTEXITCODE) -and (`$global:LASTEXITCODE -ne 0)) {
-        return [int]`$global:LASTEXITCODE
-    }
-    return 1
-}
-
-
 # 按退出码退出管理脚本
 function Exit-ManagerScript {
     param ([int]`$ExitCode)
     if ((-not `$script:BuildMode) -and (-not `$script:NoPause)) { Read-Host | Out-Null }
     exit `$ExitCode
-}
-
-
-# 更新 SD WebUI All In One 内核
-function Update-SDWebUiAllInOne {
-    `$content = `"
-import re
-from importlib.metadata import version
-
-
-def compare_versions(version1: str, version2: str) -> int:
-    try:
-        nums1 = re.sub(r'[a-zA-Z]+', '', version1).replace('-', '.').replace('+', '.').split('.')
-        nums2 = re.sub(r'[a-zA-Z]+', '', version2).replace('-', '.').replace('+', '.').split('.')
-    except Exception:
-        return 0
-    for i in range(max(len(nums1), len(nums2))):
-        num1 = int(nums1[i]) if i < len(nums1) else 0
-        num2 = int(nums2[i]) if i < len(nums2) else 0
-        if num1 == num2:
-            continue
-        elif num1 > num2:
-            return 1
-        else:
-            return -1
-    return 0
-
-
-def is_core_need_update(core_minimum_ver: str) -> bool:
-    try:
-        core_ver = version('sd-webui-all-in-one')
-    except Exception:
-        return True
-    return compare_versions(core_ver, core_minimum_ver) < 0
-
-
-if __name__ == '__main__':
-    print(is_core_need_update('`$script:CORE_MINIMUM_VER'))
-`".Trim()
-
-    `$pip_index_url = `"https://pypi.python.org/simple`"
-    if ((!(`$script:DisablePyPIMirror)) -and (!(Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`")))) {
-        `$pip_index_url = `"https://mirrors.cloud.tencent.com/pypi/simple`"
-    }
-    Write-Log `"检测 SD WebUI All In One 内核是否需要更新`"
-    `$status = `$(python -c `"`$content`")
-    if (`$status -ne `"True`") {
-        Write-Log `"SD WebUI All In One 内核无需更新`"
-        return
-    }
-    Write-Log `"更新 SD WebUI All In One 内核中`"
-    & python -m pip install -U `"sd-webui-all-in-one>=`$script:CORE_MINIMUM_VER`" --index-url `$pip_index_url
-    if (!(`$?)) { & python -m pip install -U `"sd-webui-all-in-one>=`$script:CORE_MINIMUM_VER`" }
-    if (!(`$?)) {
-        Write-Log `"SD WebUI All In One 内核更新失败, Installer 部分功能将无法使用`" -Level ERROR
-        if ((-not `$script:BuildMode) -and (-not `$script:NoPause)) { Read-Host | Out-Null }
-        exit 1
-    }
-    Write-Log `"SD WebUI All In One 内核更新成功`"
 }
 
 
@@ -1726,23 +1510,6 @@ function Update-Installer {
     catch { exit 1 }
 }
 
-
-
-# 获取当前平台
-function Get-CurrentPlatform {
-    if ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Windows)) {
-        return `"windows`"
-    }
-    elseif ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::Linux)) {
-        return `"linux`"
-    }
-    elseif ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::OSX)) {
-        return `"macos`"
-    }
-    else {
-        return `"unknown`"
-    }
-}
 
 
 # 检测 Windows 长路径支持是否启用
@@ -1931,55 +1698,6 @@ function Invoke-WindowsLongPathsStartupCheck {
 }
 
 
-# 获取当前架构
-function Get-CurrentArchitecture {
-    if (`$PSVersionTable.PSVersion.Major -ge 6) {
-        `$arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower()
-    }
-    else {
-        if ([Environment]::Is64BitOperatingSystem) {
-            if (`$env:PROCESSOR_ARCHITEW6432) {
-                `$arch = `$env:PROCESSOR_ARCHITEW6432.ToLower()
-            }
-            else {
-                `$arch = `$env:PROCESSOR_ARCHITECTURE.ToLower()
-            }
-        }
-        else {
-            `$arch = `"x86`"
-        }
-    }
-    switch (`$arch) {
-        `"amd64`"  { return `"amd64`" }
-        `"x64`"    { return `"amd64`" }
-        `"arm64`"  { return `"aarch64`" }
-        `"x86_64`" { return `"amd64`" }
-        `"x86`"    { return `"x86`" }
-        `"i386`"   { return `"x86`" }
-        `"i686`"   { return `"x86`" }
-        default  { return `$arch }
-    }
-}
-
-# 获取规范化路径
-function Get-NormalizedFilePath {
-    [CmdletBinding()]
-    param ([Parameter(Mandatory = `$false)][string]`$Filepath)
-    if (-not [string]::IsNullOrWhiteSpace(`$Filepath)) { return Join-NormalizedPath `$Filepath }
-    return `$null
-}
-
-
-# 显示版本信息
-function Get-Version {
-    `$ver = `$([string]`$script:SD_TRAINER_SCRIPT_INSTALLER_VERSION).ToCharArray()
-    `$major = (`$ver[0..(`$ver.Length - 3)])
-    `$minor = `$ver[-2]
-    `$micro = `$ver[-1]
-    Write-Log `"SD Trainer Script Installer 版本: v`${major}.`${minor}.`${micro}`"
-}
-
-
 # 获取帮助信息
 function Get-HelpMessage {
     if (!(`$script:Help)) { return }
@@ -2094,44 +1812,6 @@ function Set-Proxy {
 }
 
 
-# 设置 CLI 自动选择下载镜像源状态
-function Set-AutoMirror {
-    [CmdletBinding()]
-    param ([System.Collections.ArrayList]`$ArrayList)
-
-    if ((`$script:DisableAutoMirror) -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_auto_mirror.txt`"))) {
-        if (-not `$ArrayList.Contains(`"--no-auto-mirror`")) {
-            `$ArrayList.Add(`"--no-auto-mirror`") | Out-Null
-        }
-        if (-not `$script:AutoMirrorStatusLogged) {
-            Write-Log `"检测到 disable_auto_mirror.txt 配置文件 / -DisableAutoMirror 命令行参数, 已禁用 CLI 自动选择下载镜像源, 将遵守手动镜像源设置`"
-            `$script:AutoMirrorStatusLogged = `$true
-        }
-        return `$true
-    }
-
-    if (-not `$script:AutoMirrorStatusLogged) {
-        Write-Log `"CLI 自动选择下载镜像源已启用, 将由 Python CLI 根据网络检测结果强制覆盖镜像源相关参数`"
-        `$script:AutoMirrorStatusLogged = `$true
-    }
-    return `$false
-}
-
-
-# 配置 PyPI 软件包镜像源
-function Set-PyPIMirror {
-    [CmdletBinding()]
-    param ([System.Collections.ArrayList]`$ArrayList)
-    if (!(Set-AutoMirror `$ArrayList)) { return }
-    if (`$script:DisablePyPIMirror -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_pypi_mirror.txt`"))) {
-        Write-Log `"检测到 disable_pypi_mirror.txt 配置文件 / -DisablePyPIMirror 命令行参数, 已将 PyPI 源切换至官方源`"
-        `$ArrayList.Add(`"--no-pypi-mirror`") | Out-Null
-        return
-    }
-    Write-Log `"使用 PyPI 软件包镜像源`"
-}
-
-
 # 设置模型下载来源
 function Set-ModelMirror {
     [CmdletBinding()]
@@ -2199,20 +1879,6 @@ function Set-GithubMirror {
             `$ArrayList.Add(`"--custom-github-mirror`") | Out-Null
             `$ArrayList.Add(`$github_mirror) | Out-Null
         }
-    }
-}
-
-
-# 设置 uv 的使用状态
-function Set-uv {
-    [CmdletBinding()]
-    param ([System.Collections.ArrayList]`$ArrayList)
-    if (`$script:DisableUV -or (Test-Path (Join-NormalizedPath `$PSScriptRoot `"disable_uv.txt`"))) {
-        Write-Log `"检测到 disable_uv.txt 配置文件 / -DisableUV 命令行参数, 已禁用 uv, 使用 Pip 作为 Python 包管理器`"
-        `$ArrayList.Add(`"--no-uv`") | Out-Null
-    } else {
-        Write-Log `"默认启用 uv 作为 Python 包管理器, 加快 Python 软件包的安装速度`"
-        Write-Log `"当 uv 安装 Python 软件包失败时, 将自动切换成 Pip 重试 Python 软件包的安装`"
     }
 }
 
