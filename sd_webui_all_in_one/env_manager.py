@@ -22,7 +22,16 @@ logger = get_logger(
 
 
 def generate_proxy_env_vars(proxy_address: str | None = None) -> dict[str, str]:
-    """生成代理相关环境变量"""
+    """生成代理相关环境变量
+
+    Args:
+        proxy_address (str | None):
+            代理服务器地址, 为 None 时不配置代理
+
+    Returns:
+        (dict[str, str]):
+            代理相关环境变量字典
+    """
     env = {"NO_PROXY": "localhost,127.0.0.1,::1"}
     if proxy_address is not None:
         env["HTTP_PROXY"] = proxy_address
@@ -34,7 +43,18 @@ def generate_cache_path_env_vars(
     cache_path: Path,
     origin_env: Mapping[str, str] | None = None,
 ) -> dict[str, str]:
-    """生成缓存路径相关环境变量"""
+    """生成缓存路径相关环境变量
+
+    Args:
+        cache_path (Path):
+            缓存根目录路径
+        origin_env (Mapping[str, str] | None):
+            原始环境变量字典, 为 None 时使用当前进程环境变量
+
+    Returns:
+        (dict[str, str]):
+            已配置缓存路径的环境变量字典
+    """
     env = os.environ if origin_env is None else origin_env
     defaults = {
         "CACHE_HOME": cache_path.as_posix(),
@@ -56,7 +76,16 @@ def generate_cache_path_env_vars(
 
 
 def generate_config_file_env_vars(config_dir: Path) -> dict[str, str]:
-    """生成 Pip、uv 和 Git 配置文件相关环境变量"""
+    """生成 Pip、uv 和 Git 配置文件相关环境变量
+
+    Args:
+        config_dir (Path):
+            配置文件所在目录
+
+    Returns:
+        (dict[str, str]):
+            配置文件相关环境变量字典
+    """
     return {
         "PIP_CONFIG_FILE": (config_dir / "pip.ini").as_posix(),
         "UV_CONFIG_FILE": (config_dir / "uv.toml").as_posix(),
