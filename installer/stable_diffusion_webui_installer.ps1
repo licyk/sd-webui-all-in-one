@@ -142,6 +142,10 @@ Stable Diffusion WebUI 分支编号可运行 switch_branch.ps1 脚本进行查�
 "@)][switch]$InstallHanamizuki,
 
     [Parameter(HelpMessage=@"
+安装 Hanafubuki 启动器, 并自动配置启动器所需的 Python / Git 环境
+"@)][switch]$InstallHanafubuki,
+
+    [Parameter(HelpMessage=@"
 安装结束后保留下载 Python 软件包缓存
 "@)][switch]$NoCleanCache,
 
@@ -908,6 +912,309 @@ function Get-NormalizedFilePath {
     return $null
 }
 
+function Convert-WebResponseContentToText {
+    [CmdletBinding()]
+    param ([Parameter(Mandatory = $true)]$Content)
+
+    if ($Content -is [byte[]]) {
+        return [System.Text.Encoding]::UTF8.GetString($Content)
+    }
+    return [string]$Content
+}
+
+function Get-HanafubukiPlatformPackage {
+    [CmdletBinding()]
+    param ([Parameter(Mandatory = $true)][string]$InstallRoot)
+
+    $platform = Get-CurrentPlatform
+    $architecture = Get-CurrentArchitecture
+    $manifest_architecture = switch ($architecture) {
+        "amd64" { "x86_64" }
+        "aarch64" { "aarch64" }
+        default { $architecture }
+    }
+
+    switch ($platform) {
+        "windows" {
+            $entry_name = "hanafubuki-launcher.exe"
+            $archive_type = "zip"
+        }
+        "linux" {
+            $entry_name = "hanafubuki-launcher"
+            $archive_type = "tar.gz"
+        }
+        "macos" {
+            $entry_name = "Hanafubuki Launcher.app"
+            $archive_type = "tar.gz"
+        }
+        default {
+            throw "Hanafubuki 不支持当前平台: $platform"
+        }
+    }
+
+    if ($manifest_architecture -notin @("x86_64", "aarch64")) {
+        throw "Hanafubuki 不支持当前架构: $architecture"
+    }
+    if (($platform -eq "windows") -and ($manifest_architecture -ne "x86_64")) {
+        throw "Hanafubuki 暂不支持 Windows $architecture"
+    }
+
+    return [PSCustomObject]@{
+        Platform = $platform
+        Architecture = $manifest_architecture
+        ArchiveType = $archive_type
+        EntryName = $entry_name
+        DestinationPath = Join-NormalizedPath $InstallRoot $entry_name
+    }
+}
+
+function Expand-HanafubukiPackageArchive {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)][string]$ArchivePath,
+        [Parameter(Mandatory = $true)][string]$DestinationPath,
+        [Parameter(Mandatory = $true)][ValidateSet("zip", "tar.gz")][string]$ArchiveType
+    )
+
+    New-Item -ItemType Directory -Path $DestinationPath -Force | Out-Null
+    if ($ArchiveType -eq "zip") {
+        Expand-Archive -LiteralPath $ArchivePath -DestinationPath $DestinationPath -Force
+        return
+    }
+
+    $tar_command = Get-Command tar -ErrorAction SilentlyContinue
+    if (-not $tar_command) {
+        throw "未找到 tar 命令, 无法解压 Hanafubuki 安装包"
+    }
+    $tar_output = & $tar_command.Source "-xzf" $ArchivePath "-C" $DestinationPath 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "解压 Hanafubuki 安装包失败: $($tar_output -join [Environment]::NewLine)"
+    }
+}
+
+function Test-HanafubukiInstallation {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][ValidateSet("windows", "linux", "macos")][string]$Platform
+    )
+
+    if ($Platform -eq "macos") {
+        if (!(Test-Path -LiteralPath $Path -PathType Container)) {
+            return $false
+        }
+        $macos_path = Join-NormalizedPath $Path "Contents" "MacOS"
+        $executables = @(Get-ChildItem -LiteralPath $macos_path -File -ErrorAction SilentlyContinue)
+        return ($executables.Count -gt 0) -and (($executables | Where-Object Length -gt 0).Count -eq $executables.Count)
+    }
+
+    if (!(Test-Path -LiteralPath $Path -PathType Leaf)) {
+        return $false
+    }
+    return (Get-Item -LiteralPath $Path).Length -gt 0
+}
+
+function Install-HanafubukiPackage {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)][string]$InstallRoot,
+        [Parameter(Mandatory = $true)][string]$CachePath
+    )
+
+    $manifest_urls = @(
+        "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/hanafubuki-launcher/latest.json",
+        "https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/hanafubuki-launcher/latest.json"
+    )
+
+    try {
+        $package = Get-HanafubukiPlatformPackage -InstallRoot $InstallRoot
+    }
+    catch {
+        Write-Log $_.Exception.Message -Level ERROR
+        return $false
+    }
+
+    if (Test-HanafubukiInstallation -Path $package.DestinationPath -Platform $package.Platform) {
+        Write-Log "Hanafubuki 启动器已安装, 路径: $([System.IO.Path]::GetFullPath($package.DestinationPath))"
+        return $true
+    }
+
+    New-Item -ItemType Directory -Path $InstallRoot -Force | Out-Null
+    New-Item -ItemType Directory -Path $CachePath -Force | Out-Null
+
+    foreach ($manifest_url in $manifest_urls) {
+        $random_string = [Guid]::NewGuid().ToString("N")
+        $archive_path = Join-NormalizedPath $CachePath "hanafubuki_$random_string.$($package.ArchiveType)"
+        $staging_path = Join-NormalizedPath $CachePath "hanafubuki_$($random_string)_tmp"
+        $backup_path = Join-NormalizedPath $CachePath "hanafubuki_$($random_string)_backup"
+        $backup_created = $false
+        $install_succeeded = $false
+
+        try {
+            Write-Log "从 $manifest_url 获取 Hanafubuki 最新版本信息"
+            $manifest_request_params = @{
+                Uri = $manifest_url
+                UseBasicParsing = $true
+                TimeoutSec = 15
+                ErrorAction = "Stop"
+            }
+            $manifest_response = Invoke-WebRequest @manifest_request_params
+            $manifest_content = Convert-WebResponseContentToText -Content $manifest_response.Content
+            $manifest = $manifest_content | ConvertFrom-Json -ErrorAction Stop
+            if ([string]::IsNullOrWhiteSpace([string]$manifest.version)) {
+                throw "Hanafubuki 版本清单缺少 version"
+            }
+
+            $platform_property = $manifest.platforms.PSObject.Properties[$package.Platform]
+            if (-not $platform_property) {
+                throw "Hanafubuki $($manifest.version) 不支持平台 $($package.Platform)"
+            }
+            $asset_property = $platform_property.Value.PSObject.Properties[$package.Architecture]
+            if (-not $asset_property) {
+                throw "Hanafubuki $($manifest.version) 不支持架构 $($package.Architecture)"
+            }
+            $download_url = [string]$asset_property.Value.url
+            [System.Uri]$parsed_download_url = $null
+            if ([string]::IsNullOrWhiteSpace($download_url) -or
+                !([System.Uri]::TryCreate($download_url, [System.UriKind]::Absolute, [ref]$parsed_download_url)) -or
+                ($parsed_download_url.Scheme -notin @("http", "https"))) {
+                throw "Hanafubuki 版本清单中的下载链接无效"
+            }
+
+            Write-Log "下载 Hanafubuki $($manifest.version) ($($package.Platform)/$($package.Architecture))"
+            $download_request_params = @{
+                Uri = $download_url
+                UseBasicParsing = $true
+                OutFile = $archive_path
+                TimeoutSec = 120
+                ErrorAction = "Stop"
+            }
+            Invoke-WebRequest @download_request_params
+            if (!(Test-Path -LiteralPath $archive_path -PathType Leaf) -or ((Get-Item -LiteralPath $archive_path).Length -le 0)) {
+                throw "下载的 Hanafubuki 安装包为空"
+            }
+
+            Expand-HanafubukiPackageArchive -ArchivePath $archive_path -DestinationPath $staging_path -ArchiveType $package.ArchiveType
+            $staged_entry = Join-NormalizedPath $staging_path $package.EntryName
+            if (!(Test-HanafubukiInstallation -Path $staged_entry -Platform $package.Platform)) {
+                throw "Hanafubuki 安装包结构不符合预期, 缺少 $($package.EntryName)"
+            }
+
+            if (Test-Path -LiteralPath $package.DestinationPath) {
+                Move-Item -LiteralPath $package.DestinationPath -Destination $backup_path -Force
+                $backup_created = $true
+            }
+
+            try {
+                Move-Item -LiteralPath $staged_entry -Destination $package.DestinationPath -Force
+                if ($package.Platform -eq "linux") {
+                    & chmod "+x" $package.DestinationPath
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "无法为 Hanafubuki 启动器设置可执行权限"
+                    }
+                }
+                elseif ($package.Platform -eq "macos") {
+                    $macos_path = Join-NormalizedPath $package.DestinationPath "Contents" "MacOS"
+                    foreach ($executable in @(Get-ChildItem -LiteralPath $macos_path -File -ErrorAction Stop)) {
+                        & chmod "+x" $executable.FullName
+                        if ($LASTEXITCODE -ne 0) {
+                            throw "无法为 Hanafubuki 启动器设置可执行权限"
+                        }
+                    }
+                }
+
+                if (!(Test-HanafubukiInstallation -Path $package.DestinationPath -Platform $package.Platform)) {
+                    throw "Hanafubuki 安装结果验证失败"
+                }
+                $install_succeeded = $true
+            }
+            catch {
+                if (Test-Path -LiteralPath $package.DestinationPath) {
+                    Remove-Item -LiteralPath $package.DestinationPath -Force -Recurse -ErrorAction SilentlyContinue
+                }
+                if ($backup_created -and (Test-Path -LiteralPath $backup_path)) {
+                    Move-Item -LiteralPath $backup_path -Destination $package.DestinationPath -Force
+                    $backup_created = $false
+                }
+                throw
+            }
+
+            if ($backup_created -and (Test-Path -LiteralPath $backup_path)) {
+                Remove-Item -LiteralPath $backup_path -Force -Recurse
+                $backup_created = $false
+            }
+            Write-Log "Hanafubuki $($manifest.version) 安装成功, 路径: $([System.IO.Path]::GetFullPath($package.DestinationPath))"
+            return $true
+        }
+        catch {
+            Write-Log "通过 $manifest_url 安装 Hanafubuki 失败: $($_.Exception.Message)" -Level WARNING
+        }
+        finally {
+            Remove-Item -LiteralPath $archive_path -Force -ErrorAction SilentlyContinue
+            Remove-Item -LiteralPath $staging_path -Force -Recurse -ErrorAction SilentlyContinue
+            if ($install_succeeded -and (Test-Path -LiteralPath $backup_path)) {
+                Remove-Item -LiteralPath $backup_path -Force -Recurse -ErrorAction SilentlyContinue
+            }
+        }
+    }
+
+    Write-Log "所有下载源均无法安装 Hanafubuki 启动器" -Level ERROR
+    return $false
+}
+
+function Move-PortableLauncherRuntime {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)][string]$InstallRoot,
+        [Parameter(Mandatory = $true)][string]$CorePrefix,
+        [Parameter(Mandatory = $true)][string]$LauncherName
+    )
+
+    $core_path = Join-NormalizedPath $InstallRoot $CorePrefix
+    if (!(Test-Path -LiteralPath $core_path -PathType Container)) {
+        Write-Log "内核路径 $core_path 未找到, 无法为 $LauncherName 配置 Python / Git 环境" -Level ERROR
+        return $false
+    }
+
+    Write-Log "检查 $LauncherName 运行环境"
+    $runtime_ready = $true
+    $runtime_names = @("python", "git")
+    foreach ($runtime_name in $runtime_names) {
+        $display_name = if ($runtime_name -eq "python") { "Python" } else { "Git" }
+        $source_path = Join-NormalizedPath $InstallRoot $runtime_name
+        $destination_path = Join-NormalizedPath $core_path $runtime_name
+
+        if (Test-Path -LiteralPath $destination_path -PathType Container) {
+            if (Test-Path -LiteralPath $source_path -PathType Container) {
+                Write-Log "$display_name 的根目录和内核目录副本同时存在, 为避免覆盖已跳过移动: $source_path" -Level WARNING
+            }
+            continue
+        }
+
+        if (!(Test-Path -LiteralPath $source_path -PathType Container)) {
+            if (($runtime_name -eq "python") -or ((Get-CurrentPlatform) -eq "windows")) {
+                Write-Log "环境缺少 $display_name, 无法为 $LauncherName 准备 $display_name 环境, 请重新运行 Stable Diffusion WebUI Installer 修复环境" -Level WARNING
+                $runtime_ready = $false
+            }
+            continue
+        }
+
+        try {
+            Write-Log "尝试将 $display_name 移动至 $core_path 中"
+            Move-Item -LiteralPath $source_path -Destination $core_path -Force -ErrorAction Stop
+            Write-Log "$display_name 路径移动成功"
+        }
+        catch {
+            Write-Log "$display_name 路径移动失败, 这将导致 $LauncherName 无法正确识别到 $display_name 环境: $($_.Exception.Message)" -Level ERROR
+            Write-Log "请关闭所有占用 $display_name 的进程, 并重新运行安装命令"
+            $runtime_ready = $false
+        }
+    }
+
+    Write-Log "检查 $LauncherName 运行环境结束"
+    return $runtime_ready
+}
+
 function Stop-SnapshotRestore {
     [CmdletBinding()]
     param ([Parameter(Mandatory = $true)][string]$Message)
@@ -1404,6 +1711,18 @@ function Invoke-Installation {
 
 # 通用模块脚本
 function Write-ModulesScript {
+    $hanafubuki_helper_content = @(
+        "Convert-WebResponseContentToText",
+        "Get-HanafubukiPlatformPackage",
+        "Expand-HanafubukiPackageArchive",
+        "Test-HanafubukiInstallation",
+        "Install-HanafubukiPackage",
+        "Move-PortableLauncherRuntime"
+    ) | ForEach-Object {
+        "function $_ {`n$((Get-Command $_ -CommandType Function).Definition)`n}"
+    }
+    $hanafubuki_helper_content = $hanafubuki_helper_content -join "`n`n"
+
     $content = "
 param (
     [string]`$OriginalScriptPath,
@@ -1438,6 +1757,8 @@ param (
 `$script:UPDATE_TIME_SPAN = $script:UPDATE_TIME_SPAN
 # SD WebUI All In One 内核最低版本
 `$script:CORE_MINIMUM_VER = `"$script:CORE_MINIMUM_VER`"
+
+$hanafubuki_helper_content
 
 
 # 初始化环境变量
@@ -2813,6 +3134,8 @@ Export-ModuleMember -Function ``
     Get-CurrentArchitecture, ``
     New-AppShortcut, ``
     Test-PythonAndGit, ``
+    Install-HanafubukiPackage, ``
+    Move-PortableLauncherRuntime, ``
     Get-NativeCommandExitCode, ``
     Exit-ManagerScript, ``
     Get-TrimmedTextFile
@@ -5064,7 +5387,7 @@ try {
         UseCustomHuggingFaceMirror = `$script:UseCustomHuggingFaceMirror
         NoPause = `$script:NoPause
     }
-    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-CurrentPlatform`", `"Get-NormalizedFilePath`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
+    (Import-Module (Join-Path `$PSScriptRoot `"modules.psm1`") -Function `"Join-NormalizedPath`", `"Get-TrimmedTextFile`", `"Resolve-CorePrefix`", `"Initialize-EnvPath`", `"Write-Log`", `"Format-CommandLineArgumentForLog`", `"Format-CoreCliCommandForLog`", `"Write-CoreCliFailureCommand`", `"Set-CorePrefix`", `"Get-Version`", `"Set-Proxy`", `"Get-CurrentPlatform`", `"Get-CurrentArchitecture`", `"Get-NormalizedFilePath`", `"Get-HelpMessage`", `"Test-PythonAndGit`", `"Install-HanafubukiPackage`", `"Move-PortableLauncherRuntime`", `"Get-NativeCommandExitCode`", `"Exit-ManagerScript`" -PassThru -Force -ErrorAction Stop).Invoke({
         param (`$cfg)
         `$script:OriginalScriptPath = `$cfg.OriginalScriptPath
         `$script:LaunchCommandLine = `$cfg.LaunchCommandLine
@@ -5281,38 +5604,22 @@ if exist .\hanamizuki.exe (
 
     Set-Content -Encoding Default -Path (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `"hanamizuki.bat`") -Value `$content
 
-    Write-Log `"检查绘世启动器运行环境`"
-    if (!(Test-Path (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX `"python`" `"python.exe`"))) {
-        if (Test-Path (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `"python`")) {
-            Write-Log `"尝试将 Python 移动至 `$(Join-NormalizedPath env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX) 中`"
-            Move-Item -Path (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `"python`") (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX) -Force
-            if (`$?) {
-                Write-Log `"Python 路径移动成功`"
-            } else {
-                Write-Log `"Python 路径移动失败, 这将导致绘世启动器无法正确识别到 Python 环境`" -Level ERROR
-                Write-Log `"请关闭所有占用 Python 的进程, 并重新运行该命令`"
-            }
-        } else {
-            Write-Log `"环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 SD WebUI Installer 修复环境`" -Level ERROR
-        }
+    Move-PortableLauncherRuntime -InstallRoot `$env:SD_WEBUI_INSTALLER_ROOT -CorePrefix `$env:CORE_PREFIX -LauncherName `"绘世启动器`" | Out-Null
+}
+
+
+# 安装 Hanafubuki 启动器
+function global:Install-Hanafubuki {
+    `$core_path = Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX
+    if (!(Test-Path -LiteralPath `$core_path -PathType Container)) {
+        Write-Log `"内核路径 `$core_path 未找到, 无法安装 Hanafubuki 启动器, 请检查 Stable Diffusion WebUI 是否已正确安装, 或者尝试运行 SD WebUI Installer 进行修复`" -Level ERROR
+        return
     }
 
-    if (!(Test-Path (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX `"git`" `"bin`" `"git.exe`"))) {
-        if (Test-Path (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `"git`")) {
-            Write-Log `"尝试将 Git 移动至 `$(Join-NormalizedPath env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX) 中`"
-            Move-Item -Path (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `"git`") (Join-NormalizedPath `$env:SD_WEBUI_INSTALLER_ROOT `$env:CORE_PREFIX) -Force
-            if (`$?) {
-                Write-Log `"Git 路径移动成功`"
-            } else {
-                Write-Log `"Git 路径移动失败, 这将导致绘世启动器无法正确识别到 Git 环境`" -Level ERROR
-                Write-Log `"请关闭所有占用 Git 的进程, 并重新运行该命令`"
-            }
-        } else {
-            Write-Log `"环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 SD WebUI Installer 修复环境`" -Level ERROR
-        }
+    `$installed = Install-HanafubukiPackage -InstallRoot `$env:SD_WEBUI_INSTALLER_ROOT -CachePath `$env:CACHE_HOME
+    if (`$installed) {
+        Move-PortableLauncherRuntime -InstallRoot `$env:SD_WEBUI_INSTALLER_ROOT -CorePrefix `$env:CORE_PREFIX -LauncherName `"Hanafubuki 启动器`" | Out-Null
     }
-
-    Write-Log `"检查绘世启动器运行环境结束`"
 }
 
 
@@ -5340,6 +5647,7 @@ Github：https://github.com/licyk
 当前可用的 SD WebUI Installer 内置命令：
 
     Install-Hanamizuki
+    Install-Hanafubuki
     List-CMD
 
 更多帮助信息可在 SD WebUI Installer 文档中查看: https://licyk.github.io/sd-webui-all-in-one/installer/sd-webui/
@@ -5822,6 +6130,27 @@ function Install-Hanamizuki {
 }
 
 
+# 安装 Hanafubuki 启动器
+function Install-Hanafubuki {
+    if (!($InstallHanafubuki)) {
+        return $true
+    }
+
+    $core_path = Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX
+    if (!(Test-Path -LiteralPath $core_path -PathType Container)) {
+        Write-Log "内核路径 $core_path 未找到, 无法安装 Hanafubuki 启动器" -Level ERROR
+        return $false
+    }
+
+    $installed = Install-HanafubukiPackage -InstallRoot $script:InstallPath -CachePath $env:CACHE_HOME
+    if (-not $installed) {
+        return $false
+    }
+
+    return Move-PortableLauncherRuntime -InstallRoot $script:InstallPath -CorePrefix $env:CORE_PREFIX -LauncherName "Hanafubuki 启动器"
+}
+
+
 # 配置绘世启动器运行环境
 function Initialize-HanamizukiEnv {
     if (!(Test-Path (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "hanamizuki.exe"))) {
@@ -5830,38 +6159,24 @@ function Initialize-HanamizukiEnv {
 
     Write-HanamizukiScript -Force
 
-    Write-Log "检查绘世启动器运行环境"
-    if (!(Test-Path (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "python" "python.exe"))) {
-        if (Test-Path (Join-NormalizedPath $script:InstallPath "python")) {
-            Write-Log "尝试将 Python 移动至 $(Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX) 中"
-            Move-Item -Path (Join-NormalizedPath $script:InstallPath "python") (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX) -Force
-            if ($?) {
-                Write-Log "Python 路径移动成功"
-            } else {
-                Write-Log "Python 路径移动失败, 这将导致绘世启动器无法正确识别到 Python 环境"
-                Write-Log "请关闭所有占用 Python 的进程, 并重新运行该命令"
-            }
-        } else {
-            Write-Log "环境缺少 Python, 无法为绘世启动器准备 Python 环境, 请重新运行 SD WebUI Installer 修复环境"
-        }
+    Move-PortableLauncherRuntime -InstallRoot $script:InstallPath -CorePrefix $env:CORE_PREFIX -LauncherName "绘世启动器" | Out-Null
+}
+
+
+# 配置 Hanafubuki 启动器运行环境
+function Initialize-HanafubukiEnv {
+    try {
+        $package = Get-HanafubukiPlatformPackage -InstallRoot $script:InstallPath
+    }
+    catch {
+        return
     }
 
-    if (!(Test-Path (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX "git" "bin" "git.exe"))) {
-        if (Test-Path (Join-NormalizedPath $script:InstallPath "git")) {
-            Write-Log "尝试将 Git 移动至 $(Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX) 中"
-            Move-Item -Path (Join-NormalizedPath $script:InstallPath "git") (Join-NormalizedPath $script:InstallPath $env:CORE_PREFIX) -Force
-            if ($?) {
-                Write-Log "Git 路径移动成功"
-            } else {
-                Write-Log "Git 路径移动失败, 这将导致绘世启动器无法正确识别到 Git 环境"
-                Write-Log "请关闭所有占用 Git 的进程, 并重新运行该命令"
-            }
-        } else {
-            Write-Log "环境缺少 Git, 无法为绘世启动器准备 Git 环境, 请重新运行 SD WebUI Installer 修复环境"
-        }
+    if (!(Test-HanafubukiInstallation -Path $package.DestinationPath -Platform $package.Platform)) {
+        return
     }
 
-    Write-Log "检查绘世启动器运行环境结束"
+    Move-PortableLauncherRuntime -InstallRoot $script:InstallPath -CorePrefix $env:CORE_PREFIX -LauncherName "Hanafubuki 启动器" | Out-Null
 }
 
 
@@ -5879,11 +6194,19 @@ function Use-InstallMode {
     if ($script:BuildMode) {
         Use-BuildMode
         Install-Hanamizuki
+        $hanafubuki_install_succeeded = Install-Hanafubuki
+        if ($InstallHanafubuki -and (-not $hanafubuki_install_succeeded)) {
+            Write-Log "构建模式要求安装 Hanafubuki 启动器, 但安装未成功" -Level ERROR
+            exit 1
+        }
         Initialize-HanamizukiEnv
+        Initialize-HanafubukiEnv
         Write-Log "Stable Diffusion WebUI 环境构建完成, 路径: $script:InstallPath"
     } else {
         Install-Hanamizuki
+        Install-Hanafubuki | Out-Null
         Initialize-HanamizukiEnv
+        Initialize-HanafubukiEnv
         Write-Log "Stable Diffusion WebUI 安装结束, 安装路径为: $script:InstallPath"
     }
 
