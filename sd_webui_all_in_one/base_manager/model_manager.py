@@ -9,6 +9,14 @@ from typing import Literal, TypeAlias
 
 from sd_webui_all_in_one.downloader import DownloadToolType, download_file
 from sd_webui_all_in_one.file_manager import copy_files, copy_files_merge, move_files, move_files_merge, remove_files
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
+from sd_webui_all_in_one.logger import get_logger
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 
 WebUiModelType: TypeAlias = Literal[
@@ -83,6 +91,7 @@ def _path_size(path: Path) -> int:
         try:
             return path.stat().st_size
         except OSError:
+            logger.debug("读取文件大小失败, 视为 0 字节: %s", path)
             return 0
     return 0
 
@@ -94,6 +103,7 @@ class FileModelManager:
         if webui_type not in FILE_MODEL_ROOT_DIRS:
             raise ValueError(f"不支持按文件夹管理模型的 WebUI 类型: {webui_type}")
         self.webui_type = webui_type
+        logger.debug("初始化 FileModelManager, webui_type=%s", webui_type)
 
     def root(self, webui_path: Path) -> ModelRoot:
         """返回模型根目录信息。
@@ -105,10 +115,12 @@ class FileModelManager:
             ModelRoot: WebUI 类型、根目录和模型目录。
         """
         path = Path(webui_path)
+        root_path = path / FILE_MODEL_ROOT_DIRS[self.webui_type]
+        logger.debug("计算模型根目录: %s, 根目录=%s", self.webui_type, root_path)
         return ModelRoot(
             webui_type=self.webui_type,
             webui_path=path,
-            root_path=path / FILE_MODEL_ROOT_DIRS[self.webui_type],
+            root_path=root_path,
         )
 
     def root_path(self, webui_path: Path) -> Path:
@@ -134,6 +146,7 @@ class FileModelManager:
         """
         root = self.root_path(webui_path)
         root.mkdir(parents=True, exist_ok=True)
+        logger.debug("确保模型根目录存在: %s", root)
         return root
 
     def resolve_path(
@@ -167,7 +180,9 @@ class FileModelManager:
         root = root_path.resolve()
         resolved = candidate.resolve()
         if resolved != root and not resolved.is_relative_to(root):
+            logger.warning("路径越界, 拒绝访问: %s", candidate)
             raise ValueError(f"路径不在模型目录内: {candidate}")
+        logger.debug("解析路径: %s -> %s", candidate, resolved)
         return resolved
 
     def relative_to_root(
@@ -213,6 +228,7 @@ class FileModelManager:
         """
         clean_name = name.strip()
         if not _is_path_name(clean_name):
+            logger.warning("名称无效: %s", name)
             raise ValueError(f"名称无效: {name}")
         return clean_name
 
@@ -239,16 +255,20 @@ class FileModelManager:
         """
         path = self.resolve_path(webui_path, relative_path)
         if not path.exists():
+            logger.debug("路径不存在, 返回空列表: %s", path)
             return []
         if not path.is_dir():
+            logger.warning("路径不是文件夹: %s", path)
             raise NotADirectoryError(f"不是文件夹: {path}")
 
+        logger.debug("开始扫描目录: %s", path)
         entries: list[ModelEntry] = []
         for item in path.iterdir():
             try:
                 stat_result = item.stat()
                 modified_time = stat_result.st_mtime
             except OSError:
+                logger.warning("读取条目属性失败, 修改时间置 0: %s", item)
                 modified_time = 0
             entries.append(
                 ModelEntry(
@@ -260,6 +280,8 @@ class FileModelManager:
                     modified_time=modified_time,
                 )
             )
+            logger.debug("扫描到条目: %s, is_dir=%s", item, item.is_dir())
+        logger.info("目录扫描完成: %s, 共 %s 个条目", path, len(entries))
         return sorted(entries, key=lambda entry: (not entry.is_dir, entry.name.lower()))
 
     def list_directories(self, webui_path: Path) -> list[str]:
@@ -274,6 +296,7 @@ class FileModelManager:
         """
         root = self.ensure_root(webui_path).resolve()
         dirs = ["."]
+        logger.debug("开始扫描模型根目录: %s", root)
         for current_root, dir_names, _file_names in os.walk(root):
             current = Path(current_root)
             dir_names.sort(key=str.lower)
@@ -282,8 +305,11 @@ class FileModelManager:
                 try:
                     relative = path.resolve().relative_to(root).as_posix()
                 except ValueError:
+                    logger.warning("跳过无法解析的目录: %s", path)
                     continue
+                logger.debug("发现目录: %s", relative)
                 dirs.append(relative)
+        logger.info("目录扫描完成, 共 %s 个文件夹", len(dirs))
         return dirs
 
     def create_folder(
@@ -314,11 +340,14 @@ class FileModelManager:
         """
         parent = self.resolve_path(webui_path, parent_relative_path)
         if not parent.is_dir():
+            logger.warning("父级路径不是文件夹: %s", parent)
             raise NotADirectoryError(f"不是文件夹: {parent}")
         target = parent / self.validate_name(name)
         if target.exists() or target.is_symlink():
+            logger.warning("目标文件夹已存在: %s", target)
             raise FileExistsError(f"目标已存在: {target}")
         target.mkdir(parents=True)
+        logger.info("创建文件夹: %s", target)
         return target
 
     def _target_path(
@@ -330,10 +359,12 @@ class FileModelManager:
     ) -> Path:
         target_dir = self.resolve_path(webui_path, target_dir_relative_path)
         if not target_dir.is_dir():
+            logger.warning("目标路径不是文件夹: %s", target_dir)
             raise NotADirectoryError(f"不是文件夹: {target_dir}")
         target_name = source_path.name if new_name is None else self.validate_name(new_name)
         target = (target_dir / target_name).resolve()
         self.resolve_path(webui_path, target)
+        logger.debug("计算目标路径: %s", target)
         return target
 
     def _copy_to_target(
@@ -344,13 +375,17 @@ class FileModelManager:
     ) -> Path:
         if target_path.exists() or target_path.is_symlink():
             if not overwrite:
+                logger.warning("目标已存在且不允许覆盖: %s", target_path)
                 raise FileExistsError(f"目标已存在: {target_path}")
             if source_path.is_dir() and target_path.is_dir():
+                logger.debug("合并复制目录: %s -> %s", source_path, target_path)
                 copy_files_merge(source_path, target_path)
                 return target_path
+            logger.debug("覆盖删除已有目标: %s", target_path)
             remove_files(target_path)
 
         copy_files(source_path, target_path)
+        logger.debug("复制完成: %s -> %s", source_path, target_path)
         return target_path
 
     def _move_to_target(
@@ -361,16 +396,21 @@ class FileModelManager:
         overwrite: bool,
     ) -> Path:
         if source_path == self.root_path(webui_path).resolve():
+            logger.warning("不允许移动模型根目录: %s", source_path)
             raise ValueError("不能移动模型根目录")
         if target_path.exists() or target_path.is_symlink():
             if not overwrite:
+                logger.warning("目标已存在且不允许覆盖: %s", target_path)
                 raise FileExistsError(f"目标已存在: {target_path}")
             if source_path.is_dir() and target_path.is_dir():
+                logger.debug("合并移动目录: %s -> %s", source_path, target_path)
                 move_files_merge(source_path, target_path)
                 return target_path
+            logger.debug("覆盖删除已有目标: %s", target_path)
             remove_files(target_path)
 
         move_files(source_path, target_path)
+        logger.debug("移动完成: %s -> %s", source_path, target_path)
         return target_path
 
     def copy_entry(
@@ -405,9 +445,13 @@ class FileModelManager:
         """
         source = self.resolve_path(webui_path, source_relative_path)
         if not source.exists() and not source.is_symlink():
+            logger.warning("源路径不存在: %s", source)
             raise FileNotFoundError(f"源路径不存在: {source}")
+        logger.debug("开始复制条目: %s", source)
         target = self._target_path(webui_path, source, target_dir_relative_path, new_name)
-        return self._copy_to_target(source, target, overwrite)
+        result = self._copy_to_target(source, target, overwrite)
+        logger.info("复制条目完成: %s -> %s", source, result)
+        return result
 
     def move_entry(
         self,
@@ -441,9 +485,13 @@ class FileModelManager:
         """
         source = self.resolve_path(webui_path, source_relative_path)
         if not source.exists() and not source.is_symlink():
+            logger.warning("源路径不存在: %s", source)
             raise FileNotFoundError(f"源路径不存在: {source}")
+        logger.debug("开始移动条目: %s", source)
         target = self._target_path(webui_path, source, target_dir_relative_path, new_name)
-        return self._move_to_target(webui_path, source, target, overwrite)
+        result = self._move_to_target(webui_path, source, target, overwrite)
+        logger.info("移动条目完成: %s -> %s", source, result)
+        return result
 
     def rename_entry(
         self,
@@ -478,8 +526,10 @@ class FileModelManager:
         """
         source = self.resolve_path(webui_path, source_relative_path)
         if not source.exists() and not source.is_symlink():
+            logger.warning("源路径不存在: %s", source)
             raise FileNotFoundError(f"源路径不存在: {source}")
         if source == self.root_path(webui_path).resolve():
+            logger.warning("不允许重命名模型根目录: %s", source)
             raise ValueError("不能重命名模型根目录")
 
         target = (source.parent / self.validate_name(new_name)).resolve()
@@ -489,10 +539,13 @@ class FileModelManager:
 
         if target.exists() or target.is_symlink():
             if not overwrite:
+                logger.warning("目标已存在且不允许覆盖: %s", target)
                 raise FileExistsError(f"目标已存在: {target}")
+            logger.debug("覆盖删除已有目标: %s", target)
             remove_files(target)
 
         move_files(source, target)
+        logger.info("重命名条目完成: %s -> %s", source, target)
         return target
 
     def delete_entry(
@@ -514,8 +567,10 @@ class FileModelManager:
         """
         target = self.resolve_path(webui_path, relative_path)
         if target == self.root_path(webui_path).resolve():
+            logger.warning("不允许删除模型根目录: %s", target)
             raise ValueError("不能删除模型根目录")
         remove_files(target)
+        logger.info("删除条目完成: %s", target)
 
     def import_paths(
         self,
@@ -548,15 +603,21 @@ class FileModelManager:
         """
         target_dir = self.resolve_path(webui_path, target_dir_relative_path)
         if not target_dir.is_dir():
+            logger.warning("目标路径不是文件夹: %s", target_dir)
             raise NotADirectoryError(f"不是文件夹: {target_dir}")
 
+        logger.info("开始导入模型, 共 %s 个源路径", len(source_paths))
         imported: list[Path] = []
         for source in source_paths:
             source_path = Path(source).expanduser().resolve()
             if not source_path.exists() and not source_path.is_symlink():
+                logger.warning("源路径不存在: %s", source_path)
                 raise FileNotFoundError(f"源路径不存在: {source_path}")
             target_path = self._target_path(webui_path, source_path, target_dir)
-            imported.append(self._copy_to_target(source_path, target_path, overwrite))
+            result = self._copy_to_target(source_path, target_path, overwrite)
+            imported.append(result)
+            logger.debug("导入条目完成: %s -> %s", source_path, result)
+        logger.info("模型导入完成, 共 %s 个条目", len(imported))
         return imported
 
     def download_url(
@@ -588,12 +649,15 @@ class FileModelManager:
         target_dir = self.resolve_path(webui_path, target_dir_relative_path)
         target_dir.mkdir(parents=True, exist_ok=True)
         clean_save_name = self.validate_name(save_name) if save_name else None
-        return download_file(
+        logger.info("开始下载模型到目录: %s, 保存文件名: %s", target_dir, clean_save_name)
+        result = download_file(
             url=url,
             path=target_dir,
             save_name=clean_save_name,
             tool=downloader,
         )
+        logger.info("模型下载完成: %s", result)
+        return result
 
 
 class InvokeAIModelManager:
@@ -604,6 +668,7 @@ class InvokeAIModelManager:
         invokeai_path: Path,
     ) -> None:
         self.invokeai_path = Path(invokeai_path)
+        logger.debug("初始化 InvokeAIModelManager, invokeai_path=%s", self.invokeai_path)
 
     @property
     def import_cache_path(self) -> Path:
@@ -624,7 +689,10 @@ class InvokeAIModelManager:
         """
         from sd_webui_all_in_one.base_manager.invokeai_base import get_invokeai_model_list
 
-        return get_invokeai_model_list(invokeai_path=self.invokeai_path)
+        logger.debug("开始获取 InvokeAI 模型列表: %s", self.invokeai_path)
+        model_list = get_invokeai_model_list(invokeai_path=self.invokeai_path)
+        logger.info("获取 InvokeAI 模型列表完成, 共 %s 个模型", len(model_list))
+        return model_list
 
     def install_from_url(
         self,
@@ -642,7 +710,10 @@ class InvokeAIModelManager:
         """
         from sd_webui_all_in_one.base_manager.invokeai_base import install_invokeai_model_from_source
 
-        return install_invokeai_model_from_source(invokeai_path=self.invokeai_path, source=url)
+        logger.info("开始通过 InvokeAI 安装模型, invokeai_path=%s", self.invokeai_path)
+        result = install_invokeai_model_from_source(invokeai_path=self.invokeai_path, source=url)
+        logger.info("InvokeAI 模型安装完成, 成功=%s", result)
+        return result
 
     def import_local_paths(
         self,
@@ -667,22 +738,28 @@ class InvokeAIModelManager:
         from sd_webui_all_in_one.base_manager.invokeai_base import import_model_to_invokeai
 
         self.import_cache_path.mkdir(parents=True, exist_ok=True)
+        logger.info("开始导入本地模型到 InvokeAI, 共 %s 个源路径", len(source_paths))
         copied_paths: list[Path] = []
         for source in source_paths:
             source_path = Path(source).expanduser().resolve()
             if not source_path.exists() and not source_path.is_symlink():
+                logger.warning("源路径不存在: %s", source_path)
                 raise FileNotFoundError(f"源路径不存在: {source_path}")
             target = self.import_cache_path / source_path.name
             if target.exists() or target.is_symlink():
+                logger.warning("导入暂存路径已存在: %s", target)
                 raise FileExistsError(f"InvokeAI 导入暂存路径已存在: {target}")
             copy_files(source_path, target)
             copied_paths.append(target)
+            logger.debug("复制到导入暂存目录: %s -> %s", source_path, target)
 
-        return import_model_to_invokeai(
+        result = import_model_to_invokeai(
             model_list=copied_paths,
             install_model_to_local=False,
             invokeai_path=self.invokeai_path,
         )
+        logger.info("InvokeAI 本地模型导入完成, 成功=%s", result)
+        return result
 
     def unregister(
         self,
@@ -700,11 +777,14 @@ class InvokeAIModelManager:
         """
         from sd_webui_all_in_one.base_manager.invokeai_base import uninstall_model_from_invokeai
 
-        return uninstall_model_from_invokeai(
+        logger.debug("开始注销 InvokeAI 模型: %s", model_id)
+        result = uninstall_model_from_invokeai(
             model_identifiers=[model_id],
             delete_files=False,
             invokeai_path=self.invokeai_path,
         )
+        logger.info("InvokeAI 模型注销完成, model_id=%s, 成功=%s", model_id, result)
+        return result
 
     def delete(
         self,
@@ -722,11 +802,14 @@ class InvokeAIModelManager:
         """
         from sd_webui_all_in_one.base_manager.invokeai_base import uninstall_model_from_invokeai
 
-        return uninstall_model_from_invokeai(
+        logger.debug("开始删除 InvokeAI 模型: %s", model_id)
+        result = uninstall_model_from_invokeai(
             model_identifiers=[model_id],
             delete_files=True,
             invokeai_path=self.invokeai_path,
         )
+        logger.info("InvokeAI 模型删除完成, model_id=%s, 成功=%s", model_id, result)
+        return result
 
 
 def launch_model_manager_gui(
@@ -752,14 +835,18 @@ def launch_model_manager_gui(
         from sd_webui_all_in_one.base_manager.gui.model_manager_gui import launch_model_manager_gui as _launch_model_manager_gui
     except ModuleNotFoundError as e:
         if e.name == "tkinter":
+            logger.error("当前 Python 环境未安装 tkinter, 无法启动模型管理 GUI")
             raise RuntimeError("当前 Python 环境未安装 tkinter, 无法启动模型管理 GUI") from e
+        logger.error("导入 GUI 管理模块发生错误: %s", e)
         raise RuntimeError(f"导入 GUI 管理模块发生错误: {e}") from e
 
+    logger.info("启动模型管理 GUI: %s, webui_path=%s", webui_type, webui_path)
     _launch_model_manager_gui(
         webui_type=webui_type,
         webui_path=webui_path,
         title=title or WEBUI_MODEL_TITLES[webui_type],
     )
+    logger.info("模型管理 GUI 启动完成: %s", webui_type)
 
 
 def launch_sd_webui_model_manager_gui(sd_webui_path: Path) -> None:

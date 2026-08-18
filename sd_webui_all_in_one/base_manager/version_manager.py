@@ -33,6 +33,15 @@ from sd_webui_all_in_one.file_manager import remove_files
 from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST
 from sd_webui_all_in_one.package_analyzer import CommonVersionComparison, PyWhlVersionComparison, get_package_version_from_library, is_prerelease_version, parse_version_component
 
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
+from sd_webui_all_in_one.logger import get_logger
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
+
 
 DEFAULT_EXTENSION_INDEX_URL = "https://raw.githubusercontent.com/AUTOMATIC1111/stable-diffusion-webui-extensions/master/index.json"
 """AUTOMATIC1111 扩展源地址"""
@@ -378,6 +387,7 @@ def configure_git_env(
     Returns:
         dict[str, str]: 配置后的环境变量
     """
+    logger.debug("配置 Git 环境变量, 启用镜像源: %s", use_github_mirror)
     custom_env = apply_git_base_config_and_github_mirror(
         use_github_mirror=use_github_mirror,
         custom_github_mirror=(GITHUB_MIRROR_LIST if custom_github_mirror is None else custom_github_mirror) if use_github_mirror else None,
@@ -406,7 +416,9 @@ def _run_git_output(
     Returns:
         str: 命令输出
     """
+    logger.debug("执行 Git 命令: git %s (路径: %s)", " ".join(args), path)
     output = git_warpper.run_git(*args, path=path, custom_env=custom_env, live=False)
+    logger.debug("Git 命令输出: %s", output)
     return "" if output is None else output.strip()
 
 
@@ -425,7 +437,8 @@ def _safe_git_value(func: Callable[[Path], str | None], path: Path) -> str | Non
     """
     try:
         return func(path)
-    except Exception:
+    except Exception as exc:
+        logger.error("读取 Git 字段失败: %s", exc)
         return None
 
 
@@ -450,9 +463,12 @@ def fetch_repository(
             目标路径不是 Git 仓库
     """
     if not git_warpper.is_git_repo(path):
+        logger.error("目标路径不是有效的 Git 仓库, 无法拉取远程引用: %s", path)
         raise ValueError(f"'{path}' 不是有效的 Git 仓库")
+    logger.info("开始拉取远程引用: %s", path)
     custom_env = configure_git_env(use_github_mirror=use_github_mirror, custom_github_mirror=custom_github_mirror) if use_github_mirror else None
     _run_git_output(path, "fetch", "--all", "--prune", custom_env=custom_env)
+    logger.info("拉取远程引用完成: %s", path)
 
 
 def _resolve_update_remote_ref(path: Path, branch: str | None) -> str | None:
@@ -470,14 +486,18 @@ def _resolve_update_remote_ref(path: Path, branch: str | None) -> str | None:
     """
     remote_branch = git_warpper.get_git_repo_current_remote_branch(path)
     if remote_branch:
+        logger.debug("解析到远程跟踪分支: %s", remote_branch)
         return remote_branch
     if branch:
         fallback_ref = f"origin/{branch}"
+        logger.warning("获取远程跟踪分支失败, 回退到引用 %s: %s", fallback_ref, path)
         try:
             _run_git_output(path, "rev-parse", "--verify", fallback_ref)
             return fallback_ref
         except RuntimeError:
+            logger.warning("回退引用 %s 不存在: %s", fallback_ref, path)
             return None
+    logger.debug("未找到用于更新检查的远程引用: %s", path)
     return None
 
 
@@ -493,8 +513,11 @@ def _read_repository_dirty(path: Path) -> bool:
         bool: 存在未提交改动时返回 True
     """
     try:
-        return bool(_run_git_output(path, "status", "--porcelain"))
-    except Exception:
+        is_dirty = bool(_run_git_output(path, "status", "--porcelain"))
+        logger.debug("仓库工作区是否包含未提交改动: %s", is_dirty)
+        return is_dirty
+    except Exception as exc:
+        logger.warning("检查工作区未提交改动失败, 视为无改动: %s", exc)
         return False
 
 
@@ -514,7 +537,9 @@ def _read_ahead_behind(path: Path, remote_ref: str) -> tuple[int, int]:
     output = _run_git_output(path, "rev-list", "--left-right", "--count", f"HEAD...{remote_ref}")
     parts = output.replace("\t", " ").split()
     if len(parts) < 2:
+        logger.warning("解析领先/落后提交数失败, 原始输出: %s", output)
         return 0, 0
+    logger.debug("与 %s 的领先/落后提交数: 领先 %s, 落后 %s", remote_ref, parts[0], parts[1])
     return int(parts[0]), int(parts[1])
 
 
@@ -540,6 +565,7 @@ def check_repository_update(
     Returns:
         RepositoryUpdateStatus: 仓库更新状态
     """
+    logger.info("检查仓库更新中: %s", path)
     state = inspect_repository(path)
     status = RepositoryUpdateStatus(
         name=state.name,
@@ -551,6 +577,7 @@ def check_repository_update(
         error=state.error,
     )
     if not state.is_git_repo:
+        logger.warning("仓库 '%s' 不是 Git 仓库, 跳过更新检查", path)
         return status
 
     try:
@@ -560,14 +587,17 @@ def check_repository_update(
         status.remote_branch = _resolve_update_remote_ref(path, state.branch)
         if status.remote_branch is None:
             status.error = "未找到远程跟踪分支"
+            logger.warning("未找到远程跟踪分支, 跳过更新检查: %s", path)
             return status
         status.current_commit = _run_git_output(path, "rev-parse", "HEAD")
         status.remote_commit = _run_git_output(path, "rev-parse", status.remote_branch)
         status.ahead, status.behind = _read_ahead_behind(path, status.remote_branch)
         status.has_update = status.behind > 0
         status.error = None
+        logger.info("仓库更新检查完成: %s, 当前提交 %s, 远程提交 %s, 是否有更新: %s", path, status.current_commit, status.remote_commit, status.has_update)
     except Exception as exc:
         status.error = str(exc)
+        logger.error("检查仓库更新失败: %s", exc)
     return status
 
 
@@ -586,16 +616,19 @@ def list_commits(path: Path, limit: int | None = 100, fetch: bool = True) -> lis
     Returns:
         list[CommitInfo]: 提交信息列表
     """
+    logger.info("获取提交列表中: %s", path)
     try:
         if not git_warpper.is_git_repo(path):
+            logger.warning("路径不是 Git 仓库, 返回空提交列表: %s", path)
             return []
-    except Exception:
+    except Exception as exc:
+        logger.warning("检查 Git 仓库失败, 返回空提交列表: %s", exc)
         return []
     if fetch:
         try:
             fetch_repository(path)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("拉取远程引用失败, 继续获取提交列表: %s", exc)
     current_commit = _safe_git_value(git_warpper.get_current_commit, path)
     format_arg = "--format=%H%x1f%h%x1f%ci%x1f%an%x1f%at%x1f%D%x1f%s"
     args = ["log", "HEAD", "@{u}", format_arg]
@@ -604,6 +637,7 @@ def list_commits(path: Path, limit: int | None = 100, fetch: bool = True) -> lis
     try:
         output = run_git_output(path, *args)
     except RuntimeError:
+        logger.warning("获取 @{u} 相关提交失败, 回退到仅获取本地提交: %s", path)
         args = ["log", "HEAD", format_arg]
         if limit is not None:
             args.extend(["-n", str(limit)])
@@ -612,6 +646,7 @@ def list_commits(path: Path, limit: int | None = 100, fetch: bool = True) -> lis
     for line in output.splitlines():
         parts = line.split("\x1f", 6)
         if len(parts) != 7:
+            logger.warning("解析提交行失败, 跳过: %s", line)
             continue
         commit, short_commit, date, author, timestamp_text, decorations, message = parts
         tags: list[str] = []
@@ -625,6 +660,7 @@ def list_commits(path: Path, limit: int | None = 100, fetch: bool = True) -> lis
                 branches.append(decoration.removeprefix("HEAD -> "))
             else:
                 branches.append(decoration)
+        logger.debug("解析到提交: %s %s", short_commit, message)
         commits.append(
             CommitInfo(
                 commit=commit,
@@ -638,6 +674,7 @@ def list_commits(path: Path, limit: int | None = 100, fetch: bool = True) -> lis
                 is_current=bool(current_commit and commit.startswith(current_commit)),
             )
         )
+    logger.info("获取提交列表完成: %s, 共 %s 条", path, len(commits))
     return commits
 
 
@@ -654,10 +691,13 @@ def list_branches(path: Path, fetch: bool = True) -> list[BranchInfo]:
     Returns:
         list[BranchInfo]: 分支信息列表
     """
+    logger.info("获取分支列表中: %s", path)
     try:
         if not git_warpper.is_git_repo(path):
+            logger.warning("路径不是 Git 仓库, 返回空分支列表: %s", path)
             return []
-    except Exception:
+    except Exception as exc:
+        logger.warning("检查 Git 仓库失败, 返回空分支列表: %s", exc)
         return []
     if fetch:
         fetch_repository(path)
@@ -672,11 +712,13 @@ def list_branches(path: Path, fetch: bool = True) -> list[BranchInfo]:
         display_name = name.removeprefix("origin/")
         if display_name in branches and branches[display_name].is_remote is False:
             continue
+        logger.debug("解析到分支: %s (远程: %s)", display_name, is_remote)
         branches[display_name] = BranchInfo(
             name=display_name,
             is_current=display_name == current_branch,
             is_remote=is_remote,
         )
+    logger.info("获取分支列表完成: %s, 共 %s 个分支", path, len(branches))
     return sorted(branches.values(), key=lambda item: (not item.is_current, item.name.lower()))
 
 
@@ -699,6 +741,7 @@ def switch_repository_branch(
         recurse_submodules (bool):
             是否递归更新子模块
     """
+    logger.info("切换仓库分支中: %s -> %s", path, branch)
     fetch_repository(path)
     git_warpper.switch_branch(
         path=path,
@@ -706,6 +749,7 @@ def switch_repository_branch(
         new_url=new_url,
         recurse_submodules=recurse_submodules,
     )
+    logger.info("切换仓库分支完成: %s -> %s", path, branch)
 
 
 def switch_repository_commit(
@@ -721,7 +765,9 @@ def switch_repository_commit(
         commit (str):
             目标提交 ID
     """
+    logger.info("切换仓库到指定提交: %s -> %s", path, commit)
     git_warpper.switch_commit(path=path, commit=commit)
+    logger.info("切换仓库到指定提交完成: %s -> %s", path, commit)
 
 
 def update_repository(
@@ -734,7 +780,9 @@ def update_repository(
         path (Path):
             Git 仓库路径
     """
+    logger.info("更新仓库中: %s", path)
     git_warpper.update(path)
+    logger.info("更新仓库完成: %s", path)
 
 
 class ExtensionManager:
@@ -777,6 +825,7 @@ class ExtensionManager:
         self.set_enabled = set_enabled
         self.ignored_names = set(ignored_names or {"__pycache__"})
         self.include_files = include_files
+        logger.info("初始化扩展管理器完成, 扩展目录: %s", self.extension_path)
 
     def list_extensions(self) -> list[ManagedExtension]:
         """
@@ -786,6 +835,7 @@ class ExtensionManager:
             list[ManagedExtension]: 本地扩展列表
         """
         if not self.extension_path.exists():
+            logger.warning("扩展目录不存在: %s", self.extension_path)
             return []
         result: list[ManagedExtension] = []
         for ext_path in sorted(self.extension_path.iterdir(), key=lambda item: item.name.lower()):
@@ -793,6 +843,7 @@ class ExtensionManager:
                 continue
             if not ext_path.is_dir() and not (self.include_files and ext_path.is_file()):
                 continue
+            logger.debug("解析扩展: %s", ext_path.name)
             repo_state = inspect_repository(ext_path)
             result.append(
                 ManagedExtension(
@@ -809,6 +860,7 @@ class ExtensionManager:
                     source_type="git" if repo_state.is_git_repo else ("file" if ext_path.is_file() else "unknown"),
                 )
             )
+        logger.info("获取扩展列表完成: %s, 共 %s 个扩展", self.extension_path, len(result))
         return result
 
     def set_extension_enabled(
@@ -825,6 +877,7 @@ class ExtensionManager:
             enabled (bool):
                 是否启用
         """
+        logger.info("设置扩展启用状态: %s -> %s", name, enabled)
         self.set_enabled(name, enabled)
 
     def install_extension(
@@ -854,9 +907,12 @@ class ExtensionManager:
         del use_github_mirror, custom_github_mirror
         extension_name = get_repo_name_from_url(url)
         extension_path = self.extension_path / extension_name
+        logger.info("安装扩展中: %s", url)
         if extension_path.exists():
+            logger.warning("扩展已存在, 无法安装: %s", extension_path)
             raise FileExistsError(f"'{extension_name}' 扩展已存在")
         clone_repo(repo=url, path=extension_path)
+        logger.info("扩展安装完成: %s", extension_path)
         return extension_path
 
     def update_extension(
@@ -875,9 +931,12 @@ class ExtensionManager:
                 扩展不是 Git 仓库
         """
         ext_path = self.extension_path / name
+        logger.info("更新扩展中: %s", name)
         if not git_warpper.is_git_repo(ext_path):
+            logger.warning("扩展 '%s' 不是 Git 仓库, 无法更新", name)
             raise ValueError(f"'{name}' 不是 Git 仓库，无法更新")
         update_repository(ext_path)
+        logger.info("更新扩展完成: %s", name)
 
     def update_all(
         self,
@@ -890,15 +949,19 @@ class ExtensionManager:
                 一个或多个扩展更新失败
         """
         errors: list[Exception] = []
+        logger.info("更新所有扩展中: %s", self.extension_path)
         for ext in self.list_extensions():
             if not ext.is_git_repo:
                 continue
             try:
                 update_repository(ext.path)
             except Exception as e:
+                logger.error("更新扩展 '%s' 时发生错误: %s", ext.name, e)
                 errors.append(e)
         if errors:
+            logger.error("更新扩展时发生错误, 共 %s 个扩展更新失败", len(errors))
             raise AggregateError("更新扩展时发生错误", errors)
+        logger.info("更新所有扩展完成: %s", self.extension_path)
 
     def check_updates(
         self,
@@ -921,6 +984,7 @@ class ExtensionManager:
             list[RepositoryUpdateStatus]: 扩展更新状态列表
         """
         result: list[RepositoryUpdateStatus] = []
+        logger.info("检查扩展更新中: %s", self.extension_path)
         for ext in self.list_extensions():
             if not ext.is_git_repo:
                 result.append(
@@ -942,6 +1006,7 @@ class ExtensionManager:
             )
             status.name = ext.name
             result.append(status)
+        logger.info("检查扩展更新完成: %s, 共 %s 个扩展", self.extension_path, len(result))
         return result
 
     def uninstall_extension(
@@ -960,9 +1025,12 @@ class ExtensionManager:
                 扩展未安装
         """
         ext_path = self.extension_path / name
+        logger.info("卸载扩展中: %s", name)
         if not ext_path.exists():
+            logger.warning("扩展未安装, 无法卸载: %s", name)
             raise FileNotFoundError(f"'{name}' 扩展未安装")
         remove_files(ext_path)
+        logger.info("卸载扩展完成: %s", name)
 
     def switch_extension_commit(
         self,
@@ -978,6 +1046,7 @@ class ExtensionManager:
             commit (str):
                 目标提交 ID
         """
+        logger.info("切换扩展到指定提交: %s -> %s", name, commit)
         switch_repository_commit(self.extension_path / name, commit)
 
     def switch_extension_branch(
@@ -994,6 +1063,7 @@ class ExtensionManager:
             branch (str):
                 目标分支
         """
+        logger.info("切换扩展分支: %s -> %s", name, branch)
         switch_repository_branch(self.extension_path / name, branch)
 
 
@@ -1060,13 +1130,17 @@ def parse_extension_index(data: Any) -> list[ExtensionIndexItem]:
         raw_extensions = data
     else:
         raw_extensions = []
+        logger.warning("扩展源数据类型异常, 返回空列表")
 
+    logger.debug("解析扩展源数据, 共 %s 条原始条目", len(raw_extensions))
     items: list[ExtensionIndexItem] = []
     for raw_item in raw_extensions:
         if not isinstance(raw_item, dict):
+            logger.warning("跳过非字典类型的扩展源条目")
             continue
         url = _pick_extension_url(raw_item)
         if not url:
+            logger.warning("跳过缺少下载地址的扩展源条目")
             continue
         items.append(
             ExtensionIndexItem(
@@ -1079,6 +1153,7 @@ def parse_extension_index(data: Any) -> list[ExtensionIndexItem]:
                 reference=str(raw_item.get("reference") or ""),
             )
         )
+    logger.info("解析扩展源完成, 共 %s 个条目", len(items))
     return items
 
 
@@ -1099,15 +1174,19 @@ def parse_comfyui_custom_node_index(data: Any) -> list[ExtensionIndexItem]:
         raw_extensions = data
     else:
         raw_extensions = []
+        logger.warning("自定义节点数据类型异常, 返回空列表")
 
+    logger.debug("解析自定义节点列表, 共 %s 条原始数据", len(raw_extensions))
     items: list[ExtensionIndexItem] = []
     for raw_item in raw_extensions:
         if not isinstance(raw_item, dict):
+            logger.warning("跳过非字典类型的自定义节点条目")
             continue
         files = _pick_extension_files(raw_item)
         reference = str(raw_item.get("reference") or "")
         url = files[0] if files else reference
         if not url:
+            logger.warning("跳过缺少下载地址的自定义节点条目")
             continue
         title = raw_item.get("title") or raw_item.get("name") or raw_item.get("id")
         name = str(title).strip() if title else get_repo_name_from_url(reference or url)
@@ -1129,6 +1208,7 @@ def parse_comfyui_custom_node_index(data: Any) -> list[ExtensionIndexItem]:
                 author=author_name,
             )
         )
+    logger.info("解析自定义节点列表完成, 共 %s 个条目", len(items))
     return items
 
 
@@ -1148,10 +1228,13 @@ def fetch_extension_index(
     Returns:
         list[ExtensionIndexItem]: 扩展源条目列表
     """
+    logger.info("获取扩展源列表中: %s", index_url)
     req = urllib.request.Request(index_url, headers={"User-Agent": "SD-WebUI-All-In-One"})
     with urllib.request.urlopen(req, timeout=timeout) as response:
         payload = response.read().decode("utf-8")
-    return parse_extension_index(json.loads(payload))
+    items = parse_extension_index(json.loads(payload))
+    logger.info("获取扩展源列表完成, 共 %s 个条目", len(items))
+    return items
 
 
 def fetch_comfyui_custom_node_index(index_url: str, timeout: int | None = 20) -> list[ExtensionIndexItem]:
@@ -1167,10 +1250,13 @@ def fetch_comfyui_custom_node_index(index_url: str, timeout: int | None = 20) ->
     Returns:
         list[ExtensionIndexItem]: 扩展源条目列表
     """
+    logger.info("获取自定义节点列表中: %s", index_url)
     req = urllib.request.Request(index_url, headers={"User-Agent": "SD-WebUI-All-In-One"})
     with urllib.request.urlopen(req, timeout=timeout) as response:
         payload = response.read().decode("utf-8")
-    return parse_comfyui_custom_node_index(json.loads(payload))
+    items = parse_comfyui_custom_node_index(json.loads(payload))
+    logger.info("获取自定义节点列表完成, 共 %s 个条目", len(items))
+    return items
 
 
 def _pypi_version_sort_key(
@@ -1193,6 +1279,7 @@ def _pypi_version_sort_key(
             跨比较器比较.
     """
     if parse_version_component(version) is None:
+        logger.debug("版本号 '%s' 不符合 PEP 440, 使用通用比较器排序", version)
         return (0, CommonVersionComparison(version))
     return (1, PyWhlVersionComparison(version))
 
@@ -1224,6 +1311,7 @@ def fetch_pypi_versions(
     # 未显式传入当前版本时按运行环境解析, 否则调用方无法得到 is_current 标记。
     if current_version is None:
         current_version = get_package_version_from_library(package_name)
+    logger.debug("获取软件包版本列表: %s, 当前版本: %s", package_name, current_version)
     base_url = index_url.rstrip("/")
     if base_url.endswith("/simple"):
         base_url = base_url.removesuffix("/simple")
@@ -1235,6 +1323,7 @@ def fetch_pypi_versions(
         url = base_url
     else:
         url = f"{base_url}/pypi/{package_name}/json"
+    logger.debug("PyPI API 地址: %s", url)
     req = urllib.request.Request(url, headers={"User-Agent": "SD-WebUI-All-In-One"})
     with urllib.request.urlopen(req, timeout=timeout) as response:
         payload = json.loads(response.read().decode("utf-8"))
@@ -1246,6 +1335,7 @@ def fetch_pypi_versions(
 
     releases = payload.get("releases", {})
     if not isinstance(releases, dict):
+        logger.warning("PyPI 返回的 releases 字段格式异常, 返回空版本列表: %s", package_name)
         return []
 
     versions: list[PackageVersionInfo] = []
@@ -1265,6 +1355,7 @@ def fetch_pypi_versions(
             )
         )
 
+    logger.info("获取软件包版本列表完成: %s, 共 %s 个版本", package_name, len(versions))
     return sorted(versions, key=lambda item: _pypi_version_sort_key(item.version), reverse=True)
 
 
@@ -1289,6 +1380,7 @@ def filter_extension_index(
     """
     keyword = keyword.strip().lower()
     selected_tags = {tag.lower() for tag in tags or []}
+    logger.debug("过滤扩展源条目, 关键字: %s, 标签: %s", keyword, sorted(selected_tags))
     result: list[ExtensionIndexItem] = []
     for item in items:
         haystack = " ".join(
@@ -1308,6 +1400,7 @@ def filter_extension_index(
         if selected_tags and not selected_tags.intersection({tag.lower() for tag in item.tags}):
             continue
         result.append(item)
+    logger.debug("过滤扩展源条目完成, 共 %s 个条目", len(result))
     return result
 
 
@@ -1335,6 +1428,7 @@ def check_package_update(
         PackageUpdateStatus: PyPI 内核包的详细更新状态。
     """
     current_version = get_package_version_from_library(package_name)
+    logger.info("检查软件包更新中: %s (%s)", display_name, package_name)
     latest_prerelease: str | None = None
     try:
         versions = fetch_pypi_versions(
@@ -1363,6 +1457,8 @@ def check_package_update(
         latest_version = None
         has_update = False
         error = str(exc)
+        logger.error("检查软件包更新失败: %s", exc)
+    logger.info("软件包更新检查完成: %s, 当前版本 %s, 最新版本 %s, 是否有更新: %s", display_name, current_version, latest_version, has_update)
     return PackageUpdateStatus(
         name=display_name,
         package_name=package_name,
@@ -1398,7 +1494,9 @@ def check_extension_updates(
         list[ExtensionUpdateStatus]: 每个扩展的详细更新状态。
     """
     result: list[ExtensionUpdateStatus] = []
+    logger.info("检查扩展更新中")
     for extension in extensions:
+        logger.debug("检查扩展更新: %s", extension.name)
         status = ExtensionUpdateStatus(
             name=extension.name,
             path=extension.path,
@@ -1437,10 +1535,13 @@ def check_extension_updates(
                     status.message = "存在 Registry 更新" if status.has_update else "已是最新版本"
             except Exception as exc:
                 status.error = str(exc)
+                logger.error("检查 Registry 扩展更新失败: %s", exc)
         else:
             status.skipped = True
             status.message = f"扩展来源 '{extension.source_type}' 不支持更新检查"
+            logger.debug("扩展来源 '%s' 不支持更新检查, 已跳过: %s", extension.source_type, extension.name)
         result.append(status)
+    logger.info("检查扩展更新完成, 共 %s 个扩展", len(result))
     return result
 
 
@@ -1469,6 +1570,7 @@ def check_webui_updates(
         WebUiUpdateStatus: WebUI 的完整结构化更新状态。
     """
     options = options or WebUiUpdateOptions()
+    logger.info("检查 WebUI 更新中: %s (%s)", display_name, webui_type)
     errors: list[str] = []
     kernel: RepositoryUpdateStatus | PackageUpdateStatus | None = None
     if options.include_kernel:
@@ -1501,6 +1603,7 @@ def check_webui_updates(
             )
         except Exception as exc:
             errors.append(f"加载扩展失败: {exc}")
+            logger.error("加载扩展失败: %s", exc)
 
     kernel_has_update = bool(kernel and kernel.has_update)
     pytorch_has_update = bool(pytorch and pytorch.has_update)
@@ -1516,6 +1619,7 @@ def check_webui_updates(
         skipped_count=skipped_count,
         error_count=error_count,
     )
+    logger.info("WebUI 更新检查完成: %s, 是否有更新: %s, 可更新扩展 %s 个", display_name, summary.has_update, summary.extension_update_count)
     return WebUiUpdateStatus(
         webui_type=webui_type,
         name=display_name,

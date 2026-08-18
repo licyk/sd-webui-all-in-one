@@ -15,7 +15,20 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, TYPE_CHECKING
 
-from sd_webui_all_in_one.config import ROOT_PATH, SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH
+from sd_webui_all_in_one.config import (
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+    ROOT_PATH,
+    SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH,
+)
+from sd_webui_all_in_one.logger import get_logger
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 if TYPE_CHECKING:
     from sd_webui_all_in_one_hotpatcher import services
@@ -38,6 +51,7 @@ def ensure_hotpatcher_import_path() -> Path:
 
     path_text = HOTPATCHER_PATH.as_posix()
     if path_text not in sys.path:
+        logger.debug("将 hotpatcher 源码目录 %s 插入 sys.path 首位", path_text)
         sys.path.insert(0, path_text)
     return HOTPATCHER_PATH
 
@@ -46,6 +60,7 @@ def _services_module() -> "services":  # ty: ignore[invalid-type-form]
     ensure_hotpatcher_import_path()
     from sd_webui_all_in_one_hotpatcher import services
 
+    logger.debug("加载 hotpatcher services 模块")
     return services
 
 
@@ -58,7 +73,9 @@ def get_hotpatcher_default_config() -> dict[str, Any]:
             hotpatcher services 提供的默认配置。
     """
 
-    return _services_module().get_default_config()
+    config = _services_module().get_default_config()
+    logger.debug("获取 hotpatcher 默认配置")
+    return config
 
 
 def get_hotpatcher_catalog() -> dict[str, Any]:
@@ -70,7 +87,9 @@ def get_hotpatcher_catalog() -> dict[str, Any]:
             hotpatcher features catalog 和已注册补丁信息。
     """
 
-    return _services_module().get_catalog()
+    catalog = _services_module().get_catalog()
+    logger.debug("获取 hotpatcher 功能目录")
+    return catalog
 
 
 def normalize_hotpatcher_config(config: dict[str, Any]) -> dict[str, Any]:
@@ -86,6 +105,7 @@ def normalize_hotpatcher_config(config: dict[str, Any]) -> dict[str, Any]:
             补齐默认值后的配置对象。
     """
 
+    logger.debug("补齐 hotpatcher 配置默认值")
     return _services_module().normalize_config(config)
 
 
@@ -113,13 +133,16 @@ def load_hotpatcher_config(path: str | Path | None = None, normalize: bool = Tru
     """
 
     config_path = _resolve_config_path(path)
+    logger.debug("读取 hotpatcher 配置, 路径: %s, normalize: %s", config_path, normalize)
     if normalize:
-        return _services_module().load_config_file(config_path, write_back=False)
-
-    with config_path.open("r", encoding="utf-8") as file:
-        config = json.load(file)
-    if not isinstance(config, dict):
-        raise ValueError("hotpatcher config file must decode to an object")
+        config = _services_module().load_config_file(config_path, write_back=False)
+    else:
+        with config_path.open("r", encoding="utf-8") as file:
+            config = json.load(file)
+        if not isinstance(config, dict):
+            logger.error("hotpatcher 配置文件 %s 内容不是 JSON 对象", config_path)
+            raise ValueError("hotpatcher config file must decode to an object")
+    logger.debug("hotpatcher 配置加载完成, 配置键: %s", list(config.keys()))
     return config
 
 
@@ -134,7 +157,9 @@ def save_hotpatcher_config(path: str | Path | None, config: dict[str, Any]) -> N
             要写出的配置对象。
     """
 
-    _services_module().save_config_file(_resolve_config_path(path), config)
+    config_path = _resolve_config_path(path)
+    logger.info("保存 hotpatcher 配置, 路径: %s", config_path)
+    _services_module().save_config_file(config_path, config)
 
 
 def export_hotpatcher_default_config(path: str | Path | None = None, overwrite: bool = False) -> Path:
@@ -158,7 +183,9 @@ def export_hotpatcher_default_config(path: str | Path | None = None, overwrite: 
 
     output_path = _resolve_config_path(path)
     if output_path.exists() and not overwrite:
+        logger.warning("导出目标文件已存在且未允许覆盖, 路径: %s", output_path)
         raise FileExistsError(f"Config file already exists: {output_path}")
+    logger.info("导出 hotpatcher 默认配置, 路径: %s, overwrite: %s", output_path, overwrite)
     save_hotpatcher_config(output_path, get_hotpatcher_default_config())
     return output_path
 
@@ -178,9 +205,13 @@ def apply_hotpatcher_config(config_or_path: dict[str, Any] | str | Path | None =
 
     if isinstance(config_or_path, dict):
         config = config_or_path
+        logger.debug("直接应用传入的 hotpatcher 配置对象")
     else:
+        logger.debug("从路径加载 hotpatcher 配置: %s", config_or_path)
         config = load_hotpatcher_config(config_or_path, normalize=True)
-    return _services_module().apply_config(config)
+    result = _services_module().apply_config(config)
+    logger.info("hotpatcher 配置应用完成")
+    return result
 
 
 def apply_hotpatcher_launch_env(
@@ -223,6 +254,7 @@ def apply_hotpatcher_launch_env(
     env = remove_hotpatcher_launch_env(env)
 
     if not enabled:
+        logger.info("hotpatcher 未启用, 已移除相关启动环境变量")
         return env
 
     env.update(preserved)
@@ -250,6 +282,14 @@ def apply_hotpatcher_launch_env(
             ensure_ascii=False,
             separators=(",", ":"),
         )
+    config_source = env.get("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE", "unknown")
+    config_file = env.get("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_FILE")
+    logger.info(
+        "hotpatcher 启动环境注入完成, 配置来源: %s, 配置文件: %s, enable_runtime: %s",
+        config_source,
+        config_file,
+        enable_runtime,
+    )
     return env
 
 
@@ -271,10 +311,13 @@ def configure_hotpatcher_for_current_process(enabled: bool = False) -> Any:
 
     if not enabled:
         return None
+    logger.info("在当前进程执行 hotpatcher bootstrap")
     ensure_hotpatcher_import_path()
     from sd_webui_all_in_one_hotpatcher.bootstrap import configure_from_env
 
-    return configure_from_env()
+    state = configure_from_env()
+    logger.debug("hotpatcher bootstrap 完成")
+    return state
 
 
 def remove_hotpatcher_launch_env(origin_env: dict[str, str]) -> dict[str, str]:
@@ -290,7 +333,9 @@ def remove_hotpatcher_launch_env(origin_env: dict[str, str]) -> dict[str, str]:
             移除 hotpatcher 前缀变量后的环境变量。
     """
 
-    return {key: value for key, value in origin_env.items() if not key.startswith(HOTPATCHER_ENV_PREFIX)}
+    env = {key: value for key, value in origin_env.items() if not key.startswith(HOTPATCHER_ENV_PREFIX)}
+    logger.debug("已移除 %d 个 hotpatcher 前缀环境变量", len(origin_env) - len(env))
+    return env
 
 
 def ensure_hotpatcher_pythonpath_first(origin_env: dict[str, str]) -> dict[str, str]:
@@ -311,6 +356,7 @@ def ensure_hotpatcher_pythonpath_first(origin_env: dict[str, str]) -> dict[str, 
     current = env.get("PYTHONPATH", "")
     parts = [item for item in current.split(os.pathsep) if item and item != path_text]
     env["PYTHONPATH"] = os.pathsep.join([path_text, *parts])
+    logger.debug("确保 hotpatcher 目录 %s 位于 PYTHONPATH 首位", path_text)
     return env
 
 
@@ -349,6 +395,7 @@ def build_hotpatcher_runtime_env(
     }
     if token:
         env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN"] = token
+    logger.debug("构建 hotpatcher runtime 连接环境, host: %s, port: %s, config_source: %s", host, port, config_source)
     return env
 
 
@@ -382,9 +429,12 @@ def launch_hotpatcher_manager_gui(
         from sd_webui_all_in_one.base_manager.gui.hotpatcher_manager_gui import launch_hotpatcher_manager_gui as _launch_gui
     except ModuleNotFoundError as e:
         if e.name == "tkinter":
+            logger.error("当前 Python 环境未安装 tkinter, 无法启动补丁系统配置管理 GUI")
             raise RuntimeError("当前 Python 环境未安装 tkinter, 无法启动补丁系统配置管理 GUI") from e
+        logger.error("启动 GUI 时缺少模块: %s", e.name)
         raise e
 
+    logger.info("启动 hotpatcher 配置管理 GUI, host: %s, port: %s", host, port)
     _launch_gui(config_path=config_path, host=host, port=port, token=token)
 
 
@@ -540,6 +590,7 @@ class RuntimeServiceChannel:
         """
 
         if self.closed:
+            logger.warning("services channel 已关闭, 拒绝发送请求 %s", message_type)
             raise RemoteServiceError("channel_closed", "services channel is closed")
 
         message_id = uuid.uuid4().hex
@@ -547,6 +598,7 @@ class RuntimeServiceChannel:
         with self._pending_lock:
             self._pending[message_id] = pending
 
+        logger.debug("发送 services 请求, id: %s, type: %s, timeout: %s", message_id, message_type, timeout)
         try:
             self._send(
                 {
@@ -558,15 +610,18 @@ class RuntimeServiceChannel:
             try:
                 response = pending.queue.get(timeout=timeout)
             except queue.Empty as exc:
+                logger.error("services 请求 %s (%s) 等待响应超时", message_type, message_id)
                 raise RemoteServiceError("timeout", "services request timed out") from exc
 
             if response.get("ok") is True:
                 response_payload = response.get("payload", {})
+                logger.debug("services 请求 %s (%s) 成功", message_type, message_id)
                 return response_payload if isinstance(response_payload, dict) else {}
 
             error = response.get("error", {})
             if not isinstance(error, dict):
                 error = {}
+            logger.warning("services 请求 %s (%s) 远端返回错误: %s", message_type, message_id, error.get("code", "request_failed"))
             raise RemoteServiceError(
                 str(error.get("code", "request_failed")),
                 str(error.get("message", "")),
@@ -597,6 +652,7 @@ class RuntimeServiceChannel:
         if pending is None:
             return False
         pending.queue.put(message)
+        logger.debug("services 通道收到匹配请求 id: %s 的响应", message_id)
         return True
 
     def close(self) -> None:
@@ -608,6 +664,7 @@ class RuntimeServiceChannel:
 
         if self.closed:
             return
+        logger.debug("services 通道关闭")
         self.closed = True
         if self.on_close is not None:
             self.on_close(self)
@@ -732,6 +789,7 @@ class HotpatcherRuntimeHost:
         if self._server is not None:
             return self
 
+        logger.info("启动 hotpatcher runtime host, host: %s, port: %s", self.host, self.port)
         with self._lock:
             self.browser_events.clear()
             self.browser_diagnostics.clear()
@@ -772,6 +830,7 @@ class HotpatcherRuntimeHost:
         if self._thread is not None:
             self._thread.join(timeout=2)
             self._thread = None
+        logger.info("hotpatcher runtime host 已停止")
         self._emit_status("runtime host stopped")
 
     def request_services(
@@ -803,6 +862,7 @@ class HotpatcherRuntimeHost:
 
         channel = self._service_channel
         if channel is None or channel.closed:
+            logger.warning("services channel 未连接, 无法发送请求 %s", message_type)
             raise RemoteServiceError("channel_unavailable", "services channel is not connected")
         return channel.request(message_type, payload, timeout=timeout)
 
@@ -830,12 +890,14 @@ class HotpatcherRuntimeHost:
                 services channel 未连接或请求失败时抛出。
         """
 
+        logger.debug("通过 services channel 应用远端 hotpatcher 配置")
         payload = self.request_services(
             "services.config.apply",
             {"config": config},
             timeout=timeout,
         )
         result = payload.get("result", {})
+        logger.debug("远端配置应用结果: %s", list(result.keys()))
         return result if isinstance(result, dict) else {}
 
     def close(self) -> None:
@@ -861,13 +923,16 @@ class HotpatcherRuntimeHost:
         try:
             first_message = self._decode(first_line)
         except Exception as exc:
+            logger.warning("来自 %s 的非法 runtime 消息: %s", address, exc)
             self._emit_status(f"invalid runtime message from {address}: {exc}")
             return
 
         if not self._check_token(first_message):
+            logger.warning("来自 %s 的 runtime token 校验失败", address)
             self._emit_status(f"runtime token rejected from {address}")
             return
 
+        logger.debug("收到来自 %s 的首条 runtime 消息, type: %s", address, first_message.get("type"))
         self._record_message(first_message, address)
         if first_message.get("type") == "channel.open":
             self._handle_channel(handler, first_message, address)
@@ -877,6 +942,7 @@ class HotpatcherRuntimeHost:
             try:
                 message = self._decode(raw_line)
             except Exception as exc:
+                logger.warning("来自 %s 的非法 runtime 消息: %s", address, exc)
                 self._emit_status(f"invalid runtime message from {address}: {exc}")
                 continue
             self._record_message(message, address)
@@ -892,22 +958,26 @@ class HotpatcherRuntimeHost:
         if channel_name == "services":
             channel = RuntimeServiceChannel(handler.wfile, on_close=self._remove_service_channel)
             self._service_channel = channel
+            logger.info("services channel 已连接, 来源: %s", address)
             self._emit_status(f"services channel connected from {address}")
             try:
                 for raw_line in handler.rfile:
                     try:
                         incoming = self._decode(raw_line)
                     except Exception as exc:
+                        logger.warning("来自 %s 的非法 services 消息: %s", address, exc)
                         self._emit_status(f"invalid services message from {address}: {exc}")
                         continue
                     self._record_message(incoming, address)
                     channel.handle_message(incoming)
             finally:
                 channel.close()
+                logger.info("services channel 已断开, 来源: %s", address)
                 self._emit_status("services channel disconnected")
             return
 
         if channel_name == "fault":
+            logger.debug("fault channel 已连接, 来源: %s", address)
             self._emit_status(f"fault channel connected from {address}")
             for raw_line in handler.rfile:
                 payload = {"stream": "fault", "text": raw_line.decode("utf-8", errors="replace"), "source": "fault"}
@@ -919,21 +989,25 @@ class HotpatcherRuntimeHost:
         message: dict[str, Any],
     ) -> None:
         message_type = str(message.get("type", ""))
+        message_id = message.get("id")
+        logger.debug("处理 runtime 消息, id: %s, type: %s", message_id, message_type)
         if message_type.startswith("log."):
             self._record_log(RuntimeLogEntry(message_type, dict(message.get("payload", {}) if isinstance(message.get("payload"), dict) else {})))
 
-        message_id = message.get("id")
         if message_id is None:
             return
 
         if message_type == "config.get":
+            logger.debug("响应 config.get 请求, id: %s", message_id)
             self._send_response(handler, message_id, {"config": self._safe_config()})
             return
 
         if message_type.startswith("file."):
             if self.confirm_file_operation is not None and self.confirm_file_operation(message_type, self._payload(message)):
+                logger.debug("响应 file 请求 %s, id: %s, 已接受", message_type, message_id)
                 self._send_response(handler, message_id, {"accepted": True})
             else:
+                logger.warning("file 操作 %s (id: %s) 被拒绝", message_type, message_id)
                 self._send_error(handler, message_id, "cancelled", "file operation cancelled")
             return
 
@@ -950,6 +1024,7 @@ class HotpatcherRuntimeHost:
                 self._record_browser_event(url)
             else:
                 diagnostic = "rejected malformed browser.open runtime event"
+                logger.warning("拒绝格式错误的 browser.open 消息, 来源: %s", address)
                 with self._lock:
                     self.browser_diagnostics.append(diagnostic)
                     del self.browser_diagnostics[:-100]
@@ -968,6 +1043,7 @@ class HotpatcherRuntimeHost:
             overflow = len(self.browser_events) - self._browser_retention
             if overflow > 0:
                 del self.browser_events[:overflow]
+        logger.debug("记录浏览器事件, sequence: %s, url: %s", event.sequence, url)
 
     def read_browser_events(self, since_cursor: int = 0, limit: int = 100) -> dict[str, Any]:
         """读取已校验浏览器事件的有界单调切片。
@@ -995,6 +1071,7 @@ class HotpatcherRuntimeHost:
                 if event.sequence >= start_cursor
             ][:bounded_limit]
             next_cursor = selected[-1].sequence + 1 if selected else start_cursor
+            logger.debug("读取浏览器事件, since_cursor: %s, limit: %s, 返回 %s 条", requested, bounded_limit, len(selected))
             return {
                 "runtime_identity": self.runtime_identity,
                 "events": [
@@ -1040,6 +1117,7 @@ class HotpatcherRuntimeHost:
             start_cursor = max(requested, first_cursor)
             selected = [item for item in self.log_entries if item.sequence >= start_cursor][:bounded_limit]
             next_cursor = selected[-1].sequence + 1 if selected else start_cursor
+            logger.debug("读取 runtime 日志, since_cursor: %s, limit: %s, 返回 %s 条", requested, bounded_limit, len(selected))
             return {
                 "logs": [
                     {
@@ -1060,11 +1138,13 @@ class HotpatcherRuntimeHost:
         try:
             config = self.get_config()
         except Exception:
+            logger.exception("获取 hotpatcher 配置失败, 返回空配置")
             config = {}
         return config if isinstance(config, dict) else {}
 
     def _remove_service_channel(self, channel: RuntimeServiceChannel) -> None:
         if self._service_channel is channel:
+            logger.debug("移除已断开的 services channel")
             self._service_channel = None
 
     def _check_token(self, message: dict[str, Any]) -> bool:
@@ -1145,8 +1225,10 @@ def wait_for_runtime_log(
         with host._lock:  # pylint: disable=protected-access
             for entry in host.log_entries:
                 if predicate(entry):
+                    logger.debug("等待到符合条件的 runtime 日志")
                     return entry
         time.sleep(0.02)
+    logger.debug("等待 runtime 日志超时")
     return None
 
 
@@ -1168,6 +1250,8 @@ def wait_for_service_channel(host: HotpatcherRuntimeHost, timeout: float = 2.0) 
     deadline = time.time() + timeout
     while time.time() < deadline:
         if host.service_channel_available:
+            logger.debug("services channel 已连接")
             return True
         time.sleep(0.02)
+    logger.debug("等待 services channel 连接超时")
     return False

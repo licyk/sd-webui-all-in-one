@@ -299,6 +299,7 @@ def snapshot_to_dict(value: object) -> JsonValue:
     if isinstance(value, Path):
         return value.as_posix()
     if is_dataclass(value) and not isinstance(value, type):
+        logger.debug("序列化快照对象: %s", type(value).__name__)
         return {field_info.name: snapshot_to_dict(getattr(value, field_info.name)) for field_info in fields(value)}
     if isinstance(value, dict):
         return {str(key): snapshot_to_dict(item) for key, item in value.items()}
@@ -326,6 +327,7 @@ def collect_python_info() -> PythonSnapshot:
     Returns:
         PythonSnapshot: 当前 Python 解释器快照。
     """
+    logger.debug("采集 Python 解释器信息")
     return PythonSnapshot(
         version=platform.python_version(),
         implementation=platform.python_implementation(),
@@ -340,6 +342,7 @@ def collect_system_info() -> SystemSnapshot:
     Returns:
         SystemSnapshot: 当前系统环境快照。
     """
+    logger.debug("采集系统信息: %s/%s", platform.system() or sys.platform, platform.machine() or "unknown")
     return SystemSnapshot(
         system=platform.system() or sys.platform,
         architecture=platform.machine() or "unknown",
@@ -350,6 +353,7 @@ def _read_distribution_text(dist: metadata.Distribution, filename: str) -> str |
     try:
         return dist.read_text(filename)
     except Exception:
+        logger.warning("读取发行版元数据文件失败: %s", filename)
         return None
 
 
@@ -455,6 +459,7 @@ def _parse_direct_url(raw_direct_url: str | None) -> DirectUrlSnapshot | None:
     try:
         data = json.loads(raw_direct_url)
     except json.JSONDecodeError:
+        logger.warning("解析 direct_url 失败: %s", raw_direct_url[:120])
         return None
     if not isinstance(data, dict):
         return None
@@ -613,6 +618,7 @@ def snapshot_from_dict(data: JsonObject) -> WebUiSnapshot:
 
     packages = [_package_from_json(item, f"packages[{index}]") for index, item in enumerate(_require_list(_get_required(data, "packages", "packages"), "packages"))]
     extensions = [_extension_from_json(item, f"extensions[{index}]") for index, item in enumerate(_require_list(_get_required(data, "extensions", "extensions"), "extensions"))]
+    logger.debug("解析快照: 包 %s 个, 扩展 %s 个", len(packages), len(extensions))
 
     return WebUiSnapshot(
         schema_version=schema_version,
@@ -640,11 +646,14 @@ def load_snapshot(path: Path) -> WebUiSnapshot:
         ValueError:
             当输入数据无效或快照内容不匹配时抛出。
     """
+    logger.info("加载快照文件: %s", path)
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as e:
+        logger.error("快照文件不是有效 JSON: %s", path)
         raise ValueError(f"快照文件不是有效 JSON: {path}") from e
     snapshot_data = _require_object(data, "snapshot")
+    logger.debug("快照文件顶层键数量: %s", len(snapshot_data))
     if _is_comfyui_manager_snapshot(snapshot_data):
         return comfyui_manager_snapshot_from_dict(snapshot_data, path)
     return snapshot_from_dict(snapshot_data)
@@ -660,10 +669,14 @@ def _package_snapshots_from_comfyui_manager_pips(value: JsonValue) -> list[Packa
     packages: list[PackageSnapshot] = []
     for name, version in value.items():
         if not isinstance(name, str):
+            logger.debug("跳过非字符串包名")
             continue
         if isinstance(version, str) and version:
             packages.append(PackageSnapshot(name=name, version=version))
-    return sorted(packages, key=lambda item: item.name.lower())
+            logger.debug("解析 pip 包: %s %s", name, version)
+    result = sorted(packages, key=lambda item: item.name.lower())
+    logger.debug("ComfyUI-Manager pip 包: %s 个", len(result))
+    return result
 
 
 def comfyui_manager_snapshot_from_dict(data: JsonObject, snapshot_path: Path | None = None) -> WebUiSnapshot:
@@ -689,6 +702,7 @@ def comfyui_manager_snapshot_from_dict(data: JsonObject, snapshot_path: Path | N
             name = get_repo_name_from_url(url)
             commit = info.get("hash") if isinstance(info.get("hash"), str) else None
             disabled = info.get("disabled") if isinstance(info.get("disabled"), bool) else False
+            logger.debug("解析 ComfyUI-Manager git 节点: %s (%s)", name, url)
             extensions.append(
                 ExtensionSnapshot(
                     name=name,
@@ -700,6 +714,8 @@ def comfyui_manager_snapshot_from_dict(data: JsonObject, snapshot_path: Path | N
                     source_type="git",
                 )
             )
+    git_node_count = len(extensions)
+    logger.debug("ComfyUI-Manager git 节点数量: %s", git_node_count)
 
     cnr_nodes = data.get("cnr_custom_nodes", {})
     if isinstance(cnr_nodes, dict):
@@ -707,6 +723,7 @@ def comfyui_manager_snapshot_from_dict(data: JsonObject, snapshot_path: Path | N
             if not isinstance(node_id, str) or not node_id:
                 continue
             version_text = str(version) if version is not None else None
+            logger.debug("解析 ComfyUI-Manager CNR 节点: %s (%s)", node_id, version_text)
             extensions.append(
                 ExtensionSnapshot(
                     name=node_id,
@@ -718,6 +735,8 @@ def comfyui_manager_snapshot_from_dict(data: JsonObject, snapshot_path: Path | N
                     registry_version=version_text,
                 )
             )
+    cnr_node_count = len(extensions) - git_node_count
+    logger.debug("ComfyUI-Manager CNR 节点数量: %s", cnr_node_count)
 
     file_nodes = data.get("file_custom_nodes", [])
     if isinstance(file_nodes, list):
@@ -728,6 +747,7 @@ def comfyui_manager_snapshot_from_dict(data: JsonObject, snapshot_path: Path | N
             if not isinstance(filename, str) or not filename:
                 continue
             disabled = raw_item.get("disabled") if isinstance(raw_item.get("disabled"), bool) else filename.endswith(".disabled")
+            logger.debug("解析 ComfyUI-Manager 文件节点: %s", filename)
             extensions.append(
                 ExtensionSnapshot(
                     name=filename,
@@ -737,10 +757,13 @@ def comfyui_manager_snapshot_from_dict(data: JsonObject, snapshot_path: Path | N
                     source_type="file",
                 )
             )
+    file_node_count = len(extensions) - git_node_count - cnr_node_count
+    logger.debug("ComfyUI-Manager 文件节点数量: %s", file_node_count)
 
     comfyui_commit = data.get("comfyui")
     kernel = None
     if isinstance(comfyui_commit, str) and comfyui_commit:
+        logger.debug("ComfyUI-Manager 内核提交: %s", comfyui_commit)
         kernel = RepositorySnapshot(
             path=Path("."),
             name="ComfyUI",
@@ -748,12 +771,15 @@ def comfyui_manager_snapshot_from_dict(data: JsonObject, snapshot_path: Path | N
             commit=comfyui_commit,
         )
 
+    packages = _package_snapshots_from_comfyui_manager_pips(data.get("pips"))
+    logger.debug("ComfyUI-Manager pip 包数量: %s", len(packages))
+    logger.info("转换 ComfyUI-Manager 快照完成: 扩展 %s 个, 包 %s 个", len(extensions), len(packages))
     return WebUiSnapshot(
         schema_version=SNAPSHOT_SCHEMA_VERSION,
         created_at=utc_now_iso(),
         webui=WebUiIdentitySnapshot(name="ComfyUI", type="comfyui", path=snapshot_path.parent if snapshot_path else Path(".")),
         python=collect_python_info(),
-        packages=_package_snapshots_from_comfyui_manager_pips(data.get("pips")),
+        packages=packages,
         kernel=kernel,
         extensions=extensions,
         system=collect_system_info(),
@@ -800,6 +826,7 @@ def _parse_wheel_metadata(raw_wheel: str | None) -> WheelSnapshot | None:
         elif normalized_key == "tag":
             tags.append(normalized_value)
 
+    logger.debug("解析 WHEEL 元数据: generator=%s, 标签数=%s", generator, len(tags))
     return WheelSnapshot(
         generator=generator,
         root_is_purelib=root_is_purelib,
@@ -814,12 +841,15 @@ def collect_installed_packages() -> list[PackageSnapshot]:
         list[PackageSnapshot]: 已安装 Python 包快照列表。
     """
     packages: list[PackageSnapshot] = []
+    logger.info("开始采集已安装 Python 包")
     for dist in metadata.distributions():
         try:
             name = dist.metadata["Name"]
         except KeyError:
+            logger.debug("跳过无名称的发行版")
             continue
         if not name:
+            logger.debug("跳过名称为空的发行版")
             continue
 
         direct_url = _parse_direct_url(_read_distribution_text(dist, "direct_url.json"))
@@ -839,8 +869,11 @@ def collect_installed_packages() -> list[PackageSnapshot]:
                 wheel=wheel,
             )
         )
+        logger.debug("采集到包: %s %s", name, dist.version)
 
-    return sorted(packages, key=lambda item: item.name.lower())
+    result = sorted(packages, key=lambda item: item.name.lower())
+    logger.info("已采集 %s 个已安装 Python 包", len(result))
+    return result
 
 
 def repository_state_to_snapshot(state: RepositoryState) -> RepositorySnapshot:
@@ -883,6 +916,7 @@ def repository_dirty(path: Path, is_git_repo: bool) -> bool | None:
     try:
         return run_git_output(path, "status", "--porcelain") != ""
     except Exception:
+        logger.warning("检查 Git 仓库变更状态失败: %s", path)
         return None
 
 
@@ -896,9 +930,13 @@ def collect_repository_snapshot(path: Path) -> RepositorySnapshot:
     Returns:
         RepositorySnapshot: Git 仓库快照。
     """
+    logger.debug("采集仓库快照: %s", path)
     state = inspect_repository(path)
+    if state.error:
+        logger.warning("仓库检查存在问题: %s (%s)", path, state.error)
     snapshot = repository_state_to_snapshot(state)
     snapshot.dirty = repository_dirty(path, state.is_git_repo)
+    logger.debug("仓库快照: 名称=%s, is_git_repo=%s, 分支=%s, 提交=%s", snapshot.name, snapshot.is_git_repo, snapshot.branch, snapshot.commit)
     return snapshot
 
 
@@ -923,16 +961,21 @@ def collect_git_extensions(
     if ignored_names is None:
         ignored_names = {"__pycache__"}
     if not extension_dir.is_dir():
+        logger.warning("扩展目录不存在: %s", extension_dir)
         return []
 
+    logger.info("开始采集 Git 扩展: %s", extension_dir)
     extensions: list[ExtensionSnapshot] = []
     for ext_path in sorted(extension_dir.iterdir(), key=lambda item: item.name.lower()):
         if ext_path.name in ignored_names or not ext_path.is_dir():
+            logger.debug("跳过忽略或非目录的条目: %s", ext_path)
             continue
         repo = collect_repository_snapshot(ext_path)
         if not repo.is_git_repo:
+            logger.warning("跳过非 Git 仓库的扩展: %s", ext_path)
             continue
         enabled = enabled_resolver(ext_path.name, ext_path) if enabled_resolver is not None else None
+        logger.debug("采集到 Git 扩展: %s (%s)", ext_path.name, repo.url)
         extensions.append(
             ExtensionSnapshot(
                 name=ext_path.name,
@@ -949,6 +992,7 @@ def collect_git_extensions(
                 source_type="git",
             )
         )
+    logger.info("已采集 %s 个 Git 扩展", len(extensions))
     return extensions
 
 
@@ -977,6 +1021,10 @@ def build_webui_snapshot(
         WebUiSnapshot: WebUI 环境快照。
     """
     logger.info("开始采集 %s 环境快照: %s", webui_name, webui_path)
+    packages = collect_installed_packages() if include_packages else []
+    kernel = collect_repository_snapshot(webui_path)
+    extension_list = extensions or []
+    logger.info("环境快照采集完成: 包 %s 个, 扩展 %s 个", len(packages), len(extension_list))
     return WebUiSnapshot(
         schema_version=SNAPSHOT_SCHEMA_VERSION,
         created_at=utc_now_iso(),
@@ -986,9 +1034,9 @@ def build_webui_snapshot(
             path=webui_path,
         ),
         python=collect_python_info(),
-        packages=collect_installed_packages() if include_packages else [],
-        kernel=collect_repository_snapshot(webui_path),
-        extensions=extensions or [],
+        packages=packages,
+        kernel=kernel,
+        extensions=extension_list,
         system=collect_system_info(),
     )
 
@@ -1007,6 +1055,7 @@ def save_snapshot(snapshot: WebUiSnapshot, output: Path) -> Path:
     """
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(snapshot_to_dict(snapshot), ensure_ascii=False, indent=2), encoding="utf-8")
+    logger.info("快照已保存: %s", output)
     return output
 
 
@@ -1069,13 +1118,17 @@ def list_webui_snapshots(
     """
     directory = snapshot_dir or webui_path / "snapshots"
     if not directory.exists():
+        logger.warning("快照目录不存在: %s", directory)
         return []
 
+    logger.info("开始列出快照: %s", directory)
     summaries: list[SnapshotSummary] = []
     for item in sorted(directory.glob("*.json"), key=lambda path: path.stat().st_mtime, reverse=True):
+        logger.debug("读取快照文件: %s", item)
         try:
             snapshot = load_snapshot(item)
         except Exception as exc:
+            logger.warning("无法解析快照文件: %s (%s)", item, exc)
             summaries.append(SnapshotSummary(path=item, filename=item.name, error=str(exc)))
             continue
         summaries.append(
@@ -1089,6 +1142,7 @@ def list_webui_snapshots(
                 extension_count=len(snapshot.extensions),
             )
         )
+    logger.info("共找到 %s 个快照", len(summaries))
     return summaries
 
 
@@ -1112,9 +1166,11 @@ def create_webui_snapshot(
     Returns:
         SavedSnapshot: 保存路径和完整快照。
     """
+    logger.info("开始创建 WebUI 快照: %s", webui_path)
     snapshot = snapshot_factory(webui_path, include_packages)
     output = default_snapshot_output(snapshot, output_dir=snapshot_dir or webui_path / "snapshots")
     save_snapshot(snapshot, output)
+    logger.info("WebUI 快照创建完成: %s (包 %s 个, 扩展 %s 个)", output, len(snapshot.packages), len(snapshot.extensions))
     return SavedSnapshot(path=output, snapshot=snapshot)
 
 
@@ -1131,6 +1187,8 @@ def delete_snapshot(snapshot_path: Path) -> Path:
         FileNotFoundError: 快照文件不存在。
     """
     if not snapshot_path.is_file():
+        logger.warning("快照文件不存在, 无法删除: %s", snapshot_path)
         raise FileNotFoundError(f"Snapshot not found: {snapshot_path}")
     snapshot_path.unlink()
+    logger.info("快照已删除: %s", snapshot_path)
     return snapshot_path

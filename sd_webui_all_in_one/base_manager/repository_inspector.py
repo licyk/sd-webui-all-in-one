@@ -7,6 +7,14 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sd_webui_all_in_one import git_warpper
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
+from sd_webui_all_in_one.logger import get_logger
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 
 @dataclass(slots=True)
@@ -59,8 +67,11 @@ def run_git_output(path: Path, *args: str) -> str:
     Returns:
         str: 命令输出
     """
+    logger.debug("执行 Git 命令: '%s' %s", path, " ".join(args))
     output = git_warpper.run_git(*args, path=path, live=False)
-    return "" if output is None else output.strip()
+    if output is None:
+        return ""
+    return output.strip()
 
 
 def _resolve_git_dir(path: Path) -> Path | None:
@@ -83,8 +94,10 @@ def _resolve_git_dir(path: Path) -> Path | None:
     try:
         content = git_path.read_text(encoding="utf-8").strip()
     except OSError:
+        logger.error("读取 .git 文件失败: '%s'", git_path)
         return None
     if not content.startswith("gitdir:"):
+        logger.warning(".git 文件内容未指向 gitdir: '%s'", content)
         return None
 
     git_dir = Path(content.split(":", 1)[1].strip())
@@ -107,6 +120,7 @@ def _read_text(path: Path) -> str | None:
     try:
         return path.read_text(encoding="utf-8").strip()
     except OSError:
+        logger.debug("读取文本文件失败: '%s'", path)
         return None
 
 
@@ -128,9 +142,11 @@ def _resolve_common_git_dir(git_dir: Path) -> Path:
     try:
         common_dir = Path(common_dir_file.read_text(encoding="utf-8").strip())
     except OSError:
+        logger.error("读取 commondir 文件失败: '%s'", common_dir_file)
         return git_dir
     if not common_dir.is_absolute():
         common_dir = git_dir / common_dir
+    logger.debug("解析到 Git 公共目录: '%s'", common_dir)
     return common_dir
 
 
@@ -166,7 +182,10 @@ def _read_repository_branch(git_dir: Path) -> str | None:
         return None
     ref_prefix = "ref: refs/heads/"
     if head.startswith(ref_prefix):
-        return head.removeprefix(ref_prefix)
+        branch = head.removeprefix(ref_prefix)
+        logger.debug("从 HEAD 解析到当前分支: '%s'", branch)
+        return branch
+    logger.debug("HEAD 为 detached 状态: '%s'", head)
     return None
 
 
@@ -186,12 +205,14 @@ def _read_repository_remote_url(git_dir: Path, branch: str | None) -> str | None
     common_git_dir = _resolve_common_git_dir(git_dir)
     config_path = common_git_dir / "config"
     if not config_path.is_file():
+        logger.debug("未找到 Git config 文件: '%s'", config_path)
         return None
 
     parser = configparser.ConfigParser(interpolation=None, strict=False)
     try:
         parser.read(config_path, encoding="utf-8")
     except configparser.Error:
+        logger.error("解析 Git config 失败: '%s'", config_path)
         return None
 
     remote_name = "origin"
@@ -226,6 +247,7 @@ def _read_ref_from_packed_refs(git_dir: Path, ref: str) -> str | None:
     try:
         lines = packed_refs.read_text(encoding="utf-8").splitlines()
     except OSError:
+        logger.error("读取 packed-refs 失败: '%s'", packed_refs)
         return None
 
     for line in lines:
@@ -234,6 +256,7 @@ def _read_ref_from_packed_refs(git_dir: Path, ref: str) -> str | None:
             continue
         commit, sep, packed_ref = line.partition(" ")
         if sep and packed_ref == ref and _is_full_commit_hash(commit):
+            logger.debug("从 packed-refs 找到引用 '%s' 对应提交: '%s'", ref, commit)
             return commit
     return None
 
@@ -255,16 +278,19 @@ def _read_ref_commit(git_dir: Path, ref: str) -> str | None:
     search_dirs = [git_dir]
     if common_git_dir != git_dir:
         search_dirs.append(common_git_dir)
+        logger.debug("引用搜索包含公共目录: '%s'", common_git_dir)
 
     for base_dir in search_dirs:
         commit = _read_text(base_dir / ref)
         if _is_full_commit_hash(commit):
+            logger.debug("从 loose ref 找到引用 '%s' 对应提交: '%s'", ref, commit)
             return commit
 
     for base_dir in search_dirs:
         commit = _read_ref_from_packed_refs(base_dir, ref)
         if commit is not None:
             return commit
+    logger.debug("未找到引用 '%s' 对应的提交", ref)
     return None
 
 
@@ -283,8 +309,14 @@ def _read_head_commit(git_dir: Path) -> str | None:
     if head is None:
         return None
     if head.startswith("ref:"):
-        return _read_ref_commit(git_dir, head.split(":", 1)[1].strip())
-    return head if _is_full_commit_hash(head) else None
+        commit = _read_ref_commit(git_dir, head.split(":", 1)[1].strip())
+        if commit is not None:
+            logger.debug("HEAD 引用的提交: '%s'", commit)
+        return commit
+    if _is_full_commit_hash(head):
+        logger.debug("HEAD 为 detached 提交: '%s'", head)
+        return head
+    return None
 
 
 def _format_git_commit_time(timestamp: str, offset: str) -> str | None:
@@ -301,10 +333,12 @@ def _format_git_commit_time(timestamp: str, offset: str) -> str | None:
         str | None: 格式化时间
     """
     if len(offset) != 5 or offset[0] not in "+-" or not offset[1:].isdigit():
+        logger.debug("无效时区偏移: '%s'", offset)
         return None
     try:
         seconds = int(timestamp)
     except ValueError:
+        logger.debug("无效时间戳: '%s'", timestamp)
         return None
 
     sign = 1 if offset[0] == "+" else -1
@@ -327,6 +361,7 @@ def _parse_loose_commit_object(content: bytes) -> tuple[str | None, str | None]:
     """
     header, sep, body = content.partition(b"\x00")
     if sep == b"" or not header.startswith(b"commit "):
+        logger.debug("非 commit 类型的 loose object")
         return None, None
 
     text = body.decode("utf-8", errors="replace")
@@ -341,6 +376,7 @@ def _parse_loose_commit_object(content: bytes) -> tuple[str | None, str | None]:
         break
 
     message = raw_message.splitlines()[0] if raw_message else None
+    logger.debug("解析 commit object 完成: 提交时间 '%s', 提交信息 '%s'", commit_date, message)
     return commit_date, message
 
 
@@ -362,6 +398,7 @@ def _read_loose_commit_details(git_dir: Path, commit: str) -> tuple[str | None, 
     try:
         content = zlib.decompress(object_path.read_bytes())
     except (OSError, zlib.error):
+        logger.debug("读取或解压 loose object 失败: '%s'", object_path)
         return None, None
     return _parse_loose_commit_object(content)
 
@@ -379,13 +416,16 @@ def _read_repository_head_from_git(path: Path) -> tuple[str | None, str | None, 
     """
     try:
         output = run_git_output(path, "show", "-s", "--format=%H%x1f%ci%x1f%s", "HEAD")
-    except Exception:
+    except Exception as exc:
+        logger.error("执行 git show 读取 HEAD 失败: '%s'", exc)
         return None
 
     parts = output.split("\x1f", 2)
     if len(parts) == 3:
         commit, commit_date, message = parts
+        logger.debug("git show 解析 HEAD 成功: 提交 '%s', 时间 '%s'", commit or None, commit_date or None)
         return commit or None, commit_date or None, message or None
+    logger.debug("git show 输出格式不符合预期: '%s'", output)
     return None
 
 
@@ -402,8 +442,10 @@ def _read_repository_head_from_git_dir(git_dir: Path) -> tuple[str | None, str |
     """
     commit = _read_head_commit(git_dir)
     if commit is None:
+        logger.debug("从 Git 目录未解析到当前提交")
         return None, None, None
     commit_date, message = _read_loose_commit_details(git_dir, commit)
+    logger.debug("从 Git 目录解析 HEAD 完成: 提交 '%s', 时间 '%s'", commit, commit_date)
     return commit, commit_date, message
 
 
@@ -422,13 +464,16 @@ def inspect_repository(path: Path) -> RepositoryState:
     """
     path = Path(path)
     state = RepositoryState(path=path, is_git_repo=False, name=path.name)
+    logger.info("开始检查仓库: '%s'", path)
     if not path.exists():
         state.error = "路径不存在"
+        logger.warning("仓库路径不存在: '%s'", path)
         return state
 
     git_dir = _resolve_git_dir(path)
     if git_dir is None:
         state.error = "非 Git 仓库"
+        logger.warning("非 Git 仓库: '%s'", path)
         return state
 
     state.is_git_repo = True
@@ -436,6 +481,14 @@ def inspect_repository(path: Path) -> RepositoryState:
     state.url = _read_repository_remote_url(git_dir, state.branch)
     head_info = _read_repository_head_from_git(path)
     if head_info is None:
+        logger.warning("git show 读取 HEAD 失败, 回退到本地 Git 目录解析: '%s'", path)
         head_info = _read_repository_head_from_git_dir(git_dir)
     state.commit, state.commit_date, state.message = head_info
+    logger.info(
+        "仓库检查完成: '%s', 分支 '%s', 提交 '%s', 远程地址 '%s'",
+        path,
+        state.branch,
+        state.commit,
+        state.url,
+    )
     return state

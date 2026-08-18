@@ -344,6 +344,14 @@ def _finalize_plan(plan: SnapshotRestorePlan) -> SnapshotRestorePlan:
                 required.append(flag)
     plan.required_options = required
     plan.restorable = plan.webui_type_match and not plan.blockers
+    logger.debug(
+        "恢复计划汇总: 包变更 %s, 内核变更 %s, 扩展变更 %s, 阻断 %s, 可恢复: %s",
+        plan.diff_summary.packages.changed,
+        plan.diff_summary.kernel.changed,
+        plan.diff_summary.extensions.changed,
+        len(plan.blockers),
+        plan.restorable,
+    )
     return plan
 
 
@@ -555,6 +563,7 @@ def _pytorch_env(packages: list[PackageSnapshot], use_pypi_mirror: bool) -> dict
         "find_links": [],
     }
     mirrors[kind] = url
+    logger.debug("PyTorch 特殊源: dtype=%s, kind=%s", dtype, kind)
     return generate_uv_and_pip_env_mirror_config(
         index_url=mirrors["index_url"],
         extra_index_url=mirrors["extra_index_url"],
@@ -581,10 +590,12 @@ def _install_pytorch_packages(packages: list[PackageSnapshot], options: Snapshot
 
     torch_packages = [package for package in packages if _normalized_package_name(package.name) != "xformers"]
     xformers_packages = [package for package in packages if _normalized_package_name(package.name) == "xformers"]
+    logger.debug("PyTorch 相关包: torch=%s, xformers=%s", [p.name for p in torch_packages], [p.name for p in xformers_packages])
     custom_env = _pytorch_env(packages, use_pypi_mirror=options.use_pypi_mirror)
     torch_package = [*[_package_version_spec(package) for package in torch_packages], "--no-deps"] if torch_packages else None
     xformers_package = [*[_package_version_spec(package) for package in xformers_packages], "--no-deps"] if xformers_packages else None
 
+    logger.info("恢复 PyTorch 相关包: %s", ", ".join(package.name for package in packages))
     install_pytorch_with_fallback(
         torch_package=torch_package,
         xformers_package=xformers_package,
@@ -622,6 +633,7 @@ def _build_package_restore_plan(
         normalized = _normalized_package_name(package.name)
         current = current_packages.get(normalized)
         local_path = _local_path_from_package(package)
+        logger.debug("检查 Python 包: %s (当前 %s, 快照 %s)", package.name, current.version if current is not None else "未安装", package.version)
 
         def make_item(action: PackageRestoreAction, reason: str) -> PackageRestorePlanItem:
             return PackageRestorePlanItem(
@@ -730,6 +742,7 @@ def restore_python_packages(snapshot: WebUiSnapshot, options: SnapshotRestoreOpt
     pytorch_packages = [package for package in to_install if _normalized_package_name(package.name) in PYTORCH_PACKAGE_NAMES]
     other_packages = [package for package in to_install if _normalized_package_name(package.name) not in PYTORCH_PACKAGE_NAMES]
 
+    logger.info("开始恢复 Python 包, 待安装 %s 个 (PyTorch %s 个, 其他 %s 个)", len(to_install), len(pytorch_packages), len(other_packages))
     _install_pytorch_packages(pytorch_packages, options)
     custom_env = _pypi_env(use_pypi_mirror=options.use_pypi_mirror)
     _install_packages(other_packages, custom_env=custom_env, use_uv=options.use_uv)
@@ -786,7 +799,8 @@ def _same_commit(current_commit: str | None, target_commit: str | None) -> bool:
 def _current_git_commit(path: Path) -> str | None:
     try:
         return git_warpper.get_current_commit(path)
-    except Exception:
+    except Exception as e:
+        logger.error("获取 '%s' 当前 Git commit 失败: %s", path, e)
         return None
 
 
@@ -796,6 +810,7 @@ def _build_git_restore_plan(
     options: SnapshotRestoreOptions,
 ) -> GitRestorePlanItem:
     name = _repo_target_name(repo)
+    logger.debug("构建 Git 恢复计划: %s (目标: %s)", name, target_path)
     if not repo.is_git_repo:
         return GitRestorePlanItem(
             name=name,
@@ -895,6 +910,7 @@ def _build_git_restore_plan(
 
 def _build_missing_kernel_plan(snapshot: WebUiSnapshot, webui_path: Path) -> GitRestorePlanItem:
     kernel = snapshot.kernel
+    logger.warning("内核目录不存在, 生成阻断计划: %s", webui_path)
     return GitRestorePlanItem(
         name=_repo_target_name(kernel) if kernel is not None else webui_path.name,
         path=webui_path,
@@ -906,6 +922,7 @@ def _build_missing_kernel_plan(snapshot: WebUiSnapshot, webui_path: Path) -> Git
 
 
 def _ensure_kernel_target_exists(webui_path: Path) -> None:
+    logger.debug("检查内核目录: %s", webui_path)
     if not webui_path.exists():
         raise FileNotFoundError(f"内核目录不存在, 请先通过 installer 准备 WebUI kernel 后再恢复快照: {webui_path}")
 
@@ -922,7 +939,8 @@ def _sd_webui_extension_enabled(webui_path: Path, name: str) -> bool | None:
     config_path = webui_path / "config.json"
     try:
         data = json.loads(config_path.read_text(encoding="utf-8"))
-    except Exception:
+    except Exception as e:
+        logger.warning("读取扩展启用配置失败: %s: %s", config_path, e)
         return None
     if not isinstance(data, dict):
         return None
@@ -970,6 +988,7 @@ def _build_registry_restore_plan(
     registry_id = extension.registry_id or extension.name.removesuffix(".disabled")
     if not registry_id:
         return "skip_registry_missing_id", "快照缺少 Comfy Registry 节点 ID", None, extension.registry_version, None
+    logger.debug("构建 Registry 恢复计划: %s (目标版本 %s)", registry_id, extension.registry_version)
 
     resolved = comfyui_base.resolve_comfyui_custom_node_path(webui_path, extension.name) or comfyui_base.resolve_comfyui_custom_node_path(webui_path, registry_id)
     current_version = None
@@ -1005,6 +1024,7 @@ def _build_extension_restore_plan(
         normalized = normalize_extension_name(extension.name, strip_disabled_suffix=tools.strip_disabled_suffix)
         target_path = _extension_target_path(webui_path, extension, tools)
         source_type = _extension_source_type(extension)
+        logger.debug("检查扩展: %s (来源: %s)", extension.name, source_type)
         git_plan = None if source_type == "comfy-registry" else _build_git_restore_plan(extension, target_path, options)
         registry_action = None
         current_version = None
@@ -1112,8 +1132,10 @@ def restore_git_repository(
         return target_path.is_dir()
     if not _ensure_git_target(repo, target_path):
         return False
+    logger.debug("恢复 Git 仓库: %s (目标: %s, commit: %s)", _repo_target_name(repo), target_path, repo.commit)
 
     if repository_dirty(target_path, True) and not options.force_git_reset:
+        logger.error("目标仓库存在未提交变更, 中止恢复: %s", target_path)
         raise RuntimeError(f"'{target_path}' 存在未提交变更, 请先处理或使用强制恢复")
 
     try:
@@ -1122,6 +1144,7 @@ def restore_git_repository(
         logger.warning("拉取 '%s' 远程引用失败, 将尝试使用本地提交恢复: %s", target_path, e)
 
     git_warpper.switch_commit(target_path, repo.commit)
+    logger.info("已切换仓库 '%s' 到快照 commit %s", target_path, repo.commit)
     return True
 
 
@@ -1148,6 +1171,7 @@ def restore_comfy_registry_extension(
     if not registry_id:
         logger.warning("快照扩展缺少 Comfy Registry 节点 ID, 跳过: %s", extension.name)
         return False
+    logger.debug("恢复 Comfy Registry 节点: %s (版本 %s)", registry_id, extension.registry_version)
     resolved = comfyui_base.resolve_comfyui_custom_node_path(webui_path, extension.name) or comfyui_base.resolve_comfyui_custom_node_path(webui_path, registry_id)
     target_path = resolved[0] if resolved is not None else webui_path / "custom_nodes" / registry_id
     custom_env = _pypi_env(use_pypi_mirror=options.use_pypi_mirror)
@@ -1163,6 +1187,7 @@ def restore_comfy_registry_extension(
     except comfy_registry.ComfyRegistryInstallUnavailableError as e:
         logger.warning("快照中的 Comfy Registry 节点不可安装，已跳过: %s", e)
         return False
+    logger.info("Comfy Registry 节点已恢复: %s", registry_id)
     return True
 
 
@@ -1181,6 +1206,7 @@ def _target_extension_names(snapshot: WebUiSnapshot, tools: ExtensionRestoreTool
 def _prune_extensions(webui_path: Path, snapshot: WebUiSnapshot, tools: ExtensionRestoreTools) -> None:
     extension_root = webui_path / tools.directory_name
     if not extension_root.is_dir():
+        logger.debug("扩展目录不存在, 跳过清理: %s", extension_root)
         return
 
     target_names = _target_extension_names(snapshot, tools)
@@ -1211,8 +1237,10 @@ def restore_extensions(snapshot: WebUiSnapshot, webui_path: Path, options: Snaps
             logger.warning("当前 WebUI 类型不支持扩展恢复: %s", snapshot.webui.type)
         return
 
+    logger.info("开始恢复扩展, 共 %s 个", len(snapshot.extensions))
     for extension in snapshot.extensions:
         source_type = _extension_source_type(extension)
+        logger.debug("恢复扩展: %s (来源: %s)", extension.name, source_type)
         if source_type == "comfy-registry" and snapshot.webui.type == "comfyui":
             restored = restore_comfy_registry_extension(extension=extension, webui_path=webui_path, options=options)
         else:
@@ -1224,9 +1252,11 @@ def restore_extensions(snapshot: WebUiSnapshot, webui_path: Path, options: Snaps
             )
         if restored and extension.enabled is not None:
             tools.set_status(webui_path, extension.name, extension.enabled)
+            logger.debug("设置扩展启用状态: %s -> %s", extension.name, extension.enabled)
 
     if options.prune_extensions:
         _prune_extensions(webui_path=webui_path, snapshot=snapshot, tools=tools)
+    logger.info("扩展恢复完成")
 
 
 def preview_webui_snapshot_restore(
@@ -1253,8 +1283,10 @@ def preview_webui_snapshot_restore(
     if options is None:
         options = SnapshotRestoreOptions()
 
+    logger.info("开始预检查快照恢复: %s -> %s", snapshot_path, webui_path)
     snapshot = load_snapshot(snapshot_path)
     webui_type_match = snapshot.webui.type == expected_webui_type
+    logger.debug("快照 WebUI 类型: %s, 期望类型: %s", snapshot.webui.type, expected_webui_type)
     plan = SnapshotRestorePlan(
         webui_type_match=webui_type_match,
         expected_webui_type=expected_webui_type,
@@ -1345,11 +1377,14 @@ def restore_webui_snapshot(
     if options is None:
         options = SnapshotRestoreOptions()
 
+    logger.info("开始恢复 WebUI 快照: %s -> %s", snapshot_path, webui_path)
     snapshot = load_snapshot(snapshot_path)
     if snapshot.webui.type != expected_webui_type:
+        logger.error("快照 WebUI 类型不匹配: 期望 '%s', 实际 '%s'", expected_webui_type, snapshot.webui.type)
         raise ValueError(f"快照 WebUI 类型不匹配: 期望 '{expected_webui_type}', 实际 '{snapshot.webui.type}'")
     if _requires_existing_kernel_target(snapshot):
         _ensure_kernel_target_exists(webui_path)
+    logger.debug("快照 WebUI 类型: %s, 名称: %s", snapshot.webui.type, snapshot.webui.name)
 
     git_env = apply_git_base_config_and_github_mirror(
         use_github_mirror=options.use_github_mirror,
@@ -1366,7 +1401,9 @@ def restore_webui_snapshot(
         if snapshot.kernel is not None and not _uses_package_kernel(snapshot):
             restore_git_repository(repo=snapshot.kernel, target_path=webui_path, options=options)
         restore_extensions(snapshot=snapshot, webui_path=webui_path, options=options)
+        logger.info("WebUI 快照恢复完成: %s", webui_path)
     finally:
+        logger.debug("恢复 GIT_CONFIG_GLOBAL 环境变量")
         if old_git_config is None:
             os.environ.pop("GIT_CONFIG_GLOBAL", None)
         else:

@@ -18,6 +18,15 @@ from sd_webui_all_in_one.pytorch_manager import (
     find_latest_pytorch_info,
     get_available_pytorch_device_type,
 )
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
+from sd_webui_all_in_one.logger import get_logger
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
+
 
 def _stable_id(namespace: str, *parts: object) -> str:
     digest = hashlib.sha256("\0".join(str(part) for part in parts).encode()).hexdigest()[:20]
@@ -31,6 +40,7 @@ def _package_versions() -> dict[str, str | None]:
             result[name] = importlib.metadata.version(name)
         except importlib.metadata.PackageNotFoundError:
             result[name] = None
+        logger.debug("检测到包 %s 的版本：%s", name, result[name])
     return result
 
 
@@ -39,8 +49,10 @@ def _unique(items: list[dict[str, Any]], kind: str) -> list[dict[str, Any]]:
     for item in items:
         item_id = item["id"]
         if item_id in seen:
+            logger.error("检测到重复的 %s 目录 id：%s", kind, item_id)
             raise ValueError(f"Duplicate {kind} catalog id: {item_id}")
         seen.add(item_id)
+    logger.debug("目录去重完成，%s 条目数量：%s", kind, len(items))
     return items
 
 
@@ -48,6 +60,14 @@ def _pytorch_item(webui_type: str, raw: PyTorchVersionInfo, recommended_id: str 
     item_id = _stable_id(
         "pytorch-combination",
         webui_type,
+        raw["name"],
+        raw["dtype"],
+        raw.get("torch_ver"),
+        raw.get("xformers_ver"),
+    )
+    logger.debug(
+        "构建 PyTorch 组合条目 %s：名称=%s，dtype=%s，torch=%s，xformers=%s",
+        item_id,
         raw["name"],
         raw["dtype"],
         raw.get("torch_ver"),
@@ -76,10 +96,12 @@ def pytorch_catalog(webui_type: str) -> dict[str, Any]:
     Returns:
         dict[str, Any]: PyTorch 环境、自动选择结果与可用组合。
     """
+    logger.info("开始构建 PyTorch 目录，WebUI 类型：%s", webui_type)
     versions = _package_versions()
     try:
         compatibility = check_torch_version_status()
     except Exception as error:
+        logger.error("PyTorch 兼容性检查失败：%s", error)
         compatibility = {
             "available_types": [],
             "gpu_list": [],
@@ -110,8 +132,10 @@ def pytorch_catalog(webui_type: str) -> dict[str, Any]:
         preview_id = f"invokeai-category:{detected}"
         available = list(PYTORCH_DEVICE_CATEGORY_LIST)
         detected_type = None
+        logger.debug("检测到 InvokeAI 设备类别：%s，可用类别数量：%s", detected, len(available))
     else:
         detected_type = auto_detect_available_pytorch_type()
+        logger.debug("检测到 PyTorch 设备类型：%s", detected_type)
         selected = find_latest_pytorch_info(detected_type)
         preview_id = _stable_id(
             "pytorch-combination",
@@ -124,6 +148,8 @@ def pytorch_catalog(webui_type: str) -> dict[str, Any]:
         items = [_pytorch_item(webui_type, item, preview_id) for item in export_pytorch_list()]
         available = get_available_pytorch_device_type()
         detected = None
+        logger.debug("可用 PyTorch 设备类型：%s", available)
+    logger.info("PyTorch 目录构建完成，WebUI 类型：%s，组合条目数量：%s", webui_type, len(items))
     return {
         "webui_type": webui_type,
         "current": {
@@ -158,7 +184,9 @@ def model_library_catalog(webui_type: str) -> dict[str, Any]:
         ValueError: WebUI 类型不支持内置模型库。
     """
     if webui_type not in SUPPORTED_WEBUI_LIST:
+        logger.error("不支持的模型库 WebUI 类型：%s", webui_type)
         raise ValueError(f"Unsupported model library webui_type: {webui_type}")
+    logger.info("开始构建模型库目录，WebUI 类型：%s", webui_type)
     raw_items = export_model_list(webui_type)
     items: list[dict[str, Any]] = []
     for raw in raw_items:
@@ -184,4 +212,6 @@ def model_library_catalog(webui_type: str) -> dict[str, Any]:
                 "details": {"filename": raw["filename"]},
             }
         )
+        logger.debug("模型库条目 %s：名称=%s，dtype=%s，可安装=%s", item_id, raw["name"], raw["dtype"], installable)
+    logger.info("模型库目录构建完成，WebUI 类型：%s，模型数量：%s", webui_type, len(items))
     return {"webui_type": webui_type, "count": len(items), "models": _unique(items, "model")}
