@@ -77,13 +77,13 @@ python <python_script.py>
 sd-webui-all-in-one self-manager download-file <url> --path <dir> --save-name <output_file_name>
 ```
 
-### 安装绘世启动器并自动配置绘世启动器所需的环境
+### 安装 Hanafubuki 启动器并自动配置所需环境
 ```powershell
-Install-Hanamizuki
+Install-Hanafubuki
 ```
 
 !!! info
-    运行该命令前请确保 Qwen TTS WebUI 已经关闭，如果运行该命令出现报错，可根据报错提示内容进行其他操作，再重新运行该命令。
+    命令会根据当前平台和架构安装 Hanafubuki，并将安装目录根级的 Python / Git 移入当前内核路径前缀目录。运行前请确保 Qwen TTS WebUI 和 Hanafubuki 均已关闭。
 
 ### 列出 Qwen TTS WebUI Installer 内置命令
 ```powershell

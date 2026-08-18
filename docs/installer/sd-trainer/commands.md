@@ -85,6 +85,14 @@ Install-Hanamizuki
 !!! info
     运行该命令前请确保 SD-Trainer 已经关闭，如果运行该命令出现报错，可根据报错提示内容进行其他操作，再重新运行该命令。
 
+### 安装 Hanafubuki 启动器并自动配置所需环境
+```powershell
+Install-Hanafubuki
+```
+
+!!! info
+    命令会根据当前平台和架构安装 Hanafubuki，并将安装目录根级的 Python / Git 移入当前内核路径前缀目录。运行前请确保 SD-Trainer、Hanafubuki 和绘世启动器均已关闭。
+
 ### 列出 SD Trainer Installer 内置命令
 ```powershell
 List-CMD

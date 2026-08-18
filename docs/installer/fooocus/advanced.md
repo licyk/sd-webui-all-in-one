@@ -72,6 +72,17 @@ Fooocus Installer 部署出来的 Fooocus 可以通过绘世启动器进行启�
 [GitHub Release 下载 :material-download:](https://github.com/licyk/term-sd/releases/download/archive/hanamizuki.exe){ .md-button }
 [Gitee Release 下载 :material-download:](https://gitee.com/licyk/term-sd/releases/download/archive/hanamizuki.exe){ .md-button }
 
+### 使用 Hanafubuki 启动器
+可在安装 Fooocus 时添加 `-InstallHanafubuki`，或进入 Fooocus Env 后运行 `Install-Hanafubuki`。安装器会按 Hugging Face、ModelScope 的顺序读取版本清单，并下载当前平台和架构对应的安装包。
+
+Hanafubuki 的安装位置如下：
+
+- Windows：`<安装目录>/hanafubuki-launcher.exe`
+- Linux：`<安装目录>/hanafubuki-launcher`
+- macOS：`<安装目录>/Hanafubuki Launcher.app`
+
+为了让 Hanafubuki 和绘世启动器共用同一套环境，安装器会将根级 Python / Git 移入当前内核路径前缀目录，即从 `<安装目录>/python`、`<安装目录>/git` 移动到 `<安装目录>/<内核路径前缀>/python`、`<安装目录>/<内核路径前缀>/git`。如果目标目录已存在，安装器不会覆盖已有环境。
+
 ### 创建快捷启动方式
 !!! info
     该设置可通过 [管理 Fooocus Installer 设置](config.md#fooocus-installer_1) 中提到的 `settings.ps1` 进行修改。
@@ -137,6 +148,7 @@ Fooocus Installer 支持使用命令参数设置安装 Fooocus 的参数，支�
 - `-PyTorchPackage` `<PyTorch 软件包>`：(需搭配 `-xFormersPackage`) 指定安装的 PyTorch 版本。如：`-PyTorchPackage "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"`
 - `-xFormersPackage` `<xFormers 软件包>`：(需搭配 `-PyTorchPackage`) 指定安装的 xFormers 版本。如：`-xFormersPackage "xformers===0.0.26.post1+cu118"`
 - `-InstallHanamizuki`：安装绘世启动器，并生成 `hanamizuki.bat` 用于启动。
+- `-InstallHanafubuki`：安装当前平台和架构对应的 Hanafubuki 启动器，并将根级 Python / Git 移入当前内核路径前缀目录。
 - `-NoCleanCache`：安装结束后保留下载的 Python 软件包缓存。
 - `-DisableModelMirror`：不使用 ModelScope 下载模型, 使用 HuggingFace 下载模型。
 - `-NoPause`：脚本执行完成后不暂停, 直接退出。

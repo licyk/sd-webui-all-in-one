@@ -98,6 +98,14 @@ uv pip install <package_name>
 List-CMD
 ```
 
+### 安装 Hanafubuki 启动器并自动配置所需环境
+```powershell
+Install-Hanafubuki
+```
+
+!!! info
+    命令会根据当前平台和架构安装 Hanafubuki，并将安装目录根级的 Python / Git 移入当前内核路径前缀目录。运行前请确保 InvokeAI 和 Hanafubuki 均已关闭。
+
 ### 查看可用的 InvokeAI 版本并切换
 （已在 [环境管理](usage.md#_2) 章节中说明）
 

@@ -17,6 +17,17 @@
 !!! warning
     如果 Qwen TTS WebUI 的路径发生移动，需要重新运行 `launch.ps1` 更新快捷启动方式。
 
+### 使用 Hanafubuki 启动器
+可在安装 Qwen TTS WebUI 时添加 `-InstallHanafubuki`，或进入 Qwen TTS WebUI Env 后运行 `Install-Hanafubuki`。安装器会按 Hugging Face、ModelScope 的顺序读取版本清单，并下载当前平台和架构对应的安装包。
+
+Hanafubuki 的安装位置如下：
+
+- Windows：`<安装目录>/hanafubuki-launcher.exe`
+- Linux：`<安装目录>/hanafubuki-launcher`
+- macOS：`<安装目录>/Hanafubuki Launcher.app`
+
+为了让 Hanafubuki 能够正确识别到环境，安装器会将根级 Python / Git 移入当前内核路径前缀目录，即从 `<安装目录>/python`、`<安装目录>/git` 移动到 `<安装目录>/<内核路径前缀>/python`、`<安装目录>/<内核路径前缀>/git`。如果目标目录已存在，安装器不会覆盖已有环境。
+
 ### 使用命令运行 Qwen TTS WebUI Installer
 Qwen TTS WebUI Installer 支持使用命令参数设置安装 Qwen TTS WebUI 的参数，支持的参数如下。
 
@@ -51,6 +62,7 @@ Qwen TTS WebUI Installer 支持使用命令参数设置安装 Qwen TTS WebUI 的
 - `-PyTorchPackage` `<PyTorch 软件包>`：(需搭配 `-xFormersPackage`) 指定安装的 PyTorch 版本。如：`-PyTorchPackage "torch==2.3.0+cu118 torchvision==0.18.0+cu118 torchaudio==2.3.0+cu118"`
 - `-xFormersPackage` `<xFormers 软件包>`：(需搭配 `-PyTorchPackage`) 指定安装的 xFormers 版本。如：`-xFormersPackage "xformers===0.0.26.post1+cu118"`
 - `-NoCleanCache`：安装结束后保留下载的 Python 软件包缓存。
+- `-InstallHanafubuki`：安装当前平台和架构对应的 Hanafubuki 启动器，并将根级 Python / Git 移入当前内核路径前缀目录。
 - `-NoPreDownloadModel`：安装 Qwen TTS WebUI 时跳过预下载模型。
 - `-DisableModelMirror`：不使用 ModelScope 下载模型, 使用 HuggingFace 下载模型。
 - `-NoPause`：脚本执行完成后不暂停, 直接退出。

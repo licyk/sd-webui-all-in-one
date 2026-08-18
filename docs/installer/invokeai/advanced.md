@@ -17,6 +17,17 @@
 !!! warning
     如果 InvokeAI 的路径发生移动，需要重新运行 `launch.ps1` 更新快捷启动方式。
 
+### 使用 Hanafubuki 启动器
+可在安装 InvokeAI 时添加 `-InstallHanafubuki`，或进入 InvokeAI Env 后运行 `Install-Hanafubuki`。安装器会按 Hugging Face、ModelScope 的顺序读取版本清单，并下载当前平台和架构对应的安装包。
+
+Hanafubuki 的安装位置如下：
+
+- Windows：`<安装目录>/hanafubuki-launcher.exe`
+- Linux：`<安装目录>/hanafubuki-launcher`
+- macOS：`<安装目录>/Hanafubuki Launcher.app`
+
+为了让 Hanafubuki 能够正确识别到环境，安装器会将根级 Python / Git 移入当前内核路径前缀目录，即从 `<安装目录>/python`、`<安装目录>/git` 移动到 `<安装目录>/<内核路径前缀>/python`、`<安装目录>/<内核路径前缀>/git`。如果目标目录已存在，安装器不会覆盖已有环境。
+
 ### 使用命令运行 InvokeAI Installer
 InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支持的参数如下。
 
@@ -59,6 +70,7 @@ InvokeAI Installer 支持使用命令参数设置安装 InvokeAI 的参数，支
 - `-BuildWithLaunch`：(需添加 `-BuildMode`) 安装流程结束后调用 `launch.ps1` 脚本，执行启动前的环境检查，但跳过启动 InvokeAI。
 - `-NoPreDownloadModel`：安装 InvokeAI 时跳过预下载模型。
 - `-NoCleanCache`：安装结束后保留下载的 Python 软件包缓存。
+- `-InstallHanafubuki`：安装当前平台和架构对应的 Hanafubuki 启动器，并将根级 Python / Git 移入当前内核路径前缀目录。
 - `-DisableModelMirror`：不使用 ModelScope 下载模型, 使用 HuggingFace 下载模型。
 - `-NoPause`：脚本执行完成后不暂停, 直接退出。
 - `-DisableUpdate`：(仅在构建模式生效且只作用于管理脚本) 禁用 InvokeAI Installer 更新检查。
