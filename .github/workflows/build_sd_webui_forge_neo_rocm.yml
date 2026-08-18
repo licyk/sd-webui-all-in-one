@@ -32,6 +32,7 @@ jobs:
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -InstallHanamizuki `
+            -InstallHanafubuki `
             -DisableHuggingFaceMirror
 
       - name: Install Insightface

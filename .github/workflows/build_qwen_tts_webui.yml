@@ -29,6 +29,7 @@ jobs:
             -DisableAutoMirror `
             -DisablePyPIMirror `
             -DisableGithubMirror `
+            -InstallHanafubuki `
             -DisableHuggingFaceMirror
 
       - name: Install FFmpeg

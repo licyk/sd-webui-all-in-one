@@ -31,6 +31,7 @@ jobs:
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -InstallHanamizuki `
+            -InstallHanafubuki `
             -DisableHuggingFaceMirror `
             -NoPreDownloadModel
 

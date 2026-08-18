@@ -32,6 +32,7 @@ jobs:
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `
             -InstallHanamizuki `
+            -InstallHanafubuki `
             -NoPreDownloadModel
 
       - name: Finalize portable package

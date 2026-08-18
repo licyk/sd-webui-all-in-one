@@ -30,6 +30,7 @@ jobs:
             -DisablePyPIMirror `
             -DisableGithubMirror `
             -DisableHuggingFaceMirror `
+            -InstallHanafubuki `
             -NoPreDownloadModel
 
       - name: Finalize portable package
