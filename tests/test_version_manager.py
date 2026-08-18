@@ -397,7 +397,7 @@ def test_list_commits_and_branches_parse_git_output(monkeypatch, tmp_path):
     assert commits[1].branches == ("origin/main",)
 
     branches = version_manager.list_branches(repo_path, fetch=True)
-    assert fetch_calls == [repo_path]
+    assert fetch_calls == [repo_path, repo_path]
     assert [(item.name, item.is_current, item.is_remote) for item in branches] == [
         ("main", True, False),
         ("dev", False, True),

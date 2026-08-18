@@ -571,7 +571,7 @@ def check_repository_update(
     return status
 
 
-def list_commits(path: Path, limit: int | None = 100) -> list[CommitInfo]:
+def list_commits(path: Path, limit: int | None = 100, fetch: bool = True) -> list[CommitInfo]:
     """
     列出最近提交
 
@@ -580,6 +580,8 @@ def list_commits(path: Path, limit: int | None = 100) -> list[CommitInfo]:
             Git 仓库路径
         limit (int | None):
             最大提交数量, 为 None 时不限制
+        fetch (bool):
+            是否先拉取远程引用, 以确保 @{u} 指向最新的远程提交
 
     Returns:
         list[CommitInfo]: 提交信息列表
@@ -589,6 +591,11 @@ def list_commits(path: Path, limit: int | None = 100) -> list[CommitInfo]:
             return []
     except Exception:
         return []
+    if fetch:
+        try:
+            fetch_repository(path)
+        except Exception:
+            pass
     current_commit = _safe_git_value(git_warpper.get_current_commit, path)
     format_arg = "--format=%H%x1f%h%x1f%ci%x1f%an%x1f%at%x1f%D%x1f%s"
     args = ["log", "HEAD", "@{u}", format_arg]
