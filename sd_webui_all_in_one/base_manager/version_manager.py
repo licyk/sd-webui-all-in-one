@@ -611,7 +611,7 @@ def list_commits(path: Path, limit: int | None = 100, fetch: bool = True) -> lis
         limit (int | None):
             最大提交数量, 为 None 时不限制
         fetch (bool):
-            是否先拉取远程引用, 以确保 @{u} 指向最新的远程提交
+            是否先拉取远程引用, 以确保上游引用指向最新的远程提交
 
     Returns:
         list[CommitInfo]: 提交信息列表
@@ -630,14 +630,22 @@ def list_commits(path: Path, limit: int | None = 100, fetch: bool = True) -> lis
         except Exception as exc:
             logger.warning("拉取远程引用失败, 继续获取提交列表: %s", exc)
     current_commit = _safe_git_value(git_warpper.get_current_commit, path)
+    current_branch = _safe_git_value(git_warpper.get_current_branch, path)
+    upstream_ref = _resolve_update_remote_ref(path, current_branch)
     format_arg = "--format=%H%x1f%h%x1f%ci%x1f%an%x1f%at%x1f%D%x1f%s"
-    args = ["log", "HEAD", "@{u}", format_arg]
-    if limit is not None:
-        args.extend(["-n", str(limit)])
-    try:
-        output = run_git_output(path, *args)
-    except RuntimeError:
-        logger.warning("获取 @{u} 相关提交失败, 回退到仅获取本地提交: %s", path)
+    if upstream_ref:
+        args = ["log", "HEAD", upstream_ref, format_arg]
+        if limit is not None:
+            args.extend(["-n", str(limit)])
+        try:
+            output = run_git_output(path, *args)
+        except RuntimeError:
+            logger.warning("获取上游引用 %s 相关提交失败, 回退到仅获取本地提交: %s", upstream_ref, path)
+            args = ["log", "HEAD", format_arg]
+            if limit is not None:
+                args.extend(["-n", str(limit)])
+            output = run_git_output(path, *args)
+    else:
         args = ["log", "HEAD", format_arg]
         if limit is not None:
             args.extend(["-n", str(limit)])

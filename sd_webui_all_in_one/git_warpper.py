@@ -392,6 +392,10 @@ def get_git_repo_current_remote_branch(
 ) -> str | None:
     """获取 Git 仓库的当前本地分支对应的远程分支
 
+    通过读取 `branch.<name>.remote` 与 `branch.<name>.merge` 配置解析上游引用,
+    不依赖 `@{u}` 语法, 以避免 MSYS2/Cygwin 构建的 Git 在命令行解析时
+    将 `{u}` 作为花括号展开, 导致 `@{u}` 变成 `@u` 而无法解析。
+
     Args:
         path (Path):
             Git 仓库路径
@@ -408,7 +412,17 @@ def get_git_repo_current_remote_branch(
         raise ValueError(f"'{path}' 不是有效的 Git 仓库")
 
     try:
-        return run_git("rev-parse", "--abbrev-ref", "--symbolic-full-name", r"@{u}", path=path, live=False).strip()
+        branch = get_current_branch(path)
+        if not branch:
+            return None
+        remote = run_git("config", f"branch.{branch}.remote", path=path, live=False).strip()
+        merge = run_git("config", f"branch.{branch}.merge", path=path, live=False).strip()
+        if not remote or not merge:
+            return None
+        merge_branch = merge.removeprefix("refs/heads/")
+        ref = f"refs/remotes/{remote}/{merge_branch}"
+        run_git("rev-parse", "--verify", ref, path=path, live=False)
+        return run_git("rev-parse", "--abbrev-ref", ref, path=path, live=False).strip()
     except RuntimeError as e:
         logger.debug("'%s' 仓库的当前所在分支无对应的远程分支: %s", path, e)
         return None
