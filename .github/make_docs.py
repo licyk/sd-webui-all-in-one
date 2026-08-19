@@ -76,6 +76,26 @@ exit %errorlevel%
     )
 
 
+def generate_launch_hanafubuki_bat(base_path: Path) -> None:
+    content = r"""
+@echo off
+@setlocal DisableDelayedExpansion
+set "__WorkPath__=%~dp0"
+if "%__WorkPath__:~-1%"=="\" set "__WorkPath__=%__WorkPath__:~0,-1%"
+echo Launch Hanamizuki
+start "" /B "%__WorkPath__%\hanafubuki-launcher.exe" %*
+exit %errorlevel%
+""".strip()
+    if not (base_path / "hanafubuki-launcher.exe").is_file():
+        return
+    print("[INFO] 生成 Hanafubuki 启动器启动脚本")
+    write_content_to_file(
+        content=content,
+        save_path=base_path / "启动 Hanafubuki 启动器.bat",
+        use_crlf=True,
+    )
+
+
 def generate_open_docs_bat(base_path: Path) -> None:
     content = r"""
 @echo off
@@ -279,6 +299,7 @@ https://space.bilibili.com/46497516
         ],
     )
     generate_launch_hanamizuki_bat(docs_path)
+    generate_launch_hanafubuki_bat(docs_path)
     generate_open_docs_bat(docs_path)
     generate_install_launcher_bat(docs_path)
     generate_configure_env_bat(docs_path)
