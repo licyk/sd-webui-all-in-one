@@ -453,15 +453,25 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         if not ext.is_git_repo:
             messagebox.showwarning("无法切换", f"'{ext.name}' 不是 Git 仓库")
             return
-        self.run_background(
+        dialog: CommitSwitchDialog | None = None
+
+        def _open_or_refresh_dialog(commits: list[CommitInfo]) -> None:
+            nonlocal dialog
+            if dialog is None:
+                dialog = CommitSwitchDialog(
+                    self,
+                    f"{ext.name} 版本切换",
+                    commits,
+                    lambda commit: self._switch_extension_commit(ext.name, commit.commit),
+                )
+            else:
+                dialog.update_commits(commits)
+
+        self.run_refresh_commits(
             "读取扩展版本中...",
-            lambda: list_commits(ext.path, None),
-            lambda commits: CommitSwitchDialog(
-                self,
-                f"{ext.name} 版本切换",
-                commits,
-                lambda commit: self._switch_extension_commit(ext.name, commit.commit),
-            ),
+            lambda: list_commits(ext.path, None, fetch=False),
+            lambda: list_commits(ext.path, None, fetch=True),
+            _open_or_refresh_dialog,
         )
 
     def _switch_extension_commit(

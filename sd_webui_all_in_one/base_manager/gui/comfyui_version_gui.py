@@ -326,9 +326,10 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         """
         刷新内核仓库信息和版本列表
         """
-        self.run_background(
+        self.run_refresh_commits(
             "刷新内核信息中...",
-            lambda: (inspect_repository(self.comfyui_path), list_commits(self.comfyui_path, None)),
+            lambda: (inspect_repository(self.comfyui_path), list_commits(self.comfyui_path, None, fetch=False)),
+            lambda: (inspect_repository(self.comfyui_path), list_commits(self.comfyui_path, None, fetch=True)),
             self._apply_kernel_info,
         )
 
@@ -587,10 +588,20 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         if not self.repository_state or not self.repository_state.is_git_repo:
             messagebox.showwarning("无法切换", "当前内核不是 Git 仓库")
             return
-        self.run_background(
+        dialog: CommitSwitchDialog | None = None
+
+        def _open_or_refresh_dialog(commits: list[CommitInfo]) -> None:
+            nonlocal dialog
+            if dialog is None:
+                dialog = CommitSwitchDialog(self, "内核版本切换", commits, lambda commit: self._switch_kernel_commit(commit.commit))
+            else:
+                dialog.update_commits(commits)
+
+        self.run_refresh_commits(
             "读取内核版本中...",
-            lambda: list_commits(self.comfyui_path, None),
-            lambda commits: CommitSwitchDialog(self, "内核版本切换", commits, lambda commit: self._switch_kernel_commit(commit.commit)),
+            lambda: list_commits(self.comfyui_path, None, fetch=False),
+            lambda: list_commits(self.comfyui_path, None, fetch=True),
+            _open_or_refresh_dialog,
         )
 
     def _switch_kernel_commit(
@@ -727,15 +738,25 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         if not ext.is_git_repo:
             messagebox.showwarning("无法切换", f"'{ext.name}' 不是 Git 仓库")
             return
-        self.run_background(
+        dialog: CommitSwitchDialog | None = None
+
+        def _open_or_refresh_dialog(commits: list[CommitInfo]) -> None:
+            nonlocal dialog
+            if dialog is None:
+                dialog = CommitSwitchDialog(
+                    self,
+                    f"{ext.name} 版本切换",
+                    commits,
+                    lambda commit: self._switch_extension_commit(ext.name, commit.commit),
+                )
+            else:
+                dialog.update_commits(commits)
+
+        self.run_refresh_commits(
             "读取节点版本中...",
-            lambda: list_commits(ext.path, None),
-            lambda commits: CommitSwitchDialog(
-                self,
-                f"{ext.name} 版本切换",
-                commits,
-                lambda commit: self._switch_extension_commit(ext.name, commit.commit),
-            ),
+            lambda: list_commits(ext.path, None, fetch=False),
+            lambda: list_commits(ext.path, None, fetch=True),
+            _open_or_refresh_dialog,
         )
 
     def _switch_extension_commit(

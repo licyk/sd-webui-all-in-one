@@ -350,6 +350,43 @@ class BackgroundTaskMixin:
         thread = threading.Thread(target=_target, daemon=True)
         thread.start()
 
+    def run_refresh_commits(
+        self,
+        message: str,
+        fast_func: Callable[[], T],
+        full_func: Callable[[], T],
+        callback: Callable[[T], object] | None = None,
+    ) -> None:
+        """
+        两段式刷新提交列表
+
+        先执行 fast_func(应使用 fetch=False, 仅读取本地已知引用) 快速渲染列表,
+        再在后台执行 full_func(应使用 fetch=True, 拉取远程引用), 完成后再次调用
+        callback 刷新列表, 避免每次加载都同步阻塞在网络拉取上。
+
+        Args:
+            message (str):
+                第一阶段任务状态文本
+            fast_func (Callable[[], T]):
+                快速阶段执行函数, 应使用 fetch=False
+            full_func (Callable[[], T]):
+                后台刷新阶段执行函数, 应使用 fetch=True
+            callback (Callable[[T], object] | None):
+                成功回调, 快速阶段与后台刷新阶段都会调用
+        """
+
+        def _fast_done(value: T) -> None:
+            if callback is not None:
+                callback(value)
+            self.run_background(
+                "拉取最新提交中...",
+                full_func,
+                callback,
+                error_callback=lambda exc: self.set_status(f"拉取最新提交失败, 保留当前列表: {exc}"),
+            )
+
+        self.run_background(message, fast_func, _fast_done)
+
     def _poll_tasks(
         self,
     ) -> None:
@@ -1711,6 +1748,28 @@ class CommitSwitchDialog(tk.Toplevel):
         ttk.Button(button_frame, text="关闭", command=self.destroy).pack(side=tk.RIGHT, padx=(0, 8))
 
         self._refresh()
+
+    def update_commits(
+        self,
+        commits: list[CommitInfo],
+    ) -> None:
+        """
+        更新弹窗中的提交列表
+
+        用于两段式刷新: 弹窗先以本地已知引用渲染, 后台拉取远程引用完成后
+        原地更新列表。
+
+        Args:
+            commits (list[CommitInfo]):
+                新的提交列表
+        """
+        try:
+            if not self.winfo_exists():
+                return
+            self.commits = commits
+            self._refresh()
+        except tk.TclError:
+            pass
 
     def _refresh(
         self,
