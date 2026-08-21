@@ -333,7 +333,7 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         """
         刷新内核仓库信息和版本列表
         """
-        self.run_refresh_commits(
+        self.run_two_phase_refresh(
             "刷新内核信息中...",
             lambda: (inspect_repository(self.sd_webui_path), list_commits(self.sd_webui_path, limit=None, fetch=False)),
             lambda: (inspect_repository(self.sd_webui_path), list_commits(self.sd_webui_path, limit=None, fetch=True)),
@@ -505,7 +505,7 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             else:
                 dialog.update_commits(commits)
 
-        self.run_refresh_commits(
+        self.run_two_phase_refresh(
             "读取内核版本中...",
             lambda: list_commits(self.sd_webui_path, limit=None, fetch=False),
             lambda: list_commits(self.sd_webui_path, limit=None, fetch=True),
@@ -527,10 +527,20 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         if not self.repository_state or not self.repository_state.is_git_repo:
             messagebox.showwarning("无法切换", "当前内核不是 Git 仓库")
             return
-        self.run_background(
+        dialog: BranchSwitchDialog | None = None
+
+        def _open_or_refresh_dialog(branches: list[BranchInfo]) -> None:
+            nonlocal dialog
+            if dialog is None:
+                dialog = BranchSwitchDialog(self, "内核分支切换", branches, lambda branch: self._switch_kernel_branch(branch.name))
+            else:
+                dialog.update_branches(branches)
+
+        self.run_two_phase_refresh(
             "读取内核分支中...",
-            lambda: self._list_branches_with_env(self.sd_webui_path),
-            lambda branches: BranchSwitchDialog(self, "内核分支切换", branches, lambda branch: self._switch_kernel_branch(branch.name)),
+            lambda: self._list_branches_with_env(self.sd_webui_path, fetch=False),
+            lambda: self._list_branches_with_env(self.sd_webui_path, fetch=True),
+            _open_or_refresh_dialog,
         )
 
     def _switch_kernel_branch(
@@ -616,7 +626,7 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             else:
                 dialog.update_commits(commits)
 
-        self.run_refresh_commits(
+        self.run_two_phase_refresh(
             "读取扩展版本中...",
             lambda: list_commits(ext.path, limit=None, fetch=False),
             lambda: list_commits(ext.path, limit=None, fetch=True),
@@ -642,10 +652,25 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         if not ext.is_git_repo:
             messagebox.showwarning("无法切换", f"'{ext.name}' 不是 Git 仓库")
             return
-        self.run_background(
+        dialog: BranchSwitchDialog | None = None
+
+        def _open_or_refresh_dialog(branches: list[BranchInfo]) -> None:
+            nonlocal dialog
+            if dialog is None:
+                dialog = BranchSwitchDialog(
+                    self,
+                    f"{ext.name} 分支切换",
+                    branches,
+                    lambda branch: self._switch_extension_branch(ext.name, branch.name),
+                )
+            else:
+                dialog.update_branches(branches)
+
+        self.run_two_phase_refresh(
             "读取扩展分支中...",
-            lambda: self._list_branches_with_env(ext.path),
-            lambda branches: BranchSwitchDialog(self, f"{ext.name} 分支切换", branches, lambda branch: self._switch_extension_branch(ext.name, branch.name)),
+            lambda: self._list_branches_with_env(ext.path, fetch=False),
+            lambda: self._list_branches_with_env(ext.path, fetch=True),
+            _open_or_refresh_dialog,
         )
 
     def _switch_extension_branch(
@@ -658,18 +683,20 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
 
         self.run_background("切换扩展分支中...", _switch, lambda _value: self.refresh_extensions())
 
-    def _list_branches_with_env(self, path: Path) -> list[BranchInfo]:
+    def _list_branches_with_env(self, path: Path, fetch: bool) -> list[BranchInfo]:
         """
         读取分支列表
 
         Args:
             path (Path):
                 Git 仓库路径
+            fetch (bool):
+                是否先拉取远程引用
 
         Returns:
             list[BranchInfo]: 分支列表
         """
-        return list_branches(path)
+        return list_branches(path, fetch=fetch)
 
     def _extension_values(self, ext: ManagedExtension) -> tuple[str, str, str, str, str, str, str]:
         return (

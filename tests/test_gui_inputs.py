@@ -7,6 +7,7 @@ import pytest
 
 from sd_webui_all_in_one.base_manager.gui.version_gui import (
     AdaptiveIndexList,
+    BackgroundTaskMixin,
     EnhancedEntry,
     commit_matches_keyword,
     install_text_context_menu,
@@ -55,6 +56,35 @@ def test_format_comfyui_registry_index_tags_hides_source_tag() -> None:
     )
 
     assert _format_index_tags(item) == "image, Actual Author"
+
+
+def test_two_phase_refresh_applies_local_then_remote(monkeypatch: pytest.MonkeyPatch) -> None:
+    runner = BackgroundTaskMixin()
+    messages: list[str] = []
+    applied: list[str] = []
+
+    def run_synchronously(message, func, callback=None, error_callback=None):
+        messages.append(message)
+        try:
+            value = func()
+        except BaseException as exc:
+            if error_callback is not None:
+                error_callback(exc)
+            return
+        if callback is not None:
+            callback(value)
+
+    monkeypatch.setattr(runner, "run_background", run_synchronously)
+
+    runner.run_two_phase_refresh(
+        "读取本地列表中...",
+        lambda: "local",
+        lambda: "remote",
+        applied.append,
+    )
+
+    assert messages == ["读取本地列表中...", "联网刷新列表中..."]
+    assert applied == ["local", "remote"]
 
 
 def test_enhanced_entry_select_all_detection_requires_control() -> None:

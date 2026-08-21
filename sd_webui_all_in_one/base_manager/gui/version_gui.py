@@ -350,7 +350,7 @@ class BackgroundTaskMixin:
         thread = threading.Thread(target=_target, daemon=True)
         thread.start()
 
-    def run_refresh_commits(
+    def run_two_phase_refresh(
         self,
         message: str,
         fast_func: Callable[[], T],
@@ -358,11 +358,11 @@ class BackgroundTaskMixin:
         callback: Callable[[T], object] | None = None,
     ) -> None:
         """
-        两段式刷新提交列表
+        两段式刷新 Git 列表
 
         先执行 fast_func(应使用 fetch=False, 仅读取本地已知引用) 快速渲染列表,
         再在后台执行 full_func(应使用 fetch=True, 拉取远程引用), 完成后再次调用
-        callback 刷新列表, 避免每次加载都同步阻塞在网络拉取上。
+        callback 刷新列表, 避免提交或分支列表同步阻塞在网络拉取上。
 
         Args:
             message (str):
@@ -379,10 +379,10 @@ class BackgroundTaskMixin:
             if callback is not None:
                 callback(value)
             self.run_background(
-                "拉取最新提交中...",
+                "联网刷新列表中...",
                 full_func,
                 callback,
-                error_callback=lambda exc: self.set_status(f"拉取最新提交失败, 保留当前列表: {exc}"),
+                error_callback=lambda exc: self.set_status(f"联网刷新失败, 保留当前列表: {exc}"),
             )
 
         self.run_background(message, fast_func, _fast_done)
@@ -1852,13 +1852,46 @@ class BranchSwitchDialog(tk.Toplevel):
         self.tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         self.tree.bind("<Double-1>", lambda _event: self._switch_selected())
 
-        for branch in self.branches:
-            self.tree.insert("", tk.END, iid=branch.name, values=(branch.name, "远程" if branch.is_remote else "本地", "✓" if branch.is_current else ""))
+        self._refresh()
 
         button_frame = ttk.Frame(self)
         button_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
         ttk.Button(button_frame, text="切换", command=self._switch_selected).pack(side=tk.RIGHT)
         ttk.Button(button_frame, text="关闭", command=self.destroy).pack(side=tk.RIGHT, padx=(0, 8))
+
+    def update_branches(
+        self,
+        branches: list[BranchInfo],
+    ) -> None:
+        """
+        更新弹窗中的分支列表
+
+        用于两段式刷新: 弹窗先以本地已知引用渲染, 后台拉取远程引用完成后
+        原地更新列表。
+
+        Args:
+            branches (list[BranchInfo]):
+                新的分支列表
+        """
+        try:
+            if not self.winfo_exists():
+                return
+            self.branches = branches
+            self._refresh()
+        except tk.TclError:
+            pass
+
+    def _refresh(
+        self,
+    ) -> None:
+        self.tree.delete(*self.tree.get_children())
+        for branch in self.branches:
+            self.tree.insert(
+                "",
+                tk.END,
+                iid=branch.name,
+                values=(branch.name, "远程" if branch.is_remote else "本地", "✓" if branch.is_current else ""),
+            )
 
     def _switch_selected(
         self,

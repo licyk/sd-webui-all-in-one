@@ -190,7 +190,7 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         """
         刷新内核仓库信息和版本列表
         """
-        self.run_refresh_commits(
+        self.run_two_phase_refresh(
             "刷新内核信息中...",
             lambda: (inspect_repository(self.root_path), list_commits(self.root_path, limit=None, fetch=False)),
             lambda: (inspect_repository(self.root_path), list_commits(self.root_path, limit=None, fetch=True)),
@@ -260,7 +260,7 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             else:
                 dialog.update_commits(commits)
 
-        self.run_refresh_commits(
+        self.run_two_phase_refresh(
             "读取内核版本中...",
             lambda: list_commits(self.root_path, limit=None, fetch=False),
             lambda: list_commits(self.root_path, limit=None, fetch=True),
@@ -282,10 +282,20 @@ class GitKernelVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         if not self.repository_state or not self.repository_state.is_git_repo:
             messagebox.showwarning("无法切换", "当前内核不是 Git 仓库")
             return
-        self.run_background(
+        dialog: BranchSwitchDialog | None = None
+
+        def _open_or_refresh_dialog(branches: list[BranchInfo]) -> None:
+            nonlocal dialog
+            if dialog is None:
+                dialog = BranchSwitchDialog(self, f"{self.app_title} 分支切换", branches, self._switch_branch)
+            else:
+                dialog.update_branches(branches)
+
+        self.run_two_phase_refresh(
             "读取内核分支中...",
-            lambda: list_branches(self.root_path),
-            lambda branches: BranchSwitchDialog(self, f"{self.app_title} 分支切换", branches, self._switch_branch),
+            lambda: list_branches(self.root_path, fetch=False),
+            lambda: list_branches(self.root_path, fetch=True),
+            _open_or_refresh_dialog,
         )
 
     def _switch_branch(

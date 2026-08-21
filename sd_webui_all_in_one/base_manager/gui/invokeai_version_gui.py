@@ -15,6 +15,7 @@ from tkinter import (
 
 from sd_webui_all_in_one.base_manager.invokeai_base import install_invokeai_component
 from sd_webui_all_in_one.base_manager.version_manager import (
+    BranchInfo,
     CommitInfo,
     ExtensionManager,
     ManagedExtension,
@@ -467,7 +468,7 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             else:
                 dialog.update_commits(commits)
 
-        self.run_refresh_commits(
+        self.run_two_phase_refresh(
             "读取扩展版本中...",
             lambda: list_commits(ext.path, None, fetch=False),
             lambda: list_commits(ext.path, None, fetch=True),
@@ -493,15 +494,25 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         if not ext.is_git_repo:
             messagebox.showwarning("无法切换", f"'{ext.name}' 不是 Git 仓库")
             return
-        self.run_background(
+        dialog: BranchSwitchDialog | None = None
+
+        def _open_or_refresh_dialog(branches: list[BranchInfo]) -> None:
+            nonlocal dialog
+            if dialog is None:
+                dialog = BranchSwitchDialog(
+                    self,
+                    f"{ext.name} 分支切换",
+                    branches,
+                    lambda branch: self._switch_extension_branch(ext.name, branch.name),
+                )
+            else:
+                dialog.update_branches(branches)
+
+        self.run_two_phase_refresh(
             "读取扩展分支中...",
-            lambda: list_branches(ext.path),
-            lambda branches: BranchSwitchDialog(
-                self,
-                f"{ext.name} 分支切换",
-                branches,
-                lambda branch: self._switch_extension_branch(ext.name, branch.name),
-            ),
+            lambda: list_branches(ext.path, fetch=False),
+            lambda: list_branches(ext.path, fetch=True),
+            _open_or_refresh_dialog,
         )
 
     def _switch_extension_branch(

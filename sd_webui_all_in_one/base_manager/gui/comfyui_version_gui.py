@@ -326,7 +326,7 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         """
         刷新内核仓库信息和版本列表
         """
-        self.run_refresh_commits(
+        self.run_two_phase_refresh(
             "刷新内核信息中...",
             lambda: (inspect_repository(self.comfyui_path), list_commits(self.comfyui_path, None, fetch=False)),
             lambda: (inspect_repository(self.comfyui_path), list_commits(self.comfyui_path, None, fetch=True)),
@@ -597,7 +597,7 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             else:
                 dialog.update_commits(commits)
 
-        self.run_refresh_commits(
+        self.run_two_phase_refresh(
             "读取内核版本中...",
             lambda: list_commits(self.comfyui_path, None, fetch=False),
             lambda: list_commits(self.comfyui_path, None, fetch=True),
@@ -619,10 +619,20 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         if not self.repository_state or not self.repository_state.is_git_repo:
             messagebox.showwarning("无法切换", "当前内核不是 Git 仓库")
             return
-        self.run_background(
+        dialog: BranchSwitchDialog | None = None
+
+        def _open_or_refresh_dialog(branches: list[BranchInfo]) -> None:
+            nonlocal dialog
+            if dialog is None:
+                dialog = BranchSwitchDialog(self, "内核分支切换", branches, self._switch_kernel_branch)
+            else:
+                dialog.update_branches(branches)
+
+        self.run_two_phase_refresh(
             "读取内核分支中...",
-            lambda: list_branches(self.comfyui_path),
-            lambda branches: BranchSwitchDialog(self, "内核分支切换", branches, self._switch_kernel_branch),
+            lambda: list_branches(self.comfyui_path, fetch=False),
+            lambda: list_branches(self.comfyui_path, fetch=True),
+            _open_or_refresh_dialog,
         )
 
     def _switch_kernel_branch(
@@ -752,7 +762,7 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
             else:
                 dialog.update_commits(commits)
 
-        self.run_refresh_commits(
+        self.run_two_phase_refresh(
             "读取节点版本中...",
             lambda: list_commits(ext.path, None, fetch=False),
             lambda: list_commits(ext.path, None, fetch=True),
@@ -788,15 +798,25 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin):
         if not ext.is_git_repo:
             messagebox.showwarning("无法切换", f"'{ext.name}' 不是 Git 仓库")
             return
-        self.run_background(
+        dialog: BranchSwitchDialog | None = None
+
+        def _open_or_refresh_dialog(branches: list[BranchInfo]) -> None:
+            nonlocal dialog
+            if dialog is None:
+                dialog = BranchSwitchDialog(
+                    self,
+                    f"{ext.name} 分支切换",
+                    branches,
+                    lambda branch: self._switch_extension_branch(ext.name, branch.name),
+                )
+            else:
+                dialog.update_branches(branches)
+
+        self.run_two_phase_refresh(
             "读取节点分支中...",
-            lambda: list_branches(ext.path),
-            lambda branches: BranchSwitchDialog(
-                self,
-                f"{ext.name} 分支切换",
-                branches,
-                lambda branch: self._switch_extension_branch(ext.name, branch.name),
-            ),
+            lambda: list_branches(ext.path, fetch=False),
+            lambda: list_branches(ext.path, fetch=True),
+            _open_or_refresh_dialog,
         )
 
     def _switch_extension_branch(
