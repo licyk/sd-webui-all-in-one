@@ -303,7 +303,7 @@ class RepoManager:
         return ms_api
 
     def get_ms_git_token(self) -> str | None:
-        """获取 ModelScope 持久化的 Git access token
+        """获取 ModelScope Git access token
 
         Returns:
             (str | None):
@@ -312,7 +312,19 @@ class RepoManager:
         _ensure_modelscope("modelscope.hub.api")
         from modelscope.hub.api import ModelScopeConfig
 
-        return ModelScopeConfig.get_git_token()
+        git_token = ModelScopeConfig.get_git_token()
+        if git_token or not self.ms_token:
+            return git_token
+
+        login_result = self.ms_api.login(self.ms_token)
+        if isinstance(login_result, tuple) and login_result:
+            login_git_token = login_result[0]
+            if isinstance(login_git_token, str) and login_git_token:
+                return login_git_token
+        if isinstance(login_result, str) and login_result:
+            return login_result
+
+        return ModelScopeConfig.get_git_token() or self.ms_token
 
     def get_hf_token(self) -> str | None:
         """获取当前配置的 HuggingFace Token

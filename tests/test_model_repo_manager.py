@@ -251,6 +251,94 @@ def test_repo_manager_get_ms_git_token_delegates_without_initializing_api(monkey
     assert token_calls == [True]
 
 
+def test_repo_manager_get_ms_git_token_logs_in_when_persisted_token_is_missing(monkeypatch):
+    ensure_calls = []
+    login_calls = []
+
+    class FakeModelScopeConfig:
+        @staticmethod
+        def get_git_token():
+            return None
+
+    class FakeMsApi:
+        def login(self, token):
+            login_calls.append(token)
+            return ("login-git-token", object())
+
+    modelscope_module = types.ModuleType("modelscope")
+    modelscope_module.__path__ = []
+    hub_module = types.ModuleType("modelscope.hub")
+    hub_module.__path__ = []
+    api_module = types.ModuleType("modelscope.hub.api")
+    api_module.ModelScopeConfig = FakeModelScopeConfig
+    monkeypatch.setitem(sys.modules, "modelscope", modelscope_module)
+    monkeypatch.setitem(sys.modules, "modelscope.hub", hub_module)
+    monkeypatch.setitem(sys.modules, "modelscope.hub.api", api_module)
+    monkeypatch.setattr(repo_module, "_ensure_modelscope", lambda module_name="modelscope": ensure_calls.append(module_name))
+
+    manager = RepoManager(ms_token="ms-token")
+    manager.ms_api = FakeMsApi()
+
+    assert manager.get_ms_git_token() == "login-git-token"
+    assert ensure_calls == ["modelscope.hub.api"]
+    assert login_calls == ["ms-token"]
+
+
+def test_repo_manager_get_ms_git_token_reads_persisted_token_after_login(monkeypatch):
+    token_values = iter((None, "persisted-git-token"))
+    login_calls = []
+
+    class FakeModelScopeConfig:
+        @staticmethod
+        def get_git_token():
+            return next(token_values)
+
+    class FakeMsApi:
+        def login(self, token):
+            login_calls.append(token)
+            return None
+
+    modelscope_module = types.ModuleType("modelscope")
+    modelscope_module.__path__ = []
+    hub_module = types.ModuleType("modelscope.hub")
+    hub_module.__path__ = []
+    api_module = types.ModuleType("modelscope.hub.api")
+    api_module.ModelScopeConfig = FakeModelScopeConfig
+    monkeypatch.setitem(sys.modules, "modelscope", modelscope_module)
+    monkeypatch.setitem(sys.modules, "modelscope.hub", hub_module)
+    monkeypatch.setitem(sys.modules, "modelscope.hub.api", api_module)
+    monkeypatch.setattr(repo_module, "_ensure_modelscope", lambda module_name="modelscope": None)
+
+    manager = RepoManager(ms_token="ms-token")
+    manager.ms_api = FakeMsApi()
+
+    assert manager.get_ms_git_token() == "persisted-git-token"
+    assert login_calls == ["ms-token"]
+
+
+def test_repo_manager_get_ms_git_token_does_not_initialize_api_without_any_token(monkeypatch):
+    class FakeModelScopeConfig:
+        @staticmethod
+        def get_git_token():
+            return None
+
+    modelscope_module = types.ModuleType("modelscope")
+    modelscope_module.__path__ = []
+    hub_module = types.ModuleType("modelscope.hub")
+    hub_module.__path__ = []
+    api_module = types.ModuleType("modelscope.hub.api")
+    api_module.ModelScopeConfig = FakeModelScopeConfig
+    monkeypatch.setitem(sys.modules, "modelscope", modelscope_module)
+    monkeypatch.setitem(sys.modules, "modelscope.hub", hub_module)
+    monkeypatch.setitem(sys.modules, "modelscope.hub.api", api_module)
+    monkeypatch.setattr(repo_module, "_ensure_modelscope", lambda module_name="modelscope": None)
+
+    manager = RepoManager()
+    monkeypatch.setattr(manager, "_init_ms_api", lambda: pytest.fail("get_ms_git_token should not initialize HubApi"))
+
+    assert manager.get_ms_git_token() is None
+
+
 def test_repo_manager_token_accessors_return_current_tokens():
     manager = RepoManager(hf_token="hf-token", ms_token="ms-token")
 
@@ -767,10 +855,7 @@ def test_repo_manager_file_download_urls(monkeypatch):
     manager.hf_api = FakeHfApi()
     manager.hf_token = "hf-token"
 
-    assert (
-        manager.get_hf_repo_file_download_url("owner/repo", "weights/a.bin", revision="main")
-        == "https://hf.example/owner/repo/resolve/main/weights/a.bin"
-    )
+    assert manager.get_hf_repo_file_download_url("owner/repo", "weights/a.bin", revision="main") == "https://hf.example/owner/repo/resolve/main/weights/a.bin"
     assert hf_calls == [
         (
             "url",
@@ -815,14 +900,8 @@ def test_repo_manager_file_download_urls(monkeypatch):
 
     manager.ms_api = FakeMsApi()
 
-    assert (
-        manager.get_ms_repo_file_download_url("owner/model", "weights/a.bin", revision="v1")
-        == "https://ms.example/model/v1/weights/a.bin"
-    )
-    assert (
-        manager.get_repo_file_download_url("modelscope", "owner/dataset", "data/a.txt", repo_type="dataset")
-        == "https://ms.example/dataset/master/data/a.txt"
-    )
+    assert manager.get_ms_repo_file_download_url("owner/model", "weights/a.bin", revision="v1") == "https://ms.example/model/v1/weights/a.bin"
+    assert manager.get_repo_file_download_url("modelscope", "owner/dataset", "data/a.txt", repo_type="dataset") == "https://ms.example/dataset/master/data/a.txt"
     assert ms_calls == [
         ("model_url", {"model_id": "owner/model", "file_path": "weights/a.bin", "revision": "v1"}),
         (
@@ -864,11 +943,14 @@ def test_repo_manager_upload_skips_matching_hash_and_aggregates_failures(monkeyp
             uploaded.append(kwargs)
 
     manager.hf_api = FakeHfApi()
-    manager.get_repo_files_metadata = lambda **kwargs: list_calls.append(kwargs) or [
-        {"path": "remote/existing.txt", "type": "file", "sha256": _sha256("old")},
-        {"path": "remote/changed.txt", "type": "file", "sha256": _sha256("changed-remote")},
-        {"path": "remote/nested/keep.txt", "type": "file", "sha256": _sha256("nested")},
-    ]
+    manager.get_repo_files_metadata = lambda **kwargs: (
+        list_calls.append(kwargs)
+        or [
+            {"path": "remote/existing.txt", "type": "file", "sha256": _sha256("old")},
+            {"path": "remote/changed.txt", "type": "file", "sha256": _sha256("changed-remote")},
+            {"path": "remote/nested/keep.txt", "type": "file", "sha256": _sha256("nested")},
+        ]
+    )
 
     manager.upload_files_to_huggingface("owner/repo", upload_root, path_in_repo="/remote/", num_threads=1, revision="upload-branch")
 
@@ -1104,9 +1186,7 @@ def test_repo_manager_mirror_repo_files_can_use_fast_download(monkeypatch):
 
     manager.hf_api = FakeHfApi()
     manager.check_repo = lambda **_kwargs: True
-    manager.get_repo_files_metadata = lambda **kwargs: [
-        {"path": "nested/file.bin", "type": "file", "sha256": _sha256("src")}
-    ] if kwargs["api_type"] == "modelscope" else []
+    manager.get_repo_files_metadata = lambda **kwargs: [{"path": "nested/file.bin", "type": "file", "sha256": _sha256("src")}] if kwargs["api_type"] == "modelscope" else []
 
     def fake_get_repo_file_download_url(**kwargs):
         download_url_calls.append(kwargs)
