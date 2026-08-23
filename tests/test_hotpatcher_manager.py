@@ -17,7 +17,9 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     HOTPATCHER_PATH,
     HOTPATCHER_ENV_PREFIX,
     HotpatcherRuntimeHost,
+    RemoteServiceError,
     RuntimeLogEntry,
+    RuntimeServiceChannel,
     apply_hotpatcher_launch_env,
     build_hotpatcher_runtime_env,
     export_hotpatcher_default_config,
@@ -40,6 +42,19 @@ def _send_json_line(file, message):
 
 def _read_json_line(file):
     return json.loads(file.readline().decode("utf-8"))
+
+
+class _RecordingWriter:
+    def __init__(self):
+        self.data = bytearray()
+        self.written = threading.Event()
+
+    def write(self, data):
+        self.data.extend(data)
+        self.written.set()
+
+    def flush(self):
+        pass
 
 
 def test_hotpatcher_import_path_is_injected(monkeypatch):
@@ -353,8 +368,7 @@ print(json.dumps({
 
 def test_runtime_host_serves_config_and_records_logs():
     with HotpatcherRuntimeHost(port=0, get_config=lambda: {"answer": 42}) as host:
-        with socket.create_connection(host.server_address, timeout=2) as sock:
-            file = sock.makefile("rwb")
+        with socket.create_connection(host.server_address, timeout=2) as sock, sock.makefile("rwb") as file:
             _send_json_line(file, {"type": "hello", "version": 1, "features": ["config", "logs"]})
             _send_json_line(file, {"id": "cfg", "type": "config.get", "payload": {}})
             response = _read_json_line(file)
@@ -405,8 +419,7 @@ def test_runtime_client_optional_connection_failure_is_quiet(monkeypatch, capsys
 
 def test_runtime_host_services_channel_roundtrip():
     with HotpatcherRuntimeHost(port=0) as host:
-        with socket.create_connection(host.server_address, timeout=2) as sock:
-            file = sock.makefile("rwb")
+        with socket.create_connection(host.server_address, timeout=2) as sock, sock.makefile("rwb") as file:
             _send_json_line(file, {"type": "channel.open", "channel": "services", "token": ""})
             assert wait_for_service_channel(host)
 
@@ -415,7 +428,7 @@ def test_runtime_host_services_channel_roundtrip():
 
             def _request():
                 try:
-                    result["value"] = host.request_services("services.config.apply", {"config": {"core": {}}}, timeout=2)
+                    result["value"] = host.request_services("services.config.apply", {"config": {"core": {}}}, timeout=5)
                 except Exception as exc:  # pragma: no cover - makes thread assertion readable
                     error["value"] = exc
 
@@ -425,30 +438,50 @@ def test_runtime_host_services_channel_roundtrip():
             assert request["type"] == "services.config.apply"
             assert request["payload"] == {"config": {"core": {}}}
             _send_json_line(file, {"id": request["id"], "ok": True, "payload": {"result": {"applied": ["core.import_hook"]}}})
-            thread.join(timeout=2)
+            thread.join(timeout=5)
 
+            assert not thread.is_alive()
             assert error == {}
             assert result["value"] == {"result": {"applied": ["core.import_hook"]}}
 
 
+def test_runtime_service_channel_close_wakes_pending_request():
+    writer = _RecordingWriter()
+    channel = RuntimeServiceChannel(writer)
+    error = {}
+
+    def _request():
+        try:
+            channel.request("services.config.apply", timeout=30)
+        except RemoteServiceError as exc:
+            error["value"] = exc
+
+    thread = threading.Thread(target=_request)
+    thread.start()
+    assert writer.written.wait(timeout=1)
+
+    channel.close()
+    thread.join(timeout=1)
+
+    assert not thread.is_alive()
+    assert error["value"].code == "channel_closed"
+
+
 def test_runtime_host_keeps_browser_retention_after_services_disconnect():
     with HotpatcherRuntimeHost(port=0) as host:
-        with socket.create_connection(host.server_address, timeout=2) as services_sock:
-            services_file = services_sock.makefile("rwb")
+        with socket.create_connection(host.server_address, timeout=2) as services_sock, services_sock.makefile("rwb") as services_file:
             _send_json_line(
                 services_file,
                 {"type": "channel.open", "channel": "services", "token": ""},
             )
             assert wait_for_service_channel(host)
-            services_file.close()
 
         deadline = time.time() + 2
         while host.service_channel_available and time.time() < deadline:
             time.sleep(0.01)
         assert host.service_channel_available is False
 
-        with socket.create_connection(host.server_address, timeout=2) as runtime_sock:
-            runtime_file = runtime_sock.makefile("rwb")
+        with socket.create_connection(host.server_address, timeout=2) as runtime_sock, runtime_sock.makefile("rwb") as runtime_file:
             _send_json_line(runtime_file, {"type": "hello", "version": 1})
             _send_json_line(
                 runtime_file,

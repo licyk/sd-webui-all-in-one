@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import tkinter as tk
 import time
 
@@ -20,6 +21,14 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     ExtensionIndexItem,
     PackageVersionInfo,
 )
+
+
+@pytest.fixture(scope="module", autouse=True)
+def collect_tk_objects_on_main_thread():
+    """在后续测试启动后台线程前，于 Tk 创建线程回收 Tcl 对象。"""
+
+    yield
+    gc.collect()
 
 
 def test_normalize_search_keyword_ignores_placeholder() -> None:

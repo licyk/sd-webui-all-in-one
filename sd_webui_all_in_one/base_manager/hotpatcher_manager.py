@@ -589,13 +589,12 @@ class RuntimeServiceChannel:
                 通道关闭、请求超时或远端返回错误时抛出。
         """
 
-        if self.closed:
-            logger.warning("services channel 已关闭, 拒绝发送请求 %s", message_type)
-            raise RemoteServiceError("channel_closed", "services channel is closed")
-
         message_id = uuid.uuid4().hex
         pending = _PendingRequest()
         with self._pending_lock:
+            if self.closed:
+                logger.warning("services channel 已关闭, 拒绝发送请求 %s", message_type)
+                raise RemoteServiceError("channel_closed", "services channel is closed")
             self._pending[message_id] = pending
 
         logger.debug("发送 services 请求, id: %s, type: %s, timeout: %s", message_id, message_type, timeout)
@@ -651,7 +650,10 @@ class RuntimeServiceChannel:
             pending = self._pending.get(message_id)
         if pending is None:
             return False
-        pending.queue.put(message)
+        try:
+            pending.queue.put_nowait(message)
+        except queue.Full:
+            return False
         logger.debug("services 通道收到匹配请求 id: %s 的响应", message_id)
         return True
 
@@ -662,10 +664,24 @@ class RuntimeServiceChannel:
         关闭时会触发 ``on_close`` 回调, 用于从 runtime host 中移除当前通道。
         """
 
-        if self.closed:
-            return
-        logger.debug("services 通道关闭")
-        self.closed = True
+        with self._pending_lock:
+            if self.closed:
+                return
+            logger.debug("services 通道关闭")
+            self.closed = True
+            pending_requests = tuple(self._pending.values())
+        closed_response = {
+            "ok": False,
+            "error": {
+                "code": "channel_closed",
+                "message": "services channel is closed",
+            },
+        }
+        for pending in pending_requests:
+            try:
+                pending.queue.put_nowait(closed_response)
+            except queue.Full:
+                pass
         if self.on_close is not None:
             self.on_close(self)
 
