@@ -713,7 +713,7 @@ function Sync-PortableDataGrid {
 
     Write-Host "[数据] 正在切换视图: $sourceName -> $versionType" -ForegroundColor Magenta
     $gridSource = @()
-    $sourceNode = $State.Metadata.resources."$sourceName"
+    $sourceNode = $State.Metadata.resources."$sourceName".windows
     if ($null -ne $sourceNode) {
         foreach ($resource in $sourceNode.PSObject.Properties) {
             $resourceKey = $resource.Name
@@ -747,6 +747,7 @@ function Sync-PortableDataGrid {
                         BuildDate = [string]$vEntry.build_date
                         Channel   = [string]$vEntry.channel
                         Signature = [string]$vEntry.signature
+                        Platform  = [string]$vEntry.platform
                         Extension = [string]$vEntry.extension
                     }
                 }

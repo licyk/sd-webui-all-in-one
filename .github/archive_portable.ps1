@@ -4,11 +4,14 @@
     [string]$Source,
     [string]$SaveDst,
     [string]$Author,
+    [ValidateSet("windows", "linux", "macos")]
+    [string]$Platform = "windows",
     [switch]$ExtremeCompress
 )
 
 $build_time = (Get-Date).ToUniversalTime().AddHours(8).ToString("yyyyMMdd")
-$package_name = "${SoftwareName}-${Author}-${build_time}"
+$platform_name = $Platform.ToLowerInvariant()
+$package_name = "${SoftwareName}-${Author}-${platform_name}-${build_time}"
 $protable_name = "${package_name}-nightly.7z"
 $save_path = "${SaveDst}/${SoftwareName}/${protable_name}"
 $resource_path = "${Workspace}/${package_name}"

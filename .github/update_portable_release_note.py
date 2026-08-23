@@ -19,6 +19,13 @@ import requests
 UTC_PLUS_8 = timezone(timedelta(hours=8))
 """整合包更新时间显示时区。"""
 
+PLATFORM_DISPLAY_NAMES = {
+    "windows": "Windows",
+    "linux": "Linux",
+    "macos": "macOS",
+}
+"""整合包平台展示名称。"""
+
 
 def fetch_portable_list(
     url: str,
@@ -80,22 +87,27 @@ def format_update_time(
 def get_source_resources(
     data: Mapping[str, Any],
     source: str,
+    platform: str,
 ) -> Mapping[str, Any]:
-    """获取指定下载源的资源节点"""
+    """获取指定下载源和平台的资源节点"""
     resources = get_portable_resources(data)
     source_resources = resources.get(source, {})
     if not isinstance(source_resources, Mapping):
         return {}
-    return source_resources
+    platform_resources = source_resources.get(platform, {})
+    if not isinstance(platform_resources, Mapping):
+        return {}
+    return platform_resources
 
 
 def get_resource_node(
     data: Mapping[str, Any],
     source: str,
+    platform: str,
     project: str,
 ) -> Mapping[str, Any]:
-    """获取指定下载源下的整合包资源节点"""
-    project_data = get_source_resources(data, source).get(project, {})
+    """获取指定下载源和平台下的整合包资源节点"""
+    project_data = get_source_resources(data, source, platform).get(project, {})
     if not isinstance(project_data, Mapping):
         return {}
     return project_data
@@ -103,11 +115,12 @@ def get_resource_node(
 
 def get_project_display_name(
     data: Mapping[str, Any],
+    platform: str,
     project: str,
 ) -> str:
     """获取整合包显示名称"""
     for source in ("modelscope", "huggingface"):
-        display_name = get_resource_node(data, source, project).get("display_name")
+        display_name = get_resource_node(data, source, platform, project).get("display_name")
         if isinstance(display_name, str) and display_name:
             return display_name
     return project
@@ -115,6 +128,7 @@ def get_project_display_name(
 
 def get_projects(
     data: Mapping[str, Any],
+    platform: str,
     version_type: str,
 ) -> list[str]:
     """获取指定版本类型下所有整合包资源键"""
@@ -123,19 +137,23 @@ def get_projects(
     for source_resources in get_portable_resources(data).values():
         if not isinstance(source_resources, Mapping):
             continue
-        for project, project_data in source_resources.items():
+        platform_resources = source_resources.get(platform, {})
+        if not isinstance(platform_resources, Mapping):
+            continue
+        for project, project_data in platform_resources.items():
             if not isinstance(project, str) or not isinstance(project_data, Mapping):
                 continue
             version_data = project_data.get(version_type)
             if isinstance(version_data, list) and version_data:
                 projects.add(project)
 
-    return sorted(projects, key=lambda name: get_project_display_name(data, name).casefold())
+    return sorted(projects, key=lambda name: get_project_display_name(data, platform, name).casefold())
 
 
 def get_download_link(
     data: Mapping[str, Any],
     source: str,
+    platform: str,
     version_type: str,
     project: str,
 ) -> str:
@@ -148,6 +166,8 @@ def get_download_link(
             便携包列表数据
         source (str):
             下载源，可选值："modelscope" 或 "huggingface"
+        platform (str):
+            目标平台，可选值："windows"、"linux" 或 "macos"
         version_type (str):
             版本类型，可选值："stable" 或 "nightly"
         project (str):
@@ -157,10 +177,10 @@ def get_download_link(
         str: Markdown 格式的下载链接，格式为 "[文件名](URL)"；如果不存在则返回"暂无"
 
     Example:
-        >>> get_download_link(data, "modelscope", "stable", "ComfyUI")
-        '[comfyui-licyk-v2.2.7z](https://modelscope.cn/...)'
+        >>> get_download_link(data, "modelscope", "windows", "stable", "ComfyUI")
+        '[comfyui-licyk-windows-v2.2.7z](https://modelscope.cn/...)'
     """
-    project_data = get_resource_node(data, source, project)
+    project_data = get_resource_node(data, source, platform, project)
     version_data = project_data.get(version_type)
     if not isinstance(version_data, list) or not version_data:
         return "暂无"
@@ -178,6 +198,7 @@ def get_download_link(
 
 def generate_markdown_table(
     data: Mapping[str, Any],
+    platform: str,
     version_type: str,
     title: str,
 ) -> list[str]:
@@ -188,6 +209,8 @@ def generate_markdown_table(
     Args:
         data (dict[str, Any]):
             便携包列表数据
+        platform (str):
+            目标平台 ("windows"、"linux" 或 "macos")
         version_type (str):
             版本类型 ("stable" 或 "nightly")
         title (str):
@@ -198,13 +221,13 @@ def generate_markdown_table(
             Markdown 表格行列表，每行代表表格的一行
 
     Example:
-        >>> table_lines = generate_markdown_table(data, "stable", "Stable 版整合包")
+        >>> table_lines = generate_markdown_table(data, "windows", "stable", "Windows Stable 版整合包")
         >>> for line in table_lines:
         ...     print(line)
     """
     lines: list[str] = []
 
-    projects = get_projects(data, version_type)
+    projects = get_projects(data, platform, version_type)
 
     if not projects:
         return lines
@@ -215,9 +238,9 @@ def generate_markdown_table(
 
     # 遍历所有项目
     for project in projects:
-        project_name = get_project_display_name(data, project)
-        ms_link = get_download_link(data, "modelscope", version_type, project)
-        hf_link = get_download_link(data, "huggingface", version_type, project)
+        project_name = get_project_display_name(data, platform, project)
+        ms_link = get_download_link(data, "modelscope", platform, version_type, project)
+        hf_link = get_download_link(data, "huggingface", platform, version_type, project)
         lines.append(f"|{project_name}|{ms_link}|{hf_link}|")
 
     return lines
@@ -254,16 +277,21 @@ def main() -> None:
         "---",
     ]
 
-    # 生成 Stable 版本表格
-    print("正在生成 Stable 版本表格...")
-    stable_table: list[str] = generate_markdown_table(data, "stable", "Stable 版整合包")
-    markdown_lines.extend(stable_table)
-    markdown_lines.append("")
+    for platform, display_name in PLATFORM_DISPLAY_NAMES.items():
+        print(f"正在生成 {display_name} Stable 版本表格...")
+        stable_table = generate_markdown_table(data, platform, "stable", f"{display_name} Stable 版整合包")
+        markdown_lines.extend(stable_table)
+        if stable_table:
+            markdown_lines.append("")
 
-    # 生成 Nightly 版本表格
-    print("正在生成 Nightly 版本表格...")
-    nightly_table: list[str] = generate_markdown_table(data, "nightly", "Nightly 版整合包")
-    markdown_lines.extend(nightly_table)
+        print(f"正在生成 {display_name} Nightly 版本表格...")
+        nightly_table = generate_markdown_table(data, platform, "nightly", f"{display_name} Nightly 版整合包")
+        markdown_lines.extend(nightly_table)
+        if nightly_table:
+            markdown_lines.append("")
+
+    while markdown_lines[-1] == "":
+        markdown_lines.pop()
 
     with TemporaryDirectory() as tmp_dir:
         tmp_dir = Path(tmp_dir)

@@ -304,29 +304,34 @@ sd-webui-all-in-one self-manager portable list [选项]
 - `--hf-token <令牌>`：HuggingFace Token；未传时读取 `HF_TOKEN`。
 - `--ms-token <令牌>`：ModelScope Token；未传时读取 `MODELSCOPE_API_TOKEN`。
 
-至少需要配置 HuggingFace 或 ModelScope 中的一个下载源。输出结构为新版 `resources/update_time` 格式：
+至少需要配置 HuggingFace 或 ModelScope 中的一个下载源。整合包文件名必须使用
+`<software>-<signature>-<platform>-<版本或 nightly>.<扩展名>` 格式，其中 `platform`
+可选 `windows`、`linux`、`macos`。输出资源按下载源、平台和软件分组：
 
 ```json
 {
   "update_time": "2026-06-16T00:00:00Z",
   "resources": {
     "modelscope": {
-      "sd_webui": {
-        "display_name": "Stable Diffusion WebUI",
-        "description": "上手简单，操作方便，适合入门使用。",
-        "stable": [
-          {
-            "filename": "sd_webui-licyk-v1.0.0.7z",
-            "path": "portable/sd_webui-licyk-v1.0.0.7z",
-            "url": "https://...",
-            "signature": "licyk",
-            "channel": "stable",
-            "version": "1.0.0",
-            "build_date": null,
-            "extension": "7z"
-          }
-        ],
-        "nightly": []
+      "windows": {
+        "sd_webui": {
+          "display_name": "Stable Diffusion WebUI (NVIDIA)",
+          "description": "Stable Diffusion WebUI 的 NVIDIA 显卡整合包。",
+          "stable": [
+            {
+              "filename": "sd_webui-licyk-windows-v1.0.0.7z",
+              "path": "portable/sd_webui-licyk-windows-v1.0.0.7z",
+              "url": "https://...",
+              "signature": "licyk",
+              "platform": "windows",
+              "channel": "stable",
+              "version": "1.0.0",
+              "build_date": null,
+              "extension": "7z"
+            }
+          ],
+          "nightly": []
+        }
       }
     }
   }

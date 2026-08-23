@@ -34,11 +34,17 @@ PortableSourceType: TypeAlias = ApiType
 PortableChannelType: TypeAlias = Literal["stable", "nightly"]
 """整合包发行通道类型"""
 
+PortablePlatformType: TypeAlias = Literal["windows", "linux", "macos"]
+"""整合包目标平台类型"""
+
 PORTABLE_SOURCE_TYPE_LIST: list[PortableSourceType] = list(get_args(PortableSourceType))
 """整合包下载源类型列表"""
 
 PORTABLE_CHANNEL_TYPE_LIST: list[PortableChannelType] = list(get_args(PortableChannelType))
 """整合包发行通道类型列表"""
+
+PORTABLE_PLATFORM_TYPE_LIST: list[PortablePlatformType] = list(get_args(PortablePlatformType))
+"""整合包目标平台类型列表"""
 
 DEFAULT_PORTABLE_PATH_IN_REPO = "portable"
 """默认整合包仓库目录"""
@@ -48,6 +54,8 @@ PORTABLE_NAME_PATTERN = r"""
     (?P<software>[\w_]+?)
     -
     (?P<signature>[a-z0-9]+)
+    -
+    (?P<platform>windows|linux|macos)
     -
     (?:
         (?P<build_date>\d{8})
@@ -334,7 +342,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
 """整合包软件元数据
 
 命名规则:
-- Key 必须和整合包文件名中的 software 字段一致，例如 `sd_webui-licyk-v1.0.0.7z` 对应 `sd_webui`。
+- Key 必须和整合包文件名中的 software 字段一致，例如 `sd_webui-licyk-windows-v1.0.0.7z` 对应 `sd_webui`。
 - 不带 GPU 后缀的 Key 表示 NVIDIA 显卡整合包并使用 CUDA 版 PyTorch；`_rocm` 后缀表示 AMD 显卡整合包并使用 ROCm 版 PyTorch；`_xpu` 后缀表示 Intel 显卡整合包并使用 XPU 版 PyTorch。
 - 只为下载列表需要展示的产品或独立变体添加条目，不为 `_main`、`_dev`、`_sd3` 等分支细分单独添加条目，除非构建产物直接使用该标识作为 software。
 - `display_name` 使用产品名加显卡厂商后缀，例如 `ComfyUI (NVIDIA)`、`ComfyUI (AMD)`、`ComfyUI (Intel)`。
@@ -354,6 +362,9 @@ class PortableFilenameInfo(TypedDict):
 
     signature: str
     """整合包签名标识"""
+
+    platform: PortablePlatformType
+    """整合包目标平台"""
 
     channel: PortableChannelType
     """整合包发行通道"""
@@ -382,6 +393,9 @@ class PortableFileResource(TypedDict):
 
     signature: str
     """整合包签名标识"""
+
+    platform: PortablePlatformType
+    """整合包目标平台"""
 
     channel: PortableChannelType
     """整合包发行通道"""
@@ -412,7 +426,11 @@ class PortableSoftwareResource(TypedDict):
     """Nightly 资源列表"""
 
 
-PortableSourceResources: TypeAlias = dict[str, PortableSoftwareResource]
+PortablePlatformResources: TypeAlias = dict[str, PortableSoftwareResource]
+"""单个平台的整合包资源"""
+
+
+PortableSourceResources: TypeAlias = dict[PortablePlatformType, PortablePlatformResources]
 """单个下载源的整合包资源"""
 
 
@@ -473,9 +491,13 @@ def parse_portable_filename(filename: str) -> PortableFilenameInfo:
     build_date = groups.get("build_date")
     version = groups.get("version")
     channel: PortableChannelType = "nightly" if build_date is not None else "stable"
+    platform = groups["platform"].lower()
+    if platform not in PORTABLE_PLATFORM_TYPE_LIST:
+        raise ValueError(f"不支持的整合包平台: {platform}")
     return {
         "software": groups["software"],
         "signature": groups["signature"],
+        "platform": platform,
         "channel": channel,
         "build_date": build_date,
         "version": version,
@@ -508,6 +530,7 @@ def build_portable_file_resource(
         "path": path,
         "url": url,
         "signature": info["signature"],
+        "platform": info["platform"],
         "channel": info["channel"],
         "version": info["version"],
         "build_date": info["build_date"],
@@ -623,19 +646,22 @@ def collect_portable_files_from_repo(
 def build_portable_source_resources(
     files: list[PortableFileResource],
 ) -> PortableSourceResources:
-    """按软件标识构建下载源资源
+    """按目标平台和软件标识构建下载源资源
 
     Args:
         files (list[PortableFileResource]):
             整合包文件资源列表
 
     Returns:
-        PortableSourceResources: 按软件标识分组的下载源资源
+        PortableSourceResources: 按目标平台和软件标识分组的下载源资源
     """
-    grouped: PortableSourceResources = {}
+    grouped: dict[PortablePlatformType, PortablePlatformResources] = {}
     for file in files:
-        software = parse_portable_filename(file["filename"])["software"]
-        if software not in grouped:
+        info = parse_portable_filename(file["filename"])
+        software = info["software"]
+        platform = file["platform"]
+        platform_resources = grouped.setdefault(platform, {})
+        if software not in platform_resources:
             metadata = PORTABLE_SOFTWARE_METADATA.get(
                 software,
                 {
@@ -643,20 +669,25 @@ def build_portable_source_resources(
                     "description": "",
                 },
             )
-            grouped[software] = {
+            platform_resources[software] = {
                 "display_name": metadata["display_name"],
                 "description": metadata["description"],
                 "stable": [],
                 "nightly": [],
             }
-        grouped[software][file["channel"]].append(file)
+        platform_resources[software][file["channel"]].append(file)
 
     result: PortableSourceResources = {}
-    for software in sorted(grouped):
-        resource = grouped[software]
-        resource["stable"] = sort_portable_files(resource["stable"])
-        resource["nightly"] = sort_portable_files(resource["nightly"])
-        result[software] = resource
+    for platform in PORTABLE_PLATFORM_TYPE_LIST:
+        platform_resources = grouped.get(platform)
+        if platform_resources is None:
+            continue
+        result[platform] = {}
+        for software in sorted(platform_resources):
+            resource = platform_resources[software]
+            resource["stable"] = sort_portable_files(resource["stable"])
+            resource["nightly"] = sort_portable_files(resource["nightly"])
+            result[platform][software] = resource
     return result
 
 

@@ -8,6 +8,10 @@ inputs:
   software-name:
     description: Portable package archive software name.
     required: true
+  target-platform:
+    description: Portable package target platform.
+    required: false
+    default: windows
   upload-path:
     description: Portable package upload root directory.
     required: false
@@ -70,7 +74,8 @@ runs:
           -Workspace "${{ github.workspace }}" `
           -Source "${{ inputs.install-path }}" `
           -SaveDst "${{ github.workspace }}/sd-webui-all-in-one/portable/nightly" `
-          -Author "licyk"
+          -Author "licyk" `
+          -Platform "${{ inputs.target-platform }}"
 
     - name: Install HuggingFace and ModelScope library
       shell: pwsh
