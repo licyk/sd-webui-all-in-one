@@ -763,7 +763,9 @@ def test_legacy_runtime_and_services_remain_usable_beyond_connect_deadline():
             host.host,
             host.port,
             timeout=0.05,
-            default_request_timeout=0.2,
+            # 服务端会在响应前等待 0.08 秒，仍可证明运行时请求没有继承
+            # 0.05 秒的建连截止时间。请求自身留出充足的 CI 调度余量。
+            default_request_timeout=1.0,
         )
         channel = ServiceControlChannel(client, cast(PatchService, _StaticService()), timeout=0.05).start()
         try:

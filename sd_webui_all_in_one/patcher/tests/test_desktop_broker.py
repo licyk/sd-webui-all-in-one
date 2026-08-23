@@ -1024,21 +1024,37 @@ def test_desktop_initialization_failure_still_allows_local_suppression(monkeypat
 def test_close_final_flush_wait_is_bounded_even_when_http_is_stuck():
     entered = threading.Event()
     release = threading.Event()
+    close_completed = threading.Event()
 
     class BlockingRequester(ScriptedRequester):
         def request(self, method, path, *, body=None, query=None, timeout):
             entered.set()
-            release.wait(timeout=1)
+            release.wait()
             raise DesktopBrokerHttpError("connection_failed", "blocked")
 
     client = _client(BlockingRequester(), final_flush_seconds=0.02)
     client.emit_event("browser.open", {"url": "http://localhost:1"})
     client.start()
     assert entered.wait(timeout=1)
-    started = time.monotonic()
-    client.close()
-    elapsed = time.monotonic() - started
-    release.set()
-    assert elapsed < 0.15
+
+    def close_client():
+        client.close()
+        close_completed.set()
+
+    closer = threading.Thread(target=close_client, daemon=True)
+    closer.start()
+    try:
+        # HTTP 替身不会自行返回，因此这里成功只能说明 close() 遵守了自己的
+        # 最终刷新截止时间，而不是等待网络调用结束。宽松看门狗避免把共享 CI
+        # runner 的线程调度延迟误判成产品回归。
+        assert close_completed.wait(timeout=1)
+    finally:
+        release.set()
+        closer.join(timeout=1)
+        if client._thread is not None:
+            client._thread.join(timeout=1)
+
+    assert not closer.is_alive()
+    assert client._thread is not None and not client._thread.is_alive()
     assert client.status()["status"] == "closed"
     assert client.status()["unacknowledgedDiagnostics"][-1]["code"] == "final_flush_incomplete"
