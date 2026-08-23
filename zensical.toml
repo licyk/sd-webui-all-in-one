@@ -15,7 +15,7 @@ nav = [
         {"云端运行" = "quick-start/cloud.md"},
         {"整合包快速开始" = "quick-start/portable.md"},
         {"本地安装" = "quick-start/local-install.md"},
-        {"Launcher 快速开始" = "quick-start/launcher.md"},
+        {"Hanafubuki 快速开始" = "quick-start/launcher.md"},
         {"启动后的下一步" = "quick-start/after-start.md"},
     ]},
     {"安装器使用" = [
@@ -106,9 +106,10 @@ nav = [
     ]},
     {"下载器与启动器" = [
         {"概览" = "tools/index.md"},
+        {"Hanafubuki" = "tools/hanafubuki.md"},
         {"AI 整合包下载器" = "tools/portable-downloader.md"},
-        {"Windows GUI Launcher" = "tools/launcher-gui.md"},
         {"Bash TUI / CLI Launcher" = "tools/launcher-tui.md"},
+        {"旧版 Windows GUI Launcher" = "tools/launcher-gui.md"},
         {"故障排查" = "tools/troubleshooting.md"},
     ]},
     {"Jupyter Notebook" = [

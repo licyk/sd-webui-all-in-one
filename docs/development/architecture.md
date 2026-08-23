@@ -1,6 +1,6 @@
 # 整体架构
 
-SD WebUI All In One 由 Python 内核、PowerShell Installer、Notebook 和 Launcher / 下载器文档入口共同组成。用户可以从 CLI、Installer、Notebook 或 Launcher 进入，最终大多会调用 `sd_webui_all_in_one/` 中的安装、下载、镜像、隧道、模型和环境检查能力。
+SD WebUI All In One 由 Python 内核、PowerShell Installer、Notebook 和 Hanafubuki / Launcher / 下载器文档入口共同组成。用户可以从 CLI、Installer、Notebook、Hanafubuki 或终端 Launcher 进入，最终大多会调用 `sd_webui_all_in_one/` 中的安装、下载、镜像、隧道、模型和环境检查能力。
 
 ## 模块关系
 
@@ -9,13 +9,16 @@ flowchart TD
     User[用户入口] --> CLI[CLI: sd-webui-all-in-one]
     User --> Installer[PowerShell Installer]
     User --> Notebook[Colab / Kaggle Notebook]
-    User --> Launcher[GUI / TUI Launcher]
+    User --> Hanafubuki[Hanafubuki 桌面管理器]
+    User --> Launcher[Bash TUI / CLI Launcher]
 
     CLI --> Core[sd_webui_all_in_one Python 内核]
     Notebook --> NotebookManager[notebook_manager]
     NotebookManager --> Core
     Installer --> CorePackage[安装 / 更新 Python 内核]
     Installer --> ManagerScripts[生成管理脚本]
+    Hanafubuki --> Core
+    Hanafubuki --> WebUI
     Launcher --> Installer
     Launcher --> ManagerScripts
 
@@ -46,4 +49,3 @@ flowchart TD
 - `installer/*.ps1` 是可独立运行的安装器，同时负责写出后续管理脚本。
 - `notebook/*.ipynb` 是云端交互入口，应尽量通过 `notebook_manager` 调用 Python 内核能力。
 - `docs/` 是 Zensical 文档，用户使用说明和维护说明都应保持链接可构建。
-

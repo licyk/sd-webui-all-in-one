@@ -1,13 +1,22 @@
-# Windows GUI Launcher
+# 旧版 Windows GUI Launcher
+
+!!! warning "旧版启动器，不再推荐新用户使用"
+
+    Hanafubuki 已经代替本页面介绍的 Windows GUI Launcher，支持 Windows、macOS 和 Linux。新用户请直接阅读 [Hanafubuki](./hanafubuki.md)，或前往[官网下载](https://hanafubuki.netlify.app/download)。本页仅为仍在使用旧启动器的用户保留。
+
+[下载 Hanafubuki :material-download:](https://hanafubuki.netlify.app/download){ .md-button .md-button--primary }
+[查看 Hanafubuki 使用说明](./hanafubuki.md){ .md-button }
+
+已有 WebUI 不需要重新下载。安装 Hanafubuki 后，在首页选择“添加实例”，使用“导入现有实例”或“扫描系统”重新接入原目录。旧启动器的自身配置不会自动迁移。
 
 Windows GUI Launcher 是 `sd-webui-all-in-one-launcher` 的图形界面版本，是 Windows 上安装、启动和维护多个 WebUI / 训练工具的统一入口。它可以借助 `sd-webui-all-in-one` 安装器完成全新安装，也可以接管已解压的整合包或已有安装目录，继续运行启动、更新、终端、模型下载和版本管理等维护脚本。
 
 项目地址：[licyk/sd-webui-all-in-one-launcher](https://github.com/licyk/sd-webui-all-in-one-launcher)。
 
-## 下载与启动
+## 旧版下载与启动
 
-[GitHub 下载 install.bat :material-download:](https://github.com/licyk/sd-webui-all-in-one-launcher/releases/download/launcher/install.bat){ .md-button .md-button--primary }
-[Gitee 下载 install.bat :material-download:](https://gitee.com/licyk/sd-webui-all-in-one-launcher/releases/download/launcher/install.bat){ .md-button }
+[GitHub 下载旧版 install.bat :material-download:](https://github.com/licyk/sd-webui-all-in-one-launcher/releases/download/launcher/install.bat){ .md-button }
+[Gitee 下载旧版 install.bat :material-download:](https://gitee.com/licyk/sd-webui-all-in-one-launcher/releases/download/launcher/install.bat){ .md-button }
 
 推荐下载 `install.bat` 后双击安装。安装完成后，可以从桌面或开始菜单启动 GUI。
 

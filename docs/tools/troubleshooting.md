@@ -1,6 +1,17 @@
 # 下载器与启动器故障排查
 
-本页整理 AI 整合包下载器、Windows GUI Launcher 和 Bash TUI / CLI Launcher 的常见问题。安装器自身报错时，也需要结合对应产品的 [安装器故障排查](../installer/index.md) 一起阅读。
+本页整理 AI 整合包下载器、Hanafubuki、Bash TUI / CLI Launcher 和旧版 Windows GUI Launcher 的入口级常见问题。安装器自身报错时，也需要结合对应产品的 [安装器故障排查](../installer/index.md) 一起阅读。
+
+## Hanafubuki 无法启动或管理实例
+
+先根据故障阶段查看 [Hanafubuki 官方文档](https://hanafubuki.netlify.app/docs/)；下载或首次启动失败时检查网络、系统代理、磁盘空间和解压目录写入权限。
+
+如果使用整合包内的 `hanafubuki-launcher.exe`：
+
+- 确认 Launcher 位于有写入权限的整合包目录，不要放入只读介质或系统目录。
+- 首次运行需要下载并校验 Hanafubuki 本体，保持网络连接并等待任务完成。
+- 未自动发现旁边的 WebUI 时，在 Hanafubuki 首页选择“添加实例”，再使用“导入现有实例”或“扫描系统”。
+- SD Scripts、Musubi Tuner 当前不由 Hanafubuki 管理，改用 Installer 管理脚本或 Bash TUI / CLI Launcher。
 
 ## 下载器无法刷新列表
 
@@ -38,9 +49,9 @@ AI 整合包下载器会从远程 `portable_list.json` 同步资源列表。如�
 - 避免把整合包下载到权限受限目录。
 - 清理目标磁盘，或选择容量更大的磁盘。
 
-## GUI 无法启动
+## 旧版 GUI 无法启动
 
-Windows GUI Launcher 需要 Windows PowerShell 5.1 或 PowerShell 7+，并依赖 WPF / .NET 桌面环境。
+以下内容只适用于[旧版 Windows GUI Launcher](./launcher-gui.md)。新用户应改用 [Hanafubuki](./hanafubuki.md)。旧版 GUI 需要 Windows PowerShell 5.1 或 PowerShell 7+，并依赖 WPF / .NET 桌面环境。
 
 可尝试：
 
@@ -55,7 +66,7 @@ powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\installer_launcher
 - 使用 `install.bat` 重新安装 GUI。
 - 查看 `%LOCALAPPDATA%\installer-launcher\logs\` 下的日志。
 
-## GUI 检测为未安装或安装不完整
+## 旧版 GUI 检测为未安装或安装不完整
 
 GUI 根据安装路径和管理脚本判断安装状态：
 
@@ -65,7 +76,7 @@ GUI 根据安装路径和管理脚本判断安装状态：
 
 遇到 `安装不完整` 时，建议在“高级选项”确认安装路径后，切回“一键启动”的安装模式重新运行安装器修复。
 
-## GUI 代理或更新检查失败
+## 旧版 GUI 代理或更新检查失败
 
 GUI 的代理模式包括：
 

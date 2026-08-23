@@ -6,8 +6,8 @@
 
 | 安装方式 | 推荐场景 | 下一步 |
 | --- | --- | --- |
-| Windows GUI Launcher | 想用图形界面安装、启动和管理 | [Launcher 快速开始](./launcher.md) |
-| Bash TUI / CLI Launcher | Linux / macOS 或终端用户 | [Bash TUI / CLI Launcher](../tools/launcher-tui.md) |
+| Hanafubuki | Windows / Linux / macOS 图形界面安装、启动和管理 | [Hanafubuki 快速开始](./launcher.md) |
+| Bash TUI / CLI Launcher | 终端用户或 SD Scripts / Musubi Tuner 等训练脚本 | [Bash TUI / CLI Launcher](../tools/launcher-tui.md) |
 | 直接运行 Installer | 想手动下载并运行 PowerShell 安装器 | [安装器使用](../installer/index.md) 或选择下方产品安装页 |
 | Windows 整合包下载器 | 想下载由 Installer 构建并管理的免安装整合包 | [AI 整合包下载器](../tools/portable-downloader.md) |
 

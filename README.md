@@ -39,7 +39,20 @@ _✨一键筑基，万象生辉_
 
 </div>
 
+## 推荐：Hanafubuki 全平台启动器
+
+本项目现在优先推荐使用 **Hanafubuki** 安装、导入、启动和维护本地 WebUI。它可以在 Windows、macOS 和 Linux 上统一管理运行环境、版本、模型、扩展、快照、任务与诊断信息，完整替代旧版 Windows GUI Launcher 的日常图形化管理入口。
+
+[访问 Hanafubuki 官网](https://hanafubuki.netlify.app) · [立即下载](https://hanafubuki.netlify.app/download) · [查看使用说明](docs/tools/hanafubuki.md)
+
+[![Hanafubuki 实例管理主页](docs/assets/images/tools/hanafubuki/hanafubuki.png)](https://hanafubuki.netlify.app/download)
+
+单独下载时，长期固定使用推荐选择安装包；需要随移动硬盘携带或保留多套互不干扰的环境时选择便携版。受支持的 Windows 整合包已经包含 `hanafubuki-launcher.exe`，解压后直接运行即可，无需重复下载启动器。
+
+***
+
 - [SD WebUI All In One](#sd-webui-all-in-one)
+- [推荐：Hanafubuki 全平台启动器](#推荐hanafubuki-全平台启动器)
 - [项目文档](#项目文档)
 - [SD WebUI All In One CLI](#sd-webui-all-in-one-cli)
 - [SD WebUI All In One Notebook](#sd-webui-all-in-one-notebook)
@@ -70,7 +83,7 @@ _✨一键筑基，万象生辉_
 ***
 
 # 项目文档
-SD WebUI All In One 提供本地安装、整合包下载、Launcher 管理、Jupyter Notebook 云端运行和 CLI 管理等多种入口，用于快速安装、启动和维护常见 AI WebUI / 训练工具。
+SD WebUI All In One 提供本地安装、整合包下载、Hanafubuki 图形管理、Jupyter Notebook 云端运行和 CLI / TUI 管理等多种入口，用于快速安装、启动和维护常见 AI WebUI / 训练工具。
 
 完整文档站点：[SD WebUI All In One 文档](https://licyk.github.io/sd-webui-all-in-one/)
 
@@ -80,7 +93,8 @@ SD WebUI All In One 提供本地安装、整合包下载、Launcher 管理、Jup
 | 在 Colab / Kaggle 云端运行 | [云端运行快速开始](https://licyk.github.io/sd-webui-all-in-one/quick-start/cloud/) / [Jupyter Notebook 文档](https://licyk.github.io/sd-webui-all-in-one/notebook/) |
 | 下载 Windows 免安装整合包 | [整合包快速开始](https://licyk.github.io/sd-webui-all-in-one/quick-start/portable/) / [AI 整合包下载器](https://licyk.github.io/sd-webui-all-in-one/tools/portable-downloader/) |
 | 在本地安装 WebUI / 训练工具 | [本地安装快速开始](https://licyk.github.io/sd-webui-all-in-one/quick-start/local-install/) / [安装器使用](https://licyk.github.io/sd-webui-all-in-one/installer/) |
-| 用图形界面或终端统一管理 | [Launcher 快速开始](https://licyk.github.io/sd-webui-all-in-one/quick-start/launcher/) / [下载器与启动器](https://licyk.github.io/sd-webui-all-in-one/tools/) |
+| 用图形界面统一安装和管理 | [Hanafubuki 官网](https://hanafubuki.netlify.app) / [Hanafubuki 快速开始](https://licyk.github.io/sd-webui-all-in-one/quick-start/launcher/) |
+| 在终端中统一安装和管理 | [Bash TUI / CLI Launcher](https://licyk.github.io/sd-webui-all-in-one/tools/launcher-tui/) |
 | 使用命令行管理 | [命令行工具](https://licyk.github.io/sd-webui-all-in-one/cli/) |
 | 维护项目源码和文档 | [开发维护](https://licyk.github.io/sd-webui-all-in-one/development/) |
 

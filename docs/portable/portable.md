@@ -1,15 +1,15 @@
 # 整合包下载与使用
 
 ## 简介
-基于 [sd-webui-all-in-one/Installer](../installer/index.md) 全自动构建的整合包，下载解压后即可使用 Installer 生成的脚本启动和维护。首次使用前请先进入整合包目录，双击运行 `configure_env.bat` 完成环境配置，之后再运行启动、更新、模型下载、快照管理等 PowerShell 管理脚本。
+基于 [sd-webui-all-in-one/Installer](../installer/index.md) 全自动构建的整合包，下载解压后即可使用。Stable Diffusion WebUI、ComfyUI、InvokeAI、Fooocus、SD Trainer、Qwen TTS WebUI 六类产品及其受支持变体已经内置 Hanafubuki 便携版，解压后优先运行 `hanafubuki-launcher.exe`；Installer 生成的 PowerShell 管理脚本继续作为直接管理和故障恢复入口。
 
-可以使用 [AI 整合包下载器](../tools/portable-downloader.md) 下载并自动解压整合包；如果手动下载，整合包使用 7z 格式打包，若 Windows 系统不支持解压该格式，请使用 [7-Zip](https://7-zip.org/) / [Bandizip](https://www.bandisoft.com/bandizip/) 或者其他支持 7z 格式的工具进行解压。解压完成后务必先运行 `configure_env.bat`，否则 PowerShell 脚本可能无法正常启动。
+可以使用 [AI 整合包下载器](../tools/portable-downloader.md) 下载并自动解压整合包；如果手动下载，整合包使用 7z 格式打包，若 Windows 系统不支持解压该格式，请使用 [7-Zip](https://7-zip.org/) / [Bandizip](https://www.bandisoft.com/bandizip/) 或者其他支持 7z 格式的工具进行解压。运行 `hanafubuki-launcher.exe` 不要求先执行 `configure_env.bat`；只有直接运行 PowerShell 管理脚本时，才需要先完成环境配置。
 
 Windows 上运行 `.ps1` PowerShell 脚本时，不要左键双击；左键双击通常会用记事本或默认编辑器打开脚本，而不是执行脚本。正确方式是右键该脚本，选择 `使用 PowerShell 运行`。如果右键运行后窗口闪退，先运行同级目录的 `configure_env.bat`，完成环境配置后再右键运行 `.ps1` 脚本。
 
 部分 WebUI 支持使用绘世启动器进行启动和管理，运行`hanamizuki.bat`即可启动绘世启动器，如果没有这个文件说明绘世启动器不支持启动和管理该 WebUI。
 
-如果希望使用 Launcher 管理整合包，在 Launcher 中选择对应 WebUI / 工具，并把安装路径设置为整合包解压目录。只要目录中存在 Installer 生成的管理脚本，Launcher 就可以接管并运行启动、更新、终端、模型下载和版本管理等操作。
+首次运行 `hanafubuki-launcher.exe` 时，Launcher 会下载、校验并启动 Hanafubuki 本体，然后发现放在旁边的 WebUI。未自动发现时，在 Hanafubuki 首页选择“添加实例”，再使用“导入现有实例”或“扫描系统”。SD Scripts、Musubi Tuner 当前继续使用 Installer 管理脚本或 [Bash TUI / CLI Launcher](../tools/launcher-tui.md)。
 
 ## 管理脚本
 
@@ -19,6 +19,7 @@ Windows 上运行 `.ps1` PowerShell 脚本时，不要左键双击；左键双�
 
 | 脚本 | 作用 | 备注 |
 | --- | --- | --- |
+| `hanafubuki-launcher.exe` | 启动整合包内置的 Hanafubuki 便携版。 | 受支持整合包的首选入口；首次运行会下载并校验应用本体。 |
 | `configure_env.bat` | 首次使用前配置整合包运行环境。 | 解压后先运行一次；如果右键运行 `.ps1` 脚本后窗口闪退，也先运行该脚本。 |
 | `launch.ps1` | 启动对应 WebUI / 工具。 | 大多数 WebUI 整合包的日常启动入口，会读取同级目录中的 `launch_args.txt`。 |
 | `init.ps1` | 初始化 SD Trainer Script 类整合包的训练环境。 | 主要见于 SD Scripts、Musubi Tuner 等训练脚本整合包。 |
@@ -65,7 +66,7 @@ Windows 上运行 `.ps1` PowerShell 脚本时，不要左键双击；左键双�
 | `启动绘世启动器.bat` | `hanamizuki.bat` | 打开绘世启动器。只有包含绘世启动器的整合包才会生成。 |
 | `配置环境并修复闪退.bat` | `configure_env.bat` | 运行环境配置脚本；首次使用或 `.ps1` 运行闪退时使用。 |
 | `打开帮助.bat` | `help.txt` | 打开当前整合包的帮助文档。 |
-| `安装 SD WebUI All In One 启动器.bat` | 远程 Launcher 安装脚本 | 这是特殊脚本，不是转到同目录中的本地脚本。它会从 GitHub / Gitee / GitLab 下载 SD WebUI All In One Launcher 的 `install.ps1`，再运行该安装脚本。 |
+| `安装 SD WebUI All In One 启动器.bat` | 旧版远程 Launcher 安装脚本 | 仅用于兼容旧整合包，不再推荐运行；新整合包优先使用同目录的 `hanafubuki-launcher.exe`。 |
 
 ## 常见配置文件
 
@@ -108,7 +109,7 @@ Windows 上运行 `.ps1` PowerShell 脚本时，不要左键双击；左键双�
 
 **上手简单，操作方便，适合入门使用。**
 
-支持 SD WebUI Installer / SD WebUI All In One Launcher / 绘世启动器进行管理。
+支持 SD WebUI Installer / Hanafubuki / 绘世启动器进行管理。
 
 [下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=sd_webui){ .md-button }
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_webui){ .md-button .md-button--primary }
@@ -130,8 +131,8 @@ Windows 上运行 `.ps1` PowerShell 脚本时，不要左键双击；左键双�
 
 SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-webui/index.md)
 
-### SD WebUI All In One Launcher 管理方式
-使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `Stable Diffusion WebUI Installer`，并在高级选项中把安装路径指向 Stable Diffusion WebUI 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
+### Hanafubuki 管理方式
+优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 Stable Diffusion WebUI 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录。
 
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
@@ -144,7 +145,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 **基于 Stable Diffusion WebUI，有更强的显存优化，多了 FLUX 模型支持。**
 
-支持 SD WebUI Installer / SD WebUI All In One Launcher / 绘世启动器进行管理。
+支持 SD WebUI Installer / Hanafubuki / 绘世启动器进行管理。
 
 [下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=sd_webui_forge){ .md-button }
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_webui_forge){ .md-button .md-button--primary }
@@ -166,8 +167,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 详细 SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-webui/index.md)
 
-### SD WebUI All In One Launcher 管理方式
-使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `Stable Diffusion WebUI Installer`，并在高级选项中把安装路径指向 Stable Diffusion WebUI Forge 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
+### Hanafubuki 管理方式
+优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 Stable Diffusion WebUI Forge 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录。
 
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
@@ -180,7 +181,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 **基于旧版 Stable Diffusion WebUI Forge 开发，插件兼容性比 Stable Diffusion WebUI Forge 好一点。**
 
-支持 SD WebUI Installer / SD WebUI All In One Launcher / 绘世启动器进行管理。
+支持 SD WebUI Installer / Hanafubuki / 绘世启动器进行管理。
 
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_webui_reforge){ .md-button .md-button--primary }
 
@@ -201,8 +202,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 详细 SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-webui/index.md)
 
-### SD WebUI All In One Launcher 管理方式
-使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `Stable Diffusion WebUI Installer`，并在高级选项中把安装路径指向 Stable Diffusion WebUI reForge 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
+### Hanafubuki 管理方式
+优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 Stable Diffusion WebUI reForge 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录。
 
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
@@ -215,7 +216,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 **基于旧版 Stable Diffusion WebUI Forge 开发，精简了无用组件，更轻量。**
 
-支持 SD WebUI Installer / SD WebUI All In One Launcher / 绘世启动器进行管理。
+支持 SD WebUI Installer / Hanafubuki / 绘世启动器进行管理。
 
 **NVIDIA 显卡版本：**
 
@@ -246,8 +247,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 详细 SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-webui/index.md)
 
-### SD WebUI All In One Launcher 管理方式
-使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `Stable Diffusion WebUI Installer`，并在高级选项中把安装路径指向 Stable Diffusion WebUI Forge Neo 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
+### Hanafubuki 管理方式
+优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 Stable Diffusion WebUI Forge Neo 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录。
 
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
@@ -260,7 +261,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 **基于 Stable Diffusion WebUI 开发，支持的模型种类多，就是比较臃肿。**
 
-支持 SD WebUI Installer / SD WebUI All In One Launcher / 绘世启动器进行管理。
+支持 SD WebUI Installer / Hanafubuki / 绘世启动器进行管理。
 
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_next){ .md-button .md-button--primary }
 
@@ -281,8 +282,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 详细 SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-webui/index.md)
 
-### SD WebUI All In One Launcher 管理方式
-使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `Stable Diffusion WebUI Installer`，并在高级选项中把安装路径指向 SD Next 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
+### Hanafubuki 管理方式
+优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 SD.Next 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录。
 
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
@@ -295,7 +296,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 **流程高度自定义，可玩性高，显存优化强，支持的模型丰富，~~除了某些插件喜欢冲突弄坏环境~~。**
 
-支持 ComfyUI Installer / SD WebUI All In One Launcher / 绘世启动器进行管理。
+支持 ComfyUI Installer / Hanafubuki / 绘世启动器进行管理。
 
 **NVIDIA 显卡版本：**
 
@@ -325,8 +326,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 详细 ComfyUI Installer 使用说明可阅读：[ComfyUI Installer](../installer/comfyui/index.md)
 
-### SD WebUI All In One Launcher 管理方式
-使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `ComfyUI Installer`，并在高级选项中把安装路径指向 ComfyUI 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `comfyui`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
+### Hanafubuki 管理方式
+优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 ComfyUI 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `comfyui`，将 `INSTALL_PATH` 指向整合包解压目录。
 
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
@@ -339,7 +340,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 **化繁为简，更专注于提示词书写。**
 
-支持 Fooocus Installer / SD WebUI All In One Launcher / 绘世启动器进行管理。
+支持 Fooocus Installer / Hanafubuki / 绘世启动器进行管理。
 
 [下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=fooocus){ .md-button }
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=fooocus){ .md-button .md-button--primary }
@@ -360,8 +361,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 详细 Fooocus Installer 使用说明可阅读：[Fooocus Installer](../installer/fooocus/index.md)
 
-### SD WebUI All In One Launcher 管理方式
-使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `Fooocus Installer`，并在高级选项中把安装路径指向 Fooocus 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `fooocus`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
+### Hanafubuki 管理方式
+优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 Fooocus 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `fooocus`，将 `INSTALL_PATH` 指向整合包解压目录。
 
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
@@ -374,7 +375,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 **拥有最强大的画布系统，更适合作为辅助绘画工具。**
 
-支持 InvokeAI Installer / SD WebUI All In One Launcher 进行管理。
+支持 InvokeAI Installer / Hanafubuki 进行管理。
 
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=invokeai){ .md-button .md-button--primary }
 
@@ -394,8 +395,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 详细 InvokeAI Installer 使用说明可阅读：[InvokeAI Installer](../installer/invokeai/index.md)
 
-### SD WebUI All In One Launcher 管理方式
-使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `InvokeAI Installer`，并在高级选项中把安装路径指向 InvokeAI 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `invokeai`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
+### Hanafubuki 管理方式
+优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 InvokeAI 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `invokeai`，将 `INSTALL_PATH` 指向整合包解压目录。
 
 
 ## SD-Trainer
@@ -403,7 +404,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 **训练模型如此简单。**
 
-支持 SD-Trainer Installer / SD WebUI All In One Launcher / 绘世启动器进行管理。
+支持 SD-Trainer Installer / Hanafubuki / 绘世启动器进行管理。
 
 [下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=sd_trainer){ .md-button }
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_trainer){ .md-button .md-button--primary }
@@ -424,8 +425,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 详细 SD-Trainer Installer 使用说明可阅读：[SD Trainer Installer](../installer/sd-trainer/index.md)
 
-### SD WebUI All In One Launcher 管理方式
-使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `SD Trainer Installer`，并在高级选项中把安装路径指向 SD-Trainer 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `sd_trainer`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
+### Hanafubuki 管理方式
+优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 SD-Trainer 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_trainer`，将 `INSTALL_PATH` 指向整合包解压目录。
 
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
@@ -438,7 +439,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 **训练模型如此简单。基于 [SD Trainer](https://github.com/Akegarasu/lora-scripts) 分支，并且新增了 Anima 模型的支持。**
 
-支持 SD-Trainer Installer / SD WebUI All In One Launcher / 绘世启动器进行管理。
+支持 SD-Trainer Installer / Hanafubuki / 绘世启动器进行管理。
 
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_trainer_next){ .md-button .md-button--primary }
 
@@ -458,8 +459,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 详细 SD-Trainer Installer 使用说明可阅读：[SD Trainer Installer](../installer/sd-trainer/index.md)
 
-### SD WebUI All In One Launcher 管理方式
-使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `SD Trainer Installer`，并在高级选项中把安装路径指向 SD Trainer Next 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `sd_trainer`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
+### Hanafubuki 管理方式
+优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 SD Trainer Next 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_trainer`，将 `INSTALL_PATH` 指向整合包解压目录。
 
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
@@ -472,7 +473,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 **支持训练更多种类的模型，不过操作麻烦一点。**
 
-支持 SD-Trainer Installer / SD WebUI All In One Launcher 进行管理。
+支持 SD-Trainer Installer / Hanafubuki 进行管理。
 
 [下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=kohya_gui){ .md-button }
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=kohya_gui){ .md-button .md-button--primary }
@@ -493,15 +494,15 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 详细 SD-Trainer Installer 使用说明可阅读：[SD Trainer Installer](../installer/sd-trainer/index.md)
 
-### SD WebUI All In One Launcher 管理方式
-使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `SD Trainer Installer`，并在高级选项中把安装路径指向 Kohya GUI 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `sd_trainer`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
+### Hanafubuki 管理方式
+优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 Kohya GUI 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_trainer`，将 `INSTALL_PATH` 指向整合包解压目录。
 
 
 ## SD Scripts
 
 **支持训练 SD1.5，SDXL，FLUX，ControlNet 等多种模型，并且是 SD-Trainer 和 Kohya GUI 的训练核心，不过操作比较麻烦。**
 
-支持 SD-Trainer-Script Installer / SD WebUI All In One Launcher 进行管理。
+支持 SD-Trainer-Script Installer / Bash TUI / CLI Launcher 进行管理。
 
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_scripts){ .md-button .md-button--primary }
 
@@ -521,15 +522,15 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 详细 SD-Trainer Installer 使用说明可阅读：[SD Trainer Script Installer](../installer/sd-trainer-script/index.md)
 
-### SD WebUI All In One Launcher 管理方式
-使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `SD Trainer Script Installer`，并在高级选项中把安装路径指向 SD Scripts 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `sd_trainer_script`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
+### Bash TUI / CLI Launcher 管理方式
+SD Scripts 当前不属于 Hanafubuki 支持的实例类型。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `sd_trainer_script`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本；也可以直接使用上方 Installer 管理脚本。
 
 
 ## Musubi Tuner
 
 **支持训练 Hunyuan，Wan 等视频生成模型。**
 
-支持 SD-Trainer-Script Installer / SD WebUI All In One Launcher 进行管理。
+支持 SD-Trainer-Script Installer / Bash TUI / CLI Launcher 进行管理。
 
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=musubi_tuner){ .md-button .md-button--primary }
 
@@ -549,8 +550,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 详细 SD-Trainer-Script Installer 使用说明可阅读：[SD Trainer Script Installer](../installer/sd-trainer-script/index.md)
 
-### SD WebUI All In One Launcher 管理方式
-使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `SD Trainer Script Installer`，并在高级选项中把安装路径指向 Musubi Tuner 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `sd_trainer_script`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
+### Bash TUI / CLI Launcher 管理方式
+Musubi Tuner 当前不属于 Hanafubuki 支持的实例类型。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `sd_trainer_script`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本；也可以直接使用上方 Installer 管理脚本。
 
 
 ## Qwen TTS WebUI
@@ -558,7 +559,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 **支持使用 Qwen3 TTS 生成语音。**
 
-支持 Qwen TTS WebUI Installer / SD WebUI All In One Launcher 进行管理。
+支持 Qwen TTS WebUI Installer / Hanafubuki 进行管理。
 
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=qwen_tts_webui){ .md-button .md-button--primary }
 
@@ -576,8 +577,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 详细 Qwen TTS WebUI Installer 使用说明可阅读：[Qwen TTS WebUI Installer](../installer/qwen-tts-webui/index.md)
 
-### SD WebUI All In One Launcher 管理方式
-使用 [Windows GUI Launcher](../tools/launcher-gui.md) 时，在软件选择中选择 `Qwen TTS WebUI Installer`，并在高级选项中把安装路径指向 Qwen TTS WebUI 整合包解压目录。使用 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 时，选择项目 `qwen_tts_webui`，将 `INSTALL_PATH` 指向整合包解压目录，再通过 `manage` / `run-script` 运行管理脚本。
+### Hanafubuki 管理方式
+优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 Qwen TTS WebUI 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `qwen_tts_webui`，将 `INSTALL_PATH` 指向整合包解压目录。
 
 
 ## 所有版本
@@ -589,4 +590,4 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
     1. 整合包分为 Stable 和 Nightly 版本，Nightly 版本是未经测试的版本，并且使用日期进行命名，如`comfyui_licyk_20250322_nightly`，`comfyui`代表该整合包为 ComfyUI 整合包，`20250322`代表整合包在 2025.3.22 时进行构建。虽然 Nightly 版本未经过测试，但通常是可以使用的。
     2. Stable 版本为 Nightly 版本中经过测试的版本，但因为作者时间问题，Stable 版本并不会经常更新。
     3. 使用 [sd-webui-all-in-one/Installer](../installer/index.md) 安装的 WebUI 和使用整合包没什么区别，因为这些整合包就是使用 [sd-webui-all-in-one/Installer](../installer/index.md) 进行构建的。
-    4. 更新 WebUI / ComfyUI / ... 通常情况下不需要重新下载整合包，使用 [sd-webui-all-in-one/Installer](../installer/index.md)、[SD WebUI All In One Launcher](../tools/index.md) 或者绘世启动器即可对 WebUI / ComfyUI / ... 进行更新。
+    4. 更新 WebUI / ComfyUI / ... 通常情况下不需要重新下载整合包，可使用 [Hanafubuki](../tools/hanafubuki.md)、[sd-webui-all-in-one/Installer](../installer/index.md) 或绘世启动器进行更新；SD Scripts、Musubi Tuner 使用 Installer 或 Bash TUI / CLI Launcher。

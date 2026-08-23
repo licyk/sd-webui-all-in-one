@@ -4,11 +4,21 @@
 
 SD WebUI All In One 是一组用于安装、下载、启动和管理 AI WebUI / 训练工具的文档与脚本集合。你可以用它快速运行 Stable Diffusion WebUI、ComfyUI、Fooocus、InvokeAI、Qwen TTS WebUI、SD Trainer 和 sd-scripts 相关工具。
 
+## 首选图形界面：Hanafubuki
+
+Hanafubuki 是 Windows、macOS 和 Linux 上的全平台桌面管理器，可统一安装、导入、启动和维护 WebUI。新用户需要图形界面时，推荐优先使用 Hanafubuki；旧版 Windows GUI Launcher 仅保留给现有用户查阅。
+
+[立即下载 Hanafubuki :material-download:](https://hanafubuki.netlify.app/download){ .md-button .md-button--primary }
+[访问官网](https://hanafubuki.netlify.app){ .md-button }
+[查看本项目使用说明](./tools/hanafubuki.md){ .md-button }
+
+![Hanafubuki 实例管理主页](./assets/images/tools/hanafubuki/hanafubuki.png)
+
 [开始选择使用方式 :material-arrow-right:](./quick-start/index.md){ .md-button .md-button--primary }
 [云端运行](./quick-start/cloud.md){ .md-button }
 [下载整合包](./quick-start/portable.md){ .md-button }
 [本地安装](./quick-start/local-install.md){ .md-button }
-[Launcher 管理](./quick-start/launcher.md){ .md-button }
+[Hanafubuki 管理](./quick-start/launcher.md){ .md-button }
 
 ## 选择你的使用方式
 
@@ -16,7 +26,8 @@ SD WebUI All In One 是一组用于安装、下载、启动和管理 AI WebUI / 
 | --- | --- | --- |
 | 云端运行 | [云端运行](./quick-start/cloud.md) | 不想配置本地环境，直接用 Colab / Kaggle 运行。 |
 | 本地整合包 | [整合包快速开始](./quick-start/portable.md) | Windows 下载后解压使用，适合少配置快速启动。 |
-| Launcher 管理 | [Launcher 快速开始](./quick-start/launcher.md) | 用图形界面或终端统一安装、启动、更新和维护。 |
+| Hanafubuki 图形管理 | [Hanafubuki 快速开始](./quick-start/launcher.md) | 在 Windows、macOS 和 Linux 上统一安装、启动、更新和维护。 |
+| 终端 Launcher | [Bash TUI / CLI Launcher](./tools/launcher-tui.md) | 在 Linux、macOS 或其他终端环境中管理。 |
 | 本地安装 | [本地安装](./quick-start/local-install.md) | 需要长期部署、完整环境配置和细粒度维护。 |
 | 启动之后 | [启动后的下一步](./quick-start/after-start.md) | 下载模型、运行管理脚本、继续学习 WebUI 使用。 |
 
@@ -28,7 +39,7 @@ SD WebUI All In One 是一组用于安装、下载、启动和管理 AI WebUI / 
 
     ---
 
-    帮你在云端、本地整合包、本地安装和 Launcher 管理之间做选择，并给出最短启动路径。
+    帮你在云端、本地整合包、本地安装和 Hanafubuki 管理之间做选择，并给出最短启动路径。
 
     [:octicons-arrow-right-24: 进入快速开始](./quick-start/index.md)
 
@@ -44,7 +55,7 @@ SD WebUI All In One 是一组用于安装、下载、启动和管理 AI WebUI / 
 
     ---
 
-    了解 AI 整合包下载器、Windows GUI Launcher、Bash TUI / CLI Launcher，统一处理下载、安装、启动和维护。
+    优先使用 Hanafubuki 图形界面，也可以通过 AI 整合包下载器或 Bash TUI / CLI Launcher 完成下载、安装、启动和维护。
 
     [:octicons-arrow-right-24: 查看工具文档](./tools/index.md)
 

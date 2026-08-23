@@ -2,7 +2,7 @@
 
 AI 整合包下载器是 Windows 上的图形化下载工具，用于下载由 Installer 自动构建的整合包。它适合希望直接获取 7z 整合包、下载完成后自动解压使用的用户。
 
-下载器只负责获取和解压整合包。整合包解压后，默认通过 Installer 生成的管理脚本启动、更新和维护；如果希望使用图形界面集中管理，也可以让 Launcher 指向整合包目录并接管这些脚本。
+下载器只负责获取和解压整合包。受 Hanafubuki 支持的整合包已经内置 `hanafubuki-launcher.exe`，解压后优先运行它；Installer 生成的管理脚本仍会保留，可用于直接启动、更新和维护。
 
 ![AI 整合包下载器主界面](../assets/images/tools/portable-downloader/portable-downloader-main.jpg)
 
@@ -24,19 +24,20 @@ AI 整合包下载器是 Windows 上的图形化下载工具，用于下载由 I
 
 ## 下载后如何启动和管理
 
-整合包解压完成后，主要由 Installer 生成的管理脚本负责启动和维护，也可以选择其他入口：
+整合包解压完成后，可以选择以下入口：
 
+- 使用 Hanafubuki：Stable Diffusion WebUI、ComfyUI、InvokeAI、Fooocus、SD Trainer、Qwen TTS WebUI 六类产品及其受支持变体，优先运行整合包根目录中的 `hanafubuki-launcher.exe`。首次运行会下载、校验并启动 Hanafubuki 本体，然后发现旁边的 WebUI。
 - 使用 Installer 管理脚本：首次使用先运行 `configure_env.bat`，之后右键所需 `.ps1` 脚本并选择 `使用 PowerShell 运行`，不要左键双击 `.ps1` 脚本；左键双击通常会用记事本或默认编辑器打开脚本。如果右键运行后窗口闪退，先重新运行 `configure_env.bat`。
 - 使用绘世启动器：部分整合包包含 `hanamizuki.bat`，双击后可通过绘世启动器启动和管理对应 WebUI。
-- 使用 Windows GUI Launcher：选择对应 WebUI / 工具，把安装路径设置为整合包解压目录，然后在“一键启动”中运行 Installer 生成的 `launch.ps1` 或其他管理脚本。
 
-使用 Launcher 接管整合包时，推荐流程：
+使用内置 Hanafubuki 时，推荐流程：
 
-1. 打开 [Windows GUI Launcher](./launcher-gui.md)。
-2. 在“软件选择”中选择和整合包对应的项目，例如 ComfyUI 整合包选择 `ComfyUI Installer`。
-3. 在“高级选项 -> 安装路径”中，把路径设置为整合包解压目录。
-4. 返回“一键启动”，如果目录中存在对应管理脚本，Launcher 会进入启动 / 管理模式。
-5. 选择 `launch.ps1` 启动 WebUI，或选择 `update.ps1`、`terminal.ps1`、`download_models.ps1`、`version_manager.ps1` 做维护。
+1. 双击解压目录中的 `hanafubuki-launcher.exe`，等待首次下载和校验完成。
+2. Hanafubuki 会扫描 Launcher 所在目录并接入旁边的 WebUI。
+3. 如果没有自动发现，在首页点击“添加实例”，选择“导入现有实例”或“扫描系统”。
+4. 打开实例并启动 WebUI；版本、扩展、模型、PyTorch、快照和路径等操作位于实例管理页。
+
+SD Scripts、Musubi Tuner 当前不属于 Hanafubuki 支持的六类产品，应继续使用 Installer 管理脚本或 [Bash TUI / CLI Launcher](./launcher-tui.md)。完整版本区别和独立下载方式见 [Hanafubuki](./hanafubuki.md)。
 
 WebUI 启动后，具体的界面使用、绘图流程、模型使用和常见使用问题可以继续阅读 [SD Note](https://licyk.github.io/SDNote/)。
 

@@ -58,6 +58,6 @@ WebUI 或训练工具启动后，可以继续处理模型、扩展、更新、�
 ## 遇到问题
 
 - Notebook 问题：阅读 [Notebook 故障排查](../notebook/troubleshooting.md)。
-- 下载器或 Launcher 问题：阅读 [下载器与启动器故障排查](../tools/troubleshooting.md)。
+- Hanafubuki、下载器或终端 Launcher 问题：阅读 [下载器与启动器故障排查](../tools/troubleshooting.md)。
 - 整合包和绘世启动器问题：阅读 [常见问题](../portable/qa.md)。
 - Installer 问题：进入 [安装器使用](../installer/index.md)，选择对应产品的故障排查页面。
