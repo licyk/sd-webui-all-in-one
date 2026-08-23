@@ -39,20 +39,7 @@ _✨一键筑基，万象生辉_
 
 </div>
 
-## 推荐：Hanafubuki 全平台启动器
-
-本项目现在优先推荐使用 **Hanafubuki** 安装、导入、启动和维护本地 WebUI。它可以在 Windows、macOS 和 Linux 上统一管理运行环境、版本、模型、扩展、快照、任务与诊断信息，完整替代旧版 Windows GUI Launcher 的日常图形化管理入口。
-
-[访问 Hanafubuki 官网](https://hanafubuki.netlify.app) · [立即下载](https://hanafubuki.netlify.app/download) · [查看使用说明](docs/tools/hanafubuki.md)
-
-[![Hanafubuki 实例管理主页](docs/assets/images/tools/hanafubuki/hanafubuki.png)](https://hanafubuki.netlify.app/download)
-
-单独下载时，长期固定使用推荐选择安装包；需要随移动硬盘携带或保留多套互不干扰的环境时选择便携版。受支持的 Windows 整合包已经包含 `hanafubuki-launcher.exe`，解压后直接运行即可，无需重复下载启动器。
-
-***
-
 - [SD WebUI All In One](#sd-webui-all-in-one)
-- [推荐：Hanafubuki 全平台启动器](#推荐hanafubuki-全平台启动器)
 - [项目文档](#项目文档)
 - [SD WebUI All In One CLI](#sd-webui-all-in-one-cli)
 - [SD WebUI All In One Notebook](#sd-webui-all-in-one-notebook)

@@ -4,16 +4,6 @@
 
 SD WebUI All In One 是一组用于安装、下载、启动和管理 AI WebUI / 训练工具的文档与脚本集合。你可以用它快速运行 Stable Diffusion WebUI、ComfyUI、Fooocus、InvokeAI、Qwen TTS WebUI、SD Trainer 和 sd-scripts 相关工具。
 
-## 首选图形界面：Hanafubuki
-
-Hanafubuki 是 Windows、macOS 和 Linux 上的全平台桌面管理器，可统一安装、导入、启动和维护 WebUI。新用户需要图形界面时，推荐优先使用 Hanafubuki；旧版 Windows GUI Launcher 仅保留给现有用户查阅。
-
-[立即下载 Hanafubuki :material-download:](https://hanafubuki.netlify.app/download){ .md-button .md-button--primary }
-[访问官网](https://hanafubuki.netlify.app){ .md-button }
-[查看本项目使用说明](./tools/hanafubuki.md){ .md-button }
-
-![Hanafubuki 实例管理主页](./assets/images/tools/hanafubuki/hanafubuki.png)
-
 [开始选择使用方式 :material-arrow-right:](./quick-start/index.md){ .md-button .md-button--primary }
 [云端运行](./quick-start/cloud.md){ .md-button }
 [下载整合包](./quick-start/portable.md){ .md-button }
