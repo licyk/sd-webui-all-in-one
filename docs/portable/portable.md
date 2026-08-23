@@ -111,6 +111,7 @@ Windows 上运行 `.ps1` PowerShell 脚本时，不要左键双击；左键双�
 
 支持 SD WebUI Installer / Hanafubuki / 绘世启动器进行管理。
 
+
 [下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=sd_webui){ .md-button }
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_webui){ .md-button .md-button--primary }
 
@@ -134,6 +135,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### Hanafubuki 管理方式
 优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 Stable Diffusion WebUI 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录。
 
+详细 Hanafubuki 使用说明可阅读：[Hanafubuki 使用说明](https://hanafubuki.netlify.app/docs)
+
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
@@ -146,6 +149,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 **基于 Stable Diffusion WebUI，有更强的显存优化，多了 FLUX 模型支持。**
 
 支持 SD WebUI Installer / Hanafubuki / 绘世启动器进行管理。
+
 
 [下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=sd_webui_forge){ .md-button }
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_webui_forge){ .md-button .md-button--primary }
@@ -170,6 +174,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### Hanafubuki 管理方式
 优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 Stable Diffusion WebUI Forge 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录。
 
+详细 Hanafubuki 使用说明可阅读：[Hanafubuki 使用说明](https://hanafubuki.netlify.app/docs)
+
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
@@ -182,6 +188,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 **基于旧版 Stable Diffusion WebUI Forge 开发，插件兼容性比 Stable Diffusion WebUI Forge 好一点。**
 
 支持 SD WebUI Installer / Hanafubuki / 绘世启动器进行管理。
+
 
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_webui_reforge){ .md-button .md-button--primary }
 
@@ -205,6 +212,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### Hanafubuki 管理方式
 优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 Stable Diffusion WebUI reForge 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录。
 
+详细 Hanafubuki 使用说明可阅读：[Hanafubuki 使用说明](https://hanafubuki.netlify.app/docs)
+
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
@@ -217,6 +226,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 **基于旧版 Stable Diffusion WebUI Forge 开发，精简了无用组件，更轻量。**
 
 支持 SD WebUI Installer / Hanafubuki / 绘世启动器进行管理。
+
 
 **NVIDIA 显卡版本：**
 
@@ -250,6 +260,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### Hanafubuki 管理方式
 优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 Stable Diffusion WebUI Forge Neo 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录。
 
+详细 Hanafubuki 使用说明可阅读：[Hanafubuki 使用说明](https://hanafubuki.netlify.app/docs)
+
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
@@ -262,6 +274,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 **基于 Stable Diffusion WebUI 开发，支持的模型种类多，就是比较臃肿。**
 
 支持 SD WebUI Installer / Hanafubuki / 绘世启动器进行管理。
+
 
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_next){ .md-button .md-button--primary }
 
@@ -285,6 +298,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### Hanafubuki 管理方式
 优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 SD.Next 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_webui`，将 `INSTALL_PATH` 指向整合包解压目录。
 
+详细 Hanafubuki 使用说明可阅读：[Hanafubuki 使用说明](https://hanafubuki.netlify.app/docs)
+
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
@@ -297,6 +312,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 **流程高度自定义，可玩性高，显存优化强，支持的模型丰富，~~除了某些插件喜欢冲突弄坏环境~~。**
 
 支持 ComfyUI Installer / Hanafubuki / 绘世启动器进行管理。
+
 
 **NVIDIA 显卡版本：**
 
@@ -329,6 +345,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### Hanafubuki 管理方式
 优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 ComfyUI 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `comfyui`，将 `INSTALL_PATH` 指向整合包解压目录。
 
+详细 Hanafubuki 使用说明可阅读：[Hanafubuki 使用说明](https://hanafubuki.netlify.app/docs)
+
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
@@ -341,6 +359,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 **化繁为简，更专注于提示词书写。**
 
 支持 Fooocus Installer / Hanafubuki / 绘世启动器进行管理。
+
 
 [下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=fooocus){ .md-button }
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=fooocus){ .md-button .md-button--primary }
@@ -364,6 +383,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### Hanafubuki 管理方式
 优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 Fooocus 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `fooocus`，将 `INSTALL_PATH` 指向整合包解压目录。
 
+详细 Hanafubuki 使用说明可阅读：[Hanafubuki 使用说明](https://hanafubuki.netlify.app/docs)
+
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
@@ -376,6 +397,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 **拥有最强大的画布系统，更适合作为辅助绘画工具。**
 
 支持 InvokeAI Installer / Hanafubuki 进行管理。
+
 
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=invokeai){ .md-button .md-button--primary }
 
@@ -398,6 +420,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### Hanafubuki 管理方式
 优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 InvokeAI 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `invokeai`，将 `INSTALL_PATH` 指向整合包解压目录。
 
+详细 Hanafubuki 使用说明可阅读：[Hanafubuki 使用说明](https://hanafubuki.netlify.app/docs)
+
 
 ## SD-Trainer
 ![SD Trainer 整合包预览](../assets/images/portable/portable/sd-trainer.jpg)
@@ -405,6 +429,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 **训练模型如此简单。**
 
 支持 SD-Trainer Installer / Hanafubuki / 绘世启动器进行管理。
+
 
 [下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=sd_trainer){ .md-button }
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_trainer){ .md-button .md-button--primary }
@@ -428,6 +453,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### Hanafubuki 管理方式
 优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 SD-Trainer 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_trainer`，将 `INSTALL_PATH` 指向整合包解压目录。
 
+详细 Hanafubuki 使用说明可阅读：[Hanafubuki 使用说明](https://hanafubuki.netlify.app/docs)
+
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
@@ -440,6 +467,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 **训练模型如此简单。基于 [SD Trainer](https://github.com/Akegarasu/lora-scripts) 分支，并且新增了 Anima 模型的支持。**
 
 支持 SD-Trainer Installer / Hanafubuki / 绘世启动器进行管理。
+
 
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_trainer_next){ .md-button .md-button--primary }
 
@@ -462,6 +490,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 ### Hanafubuki 管理方式
 优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 SD Trainer Next 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_trainer`，将 `INSTALL_PATH` 指向整合包解压目录。
 
+详细 Hanafubuki 使用说明可阅读：[Hanafubuki 使用说明](https://hanafubuki.netlify.app/docs)
+
 ### 绘世启动器管理方式
 - hanamizuki.bat：启动绘世启动器
 
@@ -474,6 +504,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 **支持训练更多种类的模型，不过操作麻烦一点。**
 
 支持 SD-Trainer Installer / Hanafubuki 进行管理。
+
 
 [下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=kohya_gui){ .md-button }
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=kohya_gui){ .md-button .md-button--primary }
@@ -496,6 +527,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 ### Hanafubuki 管理方式
 优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 Kohya GUI 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `sd_trainer`，将 `INSTALL_PATH` 指向整合包解压目录。
+
+详细 Hanafubuki 使用说明可阅读：[Hanafubuki 使用说明](https://hanafubuki.netlify.app/docs)
 
 
 ## SD Scripts
@@ -561,6 +594,7 @@ Musubi Tuner 当前不属于 Hanafubuki 支持的实例类型。使用 [Bash TUI
 
 支持 Qwen TTS WebUI Installer / Hanafubuki 进行管理。
 
+
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=qwen_tts_webui){ .md-button .md-button--primary }
 
 ### Qwen TTS WebUI Installer 管理方式
@@ -579,6 +613,8 @@ Musubi Tuner 当前不属于 Hanafubuki 支持的实例类型。使用 [Bash TUI
 
 ### Hanafubuki 管理方式
 优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 Qwen TTS WebUI 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `qwen_tts_webui`，将 `INSTALL_PATH` 指向整合包解压目录。
+
+详细 Hanafubuki 使用说明可阅读：[Hanafubuki 使用说明](https://hanafubuki.netlify.app/docs)
 
 
 ## 所有版本
