@@ -746,6 +746,43 @@ def install_pypatchmatch(
     logger.info("PyPatchMatch 组件安装完成")
 
 
+def init_invokeai_default_config(
+    invokeai_path: Path,
+) -> None:
+    """初始化 InvokeAI 默认配置文件
+    
+    Args:
+        invokeai_path (Path):
+            InvokeAI 根目录
+
+    Raises:
+        ImportError:
+            导入 InvokeAI 模块发生错误时
+        RuntimeError:
+            初始化 InvokeAI 默认配置文件发生错误时
+    """
+    config_path = invokeai_path / "invokeai.yaml"
+    if config_path.is_file():
+        logger.info("InvokeAI 默认配置已存在, 跳过配置文件初始化")
+        return
+    try:
+        logger.info("导入 InvokeAI 配置模块中")
+        from invokeai.app.services.config.config_default import DefaultInvokeAIAppConfig
+    except ImportError as e:
+        logger.error("导入 InvokeAI 模块失败, 跳过初始化配置文件: %s", e)
+        raise ImportError(f"导入 InvokeAI 模块发生错误: {e}") from e
+
+    logger.info("初始化 InvokeAI 默认配置文件: %s", config_path)
+    try:
+        config_path.parent.mkdir(parents=True, exist_ok=True)
+        DefaultInvokeAIAppConfig().write_file(config_path, as_example=False)
+    except Exception as e:
+        logger.error("初始化 InvokeAI 默认配置文件失败: %s", e)
+        raise RuntimeError(f"初始化 InvokeAI 默认配置文件发生错误: {e}") from e
+
+    logger.info("初始化 InvokeAI 配置文件完成")
+
+
 def install_invokeai(
     invokeai_path: Path,
     device_type: PyTorchDeviceTypeCategory | None = None,
@@ -799,6 +836,8 @@ def install_invokeai(
     install_pypatchmatch(
         use_cn_mirror=use_pypi_mirror,
     )
+
+    init_invokeai_default_config(invokeai_path)
 
     if not no_pre_download_model:
         model_path = invokeai_path / "models" / "checkpoints"
