@@ -94,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
         process = subprocess.Popen(command, **popen_kwargs)
     except OSError as error:
         print(f"::error::Unable to launch command: {error}", flush=True)
-        return LAUNCH_ERROR_EXIT_CODE
+        return
 
     try:
         return process.wait(timeout=args.timeout)
@@ -117,8 +117,7 @@ def main(argv: list[str] | None = None) -> int:
                 "forced tree termination.",
                 flush=True,
             )
-        return TIMEOUT_EXIT_CODE
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
