@@ -63,6 +63,7 @@ Windows 上运行 `.ps1` PowerShell 脚本时，不要左键双击；左键双�
 | `重新运行安装 SD Trainer.bat` | `launch_sd_trainer_installer.ps1` | 重新运行 SD Trainer Installer。 |
 | `重新运行安装 SD Trainer Script.bat` | `launch_sd_trainer_script_installer.ps1` | 重新运行 SD Trainer Script Installer。 |
 | `重新运行安装 SD WebUI.bat` | `launch_stable_diffusion_webui_installer.ps1` | 重新运行 SD WebUI Installer。 |
+| `启动 Hanafubuki 启动器.bat` | `hanafubuki-launcher.exe` | 启动整合包内置的 Hanafubuki 便携版。只有受 Hanafubuki 支持的整合包才会提供。 |
 | `启动绘世启动器.bat` | `hanamizuki.bat` | 打开绘世启动器。只有包含绘世启动器的整合包才会生成。 |
 | `配置环境并修复闪退.bat` | `configure_env.bat` | 运行环境配置脚本；首次使用或 `.ps1` 运行闪退时使用。 |
 | `打开帮助.bat` | `help.txt` | 打开当前整合包的帮助文档。 |
