@@ -94,7 +94,7 @@ runs:
         UV_SYSTEM_PYTHON: 1
         UV_LINK_MODE: copy
       run: |
-        uv pip install huggingface_hub modelscope --upgrade --system
+        uv pip install huggingface_hub modelscope --upgrade --break-system-packages
 
     - name: Upload to HuggingFace and ModelScope repos
       shell: pwsh
