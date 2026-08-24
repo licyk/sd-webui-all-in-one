@@ -1,0 +1,97 @@
+name: Build ComfyUI macOS MPS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  Build-ComfyUI-macOS:
+    name: Build ComfyUI macOS MPS
+    runs-on: macos-15
+    env:
+      PYTHONIOENCODING: utf-8
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Setup portable build
+        uses: ./.github/actions/setup-portable-build
+
+      - name: Validate runner architecture
+        shell: pwsh
+        run: |
+          if ($env:RUNNER_ARCH -ne "ARM64") {
+            throw "Expected an ARM64 runner, got: $env:RUNNER_ARCH"
+          }
+
+      - name: Launch ComfyUI Installer
+        env:
+          SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY: 1
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/installer/comfyui_installer.ps1" `
+            -InstallPath "${{ github.workspace }}/comfyui" `
+            -PyTorchMirrorType all `
+            -BuildMode `
+            -BuildWithLaunch `
+            -DisableAutoMirror `
+            -DisablePyPIMirror `
+            -DisableGithubMirror `
+            -DisableHuggingFaceMirror `
+            -InstallHanafubuki `
+            -NoPreDownloadModel
+
+      - name: Validate MPS PyTorch
+        shell: pwsh
+        run: |
+          $python = "${{ github.workspace }}/comfyui/core/python/bin/python3"
+          & $python -c "import torch, torchvision; assert torch.backends.mps.is_built(); print(torch.__version__, torch.backends.mps.is_available())"
+          if ($LASTEXITCODE -ne 0) {
+            throw "MPS PyTorch validation failed with exit code $LASTEXITCODE"
+          }
+
+      - name: Launch ComfyUI to init custom nodes
+        shell: pwsh
+        env:
+          PIP_NO_WARN_SCRIPT_LOCATION: 0
+          PIP_DISABLE_PIP_VERSION_CHECK: 1
+        run: |
+          python "${{ github.workspace }}/.github/run_bounded_process.py" `
+            --timeout 600 `
+            --cwd "${{ github.workspace }}/comfyui/core" `
+            -- `
+            "${{ github.workspace }}/comfyui/core/python/bin/python3" `
+            "${{ github.workspace }}/comfyui/core/main.py" `
+            --quick-test-for-ci `
+            --cpu
+
+      - name: Launch to complete dependencies
+        shell: pwsh
+        env:
+          SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY: 1
+        run: |
+          & "${{ github.workspace }}/comfyui/launch.ps1" `
+            -BuildMode `
+            -DisableAutoMirror `
+            -DisablePyPIMirror `
+            -DisableGithubMirror `
+            -DisableHuggingFaceMirror
+
+      - name: Configure ComfyUI Manager
+        shell: pwsh
+        run: |
+          python "${{ github.workspace }}/.github/configure_comfyui_manager.py" `
+            --config-path "${{ github.workspace }}/comfyui/core/user/__manager/config.ini"
+
+      - name: Finalize portable package
+        uses: ./.github/actions/finalize-portable
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
+        with:
+          install-path: ${{ github.workspace }}/comfyui
+          software-name: comfyui_mps
+          target-platform: macos
+          archive-format: tar.gz
+          upload-path: ${{ github.workspace }}/sd-webui-all-in-one
+          hf-repo-id: licyk/sd-webui-all-in-one
+          ms-repo-id: licyks/sd-webui-all-in-one

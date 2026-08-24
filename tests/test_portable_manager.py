@@ -137,7 +137,11 @@ def test_portable_software_metadata_uses_vendor_names_and_pytorch_descriptions()
         assert "(ROCm)" not in display_name
         assert "(XPU)" not in display_name
 
-        if software.endswith("_rocm"):
+        if software.endswith("_mps"):
+            assert display_name.endswith("(Apple Silicon)")
+            assert "Apple Silicon 整合包" in description
+            assert "MPS 版 PyTorch" in description
+        elif software.endswith("_rocm"):
             assert display_name.endswith("(AMD)")
             assert "AMD 显卡整合包" in description
             assert "ROCm 版 PyTorch" in description
@@ -149,6 +153,13 @@ def test_portable_software_metadata_uses_vendor_names_and_pytorch_descriptions()
             assert display_name.endswith("(NVIDIA)")
             assert "NVIDIA 显卡整合包" in description
             assert "CUDA 版 PyTorch" in description
+
+
+def test_portable_software_metadata_includes_comfyui_mps():
+    assert portable_manager.PORTABLE_SOFTWARE_METADATA["comfyui_mps"] == {
+        "display_name": "ComfyUI (Apple Silicon)",
+        "description": "ComfyUI 的 Apple Silicon 整合包，使用 MPS 版 PyTorch，流程高度自定义，可玩性高。",
+    }
 
 
 def test_build_portable_list_data_uses_new_resources_shape():

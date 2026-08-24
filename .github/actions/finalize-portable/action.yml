@@ -12,6 +12,10 @@ inputs:
     description: Portable package target platform.
     required: false
     default: windows
+  archive-format:
+    description: Portable package archive format.
+    required: false
+    default: auto
   upload-path:
     description: Portable package upload root directory.
     required: false
@@ -59,14 +63,19 @@ runs:
     - name: Make docs
       shell: pwsh
       run: |
-        python "${{ github.workspace }}/.github/make_docs.py" "${{ inputs.install-path }}"
+        python "${{ github.workspace }}/.github/make_docs.py" "${{ inputs.install-path }}" `
+          --platform "${{ inputs.target-platform }}"
 
     - name: Clean cache dir
       shell: pwsh
       run: |
-        Remove-Item -Path "${{ inputs.install-path }}/cache" -Force -Recurse
+        $cachePath = "${{ inputs.install-path }}/cache"
+        if (Test-Path -LiteralPath $cachePath) {
+          Remove-Item -LiteralPath $cachePath -Force -Recurse
+        }
 
     - name: Archive
+      id: archive
       shell: pwsh
       run: |
         & "${{ github.workspace }}/.github/archive_portable.ps1" `
@@ -75,7 +84,9 @@ runs:
           -Source "${{ inputs.install-path }}" `
           -SaveDst "${{ github.workspace }}/sd-webui-all-in-one/portable/nightly" `
           -Author "licyk" `
-          -Platform "${{ inputs.target-platform }}"
+          -Platform "${{ inputs.target-platform }}" `
+          -ArchiveFormat "${{ inputs.archive-format }}" `
+          -OutputFile $env:GITHUB_OUTPUT
 
     - name: Install HuggingFace and ModelScope library
       shell: pwsh

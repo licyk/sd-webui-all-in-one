@@ -10,6 +10,12 @@ def get_args() -> argparse.Namespace:
         return Path(filepath).absolute()
 
     parser.add_argument("docs_path", type=_normalized_filepath, help="文档保存路径")
+    parser.add_argument(
+        "--platform",
+        choices=("windows", "linux", "macos"),
+        default="windows",
+        help="整合包目标平台",
+    )
 
     return parser.parse_args()
 
@@ -55,6 +61,37 @@ exit %errorlevel%
         r"{{SELECT_POWERSHELL}}",
         generate_select_powershell_bat(),
     ).replace(r"{{PSH_SCRIPT}}", psh_script)
+
+
+def generate_launch_sh(base_path: Path) -> None:
+    content = r"""
+#!/usr/bin/env bash
+set -e
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+if ! command -v pwsh >/dev/null 2>&1; then
+    echo "PowerShell 7 (pwsh) is required to run this portable package." >&2
+    exit 1
+fi
+
+exec pwsh -NoLogo -NoProfile -File "$SCRIPT_DIR/launch.ps1" "$@"
+""".strip()
+    save_path = base_path / "launch.sh"
+    print("[INFO] 生成 Unix 启动脚本")
+    write_content_to_file(content=content, save_path=save_path)
+    save_path.chmod(0o755)
+
+
+def generate_launch_command(base_path: Path) -> None:
+    content = r"""
+#!/usr/bin/env bash
+SCRIPT_DIR="$(cd -- "$(dirname -- "$0")" && pwd)"
+exec "$SCRIPT_DIR/launch.sh" "$@"
+""".strip()
+    save_path = base_path / "launch.command"
+    print("[INFO] 生成 macOS 启动脚本")
+    write_content_to_file(content=content, save_path=save_path)
+    save_path.chmod(0o755)
 
 
 def generate_launch_hanamizuki_bat(base_path: Path) -> None:
@@ -229,7 +266,7 @@ def install_hanamizuki_bg(
 def main() -> None:
     args = get_args()
     docs_path: Path = args.docs_path
-    help_content = """
+    windows_help_content = """
 首次使用该需要双击运行 configure_env.bat 配置环境, 如果运行 PowerShell 脚本闪退时请运行这个脚本去修复闪退
 运行后即可正常运行 PowerShell 脚本 (ps1 后缀的文件), PowerShell 脚本需要右键后选择 "使用 PowerShell 运行" 才可以运行
 
@@ -241,6 +278,25 @@ def main() -> None:
 
 ！！！本整合包免费提供，如您通过其他渠道付费获得本整合包，请立即退款并投诉相应商家！！！
 """.strip()
+    unix_help_content = """
+本整合包已包含独立 Python 环境。
+启动和管理脚本依赖 PowerShell 7，请先安装 pwsh 并确保可从终端直接运行。
+更新内核、更新扩展等 Git 操作依赖系统 Git，请先安装 git 并确保可从终端直接运行。
+Hanafubuki 启动器已包含在整合包中。
+
+启动 ComfyUI：
+    Linux：在终端运行 ./launch.sh
+    macOS：双击 launch.command，或在终端运行 ./launch.sh
+
+使用该整合包启动前请阅读本说明。
+更多说明请阅读: https://licyk.github.io/sd-webui-all-in-one/portable/portable
+整合包支持使用启动器运行，启动器的使用方法请阅读：https://licyk.github.io/sd-webui-all-in-one/tools/launcher-gui
+
+！！！本整合包免费提供，如您通过其他渠道付费获得本整合包，请立即退款并投诉相应商家！！！
+""".strip()
+    help_content = (
+        windows_help_content if args.platform == "windows" else unix_help_content
+    )
 
     sign_content = """
 https://space.bilibili.com/46497516
@@ -274,36 +330,50 @@ https://space.bilibili.com/46497516
         content=user_agreement_content,
         save_path=docs_path / "用户协议.txt",
     )
-    make_launch_scripts(
-        base_path=docs_path,
-        scripts=[
-            ("launch.ps1", "启动.bat"),
-            ("update.ps1", "更新内核.bat"),
-            ("update_extension.ps1", "更新扩展.bat"),
-            ("update_node.ps1", "更新扩展.bat"),
-            ("download_models.ps1", "下载模型.bat"),
-            ("switch_branch.ps1", "切换分支.bat"),
-            ("reinstall_pytorch.ps1", "重装 PyTorch.bat"),
-            ("version_manager.ps1", "版本管理.bat"),
-            ("snapshot_manager.ps1", "快照管理.bat"),
-            ("settings.ps1", "打开 Installer 设置.bat"),
-            ("terminal.ps1", "打开终端.bat"),
-            ("train.ps1", "启动训练.bat"),
-            ("launch_comfyui_installer.ps1", "重新运行安装 ComfyUI.bat"),
-            ("launch_fooocus_installer.ps1", "重新运行安装 Fooocus.bat"),
-            ("launch_invokeai_installer.ps1", "重新运行安装 InvokeAI.bat"),
-            ("launch_qwen_tts_webui_installer.ps1", "重新运行安装 Qwen TTS WebUI.bat"),
-            ("launch_sd_trainer_installer.ps1", "重新运行安装 SD Trainer.bat"),
-            ("launch_sd_trainer_script_installer.ps1", "重新运行安装 SD Trainer Script.bat"),
-            ("launch_stable_diffusion_webui_installer.ps1", "重新运行安装 SD WebUI.bat"),
-        ],
-    )
-    generate_launch_hanamizuki_bat(docs_path)
-    generate_launch_hanafubuki_bat(docs_path)
-    generate_open_docs_bat(docs_path)
-    generate_install_launcher_bat(docs_path)
-    generate_configure_env_bat(docs_path)
-    install_hanamizuki_bg(docs_path)
+    if args.platform == "windows":
+        make_launch_scripts(
+            base_path=docs_path,
+            scripts=[
+                ("launch.ps1", "启动.bat"),
+                ("update.ps1", "更新内核.bat"),
+                ("update_extension.ps1", "更新扩展.bat"),
+                ("update_node.ps1", "更新扩展.bat"),
+                ("download_models.ps1", "下载模型.bat"),
+                ("switch_branch.ps1", "切换分支.bat"),
+                ("reinstall_pytorch.ps1", "重装 PyTorch.bat"),
+                ("version_manager.ps1", "版本管理.bat"),
+                ("snapshot_manager.ps1", "快照管理.bat"),
+                ("settings.ps1", "打开 Installer 设置.bat"),
+                ("terminal.ps1", "打开终端.bat"),
+                ("train.ps1", "启动训练.bat"),
+                ("launch_comfyui_installer.ps1", "重新运行安装 ComfyUI.bat"),
+                ("launch_fooocus_installer.ps1", "重新运行安装 Fooocus.bat"),
+                ("launch_invokeai_installer.ps1", "重新运行安装 InvokeAI.bat"),
+                (
+                    "launch_qwen_tts_webui_installer.ps1",
+                    "重新运行安装 Qwen TTS WebUI.bat",
+                ),
+                ("launch_sd_trainer_installer.ps1", "重新运行安装 SD Trainer.bat"),
+                (
+                    "launch_sd_trainer_script_installer.ps1",
+                    "重新运行安装 SD Trainer Script.bat",
+                ),
+                (
+                    "launch_stable_diffusion_webui_installer.ps1",
+                    "重新运行安装 SD WebUI.bat",
+                ),
+            ],
+        )
+        generate_launch_hanamizuki_bat(docs_path)
+        generate_launch_hanafubuki_bat(docs_path)
+        generate_open_docs_bat(docs_path)
+        generate_install_launcher_bat(docs_path)
+        generate_configure_env_bat(docs_path)
+        install_hanamizuki_bg(docs_path)
+    else:
+        generate_launch_sh(docs_path)
+        if args.platform == "macos":
+            generate_launch_command(docs_path)
 
 
 if __name__ == "__main__":

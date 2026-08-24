@@ -90,6 +90,10 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Stable Diffusion WebUI (NVIDIA)",
         "description": "Stable Diffusion WebUI 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，上手简单，操作方便，适合入门使用。",
     },
+    "sd_webui_mps": {
+        "display_name": "Stable Diffusion WebUI (Apple Silicon)",
+        "description": "Stable Diffusion WebUI 的 Apple Silicon 整合包，使用 MPS 版 PyTorch，上手简单，操作方便，适合入门使用。",
+    },
     "sd_webui_rocm": {
         "display_name": "Stable Diffusion WebUI (AMD)",
         "description": "Stable Diffusion WebUI 的 AMD 显卡整合包，使用 ROCm 版 PyTorch，上手简单，操作方便，适合入门使用。",
@@ -101,6 +105,10 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
     "sd_webui_amdgpu": {
         "display_name": "Stable Diffusion WebUI AMDGPU (NVIDIA)",
         "description": "Stable Diffusion WebUI AMDGPU 分支的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，保留 Stable Diffusion WebUI 体验，并包含 DirectML 和 ZLUDA 等后端支持。",
+    },
+    "sd_webui_amdgpu_mps": {
+        "display_name": "Stable Diffusion WebUI AMDGPU (Apple Silicon)",
+        "description": "Stable Diffusion WebUI AMDGPU 分支的 Apple Silicon 整合包，使用 MPS 版 PyTorch，保留 Stable Diffusion WebUI 体验，并包含 DirectML 和 ZLUDA 等后端支持。",
     },
     "sd_webui_amdgpu_rocm": {
         "display_name": "Stable Diffusion WebUI AMDGPU (AMD)",
@@ -114,6 +122,10 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Stable Diffusion WebUI Forge (NVIDIA)",
         "description": "Stable Diffusion WebUI Forge 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，基于 Stable Diffusion WebUI，有更强的显存优化，多了 FLUX 模型支持。",
     },
+    "sd_webui_forge_mps": {
+        "display_name": "Stable Diffusion WebUI Forge (Apple Silicon)",
+        "description": "Stable Diffusion WebUI Forge 的 Apple Silicon 整合包，使用 MPS 版 PyTorch，基于 Stable Diffusion WebUI，有更强的显存优化，多了 FLUX 模型支持。",
+    },
     "sd_webui_forge_rocm": {
         "display_name": "Stable Diffusion WebUI Forge (AMD)",
         "description": "Stable Diffusion WebUI Forge 的 AMD 显卡整合包，使用 ROCm 版 PyTorch，基于 Stable Diffusion WebUI，有更强的显存优化，多了 FLUX 模型支持。",
@@ -125,6 +137,10 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
     "sd_webui_reforge": {
         "display_name": "Stable Diffusion WebUI reForge (NVIDIA)",
         "description": "Stable Diffusion WebUI reForge 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，基于旧版 Stable Diffusion WebUI Forge 开发，插件兼容性比 Stable Diffusion WebUI Forge 好一点。",
+    },
+    "sd_webui_reforge_mps": {
+        "display_name": "Stable Diffusion WebUI reForge (Apple Silicon)",
+        "description": "Stable Diffusion WebUI reForge 的 Apple Silicon 整合包，使用 MPS 版 PyTorch，基于旧版 Stable Diffusion WebUI Forge 开发，插件兼容性比 Stable Diffusion WebUI Forge 好一点。",
     },
     "sd_webui_reforge_rocm": {
         "display_name": "Stable Diffusion WebUI reForge (AMD)",
@@ -138,6 +154,10 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Stable Diffusion WebUI Forge Classic (NVIDIA)",
         "description": "Stable Diffusion WebUI Forge Classic 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，属于 Stable Diffusion WebUI Forge 的经典版本。",
     },
+    "sd_webui_forge_classic_mps": {
+        "display_name": "Stable Diffusion WebUI Forge Classic (Apple Silicon)",
+        "description": "Stable Diffusion WebUI Forge Classic 的 Apple Silicon 整合包，使用 MPS 版 PyTorch，属于 Stable Diffusion WebUI Forge 的经典版本。",
+    },
     "sd_webui_forge_classic_rocm": {
         "display_name": "Stable Diffusion WebUI Forge Classic (AMD)",
         "description": "Stable Diffusion WebUI Forge Classic 的 AMD 显卡整合包，使用 ROCm 版 PyTorch，属于 Stable Diffusion WebUI Forge 的经典版本。",
@@ -149,6 +169,10 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
     "sd_webui_forge_neo": {
         "display_name": "Stable Diffusion WebUI Forge Neo (NVIDIA)",
         "description": "Stable Diffusion WebUI Forge Neo 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，基于旧版 Stable Diffusion WebUI Forge 开发，精简了无用组件，更轻量。",
+    },
+    "sd_webui_forge_neo_mps": {
+        "display_name": "Stable Diffusion WebUI Forge Neo (Apple Silicon)",
+        "description": "Stable Diffusion WebUI Forge Neo 的 Apple Silicon 整合包，使用 MPS 版 PyTorch，基于旧版 Stable Diffusion WebUI Forge 开发，精简了无用组件，更轻量。",
     },
     "sd_webui_forge_neo_rocm": {
         "display_name": "Stable Diffusion WebUI Forge Neo (AMD)",
@@ -162,6 +186,10 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "SD Next (NVIDIA)",
         "description": "SD Next 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，基于 Stable Diffusion WebUI 开发，支持的模型种类多，就是比较臃肿。",
     },
+    "sd_next_mps": {
+        "display_name": "SD Next (Apple Silicon)",
+        "description": "SD Next 的 Apple Silicon 整合包，使用 MPS 版 PyTorch，基于 Stable Diffusion WebUI 开发，支持的模型种类多，就是比较臃肿。",
+    },
     "sd_next_rocm": {
         "display_name": "SD Next (AMD)",
         "description": "SD Next 的 AMD 显卡整合包，使用 ROCm 版 PyTorch，基于 Stable Diffusion WebUI 开发，支持的模型种类多，就是比较臃肿。",
@@ -173,6 +201,10 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
     "comfyui": {
         "display_name": "ComfyUI (NVIDIA)",
         "description": "ComfyUI 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，流程高度自定义，可玩性高，显存优化强，支持的模型丰富。",
+    },
+    "comfyui_mps": {
+        "display_name": "ComfyUI (Apple Silicon)",
+        "description": "ComfyUI 的 Apple Silicon 整合包，使用 MPS 版 PyTorch，流程高度自定义，可玩性高。",
     },
     "comfyui_rocm": {
         "display_name": "ComfyUI (AMD)",
@@ -186,6 +218,10 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Fooocus (NVIDIA)",
         "description": "Fooocus 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，化繁为简，更专注于提示词书写。",
     },
+    "fooocus_mps": {
+        "display_name": "Fooocus (Apple Silicon)",
+        "description": "Fooocus 的 Apple Silicon 整合包，使用 MPS 版 PyTorch，化繁为简，更专注于提示词书写。",
+    },
     "fooocus_rocm": {
         "display_name": "Fooocus (AMD)",
         "description": "Fooocus 的 AMD 显卡整合包，使用 ROCm 版 PyTorch，化繁为简，更专注于提示词书写。",
@@ -197,6 +233,10 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
     "ruined_fooocus": {
         "display_name": "RuinedFooocus (NVIDIA)",
         "description": "RuinedFooocus 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，基于 Fooocus，加入样式、通配符、随机提示词和更多可调参数。",
+    },
+    "ruined_fooocus_mps": {
+        "display_name": "RuinedFooocus (Apple Silicon)",
+        "description": "RuinedFooocus 的 Apple Silicon 整合包，使用 MPS 版 PyTorch，基于 Fooocus，加入样式、通配符、随机提示词和更多可调参数。",
     },
     "ruined_fooocus_rocm": {
         "display_name": "RuinedFooocus (AMD)",
@@ -210,6 +250,10 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Fooocus-MRE (NVIDIA)",
         "description": "Fooocus-MRE 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，基于 Fooocus，加入图生图、Control-LoRA、嵌入和更多采样参数。",
     },
+    "fooocus_mre_mps": {
+        "display_name": "Fooocus-MRE (Apple Silicon)",
+        "description": "Fooocus-MRE 的 Apple Silicon 整合包，使用 MPS 版 PyTorch，基于 Fooocus，加入图生图、Control-LoRA、嵌入和更多采样参数。",
+    },
     "fooocus_mre_rocm": {
         "display_name": "Fooocus-MRE (AMD)",
         "description": "Fooocus-MRE 的 AMD 显卡整合包，使用 ROCm 版 PyTorch，基于 Fooocus，加入图生图、Control-LoRA、嵌入和更多采样参数。",
@@ -221,6 +265,10 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
     "invokeai": {
         "display_name": "InvokeAI (NVIDIA)",
         "description": "InvokeAI 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，拥有最强大的画布系统，更适合作为辅助绘画工具。",
+    },
+    "invokeai_mps": {
+        "display_name": "InvokeAI (Apple Silicon)",
+        "description": "InvokeAI 的 Apple Silicon 整合包，使用 MPS 版 PyTorch，拥有最强大的画布系统，更适合作为辅助绘画工具。",
     },
     "invokeai_rocm": {
         "display_name": "InvokeAI (AMD)",
@@ -329,6 +377,10 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
     "qwen_tts_webui": {
         "display_name": "Qwen TTS WebUI (NVIDIA)",
         "description": "Qwen TTS WebUI 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，支持使用 Qwen3 TTS 生成语音。",
+    },
+    "qwen_tts_webui_mps": {
+        "display_name": "Qwen TTS WebUI (Apple Silicon)",
+        "description": "Qwen TTS WebUI 的 Apple Silicon 整合包，使用 MPS 版 PyTorch，支持使用 Qwen3 TTS 生成语音。",
     },
     "qwen_tts_webui_rocm": {
         "display_name": "Qwen TTS WebUI (AMD)",
