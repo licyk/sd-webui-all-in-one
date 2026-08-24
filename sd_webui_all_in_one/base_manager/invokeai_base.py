@@ -767,7 +767,7 @@ def init_invokeai_default_config(
         return
     try:
         logger.info("导入 InvokeAI 配置模块中")
-        from invokeai.app.services.config.config_default import DefaultInvokeAIAppConfig
+        from invokeai.app.services.config.config_default import DefaultInvokeAIAppConfig  # ty: ignore[unresolved-import]
     except ImportError as e:
         logger.error("导入 InvokeAI 模块失败, 跳过初始化配置文件: %s", e)
         raise ImportError(f"导入 InvokeAI 模块发生错误: {e}") from e
