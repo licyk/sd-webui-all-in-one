@@ -178,7 +178,7 @@ def get_download_link(
 
     Example:
         >>> get_download_link(data, "modelscope", "windows", "stable", "ComfyUI")
-        '[comfyui-licyk-windows-v2.2.7z](https://modelscope.cn/...)'
+        '[comfyui_cuda-licyk-windows-v2.2.7z](https://modelscope.cn/...)'
     """
     project_data = get_resource_node(data, source, platform, project)
     version_data = project_data.get(version_type)

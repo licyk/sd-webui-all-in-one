@@ -6,7 +6,7 @@ inputs:
     description: Portable package install directory.
     required: true
   software-name:
-    description: Portable package archive software name.
+    description: Portable package archive software name with accelerator suffix.
     required: true
   target-platform:
     description: Portable package target platform.

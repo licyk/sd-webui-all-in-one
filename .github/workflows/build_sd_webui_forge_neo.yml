@@ -85,7 +85,7 @@ jobs:
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
         with:
           install-path: ${{ github.workspace }}/sd_webui_forge_neo
-          software-name: sd_webui_forge_neo
+          software-name: sd_webui_forge_neo_cuda
           upload-path: ${{ github.workspace }}/sd-webui-all-in-one
           hf-repo-id: licyk/sd-webui-all-in-one
           ms-repo-id: licyks/sd-webui-all-in-one

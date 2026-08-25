@@ -21,10 +21,12 @@ from modelscope import HubApi
 # 解析整合包文件名的正则表达式
 PORTABLE_NAME_PATTERN = r'''
     ^
-    (?P<software>[\w_]+?)       # 软件名 (允许下划线)
+    (?P<software>[\w_]+?_(?:cuda|rocm|xpu|mps))  # 软件名和计算后端
     -                           
     (?P<signature>[a-z0-9]+)    # 署名 (小写字母 + 数字)
-    -                           
+    -
+    (?P<platform>windows|linux|macos)  # 目标平台
+    -
     (?:
         # 每日构建模式：日期 + nightly
         (?P<build_date>\d{8})   # 构建日期 (YYYYMMDD)
@@ -51,6 +53,7 @@ PortableNameComponent = namedtuple(
     'PortableNameComponent', [
         'software',     # 软件名称
         'signature',    # 署名标记
+        'platform',     # 目标平台
         'build_type',   # 构建类型 (nightly/stable)
         'build_date',   # 构建日期 (仅 nightly 有效)
         'version',      # 版本号 (仅 stable 有效)
@@ -86,6 +89,7 @@ def parse_portable_filename(filename: str) -> PortableNameComponent:
     return PortableNameComponent(
         software=groups['software'],
         signature=groups['signature'],
+        platform=groups['platform'].lower(),
         build_type=build_type,
         build_date=build_date,
         version=version,

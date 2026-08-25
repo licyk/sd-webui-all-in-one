@@ -13,10 +13,12 @@ from huggingface_hub import HfApi
 # 解析整合包文件名的正则表达式
 PORTABLE_NAME_PATTERN = r'''
     ^
-    (?P<software>[\w_]+?)       # 软件名 (允许下划线)
+    (?P<software>[\w_]+?_(?:cuda|rocm|xpu|mps))  # 软件名和计算后端
     -                           
     (?P<signature>[a-z0-9]+)    # 署名 (小写字母 + 数字)
-    -                           
+    -
+    (?P<platform>windows|linux|macos)  # 目标平台
+    -
     (?:
         # 每日构建模式：日期 + nightly
         (?P<build_date>\d{8})   # 构建日期 (YYYYMMDD)
@@ -44,6 +46,7 @@ PortableNameComponent = namedtuple(
     'PortableNameComponent', [
         'software',     # 软件名称
         'signature',    # 署名标记
+        'platform',     # 目标平台
         'build_type',   # 构建类型 (nightly/stable)
         'build_date',   # 构建日期 (仅 nightly 有效)
         'version',      # 版本号 (仅 stable 有效)
@@ -79,6 +82,7 @@ def parse_portable_filename(filename: str) -> PortableNameComponent:
     return PortableNameComponent(
         software=groups['software'],
         signature=groups['signature'],
+        platform=groups['platform'].lower(),
         build_type=build_type,
         build_date=build_date,
         version=version,
@@ -305,18 +309,18 @@ def classify_package(
 
 # 整合包别名
 PROTABLE_ALIAS = {
-    "sd_webui": "Stable Diffusion WebUI",
-    "sd_webui_forge": "Stable Diffusion WebUI Forge",
-    "sd_webui_reforge": "Stable Diffusion WebUI reForge",
-    "sd_webui_forge_classic": "Stable Diffusion WebUI Forge Classic",
-    "sd_next": "SD Next",
-    "comfyui": "ComfyUI",
-    "fooocus": "Fooocus",
-    "invokeai": "InvokeAI",
-    "sd_trainer": "SD Trainer",
-    "kohya_gui": "Kohya GUI",
-    "sd_scripts": "SD Scripts",
-    "musubi_tuner": "Musubi Tuner",
+    "sd_webui_cuda": "Stable Diffusion WebUI",
+    "sd_webui_forge_cuda": "Stable Diffusion WebUI Forge",
+    "sd_webui_reforge_cuda": "Stable Diffusion WebUI reForge",
+    "sd_webui_forge_classic_cuda": "Stable Diffusion WebUI Forge Classic",
+    "sd_next_cuda": "SD Next",
+    "comfyui_cuda": "ComfyUI",
+    "fooocus_cuda": "Fooocus",
+    "invokeai_cuda": "InvokeAI",
+    "sd_trainer_cuda": "SD Trainer",
+    "kohya_gui_cuda": "Kohya GUI",
+    "sd_scripts_cuda": "SD Scripts",
+    "musubi_tuner_cuda": "Musubi Tuner",
 }
 
 

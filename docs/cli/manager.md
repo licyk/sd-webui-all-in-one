@@ -305,8 +305,9 @@ sd-webui-all-in-one self-manager portable list [选项]
 - `--ms-token <令牌>`：ModelScope Token；未传时读取 `MODELSCOPE_API_TOKEN`。
 
 至少需要配置 HuggingFace 或 ModelScope 中的一个下载源。整合包文件名必须使用
-`<software>-<signature>-<platform>-<版本或 nightly>.<扩展名>` 格式，其中 `platform`
-可选 `windows`、`linux`、`macos`。输出资源按下载源、平台和软件分组：
+`<software>_<accelerator>-<signature>-<platform>-<版本或 nightly>.<扩展名>` 格式，其中
+`accelerator` 可选 `cuda`、`rocm`、`xpu`、`mps`，`platform` 可选 `windows`、`linux`、
+`macos`。输出资源按下载源、平台和软件分组：
 
 ```json
 {
@@ -314,13 +315,13 @@ sd-webui-all-in-one self-manager portable list [选项]
   "resources": {
     "modelscope": {
       "windows": {
-        "sd_webui": {
+        "sd_webui_cuda": {
           "display_name": "Stable Diffusion WebUI (NVIDIA)",
           "description": "Stable Diffusion WebUI 的 NVIDIA 显卡整合包。",
           "stable": [
             {
-              "filename": "sd_webui-licyk-windows-v1.0.0.7z",
-              "path": "portable/sd_webui-licyk-windows-v1.0.0.7z",
+              "filename": "sd_webui_cuda-licyk-windows-v1.0.0.7z",
+              "path": "portable/sd_webui_cuda-licyk-windows-v1.0.0.7z",
               "url": "https://...",
               "signature": "licyk",
               "platform": "windows",

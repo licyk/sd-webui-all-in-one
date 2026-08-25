@@ -74,7 +74,7 @@
 param (
     [string]$ScriptRootPath
 )
-$script:SD_PORTABLE_DOWNLOADER_VERSION = 115
+$script:SD_PORTABLE_DOWNLOADER_VERSION = 116
 Add-Type -AssemblyName PresentationFramework, System.Windows.Forms, System.Drawing
 
 # 注入 Win32 API 用于实现毛玻璃效果
@@ -635,25 +635,33 @@ function Get-PortableGpuCompatibility {
 }
 
 function Get-PortablePackageGpuVendor {
-    param([string]$DisplayName)
+    param([string]$DisplayName, [string]$ResourceKey)
+    if (-not [string]::IsNullOrWhiteSpace($ResourceKey)) {
+        switch -Regex ($ResourceKey.ToLowerInvariant()) {
+            "_cuda$" { return "NVIDIA" }
+            "_rocm$" { return "AMD" }
+            "_xpu$" { return "Intel" }
+            "_mps$" { return "Apple Silicon" }
+        }
+    }
     if ([string]::IsNullOrWhiteSpace($DisplayName)) {
         return $null
     }
-    if ($DisplayName -match "\((NVIDIA|AMD|Intel)\)\s*$") {
+    if ($DisplayName -match "\((NVIDIA|AMD|Intel|Apple Silicon)\)\s*$") {
         return $matches[1]
     }
     return $null
 }
 
 function Resolve-PortableCompatibility {
-    param([string]$DisplayName, $GpuCompatibility)
+    param([string]$DisplayName, [string]$ResourceKey, $GpuCompatibility)
 
-    $vendor = Get-PortablePackageGpuVendor -DisplayName $DisplayName
+    $vendor = Get-PortablePackageGpuVendor -DisplayName $DisplayName -ResourceKey $ResourceKey
     if ([string]::IsNullOrWhiteSpace($vendor)) {
         return [PSCustomObject]@{
             Status  = "Unknown"
             Text    = "未知"
-            Tooltip = "未从整合包名称中识别到 NVIDIA / AMD / Intel 类型"
+            Tooltip = "未从整合包标识或名称中识别到计算后端"
         }
     }
 
@@ -725,7 +733,7 @@ function Sync-PortableDataGrid {
                 $displayName = $resourceKey
             }
             $description = ([string]$resourceNode.description).Trim()
-            $compatibility = Resolve-PortableCompatibility -DisplayName $displayName -GpuCompatibility $State.GpuCompatibility
+            $compatibility = Resolve-PortableCompatibility -DisplayName $displayName -ResourceKey $resourceKey -GpuCompatibility $State.GpuCompatibility
 
             $versions = @()
             $vNode = $resourceNode."$versionType"

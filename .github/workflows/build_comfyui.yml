@@ -73,7 +73,7 @@ jobs:
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
         with:
           install-path: ${{ github.workspace }}/comfyui
-          software-name: comfyui
+          software-name: comfyui_cuda
           upload-path: ${{ github.workspace }}/sd-webui-all-in-one
           hf-repo-id: licyk/sd-webui-all-in-one
           ms-repo-id: licyks/sd-webui-all-in-one

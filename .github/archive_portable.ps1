@@ -1,5 +1,7 @@
 ﻿param (
-    [Parameter(Mandatory = $true)][string]$SoftwareName,
+    [Parameter(Mandatory = $true)]
+    [ValidatePattern("_(cuda|rocm|xpu|mps)$")]
+    [string]$SoftwareName,
     [Parameter(Mandatory = $true)][string]$Workspace,
     [Parameter(Mandatory = $true)][string]$Source,
     [Parameter(Mandatory = $true)][string]$SaveDst,

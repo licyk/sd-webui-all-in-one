@@ -6,11 +6,11 @@ from sd_webui_all_in_one import portable_manager
 
 
 def test_parse_portable_filename_stable_and_nightly():
-    stable = portable_manager.parse_portable_filename("sd_webui-licyk-windows-v1.2.3.7z")
+    stable = portable_manager.parse_portable_filename("sd_webui_cuda-licyk-windows-v1.2.3.7z")
     nightly = portable_manager.parse_portable_filename("comfyui_rocm-licyk-linux-20250616-nightly.tar.gz")
 
     assert stable == {
-        "software": "sd_webui",
+        "software": "sd_webui_cuda",
         "signature": "licyk",
         "platform": "windows",
         "channel": "stable",
@@ -31,30 +31,32 @@ def test_parse_portable_filename_stable_and_nightly():
     with pytest.raises(ValueError):
         portable_manager.parse_portable_filename("invalid-name.7z")
     with pytest.raises(ValueError):
-        portable_manager.parse_portable_filename("sd_webui-licyk-v1.2.3.7z")
+        portable_manager.parse_portable_filename("sd_webui_cuda-licyk-v1.2.3.7z")
+    with pytest.raises(ValueError):
+        portable_manager.parse_portable_filename("sd_webui-licyk-windows-v1.2.3.7z")
 
 
 def test_filter_portable_paths_skips_non_portable_and_invalid_files():
     assert portable_manager.filter_portable_paths(
         [
-            "portable/sd_webui-licyk-windows-v1.0.0.7z",
+            "portable/sd_webui_cuda-licyk-windows-v1.0.0.7z",
             "portable/not-a-portable.7z",
             "models/model.bin",
         ]
-    ) == ["portable/sd_webui-licyk-windows-v1.0.0.7z"]
+    ) == ["portable/sd_webui_cuda-licyk-windows-v1.0.0.7z"]
 
 
 def test_filter_portable_paths_supports_custom_repo_path():
     paths = [
-        "portable/sd_webui-licyk-windows-v1.0.0.7z",
-        "release/nightly/comfyui-licyk-macos-20250616-nightly.tar.gz",
+        "portable/sd_webui_cuda-licyk-windows-v1.0.0.7z",
+        "release/nightly/comfyui_mps-licyk-macos-20250616-nightly.tar.gz",
         "release/nightly/not-a-portable.7z",
     ]
 
-    assert portable_manager.filter_portable_paths(paths, path_in_repo="/release\\nightly/") == ["release/nightly/comfyui-licyk-macos-20250616-nightly.tar.gz"]
+    assert portable_manager.filter_portable_paths(paths, path_in_repo="/release\\nightly/") == ["release/nightly/comfyui_mps-licyk-macos-20250616-nightly.tar.gz"]
     assert portable_manager.filter_portable_paths(paths, path_in_repo="") == [
-        "portable/sd_webui-licyk-windows-v1.0.0.7z",
-        "release/nightly/comfyui-licyk-macos-20250616-nightly.tar.gz",
+        "portable/sd_webui_cuda-licyk-windows-v1.0.0.7z",
+        "release/nightly/comfyui_mps-licyk-macos-20250616-nightly.tar.gz",
     ]
 
     with pytest.raises(ValueError, match="不能包含"):
@@ -63,40 +65,40 @@ def test_filter_portable_paths_supports_custom_repo_path():
 
 def test_build_portable_source_resources_groups_and_sorts_versions():
     files = [
-        portable_manager.build_portable_file_resource("portable/sd_webui-licyk-windows-v1.2.0.7z", "https://example.test/v1.2")[1],
-        portable_manager.build_portable_file_resource("portable/sd_webui-licyk-windows-v1.10.0.7z", "https://example.test/v1.10")[1],
-        portable_manager.build_portable_file_resource("portable/sd_webui-licyk-windows-20250101-nightly.7z", "https://example.test/20250101")[1],
-        portable_manager.build_portable_file_resource("portable/sd_webui-licyk-windows-20250616-nightly.7z", "https://example.test/20250616")[1],
-        portable_manager.build_portable_file_resource("portable/sd_webui-licyk-linux-v9.0.0.tar.gz", "https://example.test/linux")[1],
-        portable_manager.build_portable_file_resource("portable/sd_webui-licyk-macos-v8.0.0.tar.gz", "https://example.test/macos")[1],
-        portable_manager.build_portable_file_resource("portable/custom_app-abc-linux-v1.0.0.tar.gz", "https://example.test/custom")[1],
+        portable_manager.build_portable_file_resource("portable/sd_webui_cuda-licyk-windows-v1.2.0.7z", "https://example.test/v1.2")[1],
+        portable_manager.build_portable_file_resource("portable/sd_webui_cuda-licyk-windows-v1.10.0.7z", "https://example.test/v1.10")[1],
+        portable_manager.build_portable_file_resource("portable/sd_webui_cuda-licyk-windows-20250101-nightly.7z", "https://example.test/20250101")[1],
+        portable_manager.build_portable_file_resource("portable/sd_webui_cuda-licyk-windows-20250616-nightly.7z", "https://example.test/20250616")[1],
+        portable_manager.build_portable_file_resource("portable/sd_webui_cuda-licyk-linux-v9.0.0.tar.gz", "https://example.test/linux")[1],
+        portable_manager.build_portable_file_resource("portable/sd_webui_mps-licyk-macos-v8.0.0.tar.gz", "https://example.test/macos")[1],
+        portable_manager.build_portable_file_resource("portable/custom_app_cuda-abc-linux-v1.0.0.tar.gz", "https://example.test/custom")[1],
     ]
 
     resources = portable_manager.build_portable_source_resources(files)
 
     assert list(resources) == ["windows", "linux", "macos"]
-    assert list(resources["windows"]) == ["sd_webui"]
-    assert resources["windows"]["sd_webui"]["display_name"] == "Stable Diffusion WebUI (NVIDIA)"
-    assert resources["windows"]["sd_webui"]["description"] == "Stable Diffusion WebUI 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，上手简单，操作方便，适合入门使用。"
-    assert [item["filename"] for item in resources["windows"]["sd_webui"]["stable"]] == [
-        "sd_webui-licyk-windows-v1.10.0.7z",
-        "sd_webui-licyk-windows-v1.2.0.7z",
+    assert list(resources["windows"]) == ["sd_webui_cuda"]
+    assert resources["windows"]["sd_webui_cuda"]["display_name"] == "Stable Diffusion WebUI (NVIDIA)"
+    assert resources["windows"]["sd_webui_cuda"]["description"] == "Stable Diffusion WebUI 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，上手简单，操作方便，适合入门使用。"
+    assert [item["filename"] for item in resources["windows"]["sd_webui_cuda"]["stable"]] == [
+        "sd_webui_cuda-licyk-windows-v1.10.0.7z",
+        "sd_webui_cuda-licyk-windows-v1.2.0.7z",
     ]
-    assert [item["filename"] for item in resources["windows"]["sd_webui"]["nightly"]] == [
-        "sd_webui-licyk-windows-20250616-nightly.7z",
-        "sd_webui-licyk-windows-20250101-nightly.7z",
+    assert [item["filename"] for item in resources["windows"]["sd_webui_cuda"]["nightly"]] == [
+        "sd_webui_cuda-licyk-windows-20250616-nightly.7z",
+        "sd_webui_cuda-licyk-windows-20250101-nightly.7z",
     ]
-    assert resources["linux"]["custom_app"]["display_name"] == "custom_app"
-    assert resources["linux"]["custom_app"]["description"] == ""
-    assert [item["filename"] for item in resources["linux"]["sd_webui"]["stable"]] == ["sd_webui-licyk-linux-v9.0.0.tar.gz"]
-    assert [item["filename"] for item in resources["macos"]["sd_webui"]["stable"]] == ["sd_webui-licyk-macos-v8.0.0.tar.gz"]
+    assert resources["linux"]["custom_app_cuda"]["display_name"] == "custom_app_cuda"
+    assert resources["linux"]["custom_app_cuda"]["description"] == ""
+    assert [item["filename"] for item in resources["linux"]["sd_webui_cuda"]["stable"]] == ["sd_webui_cuda-licyk-linux-v9.0.0.tar.gz"]
+    assert [item["filename"] for item in resources["macos"]["sd_webui_mps"]["stable"]] == ["sd_webui_mps-licyk-macos-v8.0.0.tar.gz"]
 
 
 def test_build_portable_source_resources_uses_gpu_variant_metadata():
     files = [
         portable_manager.build_portable_file_resource("portable/sd_webui_rocm-licyk-linux-v1.0.0.7z", "https://example.test/sd-webui-rocm")[1],
         portable_manager.build_portable_file_resource("portable/fooocus_xpu-licyk-linux-v1.0.0.7z", "https://example.test/fooocus-xpu")[1],
-        portable_manager.build_portable_file_resource("portable/sd_webui_amdgpu-licyk-linux-v1.0.0.7z", "https://example.test/sd-webui-amdgpu")[1],
+        portable_manager.build_portable_file_resource("portable/sd_webui_amdgpu_cuda-licyk-linux-v1.0.0.7z", "https://example.test/sd-webui-amdgpu")[1],
         portable_manager.build_portable_file_resource("portable/ruined_fooocus_rocm-licyk-linux-v1.0.0.7z", "https://example.test/ruined-fooocus-rocm")[1],
         portable_manager.build_portable_file_resource("portable/diffusion_pipe_xpu-licyk-linux-v1.0.0.7z", "https://example.test/diffusion-pipe-xpu")[1],
     ]
@@ -107,8 +109,8 @@ def test_build_portable_source_resources_uses_gpu_variant_metadata():
     assert resources["sd_webui_rocm"]["description"] == "Stable Diffusion WebUI 的 AMD 显卡整合包，使用 ROCm 版 PyTorch，上手简单，操作方便，适合入门使用。"
     assert resources["fooocus_xpu"]["display_name"] == "Fooocus (Intel)"
     assert resources["fooocus_xpu"]["description"] == "Fooocus 的 Intel 显卡整合包，使用 XPU 版 PyTorch，化繁为简，更专注于提示词书写。"
-    assert resources["sd_webui_amdgpu"]["display_name"] == "Stable Diffusion WebUI AMDGPU (NVIDIA)"
-    assert resources["sd_webui_amdgpu"]["description"] == "Stable Diffusion WebUI AMDGPU 分支的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，保留 Stable Diffusion WebUI 体验，并包含 DirectML 和 ZLUDA 等后端支持。"
+    assert resources["sd_webui_amdgpu_cuda"]["display_name"] == "Stable Diffusion WebUI AMDGPU (NVIDIA)"
+    assert resources["sd_webui_amdgpu_cuda"]["description"] == "Stable Diffusion WebUI AMDGPU 分支的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，保留 Stable Diffusion WebUI 体验，并包含 DirectML 和 ZLUDA 等后端支持。"
     assert resources["ruined_fooocus_rocm"]["display_name"] == "RuinedFooocus (AMD)"
     assert resources["ruined_fooocus_rocm"]["description"] == "RuinedFooocus 的 AMD 显卡整合包，使用 ROCm 版 PyTorch，基于 Fooocus，加入样式、通配符、随机提示词和更多可调参数。"
     assert resources["diffusion_pipe_xpu"]["display_name"] == "Diffusion Pipe (Intel)"
@@ -124,7 +126,7 @@ def test_portable_software_metadata_includes_additional_products_and_gpu_variant
         "finetrainers",
         "diffusion_pipe",
     ]:
-        assert software in portable_manager.PORTABLE_SOFTWARE_METADATA
+        assert f"{software}_cuda" in portable_manager.PORTABLE_SOFTWARE_METADATA
         assert f"{software}_rocm" in portable_manager.PORTABLE_SOFTWARE_METADATA
         assert f"{software}_xpu" in portable_manager.PORTABLE_SOFTWARE_METADATA
 
@@ -137,7 +139,13 @@ def test_portable_software_metadata_uses_vendor_names_and_pytorch_descriptions()
         assert "(ROCm)" not in display_name
         assert "(XPU)" not in display_name
 
-        if software.endswith("_mps"):
+        assert software.endswith(tuple(f"_{accelerator}" for accelerator in portable_manager.PORTABLE_ACCELERATOR_TYPE_LIST))
+
+        if software.endswith("_cuda"):
+            assert display_name.endswith("(NVIDIA)")
+            assert "NVIDIA 显卡整合包" in description
+            assert "CUDA 版 PyTorch" in description
+        elif software.endswith("_mps"):
             assert display_name.endswith("(Apple Silicon)")
             assert "Apple Silicon 整合包" in description
             assert "MPS 版 PyTorch" in description
@@ -150,9 +158,7 @@ def test_portable_software_metadata_uses_vendor_names_and_pytorch_descriptions()
             assert "Intel 显卡整合包" in description
             assert "XPU 版 PyTorch" in description
         else:
-            assert display_name.endswith("(NVIDIA)")
-            assert "NVIDIA 显卡整合包" in description
-            assert "CUDA 版 PyTorch" in description
+            pytest.fail(f"未覆盖的整合包计算后端: {software}")
 
 
 def test_portable_software_metadata_includes_comfyui_mps():
@@ -164,7 +170,7 @@ def test_portable_software_metadata_includes_comfyui_mps():
 
 def test_build_portable_list_data_uses_new_resources_shape():
     file_resource = portable_manager.build_portable_file_resource(
-        "portable/fooocus-licyk-macos-v2.0.0.tar.gz",
+        "portable/fooocus_mps-licyk-macos-v2.0.0.tar.gz",
         "https://example.test/fooocus",
     )[1]
 
@@ -178,13 +184,13 @@ def test_build_portable_list_data_uses_new_resources_shape():
         "resources": {
             "modelscope": {
                 "macos": {
-                    "fooocus": {
-                        "display_name": "Fooocus (NVIDIA)",
-                        "description": "Fooocus 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，化繁为简，更专注于提示词书写。",
+                    "fooocus_mps": {
+                        "display_name": "Fooocus (Apple Silicon)",
+                        "description": "Fooocus 的 Apple Silicon 整合包，使用 MPS 版 PyTorch，化繁为简，更专注于提示词书写。",
                         "stable": [
                             {
-                                "filename": "fooocus-licyk-macos-v2.0.0.tar.gz",
-                                "path": "portable/fooocus-licyk-macos-v2.0.0.tar.gz",
+                                "filename": "fooocus_mps-licyk-macos-v2.0.0.tar.gz",
+                                "path": "portable/fooocus_mps-licyk-macos-v2.0.0.tar.gz",
                                 "url": "https://example.test/fooocus",
                                 "signature": "licyk",
                                 "platform": "macos",
@@ -215,7 +221,7 @@ def test_build_portable_list_from_repositories_collects_only_valid_portables():
                 "revision": "main",
             }
             return [
-                "portable/sd_webui-licyk-windows-v1.0.0.7z",
+                "portable/sd_webui_cuda-licyk-windows-v1.0.0.7z",
                 "portable/invalid.7z",
                 "models/model.bin",
             ]
@@ -236,12 +242,12 @@ def test_build_portable_list_from_repositories_collects_only_valid_portables():
         {
             "api_type": "huggingface",
             "repo_id": "owner/repo",
-            "file_path": "portable/sd_webui-licyk-windows-v1.0.0.7z",
+            "file_path": "portable/sd_webui_cuda-licyk-windows-v1.0.0.7z",
             "repo_type": "model",
             "revision": "main",
         }
     ]
-    assert data["resources"]["huggingface"]["windows"]["sd_webui"]["stable"][0]["url"] == "https://example.test/sd_webui-licyk-windows-v1.0.0.7z"
+    assert data["resources"]["huggingface"]["windows"]["sd_webui_cuda"]["stable"][0]["url"] == "https://example.test/sd_webui_cuda-licyk-windows-v1.0.0.7z"
 
 
 def test_build_portable_list_from_repositories_uses_custom_repo_path():
@@ -251,8 +257,8 @@ def test_build_portable_list_from_repositories_uses_custom_repo_path():
 
         def get_repo_file(self, **_kwargs):
             return [
-                "portable/sd_webui-licyk-windows-v1.0.0.7z",
-                "release/nightly/comfyui-licyk-macos-20250616-nightly.tar.gz",
+                "portable/sd_webui_cuda-licyk-windows-v1.0.0.7z",
+                "release/nightly/comfyui_mps-licyk-macos-20250616-nightly.tar.gz",
             ]
 
         def get_repo_file_download_url(self, **kwargs):
@@ -270,13 +276,13 @@ def test_build_portable_list_from_repositories_uses_custom_repo_path():
         {
             "api_type": "modelscope",
             "repo_id": "owner/repo",
-            "file_path": "release/nightly/comfyui-licyk-macos-20250616-nightly.tar.gz",
+            "file_path": "release/nightly/comfyui_mps-licyk-macos-20250616-nightly.tar.gz",
             "repo_type": "model",
             "revision": None,
         }
     ]
     assert list(data["resources"]["modelscope"]) == ["macos"]
-    assert list(data["resources"]["modelscope"]["macos"]) == ["comfyui"]
+    assert list(data["resources"]["modelscope"]["macos"]) == ["comfyui_mps"]
 
 
 def test_build_portable_list_from_repositories_requires_source():

@@ -128,8 +128,8 @@ xattr -dr com.apple.quarantine "/完整的整合包解压目录"
 支持 SD WebUI Installer / Hanafubuki / 绘世启动器进行管理。
 
 
-[下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=sd_webui){ .md-button }
-[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_webui){ .md-button .md-button--primary }
+[下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=sd_webui_cuda){ .md-button }
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_webui_cuda){ .md-button .md-button--primary }
 
 ### SD WebUI Installer 管理方式
 - configure_env.bat：首次使用 SD WebUI Installer 需要运行一次，保证能正常运行
@@ -167,8 +167,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 支持 SD WebUI Installer / Hanafubuki / 绘世启动器进行管理。
 
 
-[下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=sd_webui_forge){ .md-button }
-[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_webui_forge){ .md-button .md-button--primary }
+[下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=sd_webui_forge_cuda){ .md-button }
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_webui_forge_cuda){ .md-button .md-button--primary }
 
 ### SD WebUI Installer 管理方式
 - configure_env.bat：首次使用 SD WebUI Installer 需要运行一次，保证能正常运行
@@ -206,7 +206,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 支持 SD WebUI Installer / Hanafubuki / 绘世启动器进行管理。
 
 
-[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_webui_reforge){ .md-button .md-button--primary }
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_webui_reforge_cuda){ .md-button .md-button--primary }
 
 ### SD WebUI Installer 管理方式
 - configure_env.bat：首次使用 SD WebUI Installer 需要运行一次，保证能正常运行
@@ -246,7 +246,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 **NVIDIA 显卡版本：**
 
-[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_webui_forge_neo){ .md-button .md-button--primary }
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_webui_forge_neo_cuda){ .md-button .md-button--primary }
 
 **AMD 显卡版本：**
 
@@ -292,7 +292,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 支持 SD WebUI Installer / Hanafubuki / 绘世启动器进行管理。
 
 
-[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_next){ .md-button .md-button--primary }
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_next_cuda){ .md-button .md-button--primary }
 
 ### SD WebUI Installer 管理方式
 - configure_env.bat：首次使用 SD WebUI Installer 需要运行一次，保证能正常运行
@@ -332,7 +332,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 **NVIDIA 显卡版本：**
 
-[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=comfyui){ .md-button .md-button--primary }
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=comfyui_cuda){ .md-button .md-button--primary }
 
 **AMD 显卡版本：**
 
@@ -377,8 +377,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 支持 Fooocus Installer / Hanafubuki / 绘世启动器进行管理。
 
 
-[下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=fooocus){ .md-button }
-[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=fooocus){ .md-button .md-button--primary }
+[下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=fooocus_cuda){ .md-button }
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=fooocus_cuda){ .md-button .md-button--primary }
 
 ### Fooocus Installer 管理方式
 - configure_env.bat：首次使用 Fooocus Installer 需要运行一次，保证能正常运行
@@ -415,7 +415,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 支持 InvokeAI Installer / Hanafubuki 进行管理。
 
 
-[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=invokeai){ .md-button .md-button--primary }
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=invokeai_cuda){ .md-button .md-button--primary }
 
 ### InvokeAI Installer 管理方式
 - configure_env.bat：首次使用 InvokeAI Installer 需要运行一次，保证能正常运行
@@ -447,8 +447,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 支持 SD-Trainer Installer / Hanafubuki / 绘世启动器进行管理。
 
 
-[下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=sd_trainer){ .md-button }
-[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_trainer){ .md-button .md-button--primary }
+[下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=sd_trainer_cuda){ .md-button }
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_trainer_cuda){ .md-button .md-button--primary }
 
 ### SD-Trainer Installer 管理方式
 - configure_env.bat：首次使用 SD-Trainer Installer 需要运行一次，保证能正常运行
@@ -485,7 +485,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 支持 SD-Trainer Installer / Hanafubuki / 绘世启动器进行管理。
 
 
-[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_trainer_next){ .md-button .md-button--primary }
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_trainer_next_cuda){ .md-button .md-button--primary }
 
 ### SD-Trainer Installer 管理方式
 - configure_env.bat：首次使用 SD-Trainer Installer 需要运行一次，保证能正常运行
@@ -522,8 +522,8 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 支持 SD-Trainer Installer / Hanafubuki 进行管理。
 
 
-[下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=kohya_gui){ .md-button }
-[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=kohya_gui){ .md-button .md-button--primary }
+[下载 Stable 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=stable&software=kohya_gui_cuda){ .md-button }
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=kohya_gui_cuda){ .md-button .md-button--primary }
 
 ### SD-Trainer Installer 管理方式
 - configure_env.bat：首次使用 SD-Trainer Installer 需要运行一次，保证能正常运行
@@ -553,7 +553,7 @@ SD WebUI Installer 使用说明可阅读：[SD WebUI Installer](../installer/sd-
 
 支持 SD-Trainer-Script Installer / Bash TUI / CLI Launcher 进行管理。
 
-[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_scripts){ .md-button .md-button--primary }
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=sd_scripts_cuda){ .md-button .md-button--primary }
 
 ### SD-Trainer-Script Installer 管理方式
 - configure_env.bat：首次使用 SD-Trainer-Script Installer 需要运行一次，保证能正常运行
@@ -581,7 +581,7 @@ SD Scripts 当前不属于 Hanafubuki 支持的实例类型。使用 [Bash TUI /
 
 支持 SD-Trainer-Script Installer / Bash TUI / CLI Launcher 进行管理。
 
-[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=musubi_tuner){ .md-button .md-button--primary }
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=musubi_tuner_cuda){ .md-button .md-button--primary }
 
 ### SD-Trainer-Script Installer 管理方式
 - configure_env.bat：首次使用 SD-Trainer-Script Installer 需要运行一次，保证能正常运行
@@ -611,7 +611,7 @@ Musubi Tuner 当前不属于 Hanafubuki 支持的实例类型。使用 [Bash TUI
 支持 Qwen TTS WebUI Installer / Hanafubuki 进行管理。
 
 
-[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=qwen_tts_webui){ .md-button .md-button--primary }
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&channel=nightly&software=qwen_tts_webui_cuda){ .md-button .md-button--primary }
 
 ### Qwen TTS WebUI Installer 管理方式
 - configure_env.bat：首次使用 Qwen TTS WebUI Installer 需要运行一次，保证能正常运行

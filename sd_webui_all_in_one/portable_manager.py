@@ -37,6 +37,9 @@ PortableChannelType: TypeAlias = Literal["stable", "nightly"]
 PortablePlatformType: TypeAlias = Literal["windows", "linux", "macos"]
 """整合包目标平台类型"""
 
+PortableAcceleratorType: TypeAlias = Literal["cuda", "rocm", "xpu", "mps"]
+"""整合包计算后端类型"""
+
 PORTABLE_SOURCE_TYPE_LIST: list[PortableSourceType] = list(get_args(PortableSourceType))
 """整合包下载源类型列表"""
 
@@ -46,12 +49,15 @@ PORTABLE_CHANNEL_TYPE_LIST: list[PortableChannelType] = list(get_args(PortableCh
 PORTABLE_PLATFORM_TYPE_LIST: list[PortablePlatformType] = list(get_args(PortablePlatformType))
 """整合包目标平台类型列表"""
 
+PORTABLE_ACCELERATOR_TYPE_LIST: list[PortableAcceleratorType] = list(get_args(PortableAcceleratorType))
+"""整合包计算后端类型列表"""
+
 DEFAULT_PORTABLE_PATH_IN_REPO = "portable"
 """默认整合包仓库目录"""
 
 PORTABLE_NAME_PATTERN = r"""
     ^
-    (?P<software>[\w_]+?)
+    (?P<software>[\w_]+?_(?:cuda|rocm|xpu|mps))
     -
     (?P<signature>[a-z0-9]+)
     -
@@ -86,7 +92,7 @@ class PortableSoftwareMetadata(TypedDict):
 
 
 PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
-    "sd_webui": {
+    "sd_webui_cuda": {
         "display_name": "Stable Diffusion WebUI (NVIDIA)",
         "description": "Stable Diffusion WebUI 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，上手简单，操作方便，适合入门使用。",
     },
@@ -102,7 +108,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Stable Diffusion WebUI (Intel)",
         "description": "Stable Diffusion WebUI 的 Intel 显卡整合包，使用 XPU 版 PyTorch，上手简单，操作方便，适合入门使用。",
     },
-    "sd_webui_amdgpu": {
+    "sd_webui_amdgpu_cuda": {
         "display_name": "Stable Diffusion WebUI AMDGPU (NVIDIA)",
         "description": "Stable Diffusion WebUI AMDGPU 分支的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，保留 Stable Diffusion WebUI 体验，并包含 DirectML 和 ZLUDA 等后端支持。",
     },
@@ -118,7 +124,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Stable Diffusion WebUI AMDGPU (Intel)",
         "description": "Stable Diffusion WebUI AMDGPU 分支的 Intel 显卡整合包，使用 XPU 版 PyTorch，保留 Stable Diffusion WebUI 体验，并包含 DirectML 等后端支持。",
     },
-    "sd_webui_forge": {
+    "sd_webui_forge_cuda": {
         "display_name": "Stable Diffusion WebUI Forge (NVIDIA)",
         "description": "Stable Diffusion WebUI Forge 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，基于 Stable Diffusion WebUI，有更强的显存优化，多了 FLUX 模型支持。",
     },
@@ -134,7 +140,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Stable Diffusion WebUI Forge (Intel)",
         "description": "Stable Diffusion WebUI Forge 的 Intel 显卡整合包，使用 XPU 版 PyTorch，基于 Stable Diffusion WebUI，有更强的显存优化，多了 FLUX 模型支持。",
     },
-    "sd_webui_reforge": {
+    "sd_webui_reforge_cuda": {
         "display_name": "Stable Diffusion WebUI reForge (NVIDIA)",
         "description": "Stable Diffusion WebUI reForge 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，基于旧版 Stable Diffusion WebUI Forge 开发，插件兼容性比 Stable Diffusion WebUI Forge 好一点。",
     },
@@ -150,7 +156,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Stable Diffusion WebUI reForge (Intel)",
         "description": "Stable Diffusion WebUI reForge 的 Intel 显卡整合包，使用 XPU 版 PyTorch，基于旧版 Stable Diffusion WebUI Forge 开发，插件兼容性比 Stable Diffusion WebUI Forge 好一点。",
     },
-    "sd_webui_forge_classic": {
+    "sd_webui_forge_classic_cuda": {
         "display_name": "Stable Diffusion WebUI Forge Classic (NVIDIA)",
         "description": "Stable Diffusion WebUI Forge Classic 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，属于 Stable Diffusion WebUI Forge 的经典版本。",
     },
@@ -166,7 +172,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Stable Diffusion WebUI Forge Classic (Intel)",
         "description": "Stable Diffusion WebUI Forge Classic 的 Intel 显卡整合包，使用 XPU 版 PyTorch，属于 Stable Diffusion WebUI Forge 的经典版本。",
     },
-    "sd_webui_forge_neo": {
+    "sd_webui_forge_neo_cuda": {
         "display_name": "Stable Diffusion WebUI Forge Neo (NVIDIA)",
         "description": "Stable Diffusion WebUI Forge Neo 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，基于旧版 Stable Diffusion WebUI Forge 开发，精简了无用组件，更轻量。",
     },
@@ -182,7 +188,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Stable Diffusion WebUI Forge Neo (Intel)",
         "description": "Stable Diffusion WebUI Forge Neo 的 Intel 显卡整合包，使用 XPU 版 PyTorch，基于旧版 Stable Diffusion WebUI Forge 开发，精简了无用组件，更轻量。",
     },
-    "sd_next": {
+    "sd_next_cuda": {
         "display_name": "SD Next (NVIDIA)",
         "description": "SD Next 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，基于 Stable Diffusion WebUI 开发，支持的模型种类多，就是比较臃肿。",
     },
@@ -198,7 +204,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "SD Next (Intel)",
         "description": "SD Next 的 Intel 显卡整合包，使用 XPU 版 PyTorch，基于 Stable Diffusion WebUI 开发，支持的模型种类多，就是比较臃肿。",
     },
-    "comfyui": {
+    "comfyui_cuda": {
         "display_name": "ComfyUI (NVIDIA)",
         "description": "ComfyUI 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，流程高度自定义，可玩性高，显存优化强，支持的模型丰富。",
     },
@@ -214,7 +220,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "ComfyUI (Intel)",
         "description": "ComfyUI 的 Intel 显卡整合包，使用 XPU 版 PyTorch，流程高度自定义，可玩性高。",
     },
-    "fooocus": {
+    "fooocus_cuda": {
         "display_name": "Fooocus (NVIDIA)",
         "description": "Fooocus 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，化繁为简，更专注于提示词书写。",
     },
@@ -230,7 +236,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Fooocus (Intel)",
         "description": "Fooocus 的 Intel 显卡整合包，使用 XPU 版 PyTorch，化繁为简，更专注于提示词书写。",
     },
-    "ruined_fooocus": {
+    "ruined_fooocus_cuda": {
         "display_name": "RuinedFooocus (NVIDIA)",
         "description": "RuinedFooocus 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，基于 Fooocus，加入样式、通配符、随机提示词和更多可调参数。",
     },
@@ -246,7 +252,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "RuinedFooocus (Intel)",
         "description": "RuinedFooocus 的 Intel 显卡整合包，使用 XPU 版 PyTorch，基于 Fooocus，加入样式、通配符、随机提示词和更多可调参数。",
     },
-    "fooocus_mre": {
+    "fooocus_mre_cuda": {
         "display_name": "Fooocus-MRE (NVIDIA)",
         "description": "Fooocus-MRE 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，基于 Fooocus，加入图生图、Control-LoRA、嵌入和更多采样参数。",
     },
@@ -262,7 +268,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Fooocus-MRE (Intel)",
         "description": "Fooocus-MRE 的 Intel 显卡整合包，使用 XPU 版 PyTorch，基于 Fooocus，加入图生图、Control-LoRA、嵌入和更多采样参数。",
     },
-    "invokeai": {
+    "invokeai_cuda": {
         "display_name": "InvokeAI (NVIDIA)",
         "description": "InvokeAI 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，拥有最强大的画布系统，更适合作为辅助绘画工具。",
     },
@@ -278,7 +284,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "InvokeAI (Intel)",
         "description": "InvokeAI 的 Intel 显卡整合包，使用 XPU 版 PyTorch，拥有最强大的画布系统，更适合作为辅助绘画工具。",
     },
-    "sd_trainer": {
+    "sd_trainer_cuda": {
         "display_name": "SD Trainer (NVIDIA)",
         "description": "SD Trainer 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，训练模型如此简单。",
     },
@@ -290,7 +296,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "SD Trainer (Intel)",
         "description": "SD Trainer 的 Intel 显卡整合包，使用 XPU 版 PyTorch，训练模型如此简单。",
     },
-    "sd_trainer_next": {
+    "sd_trainer_next_cuda": {
         "display_name": "SD Trainer Next (NVIDIA)",
         "description": "SD Trainer Next 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，训练模型如此简单。基于 SD Trainer 分支，并且新增了 Anima 模型的支持。",
     },
@@ -302,7 +308,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "SD Trainer Next (Intel)",
         "description": "SD Trainer Next 的 Intel 显卡整合包，使用 XPU 版 PyTorch，训练模型如此简单。基于 SD Trainer 分支，并且新增了 Anima 模型的支持。",
     },
-    "kohya_gui": {
+    "kohya_gui_cuda": {
         "display_name": "Kohya GUI (NVIDIA)",
         "description": "Kohya GUI 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，支持训练更多种类的模型，不过操作麻烦一点。",
     },
@@ -314,7 +320,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Kohya GUI (Intel)",
         "description": "Kohya GUI 的 Intel 显卡整合包，使用 XPU 版 PyTorch，支持训练更多种类的模型，不过操作麻烦一点。",
     },
-    "sd_scripts": {
+    "sd_scripts_cuda": {
         "display_name": "SD Scripts (NVIDIA)",
         "description": "SD Scripts 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，支持训练 SD1.5，SDXL，FLUX，ControlNet 等多种模型，并且是 SD-Trainer 和 Kohya GUI 的训练核心，不过操作比较麻烦。",
     },
@@ -326,7 +332,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "SD Scripts (Intel)",
         "description": "SD Scripts 的 Intel 显卡整合包，使用 XPU 版 PyTorch，支持训练 SD1.5，SDXL，FLUX，ControlNet 等多种模型，并且是 SD-Trainer 和 Kohya GUI 的训练核心，不过操作比较麻烦。",
     },
-    "ai_toolkit": {
+    "ai_toolkit_cuda": {
         "display_name": "AI Toolkit (NVIDIA)",
         "description": "AI Toolkit 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，易用的一体化扩散模型训练工具，支持图像和视频模型训练。",
     },
@@ -338,7 +344,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "AI Toolkit (Intel)",
         "description": "AI Toolkit 的 Intel 显卡整合包，使用 XPU 版 PyTorch，易用的一体化扩散模型训练工具，支持图像和视频模型训练。",
     },
-    "finetrainers": {
+    "finetrainers_cuda": {
         "display_name": "Finetrainers (NVIDIA)",
         "description": "Finetrainers 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，面向扩散模型训练，支持 LoRA、全量微调、分布式训练和省显存单卡训练。",
     },
@@ -350,7 +356,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Finetrainers (Intel)",
         "description": "Finetrainers 的 Intel 显卡整合包，使用 XPU 版 PyTorch，面向扩散模型训练，支持 LoRA、全量微调、分布式训练和省显存单卡训练。",
     },
-    "diffusion_pipe": {
+    "diffusion_pipe_cuda": {
         "display_name": "Diffusion Pipe (NVIDIA)",
         "description": "Diffusion Pipe 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，面向扩散模型的流水线并行训练，适合训练单张显卡放不下的大模型。",
     },
@@ -362,7 +368,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Diffusion Pipe (Intel)",
         "description": "Diffusion Pipe 的 Intel 显卡整合包，使用 XPU 版 PyTorch，面向扩散模型的流水线并行训练，适合训练单张显卡放不下的大模型。",
     },
-    "musubi_tuner": {
+    "musubi_tuner_cuda": {
         "display_name": "Musubi Tuner (NVIDIA)",
         "description": "Musubi Tuner 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，支持训练 Hunyuan，Wan 等视频生成模型。",
     },
@@ -374,7 +380,7 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Musubi Tuner (Intel)",
         "description": "Musubi Tuner 的 Intel 显卡整合包，使用 XPU 版 PyTorch，支持训练 Hunyuan，Wan 等视频生成模型。",
     },
-    "qwen_tts_webui": {
+    "qwen_tts_webui_cuda": {
         "display_name": "Qwen TTS WebUI (NVIDIA)",
         "description": "Qwen TTS WebUI 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，支持使用 Qwen3 TTS 生成语音。",
     },
@@ -394,8 +400,8 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
 """整合包软件元数据
 
 命名规则:
-- Key 必须和整合包文件名中的 software 字段一致，例如 `sd_webui-licyk-windows-v1.0.0.7z` 对应 `sd_webui`。
-- 不带 GPU 后缀的 Key 表示 NVIDIA 显卡整合包并使用 CUDA 版 PyTorch；`_rocm` 后缀表示 AMD 显卡整合包并使用 ROCm 版 PyTorch；`_xpu` 后缀表示 Intel 显卡整合包并使用 XPU 版 PyTorch。
+- Key 必须和整合包文件名中的 software 字段一致，例如 `sd_webui_cuda-licyk-windows-v1.0.0.7z` 对应 `sd_webui_cuda`。
+- `_cuda` 后缀表示 NVIDIA 显卡整合包并使用 CUDA 版 PyTorch；`_rocm` 后缀表示 AMD 显卡整合包并使用 ROCm 版 PyTorch；`_xpu` 后缀表示 Intel 显卡整合包并使用 XPU 版 PyTorch；`_mps` 后缀表示 Apple Silicon 整合包并使用 MPS 版 PyTorch。
 - 只为下载列表需要展示的产品或独立变体添加条目，不为 `_main`、`_dev`、`_sd3` 等分支细分单独添加条目，除非构建产物直接使用该标识作为 software。
 - `display_name` 使用产品名加显卡厂商后缀，例如 `ComfyUI (NVIDIA)`、`ComfyUI (AMD)`、`ComfyUI (Intel)`。
 
