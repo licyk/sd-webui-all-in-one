@@ -12,6 +12,19 @@
 绘世启动器基于 .NET 进行开发，需要安装 .NET 运行时才能运行，跟着提示安装就行了。
 
 
+## macOS 提示无法验证开发者、文件已损坏或整合包无法启动
+
+浏览器或网盘下载的 macOS 整合包可能带有 `com.apple.quarantine` 隔离属性，导致 `launch.command`、内置 Python 或启动器无法运行。确认整合包来自可信来源后，先解压整合包，再右键解压目录中的 `解除 macOS 隔离属性.command`，选择“打开”并确认运行。
+
+如果修复脚本也被 macOS 阻止，请打开终端，对整合包解压目录运行：
+
+```bash
+xattr -dr com.apple.quarantine "/完整的整合包解压目录"
+```
+
+命令执行成功后重新运行 `launch.command`。不要对来源不明的文件或不相关目录解除隔离属性。
+
+
 ## 运行 PowerShell 脚本闪退
 先重新运行一次 `configure_env.bat` 脚本，完成环境配置后再运行 PowerShell 脚本。
 

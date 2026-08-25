@@ -94,6 +94,38 @@ exec "$SCRIPT_DIR/launch.sh" "$@"
     save_path.chmod(0o755)
 
 
+def generate_remove_macos_quarantine_command(base_path: Path) -> None:
+    content = r"""
+#!/usr/bin/env bash
+set -u
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+echo "即将解除以下整合包目录的 macOS 隔离属性："
+echo "$SCRIPT_DIR"
+echo
+
+if ! command -v xattr >/dev/null 2>&1; then
+    echo "未找到 macOS xattr 命令，无法解除隔离属性。" >&2
+    exit_code=1
+elif xattr -dr com.apple.quarantine "$SCRIPT_DIR"; then
+    echo "隔离属性已解除，现在可以运行 launch.command。"
+    exit_code=0
+else
+    exit_code=$?
+    echo "解除隔离属性失败，请根据上方错误信息检查目录权限。" >&2
+fi
+
+echo
+read -r -p "按回车键关闭窗口..."
+exit "$exit_code"
+""".strip()
+    save_path = base_path / "解除 macOS 隔离属性.command"
+    print("[INFO] 生成 macOS 隔离属性修复脚本")
+    write_content_to_file(content=content, save_path=save_path)
+    save_path.chmod(0o755)
+
+
 def generate_launch_hanamizuki_bat(base_path: Path) -> None:
     content = r"""
 @echo off
@@ -278,15 +310,14 @@ def main() -> None:
 
 ！！！本整合包免费提供，如您通过其他渠道付费获得本整合包，请立即退款并投诉相应商家！！！
 """.strip()
-    unix_help_content = """
+    linux_help_content = """
 本整合包已包含独立 Python 环境。
 启动和管理脚本依赖 PowerShell 7，请先安装 pwsh 并确保可从终端直接运行。
 更新内核、更新扩展等 Git 操作依赖系统 Git，请先安装 git 并确保可从终端直接运行。
 Hanafubuki 启动器已包含在整合包中。
 
-启动 ComfyUI：
-    Linux：在终端运行 ./launch.sh
-    macOS：双击 launch.command，或在终端运行 ./launch.sh
+启动整合包：
+    在终端运行 ./launch.sh
 
 使用该整合包启动前请阅读本说明。
 更多说明请阅读: https://licyk.github.io/sd-webui-all-in-one/portable/portable
@@ -294,9 +325,33 @@ Hanafubuki 启动器已包含在整合包中。
 
 ！！！本整合包免费提供，如您通过其他渠道付费获得本整合包，请立即退款并投诉相应商家！！！
 """.strip()
-    help_content = (
-        windows_help_content if args.platform == "windows" else unix_help_content
-    )
+    macos_help_content = """
+【macOS 首次使用前必做】
+macOS 可能为浏览器或网盘下载的整合包添加隔离属性，导致 launch.command、内置 Python 或启动器无法运行，并可能提示“无法验证开发者”或“文件已损坏”。
+请确认整合包来自可信来源，解压后右键“解除 macOS 隔离属性.command”，选择“打开”并确认运行。
+如果该修复脚本也被 macOS 阻止，请打开终端，对整合包解压目录运行：
+    xattr -dr com.apple.quarantine "/完整的整合包解压目录"
+命令执行成功后，再运行 launch.command。请勿对来源不明的文件或不相关目录解除隔离属性。
+
+本整合包已包含独立 Python 环境。
+启动和管理脚本依赖 PowerShell 7，请先安装 pwsh 并确保可从终端直接运行。
+更新内核、更新扩展等 Git 操作依赖系统 Git，请先安装 git 并确保可从终端直接运行。
+Hanafubuki 启动器已包含在整合包中。
+
+启动整合包：
+    双击 launch.command，或在终端运行 ./launch.sh
+
+使用该整合包启动前请阅读本说明。
+更多说明请阅读: https://licyk.github.io/sd-webui-all-in-one/portable/portable
+整合包支持使用启动器运行，启动器的使用方法请阅读：https://licyk.github.io/sd-webui-all-in-one/tools/launcher-gui
+
+！！！本整合包免费提供，如您通过其他渠道付费获得本整合包，请立即退款并投诉相应商家！！！
+""".strip()
+    help_content = {
+        "windows": windows_help_content,
+        "linux": linux_help_content,
+        "macos": macos_help_content,
+    }[args.platform]
 
     sign_content = """
 https://space.bilibili.com/46497516
@@ -373,6 +428,7 @@ https://space.bilibili.com/46497516
     else:
         generate_launch_sh(docs_path)
         if args.platform == "macos":
+            generate_remove_macos_quarantine_command(docs_path)
             generate_launch_command(docs_path)
 
 

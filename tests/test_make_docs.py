@@ -23,9 +23,8 @@ def test_make_docs_defaults_to_windows(tmp_path: Path):
 
     assert (tmp_path / "启动.bat").is_file()
     assert not (tmp_path / "launch.sh").exists()
-    assert "configure_env.bat" in (tmp_path / "必读使用说明.txt").read_text(
-        encoding="utf-8"
-    )
+    assert not (tmp_path / "解除 macOS 隔离属性.command").exists()
+    assert "configure_env.bat" in (tmp_path / "必读使用说明.txt").read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("platform", ["linux", "macos"])
@@ -46,7 +45,24 @@ def test_make_docs_generates_unix_launchers(tmp_path: Path, platform: str):
     if launch_command.exists() and os.name != "nt":
         assert os.access(launch_command, os.X_OK)
 
+    quarantine_command = tmp_path / "解除 macOS 隔离属性.command"
+    assert quarantine_command.exists() is (platform == "macos")
+    if quarantine_command.exists():
+        quarantine_content = quarantine_command.read_text(encoding="utf-8")
+        assert 'xattr -dr com.apple.quarantine "$SCRIPT_DIR"' in quarantine_content
+        assert "|| true" not in quarantine_content
+        if os.name != "nt":
+            assert os.access(quarantine_command, os.X_OK)
+
     help_content = (tmp_path / "必读使用说明.txt").read_text(encoding="utf-8")
     assert "PowerShell 7" in help_content
     assert "系统 Git" in help_content
     assert "Hanafubuki" in help_content
+    assert "启动整合包：" in help_content
+    assert "启动 ComfyUI" not in help_content
+    if platform == "macos":
+        assert "解除 macOS 隔离属性.command" in help_content
+        assert "xattr -dr com.apple.quarantine" in help_content
+        assert "完整的整合包解压目录" in help_content
+    else:
+        assert "com.apple.quarantine" not in help_content

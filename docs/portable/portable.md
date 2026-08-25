@@ -3,13 +3,25 @@
 ## 简介
 基于 [sd-webui-all-in-one/Installer](../installer/index.md) 全自动构建的整合包，下载解压后即可使用。Stable Diffusion WebUI、ComfyUI、InvokeAI、Fooocus、SD Trainer、Qwen TTS WebUI 六类产品及其受支持变体已经内置 Hanafubuki 便携版，解压后优先运行 `hanafubuki-launcher.exe`；Installer 生成的 PowerShell 管理脚本继续作为直接管理和故障恢复入口。
 
-可以使用 [AI 整合包下载器](../tools/portable-downloader.md) 下载并自动解压整合包；如果手动下载，整合包使用 7z 格式打包，若 Windows 系统不支持解压该格式，请使用 [7-Zip](https://7-zip.org/) / [Bandizip](https://www.bandisoft.com/bandizip/) 或者其他支持 7z 格式的工具进行解压。运行 `hanafubuki-launcher.exe` 不要求先执行 `configure_env.bat`；只有直接运行 PowerShell 管理脚本时，才需要先完成环境配置。
+可以使用 [AI 整合包下载器](../tools/portable-downloader.md) 下载并自动解压整合包。Windows 整合包通常使用 7z 格式；若系统不支持该格式，请使用 [7-Zip](https://7-zip.org/) / [Bandizip](https://www.bandisoft.com/bandizip/) 或其他支持 7z 格式的工具解压。Linux 和 macOS 整合包使用 `tar.gz` 格式。运行 `hanafubuki-launcher.exe` 不要求先执行 `configure_env.bat`；只有直接运行 PowerShell 管理脚本时，才需要先完成环境配置。
 
 Windows 上运行 `.ps1` PowerShell 脚本时，不要左键双击；左键双击通常会用记事本或默认编辑器打开脚本，而不是执行脚本。正确方式是右键该脚本，选择 `使用 PowerShell 运行`。如果右键运行后窗口闪退，先运行同级目录的 `configure_env.bat`，完成环境配置后再右键运行 `.ps1` 脚本。
 
 部分 WebUI 支持使用绘世启动器进行启动和管理，运行`hanamizuki.bat`即可启动绘世启动器，如果没有这个文件说明绘世启动器不支持启动和管理该 WebUI。
 
 首次运行 `hanafubuki-launcher.exe` 时，Launcher 会下载、校验并启动 Hanafubuki 本体，然后发现放在旁边的 WebUI。未自动发现时，在 Hanafubuki 首页选择“添加实例”，再使用“导入现有实例”或“扫描系统”。SD Scripts、Musubi Tuner 当前继续使用 Installer 管理脚本或 [Bash TUI / CLI Launcher](../tools/launcher-tui.md)。
+
+## macOS 首次启动前解除隔离
+
+macOS 可能为浏览器或网盘下载的整合包添加 `com.apple.quarantine` 隔离属性，导致 `launch.command`、整合包内置 Python 或启动器无法运行，并可能提示“无法验证开发者”或“文件已损坏”。确认整合包来自可信来源后，先完成解压，再右键解压目录中的 `解除 macOS 隔离属性.command`，选择“打开”并确认运行。解除完成后再运行 `launch.command`。
+
+如果修复脚本本身也被 macOS 阻止，请打开终端，输入下面的命令，将最后的示例路径替换为整合包解压目录的完整路径：
+
+```bash
+xattr -dr com.apple.quarantine "/完整的整合包解压目录"
+```
+
+也可以先在终端输入 `xattr -dr com.apple.quarantine `（末尾保留一个空格），再把整合包解压目录拖入终端窗口并按回车。该命令会递归移除指定目录中的隔离属性，请勿对来源不明的文件或不相关目录执行。
 
 ## 管理脚本
 
@@ -36,6 +48,9 @@ Windows 上运行 `.ps1` PowerShell 脚本时，不要左键双击；左键双�
 | `activate.ps1` | 激活整合包环境。 | 适合已经打开 PowerShell 后手动进入当前整合包环境。 |
 | `launch_*_installer.ps1` | 重新运行对应 Installer。 | 管理脚本损坏、Python / Git 环境缺失，或需要重新修复安装时使用。 |
 | `hanamizuki.bat` | 启动绘世启动器。 | 只有支持绘世启动器管理的整合包才会提供。 |
+| `launch.sh` | 在 Linux 或 macOS 终端中启动对应 WebUI / 工具。 | 需要提前安装 PowerShell 7，并确保可以从终端运行 `pwsh`。 |
+| `launch.command` | 在 macOS 中启动对应 WebUI / 工具。 | macOS 整合包提供；首次运行前应先解除整合包目录的隔离属性。 |
+| `解除 macOS 隔离属性.command` | 递归移除当前整合包目录的 `com.apple.quarantine` 属性。 | 仅 macOS 整合包提供；只应对从可信来源下载的整合包运行。 |
 
 ## 中文 `.bat` 快捷脚本
 
