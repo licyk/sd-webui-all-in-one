@@ -1,6 +1,15 @@
 import argparse
 import shutil
+import sys
 from pathlib import Path
+
+
+def configure_console_output() -> None:
+    """Keep status output safe on Windows consoles without UTF-8 support."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(errors="backslashreplace")
 
 
 def get_args() -> argparse.Namespace:
@@ -433,4 +442,5 @@ https://space.bilibili.com/46497516
 
 
 if __name__ == "__main__":
+    configure_console_output()
     main()

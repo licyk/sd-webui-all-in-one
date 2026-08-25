@@ -9,8 +9,6 @@ import subprocess
 from pathlib import Path
 
 
-TIMEOUT_EXIT_CODE = 124
-LAUNCH_ERROR_EXIT_CODE = 125
 STOP_WAIT_SECONDS = 15
 
 
@@ -49,7 +47,7 @@ def stop_process_tree(process: subprocess.Popen[object]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the requested command and return its exit status."""
+    """Run the requested command without propagating failures to the caller."""
     parser = argparse.ArgumentParser(
         description="Run a command and terminate its process tree after a timeout."
     )
@@ -66,17 +64,19 @@ def main(argv: list[str] | None = None) -> int:
         help="Working directory for the command.",
     )
     parser.add_argument("command", nargs=argparse.REMAINDER)
-    args = parser.parse_args(argv)
+    try:
+        args = parser.parse_args(argv)
+        if args.timeout <= 0:
+            parser.error("--timeout must be greater than zero")
+        command = args.command[1:] if args.command[:1] == ["--"] else args.command
+        if not command:
+            parser.error("command is required; put it after --")
 
-    if args.timeout <= 0:
-        parser.error("--timeout must be greater than zero")
-    command = args.command[1:] if args.command[:1] == ["--"] else args.command
-    if not command:
-        parser.error("command is required; put it after --")
-
-    cwd = args.cwd.resolve()
-    if not cwd.is_dir():
-        parser.error(f"working directory does not exist: {cwd}")
+        cwd = args.cwd.resolve()
+        if not cwd.is_dir():
+            parser.error(f"working directory does not exist: {cwd}")
+    except SystemExit:
+        return 0
 
     popen_kwargs: dict[str, object] = {"cwd": cwd}
     if os.name == "nt":
@@ -94,10 +94,11 @@ def main(argv: list[str] | None = None) -> int:
         process = subprocess.Popen(command, **popen_kwargs)
     except OSError as error:
         print(f"::error::Unable to launch command: {error}", flush=True)
-        return
+        return 0
 
     try:
-        return process.wait(timeout=args.timeout)
+        process.wait(timeout=args.timeout)
+        return 0
     except subprocess.TimeoutExpired:
         print(
             f"::warning::Timed out after {args.timeout}s; stopping process "
@@ -117,7 +118,8 @@ def main(argv: list[str] | None = None) -> int:
                 "forced tree termination.",
                 flush=True,
             )
+        return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

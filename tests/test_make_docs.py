@@ -27,6 +27,18 @@ def test_make_docs_defaults_to_windows(tmp_path: Path):
     assert "configure_env.bat" in (tmp_path / "必读使用说明.txt").read_text(encoding="utf-8")
 
 
+def test_make_docs_handles_non_utf8_console_output(tmp_path: Path):
+    (tmp_path / "launch.ps1").touch()
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "ascii"
+
+    command = [sys.executable, str(MAKE_DOCS), str(tmp_path)]
+    subprocess.run(command, check=True, env=env)
+
+    assert (tmp_path / "必读使用说明.txt").is_file()
+    assert (tmp_path / "启动.bat").is_file()
+
+
 @pytest.mark.parametrize("platform", ["linux", "macos"])
 def test_make_docs_generates_unix_launchers(tmp_path: Path, platform: str):
     (tmp_path / "launch.ps1").touch()
