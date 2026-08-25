@@ -76,7 +76,7 @@ def main(argv: list[str] | None = None) -> int:
         if not cwd.is_dir():
             parser.error(f"working directory does not exist: {cwd}")
     except SystemExit:
-        return 0
+        return
 
     popen_kwargs: dict[str, object] = {"cwd": cwd}
     if os.name == "nt":
@@ -94,11 +94,11 @@ def main(argv: list[str] | None = None) -> int:
         process = subprocess.Popen(command, **popen_kwargs)
     except OSError as error:
         print(f"::error::Unable to launch command: {error}", flush=True)
-        return 0
+        return
 
     try:
         process.wait(timeout=args.timeout)
-        return 0
+        return
     except subprocess.TimeoutExpired:
         print(
             f"::warning::Timed out after {args.timeout}s; stopping process "
@@ -118,8 +118,8 @@ def main(argv: list[str] | None = None) -> int:
                 "forced tree termination.",
                 flush=True,
             )
-        return 0
+        return
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
