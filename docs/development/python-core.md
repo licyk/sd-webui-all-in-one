@@ -57,7 +57,7 @@ Python 包入口定义在 `pyproject.toml`：
 - 外部命令执行优先走 `sd_webui_all_in_one.cmd.run_cmd()`，方便统一日志、错误和命令预处理。
 - 文件下载优先走 `downloader.download_file()` 或 `download_archive_and_unpack()`，避免每个模块自己实现下载。
 - 下载后端中 `aria2` 仍是功能最完整的首选；`requests` 使用 aria2-like 的 `split`、`max_connection_per_server`、`min_split_size`、`piece_length` 模型支持 HTTP Range 分片下载、控制文件优先恢复、断点续传和分片级重试。探测确认远端不支持 Range 时，全新任务自动降级为单流；已有断点默认由 `always_resume=True` 保护并报错保留，只有显式关闭该选项且达到 `max_resume_failure_tries` 策略时才会丢弃进度重头下载。`urllib` 作为无第三方依赖时的单连接兼容 fallback。
-- `requests` 对规范化后的最终目标使用“等待后复用”的进程内互斥，并在同目录保留 `.文件名.download.lock` advisory lock 文件覆盖跨进程任务；锁文件是持久协调点，不应在运行时清理。该锁依赖本地文件系统正确实现 `flock`（Windows 使用 `msvcrt.locking`），不保证不支持文件锁语义的网络文件系统。
+- `requests` 对规范化后的最终目标使用“等待后复用”的进程内互斥，并通过系统锁覆盖跨进程任务。POSIX 下载期间会在同目录创建 `.文件名.download.lock` advisory lock，退出临界区时持锁删除，并由等待者校验文件 inode 后重试，避免删除锁文件造成并发绕过；Windows 使用命名互斥量，不创建磁盘锁文件。POSIX 锁依赖本地文件系统正确实现 `flock`，不保证不支持文件锁语义的网络文件系统。
 - Range 数据提交遵循“数据先于状态”：每次进度回调前刷新 Python 文件缓冲，保存 state 前对临时数据文件执行 `fsync`，state 使用临时文件写入、`fsync`、原子替换并尽力同步父目录。这里选择在状态提交点执行 `fsync`，而不是每个网络 chunk 都同步磁盘，以兼顾崩溃一致性和吞吐。
 - 统一入口的已有文件默认策略是 `resume`，还可显式选择 `reuse`、`verify`、`overwrite` 或 `rename`。`requests` 将顺序正式文件复制为临时断点后再原子替换，覆盖下载失败不会破坏原文件；aria2 后端把相同策略映射到 `continue`、`allow-overwrite` 和 `auto-file-renaming` 单任务选项。
 - 下载文件名当前只允许单个文件名，不允许相对子目录；统一入口和两个主要后端都会拒绝绝对路径、`..`、驱动器/UNC 路径、NUL 和 Windows 保留名称，同时保留合法 Unicode 与空格文件名。

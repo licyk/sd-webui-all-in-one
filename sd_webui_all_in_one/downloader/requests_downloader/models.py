@@ -1,5 +1,6 @@
 """Requests 下载器共享模型、错误和目标文件策略。"""
 
+import hashlib
 import os
 import threading
 from collections.abc import Iterator, Sequence
@@ -134,6 +135,12 @@ def _lock_path_for(target_file: Path) -> Path:
     return target_file.with_name(f".{target_file.name}.download.lock")
 
 
+def _windows_mutex_name(target_file: Path) -> str:
+    normalized_path = os.path.normcase(str(target_file))
+    path_digest = hashlib.sha256(os.fsencode(normalized_path)).hexdigest()
+    return f"Local\\sd-webui-all-in-one-download-{path_digest}"
+
+
 def _resolve_existing_file_policy(
     existing_file_policy: ExistingFilePolicy | None,
     *,
@@ -188,46 +195,95 @@ def _verify_existing_file(
 
 
 @contextmanager
+def _posix_target_download_lock(lock_path: Path) -> Iterator[None]:
+    """获取可安全删除的 POSIX 文件锁。"""
+    import fcntl
+
+    while True:
+        lock_file = lock_path.open("a+b")
+        try:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                lock_path_stat = lock_path.stat()
+            except FileNotFoundError:
+                pass
+            else:
+                if os.path.samestat(os.fstat(lock_file.fileno()), lock_path_stat):
+                    break
+        except BaseException:
+            lock_file.close()
+            raise
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+        lock_file.close()
+
+    try:
+        yield
+    finally:
+        try:
+            lock_path.unlink(missing_ok=True)
+        finally:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+            lock_file.close()
+
+
+@contextmanager
+def _windows_target_download_lock(target_file: Path) -> Iterator[None]:
+    """使用 Windows 命名互斥量协调同一目标，不创建磁盘锁文件。"""
+    import ctypes
+    from ctypes import wintypes
+
+    win_dll = getattr(ctypes, "WinDLL")
+    win_error = getattr(ctypes, "WinError")
+    get_last_error = getattr(ctypes, "get_last_error")
+    kernel32 = win_dll("kernel32.dll", use_last_error=True)
+    kernel32.CreateMutexW.argtypes = (ctypes.c_void_p, wintypes.BOOL, wintypes.LPCWSTR)
+    kernel32.CreateMutexW.restype = wintypes.HANDLE
+    kernel32.WaitForSingleObject.argtypes = (wintypes.HANDLE, wintypes.DWORD)
+    kernel32.WaitForSingleObject.restype = wintypes.DWORD
+    kernel32.ReleaseMutex.argtypes = (wintypes.HANDLE,)
+    kernel32.ReleaseMutex.restype = wintypes.BOOL
+    kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
+    kernel32.CloseHandle.restype = wintypes.BOOL
+
+    mutex_handle = kernel32.CreateMutexW(None, False, _windows_mutex_name(target_file))
+    if not mutex_handle:
+        raise win_error(get_last_error())
+
+    wait_result = kernel32.WaitForSingleObject(mutex_handle, 0xFFFFFFFF)
+    if wait_result not in {0x00000000, 0x00000080}:
+        error = win_error(get_last_error())
+        kernel32.CloseHandle(mutex_handle)
+        raise error
+
+    try:
+        yield
+    finally:
+        try:
+            if not kernel32.ReleaseMutex(mutex_handle):
+                raise win_error(get_last_error())
+        finally:
+            kernel32.CloseHandle(mutex_handle)
+
+
+@contextmanager
 def _target_download_lock(target_file: Path) -> Iterator[None]:
-    """同一目标采用等待语义，并通过 advisory lock 覆盖跨进程任务"""
+    """同一目标采用等待语义，并通过系统锁覆盖跨进程任务。"""
     normalized_target = target_file.resolve()
     with _TARGET_PATH_LOCKS_GUARD:
         path_lock, users = _TARGET_PATH_LOCKS.get(normalized_target, (threading.Lock(), 0))
         _TARGET_PATH_LOCKS[normalized_target] = (path_lock, users + 1)
 
     path_lock.acquire()
-    lock_file = None
     try:
-        lock_path = _lock_path_for(normalized_target)
-        lock_path.parent.mkdir(parents=True, exist_ok=True)
-        lock_file = lock_path.open("a+b")
         if os.name == "nt":
-            import msvcrt
-
-            if lock_file.tell() == 0:
-                lock_file.write(b"\0")
-                lock_file.flush()
-            lock_file.seek(0)
-            msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
+            with _windows_target_download_lock(normalized_target):
+                yield
         else:
-            import fcntl
-
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
-        yield
+            lock_path = _lock_path_for(normalized_target)
+            lock_path.parent.mkdir(parents=True, exist_ok=True)
+            with _posix_target_download_lock(lock_path):
+                yield
     finally:
-        if lock_file is not None:
-            try:
-                if os.name == "nt":
-                    import msvcrt
-
-                    lock_file.seek(0)
-                    msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
-                else:
-                    import fcntl
-
-                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
-            finally:
-                lock_file.close()
         path_lock.release()
         with _TARGET_PATH_LOCKS_GUARD:
             current_lock, users = _TARGET_PATH_LOCKS[normalized_target]

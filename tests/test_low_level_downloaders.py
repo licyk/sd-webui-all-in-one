@@ -2067,6 +2067,7 @@ def test_requests_downloader_serializes_same_target_and_reuses_result(monkeypatc
     assert results == [tmp_path / "model.bin", tmp_path / "model.bin"]
     assert get_calls == ["bytes=0-"]
     assert results[0].read_bytes() == payload
+    assert not requests_models._lock_path_for(results[0]).exists()
     assert not requests_models._TARGET_PATH_LOCKS
 
 
@@ -2086,9 +2087,23 @@ def test_requests_downloader_target_lock_is_scoped_by_directory(tmp_path):
     assert first_entered.wait(timeout=2)
     with requests_models._target_download_lock(second_target):
         assert requests_models._lock_path_for(second_target).exists()
+    assert not requests_models._lock_path_for(second_target).exists()
     release_first.set()
     thread.join(timeout=2)
     assert not thread.is_alive()
+    assert not requests_models._lock_path_for(first_target).exists()
+
+
+def test_requests_downloader_target_lock_is_removed_after_error(tmp_path):
+    target = tmp_path / "model.bin"
+
+    with pytest.raises(RuntimeError, match="download failed"):
+        with requests_models._target_download_lock(target):
+            assert requests_models._lock_path_for(target).exists()
+            raise RuntimeError("download failed")
+
+    assert not requests_models._lock_path_for(target).exists()
+    assert not requests_models._TARGET_PATH_LOCKS
 
 
 def test_requests_downloader_target_lock_waits_across_processes(tmp_path):
@@ -2113,6 +2128,7 @@ def test_requests_downloader_target_lock_waits_across_processes(tmp_path):
     stdout, stderr = process.communicate(timeout=3)
     assert process.returncode == 0, stderr
     assert stdout.strip() == "acquired"
+    assert not requests_models._lock_path_for(target).exists()
 
 
 def test_requests_downloader_flushes_data_before_periodic_and_final_state(monkeypatch, tmp_path):
