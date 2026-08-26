@@ -3,6 +3,11 @@ import os
 import pytest
 
 from sd_webui_all_in_one.base_manager import base as base_module
+from sd_webui_all_in_one.base_manager.base import environment as base_environment
+from sd_webui_all_in_one.base_manager.base import model_downloads as base_model_downloads
+from sd_webui_all_in_one.base_manager.base import pytorch as base_pytorch
+from sd_webui_all_in_one.base_manager.base import repositories as base_repositories
+from sd_webui_all_in_one.base_manager.base import runtime as base_runtime
 from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
 
 
@@ -29,7 +34,7 @@ def test_clone_repo_rejects_file_and_skips_non_empty_directory(monkeypatch, tmp_
     target_dir = tmp_path / "repo"
     target_dir.mkdir()
     (target_dir / "existing.txt").write_text("existing", encoding="utf-8")
-    monkeypatch.setattr(base_module.git_warpper, "clone", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should skip clone")))
+    monkeypatch.setattr(base_repositories.git_warpper, "clone", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should skip clone")))
 
     base_module.clone_repo("https://github.com/example/repo", target_dir)
 
@@ -55,9 +60,9 @@ def test_clone_repo_clones_into_empty_directory(monkeypatch, tmp_path):
         dst.mkdir(parents=True, exist_ok=True)
         (dst / "file.txt").write_text((src / "file.txt").read_text(encoding="utf-8"), encoding="utf-8")
 
-    monkeypatch.setattr(base_module, "remove_files", fake_remove_files)
-    monkeypatch.setattr(base_module.git_warpper, "clone", fake_clone)
-    monkeypatch.setattr(base_module, "copy_files", fake_copy_files)
+    monkeypatch.setattr(base_repositories, "remove_files", fake_remove_files)
+    monkeypatch.setattr(base_repositories.git_warpper, "clone", fake_clone)
+    monkeypatch.setattr(base_repositories, "copy_files", fake_copy_files)
 
     base_module.clone_repo("https://github.com/example/repo", target)
 
@@ -83,8 +88,8 @@ def test_launch_webui_builds_command_env_and_wraps_runtime_errors(monkeypatch, t
     def fake_print_divider(char=None):
         events.append(("divider", char))
 
-    monkeypatch.setattr(base_module, "run_cmd", fake_run_cmd)
-    monkeypatch.setattr(base_module, "print_divider", fake_print_divider)
+    monkeypatch.setattr(base_runtime, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(base_runtime, "print_divider", fake_print_divider)
     base_module.launch_webui(webui, "launch.py", launch_args=["--api"], custom_env={"PYTHONPATH": "existing"})
 
     assert captured["command"][-2:] == [(webui / "launch.py").as_posix(), "--api"]
@@ -96,7 +101,7 @@ def test_launch_webui_builds_command_env_and_wraps_runtime_errors(monkeypatch, t
         events.append("run_fail")
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(base_module, "run_cmd", fail_run_cmd)
+    monkeypatch.setattr(base_runtime, "run_cmd", fail_run_cmd)
     events.clear()
 
     with pytest.raises(WebUiRuntimeError) as exc:
@@ -114,7 +119,7 @@ def test_pre_download_model_for_webui_skips_existing_or_missing_and_downloads_em
         calls.append(kwargs)
         return [kwargs["base_path"] / "models/model.safetensors"]
 
-    monkeypatch.setattr(base_module, "download_model", fake_download_model)
+    monkeypatch.setattr(base_model_downloads, "download_model", fake_download_model)
     webui = tmp_path / "webui"
     webui.mkdir()
 
@@ -162,7 +167,7 @@ def test_run_env_check_tasks_filters_and_aggregates_errors():
     with pytest.raises(ValueError, match="missing"):
         base_module.run_env_check_tasks(tasks, include_checks=["missing"], error_message="failed")
 
-    with pytest.raises(base_module.AggregateError) as exc:
+    with pytest.raises(base_environment.AggregateError) as exc:
         base_module.run_env_check_tasks(tasks, include_checks=["fail"], error_message="failed")
     assert calls == ["alpha", "fail"]
     assert len(exc.value.exceptions) == 1
@@ -190,7 +195,7 @@ def test_apply_github_raw_file_mirror_selects_first_working_list_entry(monkeypat
             raise OSError("down")
         return FakeResponse(200)
 
-    monkeypatch.setattr(base_module.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(base_repositories.urllib.request, "urlopen", fake_urlopen)
 
     result = base_module.apply_github_raw_file_mirror(
         "owner/repo/main/index.json",
@@ -207,12 +212,12 @@ def test_install_pytorch_for_webui_only_installs_missing_packages(monkeypatch):
     def fake_version(name):
         if name == "torch":
             return "2.0.0"
-        raise base_module.importlib.metadata.PackageNotFoundError
+        raise base_pytorch.importlib.metadata.PackageNotFoundError
 
-    monkeypatch.setattr(base_module.importlib.metadata, "version", fake_version)
-    monkeypatch.setattr(base_module, "install_pytorch", lambda **kwargs: calls.append(kwargs))
+    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", fake_version)
+    monkeypatch.setattr(base_pytorch, "install_pytorch", lambda **kwargs: calls.append(kwargs))
 
-    base_module.install_pytorch_for_webui("torch==2.0.0", "xformers==0.0.1", {"PIP_INDEX_URL": "x"}, use_uv=False)
+    base_pytorch.install_pytorch_for_webui("torch==2.0.0", "xformers==0.0.1", {"PIP_INDEX_URL": "x"}, use_uv=False)
 
     assert calls == [
         {
@@ -224,6 +229,6 @@ def test_install_pytorch_for_webui_only_installs_missing_packages(monkeypatch):
     ]
 
     calls.clear()
-    monkeypatch.setattr(base_module.importlib.metadata, "version", lambda _name: "installed")
-    base_module.install_pytorch_for_webui("torch", "xformers")
+    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda _name: "installed")
+    base_pytorch.install_pytorch_for_webui("torch", "xformers")
     assert calls == []

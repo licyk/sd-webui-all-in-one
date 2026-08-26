@@ -17,7 +17,12 @@ from sd_webui_all_in_one.base_manager import (
     sd_webui_base,
 )
 from sd_webui_all_in_one.base_manager import snapshot as snapshot_utils
+from sd_webui_all_in_one.base_manager.snapshot import collection as snapshot_collection
+from sd_webui_all_in_one.base_manager.snapshot import storage as snapshot_storage
 from sd_webui_all_in_one.base_manager import snapshot_restore as restore_utils
+from sd_webui_all_in_one.base_manager.snapshot_restore import extensions as restore_extensions
+from sd_webui_all_in_one.base_manager.snapshot_restore import packages as restore_packages
+from sd_webui_all_in_one.base_manager.snapshot_restore import service as restore_service
 from sd_webui_all_in_one.pytorch_manager import mirror_selector
 from sd_webui_all_in_one.cli_manager import (
     comfyui_cli,
@@ -118,7 +123,7 @@ def _package_snapshot(
     ],
 )
 def test_snapshot_restore_local_path_from_url_handles_common_file_url_forms(url, expected):
-    assert restore_utils._local_path_from_url(url) == expected
+    assert restore_packages._local_path_from_url(url) == expected
 
 
 def test_collect_installed_packages_reads_standard_source_metadata(monkeypatch):
@@ -154,7 +159,7 @@ def test_collect_installed_packages_reads_standard_source_metadata(monkeypatch):
             },
         ),
     ]
-    monkeypatch.setattr(snapshot_utils.metadata, "distributions", lambda: distributions)
+    monkeypatch.setattr(snapshot_collection.metadata, "distributions", lambda: distributions)
 
     packages = snapshot_utils.collect_installed_packages()
 
@@ -174,8 +179,8 @@ def test_collect_installed_packages_reads_standard_source_metadata(monkeypatch):
 
 
 def test_collect_system_info_records_system_and_architecture(monkeypatch):
-    monkeypatch.setattr(snapshot_utils.platform, "system", lambda: "TestOS")
-    monkeypatch.setattr(snapshot_utils.platform, "machine", lambda: "arm64")
+    monkeypatch.setattr(snapshot_collection.platform, "system", lambda: "TestOS")
+    monkeypatch.setattr(snapshot_collection.platform, "machine", lambda: "arm64")
 
     system = snapshot_utils.collect_system_info()
 
@@ -194,8 +199,8 @@ def test_collect_repository_snapshot_includes_dirty_flag(monkeypatch, tmp_path):
         commit_date="2026-06-18 00:00:00 +0000",
         message="snapshot",
     )
-    monkeypatch.setattr(snapshot_utils, "inspect_repository", lambda _path: state)
-    monkeypatch.setattr(snapshot_utils, "run_git_output", lambda _path, *args: " M file.py\n")
+    monkeypatch.setattr(snapshot_collection, "inspect_repository", lambda _path: state)
+    monkeypatch.setattr(snapshot_collection, "run_git_output", lambda _path, *args: " M file.py\n")
 
     data = snapshot_utils.collect_repository_snapshot(tmp_path)
 
@@ -222,7 +227,7 @@ def test_collect_git_extensions_filters_non_git_directories(monkeypatch, tmp_pat
             dirty=False,
         )
 
-    monkeypatch.setattr(snapshot_utils, "collect_repository_snapshot", fake_collect)
+    monkeypatch.setattr(snapshot_collection, "collect_repository_snapshot", fake_collect)
 
     extensions = snapshot_utils.collect_git_extensions(ext_root, enabled_resolver=lambda name, _path: name == "git-ext")
 
@@ -335,7 +340,7 @@ def test_output_snapshot_writes_default_or_explicit_directory(monkeypatch, tmp_p
     default_dir = tmp_path / "snapshots"
     default_file = default_dir / "demo-2026-06-18T000000Z.json"
 
-    monkeypatch.setattr(snapshot_utils, "SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR", default_dir)
+    monkeypatch.setattr(snapshot_storage, "SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR", default_dir)
 
     assert output_snapshot(lambda: snapshot) == default_file
     assert json.loads(default_file.read_text(encoding="utf-8")) == snapshot_json
@@ -498,7 +503,7 @@ def test_load_legacy_snapshot_without_system_field_uses_current_system(monkeypat
     snapshot_data.pop("system")
     output = tmp_path / "legacy.json"
     output.write_text(json.dumps(snapshot_data), encoding="utf-8")
-    monkeypatch.setattr(snapshot_utils, "collect_system_info", lambda: snapshot_utils.SystemSnapshot(system="CurrentOS", architecture="riscv64"))
+    monkeypatch.setattr(snapshot_collection, "collect_system_info", lambda: snapshot_utils.SystemSnapshot(system="CurrentOS", architecture="riscv64"))
 
     loaded = snapshot_utils.load_snapshot(output)
 
@@ -514,7 +519,7 @@ def test_restore_webui_snapshot_rejects_mismatched_webui_type(monkeypatch, tmp_p
     def fail_restore(*_args, **_kwargs):
         raise AssertionError("restore should not run for mismatched snapshots")
 
-    monkeypatch.setattr(restore_utils, "restore_python_packages", fail_restore)
+    monkeypatch.setattr(restore_service, "restore_python_packages", fail_restore)
 
     with pytest.raises(ValueError, match="快照 WebUI 类型不匹配"):
         restore_utils.restore_webui_snapshot(
@@ -533,7 +538,7 @@ def test_restore_webui_snapshot_rejects_missing_kernel_before_package_restore(mo
     def fail_restore(*_args, **_kwargs):
         raise AssertionError("package restore should not run when kernel directory is missing")
 
-    monkeypatch.setattr(restore_utils, "restore_python_packages", fail_restore)
+    monkeypatch.setattr(restore_service, "restore_python_packages", fail_restore)
 
     with pytest.raises(FileNotFoundError, match="内核目录不存在"):
         restore_utils.restore_webui_snapshot(
@@ -559,14 +564,14 @@ def test_restore_webui_snapshot_allows_missing_path_for_package_kernel_webui(mon
     snapshot_utils.save_snapshot(snapshot, output)
 
     events = []
-    monkeypatch.setattr(restore_utils, "apply_git_base_config_and_github_mirror", lambda **kwargs: kwargs["origin_env"])
-    monkeypatch.setattr(restore_utils, "restore_python_packages", lambda snapshot, options: events.append(("packages", snapshot.webui.type)))
+    monkeypatch.setattr(restore_service, "apply_git_base_config_and_github_mirror", lambda **kwargs: kwargs["origin_env"])
+    monkeypatch.setattr(restore_service, "restore_python_packages", lambda snapshot, options: events.append(("packages", snapshot.webui.type)))
     monkeypatch.setattr(
-        restore_utils,
+        restore_service,
         "restore_git_repository",
         lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("package-kernel WebUI should not restore Git kernel")),
     )
-    monkeypatch.setattr(restore_utils, "restore_extensions", lambda snapshot, webui_path, options: events.append(("extensions", webui_path)))
+    monkeypatch.setattr(restore_service, "restore_extensions", lambda snapshot, webui_path, options: events.append(("extensions", webui_path)))
 
     restore_utils.restore_webui_snapshot(
         snapshot_path=output,
@@ -601,7 +606,7 @@ def test_preview_restore_plan_reports_package_actions_and_pytorch_source(monkeyp
     snapshot_utils.save_snapshot(snapshot, output)
 
     monkeypatch.setattr(
-        restore_utils,
+        restore_packages,
         "collect_installed_packages",
         lambda: [
             _package_snapshot("demo_pkg", "1.0.0"),
@@ -610,7 +615,7 @@ def test_preview_restore_plan_reports_package_actions_and_pytorch_source(monkeyp
             _package_snapshot("pip", "25.0"),
         ],
     )
-    monkeypatch.setattr(restore_utils, "get_pytorch_mirror", lambda dtype, use_cn_mirror: ("https://torch.example/cu128", "index_url"))
+    monkeypatch.setattr(restore_packages, "get_pytorch_mirror", lambda dtype, use_cn_mirror: ("https://torch.example/cu128", "index_url"))
 
     plan = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -640,12 +645,8 @@ def test_preview_restore_plan_reports_package_actions_and_pytorch_source(monkeyp
     assert diffs["editable-local"].status == "skipped"
     assert diffs["already"].status == "unchanged"
     assert diffs["old-pkg"].status == "removed"
-    assert diffs["demo-pkg"].fields == [
-        restore_utils.DiffField(key="version", current="1.0.0", target="2.0.0")
-    ]
-    assert diffs["old-pkg"].fields == [
-        restore_utils.DiffField(key="version", current="0.1.0", target=None)
-    ]
+    assert diffs["demo-pkg"].fields == [restore_utils.DiffField(key="version", current="1.0.0", target="2.0.0")]
+    assert diffs["old-pkg"].fields == [restore_utils.DiffField(key="version", current="0.1.0", target=None)]
     assert plan.diff_summary.packages.added == 1
     assert plan.diff_summary.packages.modified == 1
     assert plan.diff_summary.packages.removed == 1
@@ -662,8 +663,8 @@ def test_preview_restore_plan_reports_pytorch_upgrade_as_modified(monkeypatch, t
     output = tmp_path / "snapshot.json"
     snapshot_utils.save_snapshot(snapshot, output)
 
-    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [_package_snapshot("torch", "2.5.0+cu124")])
-    monkeypatch.setattr(restore_utils, "get_pytorch_mirror", lambda dtype, use_cn_mirror: ("https://torch.example/cu128", "index_url"))
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [_package_snapshot("torch", "2.5.0+cu124")])
+    monkeypatch.setattr(restore_packages, "get_pytorch_mirror", lambda dtype, use_cn_mirror: ("https://torch.example/cu128", "index_url"))
 
     plan = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -675,9 +676,7 @@ def test_preview_restore_plan_reports_pytorch_upgrade_as_modified(monkeypatch, t
     assert item.action == "install_pytorch_special"
     # 同一个 PyTorch 动作同时覆盖新装和升级, 差异状态由当前版本是否存在决定。
     assert item.diff.status == "modified"
-    assert item.diff.fields == [
-        restore_utils.DiffField(key="version", current="2.5.0+cu124", target="2.7.0+cu128")
-    ]
+    assert item.diff.fields == [restore_utils.DiffField(key="version", current="2.5.0+cu124", target="2.7.0+cu128")]
 
 
 @pytest.mark.parametrize(
@@ -709,8 +708,8 @@ def test_preview_restore_plan_normalizes_rocm_pytorch_suffix(monkeypatch, tmp_pa
         return mirror_by_dtype[dtype]
 
     monkeypatch.setattr(mirror_selector.sys, "platform", platform_tag)
-    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [])
-    monkeypatch.setattr(restore_utils, "get_pytorch_mirror", fake_get_pytorch_mirror)
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_packages, "get_pytorch_mirror", fake_get_pytorch_mirror)
 
     plan = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -738,10 +737,10 @@ def test_preview_restore_plan_blocks_dirty_kernel_without_force(monkeypatch, tmp
     snapshot_utils.save_snapshot(snapshot, output)
     (tmp_path / "demo").mkdir()
 
-    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [])
-    monkeypatch.setattr(restore_utils.git_warpper, "is_git_repo", lambda _path: True)
-    monkeypatch.setattr(restore_utils, "repository_dirty", lambda _path, _include_untracked: True)
-    monkeypatch.setattr(restore_utils.git_warpper, "get_current_commit", lambda _path: "123456")
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_extensions.git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(restore_extensions, "repository_dirty", lambda _path, _include_untracked: True)
+    monkeypatch.setattr(restore_extensions.git_warpper, "get_current_commit", lambda _path: "123456")
 
     blocked = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -858,7 +857,7 @@ def test_preview_restore_plan_allows_missing_path_for_package_kernel_webui(monke
     ]
     output = tmp_path / "snapshot.json"
     snapshot_utils.save_snapshot(snapshot, output)
-    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
 
     plan = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -895,10 +894,10 @@ def test_preview_restore_plan_prunes_comfyui_extensions_with_disabled_name(monke
     output = tmp_path / "snapshot.json"
     snapshot_utils.save_snapshot(snapshot, output)
 
-    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [])
-    monkeypatch.setattr(restore_utils.git_warpper, "is_git_repo", lambda _path: True)
-    monkeypatch.setattr(restore_utils, "repository_dirty", lambda _path, _include_untracked: False)
-    monkeypatch.setattr(restore_utils.git_warpper, "get_current_commit", lambda _path: "123456")
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_extensions.git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(restore_extensions, "repository_dirty", lambda _path, _include_untracked: False)
+    monkeypatch.setattr(restore_extensions.git_warpper, "get_current_commit", lambda _path: "123456")
 
     plan = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -940,10 +939,10 @@ def test_preview_restore_plan_marks_enabled_only_extension_change_as_modified(mo
     output = tmp_path / "snapshot.json"
     snapshot_utils.save_snapshot(snapshot, output)
 
-    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [])
-    monkeypatch.setattr(restore_utils.git_warpper, "is_git_repo", lambda _path: True)
-    monkeypatch.setattr(restore_utils, "repository_dirty", lambda _path, _include_untracked: False)
-    monkeypatch.setattr(restore_utils.git_warpper, "get_current_commit", lambda _path: "abcdef")
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_extensions.git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(restore_extensions, "repository_dirty", lambda _path, _include_untracked: False)
+    monkeypatch.setattr(restore_extensions.git_warpper, "get_current_commit", lambda _path: "abcdef")
 
     plan = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -981,10 +980,10 @@ def test_preview_restore_plan_reports_dirty_extension_blocker(monkeypatch, tmp_p
     output = tmp_path / "snapshot.json"
     snapshot_utils.save_snapshot(snapshot, output)
 
-    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [])
-    monkeypatch.setattr(restore_utils.git_warpper, "is_git_repo", lambda _path: True)
-    monkeypatch.setattr(restore_utils, "repository_dirty", lambda _path, _include_untracked: True)
-    monkeypatch.setattr(restore_utils.git_warpper, "get_current_commit", lambda _path: "123456")
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_extensions.git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(restore_extensions, "repository_dirty", lambda _path, _include_untracked: True)
+    monkeypatch.setattr(restore_extensions.git_warpper, "get_current_commit", lambda _path: "123456")
 
     blocked = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -1049,7 +1048,7 @@ def test_preview_restore_plan_keeps_comfyui_registry_extensions_when_pruning(mon
     output = tmp_path / "snapshot.json"
     snapshot_utils.save_snapshot(snapshot, output)
 
-    monkeypatch.setattr(restore_utils, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
 
     plan = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -1099,7 +1098,7 @@ def test_restore_python_packages_prioritizes_pytorch_skips_missing_local_and_pru
     ]
 
     monkeypatch.setattr(
-        restore_utils,
+        restore_packages,
         "collect_installed_packages",
         lambda: [
             _package_snapshot("demo_pkg", "1.0.0"),
@@ -1109,7 +1108,7 @@ def test_restore_python_packages_prioritizes_pytorch_skips_missing_local_and_pru
             _package_snapshot("sd-webui-all-in-one", "1.0.0"),
         ],
     )
-    monkeypatch.setattr(restore_utils, "get_pypi_mirror_config", lambda use_cn_mirror: {"PIP_INDEX_URL": "https://pypi.example"})
+    monkeypatch.setattr(restore_packages, "get_pypi_mirror_config", lambda use_cn_mirror: {"PIP_INDEX_URL": "https://pypi.example"})
 
     mirror_calls = []
     env_calls = []
@@ -1138,11 +1137,11 @@ def test_restore_python_packages_prioritizes_pytorch_skips_missing_local_and_pru
     def fake_run_cmd(cmd, **_kwargs):
         events.append(("uninstall", cmd))
 
-    monkeypatch.setattr(restore_utils, "get_pytorch_mirror", fake_get_pytorch_mirror)
-    monkeypatch.setattr(restore_utils, "generate_uv_and_pip_env_mirror_config", fake_generate_env)
-    monkeypatch.setattr(restore_utils, "install_pytorch_with_fallback", fake_install_pytorch_with_fallback)
-    monkeypatch.setattr(restore_utils, "pip_install", fake_pip_install)
-    monkeypatch.setattr(restore_utils, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(restore_packages, "get_pytorch_mirror", fake_get_pytorch_mirror)
+    monkeypatch.setattr(restore_packages, "generate_uv_and_pip_env_mirror_config", fake_generate_env)
+    monkeypatch.setattr(restore_packages, "install_pytorch_with_fallback", fake_install_pytorch_with_fallback)
+    monkeypatch.setattr(restore_packages, "pip_install", fake_pip_install)
+    monkeypatch.setattr(restore_packages, "run_cmd", fake_run_cmd)
 
     restore_utils.restore_python_packages(
         snapshot,
@@ -1193,15 +1192,15 @@ def test_restore_git_repository_requires_clean_worktree_unless_forced(monkeypatc
         commit="abcdef",
     )
 
-    monkeypatch.setattr(restore_utils.git_warpper, "is_git_repo", lambda _path: True)
-    monkeypatch.setattr(restore_utils, "repository_dirty", lambda _path, _include_untracked: True)
+    monkeypatch.setattr(restore_extensions.git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(restore_extensions, "repository_dirty", lambda _path, _include_untracked: True)
 
     with pytest.raises(RuntimeError, match="存在未提交变更"):
         restore_utils.restore_git_repository(repo, target, restore_utils.SnapshotRestoreOptions())
 
     calls = []
-    monkeypatch.setattr(restore_utils, "fetch_repository", lambda path: calls.append(("fetch", path)))
-    monkeypatch.setattr(restore_utils.git_warpper, "switch_commit", lambda path, commit: calls.append(("switch", path, commit)))
+    monkeypatch.setattr(restore_extensions, "fetch_repository", lambda path: calls.append(("fetch", path)))
+    monkeypatch.setattr(restore_extensions.git_warpper, "switch_commit", lambda path, commit: calls.append(("switch", path, commit)))
 
     restored = restore_utils.restore_git_repository(
         repo,
@@ -1239,7 +1238,7 @@ def test_restore_extensions_sets_status_and_prunes_with_comfyui_name_normalizati
     removed = []
 
     monkeypatch.setattr(
-        restore_utils,
+        restore_extensions,
         "_extension_tools",
         lambda _type: restore_utils.ExtensionRestoreTools(
             directory_name="custom_nodes",
@@ -1249,12 +1248,12 @@ def test_restore_extensions_sets_status_and_prunes_with_comfyui_name_normalizati
         ),
     )
     monkeypatch.setattr(
-        restore_utils,
+        restore_extensions,
         "restore_git_repository",
         lambda repo, target_path, options: restored.append((repo.name, target_path, options.prune_extensions)) or True,
     )
 
-    restore_utils.restore_extensions(
+    restore_extensions.restore_extensions(
         snapshot,
         webui_path,
         restore_utils.SnapshotRestoreOptions(prune_extensions=True),
@@ -1285,7 +1284,7 @@ def test_restore_extensions_restores_comfyui_registry_node(monkeypatch, tmp_path
     statuses = []
     restored = []
     monkeypatch.setattr(
-        restore_utils,
+        restore_extensions,
         "_extension_tools",
         lambda _type: restore_utils.ExtensionRestoreTools(
             directory_name="custom_nodes",
@@ -1295,12 +1294,12 @@ def test_restore_extensions_restores_comfyui_registry_node(monkeypatch, tmp_path
         ),
     )
     monkeypatch.setattr(
-        restore_utils,
+        restore_extensions,
         "restore_comfy_registry_extension",
         lambda extension, webui_path, options: restored.append((extension.registry_id, extension.registry_version, webui_path, options.use_uv)) or True,
     )
 
-    restore_utils.restore_extensions(snapshot, webui_path, restore_utils.SnapshotRestoreOptions(use_uv=False))
+    restore_extensions.restore_extensions(snapshot, webui_path, restore_utils.SnapshotRestoreOptions(use_uv=False))
 
     assert restored == [("registry-node", "1.2.3", webui_path, False)]
     assert statuses == [(webui_path, "registry-node", True)]

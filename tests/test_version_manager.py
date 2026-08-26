@@ -6,6 +6,10 @@ import pytest
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 import sd_webui_all_in_one.base_manager.repository_inspector as repository_inspector
 import sd_webui_all_in_one.base_manager.version_manager as version_manager
+from sd_webui_all_in_one.base_manager.version_manager import checks as version_checks
+from sd_webui_all_in_one.base_manager.version_manager import extensions as version_extensions
+from sd_webui_all_in_one.base_manager.version_manager import indexes as version_indexes
+from sd_webui_all_in_one.base_manager.version_manager import repository as version_repository
 from sd_webui_all_in_one.base_manager.base import PyTorchUpdateStatus, apply_github_raw_file_mirror
 from sd_webui_all_in_one.base_manager.sd_webui_base import (
     list_sd_webui_extensions,
@@ -270,10 +274,10 @@ def test_check_repository_update_reports_ahead_behind(monkeypatch, tmp_path):
             return "1\t3"
         raise AssertionError(args)
 
-    monkeypatch.setattr(version_manager, "inspect_repository", lambda path: state)
-    monkeypatch.setattr(version_manager, "fetch_repository", lambda *args, **kwargs: None)
-    monkeypatch.setattr(version_manager, "_resolve_update_remote_ref", lambda path, branch: "origin/main")
-    monkeypatch.setattr(version_manager, "_run_git_output", fake_git_output)
+    monkeypatch.setattr(version_repository, "inspect_repository", lambda path: state)
+    monkeypatch.setattr(version_repository, "fetch_repository", lambda *args, **kwargs: None)
+    monkeypatch.setattr(version_repository, "_resolve_update_remote_ref", lambda path, branch: "origin/main")
+    monkeypatch.setattr(version_repository, "_run_git_output", fake_git_output)
 
     status = version_manager.check_repository_update(repo_path, use_github_mirror=True, custom_github_mirror="https://mirror.example")
 
@@ -297,7 +301,7 @@ def test_extension_manager_check_updates_keeps_non_git_entries(monkeypatch, tmp_
 
     monkeypatch.setattr(manager, "list_extensions", lambda: [git_ext, file_ext])
     monkeypatch.setattr(
-        version_manager,
+        version_extensions,
         "check_repository_update",
         lambda path, **_kwargs: version_manager.RepositoryUpdateStatus(name=path.name, path=path, is_git_repo=True, has_update=True, behind=2),
     )
@@ -365,12 +369,12 @@ def test_list_commits_and_branches_parse_git_output(monkeypatch, tmp_path):
     repo_path.mkdir()
     fetch_calls = []
 
-    monkeypatch.setattr(version_manager.git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(version_repository.git_warpper, "is_git_repo", lambda _path: True)
     current = "abc1230000000000000000000000000000000000"
     older = "def4560000000000000000000000000000000000"
-    monkeypatch.setattr(version_manager.git_warpper, "get_current_commit", lambda _path: current)
-    monkeypatch.setattr(version_manager.git_warpper, "get_current_branch", lambda _path: "main")
-    monkeypatch.setattr(version_manager, "fetch_repository", lambda path: fetch_calls.append(path))
+    monkeypatch.setattr(version_repository.git_warpper, "get_current_commit", lambda _path: current)
+    monkeypatch.setattr(version_repository.git_warpper, "get_current_branch", lambda _path: "main")
+    monkeypatch.setattr(version_repository, "fetch_repository", lambda path: fetch_calls.append(path))
 
     def fake_git_output(_path, *args):
         if args[:1] == ("log",):
@@ -385,7 +389,7 @@ def test_list_commits_and_branches_parse_git_output(monkeypatch, tmp_path):
             return "\n".join(["origin/HEAD -> origin/main", "origin/dev", "main", "origin/main"])
         raise AssertionError(args)
 
-    monkeypatch.setattr(version_manager, "run_git_output", fake_git_output)
+    monkeypatch.setattr(version_repository, "run_git_output", fake_git_output)
 
     commits = version_manager.list_commits(repo_path, limit=2)
     assert [(item.commit, item.is_current) for item in commits] == [(current, True), (older, False)]
@@ -403,7 +407,7 @@ def test_list_commits_and_branches_parse_git_output(monkeypatch, tmp_path):
         ("dev", False, True),
     ]
 
-    monkeypatch.setattr(version_manager.git_warpper, "is_git_repo", lambda _path: False)
+    monkeypatch.setattr(version_repository.git_warpper, "is_git_repo", lambda _path: False)
     assert version_manager.list_commits(repo_path) == []
     assert version_manager.list_branches(repo_path) == []
 
@@ -437,7 +441,7 @@ def test_extension_manager_lifecycle_delegates_and_aggregates(monkeypatch, tmp_p
             commit="abc",
         )
 
-    monkeypatch.setattr(version_manager, "inspect_repository", fake_inspect)
+    monkeypatch.setattr(version_extensions, "inspect_repository", fake_inspect)
 
     extensions = manager.list_extensions()
     assert [item.name for item in extensions] == ["git-ext", "plain-ext"]
@@ -448,15 +452,15 @@ def test_extension_manager_lifecycle_delegates_and_aggregates(monkeypatch, tmp_p
     assert enabled_changes == [("plain-ext", True)]
 
     clones = []
-    monkeypatch.setattr(version_manager, "clone_repo", lambda repo, path: clones.append((repo, path)))
+    monkeypatch.setattr(version_extensions, "clone_repo", lambda repo, path: clones.append((repo, path)))
     assert manager.install_extension("https://github.com/example/new-ext.git") == ext_root / "new-ext"
     assert clones == [("https://github.com/example/new-ext.git", ext_root / "new-ext")]
     with pytest.raises(FileExistsError):
         manager.install_extension("https://github.com/example/git-ext.git")
 
-    monkeypatch.setattr(version_manager.git_warpper, "is_git_repo", lambda path: path.name == "git-ext")
+    monkeypatch.setattr(version_extensions.git_warpper, "is_git_repo", lambda path: path.name == "git-ext")
     updates = []
-    monkeypatch.setattr(version_manager, "update_repository", lambda path: updates.append(path))
+    monkeypatch.setattr(version_extensions, "update_repository", lambda path: updates.append(path))
     manager.update_extension("git-ext")
     with pytest.raises(ValueError):
         manager.update_extension("plain-ext")
@@ -465,13 +469,13 @@ def test_extension_manager_lifecycle_delegates_and_aggregates(monkeypatch, tmp_p
     def update_or_fail(path):
         raise RuntimeError("bad update")
 
-    monkeypatch.setattr(version_manager, "update_repository", update_or_fail)
+    monkeypatch.setattr(version_extensions, "update_repository", update_or_fail)
     with pytest.raises(AggregateError) as exc:
         manager.update_all()
     assert len(exc.value.exceptions) == 1
 
     removed = []
-    monkeypatch.setattr(version_manager, "remove_files", lambda path: removed.append(path))
+    monkeypatch.setattr(version_extensions, "remove_files", lambda path: removed.append(path))
     manager.uninstall_extension("plain-ext")
     assert removed == [plain_ext]
     with pytest.raises(FileNotFoundError):
@@ -486,13 +490,15 @@ def test_check_webui_updates_aggregates_kernel_extensions_and_pytorch(monkeypatc
         version_manager.ManagedExtension("file-ext", tmp_path / "file-ext.py", True, False, source_type="file"),
     ]
     monkeypatch.setattr(
-        version_manager,
+        version_checks,
         "check_repository_update",
-        lambda path, **_kwargs: kernel
-        if path == tmp_path
-        else version_manager.RepositoryUpdateStatus(name=path.name, path=path, is_git_repo=True, current_commit="local", remote_commit="remote", has_update=True, behind=1),
+        lambda path, **_kwargs: (
+            kernel
+            if path == tmp_path
+            else version_manager.RepositoryUpdateStatus(name=path.name, path=path, is_git_repo=True, current_commit="local", remote_commit="remote", has_update=True, behind=1)
+        ),
     )
-    monkeypatch.setattr(version_manager, "get_pytorch_update_status", lambda: pytorch)
+    monkeypatch.setattr(version_checks, "get_pytorch_update_status", lambda: pytorch)
 
     result = version_manager.check_webui_updates(
         "demo",
@@ -519,8 +525,8 @@ def test_check_webui_updates_aggregates_kernel_extensions_and_pytorch(monkeypatc
 
 
 def test_check_package_update_records_versions(monkeypatch):
-    monkeypatch.setattr(version_manager, "get_package_version_from_library", lambda _name: "4.0.0")
-    monkeypatch.setattr(version_manager, "fetch_pypi_versions", lambda *_args, **_kwargs: [version_manager.PackageVersionInfo("5.0.0")])
+    monkeypatch.setattr(version_checks, "get_package_version_from_library", lambda _name: "4.0.0")
+    monkeypatch.setattr(version_checks, "fetch_pypi_versions", lambda *_args, **_kwargs: [version_manager.PackageVersionInfo("5.0.0")])
 
     status = version_manager.check_package_update("invokeai", "InvokeAI", "https://pypi.example")
 
@@ -556,12 +562,12 @@ def _stub_pypi_payload(monkeypatch, releases=None):
         def __exit__(self, *_exc):
             return False
 
-    monkeypatch.setattr(version_manager.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response())
+    monkeypatch.setattr(version_indexes.urllib.request, "urlopen", lambda *_args, **_kwargs: _Response())
 
 
 def test_fetch_pypi_versions_resolves_the_installed_release_when_not_given_one(monkeypatch):
     _stub_pypi_payload(monkeypatch)
-    monkeypatch.setattr(version_manager, "get_package_version_from_library", lambda _name: "6.8.1")
+    monkeypatch.setattr(version_indexes, "get_package_version_from_library", lambda _name: "6.8.1")
 
     versions = version_manager.fetch_pypi_versions("invokeai")
 
@@ -571,7 +577,7 @@ def test_fetch_pypi_versions_resolves_the_installed_release_when_not_given_one(m
 
 def test_fetch_pypi_versions_keeps_an_explicitly_supplied_current_version(monkeypatch):
     _stub_pypi_payload(monkeypatch)
-    monkeypatch.setattr(version_manager, "get_package_version_from_library", lambda _name: "6.8.1")
+    monkeypatch.setattr(version_indexes, "get_package_version_from_library", lambda _name: "6.8.1")
 
     versions = version_manager.fetch_pypi_versions("invokeai", current_version="6.7.0")
 
@@ -590,7 +596,7 @@ _MIXED_CHANNEL_RELEASES = {
 
 def test_fetch_pypi_versions_flags_prereleases(monkeypatch):
     _stub_pypi_payload(monkeypatch, _MIXED_CHANNEL_RELEASES)
-    monkeypatch.setattr(version_manager, "get_package_version_from_library", lambda _name: "6.9.0")
+    monkeypatch.setattr(version_indexes, "get_package_version_from_library", lambda _name: "6.9.0")
 
     versions = version_manager.fetch_pypi_versions("invokeai")
 
@@ -608,7 +614,7 @@ def test_fetch_pypi_versions_flags_prereleases(monkeypatch):
 
 def test_check_package_update_ignores_prereleases(monkeypatch):
     _stub_pypi_payload(monkeypatch, _MIXED_CHANNEL_RELEASES)
-    monkeypatch.setattr(version_manager, "get_package_version_from_library", lambda _name: "6.9.0.post1")
+    monkeypatch.setattr(version_checks, "get_package_version_from_library", lambda _name: "6.9.0.post1")
 
     status = version_manager.check_package_update("invokeai", "InvokeAI", "https://pypi.example")
 
@@ -622,7 +628,7 @@ def test_check_package_update_ignores_prereleases(monkeypatch):
 
 def test_check_package_update_can_target_prereleases(monkeypatch):
     _stub_pypi_payload(monkeypatch, _MIXED_CHANNEL_RELEASES)
-    monkeypatch.setattr(version_manager, "get_package_version_from_library", lambda _name: "6.9.0.post1")
+    monkeypatch.setattr(version_checks, "get_package_version_from_library", lambda _name: "6.9.0.post1")
 
     status = version_manager.check_package_update(
         "invokeai",
@@ -639,7 +645,7 @@ def test_check_package_update_can_target_prereleases(monkeypatch):
 
 def test_check_package_update_reports_a_package_without_a_release(monkeypatch):
     _stub_pypi_payload(monkeypatch, {"1.0.0rc1": [{"upload_time": "2026-01-02T00:00:00"}]})
-    monkeypatch.setattr(version_manager, "get_package_version_from_library", lambda _name: None)
+    monkeypatch.setattr(version_checks, "get_package_version_from_library", lambda _name: None)
 
     status = version_manager.check_package_update("invokeai", "InvokeAI", "https://pypi.example")
 

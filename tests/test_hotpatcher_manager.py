@@ -10,7 +10,7 @@ import types
 
 import pytest
 
-from sd_webui_all_in_one.base_manager import hotpatcher_manager
+from sd_webui_all_in_one.base_manager.hotpatcher_manager import config as hotpatcher_config
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     DEFAULT_HOTPATCHER_CONFIG_PATH,
     DEFAULT_RUNTIME_PORT,
@@ -201,7 +201,7 @@ def test_build_hotpatcher_runtime_env():
 
 
 def test_apply_hotpatcher_launch_env_uses_default_json_when_config_missing(monkeypatch, tmp_path):
-    monkeypatch.setattr(hotpatcher_manager, "DEFAULT_HOTPATCHER_CONFIG_PATH", tmp_path / "missing.json")
+    monkeypatch.setattr(hotpatcher_config, "DEFAULT_HOTPATCHER_CONFIG_PATH", tmp_path / "missing.json")
     origin = {
         "PYTHONPATH": "existing",
         "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN": "secret",
@@ -230,7 +230,7 @@ def test_apply_hotpatcher_launch_env_uses_default_json_when_config_missing(monke
 def test_apply_hotpatcher_launch_env_prefers_config_file(monkeypatch, tmp_path):
     config_file = tmp_path / "patcher_config.json"
     config_file.write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(hotpatcher_manager, "DEFAULT_HOTPATCHER_CONFIG_PATH", config_file)
+    monkeypatch.setattr(hotpatcher_config, "DEFAULT_HOTPATCHER_CONFIG_PATH", config_file)
 
     env = apply_hotpatcher_launch_env({}, enabled=True)
 
@@ -259,7 +259,7 @@ def test_apply_hotpatcher_launch_env_can_disable_and_clear_existing_values():
 
 
 def test_sitecustomize_bootstrap_does_not_reapply_in_python_children(monkeypatch, tmp_path):
-    monkeypatch.setattr(hotpatcher_manager, "DEFAULT_HOTPATCHER_CONFIG_PATH", tmp_path / "missing.json")
+    monkeypatch.setattr(hotpatcher_config, "DEFAULT_HOTPATCHER_CONFIG_PATH", tmp_path / "missing.json")
     env = apply_hotpatcher_launch_env(dict(os.environ), enabled=True)
     env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_JSON"] = json.dumps(
         {
@@ -318,7 +318,7 @@ print(json.dumps({{
 
 
 def test_launch_webui_keeps_hotpatcher_pythonpath_first(monkeypatch, tmp_path):
-    from sd_webui_all_in_one.base_manager import base as base_module
+    from sd_webui_all_in_one.base_manager.base import runtime as base_runtime
 
     captured = {}
 
@@ -327,7 +327,7 @@ def test_launch_webui_keeps_hotpatcher_pythonpath_first(monkeypatch, tmp_path):
         captured["custom_env"] = custom_env
         captured["cwd"] = cwd
 
-    monkeypatch.setattr(base_module, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(base_runtime, "run_cmd", fake_run_cmd)
     env = apply_hotpatcher_launch_env({"PYTHONPATH": "existing"}, enabled=True)
 
     launch_webui(tmp_path, "launch.py", launch_args=["--demo"], custom_env=env)

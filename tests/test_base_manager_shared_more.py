@@ -5,6 +5,10 @@ from typing import Any, cast
 import pytest
 
 from sd_webui_all_in_one.base_manager import base as base_module
+from sd_webui_all_in_one.base_manager.base import mirrors as base_mirrors
+from sd_webui_all_in_one.base_manager.base import model_downloads as base_model_downloads
+from sd_webui_all_in_one.base_manager.base import pytorch as base_pytorch
+from sd_webui_all_in_one.base_manager.base import repositories as base_repositories
 
 
 @pytest.mark.parametrize(
@@ -18,9 +22,9 @@ from sd_webui_all_in_one.base_manager import base as base_module
 )
 def test_check_pytorch_version(monkeypatch, current_version, latest_spec, expected_dtype, expected):
     calls = []
-    monkeypatch.setattr(base_module.importlib.metadata, "version", lambda name: current_version if name == "torch" else "")
+    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda name: current_version if name == "torch" else "")
     monkeypatch.setattr(
-        base_module,
+        base_pytorch,
         "find_latest_pytorch_info",
         lambda dtype: calls.append(dtype) or {"torch_ver": latest_spec},
     )
@@ -31,16 +35,16 @@ def test_check_pytorch_version(monkeypatch, current_version, latest_spec, expect
 
 def test_check_pytorch_version_treats_missing_torch_as_needing_update(monkeypatch):
     def missing_torch(_name):
-        raise base_module.importlib.metadata.PackageNotFoundError
+        raise base_pytorch.importlib.metadata.PackageNotFoundError
 
-    monkeypatch.setattr(base_module.importlib.metadata, "version", missing_torch)
+    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", missing_torch)
 
     assert base_module.check_pytorch_version() is True
 
 
 def test_check_pytorch_version_rejects_unversioned_latest_entry(monkeypatch):
-    monkeypatch.setattr(base_module.importlib.metadata, "version", lambda _name: "2.8.0+cpu")
-    monkeypatch.setattr(base_module, "find_latest_pytorch_info", lambda _dtype: {"torch_ver": "torch torchvision"})
+    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda _name: "2.8.0+cpu")
+    monkeypatch.setattr(base_pytorch, "find_latest_pytorch_info", lambda _dtype: {"torch_ver": "torch torchvision"})
 
     with pytest.raises(ValueError, match="缺少可比较的 torch 版本"):
         base_module.check_pytorch_version()
@@ -57,11 +61,11 @@ def test_prepare_pytorch_install_info_auto_and_custom_packages(monkeypatch):
         "find_links": {"mirror": "links-mirror", "official": "links-official"},
     }
 
-    monkeypatch.setattr(base_module, "auto_detect_available_pytorch_type", lambda: "cu128")
-    monkeypatch.setattr(base_module, "find_latest_pytorch_info", lambda dtype: calls.append(("latest", dtype)) or latest)
-    monkeypatch.setattr(base_module, "get_pytorch_mirror", lambda dtype, use_cn_mirror=False: calls.append(("mirror", dtype, use_cn_mirror)) or (f"{dtype}-url", "extra_index_url"))
+    monkeypatch.setattr(base_pytorch, "auto_detect_available_pytorch_type", lambda: "cu128")
+    monkeypatch.setattr(base_pytorch, "find_latest_pytorch_info", lambda dtype: calls.append(("latest", dtype)) or latest)
+    monkeypatch.setattr(base_pytorch, "get_pytorch_mirror", lambda dtype, use_cn_mirror=False: calls.append(("mirror", dtype, use_cn_mirror)) or (f"{dtype}-url", "extra_index_url"))
 
-    torch_pkg, xformers_pkg, env = base_module.prepare_pytorch_install_info(use_cn_mirror=True)
+    torch_pkg, xformers_pkg, env = base_pytorch.prepare_pytorch_install_info(use_cn_mirror=True)
     assert (torch_pkg, xformers_pkg) == (latest["torch_ver"], latest["xformers_ver"])
     assert calls == [("latest", "cu128"), ("mirror", "cu128", True)]
     assert env["PIP_INDEX_URL"] == "index-mirror"
@@ -69,9 +73,9 @@ def test_prepare_pytorch_install_info_auto_and_custom_packages(monkeypatch):
     assert env["PIP_FIND_LINKS"] == "links-mirror"
 
     calls.clear()
-    monkeypatch.setattr(base_module, "auto_detect_pytorch_device_category", lambda: "cuda")
-    monkeypatch.setattr(base_module, "get_pytorch_mirror_type", lambda torch_ver, device_type: calls.append(("type", torch_ver, device_type)) or "cu124")
-    torch_pkg, xformers_pkg, env = base_module.prepare_pytorch_install_info(
+    monkeypatch.setattr(base_pytorch, "auto_detect_pytorch_device_category", lambda: "cuda")
+    monkeypatch.setattr(base_pytorch, "get_pytorch_mirror_type", lambda torch_ver, device_type: calls.append(("type", torch_ver, device_type)) or "cu124")
+    torch_pkg, xformers_pkg, env = base_pytorch.prepare_pytorch_install_info(
         custom_pytorch_package="torch==2.4.1 torchvision==0.19.1",
         custom_xformers_package="xformers==0.0.28",
         use_cn_mirror=False,
@@ -82,7 +86,7 @@ def test_prepare_pytorch_install_info_auto_and_custom_packages(monkeypatch):
     assert env["PIP_EXTRA_INDEX_URL"] == "cu124-url"
 
     calls.clear()
-    torch_pkg, _xformers_pkg, env = base_module.prepare_pytorch_install_info(
+    torch_pkg, _xformers_pkg, env = base_pytorch.prepare_pytorch_install_info(
         custom_pytorch_package="torch==2.6.0+cu126 torchvision==0.21.0+cu126",
         use_cn_mirror=True,
     )
@@ -101,12 +105,12 @@ def test_reinstall_pytorch_list_install_and_interactive_auto(monkeypatch):
         "find_links": {"mirror": "links-mirror", "official": "links-official"},
     }
     calls = []
-    monkeypatch.setattr(base_module, "export_pytorch_list", lambda: [info])
-    monkeypatch.setattr(base_module, "display_pytorch_config", lambda data: calls.append(("display", data)))
-    monkeypatch.setattr(base_module, "print_divider", lambda char: calls.append(("divider", char)))
-    monkeypatch.setattr(base_module, "query_pytorch_info_from_library", lambda pytorch_name=None, pytorch_index=None: calls.append(("query", pytorch_name, pytorch_index)) or info)
-    monkeypatch.setattr(base_module, "install_pytorch", lambda **kwargs: calls.append(("install", kwargs)))
-    monkeypatch.setattr(base_module, "run_cmd", lambda command: calls.append(("run", command)))
+    monkeypatch.setattr(base_pytorch, "export_pytorch_list", lambda: [info])
+    monkeypatch.setattr(base_pytorch, "display_pytorch_config", lambda data: calls.append(("display", data)))
+    monkeypatch.setattr(base_pytorch, "print_divider", lambda char: calls.append(("divider", char)))
+    monkeypatch.setattr(base_pytorch, "query_pytorch_info_from_library", lambda pytorch_name=None, pytorch_index=None: calls.append(("query", pytorch_name, pytorch_index)) or info)
+    monkeypatch.setattr(base_pytorch, "install_pytorch", lambda **kwargs: calls.append(("install", kwargs)))
+    monkeypatch.setattr(base_pytorch, "run_cmd", lambda command: calls.append(("run", command)))
 
     base_module.reinstall_pytorch(list_only=True)
     assert calls[:3] == [("divider", "="), ("display", [info]), ("divider", "=")]
@@ -122,8 +126,8 @@ def test_reinstall_pytorch_list_install_and_interactive_auto(monkeypatch):
     calls.clear()
     inputs = iter(["auto", "y"])
     monkeypatch.setattr("builtins.input", lambda _prompt="": next(inputs))
-    monkeypatch.setattr(base_module.importlib.metadata, "version", lambda _name: "installed")
-    monkeypatch.setattr(base_module, "prepare_pytorch_install_info", lambda use_cn_mirror=True: ("torch-auto", "xformers-auto", {"AUTO": str(use_cn_mirror)}))
+    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda _name: "installed")
+    monkeypatch.setattr(base_pytorch, "prepare_pytorch_install_info", lambda use_cn_mirror=True: ("torch-auto", "xformers-auto", {"AUTO": str(use_cn_mirror)}))
     base_module.reinstall_pytorch(interactive_mode=True, use_pypi_mirror=True, use_uv=True)
 
     assert ("run", [Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "xformers", "-y"]) in calls
@@ -148,10 +152,10 @@ def test_install_pytorch_with_fallback_preserves_env_and_package_inputs(monkeypa
         calls.append(("mirror", custom_env))
         return {"AUTO": "1", **(custom_env or {})}
 
-    monkeypatch.setattr(base_module, "install_pytorch", fake_install_pytorch)
-    monkeypatch.setattr(base_module, "get_auto_pypi_mirror_config", fake_get_auto_pypi_mirror_config)
+    monkeypatch.setattr(base_pytorch, "install_pytorch", fake_install_pytorch)
+    monkeypatch.setattr(base_pytorch, "get_auto_pypi_mirror_config", fake_get_auto_pypi_mirror_config)
 
-    base_module.install_pytorch_with_fallback(
+    base_pytorch.install_pytorch_with_fallback(
         torch_package=torch_package,
         xformers_package=xformers_package,
         custom_env=custom_env,
@@ -213,10 +217,10 @@ def test_install_pytorch_with_fallback_merges_mirror_env_after_existing_fallback
             "UV_FIND_LINKS": "https://auto-uv-wheels.example,https://custom-uv-wheels.example",
         }
 
-    monkeypatch.setattr(base_module, "install_pytorch", fake_install_pytorch)
-    monkeypatch.setattr(base_module, "get_auto_pypi_mirror_config", fake_get_auto_pypi_mirror_config)
+    monkeypatch.setattr(base_pytorch, "install_pytorch", fake_install_pytorch)
+    monkeypatch.setattr(base_pytorch, "get_auto_pypi_mirror_config", fake_get_auto_pypi_mirror_config)
 
-    base_module.install_pytorch_with_fallback(
+    base_pytorch.install_pytorch_with_fallback(
         torch_package=torch_package,
         xformers_package=xformers_package,
         custom_env=custom_env,
@@ -270,10 +274,10 @@ def test_install_pytorch_with_fallback_uses_first_custom_extra_index_when_no_ind
             "PIP_FIND_LINKS": "https://auto-wheels.example",
         }
 
-    monkeypatch.setattr(base_module, "install_pytorch", fake_install_pytorch)
-    monkeypatch.setattr(base_module, "get_auto_pypi_mirror_config", fake_get_auto_pypi_mirror_config)
+    monkeypatch.setattr(base_pytorch, "install_pytorch", fake_install_pytorch)
+    monkeypatch.setattr(base_pytorch, "get_auto_pypi_mirror_config", fake_get_auto_pypi_mirror_config)
 
-    base_module.install_pytorch_with_fallback(
+    base_pytorch.install_pytorch_with_fallback(
         torch_package=["torch==2.8.0+cu128"],
         xformers_package=["xformers==0.0.32"],
         custom_env=custom_env,
@@ -307,11 +311,11 @@ def test_install_webui_model_from_library_interactive_direct_search(monkeypatch,
     calls = []
     inputs = iter(["search beta", "2"])
 
-    monkeypatch.setattr(base_module, "export_model_list", lambda dtype: models)
-    monkeypatch.setattr(base_module, "display_model_table", lambda model_list: calls.append(("display", model_list)))
-    monkeypatch.setattr(base_module, "print_divider", lambda char: calls.append(("divider", char)))
-    monkeypatch.setattr(base_module, "search_models_from_library", lambda query, models: calls.append(("search", query, models)) or [2])
-    monkeypatch.setattr(base_module, "download_model", lambda **kwargs: calls.append(("download", kwargs)) or [tmp_path / "beta.safetensors"])
+    monkeypatch.setattr(base_model_downloads, "export_model_list", lambda dtype: models)
+    monkeypatch.setattr(base_model_downloads, "display_model_table", lambda model_list: calls.append(("display", model_list)))
+    monkeypatch.setattr(base_model_downloads, "print_divider", lambda char: calls.append(("divider", char)))
+    monkeypatch.setattr(base_model_downloads, "search_models_from_library", lambda query, models: calls.append(("search", query, models)) or [2])
+    monkeypatch.setattr(base_model_downloads, "download_model", lambda **kwargs: calls.append(("download", kwargs)) or [tmp_path / "beta.safetensors"])
     monkeypatch.setattr("builtins.input", lambda _prompt="": next(inputs))
 
     result = base_module.install_webui_model_from_library(
@@ -349,11 +353,11 @@ def test_install_webui_model_from_library_interactive_search_prompt(monkeypatch,
     calls = []
     inputs = iter(["search", "alpha", "1"])
 
-    monkeypatch.setattr(base_module, "export_model_list", lambda dtype: models)
-    monkeypatch.setattr(base_module, "display_model_table", lambda model_list: calls.append(("display", model_list)))
-    monkeypatch.setattr(base_module, "print_divider", lambda char: calls.append(("divider", char)))
-    monkeypatch.setattr(base_module, "search_models_from_library", lambda query, models: calls.append(("search", query, models)) or [1])
-    monkeypatch.setattr(base_module, "download_model", lambda **kwargs: calls.append(("download", kwargs)) or [tmp_path / "alpha.safetensors"])
+    monkeypatch.setattr(base_model_downloads, "export_model_list", lambda dtype: models)
+    monkeypatch.setattr(base_model_downloads, "display_model_table", lambda model_list: calls.append(("display", model_list)))
+    monkeypatch.setattr(base_model_downloads, "print_divider", lambda char: calls.append(("divider", char)))
+    monkeypatch.setattr(base_model_downloads, "search_models_from_library", lambda query, models: calls.append(("search", query, models)) or [1])
+    monkeypatch.setattr(base_model_downloads, "download_model", lambda **kwargs: calls.append(("download", kwargs)) or [tmp_path / "alpha.safetensors"])
     monkeypatch.setattr("builtins.input", lambda _prompt="": next(inputs))
 
     result = base_module.install_webui_model_from_library(
@@ -370,8 +374,8 @@ def test_apply_git_base_config_uses_env_config_and_does_not_mutate_origin(monkey
     calls = []
     origin = {"GIT_CONFIG_GLOBAL": (tmp_path / "nested" / ".gitconfig").as_posix(), "KEEP": "1"}
 
-    monkeypatch.setattr(base_module, "set_github_mirror", lambda mirror, config_path: calls.append(("mirror", mirror, config_path)))
-    monkeypatch.setattr(base_module, "set_git_base_config", lambda config_path: calls.append(("base", config_path)))
+    monkeypatch.setattr(base_repositories, "set_github_mirror", lambda mirror, config_path: calls.append(("mirror", mirror, config_path)))
+    monkeypatch.setattr(base_repositories, "set_git_base_config", lambda config_path: calls.append(("base", config_path)))
 
     result = base_module.apply_git_base_config_and_github_mirror(
         use_github_mirror=True,
@@ -401,12 +405,12 @@ def test_apply_git_config_global_to_process(monkeypatch, tmp_path):
     result = base_module.apply_git_config_global_to_process({"GIT_CONFIG_GLOBAL": config_path})
 
     assert result == config_path
-    assert base_module.os.environ["GIT_CONFIG_GLOBAL"] == config_path
+    assert base_repositories.os.environ["GIT_CONFIG_GLOBAL"] == config_path
 
     result = base_module.apply_git_config_global_to_process({"KEEP": "1"})
 
     assert result is None
-    assert base_module.os.environ["GIT_CONFIG_GLOBAL"] == config_path
+    assert base_repositories.os.environ["GIT_CONFIG_GLOBAL"] == config_path
 
 
 def test_apply_hf_mirror_string_list_disabled_and_invalid(monkeypatch):
@@ -441,7 +445,7 @@ def test_apply_hf_mirror_string_list_disabled_and_invalid(monkeypatch):
             raise OSError("down")
         return FakeResponse(200)
 
-    monkeypatch.setattr(base_module.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(base_repositories.urllib.request, "urlopen", fake_urlopen)
     result = base_module.apply_hf_mirror(use_hf_mirror=True, custom_hf_mirror=["https://bad.example", "https://good.example"], origin_env={"KEEP": "1"})
     assert result["HF_ENDPOINT"] == "https://good.example"
     assert opened == [
@@ -454,7 +458,7 @@ def test_apply_hf_mirror_string_list_disabled_and_invalid(monkeypatch):
 
 
 def test_resolve_auto_mirror_settings_uses_official_sources(monkeypatch):
-    monkeypatch.setattr(base_module, "network_gfw_test", lambda: True)
+    monkeypatch.setattr(base_mirrors, "network_gfw_test", lambda: True)
 
     resolved = base_module.resolve_auto_mirror_settings(
         auto_mirror=True,
@@ -477,7 +481,7 @@ def test_resolve_auto_mirror_settings_uses_official_sources(monkeypatch):
 
 
 def test_resolve_auto_mirror_settings_uses_mirror_sources(monkeypatch):
-    monkeypatch.setattr(base_module, "network_gfw_test", lambda: False)
+    monkeypatch.setattr(base_mirrors, "network_gfw_test", lambda: False)
 
     resolved = base_module.resolve_auto_mirror_settings(
         auto_mirror=True,
@@ -503,7 +507,7 @@ def test_resolve_auto_mirror_settings_can_be_disabled(monkeypatch):
     def fail_network_probe():
         raise AssertionError("network probe should not run")
 
-    monkeypatch.setattr(base_module, "network_gfw_test", fail_network_probe)
+    monkeypatch.setattr(base_mirrors, "network_gfw_test", fail_network_probe)
 
     resolved = base_module.resolve_auto_mirror_settings(
         auto_mirror=False,

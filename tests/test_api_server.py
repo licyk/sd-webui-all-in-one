@@ -17,7 +17,7 @@ from sd_webui_all_in_one.api_server import ApiClient, ApiClientError, ApiMethodS
 from sd_webui_all_in_one.api_server import server as api_server_module
 from sd_webui_all_in_one.api_server.registry import get_default_methods
 from sd_webui_all_in_one.api_server.server import ApiTaskCanceled
-from sd_webui_all_in_one.base_manager import base as base_module
+from sd_webui_all_in_one.base_manager.base import mirrors as base_mirrors
 
 
 def _request(url, method="GET", data=None, token=""):
@@ -91,10 +91,7 @@ def test_default_registry_uses_namespaced_real_callables():
     assert "comfyui.extension.commits" in methods
     assert "sd_webui.extension.list" in methods
     assert "sd_webui.version.branch_presets" in methods
-    assert all(
-        f"{webui_type}.environment.collect" in methods
-        for webui_type in ("sd_webui", "comfyui", "fooocus", "invokeai", "sd_trainer", "sd_scripts", "qwen_tts_webui")
-    )
+    assert all(f"{webui_type}.environment.collect" in methods for webui_type in ("sd_webui", "comfyui", "fooocus", "invokeai", "sd_trainer", "sd_scripts", "qwen_tts_webui"))
     assert "fooocus.version.branch_presets" in methods
     assert "sd_trainer.version.branch_presets" in methods
     assert "invokeai.model.list" in methods
@@ -116,10 +113,10 @@ def test_default_registry_uses_namespaced_real_callables():
     server = create_api_server(port=0)
     try:
         for method_name, target_name in {
-            "hotpatcher.catalog": "hotpatcher_manager.get_hotpatcher_catalog",
-            "hotpatcher.default_config": "hotpatcher_manager.get_hotpatcher_default_config",
-            "hotpatcher.normalize_config": "hotpatcher_manager.normalize_hotpatcher_config",
-            "hotpatcher.apply_config": "hotpatcher_manager.apply_hotpatcher_config",
+            "hotpatcher.catalog": "hotpatcher_manager.config.get_hotpatcher_catalog",
+            "hotpatcher.default_config": "hotpatcher_manager.config.get_hotpatcher_default_config",
+            "hotpatcher.normalize_config": "hotpatcher_manager.config.normalize_hotpatcher_config",
+            "hotpatcher.apply_config": "hotpatcher_manager.config.apply_hotpatcher_config",
         }.items():
             hotpatcher_details = server.method_details(method_name)
             assert hotpatcher_details is not None
@@ -127,7 +124,7 @@ def test_default_registry_uses_namespaced_real_callables():
 
         details = server.method_details("comfyui.version.branches")
         assert details is not None
-        assert details["target"].endswith("version_manager.list_branches")
+        assert details["target"].endswith("version_manager.repository.list_branches")
         assert details["params_schema"]["required"] == ["path"]
         parameters = {item["name"]: item for item in details["parameters"]}
         assert parameters["path"]["type"] == "string"
@@ -150,7 +147,7 @@ def test_default_registry_uses_namespaced_real_callables():
         assert item_schema["additionalProperties"] is False
         snapshot_details = server.method_details("comfyui.snapshot.create")
         assert snapshot_details is not None
-        assert snapshot_details["target"].endswith("snapshot.create_webui_snapshot")
+        assert snapshot_details["target"].endswith("snapshot.storage.create_webui_snapshot")
         assert [item["name"] for item in snapshot_details["parameters"]] == [
             "webui_path",
             "include_packages",
@@ -162,10 +159,10 @@ def test_default_registry_uses_namespaced_real_callables():
         assert [item["name"] for item in environment_details["parameters"]] == ["comfyui_path", "include_packages"]
         update_details = server.method_details("comfyui.extension.update")
         assert update_details is not None
-        assert update_details["target"].endswith("version_manager.update_repository")
+        assert update_details["target"].endswith("version_manager.repository.update_repository")
         restore_details = server.method_details("comfyui.snapshot.restore")
         assert restore_details is not None
-        assert restore_details["target"].endswith("snapshot_restore.restore_webui_snapshot")
+        assert restore_details["target"].endswith("snapshot_restore.service.restore_webui_snapshot")
         assert {item["name"] for item in restore_details["parameters"]} == {"snapshot_path", "webui_path", "options"}
         model_details = server.method_details("comfyui.model.copy")
         assert model_details is not None
@@ -280,7 +277,7 @@ def test_real_callable_is_invoked_with_converted_flat_parameters():
 
 
 def test_mirror_resolve_method_is_invoked(monkeypatch):
-    monkeypatch.setattr(base_module, "network_gfw_test", lambda: False)
+    monkeypatch.setattr(base_mirrors, "network_gfw_test", lambda: False)
     server, thread, base_url = _start_server(methods=get_default_methods())
     try:
         status, payload = _request(

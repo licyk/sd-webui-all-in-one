@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from sd_webui_all_in_one.base_manager import base as base_module
+from sd_webui_all_in_one.base_manager.base import environment as base_environment
 from sd_webui_all_in_one.base_manager import environment_info as environment_info_module
 from sd_webui_all_in_one.base_manager import (
     comfyui_base,
@@ -69,15 +70,15 @@ def _snapshot(path: Path) -> WebUiSnapshot:
 
 
 def test_collect_host_environment_info_normalizes_hardware(monkeypatch):
-    monkeypatch.setattr(base_module.platform, "platform", lambda: "TestOS-1")
-    monkeypatch.setattr(base_module.platform, "system", lambda: "TestOS")
-    monkeypatch.setattr(base_module.platform, "release", lambda: "1")
-    monkeypatch.setattr(base_module.platform, "version", lambda: "1.0")
-    monkeypatch.setattr(base_module.platform, "machine", lambda: "x86_64")
-    monkeypatch.setattr(base_module.platform, "processor", lambda: "Test CPU")
-    monkeypatch.setattr(base_module.os, "cpu_count", lambda: 16)
+    monkeypatch.setattr(base_environment.platform, "platform", lambda: "TestOS-1")
+    monkeypatch.setattr(base_environment.platform, "system", lambda: "TestOS")
+    monkeypatch.setattr(base_environment.platform, "release", lambda: "1")
+    monkeypatch.setattr(base_environment.platform, "version", lambda: "1.0")
+    monkeypatch.setattr(base_environment.platform, "machine", lambda: "x86_64")
+    monkeypatch.setattr(base_environment.platform, "processor", lambda: "Test CPU")
+    monkeypatch.setattr(base_environment.os, "cpu_count", lambda: 16)
     monkeypatch.setattr(
-        base_module,
+        base_environment,
         "get_gpu_list",
         lambda: [
             {
@@ -89,7 +90,7 @@ def test_collect_host_environment_info_normalizes_hardware(monkeypatch):
         ],
     )
     monkeypatch.setattr(
-        base_module,
+        base_environment,
         "check_torch_version_status",
         lambda: {
             "available_types": ["all", "cpu", "cu128"],
@@ -114,8 +115,8 @@ def test_collect_host_environment_info_normalizes_hardware(monkeypatch):
 
 
 def test_collect_host_environment_info_keeps_partial_results(monkeypatch):
-    monkeypatch.setattr(base_module, "get_gpu_list", lambda: (_ for _ in ()).throw(RuntimeError("gpu failed")))
-    monkeypatch.setattr(base_module, "check_torch_version_status", lambda: (_ for _ in ()).throw(RuntimeError("torch failed")))
+    monkeypatch.setattr(base_environment, "get_gpu_list", lambda: (_ for _ in ()).throw(RuntimeError("gpu failed")))
+    monkeypatch.setattr(base_environment, "check_torch_version_status", lambda: (_ for _ in ()).throw(RuntimeError("torch failed")))
 
     info = base_module.collect_host_environment_info()
 
