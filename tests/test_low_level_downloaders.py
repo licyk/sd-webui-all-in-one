@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import threading
@@ -2086,7 +2087,7 @@ def test_requests_downloader_target_lock_is_scoped_by_directory(tmp_path):
     thread.start()
     assert first_entered.wait(timeout=2)
     with requests_models._target_download_lock(second_target):
-        assert requests_models._lock_path_for(second_target).exists()
+        assert requests_models._lock_path_for(second_target).exists() is (os.name != "nt")
     assert not requests_models._lock_path_for(second_target).exists()
     release_first.set()
     thread.join(timeout=2)
@@ -2099,7 +2100,7 @@ def test_requests_downloader_target_lock_is_removed_after_error(tmp_path):
 
     with pytest.raises(RuntimeError, match="download failed"):
         with requests_models._target_download_lock(target):
-            assert requests_models._lock_path_for(target).exists()
+            assert requests_models._lock_path_for(target).exists() is (os.name != "nt")
             raise RuntimeError("download failed")
 
     assert not requests_models._lock_path_for(target).exists()

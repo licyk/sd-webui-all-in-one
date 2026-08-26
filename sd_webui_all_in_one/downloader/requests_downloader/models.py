@@ -1,6 +1,7 @@
 """Requests 下载器共享模型、错误和目标文件策略。"""
 
 import hashlib
+import importlib
 import os
 import threading
 from collections.abc import Iterator, Sequence
@@ -197,12 +198,15 @@ def _verify_existing_file(
 @contextmanager
 def _posix_target_download_lock(lock_path: Path) -> Iterator[None]:
     """获取可安全删除的 POSIX 文件锁。"""
-    import fcntl
+    fcntl = importlib.import_module("fcntl")
+    flock = getattr(fcntl, "flock")
+    lock_ex = getattr(fcntl, "LOCK_EX")
+    lock_un = getattr(fcntl, "LOCK_UN")
 
     while True:
         lock_file = lock_path.open("a+b")
         try:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            flock(lock_file.fileno(), lock_ex)
             try:
                 lock_path_stat = lock_path.stat()
             except FileNotFoundError:
@@ -213,7 +217,7 @@ def _posix_target_download_lock(lock_path: Path) -> Iterator[None]:
         except BaseException:
             lock_file.close()
             raise
-        fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+        flock(lock_file.fileno(), lock_un)
         lock_file.close()
 
     try:
@@ -222,7 +226,7 @@ def _posix_target_download_lock(lock_path: Path) -> Iterator[None]:
         try:
             lock_path.unlink(missing_ok=True)
         finally:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+            flock(lock_file.fileno(), lock_un)
             lock_file.close()
 
 
