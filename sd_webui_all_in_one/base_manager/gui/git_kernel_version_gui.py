@@ -16,7 +16,6 @@ from typing import Any
 from sd_webui_all_in_one.base_manager.version_manager import (
     BranchInfo,
     CommitInfo,
-    RepositoryState,
     configure_git_env,
     inspect_repository,
     list_branches,
@@ -25,6 +24,7 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     switch_repository_commit,
     update_repository,
 )
+from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryState
 from sd_webui_all_in_one.base_manager.gui.version_gui import (
     BackgroundTaskMixin,
     BranchSwitchDialog,

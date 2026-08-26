@@ -10,7 +10,6 @@ from tkinter import (
 from sd_webui_all_in_one.base_manager.version_manager import (
     BranchInfo,
     CommitInfo,
-    RepositoryState,
     inspect_repository,
     list_branches,
     list_commits,
@@ -18,6 +17,7 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     switch_repository_commit,
     update_repository,
 )
+from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryState
 from sd_webui_all_in_one.base_manager.gui.version_gui import (
     BranchSwitchDialog,
     CommitSwitchDialog,

@@ -432,7 +432,7 @@ def test_extension_manager_lifecycle_delegates_and_aggregates(monkeypatch, tmp_p
     )
 
     def fake_inspect(path):
-        return version_manager.RepositoryState(
+        return repository_inspector.RepositoryState(
             path=path,
             is_git_repo=path.name == "git-ext",
             name=path.name,

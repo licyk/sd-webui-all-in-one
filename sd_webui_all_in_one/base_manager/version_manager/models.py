@@ -12,10 +12,6 @@ from typing import (
 from sd_webui_all_in_one.base_manager.base import (
     PyTorchUpdateStatus,
 )
-from sd_webui_all_in_one.base_manager.repository_inspector import (
-    RepositoryState,  # noqa: F401
-)
-
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from sd_webui_all_in_one.logger import get_logger
 

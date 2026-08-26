@@ -15,7 +15,6 @@ from sd_webui_all_in_one.base_manager.base import (
     apply_git_config_global_to_process,
 )
 from sd_webui_all_in_one.base_manager.repository_inspector import (
-    RepositoryState,  # noqa: F401
     inspect_repository,
     run_git_output,
 )

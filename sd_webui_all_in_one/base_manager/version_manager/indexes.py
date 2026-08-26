@@ -13,9 +13,6 @@ from typing import (
 from sd_webui_all_in_one.base_manager.base import (
     get_repo_name_from_url,
 )
-from sd_webui_all_in_one.base_manager.repository_inspector import (
-    RepositoryState,  # noqa: F401
-)
 from sd_webui_all_in_one.package_analyzer import CommonVersionComparison, PyWhlVersionComparison, get_package_version_from_library, is_prerelease_version, parse_version_component
 
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME

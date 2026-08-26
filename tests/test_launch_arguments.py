@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 import sd_webui_all_in_one.launch_arguments as launch_arguments_module
+import sd_webui_all_in_one.base_manager.invokeai_base.catalog as invokeai_catalog
 from sd_webui_all_in_one.api_server import registry
 from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, qwen_tts_webui_base, sd_trainer_base, sd_webui_base
 from sd_webui_all_in_one.launch_arguments import (
@@ -633,9 +634,9 @@ def get_args_parser():
 
     invoke_parser = argparse.ArgumentParser()
     invoke_parser.add_argument("--invoke-model")
-    original_import_module = invokeai_base.importlib.import_module
+    original_import_module = invokeai_catalog.importlib.import_module
     monkeypatch.setattr(
-        invokeai_base.importlib,
+        invokeai_catalog.importlib,
         "import_module",
         lambda name: SimpleNamespace(_parser=invoke_parser) if name == "invokeai.frontend.cli.arg_parser" else original_import_module(name),
     )

@@ -35,7 +35,7 @@ from sd_webui_all_in_one.base_manager.version_manager.repository import (
     switch_repository_commit,
     update_repository,
 )
-from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryState, inspect_repository
+from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
 
 __all__ = [
     "check_extension_updates",
@@ -69,6 +69,5 @@ __all__ = [
     "switch_repository_branch",
     "switch_repository_commit",
     "update_repository",
-    "RepositoryState",
     "inspect_repository",
 ]

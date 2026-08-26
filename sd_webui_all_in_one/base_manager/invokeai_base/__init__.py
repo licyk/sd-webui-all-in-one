@@ -1,7 +1,6 @@
 """Public facade for the invokeai product manager."""
 
 from sd_webui_all_in_one.base_manager.invokeai_base.catalog import (
-    importlib,
     INVOKEAI_LAUNCH_ARGUMENT_PROVIDER_IDENTITY,
     get_invokeai_launch_argument_catalog,
 )
@@ -62,7 +61,6 @@ from sd_webui_all_in_one.base_manager.invokeai_base.shared import (
 )
 
 __all__ = [
-    "importlib",
     "INVOKEAI_LAUNCH_ARGUMENT_PROVIDER_IDENTITY",
     "get_invokeai_launch_argument_catalog",
     "get_pytorch_mirror_type_for_ivnokeai",

@@ -13,10 +13,10 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     ExtensionIndexItem,
     ExtensionManager,
     ManagedExtension,
-    RepositoryState,
     configure_git_env,
     list_branches,
 )
+from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryState
 from sd_webui_all_in_one.base_manager.gui.version_gui import (
     BackgroundTaskMixin,
     apply_gui_theme,
