@@ -16,7 +16,8 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-from sd_webui_all_in_one.downloader.requests_downloader import DownloadCancelledError, DownloadProgressEvent, _filename_from_url, _normalize_urls
+from sd_webui_all_in_one.downloader.requests_downloader.http import _filename_from_url, _normalize_urls
+from sd_webui_all_in_one.downloader.requests_downloader.models import DownloadCancelledError, DownloadProgressEvent
 from sd_webui_all_in_one.utils import (
     find_port,
     is_port_in_use,

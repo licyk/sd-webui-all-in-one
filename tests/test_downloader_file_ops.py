@@ -11,7 +11,7 @@ import pytest
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.downloader import archive_downloader
 from sd_webui_all_in_one.downloader import downloader as downloader_module
-from sd_webui_all_in_one.downloader import requests_downloader
+from sd_webui_all_in_one.downloader.requests_downloader import models as requests_models
 from sd_webui_all_in_one.downloader.multi_thread import MultiThreadDownloader
 from sd_webui_all_in_one import archive_manager
 from sd_webui_all_in_one import file_manager
@@ -53,7 +53,7 @@ def test_download_executer_does_not_outer_retry_state_error(monkeypatch, tmp_pat
 
     def fail_once(**kwargs):
         calls.append(kwargs)
-        raise requests_downloader._ResumeStateError("bad state")
+        raise requests_models._ResumeStateError("bad state")
 
     monkeypatch.setattr(downloader_module, "download_file_from_url", fail_once)
 

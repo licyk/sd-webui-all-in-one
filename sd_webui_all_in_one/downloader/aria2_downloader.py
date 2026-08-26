@@ -7,15 +7,14 @@ from pathlib import Path
 from typing import Any
 
 from sd_webui_all_in_one.downloader.aria2_server import Aria2RpcServer
-from sd_webui_all_in_one.downloader.requests_downloader import (
+from sd_webui_all_in_one.downloader.requests_downloader.api import _normalize_options
+from sd_webui_all_in_one.downloader.requests_downloader.http import _filename_from_url, _normalize_urls
+from sd_webui_all_in_one.downloader.requests_downloader.models import (
     DEFAULT_MAX_CONNECTION_PER_SERVER,
     DEFAULT_MIN_SPLIT_SIZE,
     DEFAULT_PIECE_LENGTH,
     DEFAULT_SPLIT,
-    _filename_from_url,
     _is_full_hash,
-    _normalize_options,
-    _normalize_urls,
     _resolve_existing_file_policy,
 )
 from sd_webui_all_in_one.downloader.types import ExistingFilePolicy, validate_download_file_name

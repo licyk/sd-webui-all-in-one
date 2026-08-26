@@ -7,6 +7,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import pytest
 
 from sd_webui_all_in_one.downloader import requests_downloader
+from sd_webui_all_in_one.downloader.requests_downloader import models as requests_models
 
 
 PAYLOAD = (b"0123456789abcdef" * 8192) + b"end"
@@ -76,7 +77,7 @@ class _DownloadHandler(BaseHTTPRequestHandler):
 
 @pytest.fixture
 def local_download_server(monkeypatch):
-    monkeypatch.setattr(requests_downloader, "ARIA2_SIZE_OPTION_MIN", 1)
+    monkeypatch.setattr(requests_models, "ARIA2_SIZE_OPTION_MIN", 1)
     _DownloadHandler.retry_count = 0
     server = ThreadingHTTPServer(("127.0.0.1", 0), _DownloadHandler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -118,7 +119,7 @@ def test_requests_downloader_real_http_retry_and_permanent_error(local_download_
     assert result.read_bytes() == PAYLOAD
     assert _DownloadHandler.retry_count >= 2
 
-    with pytest.raises(requests_downloader.DownloadPermanentHttpError) as exc:
+    with pytest.raises(requests_models.DownloadPermanentHttpError) as exc:
         requests_downloader.download_file_from_url(
             f"{local_download_server}/missing",
             save_path=tmp_path,
