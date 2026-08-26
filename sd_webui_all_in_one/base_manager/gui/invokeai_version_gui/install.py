@@ -16,6 +16,8 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import GuiActionsMixinCont
 
 
 class InstallActionsMixin(GuiActionsMixinContext):
+    """提供 InvokeAI 扩展安装动作。"""
+
     def _create_install_tab(
         self,
     ) -> None:

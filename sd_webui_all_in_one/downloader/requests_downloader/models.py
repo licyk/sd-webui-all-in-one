@@ -317,6 +317,8 @@ class _DownloadOptions:
 
 @dataclass(frozen=True)
 class DownloadProgressEvent:
+    """描述一次下载进度回调携带的状态。"""
+
     target_path: Path
     total_size: int
     completed_size: int

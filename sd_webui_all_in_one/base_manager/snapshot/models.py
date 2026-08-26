@@ -23,6 +23,11 @@ ExtensionEnabledResolver = Callable[[str, Path], bool | None]
 
 
 def default_system_snapshot() -> SystemSnapshot:
+    """创建当前运行环境的默认系统快照。
+
+    Returns:
+        SystemSnapshot: 当前操作系统和处理器架构信息。
+    """
     return SystemSnapshot(system=platform.system(), architecture=platform.machine())
 
 

@@ -195,12 +195,25 @@ def aria2(
             always_resume=False 时允许重头下载前的续传失败阈值
         existing_file_policy (ExistingFilePolicy):
             已有正式文件的处理策略
+        connect_timeout (int):
+            建立连接的超时时间，单位为秒
+        read_timeout (int):
+            读取响应的超时时间，单位为秒
+        lowest_speed_limit (int):
+            最低下载速度阈值，单位为字节每秒，0 表示禁用
+        lowest_speed_time (int):
+            下载速度低于阈值后允许持续的时间，单位为秒
+        progress_callback (Any | None):
+            接收下载进度事件的回调函数
+        cancel_event (threading.Event | None):
+            用于请求取消下载的线程事件
 
     Returns:
         Path: 下载成功时返回文件路径
 
     Raises:
         RuntimeError: 下载出现错误
+        ValueError: 已有文件的哈希或远端大小验证失败
     """
     if path is None:
         path = Path().cwd()

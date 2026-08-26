@@ -15,6 +15,17 @@ HASH_ALGORITHM_NAMES = {
 
 
 def normalize_hash_algorithm(algorithm: str) -> str:
+    """规范化哈希算法名称。
+
+    Args:
+        algorithm (str): 待规范化的哈希算法名称。
+
+    Returns:
+        str: hashlib 支持的规范算法名称。
+
+    Raises:
+        ValueError: 传入的哈希算法不受支持。
+    """
     try:
         return HASH_ALGORITHM_NAMES[algorithm.strip().lower()]
     except KeyError as e:
@@ -26,7 +37,16 @@ def compare_hash(
     expected_hash: str,
     algorithm: str,
 ) -> bool:
-    """检查文件哈希是否匹配给定的十六进制前缀或完整值"""
+    """检查文件哈希是否匹配给定的十六进制前缀或完整值。
+
+    Args:
+        file_path (str | Path): 待校验的文件路径。
+        expected_hash (str): 预期的十六进制哈希前缀或完整值。
+        algorithm (str): 用于计算文件哈希的算法名称。
+
+    Returns:
+        bool: 文件哈希是否匹配预期值。
+    """
     normalized_algorithm = normalize_hash_algorithm(algorithm)
     hasher = hashlib.new(normalized_algorithm)
     with open(file_path, "rb") as file:

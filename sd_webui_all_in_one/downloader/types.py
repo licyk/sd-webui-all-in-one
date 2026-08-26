@@ -30,7 +30,17 @@ _WINDOWS_RESERVED_FILE_NAMES = {
 
 
 def validate_download_file_name(file_name: str) -> str:
-    """校验下载文件名；统一入口只允许单个文件名，不允许相对子目录"""
+    """校验下载文件名；统一入口只允许单个文件名，不允许相对子目录。
+
+    Args:
+        file_name (str): 待校验的下载文件名。
+
+    Returns:
+        str: 通过校验的原始文件名。
+
+    Raises:
+        ValueError: 文件名为空、包含路径或使用 Windows 保留名称。
+    """
     if not isinstance(file_name, str) or not file_name or "\0" in file_name:
         raise ValueError("下载文件名不能为空或包含 NUL")
     if file_name in {".", ".."} or "/" in file_name or "\\" in file_name:

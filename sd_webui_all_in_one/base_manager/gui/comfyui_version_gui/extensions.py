@@ -29,6 +29,8 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import GuiActionsMixinCont
 
 
 class ExtensionActionsMixin(GuiActionsMixinContext):
+    """提供 ComfyUI 自定义节点管理动作。"""
+
     def _create_extensions_tab(
         self,
     ) -> None:

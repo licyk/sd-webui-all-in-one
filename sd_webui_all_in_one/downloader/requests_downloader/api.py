@@ -178,12 +178,25 @@ def download_file_from_url(
             always_resume=False 时允许重头下载前的续传失败阈值, 0 表示所有 URI 均失败后重头下载
         existing_file_policy (ExistingFilePolicy | None):
             已有正式文件的处理策略；None 保持兼容映射（re_download=overwrite、continue_download=resume，否则 reuse）
+        connect_timeout (int):
+            建立连接的超时时间，单位为秒
+        read_timeout (int):
+            读取响应的超时时间，单位为秒
+        lowest_speed_limit (int):
+            最低下载速度阈值，单位为字节每秒，0 表示禁用
+        lowest_speed_time (int):
+            下载速度低于阈值后允许持续的时间，单位为秒
+        progress_callback (Any | None):
+            接收下载进度事件的回调函数
+        cancel_event (threading.Event | None):
+            用于请求取消下载的线程事件
 
     Returns:
         Path: 下载的文件路径
 
     Raises:
         ValueError: 当提供了 hash_prefix 但文件哈希值不匹配时
+        DownloadIntegrityError: 下载内容或远端摘要未通过完整性校验
         IOError: 下载过程中发生 IO 异常
     """
 

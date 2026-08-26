@@ -305,6 +305,14 @@ def download_file_cli(
             always_resume=False 时允许重头下载前的续传失败阈值
         existing_file_policy (ExistingFilePolicy):
             已有正式文件的处理策略
+        connect_timeout (int):
+            建立连接的超时时间，单位为秒
+        read_timeout (int):
+            读取响应的超时时间，单位为秒
+        lowest_speed_limit (int):
+            最低下载速度阈值，单位为字节每秒，0 表示禁用
+        lowest_speed_time (int):
+            下载速度低于阈值后允许持续的时间，单位为秒
     """
     download_file(
         url=url,

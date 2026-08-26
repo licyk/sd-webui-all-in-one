@@ -35,6 +35,8 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import GuiActionsMixinCont
 
 
 class InstallActionsMixin(GuiActionsMixinContext):
+    """提供 ComfyUI 自定义节点安装动作。"""
+
     _extension_index_generation: int
 
     def _configure_extension_index_url(self) -> str:

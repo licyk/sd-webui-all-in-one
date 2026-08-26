@@ -32,6 +32,8 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import GuiActionsMixinCont
 
 
 class KernelActionsMixin(GuiActionsMixinContext):
+    """提供 SD WebUI 内核版本管理动作。"""
+
     def _create_kernel_tab(
         self,
     ) -> None:

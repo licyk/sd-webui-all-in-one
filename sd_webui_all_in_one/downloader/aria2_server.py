@@ -505,6 +505,10 @@ class Aria2RpcServer:
                 是否显示下载进度, 默认 True
             wait_complete (bool):
                 是否等待下载完成, 默认 True
+            progress_callback (Any | None):
+                接收下载进度事件的回调函数
+            cancel_event (Any | None):
+                用于请求取消下载的事件对象
 
         Returns:
             Path: 下载文件的路径
