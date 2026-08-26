@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import cast
 
-from .models import (
+from sd_webui_all_in_one.base_manager.snapshot.models import (
     SNAPSHOT_SCHEMA_VERSION,
     DirectUrlArchiveInfo,
     DirectUrlDirInfo,
@@ -304,6 +304,6 @@ def snapshot_from_dict(data: JsonObject) -> WebUiSnapshot:
 
 
 def _collect_current_system_info() -> SystemSnapshot:
-    from .collection import collect_system_info
+    from sd_webui_all_in_one.base_manager.snapshot.collection import collect_system_info
 
     return collect_system_info()

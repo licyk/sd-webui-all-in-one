@@ -12,8 +12,8 @@ from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.pkg_manager import install_requirements
 
-from .client import fetch_comfy_registry_install_info, logger
-from .models import ComfyRegistryInstallUnavailableError, ComfyRegistryNodeVersion
+from sd_webui_all_in_one.base_manager.comfy_registry.client import fetch_comfy_registry_install_info, logger
+from sd_webui_all_in_one.base_manager.comfy_registry.models import ComfyRegistryInstallUnavailableError, ComfyRegistryNodeVersion
 
 
 def _safe_zip_members(archive_path: Path) -> list[zipfile.ZipInfo]:

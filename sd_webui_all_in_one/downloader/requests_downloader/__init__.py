@@ -1,7 +1,7 @@
 """Requests 下载器。"""
 
-from .api import download_file_from_url
-from .models import (
+from sd_webui_all_in_one.downloader.requests_downloader.api import download_file_from_url
+from sd_webui_all_in_one.downloader.requests_downloader.models import (
     ARIA2_SIZE_OPTION_MAX,
     ARIA2_SIZE_OPTION_MIN,
     DEFAULT_MAX_CONNECTION_PER_SERVER,

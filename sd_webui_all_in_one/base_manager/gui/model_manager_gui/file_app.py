@@ -17,7 +17,7 @@ from sd_webui_all_in_one.base_manager.model_manager import (
     ModelEntry,
 )
 
-from .download_dialog import DownloadModelDialog, _format_size, _format_time
+from sd_webui_all_in_one.base_manager.gui.model_manager_gui.download_dialog import DownloadModelDialog, _format_size, _format_time
 
 
 class FileModelManagerApp(tk.Tk, BackgroundTaskMixin):

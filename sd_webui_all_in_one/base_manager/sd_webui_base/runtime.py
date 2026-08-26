@@ -22,8 +22,8 @@ from sd_webui_all_in_one.mirror_manager import (
     get_pypi_mirror_config,
 )
 
-from .extensions import set_sd_webui_extension_download_list_mirror
-from .shared import logger
+from sd_webui_all_in_one.base_manager.sd_webui_base.extensions import set_sd_webui_extension_download_list_mirror
+from sd_webui_all_in_one.base_manager.sd_webui_base.shared import logger
 
 
 def prepare_sd_webui_launch(

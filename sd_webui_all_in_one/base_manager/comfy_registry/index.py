@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from sd_webui_all_in_one.base_manager.version_manager import ExtensionIndexItem
 
-from .client import fetch_all_comfy_registry_nodes
-from .models import COMFY_REGISTRY_DEFAULT_PAGE_SIZE, COMFY_REGISTRY_UNAVAILABLE_STATUS, ComfyRegistryProgressCallback
+from sd_webui_all_in_one.base_manager.comfy_registry.client import fetch_all_comfy_registry_nodes
+from sd_webui_all_in_one.base_manager.comfy_registry.models import COMFY_REGISTRY_DEFAULT_PAGE_SIZE, COMFY_REGISTRY_UNAVAILABLE_STATUS, ComfyRegistryProgressCallback
 
 
 def fetch_comfy_registry_extension_index(

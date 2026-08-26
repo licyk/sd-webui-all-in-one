@@ -19,7 +19,7 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     package_version_matches_keyword,
 )
 
-from .helpers import _get_invokeai_version
+from sd_webui_all_in_one.base_manager.gui.invokeai_version_gui.helpers import _get_invokeai_version
 
 
 from sd_webui_all_in_one.base_manager.gui.version_gui import GuiActionsMixinContext

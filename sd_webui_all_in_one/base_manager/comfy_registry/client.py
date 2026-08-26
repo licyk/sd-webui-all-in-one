@@ -15,7 +15,7 @@ from sd_webui_all_in_one.config import (
     LOGGER_NAME,
 )
 
-from .models import (
+from sd_webui_all_in_one.base_manager.comfy_registry.models import (
     COMFY_REGISTRY_ACTIVE_VERSION_STATUSES,
     COMFY_REGISTRY_BASE_URL,
     COMFY_REGISTRY_CACHE_TTL_SECONDS,

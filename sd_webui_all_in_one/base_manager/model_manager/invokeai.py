@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from sd_webui_all_in_one.file_manager import copy_files
 
-from .models import logger
+from sd_webui_all_in_one.base_manager.model_manager.models import logger
 
 
 class InvokeAIModelManager:

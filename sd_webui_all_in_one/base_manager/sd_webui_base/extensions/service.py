@@ -31,7 +31,7 @@ from sd_webui_all_in_one.file_manager import (
     move_files,
     remove_files,
 )
-from ..shared import logger
+from sd_webui_all_in_one.base_manager.sd_webui_base.shared import logger
 
 
 def set_sd_webui_extension_download_list_mirror(

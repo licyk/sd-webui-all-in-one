@@ -24,9 +24,9 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     configure_gui_fonts,
 )
 
-from .extensions import ExtensionActionsMixin
-from .install import InstallActionsMixin
-from .kernel import KernelActionsMixin
+from sd_webui_all_in_one.base_manager.gui.comfyui_version_gui.extensions import ExtensionActionsMixin
+from sd_webui_all_in_one.base_manager.gui.comfyui_version_gui.install import InstallActionsMixin
+from sd_webui_all_in_one.base_manager.gui.comfyui_version_gui.kernel import KernelActionsMixin
 
 
 class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin, KernelActionsMixin, ExtensionActionsMixin, InstallActionsMixin):

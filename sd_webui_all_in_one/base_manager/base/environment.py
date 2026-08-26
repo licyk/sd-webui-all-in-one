@@ -24,7 +24,7 @@ logger = get_logger(
 )
 
 
-from .models import (
+from sd_webui_all_in_one.base_manager.base.models import (
     CpuEnvironmentInfo,
     EnvironmentCollectionError,
     EnvCheckTask,

@@ -9,8 +9,8 @@ from typing import Callable
 
 from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR
 
-from .io import load_snapshot
-from .models import SavedSnapshot, SnapshotSummary, WebUiSnapshot, logger, snapshot_to_dict
+from sd_webui_all_in_one.base_manager.snapshot.io import load_snapshot
+from sd_webui_all_in_one.base_manager.snapshot.models import SavedSnapshot, SnapshotSummary, WebUiSnapshot, logger, snapshot_to_dict
 
 
 def save_snapshot(snapshot: WebUiSnapshot, output: Path) -> Path:

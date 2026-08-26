@@ -22,7 +22,7 @@ from sd_webui_all_in_one.mirror_manager import (
 )
 from sd_webui_all_in_one.ansi_color import ANSIColor
 
-from .shared import logger
+from sd_webui_all_in_one.base_manager.sd_scripts_base.shared import logger
 
 SDScriptsBranchType: TypeAlias = Literal[
     "sd_scripts_main",

@@ -11,11 +11,11 @@ from typing import TYPE_CHECKING, Any, cast
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from sd_webui_all_in_one.logger import get_logger
 
-from . import models
-from .models import _DownloadOptions, _PieceLengthChangedError, _RemoteFileInfo, _ResumeStateError
+from sd_webui_all_in_one.downloader.requests_downloader import models
+from sd_webui_all_in_one.downloader.requests_downloader.models import _DownloadOptions, _PieceLengthChangedError, _RemoteFileInfo, _ResumeStateError
 
 if TYPE_CHECKING:
-    from .scheduler import _PieceStorage
+    from sd_webui_all_in_one.downloader.requests_downloader.scheduler import _PieceStorage
 
 
 logger = get_logger(name=LOGGER_NAME, level=LOGGER_LEVEL, color=LOGGER_COLOR)

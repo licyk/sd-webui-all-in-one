@@ -28,8 +28,8 @@ from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 
-from .catalog import QWEN_TTS_WEBUI_PRESET_HF_PATH, QWEN_TTS_WEBUI_PRESET_MS_PATH, QWEN_TTS_WEBUI_REPO
-from .shared import logger
+from sd_webui_all_in_one.base_manager.qwen_tts_webui_base.catalog import QWEN_TTS_WEBUI_PRESET_HF_PATH, QWEN_TTS_WEBUI_PRESET_MS_PATH, QWEN_TTS_WEBUI_REPO
+from sd_webui_all_in_one.base_manager.qwen_tts_webui_base.shared import logger
 
 
 def install_qwen_tts_webui_config(

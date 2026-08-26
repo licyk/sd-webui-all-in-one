@@ -7,9 +7,9 @@ from pathlib import Path
 
 from sd_webui_all_in_one.base_manager.base import get_repo_name_from_url
 
-from .codec import _require_object, snapshot_from_dict
-from .collection import collect_python_info, collect_system_info
-from .models import (
+from sd_webui_all_in_one.base_manager.snapshot.codec import _require_object, snapshot_from_dict
+from sd_webui_all_in_one.base_manager.snapshot.collection import collect_python_info, collect_system_info
+from sd_webui_all_in_one.base_manager.snapshot.models import (
     SNAPSHOT_SCHEMA_VERSION,
     ExtensionSnapshot,
     JsonObject,

@@ -50,7 +50,7 @@ from sd_webui_all_in_one.launch_arguments import (
 )
 from sd_webui_all_in_one.utils import print_divider
 
-from .shared import logger
+from sd_webui_all_in_one.base_manager.invokeai_base.shared import logger
 
 
 @contextmanager
@@ -104,7 +104,7 @@ def get_pytorch_mirror_type_for_ivnokeai(
         PyTorchDeviceType:
             PyTorch 镜像源类型
     """
-    from .lifecycle import get_invokeai_require_torch_version
+    from sd_webui_all_in_one.base_manager.invokeai_base.lifecycle import get_invokeai_require_torch_version
 
     torch_ver = get_invokeai_require_torch_version()
     return get_pytorch_mirror_type(torch_ver=torch_ver, device_type=device_type)
@@ -209,7 +209,7 @@ def sync_invokeai_component(
 
     # 获取 InvokeAI 和 InvokeAI 所需的 PyTorch 的版本
     invokeai_ver = importlib.metadata.version("invokeai")
-    from .lifecycle import get_invokeai_require_torch_version
+    from sd_webui_all_in_one.base_manager.invokeai_base.lifecycle import get_invokeai_require_torch_version
 
     torch_ver = get_invokeai_require_torch_version()
 

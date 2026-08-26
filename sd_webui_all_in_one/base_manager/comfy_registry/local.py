@@ -10,7 +10,7 @@ if sys.version_info >= (3, 11):
 else:
     from sd_webui_all_in_one import toml_parser as tomllib
 
-from .models import ComfyRegistryLocalInfo
+from sd_webui_all_in_one.base_manager.comfy_registry.models import ComfyRegistryLocalInfo
 
 
 def read_comfy_registry_info(path: Path) -> ComfyRegistryLocalInfo | None:

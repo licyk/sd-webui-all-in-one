@@ -8,8 +8,8 @@ from typing import (
     TypedDict,
 )
 from pathlib import Path
-from ..components import _temporary_invokeai_root
-from ..shared import logger
+from sd_webui_all_in_one.base_manager.invokeai_base.components import _temporary_invokeai_root
+from sd_webui_all_in_one.base_manager.invokeai_base.shared import logger
 
 
 class InvokeAILocalModelInfo(TypedDict, total=False):

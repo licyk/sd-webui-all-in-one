@@ -11,7 +11,7 @@ from sd_webui_all_in_one.launch_arguments import (
     discover_launch_argument_catalog,
 )
 
-from .components import _invokeai_help_command, _temporary_invokeai_root
+from sd_webui_all_in_one.base_manager.invokeai_base.components import _invokeai_help_command, _temporary_invokeai_root
 
 INVOKEAI_LAUNCH_ARGUMENT_PROVIDER_IDENTITY = "invokeai.frontend.cli.arg_parser:_parser"
 

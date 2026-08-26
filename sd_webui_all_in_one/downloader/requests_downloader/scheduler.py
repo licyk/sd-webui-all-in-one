@@ -7,9 +7,9 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Any
 
-from .http import _url_host_key
-from .models import _Segment
-from .state import _in_flight_bitfield_to_hex
+from sd_webui_all_in_one.downloader.requests_downloader.http import _url_host_key
+from sd_webui_all_in_one.downloader.requests_downloader.models import _Segment
+from sd_webui_all_in_one.downloader.requests_downloader.state import _in_flight_bitfield_to_hex
 
 
 class _ThreadLocalSessionPool:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .models import WEBUI_MODEL_TITLES, WebUiModelType, logger
+from sd_webui_all_in_one.base_manager.model_manager.models import WEBUI_MODEL_TITLES, WebUiModelType, logger
 
 
 def launch_model_manager_gui(

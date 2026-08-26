@@ -37,9 +37,9 @@ from sd_webui_all_in_one.env_check import (
     ComfyUIConflictAnalysisResult,
     check_comfyui_component_dependencies,
 )
-from ..shared import logger
+from sd_webui_all_in_one.base_manager.comfyui_base.shared import logger
 
-from .catalog import COMFYUI_CUSTOM_NODE_LIST_PATH
+from sd_webui_all_in_one.base_manager.comfyui_base.extensions.catalog import COMFYUI_CUSTOM_NODE_LIST_PATH
 
 
 def _normalize_custom_node_name(name: str) -> str:

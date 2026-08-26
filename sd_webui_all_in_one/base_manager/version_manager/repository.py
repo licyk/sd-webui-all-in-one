@@ -39,7 +39,7 @@ ExtensionSourceType = Literal["git", "comfy-registry", "file", "unknown"]
 """扩展安装来源类型"""
 
 
-from .models import BranchInfo, CommitInfo, RepositoryUpdateStatus
+from sd_webui_all_in_one.base_manager.version_manager.models import BranchInfo, CommitInfo, RepositoryUpdateStatus
 
 
 def configure_git_env(

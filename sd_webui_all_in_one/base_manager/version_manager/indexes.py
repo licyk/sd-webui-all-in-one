@@ -36,7 +36,7 @@ ExtensionSourceType = Literal["git", "comfy-registry", "file", "unknown"]
 """扩展安装来源类型"""
 
 
-from .models import ExtensionIndexItem, PackageVersionInfo
+from sd_webui_all_in_one.base_manager.version_manager.models import ExtensionIndexItem, PackageVersionInfo
 
 
 def _pick_extension_name(item: dict[str, Any]) -> str:

@@ -10,7 +10,7 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from .config import logger
+from sd_webui_all_in_one.base_manager.hotpatcher_manager.config import logger
 
 
 @dataclass(slots=True)

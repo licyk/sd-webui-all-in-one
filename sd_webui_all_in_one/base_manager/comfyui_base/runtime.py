@@ -22,7 +22,7 @@ from sd_webui_all_in_one.optimize import (
     apply_pytorch_alloc_conf,
 )
 
-from .shared import logger
+from sd_webui_all_in_one.base_manager.comfyui_base.shared import logger
 
 
 def prepare_comfyui_launch(

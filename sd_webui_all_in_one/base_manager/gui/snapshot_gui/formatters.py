@@ -12,7 +12,7 @@ from sd_webui_all_in_one.base_manager.snapshot_restore import (
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from sd_webui_all_in_one.logger import get_logger
 
-from .models import SnapshotListItem
+from sd_webui_all_in_one.base_manager.gui.snapshot_gui.models import SnapshotListItem
 
 SnapshotFactory = Callable[[bool], WebUiSnapshot]
 

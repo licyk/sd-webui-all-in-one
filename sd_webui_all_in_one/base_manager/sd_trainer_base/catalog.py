@@ -30,7 +30,7 @@ from sd_webui_all_in_one.launch_arguments import (
 )
 from sd_webui_all_in_one.utils import TemporaryModulePath
 
-from .shared import logger
+from sd_webui_all_in_one.base_manager.sd_trainer_base.shared import logger
 
 SD_TRAINER_LAUNCH_ARGUMENT_PROVIDER_IDENTITY = "gui:parser"
 KOHYA_GUI_LAUNCH_ARGUMENT_PROVIDER_IDENTITY = "kohya_gui:initialize_arg_parser"

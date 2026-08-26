@@ -11,8 +11,8 @@ import time
 import uuid
 from typing import Any, Callable
 
-from .config import DEFAULT_RUNTIME_HOST, DEFAULT_RUNTIME_PORT, get_hotpatcher_default_config, logger
-from .protocol import RemoteServiceError, RuntimeBrowserEvent, RuntimeLogEntry, RuntimeMessage, RuntimeServiceChannel
+from sd_webui_all_in_one.base_manager.hotpatcher_manager.config import DEFAULT_RUNTIME_HOST, DEFAULT_RUNTIME_PORT, get_hotpatcher_default_config, logger
+from sd_webui_all_in_one.base_manager.hotpatcher_manager.protocol import RemoteServiceError, RuntimeBrowserEvent, RuntimeLogEntry, RuntimeMessage, RuntimeServiceChannel
 
 
 class _RuntimeServer(socketserver.ThreadingTCPServer):

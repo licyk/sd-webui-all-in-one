@@ -31,8 +31,8 @@ from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 
-from .catalog import SDTrainerBranchType, SD_TRAINER_BRANCH_INFO_DICT, SD_TRAINER_BRANCH_LIST
-from .shared import logger
+from sd_webui_all_in_one.base_manager.sd_trainer_base.catalog import SDTrainerBranchType, SD_TRAINER_BRANCH_INFO_DICT, SD_TRAINER_BRANCH_LIST
+from sd_webui_all_in_one.base_manager.sd_trainer_base.shared import logger
 
 
 def install_sd_trainer(

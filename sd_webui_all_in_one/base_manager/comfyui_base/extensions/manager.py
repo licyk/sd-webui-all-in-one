@@ -16,8 +16,8 @@ from sd_webui_all_in_one.base_manager.version_manager import (
 )
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 
-from .install import install_comfyui_custom_node
-from .local import (
+from sd_webui_all_in_one.base_manager.comfyui_base.extensions.install import install_comfyui_custom_node
+from sd_webui_all_in_one.base_manager.comfyui_base.extensions.local import (
     _normalize_custom_node_name,
     list_comfyui_custom_nodes,
     resolve_comfyui_custom_node_path,

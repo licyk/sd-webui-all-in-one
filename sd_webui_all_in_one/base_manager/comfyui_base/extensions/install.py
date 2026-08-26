@@ -14,9 +14,9 @@ from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.mirror_manager import (
     GITHUB_MIRROR_LIST,
 )
-from ..shared import logger
+from sd_webui_all_in_one.base_manager.comfyui_base.shared import logger
 
-from .local import list_comfyui_custom_nodes
+from sd_webui_all_in_one.base_manager.comfyui_base.extensions.local import list_comfyui_custom_nodes
 
 
 def install_comfyui_custom_node(

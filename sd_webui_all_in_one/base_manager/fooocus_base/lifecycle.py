@@ -36,8 +36,8 @@ from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
 from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 
-from .catalog import FOOOCUS_BRANCH_INFO_DICT, FOOOCUS_BRANCH_LIST, FOOOCUS_PRESET_HF_PATH, FOOOCUS_PRESET_MS_PATH, FooocusBranchType
-from .shared import logger
+from sd_webui_all_in_one.base_manager.fooocus_base.catalog import FOOOCUS_BRANCH_INFO_DICT, FOOOCUS_BRANCH_LIST, FOOOCUS_PRESET_HF_PATH, FOOOCUS_PRESET_MS_PATH, FooocusBranchType
+from sd_webui_all_in_one.base_manager.fooocus_base.shared import logger
 
 FOOOCUS_TRANSLATE_ZH_PATH = ROOT_PATH / "base_manager" / "config" / "fooocus_zh_cn.json"
 

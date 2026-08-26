@@ -17,7 +17,7 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     check_webui_updates,
 )
 
-from .extensions import list_invokeai_custom_nodes
+from sd_webui_all_in_one.base_manager.invokeai_base.extensions import list_invokeai_custom_nodes
 
 
 def check_invokeai_updates(

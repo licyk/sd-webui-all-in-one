@@ -15,7 +15,7 @@ from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from sd_webui_all_in_one.downloader.types import DEFAULT_USER_AGENT, validate_download_file_name
 from sd_webui_all_in_one.logger import get_logger
 
-from .models import DownloadIntegrityError, _RemoteFileInfo, _RemoteProbeResult, _UrlInput
+from sd_webui_all_in_one.downloader.requests_downloader.models import DownloadIntegrityError, _RemoteFileInfo, _RemoteProbeResult, _UrlInput
 
 
 logger = get_logger(name=LOGGER_NAME, level=LOGGER_LEVEL, color=LOGGER_COLOR)

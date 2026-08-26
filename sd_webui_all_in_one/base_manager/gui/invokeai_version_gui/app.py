@@ -21,10 +21,10 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
 )
 from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
 
-from .helpers import _invokeai_node_enabled, _set_invokeai_node_enabled
-from .extensions import ExtensionActionsMixin
-from .install import InstallActionsMixin
-from .kernel import KernelActionsMixin
+from sd_webui_all_in_one.base_manager.gui.invokeai_version_gui.helpers import _invokeai_node_enabled, _set_invokeai_node_enabled
+from sd_webui_all_in_one.base_manager.gui.invokeai_version_gui.extensions import ExtensionActionsMixin
+from sd_webui_all_in_one.base_manager.gui.invokeai_version_gui.install import InstallActionsMixin
+from sd_webui_all_in_one.base_manager.gui.invokeai_version_gui.kernel import KernelActionsMixin
 
 
 class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin, KernelActionsMixin, ExtensionActionsMixin, InstallActionsMixin):

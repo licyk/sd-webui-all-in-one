@@ -15,7 +15,7 @@ from sd_webui_all_in_one.package_analyzer import normalize_package_name
 from sd_webui_all_in_one.pkg_manager import pip_install
 from sd_webui_all_in_one.pytorch_manager import get_pytorch_mirror, infer_pytorch_device_type
 
-from .models import PackageRestoreAction, PackageRestorePlanItem, SnapshotRestoreOptions, logger
+from sd_webui_all_in_one.base_manager.snapshot_restore.models import PackageRestoreAction, PackageRestorePlanItem, SnapshotRestoreOptions, logger
 
 PYTORCH_PACKAGE_NAMES = {"torch", "torchvision", "torchaudio", "xformers"}
 PROTECTED_PACKAGE_NAMES = {"sd-webui-all-in-one", "pip", "wheel", "uv"}

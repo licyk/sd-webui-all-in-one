@@ -8,8 +8,8 @@ from sd_webui_all_in_one.base_manager.model_manager import (
     WebUiModelType,
 )
 
-from .file_app import FileModelManagerApp
-from .invokeai_app import InvokeAIModelManagerApp
+from sd_webui_all_in_one.base_manager.gui.model_manager_gui.file_app import FileModelManagerApp
+from sd_webui_all_in_one.base_manager.gui.model_manager_gui.invokeai_app import InvokeAIModelManagerApp
 
 
 def launch_model_manager_gui(

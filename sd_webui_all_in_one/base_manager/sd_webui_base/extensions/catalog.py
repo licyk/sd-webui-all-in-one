@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import (
     TypedDict,
 )
-from ..catalog import SDWebUiBranchType
+from sd_webui_all_in_one.base_manager.sd_webui_base.catalog import SDWebUiBranchType
 
 
 class SDWebUiExtensionInfo(TypedDict):

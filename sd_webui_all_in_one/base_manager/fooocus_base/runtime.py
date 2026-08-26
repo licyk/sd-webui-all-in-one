@@ -25,8 +25,8 @@ from sd_webui_all_in_one.optimize import (
     apply_pytorch_alloc_conf,
 )
 
-from .lifecycle import _launch_args_has_option
-from .shared import logger
+from sd_webui_all_in_one.base_manager.fooocus_base.lifecycle import _launch_args_has_option
+from sd_webui_all_in_one.base_manager.fooocus_base.shared import logger
 
 
 def prepare_fooocus_launch(

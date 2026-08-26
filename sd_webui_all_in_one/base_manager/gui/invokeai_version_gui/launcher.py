@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .app import InvokeAiVersionManagerApp
+from sd_webui_all_in_one.base_manager.gui.invokeai_version_gui.app import InvokeAiVersionManagerApp
 
 
 def launch_invokeai_version_gui(

@@ -34,7 +34,7 @@ from sd_webui_all_in_one.mirror_manager import (
 )
 from sd_webui_all_in_one.utils import TemporaryModulePath
 
-from .shared import logger
+from sd_webui_all_in_one.base_manager.sd_webui_base.shared import logger
 
 SD_WEBUI_LAUNCH_ARGUMENT_PROVIDER_IDENTITY = "modules.cmd_args:parser"
 

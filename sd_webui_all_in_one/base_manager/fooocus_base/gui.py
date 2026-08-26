@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .catalog import FOOOCUS_BRANCH_INFO_DICT
-from .reporting import get_fooocus_snapshot
+from sd_webui_all_in_one.base_manager.fooocus_base.catalog import FOOOCUS_BRANCH_INFO_DICT
+from sd_webui_all_in_one.base_manager.fooocus_base.reporting import get_fooocus_snapshot
 
 
 def launch_fooocus_version_gui(

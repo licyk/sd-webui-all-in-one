@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .reporting import get_invokeai_snapshot
+from sd_webui_all_in_one.base_manager.invokeai_base.reporting import get_invokeai_snapshot
 
 
 def launch_invokeai_version_gui(

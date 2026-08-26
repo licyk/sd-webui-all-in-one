@@ -26,8 +26,8 @@ from sd_webui_all_in_one.base_manager.snapshot_restore import (
 )
 from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_SNAPSHOT_DIR
 
-from .formatters import SnapshotFactory, build_restore_blocking_guidance, format_restore_blocking_message, list_snapshot_files, logger
-from .models import SnapshotListItem
+from sd_webui_all_in_one.base_manager.gui.snapshot_gui.formatters import SnapshotFactory, build_restore_blocking_guidance, format_restore_blocking_message, list_snapshot_files, logger
+from sd_webui_all_in_one.base_manager.gui.snapshot_gui.models import SnapshotListItem
 
 
 class SnapshotManagerApp(tk.Tk, BackgroundTaskMixin):

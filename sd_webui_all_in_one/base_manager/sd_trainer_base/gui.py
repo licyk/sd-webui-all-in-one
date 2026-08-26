@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .catalog import SD_TRAINER_BRANCH_INFO_DICT
-from .reporting import get_sd_trainer_snapshot
+from sd_webui_all_in_one.base_manager.sd_trainer_base.catalog import SD_TRAINER_BRANCH_INFO_DICT
+from sd_webui_all_in_one.base_manager.sd_trainer_base.reporting import get_sd_trainer_snapshot
 
 
 def launch_sd_trainer_version_gui(

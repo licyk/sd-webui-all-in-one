@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .app import SnapshotManagerApp
-from .formatters import SnapshotFactory
+from sd_webui_all_in_one.base_manager.gui.snapshot_gui.app import SnapshotManagerApp
+from sd_webui_all_in_one.base_manager.gui.snapshot_gui.formatters import SnapshotFactory
 
 
 def launch_snapshot_manager_gui(

@@ -47,7 +47,7 @@ logger = get_logger(
 )
 
 
-from .models import PyTorchUpdateStatus
+from sd_webui_all_in_one.base_manager.base.models import PyTorchUpdateStatus
 
 
 def get_pytorch_update_status() -> PyTorchUpdateStatus:

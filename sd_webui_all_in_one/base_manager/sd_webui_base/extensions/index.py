@@ -13,7 +13,7 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     filter_extension_index,
 )
 
-from .service import install_sd_webui_extension, list_sd_webui_extensions
+from sd_webui_all_in_one.base_manager.sd_webui_base.extensions.service import install_sd_webui_extension, list_sd_webui_extensions
 
 
 def fetch_sd_webui_extension_index(

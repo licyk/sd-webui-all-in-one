@@ -15,10 +15,10 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     CommitInfo,
 )
 
-from .filters import commit_matches_keyword, normalize_search_keyword
-from .index_list import AdaptiveIndexList
-from .inputs import EnhancedEntry
-from .theme import apply_window_icon
+from sd_webui_all_in_one.base_manager.gui.version_gui.filters import commit_matches_keyword, normalize_search_keyword
+from sd_webui_all_in_one.base_manager.gui.version_gui.index_list import AdaptiveIndexList
+from sd_webui_all_in_one.base_manager.gui.version_gui.inputs import EnhancedEntry
+from sd_webui_all_in_one.base_manager.gui.version_gui.theme import apply_window_icon
 
 
 class CommitSwitchDialog(tk.Toplevel):

@@ -9,7 +9,7 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     DEFAULT_RUNTIME_PORT,
 )
 
-from .app import HotpatcherManagerApp
+from sd_webui_all_in_one.base_manager.gui.hotpatcher_manager_gui.app import HotpatcherManagerApp
 
 
 def launch_hotpatcher_manager_gui(

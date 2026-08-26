@@ -11,9 +11,9 @@ from sd_webui_all_in_one.downloader.hash_utils import compare_hash, normalize_ha
 from sd_webui_all_in_one.downloader.types import ExistingFilePolicy, validate_download_file_name
 from sd_webui_all_in_one.logger import get_logger
 
-from . import http, models, state, transfer
-from .http import _DigestTracker
-from .models import (
+from sd_webui_all_in_one.downloader.requests_downloader import http, models, state, transfer
+from sd_webui_all_in_one.downloader.requests_downloader.http import _DigestTracker
+from sd_webui_all_in_one.downloader.requests_downloader.models import (
     DEFAULT_MAX_CONNECTION_PER_SERVER,
     DEFAULT_MIN_SPLIT_SIZE,
     DEFAULT_PIECE_LENGTH,

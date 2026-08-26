@@ -7,7 +7,7 @@ from pathlib import Path
 from sd_webui_all_in_one.downloader import DownloadToolType, download_file
 from sd_webui_all_in_one.file_manager import copy_files, copy_files_merge, move_files, move_files_merge, remove_files
 
-from .models import FILE_MODEL_ROOT_DIRS, FileWebUiModelType, ModelEntry, ModelRoot, logger
+from sd_webui_all_in_one.base_manager.model_manager.models import FILE_MODEL_ROOT_DIRS, FileWebUiModelType, ModelEntry, ModelRoot, logger
 
 
 def _is_path_name(value: str) -> bool:

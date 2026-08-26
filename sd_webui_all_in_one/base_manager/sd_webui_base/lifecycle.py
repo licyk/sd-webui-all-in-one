@@ -38,9 +38,9 @@ from sd_webui_all_in_one.file_manager import (
 )
 from sd_webui_all_in_one.pkg_manager import pip_install
 
-from .catalog import SDWebUiBranchType, SD_WEBUI_BRANCH_INFO_DICT, SD_WEBUI_BRANCH_LIST, SD_WEBUI_CONFIG_PATH
-from .extensions import SDWebUiExtensionInfoList, SD_WEBUI_EXTENSION_INFO_DICT
-from .shared import logger
+from sd_webui_all_in_one.base_manager.sd_webui_base.catalog import SDWebUiBranchType, SD_WEBUI_BRANCH_INFO_DICT, SD_WEBUI_BRANCH_LIST, SD_WEBUI_CONFIG_PATH
+from sd_webui_all_in_one.base_manager.sd_webui_base.extensions import SDWebUiExtensionInfoList, SD_WEBUI_EXTENSION_INFO_DICT
+from sd_webui_all_in_one.base_manager.sd_webui_base.shared import logger
 
 SD_WEBUI_REPOSITORY_INFO_DICT: SDWebUiExtensionInfoList = [
     {

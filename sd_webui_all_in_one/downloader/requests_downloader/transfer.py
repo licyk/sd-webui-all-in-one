@@ -13,9 +13,9 @@ from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from sd_webui_all_in_one.downloader.hash_utils import compare_hash
 from sd_webui_all_in_one.logger import get_logger
 
-from . import http, models, state as state_io
-from .http import _DigestTracker
-from .models import (
+from sd_webui_all_in_one.downloader.requests_downloader import http, models, state as state_io
+from sd_webui_all_in_one.downloader.requests_downloader.http import _DigestTracker
+from sd_webui_all_in_one.downloader.requests_downloader.models import (
     DownloadCancelledError,
     DownloadIntegrityError,
     DownloadLowSpeedError,
@@ -34,7 +34,7 @@ from .models import (
     _SegmentOwnershipLost,
     _classify_network_error,
 )
-from .scheduler import _PieceStorage, _SegmentManager, _ThreadLocalSessionPool, _UriPool
+from sd_webui_all_in_one.downloader.requests_downloader.scheduler import _PieceStorage, _SegmentManager, _ThreadLocalSessionPool, _UriPool
 
 
 logger = get_logger(name=LOGGER_NAME, level=LOGGER_LEVEL, color=LOGGER_COLOR)

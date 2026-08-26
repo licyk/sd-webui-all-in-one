@@ -18,7 +18,7 @@ from sd_webui_all_in_one.base_manager.snapshot import (
 )
 from sd_webui_all_in_one.base_manager.environment_info import WebUiEnvironmentInfo, build_webui_environment_info
 
-from .extensions import list_sd_webui_extensions
+from sd_webui_all_in_one.base_manager.sd_webui_base.extensions import list_sd_webui_extensions
 
 
 def check_sd_webui_updates(

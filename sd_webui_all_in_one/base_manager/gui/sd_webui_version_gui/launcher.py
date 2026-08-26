@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .app import SDWebUiVersionManagerApp
+from sd_webui_all_in_one.base_manager.gui.sd_webui_version_gui.app import SDWebUiVersionManagerApp
 
 
 def launch_sd_webui_version_gui(

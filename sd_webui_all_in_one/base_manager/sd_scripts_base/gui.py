@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .catalog import SD_SCRIPTS_BRANCH_INFO_DICT
-from .reporting import get_sd_scripts_snapshot
+from sd_webui_all_in_one.base_manager.sd_scripts_base.catalog import SD_SCRIPTS_BRANCH_INFO_DICT
+from sd_webui_all_in_one.base_manager.sd_scripts_base.reporting import get_sd_scripts_snapshot
 
 
 def launch_sd_scripts_version_gui(

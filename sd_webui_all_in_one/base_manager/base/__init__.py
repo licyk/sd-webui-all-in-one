@@ -4,10 +4,10 @@
 
 from sd_webui_all_in_one.utils import print_divider
 
-from .environment import collect_host_environment_info, run_env_check_tasks, select_env_check_tasks
-from .mirrors import resolve_auto_mirror_settings
-from .model_downloads import install_webui_model_from_library, pre_download_model_for_webui
-from .models import (
+from sd_webui_all_in_one.base_manager.base.environment import collect_host_environment_info, run_env_check_tasks, select_env_check_tasks
+from sd_webui_all_in_one.base_manager.base.mirrors import resolve_auto_mirror_settings
+from sd_webui_all_in_one.base_manager.base.model_downloads import install_webui_model_from_library, pre_download_model_for_webui
+from sd_webui_all_in_one.base_manager.base.models import (
     CpuEnvironmentInfo,
     EnvironmentCollectionError,
     EnvCheckTask,
@@ -19,7 +19,7 @@ from .models import (
     PyTorchUpdateStatus,
     WebUiLaunchInfo,
 )
-from .pytorch import (
+from sd_webui_all_in_one.base_manager.base.pytorch import (
     check_pytorch_version,
     get_pytorch_update_status,
     install_pytorch_for_webui,
@@ -27,7 +27,7 @@ from .pytorch import (
     prepare_pytorch_install_info,
     reinstall_pytorch,
 )
-from .repositories import (
+from sd_webui_all_in_one.base_manager.base.repositories import (
     apply_git_base_config_and_github_mirror,
     apply_git_config_global_to_process,
     apply_github_raw_file_mirror,
@@ -35,6 +35,6 @@ from .repositories import (
     clone_repo,
     get_repo_name_from_url,
 )
-from .runtime import launch_webui
+from sd_webui_all_in_one.base_manager.base.runtime import launch_webui
 
 __all__ = [name for name in globals() if not name.startswith("_")]

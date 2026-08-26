@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .app import ComfyUiVersionManagerApp
+from sd_webui_all_in_one.base_manager.gui.comfyui_version_gui.app import ComfyUiVersionManagerApp
 
 
 def launch_comfyui_version_gui(

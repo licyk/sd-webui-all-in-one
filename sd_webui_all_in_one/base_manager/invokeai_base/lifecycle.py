@@ -40,9 +40,9 @@ from sd_webui_all_in_one.config import (
     ROOT_PATH,
 )
 
-from .components import _ensure_invokeai_package_installed, install_invokeai_component, install_pypatchmatch
-from .model_management import import_model_to_invokeai
-from .shared import logger
+from sd_webui_all_in_one.base_manager.invokeai_base.components import _ensure_invokeai_package_installed, install_invokeai_component, install_pypatchmatch
+from sd_webui_all_in_one.base_manager.invokeai_base.model_management import import_model_to_invokeai
+from sd_webui_all_in_one.base_manager.invokeai_base.shared import logger
 
 INVOKEAI_RUNNER_SCRIPT = ROOT_PATH / "base_manager" / "run_invokeai.py"
 

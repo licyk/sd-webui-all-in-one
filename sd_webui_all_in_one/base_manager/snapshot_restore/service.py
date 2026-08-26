@@ -9,7 +9,7 @@ from pathlib import Path
 from sd_webui_all_in_one.base_manager.base import apply_git_base_config_and_github_mirror
 from sd_webui_all_in_one.base_manager.snapshot import load_snapshot
 
-from .extensions import (
+from sd_webui_all_in_one.base_manager.snapshot_restore.extensions import (
     _build_extension_restore_plan,
     _build_git_restore_plan,
     _build_missing_kernel_plan,
@@ -19,8 +19,8 @@ from .extensions import (
     restore_extensions,
     restore_git_repository,
 )
-from .models import RestoreBlocker, SnapshotRestoreOptions, SnapshotRestorePlan, _finalize_plan, logger
-from .packages import _build_package_restore_plan, restore_python_packages
+from sd_webui_all_in_one.base_manager.snapshot_restore.models import RestoreBlocker, SnapshotRestoreOptions, SnapshotRestorePlan, _finalize_plan, logger
+from sd_webui_all_in_one.base_manager.snapshot_restore.packages import _build_package_restore_plan, restore_python_packages
 
 
 def preview_webui_snapshot_restore(

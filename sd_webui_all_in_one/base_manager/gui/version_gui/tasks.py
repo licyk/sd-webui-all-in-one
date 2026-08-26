@@ -17,7 +17,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from .theme import T
+from sd_webui_all_in_one.base_manager.gui.version_gui.theme import T
 
 
 if TYPE_CHECKING:

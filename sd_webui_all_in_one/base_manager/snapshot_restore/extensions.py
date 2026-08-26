@@ -15,7 +15,7 @@ from sd_webui_all_in_one.base_manager.snapshot import ExtensionSnapshot, Reposit
 from sd_webui_all_in_one.base_manager.version_manager import fetch_repository
 from sd_webui_all_in_one.file_manager import is_folder_empty
 
-from .models import (
+from sd_webui_all_in_one.base_manager.snapshot_restore.models import (
     ExtensionRestorePlanItem,
     ExtensionRestoreTools,
     GitRestorePlanItem,
@@ -24,7 +24,7 @@ from .models import (
     SnapshotRestoreOptions,
     logger,
 )
-from .packages import _pypi_env
+from sd_webui_all_in_one.base_manager.snapshot_restore.packages import _pypi_env
 
 PACKAGE_KERNEL_WEBUI_TYPES = {"invokeai"}
 

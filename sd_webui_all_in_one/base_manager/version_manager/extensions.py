@@ -39,8 +39,8 @@ ExtensionSourceType = Literal["git", "comfy-registry", "file", "unknown"]
 """扩展安装来源类型"""
 
 
-from .models import ManagedExtension, RepositoryUpdateStatus
-from .repository import (
+from sd_webui_all_in_one.base_manager.version_manager.models import ManagedExtension, RepositoryUpdateStatus
+from sd_webui_all_in_one.base_manager.version_manager.repository import (
     check_repository_update,
     switch_repository_branch,
     switch_repository_commit,

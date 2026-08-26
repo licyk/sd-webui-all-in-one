@@ -28,7 +28,7 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     EnhancedEntry,
 )
 
-from .helpers import COMFYUI_CUSTOM_NODE_INDEX_URL, _download_name_from_url, _format_index_tags
+from sd_webui_all_in_one.base_manager.gui.comfyui_version_gui.helpers import COMFYUI_CUSTOM_NODE_INDEX_URL, _download_name_from_url, _format_index_tags
 
 
 from sd_webui_all_in_one.base_manager.gui.version_gui import GuiActionsMixinContext

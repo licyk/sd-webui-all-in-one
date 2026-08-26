@@ -37,7 +37,16 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     install_text_context_menu,
 )
 
-from .config_values import _ensure_section_by_path, _humanize_name, _metadata_field_kind, _section_by_path, _set_value_by_path, _value_by_path, _value_to_text, _variable_to_value
+from sd_webui_all_in_one.base_manager.gui.hotpatcher_manager_gui.config_values import (
+    _ensure_section_by_path,
+    _humanize_name,
+    _metadata_field_kind,
+    _section_by_path,
+    _set_value_by_path,
+    _value_by_path,
+    _value_to_text,
+    _variable_to_value,
+)
 
 
 class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):

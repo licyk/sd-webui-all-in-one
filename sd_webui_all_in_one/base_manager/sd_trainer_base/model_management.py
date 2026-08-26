@@ -17,7 +17,7 @@ from sd_webui_all_in_one.file_manager import (
 )
 from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
 
-from .shared import logger
+from sd_webui_all_in_one.base_manager.sd_trainer_base.shared import logger
 
 
 def install_sd_trainer_model_from_library(

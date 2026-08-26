@@ -20,9 +20,9 @@ from sd_webui_all_in_one.downloader import (
     download_file,
 )
 
-from .catalog import COMFYUI_CUSTOM_NODE_INDEX_URL
-from .local import list_comfyui_custom_nodes
-from .manager import ComfyUiExtensionManager
+from sd_webui_all_in_one.base_manager.comfyui_base.extensions.catalog import COMFYUI_CUSTOM_NODE_INDEX_URL
+from sd_webui_all_in_one.base_manager.comfyui_base.extensions.local import list_comfyui_custom_nodes
+from sd_webui_all_in_one.base_manager.comfyui_base.extensions.manager import ComfyUiExtensionManager
 
 
 def _download_name_from_url(url: str) -> str:

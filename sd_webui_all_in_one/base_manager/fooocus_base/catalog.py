@@ -33,7 +33,7 @@ from sd_webui_all_in_one.mirror_manager import (
 from sd_webui_all_in_one.ansi_color import ANSIColor
 from sd_webui_all_in_one.utils import TemporaryModulePath
 
-from .shared import logger
+from sd_webui_all_in_one.base_manager.fooocus_base.shared import logger
 
 FOOOCUS_LAUNCH_ARGUMENT_PROVIDER_IDENTITY = "args_manager:args_parser.parser"
 

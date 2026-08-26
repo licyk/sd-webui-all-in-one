@@ -29,7 +29,7 @@ from sd_webui_all_in_one.mirror_manager import (
     GITHUB_MIRROR_LIST,
 )
 
-from .shared import logger
+from sd_webui_all_in_one.base_manager.invokeai_base.shared import logger
 
 
 def install_invokeai_custom_nodes(

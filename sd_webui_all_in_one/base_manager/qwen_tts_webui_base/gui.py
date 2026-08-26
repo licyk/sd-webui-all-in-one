@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .catalog import QWEN_TTS_WEBUI_REPO
-from .reporting import get_qwen_tts_webui_snapshot
+from sd_webui_all_in_one.base_manager.qwen_tts_webui_base.catalog import QWEN_TTS_WEBUI_REPO
+from sd_webui_all_in_one.base_manager.qwen_tts_webui_base.reporting import get_qwen_tts_webui_snapshot
 
 
 def launch_qwen_tts_webui_version_gui(

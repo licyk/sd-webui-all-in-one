@@ -17,7 +17,7 @@ from sd_webui_all_in_one.downloader import (
     download_file,
 )
 
-from .shared import logger
+from sd_webui_all_in_one.base_manager.sd_webui_base.shared import logger
 
 
 def install_sd_webui_model_from_library(

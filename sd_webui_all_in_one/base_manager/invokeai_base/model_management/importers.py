@@ -13,8 +13,8 @@ from sd_webui_all_in_one.downloader import (
 )
 from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
 from sd_webui_all_in_one.utils import print_divider
-from ..components import _temporary_invokeai_root
-from ..shared import logger
+from sd_webui_all_in_one.base_manager.invokeai_base.components import _temporary_invokeai_root
+from sd_webui_all_in_one.base_manager.invokeai_base.shared import logger
 
 
 def import_model_to_invokeai(

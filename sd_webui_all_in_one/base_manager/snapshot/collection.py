@@ -9,8 +9,8 @@ from pathlib import Path
 
 from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryState, inspect_repository, run_git_output
 
-from .codec import _parse_direct_url
-from .models import (
+from sd_webui_all_in_one.base_manager.snapshot.codec import _parse_direct_url
+from sd_webui_all_in_one.base_manager.snapshot.models import (
     SNAPSHOT_SCHEMA_VERSION,
     DirectUrlSnapshot,
     ExtensionEnabledResolver,

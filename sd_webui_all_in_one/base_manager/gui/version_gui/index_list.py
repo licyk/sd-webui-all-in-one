@@ -12,8 +12,8 @@ from typing import (
     Callable,
 )
 
-from .filters import normalize_search_keyword
-from .inputs import EnhancedEntry
+from sd_webui_all_in_one.base_manager.gui.version_gui.filters import normalize_search_keyword
+from sd_webui_all_in_one.base_manager.gui.version_gui.inputs import EnhancedEntry
 
 
 class AdaptiveIndexList(ttk.Frame):

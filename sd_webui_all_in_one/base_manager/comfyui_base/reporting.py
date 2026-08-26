@@ -18,7 +18,7 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     check_webui_updates,
 )
 
-from .extensions import ComfyUiExtensionManager, collect_comfyui_extensions
+from sd_webui_all_in_one.base_manager.comfyui_base.extensions import ComfyUiExtensionManager, collect_comfyui_extensions
 
 
 def check_comfyui_updates(

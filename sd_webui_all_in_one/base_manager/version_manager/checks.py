@@ -35,8 +35,8 @@ ExtensionSourceType = Literal["git", "comfy-registry", "file", "unknown"]
 """扩展安装来源类型"""
 
 
-from .indexes import fetch_pypi_versions
-from .models import (
+from sd_webui_all_in_one.base_manager.version_manager.indexes import fetch_pypi_versions
+from sd_webui_all_in_one.base_manager.version_manager.models import (
     ExtensionUpdateStatus,
     ManagedExtension,
     PackageUpdateStatus,
@@ -45,7 +45,7 @@ from .models import (
     WebUiUpdateStatus,
     WebUiUpdateSummary,
 )
-from .repository import check_repository_update
+from sd_webui_all_in_one.base_manager.version_manager.repository import check_repository_update
 
 
 def check_package_update(

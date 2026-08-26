@@ -24,10 +24,10 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     configure_gui_fonts,
 )
 
-from .helpers import _sd_webui_extension_enabled, _set_sd_webui_extension_enabled
-from .extensions import ExtensionActionsMixin
-from .install import InstallActionsMixin
-from .kernel import KernelActionsMixin
+from sd_webui_all_in_one.base_manager.gui.sd_webui_version_gui.helpers import _sd_webui_extension_enabled, _set_sd_webui_extension_enabled
+from sd_webui_all_in_one.base_manager.gui.sd_webui_version_gui.extensions import ExtensionActionsMixin
+from sd_webui_all_in_one.base_manager.gui.sd_webui_version_gui.install import InstallActionsMixin
+from sd_webui_all_in_one.base_manager.gui.sd_webui_version_gui.kernel import KernelActionsMixin
 
 
 class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin, KernelActionsMixin, ExtensionActionsMixin, InstallActionsMixin):

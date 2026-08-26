@@ -34,9 +34,9 @@ from sd_webui_all_in_one.env_check import (
     check_torch_version,
 )
 
-from .catalog import COMFYUI_CONFIG_PATH, COMFYUI_REPO_URL
-from .extensions import COMFYUI_CUSTOM_NODES_INFO_DICT
-from .shared import logger
+from sd_webui_all_in_one.base_manager.comfyui_base.catalog import COMFYUI_CONFIG_PATH, COMFYUI_REPO_URL
+from sd_webui_all_in_one.base_manager.comfyui_base.extensions import COMFYUI_CUSTOM_NODES_INFO_DICT
+from sd_webui_all_in_one.base_manager.comfyui_base.shared import logger
 
 
 def install_comfyui_config(

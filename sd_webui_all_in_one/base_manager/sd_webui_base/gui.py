@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .reporting import get_sd_webui_snapshot
+from sd_webui_all_in_one.base_manager.sd_webui_base.reporting import get_sd_webui_snapshot
 
 
 def launch_sd_webui_version_gui(
