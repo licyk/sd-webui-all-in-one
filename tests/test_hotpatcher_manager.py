@@ -640,10 +640,12 @@ def test_self_manager_patcher_get_pythonpath_cli(monkeypatch, capsys):
 def _capture_webui_launch_env(monkeypatch, module, launch_func, path_arg: str, tmp_path, **kwargs):
     captured = {}
     implementation = sys.modules[launch_func.__module__]
+    git_config_path = (tmp_path / ".gitconfig").as_posix()
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", git_config_path)
 
     def fake_git_env(*, origin_env=None, **_kwargs):
         env = (origin_env or os.environ.copy()).copy()
-        env["GIT_CONFIG_GLOBAL"] = "test-git-config"
+        env["GIT_CONFIG_GLOBAL"] = git_config_path
         return env
 
     def fake_env_passthrough(*, origin_env=None, **_kwargs):

@@ -27,16 +27,19 @@ def test_sd_trainer_next_branch_metadata():
     }
 
 
-def _patch_common_install_deps(monkeypatch, module, calls):
+def _patch_common_install_deps(monkeypatch, module, calls, tmp_path):
+    git_config_path = (tmp_path / ".gitconfig").as_posix()
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", git_config_path)
     monkeypatch.setattr(module, "prepare_pytorch_install_info", lambda **kwargs: ("torch", "xformers", {"TORCH": "env"}))
     monkeypatch.setattr(module, "get_pypi_mirror_config", lambda use_cn_mirror=True, origin_env=None: {"PIP": str(use_cn_mirror), **(origin_env or {})})
-    monkeypatch.setattr(module, "apply_git_base_config_and_github_mirror", lambda **kwargs: {"GIT_CONFIG_GLOBAL": "gitconfig", **kwargs["origin_env"]})
+    monkeypatch.setattr(module, "apply_git_base_config_and_github_mirror", lambda **kwargs: {**kwargs["origin_env"], "GIT_CONFIG_GLOBAL": git_config_path})
     monkeypatch.setattr(module, "clone_repo", lambda **kwargs: calls.append(("clone", kwargs)))
     monkeypatch.setattr(module.git_warpper, "switch_branch", lambda **kwargs: calls.append(("switch", kwargs)))
     monkeypatch.setattr(module.git_warpper, "update_submodule", lambda path: calls.append(("submodule", path)))
     monkeypatch.setattr(module, "install_pytorch_for_webui", lambda **kwargs: calls.append(("pytorch", kwargs)))
     monkeypatch.setattr(module, "install_requirements", lambda **kwargs: calls.append(("requirements", kwargs)))
     monkeypatch.setattr(module, "pre_download_model_for_webui", lambda **kwargs: calls.append(("model", kwargs)))
+    return git_config_path
 
 
 def test_install_fooocus_orchestrates_branch_requirements_model_and_config(monkeypatch, tmp_path):
@@ -46,16 +49,16 @@ def test_install_fooocus_orchestrates_branch_requirements_model_and_config(monke
     branch_info = {"name": "Demo Fooocus", "dtype": "fooocus_demo", "url": "https://github.com/example/fooocus", "branch": "demo", "use_submodule": False}
     monkeypatch.setattr(implementation, "FOOOCUS_BRANCH_LIST", ["fooocus_demo"])
     monkeypatch.setattr(implementation, "FOOOCUS_BRANCH_INFO_DICT", [branch_info])
-    _patch_common_install_deps(monkeypatch, implementation, calls)
+    git_config_path = _patch_common_install_deps(monkeypatch, implementation, calls, tmp_path)
     monkeypatch.setattr(implementation, "install_fooocus_config", lambda **kwargs: calls.append(("config", kwargs)))
 
     fooocus_base.install_fooocus(tmp_path, install_branch="fooocus_demo", use_uv=False, no_pre_download_model=False)
 
-    assert os.environ["GIT_CONFIG_GLOBAL"] == "gitconfig"
+    assert os.environ["GIT_CONFIG_GLOBAL"] == git_config_path
     assert calls[0] == ("clone", {"repo": branch_info["url"], "path": tmp_path})
     assert calls[1] == ("switch", {"path": tmp_path, "branch": "demo", "new_url": branch_info["url"], "recurse_submodules": False})
     assert calls[2][0] == "pytorch"
-    assert calls[3] == ("requirements", {"path": tmp_path / "requirements_versions.txt", "use_uv": False, "custom_env": {"PIP": "True", "GIT_CONFIG_GLOBAL": "gitconfig"}, "cwd": tmp_path})
+    assert calls[3] == ("requirements", {"path": tmp_path / "requirements_versions.txt", "use_uv": False, "custom_env": {"PIP": "True", "GIT_CONFIG_GLOBAL": git_config_path}, "cwd": tmp_path})
     assert calls[4][0] == "model"
     assert calls[4][1]["dtype"] == "fooocus"
     assert calls[5] == ("config", {"fooocus_path": tmp_path, "download_resource_type": "modelscope"})
@@ -82,7 +85,7 @@ def test_install_sd_training_products_orchestrate_common_flow(monkeypatch, tmp_p
     branch_info = {"name": "Demo", "dtype": branch_name, "url": "https://github.com/example/product", "branch": "demo", "use_submodule": True}
     monkeypatch.setattr(implementation, branch_list_attr, [branch_name])
     monkeypatch.setattr(implementation, branch_info_attr, [branch_info])
-    _patch_common_install_deps(monkeypatch, implementation, calls)
+    git_config_path = _patch_common_install_deps(monkeypatch, implementation, calls, tmp_path)
 
     getattr(module, install_func)(tmp_path, install_branch=branch_name, use_uv=False, no_pre_download_model=False)
 
@@ -90,7 +93,7 @@ def test_install_sd_training_products_orchestrate_common_flow(monkeypatch, tmp_p
     assert calls[1] == ("submodule", tmp_path)
     assert calls[2] == ("switch", {"path": tmp_path, "branch": "demo", "new_url": branch_info["url"], "recurse_submodules": True})
     assert calls[3][0] == "pytorch"
-    assert calls[4] == ("requirements", {"path": tmp_path / root_file, "use_uv": False, "custom_env": {"PIP": "True", "GIT_CONFIG_GLOBAL": "gitconfig"}, "cwd": tmp_path})
+    assert calls[4] == ("requirements", {"path": tmp_path / root_file, "use_uv": False, "custom_env": {"PIP": "True", "GIT_CONFIG_GLOBAL": git_config_path}, "cwd": tmp_path})
     assert calls[5][0] == "model"
     assert calls[5][1]["dtype"] == expected_dtype
 
@@ -105,7 +108,7 @@ def test_sd_scripts_install_exports_requirements_from_pyproject(monkeypatch, tmp
     branch_info = {"name": "Demo", "dtype": "sd_scripts_demo", "url": "https://github.com/example/product", "branch": "demo", "use_submodule": False}
     monkeypatch.setattr(implementation, "SD_SCRIPTS_BRANCH_LIST", ["sd_scripts_demo"])
     monkeypatch.setattr(implementation, "SD_SCRIPTS_BRANCH_INFO_DICT", [branch_info])
-    _patch_common_install_deps(monkeypatch, implementation, calls)
+    _patch_common_install_deps(monkeypatch, implementation, calls, tmp_path)
     monkeypatch.setattr(
         implementation, "export_requirements_from_toml_config", lambda toml_path, save_path: calls.append(("export", toml_path, save_path)) or save_path.write_text("demo\n", encoding="utf-8")
     )
@@ -128,6 +131,8 @@ def test_sd_scripts_install_exports_requirements_from_pyproject(monkeypatch, tmp
 )
 def test_product_env_checks_aggregate_failures(monkeypatch, tmp_path, module, check_func, req_name, missing_message):
     implementation = _implementation_module(module, check_func)
+    git_config_path = (tmp_path / ".gitconfig").as_posix()
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", git_config_path)
     (tmp_path / "requirements.txt").write_text("demo\n", encoding="utf-8")
     calls = []
 
@@ -138,7 +143,7 @@ def test_product_env_checks_aggregate_failures(monkeypatch, tmp_path, module, ch
         calls.append(("bad", kwargs))
         raise RuntimeError("task bad")
 
-    monkeypatch.setattr(implementation, "apply_git_base_config_and_github_mirror", lambda **kwargs: {"GIT_CONFIG_GLOBAL": "gitconfig", **kwargs["origin_env"]})
+    monkeypatch.setattr(implementation, "apply_git_base_config_and_github_mirror", lambda **kwargs: {**kwargs["origin_env"], "GIT_CONFIG_GLOBAL": git_config_path})
     monkeypatch.setattr(implementation, "get_pypi_mirror_config", lambda use_cn_mirror, origin_env=None: {"PIP": str(use_cn_mirror), **(origin_env or {})})
     monkeypatch.setattr(implementation, "py_dependency_checker", bad_task)
     monkeypatch.setattr(implementation, "fix_torch_libomp", ok_task)
@@ -155,7 +160,7 @@ def test_product_env_checks_aggregate_failures(monkeypatch, tmp_path, module, ch
     assert calls[0][0] == "bad"
     assert calls[0][1]["requirement_path"].name == "requirements.txt"
     assert calls[0][1]["name"] == req_name
-    assert calls[0][1]["custom_env"]["GIT_CONFIG_GLOBAL"] == "gitconfig"
+    assert calls[0][1]["custom_env"]["GIT_CONFIG_GLOBAL"] == git_config_path
 
     (tmp_path / "requirements.txt").unlink()
     if module is not sd_scripts_base:
@@ -173,13 +178,15 @@ def test_product_env_checks_aggregate_failures(monkeypatch, tmp_path, module, ch
 )
 def test_product_switch_and_update_delegate_to_git(monkeypatch, tmp_path, module, switch_func, branch_list_attr, branch_info_attr, branch_name):
     calls = []
+    git_config_path = (tmp_path / ".gitconfig").as_posix()
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", git_config_path)
     switch_implementation = _implementation_module(module, switch_func)
     update_func = getattr(module, switch_func.replace("switch_", "update_").replace("_branch", ""))
     update_implementation = sys.modules[update_func.__module__]
     branch_info = {"name": "Demo", "dtype": branch_name, "url": "https://github.com/example/product", "branch": "demo", "use_submodule": True}
     monkeypatch.setattr(switch_implementation, branch_list_attr, [branch_name])
     monkeypatch.setattr(switch_implementation, branch_info_attr, [branch_info])
-    monkeypatch.setattr(switch_implementation, "apply_git_base_config_and_github_mirror", lambda **kwargs: {"GIT_CONFIG_GLOBAL": "gitconfig", **kwargs["origin_env"]})
+    monkeypatch.setattr(switch_implementation, "apply_git_base_config_and_github_mirror", lambda **kwargs: {**kwargs["origin_env"], "GIT_CONFIG_GLOBAL": git_config_path})
     monkeypatch.setattr(switch_implementation.git_warpper, "switch_branch", lambda **kwargs: calls.append(("switch", kwargs)))
     monkeypatch.setattr(update_implementation.git_warpper, "update", lambda path: calls.append(("update", path)))
 

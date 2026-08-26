@@ -21,6 +21,12 @@ def _implementation_module(module, function_name):
     return sys.modules[getattr(module, function_name).__module__]
 
 
+def _use_temp_git_config(monkeypatch, tmp_path):
+    config_path = tmp_path / ".gitconfig"
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", config_path.as_posix())
+    return config_path.as_posix()
+
+
 @pytest.mark.parametrize(
     ("module", "function_name", "webui_type", "display_name", "supports_extensions", "kernel_package"),
     [
@@ -131,6 +137,7 @@ def test_comfyui_config_installs_once(monkeypatch, tmp_path):
 
 def test_install_qwen_tts_webui_orchestrates_without_external_side_effects(monkeypatch, tmp_path):
     calls = []
+    git_config_path = _use_temp_git_config(monkeypatch, tmp_path)
     implementation = _implementation_module(qwen_tts_webui_base, "install_qwen_tts_webui")
     (tmp_path / "requirements.txt").write_text("demo\n", encoding="utf-8")
 
@@ -139,7 +146,7 @@ def test_install_qwen_tts_webui_orchestrates_without_external_side_effects(monke
     monkeypatch.setattr(
         implementation,
         "apply_git_base_config_and_github_mirror",
-        lambda **kwargs: {"GIT_CONFIG_GLOBAL": "/tmp/gitconfig", **kwargs["origin_env"]},
+        lambda **kwargs: {**kwargs["origin_env"], "GIT_CONFIG_GLOBAL": git_config_path},
     )
     monkeypatch.setattr(implementation, "clone_repo", lambda **kwargs: calls.append(("clone", kwargs)))
     monkeypatch.setattr(implementation, "install_pytorch_for_webui", lambda **kwargs: calls.append(("pytorch", kwargs)))
@@ -155,7 +162,7 @@ def test_install_qwen_tts_webui_orchestrates_without_external_side_effects(monke
         model_download_resource_type="huggingface",
     )
 
-    assert os.environ["GIT_CONFIG_GLOBAL"] == "/tmp/gitconfig"
+    assert os.environ["GIT_CONFIG_GLOBAL"] == git_config_path
     assert calls[0] == ("clone", {"repo": qwen_tts_webui_base.QWEN_TTS_WEBUI_REPO, "path": tmp_path})
     assert calls[1] == (
         "pytorch",
@@ -177,13 +184,14 @@ def test_install_qwen_tts_webui_orchestrates_without_external_side_effects(monke
 
 def test_install_comfyui_orchestrates_extensions_models_and_missing_requirements(monkeypatch, tmp_path):
     calls = []
+    git_config_path = _use_temp_git_config(monkeypatch, tmp_path)
     implementation = _implementation_module(comfyui_base, "install_comfyui")
     (tmp_path / "requirements.txt").write_text("demo\n", encoding="utf-8")
 
     monkeypatch.setattr(implementation, "COMFYUI_CUSTOM_NODES_INFO_DICT", [{"name": "Node", "url": "https://github.com/example/node", "save_dir": "custom_nodes/node"}])
     monkeypatch.setattr(implementation, "prepare_pytorch_install_info", lambda **kwargs: ("torch", None, {"TORCH": "env"}))
     monkeypatch.setattr(implementation, "get_pypi_mirror_config", lambda use_cn_mirror=True: {"PIP": str(use_cn_mirror)})
-    monkeypatch.setattr(implementation, "apply_git_base_config_and_github_mirror", lambda **kwargs: {"GIT_CONFIG_GLOBAL": "gitconfig", **kwargs["origin_env"]})
+    monkeypatch.setattr(implementation, "apply_git_base_config_and_github_mirror", lambda **kwargs: {**kwargs["origin_env"], "GIT_CONFIG_GLOBAL": git_config_path})
     monkeypatch.setattr(implementation, "clone_repo", lambda **kwargs: calls.append(("clone", kwargs)))
     monkeypatch.setattr(implementation, "install_pytorch_for_webui", lambda **kwargs: calls.append(("pytorch", kwargs)))
     monkeypatch.setattr(implementation, "install_requirements", lambda **kwargs: calls.append(("requirements", kwargs)))
@@ -259,6 +267,7 @@ def test_comfyui_custom_node_lifecycle(monkeypatch, tmp_path):
 
 
 def test_comfyui_custom_node_install_and_update_aggregate_errors(monkeypatch, tmp_path):
+    _use_temp_git_config(monkeypatch, tmp_path)
     install_implementation = _implementation_module(comfyui_base, "install_comfyui_custom_node")
     update_implementation = _implementation_module(comfyui_base, "update_comfyui_custom_nodes")
     custom_nodes = tmp_path / "custom_nodes"
@@ -355,9 +364,10 @@ def test_comfyui_extension_manager_update_all_reuses_extension_scan(monkeypatch,
 
 def test_launch_helpers_build_env_and_delegate(monkeypatch, tmp_path):
     calls = []
+    git_config_path = _use_temp_git_config(monkeypatch, tmp_path)
 
     def fake_git_config(**kwargs):
-        return {"GIT_CONFIG_GLOBAL": "gitconfig", **kwargs["origin_env"]}
+        return {**kwargs["origin_env"], "GIT_CONFIG_GLOBAL": git_config_path}
 
     def fake_hf(**kwargs):
         env = kwargs["origin_env"].copy()
@@ -451,6 +461,7 @@ def test_fooocus_launch_does_not_duplicate_user_hf_mirror_arg(monkeypatch, tmp_p
 
 def test_install_sd_webui_orchestrates_branch_extensions_repositories_and_models(monkeypatch, tmp_path):
     calls = []
+    git_config_path = _use_temp_git_config(monkeypatch, tmp_path)
     implementation = _implementation_module(sd_webui_base, "install_sd_webui")
     (tmp_path / "requirements_versions.txt").write_text("demo\n", encoding="utf-8")
     branch_info = {
@@ -474,7 +485,7 @@ def test_install_sd_webui_orchestrates_branch_extensions_repositories_and_models
     )
     monkeypatch.setattr(implementation, "prepare_pytorch_install_info", lambda **kwargs: ("torch", "xformers", {"TORCH": "env"}))
     monkeypatch.setattr(implementation, "get_pypi_mirror_config", lambda use_cn_mirror=True: {"PIP": str(use_cn_mirror)})
-    monkeypatch.setattr(implementation, "apply_git_base_config_and_github_mirror", lambda **kwargs: {"GIT_CONFIG_GLOBAL": "gitconfig", **kwargs["origin_env"]})
+    monkeypatch.setattr(implementation, "apply_git_base_config_and_github_mirror", lambda **kwargs: {**kwargs["origin_env"], "GIT_CONFIG_GLOBAL": git_config_path})
     monkeypatch.setattr(implementation, "clone_repo", lambda **kwargs: calls.append(("clone", kwargs)))
     monkeypatch.setattr(implementation.git_warpper, "switch_branch", lambda **kwargs: calls.append(("switch", kwargs)))
     monkeypatch.setattr(implementation, "install_pytorch_for_webui", lambda **kwargs: calls.append(("pytorch", kwargs)))
@@ -485,7 +496,7 @@ def test_install_sd_webui_orchestrates_branch_extensions_repositories_and_models
 
     sd_webui_base.install_sd_webui(tmp_path, install_branch="sd_webui_dev", use_uv=False, no_pre_download_model=False)
 
-    assert os.environ["GIT_CONFIG_GLOBAL"] == "gitconfig"
+    assert os.environ["GIT_CONFIG_GLOBAL"] == git_config_path
     assert calls[0] == ("clone", {"repo": "https://github.com/example/webui", "path": tmp_path})
     assert calls[1] == (
         "switch",
@@ -503,6 +514,7 @@ def test_install_sd_webui_orchestrates_branch_extensions_repositories_and_models
 
 def test_check_sd_webui_env_aggregates_task_failures(monkeypatch, tmp_path):
     implementation = _implementation_module(sd_webui_base, "check_sd_webui_env")
+    git_config_path = _use_temp_git_config(monkeypatch, tmp_path)
     req = tmp_path / "requirements.txt"
     req.write_text("demo\n", encoding="utf-8")
     calls = []
@@ -514,7 +526,7 @@ def test_check_sd_webui_env_aggregates_task_failures(monkeypatch, tmp_path):
         calls.append((bad_task.__name__, kwargs))
         raise RuntimeError("task bad")
 
-    monkeypatch.setattr(implementation, "apply_git_base_config_and_github_mirror", lambda **kwargs: {"GIT_CONFIG_GLOBAL": "gitconfig", **kwargs["origin_env"]})
+    monkeypatch.setattr(implementation, "apply_git_base_config_and_github_mirror", lambda **kwargs: {**kwargs["origin_env"], "GIT_CONFIG_GLOBAL": git_config_path})
     monkeypatch.setattr(implementation, "get_pypi_mirror_config", lambda use_cn_mirror, origin_env=None: {"PIP": str(use_cn_mirror), **(origin_env or {})})
     monkeypatch.setattr(implementation, "fix_stable_diffusion_invaild_repo_url", ok_task)
     monkeypatch.setattr(implementation, "fix_forge_neo_alert", ok_task)
@@ -533,7 +545,7 @@ def test_check_sd_webui_env_aggregates_task_failures(monkeypatch, tmp_path):
     assert calls[2][1]["name"] == "Stable Diffusion WebUI"
     assert calls[2][1]["use_uv"] is False
     assert calls[2][1]["custom_env"]["PIP"] == "True"
-    assert calls[2][1]["custom_env"]["GIT_CONFIG_GLOBAL"] == "gitconfig"
+    assert calls[2][1]["custom_env"]["GIT_CONFIG_GLOBAL"] == git_config_path
 
 
 def test_sd_webui_extension_lifecycle_and_model_uninstall(monkeypatch, tmp_path):
@@ -578,6 +590,7 @@ def test_sd_webui_extension_lifecycle_and_model_uninstall(monkeypatch, tmp_path)
 
 
 def test_install_and_update_sd_webui_extensions_aggregate(monkeypatch, tmp_path):
+    _use_temp_git_config(monkeypatch, tmp_path)
     implementation = _implementation_module(sd_webui_base, "install_sd_webui_extension")
     (tmp_path / "extensions" / "bad" / ".git").mkdir(parents=True)
     (tmp_path / "extensions" / "ok" / ".git").mkdir(parents=True)
@@ -778,6 +791,7 @@ def test_invokeai_custom_node_lifecycle_and_model_download(monkeypatch, tmp_path
 
 
 def test_install_update_uninstall_invokeai_custom_nodes(monkeypatch, tmp_path):
+    _use_temp_git_config(monkeypatch, tmp_path)
     implementation = _implementation_module(invokeai_base, "install_invokeai_custom_nodes")
     (tmp_path / "nodes" / "bad" / ".git").mkdir(parents=True)
     (tmp_path / "nodes" / "ok" / ".git").mkdir(parents=True)
