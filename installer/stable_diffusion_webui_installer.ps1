@@ -16,7 +16,7 @@
 "@)][string]$PyTorchMirrorType,
 
     [Parameter(HelpMessage=@"
-指定要安装的 Python 版本, 可指定安装的 Python 版本: 3.10, 3.11, 3.12, 3.13, 3.14. 未指定时默认使用 3.11, 安装 sd_webui_forge_classic 或 sd_webui_forge_neo 分支时默认使用 3.12
+指定要安装的 Python 版本, 可指定安装的 Python 版本: 3.10, 3.11, 3.12, 3.13, 3.14. 未指定分支或安装 sd_webui_forge_classic / sd_webui_forge_neo 分支时默认使用 3.12, 安装其他分支时默认使用 3.11
 "@)][string]$InstallPythonVersion,
 
     [Parameter(HelpMessage=@"
@@ -32,16 +32,16 @@
 "@)][switch]$DisableSnapshot,
 
     [Parameter(HelpMessage=@"
-指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 分支 (sd_webui_main, sd_webui_dev, sd_webui_forge, sd_webui_reforge_main, sd_webui_reforge_dev, sd_webui_forge_classic, sd_webui_forge_neo, sd_webui_amdgpu, sd_next_main, sd_next_dev)
-未指定该参数时, 默认安装 AUTOMATIC1111 - Stable-Diffusion-WebUI 主分支
+指定 SD WebUI Installer 安装的 Stable Diffusion WebUI 分支 (sd_webui_forge_neo, sd_webui_forge_classic, sd_webui_main, sd_webui_dev, sd_webui_forge, sd_webui_reforge_main, sd_webui_reforge_dev, sd_webui_amdgpu, sd_next_main, sd_next_dev)
+未指定该参数时, 默认安装 Haoming02 - Stable-Diffusion-WebUI-Forge-Neo 分支
 支持指定安装的分支如下:
+    sd_webui_forge_neo:     Haoming02 - Stable-Diffusion-WebUI-Forge-Neo 分支
+    sd_webui_forge_classic: Haoming02 - Stable-Diffusion-WebUI-Forge-Classic 分支
     sd_webui_main:          AUTOMATIC1111 - Stable-Diffusion-WebUI 主分支
     sd_webui_dev:           AUTOMATIC1111 - Stable-Diffusion-WebUI 测试分支
     sd_webui_forge:         lllyasviel - Stable-Diffusion-WebUI-Forge 分支
     sd_webui_reforge_main:  Panchovix - Stable-Diffusion-WebUI-reForge 主分支
     sd_webui_reforge_dev:   Panchovix - Stable-Diffusion-WebUI-reForge 测试分支
-    sd_webui_forge_classic: Haoming02 - Stable-Diffusion-WebUI-Forge-Classic 分支
-    sd_webui_forge_neo:     Haoming02 - Stable-Diffusion-WebUI-Forge-Neo 分支
     sd_webui_amdgpu:        lshqqytiger - Stable-Diffusion-WebUI-AMDGPU 分支
     sd_next_main:           vladmandic - SD.NEXT 主分支
     sd_next_dev:            vladmandic - SD.NEXT 测试分支
@@ -602,6 +602,8 @@ function Set-GithubMirror {
 
 function Get-InstallBranch {
     $branch_mapping_table = @(
+        @{ Key = "sd_webui_forge_neo";    Val = "sd_webui_forge_neo" }
+        @{ Key = "sd_webui_forge_classic";Val = "sd_webui_forge_classic" }
         @{ Key = "sd_webui";              Val = "sd_webui_main" }
         @{ Key = "sd_webui_main";         Val = "sd_webui_main" }
         @{ Key = "sd_webui_dev";          Val = "sd_webui_dev" }
@@ -609,8 +611,6 @@ function Get-InstallBranch {
         @{ Key = "sd_webui_reforge";      Val = "sd_webui_reforge_main" }
         @{ Key = "sd_webui_reforge_main"; Val = "sd_webui_reforge_main" }
         @{ Key = "sd_webui_reforge_dev";  Val = "sd_webui_reforge_dev" }
-        @{ Key = "sd_webui_forge_classic";Val = "sd_webui_forge_classic" }
-        @{ Key = "sd_webui_forge_neo";    Val = "sd_webui_forge_neo" }
         @{ Key = "sd_webui_amdgpu";       Val = "sd_webui_amdgpu" }
         @{ Key = "sdnext";                Val = "sd_next_main" }
         @{ Key = "sd_next_main";          Val = "sd_next_main" }
@@ -1414,7 +1414,7 @@ function Resolve-InstallPythonVersion {
         return $script:InstallPythonVersion
     }
     $target_branch = Get-InstallBranch
-    if (($target_branch -eq "sd_webui_forge_classic") -or ($target_branch -eq "sd_webui_forge_neo")) {
+    if ((-not $target_branch) -or ($target_branch -eq "sd_webui_forge_classic") -or ($target_branch -eq "sd_webui_forge_neo")) {
         $script:InstallPythonVersion = "3.12"
     } else {
         $script:InstallPythonVersion = "3.11"
@@ -1690,8 +1690,8 @@ function Invoke-Installation {
             $launch_args_branch = $target_branch
             $default_content = $launch_args_map[$target_branch]
         } else {
-            $launch_args_branch = "sd_webui_main"
-            $default_content = $launch_args_map["sd_webui_main"]
+            $launch_args_branch = "sd_webui_forge_neo"
+            $default_content = $launch_args_map["sd_webui_forge_neo"]
         }
         if ($xformers_launch_args_map.ContainsKey($launch_args_branch) -and (Test-InstalledPyTorchIsCudaBuild)) {
             $default_content = "$default_content $($xformers_launch_args_map[$launch_args_branch])"
@@ -3672,6 +3672,8 @@ function Get-LocalSetting {
         `"vladmandic/sdnext`"                         = `"sd_next_main`"
     }
     `$fallback_check_list = @(
+        @{ Key = `"sd_webui_forge_neo`";    Val = `"sd_webui_forge_neo`" }
+        @{ Key = `"sd_webui_forge_classic`";Val = `"sd_webui_forge_classic`" }
         @{ Key = `"sd_webui`";              Val = `"sd_webui_main`" }
         @{ Key = `"sd_webui_main`";         Val = `"sd_webui_main`" }
         @{ Key = `"sd_webui_dev`";          Val = `"sd_webui_dev`" }
@@ -3679,8 +3681,6 @@ function Get-LocalSetting {
         @{ Key = `"sd_webui_reforge`";      Val = `"sd_webui_reforge_main`" }
         @{ Key = `"sd_webui_reforge_main`"; Val = `"sd_webui_reforge_main`" }
         @{ Key = `"sd_webui_reforge_dev`";  Val = `"sd_webui_reforge_dev`" }
-        @{ Key = `"sd_webui_forge_classic`";Val = `"sd_webui_forge_classic`" }
-        @{ Key = `"sd_webui_forge_neo`";    Val = `"sd_webui_forge_neo`" }
         @{ Key = `"sd_webui_amdgpu`";       Val = `"sd_webui_amdgpu`" }
         @{ Key = `"sdnext`";                Val = `"sd_next_main`" }
         @{ Key = `"sd_next_main`";          Val = `"sd_next_main`" }

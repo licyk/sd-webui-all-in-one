@@ -39,17 +39,17 @@
 [Gitee Raw 下载 :material-download:](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/stable_diffusion_webui_installer.ps1){ .md-button }
 [GitLab Raw 下载 :material-download:](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/stable_diffusion_webui_installer.ps1){ .md-button }
 
-SD WebUI Installer 默认情况下安装的是 [AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) 主分支，如果需要指定安装的分支，需要在 SD WebUI Installer 所在路径创建配置文件，以下为不同配置文件对应的 Stable Diffusion WebUI 分支。
+SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI-Forge-Neo](https://github.com/Haoming02/sd-webui-forge-classic) 分支，如果需要指定安装的分支，需要在 SD WebUI Installer 所在路径创建配置文件，以下为不同配置文件对应的 Stable Diffusion WebUI 分支。
 
 |配置文件名 | 对应安装的分支|
 |---|---|
+|`install_sd_webui_forge_neo.txt`|[Haoming02/Stable-Diffusion-WebUI-Forge-Neo](https://github.com/Haoming02/sd-webui-forge-classic)|
+|`install_sd_webui_forge_classic.txt`|[Haoming02/Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic)|
 |`install_sd_webui_main.txt`|[AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) 主分支|
 |`install_sd_webui_dev.txt`|[AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) 测试分支|
 |`install_sd_webui_forge.txt`|[lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)|
 |`install_sd_webui_reforge_main.txt`|[Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) 主分支|
 |`install_sd_webui_reforge_dev.txt`|[Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) 测试分支|
-|`install_sd_webui_forge_classic.txt`|[Haoming02/Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic)|
-|`install_sd_webui_forge_neo.txt`|[Haoming02/Stable-Diffusion-WebUI-Forge-Neo](https://github.com/Haoming02/sd-webui-forge-classic)|
 |`install_sd_webui_amdgpu.txt`|[lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)|
 |`install_sd_next_main.txt`|[vladmandic/SD.Next](https://github.com/vladmandic/sdnext) 主分支|
 |`install_sd_next_dev.txt`|[vladmandic/SD.Next](https://github.com/vladmandic/sdnext) 测试分支|

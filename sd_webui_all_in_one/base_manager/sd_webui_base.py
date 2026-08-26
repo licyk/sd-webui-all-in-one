@@ -151,14 +151,15 @@ def get_sd_webui_launch_argument_catalog(
         timeout_seconds=timeout_seconds,
     )
 
+
 SDWebUiBranchType: TypeAlias = Literal[
+    "sd_webui_forge_neo",
+    "sd_webui_forge_classic",
     "sd_webui_main",
     "sd_webui_dev",
     "sd_webui_forge",
     "sd_webui_reforge_main",
     "sd_webui_reforge_dev",
-    "sd_webui_forge_classic",
-    "sd_webui_forge_neo",
     "sd_webui_amdgpu",
     "sd_next_main",
     "sd_next_dev",
@@ -189,6 +190,20 @@ class SDWebUiBranchInfo(TypedDict):
 
 
 SD_WEBUI_BRANCH_INFO_DICT: list[SDWebUiBranchInfo] = [
+    {
+        "name": "Haoming02 - Stable-Diffusion-WebUI-Forge-Neo 分支",
+        "dtype": "sd_webui_forge_neo",
+        "url": "https://github.com/Haoming02/sd-webui-forge-classic",
+        "branch": "neo",
+        "use_submodule": False,
+    },
+    {
+        "name": "Haoming02 - Stable-Diffusion-WebUI-Forge-Classic 分支",
+        "dtype": "sd_webui_forge_classic",
+        "url": "https://github.com/Haoming02/sd-webui-forge-classic",
+        "branch": "classic",
+        "use_submodule": False,
+    },
     {
         "name": "AUTOMATIC1111 - Stable-Diffusion-WebUI 主分支",
         "dtype": "sd_webui_main",
@@ -222,20 +237,6 @@ SD_WEBUI_BRANCH_INFO_DICT: list[SDWebUiBranchInfo] = [
         "dtype": "sd_webui_reforge_dev",
         "url": "https://github.com/Panchovix/stable-diffusion-webui-reForge",
         "branch": "dev",
-        "use_submodule": False,
-    },
-    {
-        "name": "Haoming02 - Stable-Diffusion-WebUI-Forge-Classic 分支",
-        "dtype": "sd_webui_forge_classic",
-        "url": "https://github.com/Haoming02/sd-webui-forge-classic",
-        "branch": "classic",
-        "use_submodule": False,
-    },
-    {
-        "name": "Haoming02 - Stable-Diffusion-WebUI-Forge-Neo 分支",
-        "dtype": "sd_webui_forge_neo",
-        "url": "https://github.com/Haoming02/sd-webui-forge-classic",
-        "branch": "neo",
         "use_submodule": False,
     },
     {
