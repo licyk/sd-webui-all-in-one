@@ -863,7 +863,7 @@ def test_hotpatcher_gui_module_importable():
 
 
 def test_hotpatcher_gui_schema_helpers():
-    from sd_webui_all_in_one.base_manager.gui.hotpatcher_manager_gui import (
+    from sd_webui_all_in_one.base_manager.gui.hotpatcher_manager_gui.config_values import (
         _metadata_field_kind,
         _value_to_text,
     )

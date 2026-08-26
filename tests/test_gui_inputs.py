@@ -15,7 +15,7 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     normalize_search_keyword,
     package_version_matches_keyword,
 )
-from sd_webui_all_in_one.base_manager.gui.comfyui_version_gui import _format_index_tags
+from sd_webui_all_in_one.base_manager.gui.comfyui_version_gui.helpers import _format_index_tags
 from sd_webui_all_in_one.base_manager.version_manager import (
     CommitInfo,
     ExtensionIndexItem,

@@ -11,8 +11,8 @@ from sd_webui_all_in_one.base_manager.base import (
     PyTorchUpdateStatus,
     PyTorchEnvironmentInfo,
     WebUiLaunchInfo,
-    check_pytorch_version as check_pytorch_version,
-    get_pytorch_update_status as get_pytorch_update_status,
+    check_pytorch_version,
+    get_pytorch_update_status,
     prepare_pytorch_install_info,
     install_pytorch_for_webui,
     reinstall_pytorch,
@@ -345,7 +345,7 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     WebUiUpdateOptions,
     WebUiUpdateStatus,
     WebUiUpdateSummary,
-    check_repository_update as check_repository_update,
+    check_repository_update,
 )
 
 # 导出的公共 API 列表，按模块分类
