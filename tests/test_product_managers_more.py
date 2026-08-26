@@ -1,4 +1,5 @@
 import os
+import sys
 
 import pytest
 
@@ -6,6 +7,10 @@ from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.base_manager import fooocus_base
 from sd_webui_all_in_one.base_manager import sd_scripts_base
 from sd_webui_all_in_one.base_manager import sd_trainer_base
+
+
+def _implementation_module(module, function_name):
+    return sys.modules[getattr(module, function_name).__module__]
 
 
 def test_sd_trainer_next_branch_metadata():
@@ -36,12 +41,13 @@ def _patch_common_install_deps(monkeypatch, module, calls):
 
 def test_install_fooocus_orchestrates_branch_requirements_model_and_config(monkeypatch, tmp_path):
     calls = []
+    implementation = _implementation_module(fooocus_base, "install_fooocus")
     (tmp_path / "requirements_versions.txt").write_text("demo\n", encoding="utf-8")
     branch_info = {"name": "Demo Fooocus", "dtype": "fooocus_demo", "url": "https://github.com/example/fooocus", "branch": "demo", "use_submodule": False}
-    monkeypatch.setattr(fooocus_base, "FOOOCUS_BRANCH_LIST", ["fooocus_demo"])
-    monkeypatch.setattr(fooocus_base, "FOOOCUS_BRANCH_INFO_DICT", [branch_info])
-    _patch_common_install_deps(monkeypatch, fooocus_base, calls)
-    monkeypatch.setattr(fooocus_base, "install_fooocus_config", lambda **kwargs: calls.append(("config", kwargs)))
+    monkeypatch.setattr(implementation, "FOOOCUS_BRANCH_LIST", ["fooocus_demo"])
+    monkeypatch.setattr(implementation, "FOOOCUS_BRANCH_INFO_DICT", [branch_info])
+    _patch_common_install_deps(monkeypatch, implementation, calls)
+    monkeypatch.setattr(implementation, "install_fooocus_config", lambda **kwargs: calls.append(("config", kwargs)))
 
     fooocus_base.install_fooocus(tmp_path, install_branch="fooocus_demo", use_uv=False, no_pre_download_model=False)
 
@@ -71,11 +77,12 @@ def test_install_fooocus_orchestrates_branch_requirements_model_and_config(monke
 )
 def test_install_sd_training_products_orchestrate_common_flow(monkeypatch, tmp_path, module, install_func, branch_list_attr, branch_info_attr, branch_name, root_file, expected_dtype):
     calls = []
+    implementation = _implementation_module(module, install_func)
     (tmp_path / root_file).write_text("demo\n", encoding="utf-8")
     branch_info = {"name": "Demo", "dtype": branch_name, "url": "https://github.com/example/product", "branch": "demo", "use_submodule": True}
-    monkeypatch.setattr(module, branch_list_attr, [branch_name])
-    monkeypatch.setattr(module, branch_info_attr, [branch_info])
-    _patch_common_install_deps(monkeypatch, module, calls)
+    monkeypatch.setattr(implementation, branch_list_attr, [branch_name])
+    monkeypatch.setattr(implementation, branch_info_attr, [branch_info])
+    _patch_common_install_deps(monkeypatch, implementation, calls)
 
     getattr(module, install_func)(tmp_path, install_branch=branch_name, use_uv=False, no_pre_download_model=False)
 
@@ -93,13 +100,14 @@ def test_install_sd_training_products_orchestrate_common_flow(monkeypatch, tmp_p
 
 def test_sd_scripts_install_exports_requirements_from_pyproject(monkeypatch, tmp_path):
     calls = []
+    implementation = _implementation_module(sd_scripts_base, "install_sd_scripts")
     (tmp_path / "pyproject.toml").write_text("[project]\ndependencies=['demo']\n", encoding="utf-8")
     branch_info = {"name": "Demo", "dtype": "sd_scripts_demo", "url": "https://github.com/example/product", "branch": "demo", "use_submodule": False}
-    monkeypatch.setattr(sd_scripts_base, "SD_SCRIPTS_BRANCH_LIST", ["sd_scripts_demo"])
-    monkeypatch.setattr(sd_scripts_base, "SD_SCRIPTS_BRANCH_INFO_DICT", [branch_info])
-    _patch_common_install_deps(monkeypatch, sd_scripts_base, calls)
+    monkeypatch.setattr(implementation, "SD_SCRIPTS_BRANCH_LIST", ["sd_scripts_demo"])
+    monkeypatch.setattr(implementation, "SD_SCRIPTS_BRANCH_INFO_DICT", [branch_info])
+    _patch_common_install_deps(monkeypatch, implementation, calls)
     monkeypatch.setattr(
-        sd_scripts_base, "export_requirements_from_toml_config", lambda toml_path, save_path: calls.append(("export", toml_path, save_path)) or save_path.write_text("demo\n", encoding="utf-8")
+        implementation, "export_requirements_from_toml_config", lambda toml_path, save_path: calls.append(("export", toml_path, save_path)) or save_path.write_text("demo\n", encoding="utf-8")
     )
 
     sd_scripts_base.install_sd_scripts(tmp_path, install_branch="sd_scripts_demo", no_pre_download_model=True)
@@ -119,6 +127,7 @@ def test_sd_scripts_install_exports_requirements_from_pyproject(monkeypatch, tmp
     ],
 )
 def test_product_env_checks_aggregate_failures(monkeypatch, tmp_path, module, check_func, req_name, missing_message):
+    implementation = _implementation_module(module, check_func)
     (tmp_path / "requirements.txt").write_text("demo\n", encoding="utf-8")
     calls = []
 
@@ -129,15 +138,15 @@ def test_product_env_checks_aggregate_failures(monkeypatch, tmp_path, module, ch
         calls.append(("bad", kwargs))
         raise RuntimeError("task bad")
 
-    monkeypatch.setattr(module, "apply_git_base_config_and_github_mirror", lambda **kwargs: {"GIT_CONFIG_GLOBAL": "gitconfig", **kwargs["origin_env"]})
-    monkeypatch.setattr(module, "get_pypi_mirror_config", lambda use_cn_mirror, origin_env=None: {"PIP": str(use_cn_mirror), **(origin_env or {})})
-    monkeypatch.setattr(module, "py_dependency_checker", bad_task)
-    monkeypatch.setattr(module, "fix_torch_libomp", ok_task)
-    monkeypatch.setattr(module, "check_torch_version", ok_task)
-    monkeypatch.setattr(module, "check_onnxruntime_gpu", ok_task)
-    monkeypatch.setattr(module, "check_numpy", ok_task)
-    if hasattr(module, "check_accelerate_bin"):
-        monkeypatch.setattr(module, "check_accelerate_bin", ok_task)
+    monkeypatch.setattr(implementation, "apply_git_base_config_and_github_mirror", lambda **kwargs: {"GIT_CONFIG_GLOBAL": "gitconfig", **kwargs["origin_env"]})
+    monkeypatch.setattr(implementation, "get_pypi_mirror_config", lambda use_cn_mirror, origin_env=None: {"PIP": str(use_cn_mirror), **(origin_env or {})})
+    monkeypatch.setattr(implementation, "py_dependency_checker", bad_task)
+    monkeypatch.setattr(implementation, "fix_torch_libomp", ok_task)
+    monkeypatch.setattr(implementation, "check_torch_version", ok_task)
+    monkeypatch.setattr(implementation, "check_onnxruntime_gpu", ok_task)
+    monkeypatch.setattr(implementation, "check_numpy", ok_task)
+    if hasattr(implementation, "check_accelerate_bin"):
+        monkeypatch.setattr(implementation, "check_accelerate_bin", ok_task)
 
     with pytest.raises(AggregateError) as exc:
         getattr(module, check_func)(tmp_path, use_uv=False, use_pypi_mirror=True)
@@ -164,17 +173,19 @@ def test_product_env_checks_aggregate_failures(monkeypatch, tmp_path, module, ch
 )
 def test_product_switch_and_update_delegate_to_git(monkeypatch, tmp_path, module, switch_func, branch_list_attr, branch_info_attr, branch_name):
     calls = []
+    switch_implementation = _implementation_module(module, switch_func)
+    update_func = getattr(module, switch_func.replace("switch_", "update_").replace("_branch", ""))
+    update_implementation = sys.modules[update_func.__module__]
     branch_info = {"name": "Demo", "dtype": branch_name, "url": "https://github.com/example/product", "branch": "demo", "use_submodule": True}
-    monkeypatch.setattr(module, branch_list_attr, [branch_name])
-    monkeypatch.setattr(module, branch_info_attr, [branch_info])
-    monkeypatch.setattr(module, "apply_git_base_config_and_github_mirror", lambda **kwargs: {"GIT_CONFIG_GLOBAL": "gitconfig", **kwargs["origin_env"]})
-    monkeypatch.setattr(module.git_warpper, "switch_branch", lambda **kwargs: calls.append(("switch", kwargs)))
-    monkeypatch.setattr(module.git_warpper, "update", lambda path: calls.append(("update", path)))
+    monkeypatch.setattr(switch_implementation, branch_list_attr, [branch_name])
+    monkeypatch.setattr(switch_implementation, branch_info_attr, [branch_info])
+    monkeypatch.setattr(switch_implementation, "apply_git_base_config_and_github_mirror", lambda **kwargs: {"GIT_CONFIG_GLOBAL": "gitconfig", **kwargs["origin_env"]})
+    monkeypatch.setattr(switch_implementation.git_warpper, "switch_branch", lambda **kwargs: calls.append(("switch", kwargs)))
+    monkeypatch.setattr(update_implementation.git_warpper, "update", lambda path: calls.append(("update", path)))
 
     getattr(module, switch_func)(tmp_path, branch=branch_name, use_github_mirror=True, custom_github_mirror="mirror")
     assert calls[0] == ("switch", {"path": tmp_path, "branch": "demo", "new_url": "https://github.com/example/product", "recurse_submodules": True})
 
-    update_func = getattr(module, switch_func.replace("switch_", "update_").replace("_branch", ""))
     update_func(tmp_path, use_github_mirror=True)
     assert calls[1] == ("update", tmp_path)
 
@@ -192,14 +203,15 @@ def test_product_switch_and_update_delegate_to_git(monkeypatch, tmp_path, module
 )
 def test_product_model_install_and_uninstall_helpers(monkeypatch, tmp_path, module, library_func, url_func, uninstall_func, dtype, model_root):
     calls = []
+    implementation = _implementation_module(module, library_func)
     model_file = tmp_path / model_root / "checkpoints" / "demo.safetensors"
     model_file.parent.mkdir(parents=True)
     model_file.write_text("model", encoding="utf-8")
 
-    monkeypatch.setattr(module, "install_webui_model_from_library", lambda **kwargs: calls.append(("library", kwargs)))
-    monkeypatch.setattr(module, "download_file", lambda **kwargs: calls.append(("download", kwargs)))
-    monkeypatch.setattr(module, "get_file_list", lambda path: calls.append(("list", path)) or [model_file])
-    monkeypatch.setattr(module, "remove_files", lambda path: calls.append(("remove", path)))
+    monkeypatch.setattr(implementation, "install_webui_model_from_library", lambda **kwargs: calls.append(("library", kwargs)))
+    monkeypatch.setattr(implementation, "download_file", lambda **kwargs: calls.append(("download", kwargs)))
+    monkeypatch.setattr(implementation, "get_file_list", lambda path: calls.append(("list", path)) or [model_file])
+    monkeypatch.setattr(implementation, "remove_files", lambda path: calls.append(("remove", path)))
 
     getattr(module, library_func)(tmp_path, model_name="demo", downloader="urllib")
     getattr(module, url_func)(tmp_path, "https://example.test/model.safetensors", "checkpoints", downloader="requests")
@@ -222,6 +234,6 @@ def test_product_model_install_and_uninstall_helpers(monkeypatch, tmp_path, modu
     assert calls[2] == ("list", tmp_path / model_root / "checkpoints")
     assert calls[3] == ("remove", model_file)
 
-    monkeypatch.setattr(module, "get_file_list", lambda _path: [])
+    monkeypatch.setattr(implementation, "get_file_list", lambda _path: [])
     with pytest.raises(FileNotFoundError):
         getattr(module, uninstall_func)(tmp_path, "missing", model_type="checkpoints")

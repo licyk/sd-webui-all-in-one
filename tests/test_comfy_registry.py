@@ -1,4 +1,5 @@
 import zipfile
+import sys
 import urllib.error
 import urllib.parse
 
@@ -25,11 +26,12 @@ def _make_node_zip(path, version="1.2.3"):
 
 
 def test_comfy_registry_install_writes_tracking_and_reads_local_info(monkeypatch, tmp_path):
+    implementation = sys.modules[comfy_registry.install_comfy_registry_node.__module__]
     archive_path = tmp_path / "node.zip"
     _make_node_zip(archive_path)
 
     monkeypatch.setattr(
-        comfy_registry,
+        implementation,
         "fetch_comfy_registry_install_info",
         lambda node_id, version=None: comfy_registry.ComfyRegistryNodeVersion(
             node_id=node_id,
@@ -37,7 +39,7 @@ def test_comfy_registry_install_writes_tracking_and_reads_local_info(monkeypatch
             download_url="https://cdn.example/node.zip",
         ),
     )
-    monkeypatch.setattr(comfy_registry, "download_file", lambda **_kwargs: archive_path)
+    monkeypatch.setattr(implementation, "download_file", lambda **_kwargs: archive_path)
 
     info = comfy_registry.install_comfy_registry_node(tmp_path, "demo-node", run_postinstall=False)
 
@@ -54,6 +56,7 @@ def test_comfy_registry_install_writes_tracking_and_reads_local_info(monkeypatch
 
 
 def test_comfy_registry_switch_version_preserves_untracked_files(monkeypatch, tmp_path):
+    implementation = sys.modules[comfy_registry.install_comfy_registry_node.__module__]
     old_archive = tmp_path / "old.zip"
     new_archive = tmp_path / "new.zip"
     _make_node_zip(old_archive, version="1.0.0")
@@ -61,7 +64,7 @@ def test_comfy_registry_switch_version_preserves_untracked_files(monkeypatch, tm
     downloads = [old_archive, new_archive]
 
     monkeypatch.setattr(
-        comfy_registry,
+        implementation,
         "fetch_comfy_registry_install_info",
         lambda node_id, version=None: comfy_registry.ComfyRegistryNodeVersion(
             node_id=node_id,
@@ -69,7 +72,7 @@ def test_comfy_registry_switch_version_preserves_untracked_files(monkeypatch, tm
             download_url="https://cdn.example/node.zip",
         ),
     )
-    monkeypatch.setattr(comfy_registry, "download_file", lambda **_kwargs: downloads.pop(0))
+    monkeypatch.setattr(implementation, "download_file", lambda **_kwargs: downloads.pop(0))
 
     comfy_registry.install_comfy_registry_node(tmp_path, "demo-node", version="1.0.0", run_postinstall=False)
     install_path = tmp_path / "custom_nodes" / "demo-node"
@@ -82,6 +85,7 @@ def test_comfy_registry_switch_version_preserves_untracked_files(monkeypatch, tm
 
 
 def test_fetch_all_comfy_registry_nodes_paginates_and_uses_cache(monkeypatch):
+    implementation = sys.modules[comfy_registry.fetch_all_comfy_registry_nodes.__module__]
     comfy_registry.clear_comfy_registry_cache()
     calls = []
 
@@ -91,13 +95,10 @@ def test_fetch_all_comfy_registry_nodes_paginates_and_uses_cache(monkeypatch):
         page = int(query["page"][0])
         limit = int(query["limit"][0])
         calls.append((page, limit))
-        nodes = [
-            {"id": f"node-{index}", "name": f"Node {index}"}
-            for index in range((page - 1) * limit, min(page * limit, 5))
-        ]
+        nodes = [{"id": f"node-{index}", "name": f"Node {index}"} for index in range((page - 1) * limit, min(page * limit, 5))]
         return {"nodes": nodes, "total": 5}
 
-    monkeypatch.setattr(comfy_registry, "_fetch_json", fake_fetch_json)
+    monkeypatch.setattr(implementation, "_fetch_json", fake_fetch_json)
 
     first = comfy_registry.fetch_all_comfy_registry_nodes(page_size=2)
     second = comfy_registry.fetch_all_comfy_registry_nodes(page_size=2)
@@ -108,6 +109,8 @@ def test_fetch_all_comfy_registry_nodes_paginates_and_uses_cache(monkeypatch):
 
 
 def test_fetch_comfy_registry_extension_index_marks_missing_versions(monkeypatch):
+    implementation = sys.modules[comfy_registry.fetch_comfy_registry_extension_index.__module__]
+
     def fake_fetch_all_nodes(
         search=None,
         page_size=500,
@@ -138,7 +141,7 @@ def test_fetch_comfy_registry_extension_index_marks_missing_versions(monkeypatch
         ]
 
     monkeypatch.setattr(
-        comfy_registry,
+        implementation,
         "fetch_all_comfy_registry_nodes",
         fake_fetch_all_nodes,
     )
@@ -154,10 +157,12 @@ def test_fetch_comfy_registry_extension_index_marks_missing_versions(monkeypatch
 
 
 def test_fetch_comfy_registry_install_info_404_raises_unavailable(monkeypatch):
+    implementation = sys.modules[comfy_registry.fetch_comfy_registry_install_info.__module__]
+
     def fail_fetch(url, timeout=20):
         raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
 
-    monkeypatch.setattr(comfy_registry, "_fetch_json", fail_fetch)
+    monkeypatch.setattr(implementation, "_fetch_json", fail_fetch)
 
     with pytest.raises(comfy_registry.ComfyRegistryInstallUnavailableError) as exc:
         comfy_registry.fetch_comfy_registry_install_info("ComfyUI_CosyVoice")
@@ -171,8 +176,9 @@ def test_fetch_comfy_registry_install_info_404_raises_unavailable(monkeypatch):
 
 
 def test_comfy_registry_install_rejects_install_info_without_download_url(monkeypatch, tmp_path):
+    implementation = sys.modules[comfy_registry.install_comfy_registry_node.__module__]
     monkeypatch.setattr(
-        comfy_registry,
+        implementation,
         "fetch_comfy_registry_install_info",
         lambda node_id, version=None: comfy_registry.ComfyRegistryNodeVersion(
             node_id=node_id,
@@ -189,7 +195,8 @@ def test_comfy_registry_install_rejects_install_info_without_download_url(monkey
 
 
 def test_parse_comfy_registry_node_author_priority():
-    explicit = comfy_registry._parse_node(
+    implementation = sys.modules[comfy_registry.fetch_all_comfy_registry_nodes.__module__]
+    explicit = implementation._parse_node(
         {
             "id": "explicit-node",
             "name": "Explicit Node",
@@ -198,7 +205,7 @@ def test_parse_comfy_registry_node_author_priority():
             "repository": "https://github.com/repo-owner/explicit-node",
         }
     )
-    publisher = comfy_registry._parse_node(
+    publisher = implementation._parse_node(
         {
             "id": "publisher-node",
             "name": "Publisher Node",
@@ -207,7 +214,7 @@ def test_parse_comfy_registry_node_author_priority():
             "repository": "https://github.com/repo-owner/publisher-node",
         }
     )
-    repository = comfy_registry._parse_node(
+    repository = implementation._parse_node(
         {
             "id": "repository-node",
             "name": "Repository Node",

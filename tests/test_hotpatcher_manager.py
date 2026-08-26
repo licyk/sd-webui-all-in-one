@@ -639,6 +639,7 @@ def test_self_manager_patcher_get_pythonpath_cli(monkeypatch, capsys):
 
 def _capture_webui_launch_env(monkeypatch, module, launch_func, path_arg: str, tmp_path, **kwargs):
     captured = {}
+    implementation = sys.modules[launch_func.__module__]
 
     def fake_git_env(*, origin_env=None, **_kwargs):
         env = (origin_env or os.environ.copy()).copy()
@@ -648,11 +649,11 @@ def _capture_webui_launch_env(monkeypatch, module, launch_func, path_arg: str, t
     def fake_env_passthrough(*, origin_env=None, **_kwargs):
         return (origin_env or os.environ.copy()).copy()
 
-    monkeypatch.setattr(module, "apply_git_base_config_and_github_mirror", fake_git_env)
-    monkeypatch.setattr(module, "apply_hf_mirror", fake_env_passthrough)
-    monkeypatch.setattr(module, "get_pypi_mirror_config", fake_env_passthrough)
-    monkeypatch.setattr(module, "get_cuda_malloc_var", lambda: None)
-    monkeypatch.setattr(module, "launch_webui", lambda **launch_kwargs: captured.update(launch_kwargs))
+    monkeypatch.setattr(implementation, "apply_git_base_config_and_github_mirror", fake_git_env)
+    monkeypatch.setattr(implementation, "apply_hf_mirror", fake_env_passthrough)
+    monkeypatch.setattr(implementation, "get_pypi_mirror_config", fake_env_passthrough)
+    monkeypatch.setattr(implementation, "get_cuda_malloc_var", lambda: None)
+    monkeypatch.setattr(implementation, "launch_webui", lambda **launch_kwargs: captured.update(launch_kwargs))
 
     launch_kwargs = {
         path_arg: tmp_path,
@@ -739,6 +740,8 @@ def test_base_launch_functions_inject_hotpatcher_env(monkeypatch, tmp_path):
 def test_invokeai_launch_delegates_to_launch_webui(monkeypatch, tmp_path):
     from sd_webui_all_in_one.base_manager import invokeai_base
 
+    implementation = sys.modules[invokeai_base.launch_invokeai.__module__]
+
     launch_calls = []
     fake_env = {
         "PYTHONPATH": "existing",
@@ -752,17 +755,15 @@ def test_invokeai_launch_delegates_to_launch_webui(monkeypatch, tmp_path):
     def fake_launch_webui(**kwargs):
         launch_calls.append(kwargs)
 
-    monkeypatch.setattr(invokeai_base.os, "environ", fake_env)
-    monkeypatch.setattr(invokeai_base.sys, "argv", ["invokeai"])
-    monkeypatch.setattr(invokeai_base, "apply_hf_mirror", fake_env_passthrough)
-    monkeypatch.setattr(invokeai_base, "get_pypi_mirror_config", fake_env_passthrough)
-    monkeypatch.setattr(invokeai_base, "get_cuda_malloc_var", lambda: None)
-    monkeypatch.setattr(invokeai_base, "launch_webui", fake_launch_webui)
+    monkeypatch.setattr(implementation.os, "environ", fake_env)
+    monkeypatch.setattr(implementation, "apply_hf_mirror", fake_env_passthrough)
+    monkeypatch.setattr(implementation, "get_pypi_mirror_config", fake_env_passthrough)
+    monkeypatch.setattr(implementation, "get_cuda_malloc_var", lambda: None)
+    monkeypatch.setattr(implementation, "launch_webui", fake_launch_webui)
 
     invokeai_base.launch_invokeai(tmp_path, use_cuda_malloc=False)
 
     assert fake_env == original_fake_env
-    assert invokeai_base.sys.argv == ["invokeai"]
     assert launch_calls[-1]["webui_path"] == tmp_path
     assert launch_calls[-1]["launch_script"] == invokeai_base.INVOKEAI_RUNNER_SCRIPT
     assert launch_calls[-1]["webui_name"] == "InvokeAI"

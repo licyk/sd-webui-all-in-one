@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -164,6 +165,7 @@ def test_environment_info_build_and_save_contract(monkeypatch, tmp_path):
     ],
 )
 def test_product_environment_info_combines_own_snapshot(monkeypatch, tmp_path, module, function_name, snapshot_name):
+    implementation = sys.modules[getattr(module, function_name).__module__]
     snapshot = _snapshot(tmp_path)
     calls = []
     result = WebUiEnvironmentInfo(
@@ -172,8 +174,8 @@ def test_product_environment_info_combines_own_snapshot(monkeypatch, tmp_path, m
         environment=_host_environment(),
         snapshot=snapshot,
     )
-    monkeypatch.setattr(module, snapshot_name, lambda path, include_packages: calls.append((path, include_packages)) or snapshot)
-    monkeypatch.setattr(module, "build_webui_environment_info", lambda value: calls.append(value) or result)
+    monkeypatch.setattr(implementation, snapshot_name, lambda path, include_packages: calls.append((path, include_packages)) or snapshot)
+    monkeypatch.setattr(implementation, "build_webui_environment_info", lambda value: calls.append(value) or result)
 
     actual = getattr(module, function_name)(tmp_path, include_packages=False)
 

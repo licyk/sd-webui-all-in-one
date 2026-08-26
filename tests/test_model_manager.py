@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from sd_webui_all_in_one.base_manager import invokeai_base
-from sd_webui_all_in_one.base_manager import model_manager as model_manager_module
+from sd_webui_all_in_one.base_manager.model_manager import files as model_manager_files
 from sd_webui_all_in_one.base_manager.model_manager import FileModelManager, InvokeAIModelManager
 
 
@@ -83,12 +83,15 @@ def test_file_model_manager_rename_handles_same_name_overwrite_and_root(tmp_path
     source = manager.root_path(webui_path) / "models-a" / "source.bin"
     source.write_text("source", encoding="utf-8")
 
-    assert manager.rename_entry(
-        webui_path,
-        "models-a/source.bin",
-        "source.bin",
-        overwrite=True,
-    ) == source
+    assert (
+        manager.rename_entry(
+            webui_path,
+            "models-a/source.bin",
+            "source.bin",
+            overwrite=True,
+        )
+        == source
+    )
     assert source.read_text(encoding="utf-8") == "source"
 
     target = source.with_name("target.bin")
@@ -98,12 +101,15 @@ def test_file_model_manager_rename_handles_same_name_overwrite_and_root(tmp_path
     assert source.read_text(encoding="utf-8") == "source"
     assert target.read_text(encoding="utf-8") == "target"
 
-    assert manager.rename_entry(
-        webui_path,
-        "models-a/source.bin",
-        "target.bin",
-        overwrite=True,
-    ) == target
+    assert (
+        manager.rename_entry(
+            webui_path,
+            "models-a/source.bin",
+            "target.bin",
+            overwrite=True,
+        )
+        == target
+    )
     assert not source.exists()
     assert target.read_text(encoding="utf-8") == "source"
 
@@ -132,7 +138,7 @@ def test_file_model_manager_import_copies_and_download_passes_save_name(monkeypa
         output.write_text("downloaded", encoding="utf-8")
         return output
 
-    monkeypatch.setattr(model_manager_module, "download_file", fake_download_file)
+    monkeypatch.setattr(model_manager_files, "download_file", fake_download_file)
 
     downloaded = manager.download_url(
         webui_path,

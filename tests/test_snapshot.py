@@ -1,5 +1,6 @@
 import argparse
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -298,7 +299,7 @@ def test_product_snapshots_include_webui_identity_and_extension_state(monkeypatc
             ),
         ]
 
-    monkeypatch.setattr(sd_webui_base, "collect_git_extensions", fake_sd_extensions)
+    monkeypatch.setattr(sys.modules[sd_webui_base.get_sd_webui_snapshot.__module__], "collect_git_extensions", fake_sd_extensions)
     sd_snapshot = sd_webui_base.get_sd_webui_snapshot(tmp_path / "sd-webui", include_packages=False)
     assert snapshot_utils.snapshot_to_dict(sd_snapshot)["webui"] == {
         "name": "Stable Diffusion WebUI",
@@ -309,7 +310,7 @@ def test_product_snapshots_include_webui_identity_and_extension_state(monkeypatc
     assert [item.enabled for item in sd_snapshot.extensions] == [True, False]
 
     monkeypatch.setattr(
-        comfyui_base,
+        sys.modules[comfyui_base.get_comfyui_snapshot.__module__],
         "collect_comfyui_extensions",
         lambda _path: [_extension_snapshot("node.disabled", _path / "custom_nodes" / "node.disabled", False)],
     )
@@ -318,7 +319,7 @@ def test_product_snapshots_include_webui_identity_and_extension_state(monkeypatc
     assert comfy_snapshot.extensions[0].enabled is False
 
     monkeypatch.setattr(
-        invokeai_base,
+        sys.modules[invokeai_base.get_invokeai_snapshot.__module__],
         "collect_git_extensions",
         lambda _path, enabled_resolver=None, **_kwargs: [_extension_snapshot("node", _path / "node", enabled_resolver("node", _path / "node"))],
     )
