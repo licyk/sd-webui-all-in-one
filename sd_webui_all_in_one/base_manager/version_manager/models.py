@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import (
     Literal,
+    TypeAlias,
 )
 
 from sd_webui_all_in_one.base_manager.base import (
@@ -29,7 +30,7 @@ DEFAULT_EXTENSION_INDEX_URL = "https://raw.githubusercontent.com/AUTOMATIC1111/s
 """AUTOMATIC1111 扩展源地址"""
 
 
-ExtensionSourceType = Literal["git", "comfy-registry", "file", "unknown"]
+ExtensionSourceType: TypeAlias = Literal["git", "comfy-registry", "file", "unknown"]
 """扩展安装来源类型"""
 
 

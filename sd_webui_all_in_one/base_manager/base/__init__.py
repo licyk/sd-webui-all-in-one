@@ -1,7 +1,5 @@
 """WebUI 管理共享基础能力。"""
 
-# ruff: noqa: F401
-
 from sd_webui_all_in_one.utils import print_divider
 
 from sd_webui_all_in_one.base_manager.base.environment import collect_host_environment_info, run_env_check_tasks, select_env_check_tasks

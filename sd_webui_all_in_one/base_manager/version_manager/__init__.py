@@ -1,7 +1,5 @@
 """通用版本管理服务。"""
 
-# ruff: noqa: F401
-
 from sd_webui_all_in_one.base_manager.version_manager.checks import check_extension_updates, check_package_update, check_webui_updates
 from sd_webui_all_in_one.base_manager.version_manager.extensions import ExtensionManager
 from sd_webui_all_in_one.base_manager.version_manager.indexes import (
