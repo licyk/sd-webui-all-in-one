@@ -473,8 +473,8 @@ sd-webui-all-in-one self-manager download-file <下载链接> [选项]
 - `--save-name <文件名>`：文件保存名称，默认从 URL 中提取。
 - `--downloader <工具>`：下载工具，可选 `aria2`、`requests`、`urllib`，默认 `requests`。
 - `--no-progress`：禁用下载进度条。
-- `--split <数量>`：aria2 风格的单文件最大分割数，默认 `5`。
-- `--max-connection-per-server <数量>`：aria2 风格的单服务器最大连接数，默认 `1`；单 URL 默认不会并发多连接。
+- `--split <数量>`：aria2 风格的单文件最大分割数，默认 `32`。
+- `--max-connection-per-server <数量>`：aria2 风格的单服务器最大连接数，默认 `16`。
 - `--min-split-size <字节>`：aria2 风格的最小切分大小，默认 `20971520`。
 - `--piece-length <字节>`：aria2 风格的 piece 大小，默认 `1048576`。
 - `--allow-piece-length-change`：控制文件中的 piece 大小变化时，转换已完成 bitfield 并丢弃 in-flight 进度。
@@ -483,6 +483,15 @@ sd-webui-all-in-one self-manager download-file <下载链接> [选项]
 - `--retry-wait <秒>`：HTTP 503 重试前等待秒数，默认 `0`。
 - `--conditional-get`：已有本地文件时发送 `If-Modified-Since`，远端返回 `304` 时复用本地文件。
 - `--no-remote-time`：禁用按远端 `Last-Modified` 设置本地文件时间；默认启用。
+- `--no-always-resume`：允许在续传失败达到阈值后丢弃已有进度并从头下载；默认不允许，以免静默覆盖断点。
+- `--max-resume-failure-tries <次数>`：允许重头下载前的续传失败阈值，默认 `0`，表示所有 URI 都无法续传后重头下载；仅在 `--no-always-resume` 时生效。
+- `--existing-file <策略>`：已有正式文件的处理方式，可选 `reuse`（不联网直接复用）、`verify`（按远端大小或哈希校验）、`resume`（作为顺序断点继续，默认）、`overwrite`（原子覆盖）和 `rename`（生成新名称）。默认从旧的“文件存在即成功”改为 `resume`，因此残缺文件会继续下载，而不会直接误报成功。
+- `--hash <十六进制值>`：校验下载结果，可传完整哈希或前缀；显式值优先于服务端 Digest。
+- `--hash-algorithm <算法>`：`--hash` 使用的算法，可选 `sha1`、`sha256`、`sha512`，默认 `sha256`。
+- `--connect-timeout <秒>` / `--read-timeout <秒>`：分别控制建立连接和单次读取停滞，默认均为 `60`。
+- `--lowest-speed-limit <B/s>` / `--lowest-speed-time <秒>`：在给定窗口内持续低于最低速度时重新调度连接；任一值为 `0` 时禁用，默认禁用。
+
+`requests` 和 `aria2` 后端共享上述 `32/16/20 MiB/1 MiB` 任务默认值。`aria2.conf` 也使用相同的连接和分段默认值；通过统一下载入口发起任务时，RPC 的单任务选项会显式覆盖配置文件中的同名值。较高连接数可提升大文件吞吐，但服务端可能据此限流或返回 `429`；小于 `min-split-size` 的文件不会使用全部分段。
 
 ### 压缩包解压和压缩
 调用 Python 内核中的压缩包工具解压或创建压缩包。

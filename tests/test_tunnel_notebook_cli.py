@@ -474,6 +474,15 @@ def test_self_manager_start_tunnel_cli_parse_smoke(monkeypatch, tmp_path):
         }
     ]
 
+    default_args = parser.parse_args(["self-manager", "download-file", "https://example.test/defaults.bin"])
+    assert default_args.split == 32
+    assert default_args.max_connection_per_server == 16
+    assert default_args.min_split_size == 20 * 1024 * 1024
+    assert default_args.piece_length == 1024 * 1024
+    assert default_args.always_resume is True
+    assert default_args.max_resume_failure_tries == 0
+    assert default_args.existing_file == "resume"
+
 
 def test_self_manager_portable_list_cli_parse_smoke(monkeypatch, tmp_path):
     monkeypatch.setattr(cli_utils, "SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH", tmp_path / "launch")
@@ -1152,6 +1161,23 @@ def test_self_manager_download_file_cli_parse_smoke(monkeypatch, tmp_path):
             "9",
             "--conditional-get",
             "--no-remote-time",
+            "--no-always-resume",
+            "--max-resume-failure-tries",
+            "2",
+            "--existing-file",
+            "overwrite",
+            "--hash",
+            "abcd",
+            "--hash-algorithm",
+            "sha512",
+            "--connect-timeout",
+            "11",
+            "--read-timeout",
+            "22",
+            "--lowest-speed-limit",
+            "1024",
+            "--lowest-speed-time",
+            "5",
         ]
     )
     args.func(args)
@@ -1173,6 +1199,15 @@ def test_self_manager_download_file_cli_parse_smoke(monkeypatch, tmp_path):
             "retry_wait": 9,
             "conditional_get": True,
             "remote_time": False,
+            "always_resume": False,
+            "max_resume_failure_tries": 2,
+            "existing_file_policy": "overwrite",
+            "hash_value": "abcd",
+            "hash_algorithm": "sha512",
+            "connect_timeout": 11,
+            "read_timeout": 22,
+            "lowest_speed_limit": 1024,
+            "lowest_speed_time": 5,
         }
     ]
 

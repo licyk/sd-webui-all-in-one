@@ -11,6 +11,7 @@ import pytest
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.downloader import archive_downloader
 from sd_webui_all_in_one.downloader import downloader as downloader_module
+from sd_webui_all_in_one.downloader import requests_downloader
 from sd_webui_all_in_one.downloader.multi_thread import MultiThreadDownloader
 from sd_webui_all_in_one import archive_manager
 from sd_webui_all_in_one import file_manager
@@ -33,6 +34,39 @@ def test_download_file_falls_back_from_aria2_to_requests(monkeypatch, tmp_path):
     assert result == tmp_path / "downloads" / "x.bin"
     assert (tmp_path / "downloads").is_dir()
     assert calls == [("https://example.test/file.bin", tmp_path / "downloads", "x.bin", "requests", False)]
+
+
+def test_download_file_rejects_save_name_outside_target(monkeypatch, tmp_path):
+    monkeypatch.setattr(downloader_module, "download_executer", lambda **_kwargs: pytest.fail("不应启动下载器"))
+
+    with pytest.raises(ValueError, match="下载文件名"):
+        downloader_module.download_file(
+            "https://example.test/file.bin",
+            path=tmp_path,
+            save_name="../escape.bin",
+            progress=False,
+        )
+
+
+def test_download_executer_does_not_outer_retry_state_error(monkeypatch, tmp_path):
+    calls = []
+
+    def fail_once(**kwargs):
+        calls.append(kwargs)
+        raise requests_downloader._ResumeStateError("bad state")
+
+    monkeypatch.setattr(downloader_module, "download_file_from_url", fail_once)
+
+    with pytest.raises(RuntimeError, match="bad state"):
+        downloader_module.download_executer(
+            url="https://example.test/file.bin",
+            path=tmp_path,
+            save_name="file.bin",
+            tool="requests",
+            progress=False,
+        )
+
+    assert len(calls) == 1
 
 
 def test_download_file_falls_back_to_urllib_when_requests_missing(monkeypatch, tmp_path):

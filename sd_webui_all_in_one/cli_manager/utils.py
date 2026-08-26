@@ -36,7 +36,9 @@ from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
 from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.downloader.types import (
     DOWNLOAD_TOOL_TYPE_LIST,
+    EXISTING_FILE_POLICY_LIST,
     DownloadToolType,
+    ExistingFilePolicy,
 )
 from sd_webui_all_in_one.downloader.requests_downloader import (
     DEFAULT_MAX_CONNECTION_PER_SERVER,
@@ -240,6 +242,8 @@ def download_file_cli(
     save_name: str | None = None,
     tool: DownloadToolType | None = None,
     progress: bool = True,
+    hash_value: str | None = None,
+    hash_algorithm: str = "sha256",
     split: int = DEFAULT_SPLIT,
     max_connection_per_server: int = DEFAULT_MAX_CONNECTION_PER_SERVER,
     min_split_size: int = DEFAULT_MIN_SPLIT_SIZE,
@@ -250,6 +254,13 @@ def download_file_cli(
     retry_wait: int = 0,
     conditional_get: bool = False,
     remote_time: bool = True,
+    always_resume: bool = True,
+    max_resume_failure_tries: int = 0,
+    existing_file_policy: ExistingFilePolicy = "resume",
+    connect_timeout: int = 60,
+    read_timeout: int = 60,
+    lowest_speed_limit: int = 0,
+    lowest_speed_time: int = 0,
 ) -> None:
     """下载文件并输出保存路径
 
@@ -264,6 +275,10 @@ def download_file_cli(
             下载工具
         progress (bool):
             是否启用下载进度条
+        hash_value (str | None):
+            显式完整哈希值或前缀
+        hash_algorithm (str):
+            hash_value 使用的算法
         split (int):
             aria2 风格的单文件最大分割数
         max_connection_per_server (int):
@@ -284,6 +299,12 @@ def download_file_cli(
             已有本地文件时是否发送 If-Modified-Since, 远端返回 304 时复用本地文件
         remote_time (bool):
             下载完成后是否把本地文件 mtime 设置为远端 Last-Modified
+        always_resume (bool):
+            已有进度无法续传时是否保留断点并报错
+        max_resume_failure_tries (int):
+            always_resume=False 时允许重头下载前的续传失败阈值
+        existing_file_policy (ExistingFilePolicy):
+            已有正式文件的处理策略
     """
     download_file(
         url=url,
@@ -291,6 +312,8 @@ def download_file_cli(
         save_name=save_name,
         tool=tool,
         progress=progress,
+        hash_value=hash_value,
+        hash_algorithm=hash_algorithm,
         split=split,
         max_connection_per_server=max_connection_per_server,
         min_split_size=min_split_size,
@@ -301,6 +324,13 @@ def download_file_cli(
         retry_wait=retry_wait,
         conditional_get=conditional_get,
         remote_time=remote_time,
+        always_resume=always_resume,
+        max_resume_failure_tries=max_resume_failure_tries,
+        existing_file_policy=existing_file_policy,
+        connect_timeout=connect_timeout,
+        read_timeout=read_timeout,
+        lowest_speed_limit=lowest_speed_limit,
+        lowest_speed_time=lowest_speed_time,
     )
 
 
@@ -1383,6 +1413,15 @@ def register_manager(
     download_file_p.add_argument("--retry-wait", type=int, default=0, help="HTTP 503 重试前等待秒数")
     download_file_p.add_argument("--conditional-get", action="store_true", default=False, help="已有本地文件时发送 If-Modified-Since, 远端返回 304 时复用本地文件")
     download_file_p.add_argument("--no-remote-time", action="store_false", dest="remote_time", default=True, help="禁用按远端 Last-Modified 设置本地文件时间")
+    download_file_p.add_argument("--no-always-resume", action="store_false", dest="always_resume", default=True, help="续传失败后允许按阈值丢弃进度并重头下载")
+    download_file_p.add_argument("--max-resume-failure-tries", type=int, default=0, help="允许重头下载前的续传失败阈值, 0 表示所有 URI 均失败")
+    download_file_p.add_argument("--existing-file", choices=EXISTING_FILE_POLICY_LIST, default="resume", help="已有正式文件的处理策略, 默认 resume")
+    download_file_p.add_argument("--hash", dest="hash_value", default=None, help="下载文件的完整哈希值或十六进制前缀")
+    download_file_p.add_argument("--hash-algorithm", choices=["sha1", "sha256", "sha512"], default="sha256", help="--hash 使用的算法, 默认 sha256")
+    download_file_p.add_argument("--connect-timeout", type=int, default=60, help="建立连接超时秒数, 默认 60")
+    download_file_p.add_argument("--read-timeout", type=int, default=60, help="单次读取停滞超时秒数, 默认 60")
+    download_file_p.add_argument("--lowest-speed-limit", type=int, default=0, help="最低下载速度, 单位 B/s, 0 表示禁用")
+    download_file_p.add_argument("--lowest-speed-time", type=int, default=0, help="最低速度检测窗口秒数, 0 表示禁用")
     download_file_p.set_defaults(
         func=lambda args: download_file_cli(
             url=args.url,
@@ -1399,6 +1438,15 @@ def register_manager(
             retry_wait=args.retry_wait,
             conditional_get=args.conditional_get,
             remote_time=args.remote_time,
+            always_resume=args.always_resume,
+            max_resume_failure_tries=args.max_resume_failure_tries,
+            existing_file_policy=args.existing_file,
+            hash_value=args.hash_value,
+            hash_algorithm=args.hash_algorithm,
+            connect_timeout=args.connect_timeout,
+            read_timeout=args.read_timeout,
+            lowest_speed_limit=args.lowest_speed_limit,
+            lowest_speed_time=args.lowest_speed_time,
             tool=args.tool,
         )
     )

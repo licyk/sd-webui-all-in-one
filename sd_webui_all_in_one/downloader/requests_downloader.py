@@ -5,13 +5,17 @@ import binascii
 import hashlib
 import json
 import math
+import os
+import random
 import re
+import shutil
 import threading
 import time
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from email.utils import formatdate
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -21,8 +25,8 @@ from urllib.parse import unquote
 from urllib.parse import unquote_to_bytes
 from urllib.parse import urlparse
 
-from sd_webui_all_in_one.downloader.hash_utils import compare_sha256
-from sd_webui_all_in_one.downloader.types import DEFAULT_USER_AGENT
+from sd_webui_all_in_one.downloader.hash_utils import compare_hash, normalize_hash_algorithm
+from sd_webui_all_in_one.downloader.types import DEFAULT_USER_AGENT, EXISTING_FILE_POLICY_LIST, ExistingFilePolicy, validate_download_file_name
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
     LOGGER_COLOR,
@@ -58,7 +62,10 @@ STREAM_CHUNK_SIZE = 1024 * 1024
 STATE_SAVE_COMPLETED_PIECE_INTERVAL = 8
 """断点续传状态写入间隔"""
 
-STATE_VERSION = 4
+STATE_SAVE_INTERVAL_SECONDS = 10.0
+"""低速下载的断点续传状态最长写入间隔"""
+
+STATE_VERSION = 5
 """HTTP Range 断点续传 JSON 状态版本"""
 
 IN_FLIGHT_BLOCK_LENGTH = 16 * 1024
@@ -79,14 +86,191 @@ _UNSATISFIED_CONTENT_RANGE_RE = re.compile(r"(?:bytes\s+|bytes=)?\*/(\d+|\*)", f
 
 _STATE_FILE_DIGESTS: dict[Path, str] = {}
 _STATE_FILE_DIGEST_LOCK = threading.Lock()
+_TARGET_PATH_LOCKS: dict[Path, tuple[threading.Lock, int]] = {}
+_TARGET_PATH_LOCKS_GUARD = threading.Lock()
 
 
-class _RangeDownloadNotSupported(RuntimeError):
+class DownloadError:
+    """requests 下载器结构化错误基类"""
+
+
+class DownloadConfigurationError(ValueError, DownloadError):
+    """参数或路径配置错误"""
+
+
+class DownloadStateError(RuntimeError, DownloadError):
+    """断点状态损坏或不兼容"""
+
+
+class DownloadTransientError(IOError, DownloadError):
+    """允许在当前请求预算内重试的临时错误"""
+
+
+class DownloadIntegrityError(ValueError, DownloadError):
+    """大小、Digest 或调用者哈希校验失败"""
+
+
+class DownloadSizeIntegrityError(IOError, DownloadError):
+    """文件大小校验失败"""
+
+
+class DownloadPermanentHttpError(RuntimeError, DownloadError):
+    """不应重试的 HTTP 响应错误"""
+
+    def __init__(
+        self,
+        *,
+        url: str,
+        status_code: int,
+        segment: tuple[int, int] | None,
+        attempt: int,
+    ) -> None:
+        self.url = url
+        self.status_code = status_code
+        self.segment = segment
+        self.attempt = attempt
+        segment_text = f", segment={segment}" if segment is not None else ""
+        super().__init__(f"永久 HTTP 错误: url={url}, status={status_code}{segment_text}, attempt={attempt}")
+
+
+class DownloadCancelledError(IOError, DownloadError):
+    """下载任务被调用者取消"""
+
+
+class DownloadLowSpeedError(DownloadTransientError):
+    """连接在指定窗口内持续低于最低速度"""
+
+
+class DownloadConnectTimeoutError(DownloadTransientError):
+    """建立连接超时"""
+
+
+class DownloadReadTimeoutError(DownloadTransientError):
+    """读取响应数据超时"""
+
+
+def _classify_network_error(error: Exception) -> Exception:
+    error_name = type(error).__name__.lower()
+    if "connecttimeout" in error_name:
+        return DownloadConnectTimeoutError(f"建立连接超时: {error}")
+    if "readtimeout" in error_name:
+        return DownloadReadTimeoutError(f"读取响应超时: {error}")
+    return error
+
+
+class _RangeDownloadNotSupported(RuntimeError, DownloadError):
     """远端不支持可靠的 HTTP Range 下载"""
 
 
-class _ResumeStateError(RuntimeError):
+class _ResumeStateError(DownloadStateError):
     """断点续传状态文件不可恢复"""
+
+
+def _lock_path_for(target_file: Path) -> Path:
+    return target_file.with_name(f".{target_file.name}.download.lock")
+
+
+def _resolve_existing_file_policy(
+    existing_file_policy: ExistingFilePolicy | None,
+    *,
+    re_download: bool,
+    continue_download: bool,
+) -> ExistingFilePolicy:
+    if re_download:
+        return "overwrite"
+    if existing_file_policy is not None:
+        if existing_file_policy not in EXISTING_FILE_POLICY_LIST:
+            raise DownloadConfigurationError(f"不支持的已有文件处理策略: {existing_file_policy}")
+        return existing_file_policy
+    if continue_download:
+        return "resume"
+    return "reuse"
+
+
+def _renamed_file_path(cached_file: Path) -> Path:
+    index = 1
+    while True:
+        candidate = cached_file.with_name(f"{cached_file.stem} ({index}){cached_file.suffix}")
+        if not candidate.exists():
+            return candidate
+        index += 1
+
+
+def _is_full_hash(value: str | None, algorithm: str) -> bool:
+    if not value:
+        return False
+    normalized = value.strip()
+    expected_length = {"sha1": 40, "sha256": 64, "sha512": 128}[normalize_hash_algorithm(algorithm)]
+    return len(normalized) == expected_length and all(char in "0123456789abcdefABCDEF" for char in normalized)
+
+
+def _verify_existing_file(
+    cached_file: Path,
+    *,
+    remote_info: "_RemoteFileInfo",
+    hash_prefix: str | None,
+) -> None:
+    expected_hash = hash_prefix or remote_info.digest_value
+    expected_algorithm = "sha256" if hash_prefix else remote_info.digest_algorithm
+    if expected_hash and expected_algorithm:
+        if not compare_hash(cached_file, expected_hash, expected_algorithm):
+            raise DownloadIntegrityError(f"已有文件哈希值 ({expected_algorithm}) 与预期值不匹配: {expected_hash}")
+        return
+    if remote_info.total_size <= 0:
+        raise ValueError("远端未提供大小或哈希，无法验证已有文件")
+    actual_size = cached_file.stat().st_size
+    if actual_size != remote_info.total_size:
+        raise DownloadSizeIntegrityError(f"已有文件大小不匹配: 期望 {remote_info.total_size}, 实际 {actual_size}")
+
+
+@contextmanager
+def _target_download_lock(target_file: Path) -> Iterator[None]:
+    """同一目标采用等待语义，并通过 advisory lock 覆盖跨进程任务"""
+    normalized_target = target_file.resolve()
+    with _TARGET_PATH_LOCKS_GUARD:
+        path_lock, users = _TARGET_PATH_LOCKS.get(normalized_target, (threading.Lock(), 0))
+        _TARGET_PATH_LOCKS[normalized_target] = (path_lock, users + 1)
+
+    path_lock.acquire()
+    lock_file = None
+    try:
+        lock_path = _lock_path_for(normalized_target)
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        lock_file = lock_path.open("a+b")
+        if os.name == "nt":
+            import msvcrt
+
+            if lock_file.tell() == 0:
+                lock_file.write(b"\0")
+                lock_file.flush()
+            lock_file.seek(0)
+            msvcrt.locking(lock_file.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        yield
+    finally:
+        if lock_file is not None:
+            try:
+                if os.name == "nt":
+                    import msvcrt
+
+                    lock_file.seek(0)
+                    msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+            finally:
+                lock_file.close()
+        path_lock.release()
+        with _TARGET_PATH_LOCKS_GUARD:
+            current_lock, users = _TARGET_PATH_LOCKS[normalized_target]
+            if users == 1:
+                del _TARGET_PATH_LOCKS[normalized_target]
+            else:
+                _TARGET_PATH_LOCKS[normalized_target] = (current_lock, users - 1)
 
 
 class _PieceLengthChangedError(_ResumeStateError):
@@ -97,7 +281,7 @@ class _RangeRequestIgnored(_RangeDownloadNotSupported):
     """远端忽略了非零起点的 Range 请求"""
 
 
-class _RangeDownloadTemporaryError(RuntimeError):
+class _RangeDownloadTemporaryError(DownloadTransientError):
     """分片下载过程中的可重试错误"""
 
     def __init__(
@@ -138,8 +322,11 @@ class _RemoteFileInfo:
     etag: str | None = None
     last_modified: str | None = None
     digest_sha256: str | None = None
+    digest_algorithm: str | None = None
+    digest_value: str | None = None
     content_disposition_filename: str | None = None
     content_encoding: str | None = None
+    final_url: str | None = None
 
 
 @dataclass(frozen=True)
@@ -156,6 +343,63 @@ class _DownloadOptions:
     continue_download: bool
     conditional_get: bool
     remote_time: bool
+    always_resume: bool = True
+    max_resume_failure_tries: int = 0
+    connect_timeout: int = 60
+    read_timeout: int = 60
+    lowest_speed_limit: int = 0
+    lowest_speed_time: int = 0
+
+
+@dataclass(frozen=True)
+class DownloadProgressEvent:
+    target_path: Path
+    total_size: int
+    completed_size: int
+    instantaneous_speed: float
+    average_speed: float
+    active_connections: int
+    current_url: str
+
+
+@dataclass(frozen=True)
+class _RemoteProbeResult:
+    """多 URI 探测结果及可安全用于 Range 下载的 URI"""
+
+    primary_url: str
+    remote_info: _RemoteFileInfo
+    range_urls: list[str]
+    range_host_keys: dict[str, tuple[str, str, int | None]]
+    resume_failure_count: int
+
+
+class _DigestTracker:
+    """汇总 HEAD、Range probe 和实际 GET 返回的最强一致 Digest"""
+
+    _PRIORITY = {"sha1": 1, "sha256": 2, "sha512": 3}
+
+    def __init__(self, algorithm: str | None = None, value: str | None = None) -> None:
+        self.algorithm = algorithm
+        self.value = value
+        self.lock = threading.Lock()
+
+    def observe(self, digest_header: str | None) -> None:
+        digest = _digest_from_header(digest_header)
+        if digest is None:
+            return
+        algorithm, value = digest
+        with self.lock:
+            if self.algorithm == algorithm and self.value and self.value != value:
+                raise DownloadIntegrityError(f"实际 GET 的 {algorithm} Digest 与已探测值冲突")
+            if self.algorithm is None or self._PRIORITY[algorithm] > self._PRIORITY[self.algorithm]:
+                self.algorithm = algorithm
+                self.value = value
+
+    def expected(self) -> tuple[str, str] | None:
+        with self.lock:
+            if self.algorithm and self.value:
+                return self.algorithm, self.value
+            return None
 
 
 @dataclass(frozen=True)
@@ -221,16 +465,28 @@ def _parse_int_header(
         return 0
 
 
-def _sha256_from_digest_header(
+def _digest_from_header(
     digest_header: str | None,
-) -> str | None:
+) -> tuple[str, str] | None:
     if not digest_header:
         return None
 
+    algorithms = {
+        "sha-512": ("sha512", hashlib.sha512().digest_size, 3),
+        "sha512": ("sha512", hashlib.sha512().digest_size, 3),
+        "sha-256": ("sha256", hashlib.sha256().digest_size, 2),
+        "sha256": ("sha256", hashlib.sha256().digest_size, 2),
+        "sha-1": ("sha1", hashlib.sha1().digest_size, 1),
+        "sha1": ("sha1", hashlib.sha1().digest_size, 1),
+    }
+    values: dict[str, set[str]] = {}
+    priorities: dict[str, int] = {}
     for item in digest_header.split(","):
         name, separator, digest = item.strip().partition("=")
-        if not separator or name.strip().lower() not in {"sha-256", "sha256"}:
+        algorithm_info = algorithms.get(name.strip().lower())
+        if not separator or algorithm_info is None:
             continue
+        algorithm, digest_size, priority = algorithm_info
         digest = digest.strip()
         if digest.startswith(":") and digest.endswith(":") and len(digest) >= 2:
             digest = digest[1:-1]
@@ -238,9 +494,21 @@ def _sha256_from_digest_header(
             raw_digest = base64.b64decode(digest, validate=True)
         except (binascii.Error, ValueError):
             continue
-        if len(raw_digest) == hashlib.sha256().digest_size:
-            return raw_digest.hex()
-    return None
+        if len(raw_digest) == digest_size:
+            values.setdefault(algorithm, set()).add(raw_digest.hex())
+            priorities[algorithm] = priority
+    for algorithm, algorithm_values in values.items():
+        if len(algorithm_values) > 1:
+            raise DownloadIntegrityError(f"Digest 中 {algorithm} 存在冲突值")
+    if not values:
+        return None
+    strongest = max(values, key=lambda algorithm: priorities[algorithm])
+    return strongest, next(iter(values[strongest]))
+
+
+def _sha256_from_digest_header(digest_header: str | None) -> str | None:
+    digest = _digest_from_header(digest_header)
+    return digest[1] if digest and digest[0] == "sha256" else None
 
 
 def _split_content_disposition_parts(
@@ -312,11 +580,10 @@ def _safe_content_disposition_filename(
     if value is None:
         return None
     filename = value.strip()
-    if not filename or "\x00" in filename or "/" in filename or "\\" in filename:
+    try:
+        return validate_download_file_name(filename)
+    except ValueError:
         return None
-    if filename in {".", ".."}:
-        return None
-    return filename
 
 
 def _filename_from_content_disposition(
@@ -443,7 +710,7 @@ def _url_host_key(
 
 def _probe_remote_file(
     url: str,
-    timeout: int = 60,
+    timeout: Any = 60,
 ) -> _RemoteFileInfo:
     """探测远端是否支持可靠的 HTTP Range 下载"""
     import requests
@@ -452,8 +719,11 @@ def _probe_remote_file(
     etag: str | None = None
     last_modified: str | None = None
     digest_sha256: str | None = None
+    digest_algorithm: str | None = None
+    digest_value: str | None = None
     content_disposition_filename: str | None = None
     content_encoding: str | None = None
+    final_url: str | None = None
     supports_range = False
 
     try:
@@ -462,15 +732,21 @@ def _probe_remote_file(
             status_code = int(response.status_code or 0)
             if 200 <= status_code < 400:
                 headers = response.headers
+                final_url = str(getattr(response, "url", url) or url)
                 total_size = _parse_int_header(headers, "Content-Length")
                 etag = _get_header(headers, "ETag")
                 last_modified = _get_header(headers, "Last-Modified")
-                digest_sha256 = _sha256_from_digest_header(_get_header(headers, "Digest"))
+                digest = _digest_from_header(_get_header(headers, "Digest"))
+                if digest:
+                    digest_algorithm, digest_value = digest
+                    digest_sha256 = digest_value if digest_algorithm == "sha256" else None
                 content_disposition_filename = _filename_from_content_disposition(_get_header(headers, "Content-Disposition"))
                 content_encoding = _get_header(headers, "Content-Encoding")
                 supports_range = (_get_header(headers, "Accept-Ranges") or "").lower() == "bytes"
         finally:
             _close_response(response)
+    except DownloadIntegrityError:
+        raise
     except Exception as e:
         logger.debug("HEAD 探测失败, 尝试使用 Range 请求探测: %s", e)
 
@@ -488,12 +764,21 @@ def _probe_remote_file(
                             total_size = content_total
                             etag = etag or _get_header(headers, "ETag")
                             last_modified = last_modified or _get_header(headers, "Last-Modified")
-                            digest_sha256 = digest_sha256 or _sha256_from_digest_header(_get_header(headers, "Digest"))
+                            digest = _digest_from_header(_get_header(headers, "Digest"))
+                            if digest:
+                                if digest_algorithm == digest[0] and digest_value and digest_value != digest[1]:
+                                    raise DownloadIntegrityError(f"Range 探测的 {digest[0]} Digest 与 HEAD 冲突")
+                                if digest_algorithm is None or {"sha1": 1, "sha256": 2, "sha512": 3}[digest[0]] > {"sha1": 1, "sha256": 2, "sha512": 3}[digest_algorithm]:
+                                    digest_algorithm, digest_value = digest
+                                    digest_sha256 = digest_value if digest_algorithm == "sha256" else None
                             content_disposition_filename = content_disposition_filename or _filename_from_content_disposition(_get_header(headers, "Content-Disposition"))
                             content_encoding = content_encoding or _get_header(headers, "Content-Encoding")
+                            final_url = str(getattr(response, "url", url) or url)
                             supports_range = True
             finally:
                 _close_response(response)
+        except DownloadIntegrityError:
+            raise
         except Exception as e:
             logger.debug("Range 探测失败, 将使用单连接下载: %s", e)
 
@@ -507,31 +792,77 @@ def _probe_remote_file(
         etag=etag,
         last_modified=last_modified,
         digest_sha256=digest_sha256,
+        digest_algorithm=digest_algorithm,
+        digest_value=digest_value,
         content_disposition_filename=content_disposition_filename,
         content_encoding=content_encoding,
+        final_url=final_url or url,
     )
 
 
 def _probe_remote_files(
     urls: list[str],
-    timeout: int = 60,
-) -> tuple[str, _RemoteFileInfo]:
+    timeout: Any = 60,
+) -> _RemoteProbeResult:
     first_result: tuple[str, _RemoteFileInfo] | None = None
+    first_sized_result: tuple[str, _RemoteFileInfo] | None = None
+    range_results: list[tuple[str, _RemoteFileInfo]] = []
+    integrity_errors: list[tuple[str, DownloadIntegrityError]] = []
     for url in urls:
-        remote_info = _probe_remote_file(url, timeout=timeout)
+        try:
+            remote_info = _probe_remote_file(url, timeout=timeout)
+        except DownloadIntegrityError as e:
+            integrity_errors.append((url, e))
+            logger.warning("隔离 Digest 探测冲突的镜像 %s: %s", url, e)
+            continue
         if first_result is None:
             first_result = (url, remote_info)
-        if remote_info.total_size > 0:
-            return url, remote_info
+        if first_sized_result is None and remote_info.total_size > 0:
+            first_sized_result = (url, remote_info)
+        if remote_info.supports_range and remote_info.total_size > 0:
+            range_results.append((url, remote_info))
     if first_result is None:
+        if integrity_errors:
+            url, error = integrity_errors[-1]
+            raise DownloadIntegrityError(f"所有镜像的 Digest 探测均失败，最后镜像 {url}: {error}") from error
         raise ValueError("url 序列不能为空")
-    return first_result
+
+    primary_url, remote_info = range_results[0] if range_results else first_sized_result or first_result
+    range_urls: list[str] = []
+    for candidate_url, candidate_info in range_results:
+        if candidate_info.total_size != remote_info.total_size:
+            logger.warning("忽略大小不一致的镜像 %s: 期望 %s, 实际 %s", candidate_url, remote_info.total_size, candidate_info.total_size)
+            continue
+        primary_etag = remote_info.etag if remote_info.etag and not remote_info.etag.strip().startswith("W/") else None
+        candidate_etag = candidate_info.etag if candidate_info.etag and not candidate_info.etag.strip().startswith("W/") else None
+        if (
+            remote_info.digest_algorithm
+            and remote_info.digest_algorithm == candidate_info.digest_algorithm
+            and remote_info.digest_value
+            and candidate_info.digest_value
+            and remote_info.digest_value != candidate_info.digest_value
+        ):
+            logger.warning("忽略 Digest 不一致的镜像 %s", candidate_url)
+            continue
+        if primary_etag and candidate_etag and primary_etag != candidate_etag:
+            logger.warning("忽略强 ETag 不一致的镜像 %s", candidate_url)
+            continue
+        range_urls.append(candidate_url)
+    if len(range_urls) > 1 and not remote_info.digest_value and not (remote_info.etag and not remote_info.etag.strip().startswith("W/")):
+        logger.warning("多个镜像缺少强 Digest/ETag，最终结果只能依赖完整文件大小或调用者哈希")
+    return _RemoteProbeResult(
+        primary_url=primary_url,
+        remote_info=remote_info,
+        range_urls=range_urls,
+        range_host_keys={url: _url_host_key(info.final_url or url) for url, info in range_results if url in range_urls},
+        resume_failure_count=len(urls) - len(range_urls),
+    )
 
 
 def _cached_file_not_modified(
     urls: list[str],
     cached_file: Path,
-    timeout: int = 60,
+    timeout: Any = 60,
 ) -> bool:
     import requests
 
@@ -793,6 +1124,7 @@ def _parse_resume_state(
     remote_info: _RemoteFileInfo,
     piece_length: int,
     allow_piece_length_change: bool,
+    allow_validator_change: bool = False,
 ) -> tuple[list[bool], list[int]] | None:
     version = _require_state_int(state, "version")
     if version != STATE_VERSION:
@@ -800,6 +1132,37 @@ def _parse_resume_state(
     total_size = _require_state_int(state, "total_size")
     if total_size != remote_info.total_size:
         raise _ResumeStateError(f"断点续传状态文件大小不匹配: 期望 {remote_info.total_size}, 实际 {total_size}")
+
+    saved_digest = state.get("digest_value") or state.get("digest_sha256")
+    if saved_digest is not None and not isinstance(saved_digest, str):
+        raise _ResumeStateError("断点续传状态 digest_value 必须是字符串或 null")
+    saved_digest_algorithm = state.get("digest_algorithm") or ("sha256" if state.get("digest_sha256") else None)
+    if saved_digest_algorithm is not None and not isinstance(saved_digest_algorithm, str):
+        raise _ResumeStateError("断点续传状态 digest_algorithm 必须是字符串或 null")
+    matching_digest_algorithm = bool(saved_digest and remote_info.digest_value and saved_digest_algorithm == remote_info.digest_algorithm)
+    if matching_digest_algorithm:
+        if saved_digest.lower() != (remote_info.digest_value or "").lower():
+            if not allow_validator_change:
+                raise _ResumeStateError("远端强 Digest 已变化，拒绝拼接已有断点")
+            logger.warning("远端强 Digest 已变化；调用者提供了最终强哈希，将继续恢复并以最终哈希为准")
+    else:
+        saved_etag = state.get("etag")
+        saved_etag = saved_etag if isinstance(saved_etag, str) else None
+        remote_etag = remote_info.etag
+        saved_strong_etag = saved_etag if saved_etag and not saved_etag.strip().startswith("W/") else None
+        remote_strong_etag = remote_etag if remote_etag and not remote_etag.strip().startswith("W/") else None
+        if saved_strong_etag and remote_strong_etag and saved_strong_etag != remote_strong_etag:
+            if not allow_validator_change:
+                raise _ResumeStateError("远端强 ETag 已变化，拒绝拼接已有断点")
+            logger.warning("远端强 ETag 已变化；调用者提供了最终强哈希，将继续恢复并以最终哈希为准")
+        saved_last_modified = state.get("last_modified")
+        saved_last_modified = saved_last_modified if isinstance(saved_last_modified, str) else None
+        if not saved_strong_etag and not remote_strong_etag and saved_last_modified and remote_info.last_modified and saved_last_modified != remote_info.last_modified:
+            if not allow_validator_change:
+                raise _ResumeStateError("远端 Last-Modified 已变化，拒绝拼接已有断点")
+            logger.warning("远端 Last-Modified 已变化；调用者提供了最终强哈希，将继续恢复并以最终哈希为准")
+        if not matching_digest_algorithm and not (saved_strong_etag and remote_strong_etag):
+            logger.warning("断点状态缺少可共同验证的强 Digest/ETag，将按文件大小和弱 validator 保守恢复")
 
     saved_piece_length = _require_state_int(state, "piece_length")
     if saved_piece_length <= 0:
@@ -848,6 +1211,8 @@ def _save_resume_state(
         "etag": remote_info.etag,
         "last_modified": remote_info.last_modified,
         "digest_sha256": remote_info.digest_sha256,
+        "digest_algorithm": remote_info.digest_algorithm,
+        "digest_value": remote_info.digest_value,
         "content_disposition_filename": remote_info.content_disposition_filename,
         "content_encoding": remote_info.content_encoding,
         "piece_length": options.piece_length,
@@ -863,9 +1228,25 @@ def _save_resume_state(
 
     tmp_state_file = _state_temp_path_for(state_file)
     tmp_state_file.write_text(payload, encoding="utf-8")
+    with tmp_state_file.open("rb") as file:
+        os.fsync(file.fileno())
     tmp_state_file.replace(state_file)
+    try:
+        directory_fd = os.open(state_file.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    except OSError as e:
+        logger.debug("无法同步断点状态目录 '%s': %s", state_file.parent, e)
     with _STATE_FILE_DIGEST_LOCK:
         _STATE_FILE_DIGESTS[state_file] = digest
+
+
+def _flush_download_data(temp_file: Path) -> None:
+    """在提交 completed/in-flight 状态前把下载数据同步到稳定存储"""
+    with temp_file.open("rb") as file:
+        os.fsync(file.fileno())
 
 
 class _ThreadLocalSessionPool:
@@ -917,6 +1298,25 @@ class _ThreadLocalSessionPool:
             session.mount(prefix, requests.adapters.HTTPAdapter(pool_connections=self.pool_size, pool_maxsize=self.pool_size))
 
 
+@dataclass
+class _UriHealth:
+    successes: int = 0
+    failures: int = 0
+    total_bytes: int = 0
+    total_seconds: float = 0.0
+    last_error: str | None = None
+    last_success: float | None = None
+    cooldown_until: float = 0.0
+
+    @property
+    def average_speed(self) -> float:
+        return self.total_bytes / self.total_seconds if self.total_seconds > 0 else 0.0
+
+    @property
+    def success_rate(self) -> float:
+        return self.successes / max(1, self.successes + self.failures)
+
+
 class _UriPool:
     """aria2 FileEntry URI 池的简化实现"""
 
@@ -924,11 +1324,15 @@ class _UriPool:
         self,
         urls: list[str],
         max_connection_per_server: int,
+        host_keys: dict[str, tuple[str, str, int | None]] | None = None,
     ) -> None:
         self.urls = list(urls)
         self.max_connection_per_server = max(1, max_connection_per_server)
-        self.keys = [_url_host_key(url) for url in self.urls]
+        self.keys = [(host_keys or {}).get(url, _url_host_key(url)) for url in self.urls]
+        self.key_by_url = dict(zip(self.urls, self.keys))
         self.in_flight: Counter[tuple[str, str, int | None]] = Counter()
+        self.health = {url: _UriHealth() for url in self.urls}
+        self.disabled_errors: dict[str, Exception] = {}
         self.next_index = 0
         self.condition = threading.Condition()
 
@@ -939,21 +1343,49 @@ class _UriPool:
     def acquire(
         self,
         stop_event: threading.Event | None = None,
+        excluded_urls: set[str] | None = None,
     ) -> str | None:
+        excluded_urls = excluded_urls or set()
         with self.condition:
             while True:
+                now = time.monotonic()
+                candidates: list[int] = []
                 for offset in range(len(self.urls)):
                     index = (self.next_index + offset) % len(self.urls)
+                    url = self.urls[index]
+                    if url in excluded_urls or url in self.disabled_errors:
+                        continue
                     key = self.keys[index]
                     if self.in_flight[key] >= self.max_connection_per_server:
                         continue
+                    if self.health[url].cooldown_until <= now:
+                        candidates.append(index)
+
+                if candidates:
+                    unknown = [index for index in candidates if self.health[self.urls[index]].successes == 0 and self.health[self.urls[index]].failures == 0]
+                    if unknown:
+                        selected_index = unknown[0]
+                    else:
+                        selected_index = max(
+                            candidates,
+                            key=lambda index: (
+                                self.health[self.urls[index]].success_rate,
+                                self.health[self.urls[index]].average_speed,
+                                self.health[self.urls[index]].last_success or 0.0,
+                            ),
+                        )
+                    key = self.keys[selected_index]
                     self.in_flight[key] += 1
-                    self.next_index = (index + 1) % len(self.urls)
-                    return self.urls[index]
+                    self.next_index = (selected_index + 1) % len(self.urls)
+                    return self.urls[selected_index]
+
+                if all(url in excluded_urls or url in self.disabled_errors for url in self.urls):
+                    return None
 
                 if stop_event is not None and stop_event.is_set():
                     return None
-                self.condition.wait(timeout=0.1)
+                cooldowns = [self.health[url].cooldown_until - now for url in self.urls if url not in excluded_urls and url not in self.disabled_errors and self.health[url].cooldown_until > now]
+                self.condition.wait(timeout=min(cooldowns, default=0.1))
 
     def release(
         self,
@@ -961,12 +1393,33 @@ class _UriPool:
     ) -> None:
         if url is None:
             return
-        key = _url_host_key(url)
+        key = self.key_by_url[url]
         with self.condition:
             if self.in_flight[key] > 0:
                 self.in_flight[key] -= 1
                 if self.in_flight[key] <= 0:
                     del self.in_flight[key]
+            self.condition.notify_all()
+
+    def report_success(self, url: str, *, byte_count: int, elapsed: float) -> None:
+        with self.condition:
+            health = self.health[url]
+            health.successes += 1
+            health.total_bytes += max(0, byte_count)
+            health.total_seconds += max(elapsed, 1e-9)
+            health.last_success = time.monotonic()
+            health.last_error = None
+            health.cooldown_until = 0.0
+            self.condition.notify_all()
+
+    def report_failure(self, url: str, error: Exception, *, cooldown: float = 0.0, permanent: bool = False) -> None:
+        with self.condition:
+            health = self.health[url]
+            health.failures += 1
+            health.last_error = str(error)
+            health.cooldown_until = max(health.cooldown_until, time.monotonic() + max(0.0, cooldown))
+            if permanent:
+                self.disabled_errors[url] = error
             self.condition.notify_all()
 
 
@@ -1309,6 +1762,11 @@ class _SegmentManager:
         return self.piece_storage.owns_segment(segment)
 
 
+def _retry_delay_with_jitter(attempt: int) -> float:
+    base_delay = min(0.5 * (2 ** max(0, attempt - 1)), 5.0)
+    return min(random.uniform(0.75, 1.25) * base_delay, 5.0)
+
+
 def _retry_delay_for(
     headers: Any,
     attempt: int,
@@ -1316,20 +1774,27 @@ def _retry_delay_for(
     status_code: int,
     retry_wait: int,
 ) -> float:
-    if status_code == 503:
+    if status_code == 503 and retry_wait > 0:
         return float(retry_wait)
     retry_after = _get_header(headers, "Retry-After")
     if retry_after:
         try:
             return min(float(retry_after), 30.0)
         except ValueError:
-            pass
-    return min(0.5 * attempt, 5.0)
+            try:
+                retry_at = parsedate_to_datetime(retry_after).timestamp()
+                return min(max(0.0, retry_at - time.time()), 30.0)
+            except (TypeError, ValueError, OverflowError):
+                pass
+    if status_code == 503:
+        return 0.0
+    return _retry_delay_with_jitter(attempt)
 
 
 def _validate_range_response(
     response: Any,
     *,
+    url: str = "<unknown>",
     segment: _Segment,
     total_size: int,
     attempt: int,
@@ -1346,7 +1811,12 @@ def _validate_range_response(
             retry_delay=_retry_delay_for(headers, attempt, status_code=status_code, retry_wait=retry_wait),
         )
     if status_code not in {200, 206}:
-        raise RuntimeError(f"Range 请求返回非预期状态码: HTTP {status_code}")
+        raise DownloadPermanentHttpError(
+            url=url,
+            status_code=status_code,
+            segment=segment.byte_range,
+            attempt=attempt,
+        )
 
     if _get_header(headers, "Transfer-Encoding") is not None:
         if status_code == 200 and segment.start > 0:
@@ -1369,8 +1839,12 @@ def _validate_range_response(
 
 def _stream_request_headers(
     segment: _Segment,
+    if_range: str | None = None,
 ) -> dict[str, str]:
-    return _request_headers({"Range": f"bytes={segment.start}-"})
+    headers = {"Range": f"bytes={segment.start}-"}
+    if if_range:
+        headers["If-Range"] = if_range
+    return _request_headers(headers)
 
 
 def _download_stream_once(
@@ -1380,9 +1854,14 @@ def _download_stream_once(
     temp_file: Path,
     segment: _Segment,
     total_size: int,
-    timeout: int,
+    timeout: Any,
     attempt: int,
     retry_wait: int,
+    if_range: str | None,
+    digest_tracker: _DigestTracker,
+    cancel_event: threading.Event,
+    lowest_speed_limit: int,
+    lowest_speed_time: int,
     segment_manager: _SegmentManager,
     mark_complete_callback: Any,
     progress_callback: Any | None = None,
@@ -1391,15 +1870,22 @@ def _download_stream_once(
     current_segment: _Segment | None = segment
     last_complete_segment: _Segment | None = None
     partial_reported_size = 0
+    speed_window_started = time.monotonic()
+    speed_window_bytes = 0
     try:
-        response = request_client.get(url, stream=True, timeout=timeout, headers=_stream_request_headers(segment))
+        if cancel_event.is_set():
+            raise DownloadCancelledError("下载已取消")
+        response = request_client.get(url, stream=True, timeout=timeout, headers=_stream_request_headers(segment, if_range))
+        digest_tracker.observe(_get_header(response.headers, "Digest"))
         if not segment_manager.owns_segment(segment):
             raise _SegmentOwnershipLost()
-        _validate_range_response(response, segment=segment, total_size=total_size, attempt=attempt, retry_wait=retry_wait)
+        _validate_range_response(response, url=url, segment=segment, total_size=total_size, attempt=attempt, retry_wait=retry_wait)
 
         offset = segment.start
         with temp_file.open("r+b") as file:
             for chunk in response.iter_content(chunk_size=STREAM_CHUNK_SIZE):
+                if cancel_event.is_set():
+                    raise DownloadCancelledError("下载已取消")
                 if not chunk:
                     continue
                 chunk_offset = 0
@@ -1425,12 +1911,24 @@ def _download_stream_once(
                         raise _SegmentOwnershipLost()
                     file.seek(offset)
                     file.write(chunk[chunk_offset : chunk_offset + writable_size])
+                    # state 可能在 progress/complete 回调中立即提交，因此先刷新
+                    # Python 文件缓冲，避免控制状态领先于实际写入的数据。
+                    file.flush()
                     offset += writable_size
                     chunk_offset += writable_size
                     partial_reported_size += writable_size
+                    speed_window_bytes += writable_size
                     segment_manager.record_progress(current_segment, offset)
                     if progress_callback is not None:
-                        progress_callback(writable_size)
+                        progress_callback(writable_size, url)
+
+                    speed_window_elapsed = time.monotonic() - speed_window_started
+                    if lowest_speed_limit > 0 and lowest_speed_time > 0 and speed_window_elapsed >= lowest_speed_time:
+                        current_speed = speed_window_bytes / max(speed_window_elapsed, 1e-9)
+                        if current_speed < lowest_speed_limit:
+                            raise DownloadLowSpeedError(f"镜像 {url} 在 {speed_window_elapsed:.1f}s 内速度 {current_speed:.1f} B/s 低于 {lowest_speed_limit} B/s")
+                        speed_window_started = time.monotonic()
+                        speed_window_bytes = 0
 
                     if offset > current_segment.end:
                         mark_complete_callback(current_segment)
@@ -1442,10 +1940,17 @@ def _download_stream_once(
             raise IOError(f"分片大小不匹配: 期望 {current_segment.size}, 实际 {partial_reported_size}")
     except _RangeDownloadNotSupported:
         raise
+    except DownloadPermanentHttpError:
+        raise
+    except DownloadIntegrityError:
+        raise
+    except DownloadCancelledError:
+        raise
     except _SegmentOwnershipLost:
         raise
     except Exception as e:
-        raise _SegmentDownloadError(current_segment or segment, e) from e
+        classified_error = _classify_network_error(e)
+        raise _SegmentDownloadError(current_segment or segment, classified_error) from e
     finally:
         _close_response(response)
 
@@ -1457,41 +1962,82 @@ def _download_stream_with_retries(
     temp_file: Path,
     segment: _Segment,
     total_size: int,
-    timeout: int,
+    timeout: Any,
     max_tries: int,
     retry_wait: int,
+    if_range: str | None,
+    digest_tracker: _DigestTracker,
+    cancel_event: threading.Event,
+    lowest_speed_limit: int,
+    lowest_speed_time: int,
     stop_event: threading.Event,
     segment_manager: _SegmentManager,
     mark_complete_callback: Any,
     progress_callback: Any | None = None,
 ) -> None:
     last_error: Exception | None = None
-    attempt = 0
-    while max_tries == 0 or attempt < max_tries:
-        attempt += 1
-        url = uri_pool.acquire(stop_event)
+    last_url: str | None = None
+    attempts_by_url: Counter[str] = Counter()
+    total_attempt_limit = max_tries * len(uri_pool.urls)
+    while max_tries == 0 or sum(attempts_by_url.values()) < total_attempt_limit:
+        exhausted_urls = {url for url, attempts in attempts_by_url.items() if max_tries != 0 and attempts >= max_tries}
+        url = uri_pool.acquire(stop_event, excluded_urls=exhausted_urls)
         if url is None:
+            if stop_event.is_set():
+                segment_manager.release(segment)
+                return
+            disabled_errors = list(uri_pool.disabled_errors.values())
+            if len(disabled_errors) == 1:
+                raise disabled_errors[0]
+            if disabled_errors:
+                raise DownloadTransientError(f"所有镜像均已被隔离: {[str(error) for error in disabled_errors]}") from disabled_errors[-1]
             segment_manager.release(segment)
-            return
+            break
+        attempts_by_url[url] += 1
+        request_attempt = attempts_by_url[url]
+        started_at = time.monotonic()
         try:
-            return _download_stream_once(
+            _download_stream_once(
                 session_pool.get(),
                 url=url,
                 temp_file=temp_file,
                 segment=segment,
                 total_size=total_size,
                 timeout=timeout,
-                attempt=attempt,
+                attempt=request_attempt,
                 retry_wait=retry_wait,
+                if_range=if_range,
+                digest_tracker=digest_tracker,
+                cancel_event=cancel_event,
+                lowest_speed_limit=lowest_speed_limit,
+                lowest_speed_time=lowest_speed_time,
                 segment_manager=segment_manager,
                 mark_complete_callback=mark_complete_callback,
                 progress_callback=progress_callback,
             )
-        except _RangeDownloadNotSupported:
-            raise
+            uri_pool.report_success(url, byte_count=segment.size, elapsed=time.monotonic() - started_at)
+            return
+        except _RangeDownloadNotSupported as e:
+            uri_pool.report_failure(url, e, permanent=True)
+            if len(uri_pool.disabled_errors) >= len(uri_pool.urls):
+                raise
+            continue
+        except DownloadPermanentHttpError as e:
+            uri_pool.report_failure(url, e, permanent=True)
+            if len(uri_pool.disabled_errors) >= len(uri_pool.urls):
+                raise
+            continue
+        except DownloadIntegrityError as e:
+            uri_pool.report_failure(url, e, permanent=True)
+            if len(uri_pool.disabled_errors) >= len(uri_pool.urls):
+                raise
+            continue
         except _SegmentOwnershipLost:
             return
+        except DownloadCancelledError:
+            raise
         except _SegmentDownloadError as e:
+            last_url = url
             failed_range = e.segment.byte_range
             segment_manager.release(e.segment)
             new_segment = segment_manager.get_segment(e.segment.owner_id)
@@ -1499,33 +2045,118 @@ def _download_stream_with_retries(
                 return
             segment = new_segment
             last_error = e.error
-            if max_tries != 0 and attempt >= max_tries:
-                break
-            delay = e.error.retry_delay if isinstance(e.error, _RangeDownloadTemporaryError) and e.error.retry_delay is not None else min(0.5 * attempt, 5.0)
+            delay = e.error.retry_delay if isinstance(e.error, _RangeDownloadTemporaryError) and e.error.retry_delay is not None else _retry_delay_with_jitter(request_attempt)
+            uri_pool.report_failure(url, e.error, cooldown=delay if len(uri_pool.urls) > 1 else 0.0)
             logger.warning(
-                "分片 %s 从 %s 下载失败 [%s/%s]: %s, %.1fs 后重试",
-                failed_range,
+                "镜像 %s 的分片 %s 下载失败 [%s/%s]: %s, %.1fs 后重试",
                 url,
-                attempt,
+                failed_range,
+                request_attempt,
                 max_tries,
                 e.error,
                 delay,
             )
-            time.sleep(delay)
+            attempts_remain = max_tries == 0 or any(attempts_by_url[candidate] < max_tries for candidate in uri_pool.urls if candidate not in uri_pool.disabled_errors)
+            if attempts_remain and len(uri_pool.urls) == 1:
+                time.sleep(delay)
         finally:
             uri_pool.release(url)
     segment_manager.release(segment)
-    raise IOError(f"分片 {segment.byte_range} 下载失败: {last_error}") from last_error
+    raise DownloadTransientError(f"所有镜像的分片 {segment.byte_range} 下载预算已耗尽: attempts={dict(attempts_by_url)}, last_url={last_url}, last_error={last_error}") from last_error
+
+
+def _resume_progress_size(
+    *,
+    temp_file: Path,
+    state_file: Path,
+    remote_info: _RemoteFileInfo,
+    options: _DownloadOptions,
+    allow_validator_change: bool = False,
+) -> int:
+    """校验断点文件并返回可恢复的字节数"""
+    state_exists = state_file.exists()
+    temp_exists = temp_file.exists()
+    if state_exists:
+        if not temp_exists:
+            state_file.unlink(missing_ok=True)
+            return 0
+        state = _load_resume_state(state_file)
+        validation_info = remote_info
+        if remote_info.total_size <= 0:
+            saved_total_size = _require_state_int(state, "total_size")
+            if saved_total_size <= 0:
+                raise _ResumeStateError("断点续传状态 total_size 必须大于 0")
+            validation_info = _RemoteFileInfo(
+                total_size=saved_total_size,
+                supports_range=False,
+                etag=remote_info.etag,
+                last_modified=remote_info.last_modified,
+                digest_sha256=remote_info.digest_sha256,
+                digest_algorithm=remote_info.digest_algorithm,
+                digest_value=remote_info.digest_value,
+                content_disposition_filename=remote_info.content_disposition_filename,
+                content_encoding=remote_info.content_encoding,
+            )
+        temp_size = temp_file.stat().st_size
+        if temp_size != validation_info.total_size:
+            raise _ResumeStateError(f"临时文件大小与断点续传状态不匹配: 期望 {validation_info.total_size}, 实际 {temp_size}")
+        parsed_state = _parse_resume_state(
+            state,
+            remote_info=validation_info,
+            piece_length=options.piece_length,
+            allow_piece_length_change=options.allow_piece_length_change,
+            allow_validator_change=allow_validator_change,
+        )
+        if parsed_state is None:
+            return 0
+        completed, in_flight_lengths = parsed_state
+        completed_size = sum(
+            _piece_size_for(
+                total_size=validation_info.total_size,
+                piece_length=options.piece_length,
+                index=index,
+            )
+            for index, is_completed in enumerate(completed)
+            if is_completed
+        )
+        return completed_size + sum(in_flight_lengths)
+
+    if options.continue_download and temp_exists:
+        temp_size = temp_file.stat().st_size
+        # Range 下载会先把临时文件预分配到完整大小。没有 state 时不能把这种
+        # full-size sparse file 当作已完成内容，只能信任严格小于远端大小的顺序文件。
+        if temp_size > 0 and (remote_info.total_size <= 0 or temp_size < remote_info.total_size):
+            return temp_size
+    return 0
+
+
+def _resume_policy_allows_restart(
+    options: _DownloadOptions,
+    *,
+    failure_count: int,
+    total_url_count: int,
+) -> bool:
+    """按 aria2 always-resume/max-resume-failure-tries 语义判断是否重头下载"""
+    if options.always_resume:
+        return False
+    if failure_count >= total_url_count:
+        return True
+    return options.max_resume_failure_tries > 0 and failure_count >= options.max_resume_failure_tries
 
 
 def _download_file_with_ranges(
     urls: list[str],
+    uri_host_keys: dict[str, tuple[str, str, int | None]] | None,
     temp_file: Path,
     state_file: Path,
     remote_info: _RemoteFileInfo,
     progress: bool,
     options: _DownloadOptions,
-    timeout: int = 60,
+    digest_tracker: _DigestTracker,
+    allow_validator_change: bool,
+    progress_callback: Any | None = None,
+    cancel_event: threading.Event | None = None,
+    timeout: Any = 60,
 ) -> None:
     try:
         from tqdm import tqdm
@@ -1552,6 +2183,7 @@ def _download_file_with_ranges(
             remote_info=remote_info,
             piece_length=options.piece_length,
             allow_piece_length_change=options.allow_piece_length_change,
+            allow_validator_change=allow_validator_change,
         )
         if parsed_state is None:
             _cleanup_resume_files(temp_file, state_file)
@@ -1566,7 +2198,7 @@ def _download_file_with_ranges(
                 completed=completed,
                 in_flight_lengths=in_flight_lengths,
             )
-    elif options.continue_download and not state_exists and temp_exists and 0 < temp_size <= remote_info.total_size:
+    elif options.continue_download and not state_exists and temp_exists and 0 < temp_size < remote_info.total_size:
         completed_piece_count = temp_size // options.piece_length
         partial_piece_length = temp_size % options.piece_length
         completed = [index < completed_piece_count for index in range(seed_storage.piece_count)]
@@ -1591,18 +2223,43 @@ def _download_file_with_ranges(
     completed_size = piece_storage.completed_size()
     progress_lock = threading.Lock()
     state_lock = threading.Lock()
-    stop_event = threading.Event()
+    stop_event = cancel_event or threading.Event()
     range_ignored_event = threading.Event()
     completed_since_state_save = 0
-    uri_pool = _UriPool(urls, options.max_connection_per_server)
+    last_state_save = time.monotonic()
+    uri_pool = _UriPool(urls, options.max_connection_per_server, host_keys=uri_host_keys)
     worker_count = max(1, min(options.split, piece_storage.piece_count, uri_pool.capacity))
     session_pool = _ThreadLocalSessionPool(pool_size=worker_count)
+    if_range = remote_info.etag if remote_info.etag and not remote_info.etag.strip().startswith("W/") else remote_info.last_modified
+    metrics_started = time.monotonic()
+    last_progress_at = metrics_started
+    callback_completed_size = completed_size
 
-    def _update_progress(delta: int) -> None:
+    def _update_progress(delta: int, current_url: str) -> None:
+        nonlocal callback_completed_size, last_progress_at
         with progress_lock:
             progress_bar.update(delta)
+            now = time.monotonic()
+            interval = max(now - last_progress_at, 1e-9)
+            callback_completed_size += delta
+            if progress_callback is not None:
+                progress_callback(
+                    DownloadProgressEvent(
+                        target_path=temp_file.with_name(temp_file.name.removesuffix(".tmp")),
+                        total_size=remote_info.total_size,
+                        completed_size=callback_completed_size,
+                        instantaneous_speed=delta / interval,
+                        average_speed=(callback_completed_size - completed_size) / max(now - metrics_started, 1e-9),
+                        active_connections=sum(uri_pool.in_flight.values()),
+                        current_url=current_url,
+                    )
+                )
+            last_progress_at = now
+        _maybe_flush_state()
 
     def _flush_state() -> None:
+        nonlocal last_state_save
+        _flush_download_data(temp_file)
         _save_resume_state(
             state_file,
             urls=urls,
@@ -1610,6 +2267,16 @@ def _download_file_with_ranges(
             options=options,
             piece_storage=piece_storage,
         )
+        last_state_save = time.monotonic()
+
+    def _maybe_flush_state(*, force: bool = False) -> None:
+        nonlocal completed_since_state_save
+        with state_lock:
+            save_due_to_piece_count = completed_since_state_save >= STATE_SAVE_COMPLETED_PIECE_INTERVAL
+            save_due_to_time = time.monotonic() - last_state_save >= STATE_SAVE_INTERVAL_SECONDS
+            if force or save_due_to_piece_count or save_due_to_time:
+                _flush_state()
+                completed_since_state_save = 0
 
     def _mark_segment_complete(segment: _Segment) -> None:
         nonlocal completed_since_state_save
@@ -1636,6 +2303,11 @@ def _download_file_with_ranges(
                     timeout=timeout,
                     max_tries=options.max_tries,
                     retry_wait=options.retry_wait,
+                    if_range=if_range,
+                    digest_tracker=digest_tracker,
+                    cancel_event=stop_event,
+                    lowest_speed_limit=options.lowest_speed_limit,
+                    lowest_speed_time=options.lowest_speed_time,
                     stop_event=stop_event,
                     segment_manager=segment_manager,
                     mark_complete_callback=_mark_segment_complete,
@@ -1670,15 +2342,13 @@ def _download_file_with_ranges(
                                 pending.cancel()
                             raise
         except Exception:
-            with state_lock:
-                _flush_state()
+            _maybe_flush_state(force=True)
             raise
         finally:
             session_pool.close_all()
 
     if not piece_storage.is_complete():
-        with state_lock:
-            _flush_state()
+        _maybe_flush_state(force=True)
         if range_ignored_event.is_set():
             raise _RangeDownloadNotSupported("远端忽略 Range 请求")
         raise IOError("分片下载未完成")
@@ -1691,6 +2361,14 @@ def _download_file_single_stream_once(
     temp_file: Path,
     file_name: str,
     progress: bool,
+    attempt: int,
+    retry_wait: int,
+    digest_tracker: _DigestTracker,
+    timeout: Any,
+    cancel_event: threading.Event,
+    lowest_speed_limit: int,
+    lowest_speed_time: int,
+    progress_callback: Any | None,
 ) -> int:
     import requests
 
@@ -1699,13 +2377,27 @@ def _download_file_single_stream_once(
     except ImportError:
         from sd_webui_all_in_one.simple_tqdm import SimpleTqdm as tqdm
 
-    response = requests.get(url, stream=True, timeout=60, headers=_request_headers())
+    response = requests.get(url, stream=True, timeout=timeout, headers=_request_headers())
     try:
+        digest_tracker.observe(_get_header(response.headers, "Digest"))
+        status_code = int(response.status_code or 0)
+        if status_code in RETRYABLE_STATUS_CODES:
+            raise _RangeDownloadTemporaryError(
+                f"HTTP {status_code}",
+                retry_delay=_retry_delay_for(response.headers, attempt, status_code=status_code, retry_wait=retry_wait),
+            )
+        if status_code >= 400:
+            raise DownloadPermanentHttpError(url=url, status_code=status_code, segment=None, attempt=attempt)
         response.raise_for_status()
         if _get_header(response.headers, "Transfer-Encoding") is not None or _content_encoding_requires_single_stream(_get_header(response.headers, "Content-Encoding")):
             total_size = 0
         else:
             total_size = _parse_int_header(response.headers, "Content-Length")
+        completed_size = 0
+        metrics_started = time.monotonic()
+        last_progress_at = metrics_started
+        speed_window_started = metrics_started
+        speed_window_bytes = 0
         with tqdm(
             total=total_size,
             unit="B",
@@ -1715,9 +2407,34 @@ def _download_file_single_stream_once(
         ) as progress_bar:
             with open(temp_file, "wb") as file:
                 for chunk in response.iter_content(chunk_size=STREAM_CHUNK_SIZE):
+                    if cancel_event.is_set():
+                        raise DownloadCancelledError("下载已取消")
                     if chunk:
                         file.write(chunk)
                         progress_bar.update(len(chunk))
+                        completed_size += len(chunk)
+                        speed_window_bytes += len(chunk)
+                        now = time.monotonic()
+                        if progress_callback is not None:
+                            progress_callback(
+                                DownloadProgressEvent(
+                                    target_path=temp_file.with_name(temp_file.name.removesuffix(".tmp")),
+                                    total_size=total_size,
+                                    completed_size=completed_size,
+                                    instantaneous_speed=len(chunk) / max(now - last_progress_at, 1e-9),
+                                    average_speed=completed_size / max(now - metrics_started, 1e-9),
+                                    active_connections=1,
+                                    current_url=url,
+                                )
+                            )
+                        last_progress_at = now
+                        speed_window_elapsed = now - speed_window_started
+                        if lowest_speed_limit > 0 and lowest_speed_time > 0 and speed_window_elapsed >= lowest_speed_time:
+                            current_speed = speed_window_bytes / max(speed_window_elapsed, 1e-9)
+                            if current_speed < lowest_speed_limit:
+                                raise DownloadLowSpeedError(f"镜像 {url} 在 {speed_window_elapsed:.1f}s 内速度 {current_speed:.1f} B/s 低于 {lowest_speed_limit} B/s")
+                            speed_window_started = now
+                            speed_window_bytes = 0
         return total_size
     finally:
         _close_response(response)
@@ -1730,28 +2447,67 @@ def _download_file_single_stream(
     progress: bool,
     max_tries: int,
     retry_wait: int,
+    digest_tracker: _DigestTracker,
+    timeout: Any,
+    cancel_event: threading.Event,
+    lowest_speed_limit: int,
+    lowest_speed_time: int,
+    progress_callback: Any | None,
 ) -> int:
-    attempt = 0
+    attempts_by_url: Counter[str] = Counter()
+    permanent_errors: dict[str, str] = {}
     last_error: Exception | None = None
-    while max_tries == 0 or attempt < max_tries:
-        url = urls[attempt % len(urls)]
-        attempt += 1
+    last_url: str | None = None
+    total_attempt_limit = max_tries * len(urls)
+    while max_tries == 0 or sum(attempts_by_url.values()) < total_attempt_limit:
+        available_urls = [url for url in urls if url not in permanent_errors and (max_tries == 0 or attempts_by_url[url] < max_tries)]
+        if not available_urls:
+            break
+        url = available_urls[sum(attempts_by_url.values()) % len(available_urls)]
+        attempts_by_url[url] += 1
+        request_attempt = attempts_by_url[url]
         try:
             return _download_file_single_stream_once(
                 url=url,
                 temp_file=temp_file,
                 file_name=file_name,
                 progress=progress,
+                attempt=request_attempt,
+                retry_wait=retry_wait,
+                digest_tracker=digest_tracker,
+                timeout=timeout,
+                cancel_event=cancel_event,
+                lowest_speed_limit=lowest_speed_limit,
+                lowest_speed_time=lowest_speed_time,
+                progress_callback=progress_callback,
             )
-        except Exception as e:
+        except DownloadCancelledError:
+            raise
+        except DownloadIntegrityError as e:
+            permanent_errors[url] = str(e)
             last_error = e
-            if max_tries != 0 and attempt >= max_tries:
-                break
-            delay = float(retry_wait) if retry_wait > 0 else min(0.5 * attempt, 5.0)
-            logger.warning("从 %s 单流下载失败 [%s/%s]: %s, %.1fs 后重试", url, attempt, max_tries, e, delay)
-            time.sleep(delay)
+            last_url = url
+            continue
+        except DownloadPermanentHttpError as e:
+            last_url = url
+            permanent_errors[url] = str(e)
+            last_error = e
+            continue
+        except Exception as e:
+            last_url = url
+            classified_error = _classify_network_error(e)
+            last_error = classified_error
+            delay = (
+                classified_error.retry_delay if isinstance(classified_error, _RangeDownloadTemporaryError) and classified_error.retry_delay is not None else _retry_delay_with_jitter(request_attempt)
+            )
+            logger.warning("镜像 %s 单流下载失败 [%s/%s]: %s, %.1fs 后重试", url, request_attempt, max_tries, classified_error, delay)
+            attempts_remain = max_tries == 0 or any(attempts_by_url[candidate] < max_tries for candidate in urls if candidate not in permanent_errors)
+            if attempts_remain and len(available_urls) == 1:
+                time.sleep(delay)
 
-    raise IOError(f"单流下载失败: {last_error}") from last_error
+    if len(urls) == 1 and isinstance(last_error, DownloadPermanentHttpError):
+        raise last_error
+    raise DownloadTransientError(f"所有镜像的单流下载预算已耗尽: attempts={dict(attempts_by_url)}, permanent={permanent_errors}, last_url={last_url}, last_error={last_error}") from last_error
 
 
 def _apply_remote_time(
@@ -1781,6 +2537,7 @@ def _finalize_download(
     cached_file: Path,
     file_name: str,
     hash_prefix: str | None,
+    hash_algorithm: str,
     remote_time: bool,
     last_modified: str | None,
     expected_size: int = 0,
@@ -1790,16 +2547,16 @@ def _finalize_download(
         if actual_size < expected_size:
             logger.error("'%s' 下载大小不足, 正在删除临时文件", temp_file)
             _cleanup_resume_files(temp_file, state_file)
-            raise IOError(f"下载文件大小不足: 期望 {expected_size}, 实际 {actual_size}")
+            raise DownloadSizeIntegrityError(f"下载文件大小不足: 期望 {expected_size}, 实际 {actual_size}")
         if actual_size > expected_size:
             logger.warning("'%s' 包含多余尾部数据, 将截断到 %s 字节", temp_file, expected_size)
             with temp_file.open("r+b") as file:
                 file.truncate(expected_size)
 
-    if hash_prefix and not compare_sha256(temp_file, hash_prefix):
+    if hash_prefix and not compare_hash(temp_file, hash_prefix, hash_algorithm):
         logger.error("'%s' 的哈希值不匹配, 正在删除临时文件", temp_file)
         _cleanup_resume_files(temp_file, state_file)
-        raise ValueError(f"文件哈希值与预期的哈希前缀不匹配: {hash_prefix}")
+        raise DownloadIntegrityError(f"文件 {hash_algorithm} 哈希值与预期值不匹配: {hash_prefix}")
 
     temp_file.replace(cached_file)
     if remote_time:
@@ -1820,6 +2577,12 @@ def _normalize_options(
     continue_download: bool,
     conditional_get: bool,
     remote_time: bool,
+    always_resume: bool = True,
+    max_resume_failure_tries: int = 0,
+    connect_timeout: int = 60,
+    read_timeout: int = 60,
+    lowest_speed_limit: int = 0,
+    lowest_speed_time: int = 0,
 ) -> _DownloadOptions:
     def _normalize_int_option(
         name: str,
@@ -1831,11 +2594,11 @@ def _normalize_options(
         try:
             normalized = int(value)
         except (TypeError, ValueError) as e:
-            raise ValueError(f"{name} 必须是整数") from e
+            raise DownloadConfigurationError(f"{name} 必须是整数") from e
         if normalized < minimum:
-            raise ValueError(f"{name} 必须大于等于 {minimum}")
+            raise DownloadConfigurationError(f"{name} 必须大于等于 {minimum}")
         if maximum is not None and normalized > maximum:
-            raise ValueError(f"{name} 必须小于等于 {maximum}")
+            raise DownloadConfigurationError(f"{name} 必须小于等于 {maximum}")
         return normalized
 
     return _DownloadOptions(
@@ -1864,6 +2627,16 @@ def _normalize_options(
         continue_download=bool(continue_download),
         conditional_get=bool(conditional_get),
         remote_time=bool(remote_time),
+        always_resume=bool(always_resume),
+        max_resume_failure_tries=_normalize_int_option(
+            "max_resume_failure_tries",
+            max_resume_failure_tries,
+            minimum=0,
+        ),
+        connect_timeout=_normalize_int_option("connect_timeout", connect_timeout, minimum=1, maximum=600),
+        read_timeout=_normalize_int_option("read_timeout", read_timeout, minimum=1, maximum=600),
+        lowest_speed_limit=_normalize_int_option("lowest_speed_limit", lowest_speed_limit, minimum=0),
+        lowest_speed_time=_normalize_int_option("lowest_speed_time", lowest_speed_time, minimum=0),
     )
 
 
@@ -1873,6 +2646,8 @@ def download_file_from_url(
     file_name: str | None = None,
     progress: bool = True,
     hash_prefix: str | None = None,
+    hash_value: str | None = None,
+    hash_algorithm: str = "sha256",
     re_download: bool = False,
     split: int = DEFAULT_SPLIT,
     max_connection_per_server: int = DEFAULT_MAX_CONNECTION_PER_SERVER,
@@ -1884,6 +2659,15 @@ def download_file_from_url(
     retry_wait: int = 0,
     conditional_get: bool = False,
     remote_time: bool = True,
+    always_resume: bool = True,
+    max_resume_failure_tries: int = 0,
+    existing_file_policy: ExistingFilePolicy | None = None,
+    connect_timeout: int = 60,
+    read_timeout: int = 60,
+    lowest_speed_limit: int = 0,
+    lowest_speed_time: int = 0,
+    progress_callback: Any | None = None,
+    cancel_event: threading.Event | None = None,
 ) -> Path:
     """使用 requests 库下载文件
 
@@ -1898,6 +2682,10 @@ def download_file_from_url(
             是否启用下载进度条
         hash_prefix (str | None):
             sha256 十六进制字符串, 如果提供, 将检查下载文件的哈希值是否与此前缀匹配, 当不匹配时引发`ValueError`
+        hash_value (str | None):
+            指定算法的完整哈希值或十六进制前缀，优先于 hash_prefix
+        hash_algorithm (str):
+            hash_value 使用的算法，可选 sha1、sha256、sha512
         re_download (bool):
             强制重新下载文件
         split (int):
@@ -1920,6 +2708,12 @@ def download_file_from_url(
             已有本地文件时是否发送 If-Modified-Since, 远端返回 304 时复用本地文件
         remote_time (bool):
             下载完成后是否把本地文件 mtime 设置为远端 Last-Modified
+        always_resume (bool):
+            已有进度无法可靠续传时是否报错并保留断点, 默认为 True
+        max_resume_failure_tries (int):
+            always_resume=False 时允许重头下载前的续传失败阈值, 0 表示所有 URI 均失败后重头下载
+        existing_file_policy (ExistingFilePolicy | None):
+            已有正式文件的处理策略；None 保持兼容映射（re_download=overwrite、continue_download=resume，否则 reuse）
 
     Returns:
         Path: 下载的文件路径
@@ -1933,21 +2727,36 @@ def download_file_from_url(
         save_path = Path.cwd()
 
     urls = _normalize_urls(url)
+    normalized_hash_algorithm = normalize_hash_algorithm(hash_algorithm)
+    explicit_hash_value = hash_value or hash_prefix
+    explicit_hash_algorithm = normalized_hash_algorithm if hash_value else "sha256"
+    explicit_hash_is_strong = _is_full_hash(explicit_hash_value, explicit_hash_algorithm)
     explicit_file_name = file_name is not None
     if file_name is None:
         file_name = _filename_from_url(urls[0])
+    else:
+        file_name = validate_download_file_name(file_name)
     cached_file = save_path.resolve() / file_name
     cached_file_exists = cached_file.exists()
+    effective_existing_policy = _resolve_existing_file_policy(
+        existing_file_policy,
+        re_download=re_download,
+        continue_download=continue_download,
+    )
 
-    if cached_file_exists and not re_download and not conditional_get:
+    if cached_file_exists and effective_existing_policy == "reuse" and not conditional_get:
+        if explicit_hash_value and not compare_hash(cached_file, explicit_hash_value, explicit_hash_algorithm):
+            raise DownloadIntegrityError(f"已有文件哈希值 ({explicit_hash_algorithm}) 与预期值不匹配: {explicit_hash_value}")
         logger.info("'%s' 已存在于 '%s' 中", file_name, cached_file)
         return cached_file
 
     if cached_file_exists and not re_download and conditional_get and _cached_file_not_modified(urls, cached_file):
         logger.info("'%s' 未修改, 复用 '%s'", file_name, cached_file)
         return cached_file
+    if conditional_get and cached_file_exists:
+        effective_existing_policy = "overwrite"
 
-    if re_download or not cached_file_exists or conditional_get:
+    if effective_existing_policy != "reuse" or not cached_file_exists or conditional_get:
         save_path.mkdir(parents=True, exist_ok=True)
 
         options = _normalize_options(
@@ -1961,56 +2770,166 @@ def download_file_from_url(
             continue_download=continue_download,
             conditional_get=conditional_get,
             remote_time=remote_time,
+            always_resume=always_resume,
+            max_resume_failure_tries=max_resume_failure_tries,
+            connect_timeout=connect_timeout,
+            read_timeout=read_timeout,
+            lowest_speed_limit=lowest_speed_limit,
+            lowest_speed_time=lowest_speed_time,
         )
-        primary_url, remote_info = _probe_remote_files(urls)
+        probe_result = _probe_remote_files(urls, timeout=(options.connect_timeout, options.read_timeout))
+        primary_url = probe_result.primary_url
+        remote_info = probe_result.remote_info
+        digest_tracker = _DigestTracker(remote_info.digest_algorithm, remote_info.digest_value)
         ordered_urls = [primary_url] + [candidate for candidate in urls if candidate != primary_url]
         if not explicit_file_name and remote_info.content_disposition_filename:
             file_name = remote_info.content_disposition_filename
             cached_file = save_path.resolve() / file_name
-            if not re_download and not conditional_get and cached_file.exists():
+            cached_file_exists = cached_file.exists()
+            if effective_existing_policy == "reuse" and not conditional_get and cached_file_exists:
+                if explicit_hash_value and not compare_hash(cached_file, explicit_hash_value, explicit_hash_algorithm):
+                    raise DownloadIntegrityError(f"已有文件哈希值 ({explicit_hash_algorithm}) 与预期值不匹配: {explicit_hash_value}")
                 logger.info("'%s' 已存在于 '%s' 中", file_name, cached_file)
                 return cached_file
 
-        temp_file = save_path / f"{file_name}.tmp"
-        state_file = _state_path_for(temp_file)
-        if re_download:
-            _cleanup_resume_files(temp_file, state_file)
+        if effective_existing_policy == "rename" and cached_file.exists():
+            cached_file = _renamed_file_path(cached_file)
+            file_name = cached_file.name
+            cached_file_exists = False
 
-        logger.info("下载 '%s' 到 '%s' 中", file_name, cached_file)
-        expected_size = remote_info.total_size
+        with _target_download_lock(cached_file):
+            # 探测在锁外进行；等待同目标任务完成后必须重新检查最终文件，
+            # 后来的重复任务直接复用先完成任务的原子结果。
+            if cached_file.exists() and not re_download and not cached_file_exists:
+                logger.info("'%s' 已由另一下载任务保存到 '%s'", file_name, cached_file)
+                return cached_file
 
-        if remote_info.total_size > 0:
-            try:
-                _download_file_with_ranges(
-                    urls=ordered_urls,
-                    temp_file=temp_file,
-                    state_file=state_file,
-                    remote_info=remote_info,
-                    progress=bool(progress),
-                    options=options,
-                )
-            except _RangeDownloadNotSupported as e:
-                logger.error("无法使用 HTTP Range 继续下载 '%s': %s, 已保留临时文件和断点状态", file_name, e)
-                raise IOError(f"无法使用 HTTP Range 继续下载 '{file_name}': {e}") from e
-        else:
-            _cleanup_resume_files(temp_file, state_file)
-            expected_size = _download_file_single_stream(
-                urls=ordered_urls,
+            if cached_file.exists() and effective_existing_policy == "reuse" and not conditional_get:
+                if explicit_hash_value and not compare_hash(cached_file, explicit_hash_value, explicit_hash_algorithm):
+                    raise DownloadIntegrityError(f"已有文件哈希值 ({explicit_hash_algorithm}) 与预期值不匹配: {explicit_hash_value}")
+                return cached_file
+            if cached_file.exists() and effective_existing_policy == "verify":
+                if explicit_hash_value:
+                    if not compare_hash(cached_file, explicit_hash_value, explicit_hash_algorithm):
+                        raise DownloadIntegrityError(f"已有文件哈希值 ({explicit_hash_algorithm}) 与预期值不匹配: {explicit_hash_value}")
+                else:
+                    _verify_existing_file(cached_file, remote_info=remote_info, hash_prefix=None)
+                logger.info("'%s' 已通过大小或哈希校验, 复用 '%s'", file_name, cached_file)
+                return cached_file
+
+            temp_file = save_path / f"{file_name}.tmp"
+            state_file = _state_path_for(temp_file)
+            if effective_existing_policy == "overwrite":
+                _cleanup_resume_files(temp_file, state_file)
+            elif effective_existing_policy == "resume" and cached_file.exists():
+                local_size = cached_file.stat().st_size
+                if remote_info.total_size <= 0:
+                    raise IOError("远端未提供文件大小，无法把已有正式文件作为断点")
+                if local_size > remote_info.total_size:
+                    raise IOError(f"已有文件大于远端文件: 远端 {remote_info.total_size}, 本地 {local_size}")
+                if local_size == remote_info.total_size:
+                    tracker_hash = digest_tracker.expected()
+                    expected_hash = (explicit_hash_algorithm, explicit_hash_value) if explicit_hash_value else tracker_hash
+                    if expected_hash and not compare_hash(cached_file, expected_hash[1], expected_hash[0]):
+                        raise ValueError(f"已有文件哈希值与预期的哈希前缀不匹配: {expected_hash}")
+                    logger.info("'%s' 大小已完整, 复用 '%s'", file_name, cached_file)
+                    return cached_file
+                _cleanup_resume_files(temp_file, state_file)
+                shutil.copyfile(cached_file, temp_file)
+                options = replace(options, continue_download=True)
+
+            logger.info("下载 '%s' 到 '%s' 中", file_name, cached_file)
+            expected_size = remote_info.total_size
+            resume_progress_size = _resume_progress_size(
                 temp_file=temp_file,
-                file_name=file_name,
-                progress=bool(progress),
-                max_tries=options.max_tries,
-                retry_wait=options.retry_wait,
+                state_file=state_file,
+                remote_info=remote_info,
+                options=options,
+                allow_validator_change=explicit_hash_is_strong,
             )
 
-        _finalize_download(
-            temp_file=temp_file,
-            state_file=state_file,
-            cached_file=cached_file,
-            file_name=file_name,
-            hash_prefix=hash_prefix or remote_info.digest_sha256,
-            remote_time=options.remote_time,
-            last_modified=remote_info.last_modified,
-            expected_size=expected_size,
-        )
+            def _restart_with_single_stream(reason: str) -> int:
+                if resume_progress_size > 0:
+                    logger.warning(
+                        "无法继续下载 '%s' (%s), 将丢弃 %s 字节已有进度并从头下载",
+                        file_name,
+                        reason,
+                        resume_progress_size,
+                    )
+                _cleanup_resume_files(temp_file, state_file)
+                stream_size = _download_file_single_stream(
+                    urls=ordered_urls,
+                    temp_file=temp_file,
+                    file_name=file_name,
+                    progress=bool(progress),
+                    max_tries=options.max_tries,
+                    retry_wait=options.retry_wait,
+                    digest_tracker=digest_tracker,
+                    timeout=(options.connect_timeout, options.read_timeout),
+                    cancel_event=cancel_event or threading.Event(),
+                    lowest_speed_limit=options.lowest_speed_limit,
+                    lowest_speed_time=options.lowest_speed_time,
+                    progress_callback=progress_callback,
+                )
+                return stream_size or remote_info.total_size
+
+            if remote_info.total_size > 0 and remote_info.supports_range:
+                try:
+                    _download_file_with_ranges(
+                        urls=probe_result.range_urls,
+                        uri_host_keys=probe_result.range_host_keys,
+                        temp_file=temp_file,
+                        state_file=state_file,
+                        remote_info=remote_info,
+                        progress=bool(progress),
+                        options=options,
+                        digest_tracker=digest_tracker,
+                        allow_validator_change=explicit_hash_is_strong,
+                        timeout=(options.connect_timeout, options.read_timeout),
+                        progress_callback=progress_callback,
+                        cancel_event=cancel_event,
+                    )
+                except _RangeDownloadNotSupported as e:
+                    failure_count = min(len(urls), probe_result.resume_failure_count + 1)
+                    if resume_progress_size == 0 or _resume_policy_allows_restart(
+                        options,
+                        failure_count=failure_count,
+                        total_url_count=len(urls),
+                    ):
+                        expected_size = _restart_with_single_stream(str(e))
+                    else:
+                        logger.error("无法使用 HTTP Range 继续下载 '%s': %s, 已保留临时文件和断点状态", file_name, e)
+                        raise IOError(f"无法使用 HTTP Range 继续下载 '{file_name}': {e}") from e
+            elif remote_info.total_size > 0:
+                if resume_progress_size > 0 and not _resume_policy_allows_restart(
+                    options,
+                    failure_count=probe_result.resume_failure_count,
+                    total_url_count=len(urls),
+                ):
+                    logger.error("远端不支持 HTTP Range, 无法继续下载 '%s', 已保留临时文件和断点状态", file_name)
+                    raise IOError(f"远端不支持 HTTP Range, 无法继续下载 '{file_name}'")
+                expected_size = _restart_with_single_stream("远端不支持 HTTP Range")
+            else:
+                if resume_progress_size > 0 and not _resume_policy_allows_restart(
+                    options,
+                    failure_count=probe_result.resume_failure_count,
+                    total_url_count=len(urls),
+                ):
+                    logger.error("远端未提供可靠的 Range 元数据, 无法继续下载 '%s', 已保留临时文件和断点状态", file_name)
+                    raise IOError(f"远端未提供可靠的 Range 元数据, 无法继续下载 '{file_name}'")
+                expected_size = _restart_with_single_stream("远端未提供可靠的 Range 元数据")
+
+            tracker_hash = digest_tracker.expected()
+            final_hash = (explicit_hash_algorithm, explicit_hash_value) if explicit_hash_value else tracker_hash
+            _finalize_download(
+                temp_file=temp_file,
+                state_file=state_file,
+                cached_file=cached_file,
+                file_name=file_name,
+                hash_prefix=final_hash[1] if final_hash else None,
+                hash_algorithm=final_hash[0] if final_hash else "sha256",
+                remote_time=options.remote_time,
+                last_modified=remote_info.last_modified,
+                expected_size=expected_size,
+            )
     return cached_file

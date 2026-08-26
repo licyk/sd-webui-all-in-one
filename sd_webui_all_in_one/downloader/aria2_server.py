@@ -16,8 +16,7 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-from sd_webui_all_in_one.downloader.requests_downloader import _filename_from_url
-from sd_webui_all_in_one.downloader.requests_downloader import _normalize_urls
+from sd_webui_all_in_one.downloader.requests_downloader import DownloadCancelledError, DownloadProgressEvent, _filename_from_url, _normalize_urls
 from sd_webui_all_in_one.utils import (
     find_port,
     is_port_in_use,
@@ -251,8 +250,9 @@ class Aria2RpcServer:
                 f"--dir={self.download_dir.as_posix()}",
                 "--max-concurrent-downloads=16",
                 "--max-connection-per-server=16",
-                "--split=16",
-                "--min-split-size=1M",
+                "--split=32",
+                "--min-split-size=20M",
+                "--piece-length=1M",
                 "--continue=true",
                 "--file-allocation=none",
                 "--console-log-level=error",
@@ -485,6 +485,8 @@ class Aria2RpcServer:
         options: dict[str, Any] | None = None,
         show_progress: bool = True,
         wait_complete: bool = True,
+        progress_callback: Any | None = None,
+        cancel_event: Any | None = None,
     ) -> Path:
         """
         下载单个文件
@@ -538,7 +540,7 @@ class Aria2RpcServer:
             return save_path / save_name
 
         # 等待下载完成并显示进度
-        return self._wait_download(gid, save_name, show_progress)
+        return self._wait_download(gid, save_name, show_progress, progress_callback=progress_callback, cancel_event=cancel_event)
 
     def download_batch(
         self,
@@ -616,6 +618,8 @@ class Aria2RpcServer:
         gid: str,
         file_name: str,
         show_progress: bool = True,
+        progress_callback: Any | None = None,
+        cancel_event: Any | None = None,
     ) -> Path:
         """
         等待下载完成并显示进度
@@ -644,9 +648,15 @@ class Aria2RpcServer:
         pbar: tqdm | None = None
         consecutive_errors: int = 0  # 连续错误计数
         max_consecutive_errors: int = 5  # 最大连续错误次数
+        started_at = time.monotonic()
 
         try:
             while True:
+                if cancel_event is not None and cancel_event.is_set():
+                    try:
+                        self._rpc_call("aria2.remove", [gid], retry_count=1)
+                    finally:
+                        raise DownloadCancelledError("下载已取消")
                 # 检查 aria2 进程是否仍在运行
                 if not self._check_process_alive():
                     if pbar is not None:
@@ -671,6 +681,22 @@ class Aria2RpcServer:
                     total: int = int(status.get("totalLength", 0))
                     completed: int = int(status.get("completedLength", 0))
                     current_status: str = status.get("status", "unknown")
+                    if progress_callback is not None:
+                        files = status.get("files", [])
+                        current_path = Path(files[0]["path"]) if files else self.download_dir / file_name
+                        uris = files[0].get("uris", []) if files else []
+                        current_url = uris[0].get("uri", "") if uris else ""
+                        progress_callback(
+                            DownloadProgressEvent(
+                                target_path=current_path,
+                                total_size=total,
+                                completed_size=completed,
+                                instantaneous_speed=float(status.get("downloadSpeed", 0)),
+                                average_speed=completed / max(time.monotonic() - started_at, 1e-9),
+                                active_connections=int(status.get("connections", 0)),
+                                current_url=current_url,
+                            )
+                        )
 
                     # 初始化进度条
                     if show_progress and pbar is None and total > 0:
