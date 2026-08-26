@@ -35,6 +35,8 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import GuiActionsMixinCont
 
 
 class InstallActionsMixin(GuiActionsMixinContext):
+    _extension_index_generation: int
+
     def _configure_extension_index_url(self) -> str:
         if not self.use_github_mirror:
             return COMFYUI_CUSTOM_NODE_INDEX_URL
