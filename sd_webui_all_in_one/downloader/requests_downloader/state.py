@@ -367,7 +367,7 @@ def _save_resume_state(
 
     tmp_state_file = _state_temp_path_for(state_file)
     tmp_state_file.write_text(payload, encoding="utf-8")
-    with tmp_state_file.open("rb") as file:
+    with tmp_state_file.open("r+b") as file:
         os.fsync(file.fileno())
     tmp_state_file.replace(state_file)
     try:
@@ -384,5 +384,5 @@ def _save_resume_state(
 
 def _flush_download_data(temp_file: Path) -> None:
     """在提交 completed/in-flight 状态前把下载数据同步到稳定存储"""
-    with temp_file.open("rb") as file:
+    with temp_file.open("r+b") as file:
         os.fsync(file.fileno())
