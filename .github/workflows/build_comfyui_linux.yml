@@ -6,7 +6,7 @@ on:
 jobs:
   Build-ComfyUI-Linux:
     name: Build ComfyUI Linux NVIDIA
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     env:
       PYTHONIOENCODING: utf-8
     steps:

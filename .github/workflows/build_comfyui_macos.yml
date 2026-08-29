@@ -6,7 +6,7 @@ on:
 jobs:
   Build-ComfyUI-macOS:
     name: Build ComfyUI macOS MPS
-    runs-on: macos-15
+    runs-on: macos-latest
     env:
       PYTHONIOENCODING: utf-8
     steps:
