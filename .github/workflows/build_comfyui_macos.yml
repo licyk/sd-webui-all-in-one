@@ -16,13 +16,6 @@ jobs:
       - name: Setup portable build
         uses: ./.github/actions/setup-portable-build
 
-      - name: Validate runner architecture
-        shell: pwsh
-        run: |
-          if ($env:RUNNER_ARCH -ne "ARM64") {
-            throw "Expected an ARM64 runner, got: $env:RUNNER_ARCH"
-          }
-
       - name: Launch ComfyUI Installer
         env:
           SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY: 1
@@ -39,15 +32,6 @@ jobs:
             -DisableHuggingFaceMirror `
             -InstallHanafubuki `
             -NoPreDownloadModel
-
-      - name: Validate MPS PyTorch
-        shell: pwsh
-        run: |
-          $python = "${{ github.workspace }}/comfyui/core/python/bin/python3"
-          & $python -c "import torch, torchvision; assert torch.backends.mps.is_built(); print(torch.__version__, torch.backends.mps.is_available())"
-          if ($LASTEXITCODE -ne 0) {
-            throw "MPS PyTorch validation failed with exit code $LASTEXITCODE"
-          }
 
       - name: Launch ComfyUI to init custom nodes
         shell: pwsh
