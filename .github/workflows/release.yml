@@ -6,7 +6,6 @@ on:
     paths:
       - 'installer/**'
       - 'notebook/**'
-      - 'sd_scripts_ipynb_core.py'
   workflow_dispatch:
 
 jobs:
@@ -55,7 +54,6 @@ jobs:
             gt_id: 435278
             files: |
               notebook/*.ipynb
-              sd_scripts_ipynb_core.py
 
     steps:
       - name: Checkout repo
