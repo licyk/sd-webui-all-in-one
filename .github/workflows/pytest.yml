@@ -6,6 +6,8 @@ on:
       - "sd_webui_all_in_one/**"
       - "tests/**"
       - "pyproject.toml"
+      - ".github/actions/finalize-portable/action.yml"
+      - ".github/check_portable_pytorch_type.py"
       - ".github/run_bounded_process.py"
       - ".github/workflows/pytest.yml"
   pull_request:
@@ -13,6 +15,8 @@ on:
       - "sd_webui_all_in_one/**"
       - "tests/**"
       - "pyproject.toml"
+      - ".github/actions/finalize-portable/action.yml"
+      - ".github/check_portable_pytorch_type.py"
       - ".github/run_bounded_process.py"
       - ".github/workflows/pytest.yml"
   workflow_dispatch:

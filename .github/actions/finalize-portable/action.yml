@@ -60,6 +60,28 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Check portable PyTorch type
+      shell: pwsh
+      run: |
+        $pythonCandidates = @(
+          "${{ inputs.install-path }}/core/python/python.exe",
+          "${{ inputs.install-path }}/core/python/bin/python3",
+          "${{ inputs.install-path }}/core/python/bin/python",
+          "${{ inputs.install-path }}/core/python/python"
+        )
+        $pythonExecutable = $pythonCandidates |
+          Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } |
+          Select-Object -First 1
+        if ([string]::IsNullOrWhiteSpace($pythonExecutable)) {
+          throw "Portable Python executable was not found under ${{ inputs.install-path }}/core/python"
+        }
+
+        & $pythonExecutable "${{ github.workspace }}/.github/check_portable_pytorch_type.py" `
+          --software-name "${{ inputs.software-name }}"
+        if ($LASTEXITCODE -ne 0) {
+          throw "Portable PyTorch type check failed with exit code $LASTEXITCODE"
+        }
+
     - name: Make docs
       shell: pwsh
       run: |
