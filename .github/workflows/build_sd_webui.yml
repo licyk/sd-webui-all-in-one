@@ -26,6 +26,7 @@ jobs:
             -PyTorchMirrorType cu130 `
             -BuildMode `
             -BuildWithTorch 174 `
+            -BuildWithTorchReinstall `
             -BuildWithLaunch `
             -InstallBranch "sd_webui_dev" `
             -NoPreDownloadModel `

@@ -25,7 +25,8 @@ jobs:
             -InstallPath "${{ github.workspace }}/sd_webui_forge_neo_rocm" `
             -PyTorchMirrorType rocm_win `
             -BuildMode `
-            -BuildWithTorch 174 `
+            -BuildWithTorch 8 `
+            -BuildWithTorchReinstall `
             -BuildWithLaunch `
             -InstallBranch "sd_webui_forge_neo" `
             -NoPreDownloadModel `

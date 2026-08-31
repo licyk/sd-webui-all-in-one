@@ -25,7 +25,8 @@ jobs:
             -InstallPath "${{ github.workspace }}/sd_webui_forge_neo_xpu" `
             -PyTorchMirrorType xpu `
             -BuildMode `
-            -BuildWithTorch 174 `
+            -BuildWithTorch 172 `
+            -BuildWithTorchReinstall `
             -BuildWithLaunch `
             -InstallBranch "sd_webui_forge_neo" `
             -NoPreDownloadModel `
