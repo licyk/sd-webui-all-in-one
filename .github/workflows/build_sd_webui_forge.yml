@@ -25,6 +25,7 @@ jobs:
             -InstallPath "${{ github.workspace }}/sd_webui_forge" `
             -PyTorchMirrorType cu130 `
             -BuildMode `
+            -BuildWithTorch 174 `
             -BuildWithLaunch `
             -InstallBranch "sd_webui_forge" `
             -NoPreDownloadModel `
