@@ -234,7 +234,7 @@ SD_WEBUI_EXTENSION_INFO_DICT: SDWebUiExtensionInfoList = [
     },
     {
         "name": "sd-webui-regional-prompter",
-        "url": "https://github.com/hako-mikan/sd-webui-regional-prompter",
+        "url": "https://github.com/licyk/sd-webui-regional-prompter",
         "save_dir": "extensions/sd-webui-regional-prompter",
         "supported_branch": [
             "sd_webui_main",
@@ -242,6 +242,7 @@ SD_WEBUI_EXTENSION_INFO_DICT: SDWebUiExtensionInfoList = [
             "sd_webui_forge",
             "sd_webui_reforge_main",
             "sd_webui_reforge_dev",
+            "sd_webui_forge_neo",
             "sd_webui_amdgpu",
         ],
     },
