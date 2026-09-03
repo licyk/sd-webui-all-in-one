@@ -37,6 +37,7 @@ PYTORCH_MIRROR_DICT: PyTorchMirrorMap = {
     "rocm6.3": ("https://download.pytorch.org/whl/rocm6.3", "index_url"),
     "rocm6.4": ("https://download.pytorch.org/whl/rocm6.4", "index_url"),
     "rocm7.1": ("https://download.pytorch.org/whl/rocm7.1", "index_url"),
+    "rocm7.14": ("https://download.pytorch.org/whl/rocm7.14", "index_url"),
     "rocm7.2": ("https://download.pytorch.org/whl/rocm7.2", "index_url"),
     "cu75": ("https://download.pytorch.org/whl/cu75", "index_url"),
     "cu80": ("https://download.pytorch.org/whl/cu80", "index_url"),
