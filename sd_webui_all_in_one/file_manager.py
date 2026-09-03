@@ -1,9 +1,10 @@
 """文件操作工具"""
 
 import os
-import uuid
-import stat
 import shutil
+import stat
+import sys
+import uuid
 from pathlib import Path
 
 from sd_webui_all_in_one.logger import get_logger
@@ -62,7 +63,10 @@ def remove_files(
 
         elif path.is_dir():
             # 处理文件夹
-            shutil.rmtree(path, onerror=_handle_remove_readonly)
+            if sys.version_info >= (3, 12):
+                shutil.rmtree(path, onexc=_handle_remove_readonly)
+            else:
+                shutil.rmtree(path, onerror=_handle_remove_readonly)
 
     except OSError as e:
         logger.error("删除失败: '%s' - 原因: %s", path, e)
