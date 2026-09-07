@@ -37,13 +37,13 @@ jobs:
             -InstallHanafubuki `
             -DisableHuggingFaceMirror
 
-      - name: Install Insightface
+      - name: Install extra Python packages
         shell: pwsh
         env:
           UV_PYTHON: "${{ github.workspace }}/sd_webui/core/python/python.exe"
           UV_LINK_MODE: copy
         run: |
-          uv pip install insightface
+          uv pip install insightface triton-windows
 
       - name: Install OpenPose Editor Assets
         shell: pwsh

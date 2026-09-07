@@ -34,6 +34,14 @@ jobs:
             -InstallHanafubuki `
             -NoPreDownloadModel
 
+      - name: Install extra Python packages
+        shell: pwsh
+        env:
+          UV_PYTHON: "${{ github.workspace }}/comfyui/core/python/python.exe"
+          UV_LINK_MODE: copy
+        run: |
+          uv pip install insightface triton-windows
+
       - name: Launch ComfyUI to init custom nodes
         shell: pwsh
         env:
