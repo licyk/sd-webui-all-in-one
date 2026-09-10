@@ -67,7 +67,11 @@ runs:
           "${{ inputs.install-path }}/core/python/python.exe",
           "${{ inputs.install-path }}/core/python/bin/python3",
           "${{ inputs.install-path }}/core/python/bin/python",
-          "${{ inputs.install-path }}/core/python/python"
+          "${{ inputs.install-path }}/core/python/python",
+          "${{ inputs.install-path }}/python/python.exe",
+          "${{ inputs.install-path }}/python/bin/python3",
+          "${{ inputs.install-path }}/python/bin/python",
+          "${{ inputs.install-path }}/python/python"
         )
         $pythonExecutable = $pythonCandidates |
           Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } |
