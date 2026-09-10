@@ -310,10 +310,11 @@ def main() -> None:
     windows_help_content = """
 首次使用该需要双击运行 configure_env.bat 配置环境, 如果运行 PowerShell 脚本闪退时请运行这个脚本去修复闪退
 运行后即可正常运行 PowerShell 脚本 (ps1 后缀的文件), PowerShell 脚本需要右键后选择 "使用 PowerShell 运行" 才可以运行
+Hanafubuki 启动器已包含在整合包中，双击 hanafubuki-launcher 即可启动，使用说明请阅读：https://hanafubuki.netlify.app/docs
 
 使用该整合包启动前请打开 help.txt 文件阅读说明
 更多说明请阅读: https://licyk.github.io/sd-webui-all-in-one/portable/portable
-整合包支持使用启动器运行，启动器的使用方法请阅读：https://licyk.github.io/sd-webui-all-in-one/tools/launcher-gui
+整合包支持使用启动器运行，启动器的使用方法请阅读：https://licyk.github.io/sd-webui-all-in-one/tools/hanafubuki
 
 ！！！不会启动该整合包的请重新阅读 help.txt 文件中的说明！！！
 
@@ -323,7 +324,7 @@ def main() -> None:
 本整合包已包含独立 Python 环境。
 启动和管理脚本依赖 PowerShell 7，请先安装 pwsh 并确保可从终端直接运行。
 更新内核、更新扩展等 Git 操作依赖系统 Git，请先安装 git 并确保可从终端直接运行。
-Hanafubuki 启动器已包含在整合包中。
+Hanafubuki 启动器已包含在整合包中，双击 hanafubuki-launcher 即可启动，使用说明请阅读：https://hanafubuki.netlify.app/docs
 
 启动整合包：
     在终端运行 ./launch.sh
@@ -345,7 +346,7 @@ macOS 可能为浏览器或网盘下载的整合包添加隔离属性，导致 l
 本整合包已包含独立 Python 环境。
 启动和管理脚本依赖 PowerShell 7，请先安装 pwsh 并确保可从终端直接运行。
 更新内核、更新扩展等 Git 操作依赖系统 Git，请先安装 git 并确保可从终端直接运行。
-Hanafubuki 启动器已包含在整合包中。
+Hanafubuki 启动器已包含在整合包中，双击 hanafubuki-launcher 即可启动，使用说明请阅读：https://hanafubuki.netlify.app/docs
 
 启动整合包：
     双击 launch.command，或在终端运行 ./launch.sh
