@@ -35,6 +35,14 @@ jobs:
             -InstallHanafubuki `
             -NoPreDownloadModel
 
+      - name: Install extra Python packages
+        shell: pwsh
+        env:
+          UV_PYTHON: "${{ github.workspace }}/fooocus/core/python/python.exe"
+          UV_LINK_MODE: copy
+        run: |
+          uv pip install insightface triton-windows
+
       - name: Finalize portable package
         uses: ./.github/actions/finalize-portable
         env:
