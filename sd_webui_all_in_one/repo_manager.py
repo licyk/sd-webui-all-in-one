@@ -317,7 +317,7 @@ class RepoManager:
             return git_token
 
         login_result = self.ms_api.login(self.ms_token)
-        if isinstance(login_result, tuple) and login_result:
+        if isinstance(login_result, tuple):
             login_git_token = login_result[0]
             if isinstance(login_git_token, str) and login_git_token:
                 return login_git_token
