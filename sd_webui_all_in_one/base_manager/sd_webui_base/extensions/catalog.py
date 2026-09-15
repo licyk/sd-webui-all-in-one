@@ -86,6 +86,14 @@ SD_WEBUI_EXTENSION_INFO_DICT: SDWebUiExtensionInfoList = [
         ],
     },
     {
+        "name": "sd-forge-neo-kohya-hrfix",
+        "url": "https://github.com/licyk/sd-forge-neo-kohya-hrfix",
+        "save_dir": "extensions/sd-forge-neo-kohya-hrfix",
+        "supported_branch": [
+            "sd_webui_forge_neo",
+        ],
+    },
+    {
         "name": "sd-webui-infinite-image-browsing",
         "url": "https://github.com/zanllp/sd-webui-infinite-image-browsing",
         "save_dir": "extensions/sd-webui-infinite-image-browsing",

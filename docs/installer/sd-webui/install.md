@@ -190,6 +190,7 @@ SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI
     |[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
     |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
     |[Haoming02/ADetailer-Neo](https://github.com/Haoming02/ADetailer-Neo)|
+    |[licyk/sd-forge-neo-kohya-hrfix](https://github.com/licyk/sd-forge-neo-kohya-hrfix)|
     |[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|
     |[licyk/sd-webui-prompt-all-in-one](https://github.com/licyk/sd-webui-prompt-all-in-one)|
     |[licyk/sd-webui-wd14-tagger](https://github.com/licyk/sd-webui-wd14-tagger)|
