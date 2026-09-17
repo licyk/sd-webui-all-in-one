@@ -46,7 +46,7 @@ def check_accelerate_bin(
         if "bmaltais/kohya_ss" not in (repo or ""):
             logger.debug("当前分支非 bmaltais/kohya_ss")
             return
-    except Exception as e:
+    except ValueError as e:
         logger.debug("获取仓库远程源失败: %s", e)
         return
 
@@ -60,7 +60,7 @@ def check_accelerate_bin(
 
     try:
         pkg = f"accelerate=={importlib.metadata.version('accelerate')}"
-    except Exception:
+    except importlib.metadata.PackageNotFoundError:
         pkg = "accelerate"
 
     try:

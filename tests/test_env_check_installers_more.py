@@ -248,3 +248,25 @@ def test_fix_torch_libomp_copies_missing_runtime(monkeypatch, tmp_path):
     (lib / "libomp140.x86_64.dll").write_bytes(b"existing")
     fix_torch.fix_torch_libomp()
     assert (lib / "libomp140.x86_64.dll").read_bytes() == b"existing"
+
+
+def test_sd_webui_version_gui_does_not_overwrite_corrupted_config(tmp_path):
+    from sd_webui_all_in_one.base_manager.gui.sd_webui_version_gui import helpers as sd_webui_gui_helpers
+
+    config_path = tmp_path / "config.json"
+    config_path.write_text("{broken", encoding="utf-8")
+
+    assert sd_webui_gui_helpers._sd_webui_extension_enabled(tmp_path, "ext", tmp_path / "extensions" / "ext") is True
+    with pytest.raises(ValueError):
+        sd_webui_gui_helpers._set_sd_webui_extension_enabled(tmp_path, "ext", False)
+    assert config_path.read_text(encoding="utf-8") == "{broken"
+
+
+def test_set_sd_webui_extension_status_without_config_file(tmp_path):
+    from sd_webui_all_in_one.base_manager.sd_webui_base.extensions.service import set_sd_webui_extensions_status
+
+    (tmp_path / "extensions" / "ext").mkdir(parents=True)
+
+    set_sd_webui_extensions_status(tmp_path, "ext", False)
+
+    assert json.loads((tmp_path / "config.json").read_text(encoding="utf-8"))["disabled_extensions"] == ["ext"]

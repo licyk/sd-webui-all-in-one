@@ -59,8 +59,8 @@ def collect_system_info() -> SystemSnapshot:
 def _read_distribution_text(dist: metadata.Distribution, filename: str) -> str | None:
     try:
         return dist.read_text(filename)
-    except Exception:
-        logger.warning("读取发行版元数据文件失败: %s", filename)
+    except (OSError, ValueError) as e:
+        logger.warning("读取发行版元数据文件失败: %s: %s", filename, e)
         return None
 
 
@@ -193,8 +193,8 @@ def repository_dirty(path: Path, is_git_repo: bool) -> bool | None:
         return None
     try:
         return run_git_output(path, "status", "--porcelain") != ""
-    except Exception:
-        logger.warning("检查 Git 仓库变更状态失败: %s", path)
+    except (RuntimeError, OSError) as e:
+        logger.warning("检查 Git 仓库变更状态失败: %s: %s", path, e)
         return None
 
 

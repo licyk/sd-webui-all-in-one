@@ -128,7 +128,9 @@ def exec_from_path(
         code = path.read_text(encoding="utf-8")
         exec(code, env)  # pylint: disable=exec-used
         return env
-    except Exception:
+    except Exception as e:
+        # 执行的是第三方源码, 可能抛出任意异常, 此时返回 None, 但需要留下记录以便排查
+        logger.warning("执行 Python 文件 '%s' 时发生错误: %s", path, e)
         return None
 
 

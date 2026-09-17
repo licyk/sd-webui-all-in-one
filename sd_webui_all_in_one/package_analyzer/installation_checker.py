@@ -102,21 +102,26 @@ def get_package_version_from_library(
     Returns:
         str | None: 如果获取到版本号则返回版本号字符串, 否则返回 ``None``
     """
+    if not package_name.strip():
+        # importlib.metadata 对空包名抛出 ValueError 而不是 PackageNotFoundError
+        logger.debug("Python 软件包名为空, 视为未安装")
+        return None
+
     try:
         ver = importlib.metadata.version(package_name)
-    except Exception:
+    except importlib.metadata.PackageNotFoundError:
         ver = None
 
     if ver is None:
         try:
             ver = importlib.metadata.version(package_name.lower())
-        except Exception:
+        except importlib.metadata.PackageNotFoundError:
             ver = None
 
     if ver is None:
         try:
             ver = importlib.metadata.version(package_name.replace("_", "-"))
-        except Exception:
+        except importlib.metadata.PackageNotFoundError:
             ver = None
 
     return ver

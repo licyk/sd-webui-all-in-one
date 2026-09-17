@@ -149,8 +149,8 @@ def test_github_mirror(
             return gh
         except subprocess.TimeoutExpired:
             logger.warning("镜像源测试超时（%s 秒）", timeout)
-        except Exception:
-            logger.warning("镜像源不可用")
+        except (RuntimeError, OSError) as e:
+            logger.warning("镜像源不可用: %s", e)
 
     logger.warning("无可用的 Github 镜像源")
     return None

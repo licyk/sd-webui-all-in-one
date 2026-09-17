@@ -25,6 +25,14 @@ def get_gpu_names() -> set[str]:
 
     Returns:
         set[str]: GPU 名称列表
+
+    Raises:
+        OSError:
+            调用系统接口或 nvidia-smi 失败时
+        subprocess.SubprocessError:
+            nvidia-smi 执行失败时
+        ValueError:
+            解码 GPU 名称失败时
     """
     if os.name == "nt":
 
@@ -113,16 +121,29 @@ GPU_BLACKLIST = {
 NVIDIA_GPU_KEYWORD = ["NVIDIA", "GeForce", "Tesla", "Quadro"]
 
 
+def _get_gpu_names_or_empty() -> set[str]:
+    """获取 GPU 的列表, 获取失败时返回空集合
+
+    Returns:
+        set[str]: GPU 名称列表
+    """
+    try:
+        return get_gpu_names()
+    except FileNotFoundError:
+        # 未安装 nvidia-smi, 通常表示不是 NVIDIA 设备
+        return set()
+    except (OSError, subprocess.SubprocessError, ValueError) as e:
+        logger.warning("获取 GPU 列表失败, 无法确定 CUDA 内存分配器配置: %s", e)
+        return set()
+
+
 def cuda_malloc_supported() -> bool:
     """检查是否有支持 CUDA Malloc 的 GPU
 
     Returns:
         bool: 有支持 CUDA Malloc 的 GPU 时返回 True
     """
-    try:
-        names = get_gpu_names()
-    except Exception as _:
-        names = set()
+    names = _get_gpu_names_or_empty()
     for x in names:
         if any(keyword in x for keyword in NVIDIA_GPU_KEYWORD):
             for b in GPU_BLACKLIST:
@@ -137,10 +158,7 @@ def is_nvidia_device():
     Returns:
         bool: 当 GPU 为 NVIDIA 的 GPU 时返回 True
     """
-    try:
-        names = get_gpu_names()
-    except Exception as _:
-        names = set()
+    names = _get_gpu_names_or_empty()
     for x in names:
         if any(keyword in x for keyword in NVIDIA_GPU_KEYWORD):
             return True
@@ -199,7 +217,9 @@ def get_cuda_malloc_var() -> str | None:
                 malloc_type = get_pytorch_cuda_alloc_conf(False)
         else:
             malloc_type = None
-    except Exception:
+    except Exception as e:
+        # 需要执行 PyTorch 的版本文件, 可能抛出任意异常, 此时不启用 CUDA 内存分配器配置
+        logger.warning("检查 CUDA 内存分配器配置时发生错误: %s", e)
         malloc_type = None
 
     if malloc_type == "cuda_malloc":

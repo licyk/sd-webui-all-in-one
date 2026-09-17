@@ -325,8 +325,9 @@ class Aria2RpcServer:
             try:
                 self._rpc_call("aria2.shutdown")
                 logger.debug("已发送关闭信号到 aria2 RPC 服务器")
-            except Exception:
-                pass
+            except Exception as e:
+                # RPC 关闭失败时仍会等待并在超时后强制终止进程
+                logger.debug("通过 RPC 关闭 aria2 失败, 等待进程退出: %s", e)
 
             # 等待进程结束
             try:
@@ -351,8 +352,8 @@ class Aria2RpcServer:
         if self._session_file and os.path.exists(self._session_file.name):
             try:
                 os.unlink(self._session_file.name)
-            except Exception:
-                pass
+            except OSError as e:
+                logger.warning("删除 aria2 临时会话文件 '%s' 失败: %s", self._session_file.name, e)
 
     def _check_process_alive(
         self,
@@ -391,8 +392,8 @@ class Aria2RpcServer:
                 stderr_output = self.process.stderr.read()
                 if stderr_output:
                     return stderr_output.decode("utf-8", errors="ignore")
-        except Exception:
-            pass
+        except (OSError, ValueError) as e:
+            logger.debug("读取 aria2 进程错误输出失败: %s", e)
 
         return ""
 
@@ -408,7 +409,8 @@ class Aria2RpcServer:
         try:
             self._rpc_call("aria2.getVersion")
             return True
-        except Exception:
+        except Exception as e:
+            logger.debug("aria2 RPC 连接测试失败: %s", e)
             return False
 
     def _rpc_call(
@@ -767,8 +769,8 @@ class Aria2RpcServer:
             # 尝试暂停任务
             try:
                 self._rpc_call("aria2.pause", [gid], retry_count=1)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("暂停 aria2 下载任务失败, GID: %s, 错误: %s", gid, e)
             raise
 
         except Exception as e:

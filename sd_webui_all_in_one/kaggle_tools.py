@@ -31,14 +31,15 @@ def get_kaggle_secret(
     """
     try:
         from kaggle_secrets import UserSecretsClient  # pylint: disable=import-error  # type: ignore
-    except Exception as e:
+    except ImportError as e:
         logger.error("无法导入 Kaggle 工具, 获取 Kaggle Secret 失败: %s", e)
         return None
 
     try:
         return UserSecretsClient().get_secret(key)
-    except Exception:
-        logger.error("密钥 %s 不存在", key)
+    except Exception as e:
+        # Kaggle 会针对密钥不存在 / 网络请求失败抛出不同的异常类型
+        logger.error("获取密钥 %s 失败: %s", key, e)
         return None
 
 

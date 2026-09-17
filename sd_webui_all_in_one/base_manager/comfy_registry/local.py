@@ -11,6 +11,15 @@ else:
     from sd_webui_all_in_one import toml_parser as tomllib
 
 from sd_webui_all_in_one.base_manager.comfy_registry.models import ComfyRegistryLocalInfo
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
+from sd_webui_all_in_one.logger import get_logger
+
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 
 def read_comfy_registry_info(path: Path) -> ComfyRegistryLocalInfo | None:
@@ -45,7 +54,9 @@ def read_comfy_registry_info(path: Path) -> ComfyRegistryLocalInfo | None:
             version=str(raw_version),
             repository=repository if isinstance(repository, str) and repository.strip() else None,
         )
-    except Exception:
+    except (OSError, ValueError) as e:
+        # tomllib.TOMLDecodeError 与 UnicodeDecodeError 均为 ValueError 的子类
+        logger.warning("读取 Comfy Registry 节点元数据 '%s' 失败, 将按非 Registry 节点处理: %s", pyproject_path, e)
         return None
 
 

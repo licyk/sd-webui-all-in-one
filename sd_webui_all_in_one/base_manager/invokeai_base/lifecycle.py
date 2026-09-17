@@ -56,7 +56,7 @@ def get_invokeai_require_torch_version() -> str:
     """
     try:
         invokeai_requires = importlib.metadata.requires("invokeai") or []
-    except Exception:
+    except importlib.metadata.PackageNotFoundError:
         return "2.2.2"
 
     torch_version = "torch==2.2.2"

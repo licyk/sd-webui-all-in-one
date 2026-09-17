@@ -35,6 +35,10 @@ def fix_torch_libomp() -> None:
             if dest.exists():
                 break
 
+            if not test_file.is_file():
+                # 非 Windows 平台或新版本 PyTorch 不包含该文件, 无需修复
+                break
+
             with open(test_file, "rb") as f:
                 contents = f.read()
                 if b"libomp140.x86_64.dll" not in contents:
@@ -44,5 +48,8 @@ def fix_torch_libomp() -> None:
             except FileNotFoundError:
                 logger.warning("检测到 PyTorch 版本存在 libomp 问题, 进行修复")
                 shutil.copyfile(lib_folder / "libiomp5md.dll", dest)
-    except Exception:
-        pass
+    except (ImportError, ValueError) as e:
+        # find_spec 在 torch 包损坏时可能抛出异常
+        logger.warning("查找 PyTorch 安装位置失败, 跳过 libomp 问题检测: %s", e)
+    except OSError as e:
+        logger.warning("检测或修复 PyTorch 的 libomp 问题时发生错误: %s", e)

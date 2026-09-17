@@ -49,6 +49,12 @@ def get_invokeai_model_list(
     Returns:
         InvokeAILocalModelInfoList:
             包含模型信息的字典列表
+
+    Raises:
+        ImportError:
+            导入 InvokeAI 相关模块失败时抛出。
+        RuntimeError:
+            InvokeAI 模型管理服务获取模型列表失败时抛出。
     """
     with _temporary_invokeai_root(invokeai_path):
         return _get_invokeai_model_list()
@@ -64,6 +70,8 @@ def _get_invokeai_model_list() -> InvokeAILocalModelInfoList:
     Raises:
         ImportError:
             导入 InvokeAI 相关模块失败时抛出。
+        RuntimeError:
+            InvokeAI 模型管理服务获取模型列表失败时抛出。
     """
     try:
         logger.info("导入 InvokeAI 模块中")
@@ -114,8 +122,9 @@ def _get_invokeai_model_list() -> InvokeAILocalModelInfoList:
         model_manager.stop(Invoker)
         return model_list
     except Exception as e:
+        # InvokeAI 内部可能抛出任意异常, 统一转换为 RuntimeError, 避免失败被当作 "没有模型"
         logger.error("获取模型列表失败: %s", e)
-        return []
+        raise RuntimeError(f"获取 InvokeAI 模型列表失败: {e}") from e
 
 
 def list_invokeai_models(

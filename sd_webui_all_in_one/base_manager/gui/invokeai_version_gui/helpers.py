@@ -10,7 +10,7 @@ from sd_webui_all_in_one.file_manager import move_files
 def _get_invokeai_version() -> str | None:
     try:
         return importlib.metadata.version("invokeai")
-    except Exception:
+    except importlib.metadata.PackageNotFoundError:
         return None
 
 

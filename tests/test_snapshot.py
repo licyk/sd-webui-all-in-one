@@ -780,6 +780,57 @@ def test_preview_restore_plan_blocks_dirty_kernel_without_force(monkeypatch, tmp
     assert forced.diff_summary.total_changes == 1
 
 
+def test_preview_restore_plan_blocks_kernel_when_dirty_state_unknown(monkeypatch, tmp_path):
+    snapshot = _webui_snapshot(tmp_path / "demo")
+    snapshot.kernel = snapshot_utils.RepositorySnapshot(
+        path=tmp_path / "demo",
+        name="demo",
+        is_git_repo=True,
+        url="https://example.test/demo.git",
+        commit="abcdef",
+    )
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+    (tmp_path / "demo").mkdir()
+
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_extensions.git_warpper, "is_git_repo", lambda _path: True)
+    monkeypatch.setattr(restore_extensions, "repository_dirty", lambda _path, _include_untracked: None)
+    monkeypatch.setattr(restore_extensions.git_warpper, "get_current_commit", lambda _path: "123456")
+
+    blocked = restore_utils.preview_webui_snapshot_restore(
+        snapshot_path=output,
+        webui_path=tmp_path / "demo",
+        expected_webui_type="demo",
+    )
+
+    assert blocked.kernel_change is not None
+    assert blocked.kernel_change.action == "blocked_dirty"
+    assert blocked.restorable is False
+
+
+def test_restore_git_repository_refuses_reset_when_dirty_state_unknown(monkeypatch, tmp_path):
+    repo = snapshot_utils.RepositorySnapshot(
+        path=tmp_path / "demo",
+        name="demo",
+        is_git_repo=True,
+        url="https://example.test/demo.git",
+        commit="abcdef",
+    )
+    switched = []
+    monkeypatch.setattr(restore_extensions, "_ensure_git_target", lambda _repo, _path: True)
+    monkeypatch.setattr(restore_extensions, "repository_dirty", lambda _path, _include_untracked: None)
+    monkeypatch.setattr(restore_extensions, "fetch_repository", lambda _path: None)
+    monkeypatch.setattr(restore_extensions.git_warpper, "switch_commit", lambda path, commit: switched.append((path, commit)))
+
+    with pytest.raises(RuntimeError, match="无法检查"):
+        restore_extensions.restore_git_repository(repo, tmp_path / "demo", restore_utils.SnapshotRestoreOptions())
+    assert switched == []
+
+    assert restore_extensions.restore_git_repository(repo, tmp_path / "demo", restore_utils.SnapshotRestoreOptions(force_git_reset=True)) is True
+    assert switched == [(tmp_path / "demo", "abcdef")]
+
+
 def test_restore_blocking_guidance_explains_webui_type_mismatch(tmp_path):
     snapshot = _webui_snapshot(tmp_path / "demo")
     output = tmp_path / "snapshot.json"

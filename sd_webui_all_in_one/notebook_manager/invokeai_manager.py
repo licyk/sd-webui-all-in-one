@@ -60,9 +60,13 @@ class InvokeAIManager(BaseManager):
         model_list = get_file_list(model_path)
         try:
             self.mount_drive()
-            import_model_to_invokeai(model_list)
         except Exception as e:
             logger.error("挂载 Google Drive 失败, 无法导入模型: %s", e)
+            return
+        try:
+            import_model_to_invokeai(model_list)
+        except Exception as e:
+            logger.error("导入模型到 InvokeAI 时发生错误: %s", e)
 
     def get_sd_model(
         self,

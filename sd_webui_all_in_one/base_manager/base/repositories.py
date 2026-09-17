@@ -1,5 +1,6 @@
 """仓库克隆、名称解析和镜像环境。"""
 
+import http.client
 import os
 import urllib.parse
 import urllib.request
@@ -212,8 +213,8 @@ def apply_github_raw_file_mirror(
                     if response.getcode() == 200:
                         logger.info("该镜像源可用")
                         return f"{mirror_prefix}/{raw_file_path}"
-            except Exception:
-                logger.warning("该镜像源不可用")
+            except (OSError, http.client.HTTPException) as e:
+                logger.warning("该镜像源不可用: %s", e)
 
         logger.warning("无可用的 Github 镜像源")
         return None
@@ -269,8 +270,8 @@ def apply_hf_mirror(
                         logger.info("该镜像源可用")
                         custom_env["HF_ENDPOINT"] = hf
                         return custom_env
-            except Exception:
-                logger.warning("该镜像源不可用")
+            except (OSError, http.client.HTTPException) as e:
+                logger.warning("该镜像源不可用: %s", e)
 
         logger.warning("无可用的 HuggingFace 镜像源")
         return custom_env

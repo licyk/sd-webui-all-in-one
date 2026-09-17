@@ -110,7 +110,7 @@ def install_webui_model_from_library(
     def _input_to_int_list(_input: str) -> list[int] | None:
         try:
             return list({int(_i) for _i in _input.split()})
-        except Exception:
+        except ValueError:
             return None
 
     model_list = export_model_list(dtype)

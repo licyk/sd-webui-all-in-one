@@ -181,14 +181,14 @@ def _read_repository_dirty(path: Path) -> bool:
 
     Returns:
         bool: 存在未提交改动时返回 True
+
+    Raises:
+        RuntimeError:
+            执行 Git 命令失败时
     """
-    try:
-        is_dirty = bool(_run_git_output(path, "status", "--porcelain"))
-        logger.debug("仓库工作区是否包含未提交改动: %s", is_dirty)
-        return is_dirty
-    except Exception as exc:
-        logger.warning("检查工作区未提交改动失败, 视为无改动: %s", exc)
-        return False
+    is_dirty = bool(_run_git_output(path, "status", "--porcelain"))
+    logger.debug("仓库工作区是否包含未提交改动: %s", is_dirty)
+    return is_dirty
 
 
 def _read_ahead_behind(path: Path, remote_ref: str) -> tuple[int, int]:
@@ -287,17 +287,13 @@ def list_commits(path: Path, limit: int | None = 100, fetch: bool = True) -> lis
         list[CommitInfo]: 提交信息列表
     """
     logger.info("获取提交列表中: %s", path)
-    try:
-        if not git_warpper.is_git_repo(path):
-            logger.warning("路径不是 Git 仓库, 返回空提交列表: %s", path)
-            return []
-    except Exception as exc:
-        logger.warning("检查 Git 仓库失败, 返回空提交列表: %s", exc)
+    if not git_warpper.is_git_repo(path):
+        logger.warning("路径不是 Git 仓库, 返回空提交列表: %s", path)
         return []
     if fetch:
         try:
             fetch_repository(path)
-        except Exception as exc:
+        except (RuntimeError, OSError) as exc:
             logger.warning("拉取远程引用失败, 继续获取提交列表: %s", exc)
     current_commit = _safe_git_value(git_warpper.get_current_commit, path)
     current_branch = _safe_git_value(git_warpper.get_current_branch, path)
@@ -370,12 +366,8 @@ def list_branches(path: Path, fetch: bool = True) -> list[BranchInfo]:
         list[BranchInfo]: 分支信息列表
     """
     logger.info("获取分支列表中: %s", path)
-    try:
-        if not git_warpper.is_git_repo(path):
-            logger.warning("路径不是 Git 仓库, 返回空分支列表: %s", path)
-            return []
-    except Exception as exc:
-        logger.warning("检查 Git 仓库失败, 返回空分支列表: %s", exc)
+    if not git_warpper.is_git_repo(path):
+        logger.warning("路径不是 Git 仓库, 返回空分支列表: %s", path)
         return []
     if fetch:
         fetch_repository(path)

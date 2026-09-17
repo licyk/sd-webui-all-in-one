@@ -280,3 +280,17 @@ def test_check_comfyui_manager_dependence_installs_only_when_needed(monkeypatch,
     monkeypatch.setattr(analyzer, "install_requirements", lambda **_kwargs: (_ for _ in ()).throw(RuntimeError("pip bad")))
     with pytest.raises(RuntimeError, match="pip bad"):
         analyzer.check_comfyui_manager_dependence(tmp_path)
+
+
+def test_comfyui_requires_list_skips_unreadable_requirement_file(tmp_path):
+    comfyui = tmp_path / "ComfyUI"
+    broken = comfyui / "custom_nodes" / "broken"
+    broken.mkdir(parents=True)
+    (comfyui / "requirements.txt").write_text("base-pkg==1.0\n", encoding="utf-8")
+    (broken / "requirements.txt").write_bytes(b"\xff\xfe\x00invalid")
+
+    env_data = analyzer.create_comfyui_environment_dict(comfyui)
+    analyzer.update_comfyui_component_requires_list(env_data)
+
+    assert env_data["ComfyUI"]["requires"] == ["base-pkg==1.0"]
+    assert env_data["broken"]["requires"] == []

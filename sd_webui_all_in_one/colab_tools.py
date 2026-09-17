@@ -49,7 +49,7 @@ def mount_google_drive(
             drive.mount(path.as_posix())
             logger.info("Google Dirve 挂载完成")
         except Exception as e:
-            logger.error("挂载 Google Drive 时出现问题: %e", e)
+            logger.error("挂载 Google Drive 时出现问题: %s", e)
             raise RuntimeError(f"挂载 Google Drive 时出现问题: {e}") from e
     else:
         logger.info("Google Drive 已挂载")
@@ -67,12 +67,13 @@ def get_colab_secret(
     """
     try:
         from google.colab import userdata  # pylint: disable=import-error  # type: ignore
-    except Exception as e:
+    except ImportError as e:
         logger.error("导入 Colab 工具失败, 无法获取 Colab Secret: %s", e)
         return None
 
     try:
         return userdata.get(key)
     except Exception as e:
-        logger.error("密钥 %s 不存在", e)
+        # Colab 会针对密钥不存在 / 未授权访问抛出不同的异常类型
+        logger.error("获取密钥 %s 失败: %s", key, e)
         return None

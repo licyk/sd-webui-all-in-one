@@ -182,7 +182,7 @@ def install_clip_package(
         importlib.metadata.version("clip")
         logger.info("CLIP 软件包已安装")
         return
-    except Exception:
+    except importlib.metadata.PackageNotFoundError:
         logger.info("安装 CLIP 软件包中")
 
     try:

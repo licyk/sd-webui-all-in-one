@@ -86,7 +86,7 @@ def _same_commit(current_commit: str | None, target_commit: str | None) -> bool:
 def _current_git_commit(path: Path) -> str | None:
     try:
         return git_warpper.get_current_commit(path)
-    except Exception as e:
+    except (ValueError, OSError) as e:
         logger.error("获取 '%s' 当前 Git commit 失败: %s", path, e)
         return None
 
@@ -156,12 +156,13 @@ def _build_git_restore_plan(
 
     dirty = repository_dirty(target_path, True)
     current_commit = _current_git_commit(target_path)
-    if dirty and not options.force_git_reset:
+    # dirty 为 None 表示无法确认工作区状态, 按存在未提交变更处理, 避免强制重置时丢失改动
+    if dirty is not False and not options.force_git_reset:
         return GitRestorePlanItem(
             name=name,
             path=target_path,
             action="blocked_dirty",
-            reason="目标仓库存在未提交变更, 需要先处理或启用强制恢复",
+            reason="目标仓库存在未提交变更, 需要先处理或启用强制恢复" if dirty else "无法检查目标仓库是否存在未提交变更, 需要先处理或启用强制恢复",
             target_commit=repo.commit,
             current_commit=current_commit,
             dirty=dirty,
@@ -226,10 +227,13 @@ def _sd_webui_extension_enabled(webui_path: Path, name: str) -> bool | None:
     config_path = webui_path / "config.json"
     try:
         data = json.loads(config_path.read_text(encoding="utf-8"))
-    except Exception as e:
+    except FileNotFoundError:
+        return None
+    except (OSError, ValueError) as e:
         logger.warning("读取扩展启用配置失败: %s: %s", config_path, e)
         return None
     if not isinstance(data, dict):
+        logger.warning("扩展启用配置内容不是 JSON 对象: %s", config_path)
         return None
 
     disable_all_extensions = data.get("disable_all_extensions", "none")
@@ -421,13 +425,18 @@ def restore_git_repository(
         return False
     logger.debug("恢复 Git 仓库: %s (目标: %s, commit: %s)", _repo_target_name(repo), target_path, repo.commit)
 
-    if repository_dirty(target_path, True) and not options.force_git_reset:
+    dirty = repository_dirty(target_path, True)
+    if dirty is None and not options.force_git_reset:
+        # 无法确认工作区状态时不能假设没有改动, 否则后续重置可能丢失用户的未提交变更
+        logger.error("无法检查目标仓库是否存在未提交变更, 中止恢复: %s", target_path)
+        raise RuntimeError(f"无法检查 '{target_path}' 是否存在未提交变更, 请先处理或使用强制恢复")
+    if dirty and not options.force_git_reset:
         logger.error("目标仓库存在未提交变更, 中止恢复: %s", target_path)
         raise RuntimeError(f"'{target_path}' 存在未提交变更, 请先处理或使用强制恢复")
 
     try:
         fetch_repository(target_path)
-    except Exception as e:
+    except (RuntimeError, OSError) as e:
         logger.warning("拉取 '%s' 远程引用失败, 将尝试使用本地提交恢复: %s", target_path, e)
 
     git_warpper.switch_commit(target_path, repo.commit)

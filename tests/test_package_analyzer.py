@@ -20,6 +20,7 @@ from sd_webui_all_in_one.package_analyzer.requirement_parser import (
     parse_requirement,
     evaluate_marker,
     parse_requirement_to_list,
+    read_packages_from_requirements_file,
 )
 from sd_webui_all_in_one.package_analyzer.version_utils import (
     version_string_is_canonical,
@@ -578,6 +579,28 @@ class TestParseRequirementToList:
         # 使用一个永远为 False 的 marker
         result = parse_requirement_to_list("pkg;python_version=='0.0'")
         assert result == []
+
+    def test_invalid_requirement_returns_empty(self):
+        assert parse_requirement_to_list("pkg>=") == []
+
+
+class TestReadPackagesFromRequirementsFile:
+    def test_reads_lines(self, tmp_path):
+        requirement = tmp_path / "requirements.txt"
+        requirement.write_text("torch==2.3.0\nnumpy\n", encoding="utf-8")
+
+        assert read_packages_from_requirements_file(requirement) == ["torch==2.3.0\n", "numpy\n"]
+
+    def test_missing_file_raises_instead_of_returning_empty(self, tmp_path):
+        with pytest.raises(FileNotFoundError):
+            read_packages_from_requirements_file(tmp_path / "missing.txt")
+
+    def test_invalid_encoding_raises(self, tmp_path):
+        requirement = tmp_path / "requirements.txt"
+        requirement.write_bytes(b"\xff\xfe\x00torch")
+
+        with pytest.raises(UnicodeDecodeError):
+            read_packages_from_requirements_file(requirement)
 
 
 # ============================================================================

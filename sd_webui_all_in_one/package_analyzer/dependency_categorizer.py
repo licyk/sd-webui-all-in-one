@@ -181,7 +181,7 @@ def get_categorized_dependencies(
                 if evaluate_marker(marker):
                     result["mandatory"].append(full_req_name)
 
-        except Exception as e:
+        except ValueError as e:
             logger.error("解析依赖 '%s' 失败: %s", req_str, e)
 
     return result

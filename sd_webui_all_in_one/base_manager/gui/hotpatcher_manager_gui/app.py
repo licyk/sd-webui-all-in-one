@@ -431,7 +431,9 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
             return
         try:
             config = self._read_editor_config()
-        except Exception:
+        except ValueError as exc:
+            # JSON 编辑器中的内容无效时以上次有效配置为基础同步表单, 并提示用户编辑器内容已被覆盖
+            self.set_status(f"JSON 配置无效, 已使用上次有效配置同步表单: {exc}")
             config = self.config_data
         try:
             config = self._apply_form_to_config(config)
@@ -622,7 +624,8 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         """将表单内容同步到 JSON 配置。"""
         try:
             config = self._read_editor_config()
-        except Exception:
+        except ValueError as exc:
+            self.set_status(f"JSON 配置无效, 已使用上次有效配置同步表单: {exc}")
             config = self.config_data
         try:
             config = self._apply_form_to_config(config)

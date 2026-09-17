@@ -90,8 +90,8 @@ def _compare_marker_versions(
         }
         fn = comparators.get(op)
         return fn() if fn else False
-    except Exception:
-        # 回退到字符串比较
+    except ValueError:
+        # 操作数不是合法的 PEP 440 版本号 (如 platform_release), 回退到字符串比较
         if op == "~=":
             # ~= X.Y 等价于 >= X.Y, == X.*
             # 字符串回退: 检查前缀匹配 + 字符串 >=
@@ -181,13 +181,13 @@ def parse_requirement_to_list(
             依赖声明字符串
 
     Returns:
-        list[str]: 解析后的依赖声明列表
+        list[str]: 解析后的依赖声明列表, 依赖声明无法解析或 marker 不适用于当前环境时返回空列表
     """
+    bindings = get_parse_bindings()
     try:
-        bindings = get_parse_bindings()
         name, _, version_specs, marker = parse_requirement(text, bindings)
-    except Exception as e:
-        logger.debug("解析失败: %s", e)
+    except ValueError as e:
+        logger.warning("无法解析依赖声明 '%s', 已跳过: %s", text, e)
         return []
 
     if not evaluate_marker(marker):
@@ -218,10 +218,12 @@ def read_packages_from_requirements_file(
 
     Returns:
         list[str]: 从文件中读取的 Python 软件包声明列表
+
+    Raises:
+        OSError:
+            文件不存在或无法读取时
+        UnicodeDecodeError:
+            文件不是有效的 UTF-8 编码时
     """
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            return f.readlines()
-    except Exception as e:
-        logger.debug("打开 %s 时出现错误: %s\n请检查文件是否出现损坏", file_path, e)
-        return []
+    with open(file_path, "r", encoding="utf-8") as f:
+        return f.readlines()

@@ -296,8 +296,10 @@ def test_git_main_branch_local_fallbacks(monkeypatch, tmp_path):
     monkeypatch.setattr(git_warpper, "is_git_repo", lambda _path: True)
     monkeypatch.setattr(git_warpper, "get_git_repo_remote_name", lambda _path: None)
 
-    monkeypatch.setattr(git_warpper, "run_cmd", lambda *_args, **_kwargs: "dev\nmaster\n")
+    commands = []
+    monkeypatch.setattr(git_warpper, "run_cmd", lambda command, **_kwargs: commands.append(command) or "dev\nmaster\n")
     assert git_warpper.get_git_repo_main_branch(repo) == ("master", None)
+    assert commands == [_git(repo, "for-each-ref", "--format=%(refname:short)", "refs/heads/")]
 
     monkeypatch.setattr(git_warpper, "run_cmd", lambda *_args, **_kwargs: "dev\nrelease\n")
     assert git_warpper.get_git_repo_main_branch(repo) == ("dev", None)

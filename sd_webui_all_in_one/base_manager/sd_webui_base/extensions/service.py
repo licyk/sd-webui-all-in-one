@@ -187,10 +187,19 @@ def set_sd_webui_extensions_status(
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             settings = json.load(f)
-    except Exception as e:
+    except FileNotFoundError:
+        settings = {}
+    except (OSError, ValueError) as e:
         logger.error("加载 '%s' 配置文件发生错误: %s", config_path, e)
         logger.warning("尝试重置 Stable Diffusion WebUI 配置文件")
         move_files(config_path, config_path.with_name(f"config_{uuid.uuid4()}.json"))
+        settings = {}
+
+    if not isinstance(settings, dict):
+        logger.error("'%s' 配置文件内容不是 JSON 对象", config_path)
+        logger.warning("尝试重置 Stable Diffusion WebUI 配置文件")
+        move_files(config_path, config_path.with_name(f"config_{uuid.uuid4()}.json"))
+        settings = {}
 
     disabled_extensions = settings.get("disabled_extensions")
     if not isinstance(disabled_extensions, list):
@@ -234,8 +243,14 @@ def list_sd_webui_extensions(
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             settings = json.load(f)
-    except Exception as e:
-        logger.debug("加载 '%s' 配置文件发生错误: %s", config_path, e)
+    except FileNotFoundError:
+        settings = {}
+    except (OSError, ValueError) as e:
+        logger.warning("加载 '%s' 配置文件发生错误, 扩展启用状态将按默认值显示: %s", config_path, e)
+        settings = {}
+
+    if not isinstance(settings, dict):
+        logger.warning("'%s' 配置文件内容不是 JSON 对象, 扩展启用状态将按默认值显示", config_path)
         settings = {}
 
     disabled_extensions = set(settings.get("disabled_extensions", []))

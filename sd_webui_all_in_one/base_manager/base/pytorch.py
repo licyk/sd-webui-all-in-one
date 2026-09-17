@@ -70,7 +70,7 @@ def get_pytorch_update_status() -> PyTorchUpdateStatus:
     resolved_dtype: PyTorchDeviceType = dtype or "all"
     try:
         latest_info = find_latest_pytorch_info(resolved_dtype)
-    except Exception as exc:
+    except ValueError as exc:
         return PyTorchUpdateStatus(
             installed=current_version is not None,
             current_version=current_version,
@@ -235,13 +235,13 @@ def install_pytorch_for_webui(
     if pytorch_package is not None:
         try:
             importlib.metadata.version("torch")
-        except Exception:
+        except importlib.metadata.PackageNotFoundError:
             need_install_pytorch = True
 
     if xformers_package is not None:
         try:
             importlib.metadata.version("xformers")
-        except Exception:
+        except importlib.metadata.PackageNotFoundError:
             need_install_xformers = True
 
     if not need_install_pytorch and not need_install_xformers:
@@ -315,11 +315,11 @@ def reinstall_pytorch(
     def _get_torch_and_xformers_ver() -> tuple[str | None, str | None]:
         try:
             _torch_ver = importlib.metadata.version("torch")
-        except Exception:
+        except importlib.metadata.PackageNotFoundError:
             _torch_ver = None
         try:
             _xformers_ver = importlib.metadata.version("xformers")
-        except Exception:
+        except importlib.metadata.PackageNotFoundError:
             _xformers_ver = None
         return (_torch_ver, _xformers_ver)
 
@@ -384,7 +384,7 @@ def reinstall_pytorch(
 
             try:
                 index = int(user_input)
-            except Exception:
+            except ValueError:
                 input_err = (1, None)
                 continue
 

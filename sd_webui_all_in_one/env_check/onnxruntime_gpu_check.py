@@ -90,8 +90,12 @@ def get_torch_version_worker(
             cudnn_ver = None
 
         result_queue.put((torch_ver, cuda_ver, cudnn_ver))
-    except Exception:
-        # 如果导入失败或发生异常, 返回空值
+    except ImportError as e:
+        logger.debug("Torch 未安装: %s", e)
+        result_queue.put((None, None, None))
+    except Exception as e:
+        # 导入 torch 可能因环境损坏抛出任意异常, 此时返回空值, 但需要提示用户
+        logger.warning("导入 Torch 时发生错误, 无法获取 Torch 版本信息: %s", e)
         result_queue.put((None, None, None))
 
 
@@ -124,7 +128,7 @@ def get_torch_cuda_ver_subprocess() -> tuple[str | None, str | None, str | None]
 
         process.join()
     except Exception as e:
-        logger.debug("通过子进程获取 Torch 版本失败: %s", e)
+        logger.warning("通过子进程获取 Torch 版本失败: %s", e)
     finally:
         if process.is_alive():
             process.terminate()  # 如果还活着, 强制终止
@@ -153,7 +157,12 @@ def get_torch_cuda_ver() -> tuple[str | None, str | None, str | None]:
             str(cuda_ver) if cuda_ver is not None else None,
             str(cudnn_ver) if cudnn_ver is not None else None,
         )
-    except Exception as _:
+    except ImportError as e:
+        logger.debug("Torch 未安装: %s", e)
+        return None, None, None
+    except Exception as e:
+        # 导入 torch 可能因环境损坏抛出任意异常, 此时返回空值, 但需要提示用户
+        logger.warning("导入 Torch 时发生错误, 无法获取 Torch 版本信息: %s", e)
         return None, None, None
 
 
@@ -192,7 +201,7 @@ def need_install_ort_ver(
             try:
                 logger.debug("检查 ONNXRuntime GPU 是否已安装")
                 _ = importlib.metadata.version("onnxruntime-gpu")
-            except Exception:
+            except importlib.metadata.PackageNotFoundError:
                 logger.debug("ONNXRuntime GPU 未安装, 使用默认版本进行安装")
                 # ONNXRuntime GPU 没有安装时
                 return OrtType.CU130
@@ -286,7 +295,7 @@ def need_install_ort_ver(
             try:
                 _ = importlib.metadata.version("onnxruntime-gpu")
                 return None
-            except Exception as _:
+            except importlib.metadata.PackageNotFoundError:
                 # ONNXRuntime GPU 没有安装时
                 return OrtType.CU130
 

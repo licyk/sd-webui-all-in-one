@@ -249,7 +249,7 @@ def switch_fooocus_branch(
 
             try:
                 index = int(user_input)
-            except Exception:
+            except ValueError:
                 input_err = (1, None)
                 continue
 

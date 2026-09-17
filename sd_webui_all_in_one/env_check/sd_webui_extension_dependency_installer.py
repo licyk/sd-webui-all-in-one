@@ -63,8 +63,8 @@ def run_extension_installer(
             cwd=sd_webui_base_path,
         )
         return True
-    except Exception as e:
-        logger.info("执行 %s 扩展依赖安装脚本时发生错误: %s", extension_dir.name, e)
+    except RuntimeError as e:
+        logger.error("执行 %s 扩展依赖安装脚本时发生错误: %s", extension_dir.name, e)
         traceback.print_exc()
         return False
 
@@ -92,8 +92,14 @@ def install_extension_requirements(
     try:
         with open(settings_file, "r", encoding="utf-8") as file:
             settings = json.load(file)
-    except Exception as e:
-        logger.debug("Stable Diffusion WebUI 配置文件无效: %s", e)
+    except FileNotFoundError:
+        logger.debug("Stable Diffusion WebUI 配置文件不存在: %s", settings_file)
+    except (OSError, ValueError) as e:
+        logger.warning("Stable Diffusion WebUI 配置文件无效, 将按所有扩展均已启用处理: %s", e)
+
+    if not isinstance(settings, dict):
+        logger.warning("Stable Diffusion WebUI 配置文件内容不是 JSON 对象, 将按所有扩展均已启用处理")
+        settings = {}
 
     disabled_extensions = set(settings.get("disabled_extensions", []))
     disable_all_extensions = settings.get("disable_all_extensions", "none")

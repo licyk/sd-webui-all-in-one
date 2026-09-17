@@ -120,7 +120,7 @@ def get_pytorch_for_invokeai() -> str:
     pytorch_ver = []
     try:
         invokeai_requires = importlib.metadata.requires("invokeai") or []
-    except Exception:
+    except importlib.metadata.PackageNotFoundError:
         invokeai_requires = []
 
     torch_added = False
@@ -155,7 +155,7 @@ def get_xformers_for_invokeai() -> str:
     pytorch_ver = []
     try:
         invokeai_requires = importlib.metadata.requires("invokeai") or []
-    except Exception as _:
+    except importlib.metadata.PackageNotFoundError as _:
         invokeai_requires = []
 
     for require in invokeai_requires:
@@ -431,11 +431,11 @@ def reinstall_invokeai_pytorch(
     def _get_torch_and_xformers_ver() -> tuple[str | None, str | None]:
         try:
             _torch_ver = importlib.metadata.version("torch")
-        except Exception:
+        except importlib.metadata.PackageNotFoundError:
             _torch_ver = None
         try:
             _xformers_ver = importlib.metadata.version("xformers")
-        except Exception:
+        except importlib.metadata.PackageNotFoundError:
             _xformers_ver = None
         return (_torch_ver, _xformers_ver)
 

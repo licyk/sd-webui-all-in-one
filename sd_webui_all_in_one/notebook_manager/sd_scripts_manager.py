@@ -363,12 +363,12 @@ class SDScriptsManager(BaseManager):
         logger.info("安装其他 Python 模块中")
         try:
             pip_install("lycoris-lora", "dadaptation", "open-clip-torch", "wandb", use_uv=use_uv)
-        except Exception as e:
+        except RuntimeError as e:
             logger.error("安装额外 Python 软件包时发生错误: %s", e)
         # 更新 urllib3
         try:
             pip_install("urllib3", "--upgrade", use_uv=use_uv)
-        except Exception as e:
+        except RuntimeError as e:
             logger.error("更新 urllib3 时发生错误: %s", e)
         check_numpy(use_uv=use_uv)
         self.get_model_from_list(path=model_path, model_list=model_list)

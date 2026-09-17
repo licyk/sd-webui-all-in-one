@@ -39,7 +39,7 @@ def get_windows_proxy_address() -> str | None:
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, proxy_config_path, 0, winreg.KEY_READ) as reg:
             proxy_enable: int = winreg.QueryValueEx(reg, "ProxyEnable")[0]
             proxy_server: str = winreg.QueryValueEx(reg, "ProxyServer")[0]
-    except Exception as e:
+    except OSError as e:
         logger.debug("获取 Windows 上的代理地址出现错误: %s", e)
         return None
 

@@ -252,8 +252,12 @@ class FooocusManager(BaseManager):
         try:
             with open(config, "r", encoding="utf8") as file:
                 data = json.load(file)
-        except Exception as e:
-            logger.warning("打开 Fooocus 配置文件时出现错误: %s", e)
+        except (OSError, ValueError) as e:
+            logger.warning("打开 Fooocus 配置文件时出现错误, 跳过预下载模型: %s", e)
+            data = {}
+
+        if not isinstance(data, dict):
+            logger.warning("Fooocus 配置文件内容不是 JSON 对象, 跳过预下载模型: %s", config)
             data = {}
 
         downloader_map = {

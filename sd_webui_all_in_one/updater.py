@@ -44,8 +44,10 @@ def check_and_update_uv(
         if PyWhlVersionComparison(ver) >= PyWhlVersionComparison(UV_MINIMUM_VER):
             return
         logger.info("更新 uv 中")
-    except Exception:
+    except importlib.metadata.PackageNotFoundError:
         logger.info("安装 uv 中")
+    except ValueError as e:
+        logger.warning("无法解析已安装的 uv 版本, 尝试重新安装 uv: %s", e)
 
     try:
         custom_env = get_auto_pypi_mirror_config(custom_env)
@@ -103,7 +105,11 @@ def get_aria2_ver() -> str | None:
     """
     try:
         aria2_output = run_cmd(["aria2c", "--version"], live=False).strip().splitlines()
-    except RuntimeError:
+    except FileNotFoundError:
+        logger.debug("未找到 aria2c 可执行文件")
+        return None
+    except (RuntimeError, OSError) as e:
+        logger.warning("获取 Aria2 版本失败: %s", e)
         return None
 
     for text in aria2_output:
@@ -119,18 +125,13 @@ def check_aria2_version() -> bool:
 
     Returns:
         bool:
-            当 Aria2 需要更新时则返回 True
-
-    Raises:
-        Exception:
-            无法获取 aria2 版本时在内部抛出并转换为需要更新。
+            当 Aria2 需要更新时则返回 True, 无法获取 Aria2 版本时也视为需要更新
     """
-    try:
-        ver = get_aria2_ver()
-        if ver is None:
-            raise Exception()
-        if PyWhlVersionComparison(ver) >= PyWhlVersionComparison(ARIA2_MINIMUM_VER):
-            return False
-    except Exception:
+    ver = get_aria2_ver()
+    if ver is None:
         return True
-    return True
+    try:
+        return PyWhlVersionComparison(ver) < PyWhlVersionComparison(ARIA2_MINIMUM_VER)
+    except ValueError as e:
+        logger.warning("无法解析 Aria2 版本 '%s', 视为需要更新: %s", ver, e)
+        return True

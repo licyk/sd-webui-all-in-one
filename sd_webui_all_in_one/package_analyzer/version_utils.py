@@ -139,7 +139,7 @@ def _try_parse_requirement(
     try:
         parser = RequirementParser(package.strip())
         return parser.parse()
-    except Exception:
+    except ValueError:
         return None
 
 

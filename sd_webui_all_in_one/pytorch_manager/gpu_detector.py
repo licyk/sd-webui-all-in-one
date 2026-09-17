@@ -9,12 +9,65 @@ from typing import (
     TypedDict,
 )
 
+from sd_webui_all_in_one.config import (
+    LOGGER_COLOR,
+    LOGGER_LEVEL,
+    LOGGER_NAME,
+)
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.package_analyzer import CommonVersionComparison
 from sd_webui_all_in_one.pytorch_manager.types import (
     PYTORCH_DEVICE_LIST,
     PyTorchDeviceType,
     PyTorchDeviceTypeCategory,
 )
+
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
+
+_DETECTION_OUTPUT_ERRORS = (ValueError, TypeError, KeyError, IndexError, AttributeError)
+"""解析硬件检测工具输出时可能出现的异常 (工具输出格式与预期不符)"""
+
+
+def _run_detection_command(
+    cmd: list[str],
+) -> str | None:
+    """执行硬件检测命令并返回标准输出
+
+    检测工具不存在是正常情况, 仅记录调试日志; 检测工具存在但执行失败时记录警告,
+    避免驱动异常等问题被静默当作 "没有显卡".
+
+    Args:
+        cmd (list[str]):
+            要执行的命令
+
+    Returns:
+        str | None:
+            命令的标准输出, 执行失败时返回 None
+    """
+    try:
+        return subprocess.run(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8",
+            text=True,
+            errors="ignore",
+            check=True,
+        ).stdout
+    except FileNotFoundError:
+        logger.debug("未找到硬件检测工具: %s", cmd[0])
+        return None
+    except subprocess.CalledProcessError as e:
+        logger.warning("执行硬件检测工具 %s 失败, 退出码: %s, 错误信息: %s", cmd[0], e.returncode, (e.stderr or "").strip())
+        return None
+    except (OSError, subprocess.SubprocessError) as e:
+        logger.warning("执行硬件检测工具 %s 失败: %s", cmd[0], e)
+        return None
 
 
 def get_cuda_comp_cap() -> float:
@@ -35,22 +88,13 @@ def get_cuda_comp_cap() -> float:
     Returns:
         float: CUDA 计算能力值
     """
+    output = _run_detection_command(["nvidia-smi", "--query-gpu=compute_cap", "--format=noheader,csv"])
+    if output is None:
+        return 0.0
     try:
-        return max(
-            map(
-                float,
-                subprocess.run(
-                    ["nvidia-smi", "--query-gpu=compute_cap", "--format=noheader,csv"],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    encoding="utf-8",
-                    text=True,
-                    errors="ignore",
-                    check=True,
-                ).stdout.splitlines(),
-            )
-        )
-    except Exception:
+        return max(map(float, output.splitlines()))
+    except ValueError as e:
+        logger.warning("解析 nvidia-smi 输出的 CUDA 计算能力失败: %s", e)
         return 0.0
 
 
@@ -60,25 +104,16 @@ def get_cuda_version() -> float:
     Returns:
         float: CUDA 支持的版本
     """
-    try:
-        # 获取 nvidia-smi 输出
-        output = subprocess.run(
-            ["nvidia-smi", "-q"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            encoding="utf-8",
-            text=True,
-            errors="ignore",
-            check=True,
-        ).stdout
-        match = re.search(r"CUDA Version\s+:\s+(\d+\.\d+)", output)
-        if not match:
-            match = re.search(r"CUDA UMD Version\s+:\s+(\d+\.\d+)", output)
-        if match:
-            return float(match.group(1))
+    output = _run_detection_command(["nvidia-smi", "-q"])
+    if output is None:
         return 0.0
-    except Exception:
-        return 0.0
+    match = re.search(r"CUDA Version\s+:\s+(\d+\.\d+)", output)
+    if not match:
+        match = re.search(r"CUDA UMD Version\s+:\s+(\d+\.\d+)", output)
+    if match:
+        return float(match.group(1))
+    logger.warning("未能从 nvidia-smi 输出中解析到 CUDA 版本")
+    return 0.0
 
 
 class GPUDeviceInfo(TypedDict, total=False):
@@ -235,21 +270,12 @@ def get_rocm_gfx_targets() -> list[str]:
     if not shutil.which("rocminfo"):
         return []
 
-    try:
-        result = subprocess.run(
-            ["rocminfo"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            encoding="utf-8",
-            text=True,
-            errors="ignore",
-            check=True,
-        )
-    except Exception:
+    output = _run_detection_command(["rocminfo"])
+    if output is None:
         return []
 
     targets: list[str] = []
-    for target in re.findall(r"\bgfx[0-9a-f]{3,4}\b", result.stdout.casefold()):
+    for target in re.findall(r"\bgfx[0-9a-f]{3,4}\b", output.casefold()):
         if target not in targets:
             targets.append(target)
     return targets
@@ -340,18 +366,13 @@ def get_windows_gpu_list() -> list[GPUDeviceInfo]:
         list[GPUDeviceInfo]:
             显卡信息列表
     """
+    cmd = ["powershell", "-NoLogo", "-NoProfile", "-Command", "Get-CimInstance Win32_VideoController | Select-Object Name, AdapterCompatibility, AdapterRAM, DriverVersion | ConvertTo-Json"]
+    output = _run_detection_command(cmd)
+    if output is None:
+        return []
+
     try:
-        cmd = ["powershell", "-NoLogo", "-NoProfile", "-Command", "Get-CimInstance Win32_VideoController | Select-Object Name, AdapterCompatibility, AdapterRAM, DriverVersion | ConvertTo-Json"]
-        result = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            encoding="utf-8",
-            text=True,
-            errors="ignore",
-            check=True,
-        )
-        gpus = json.loads(result.stdout)
+        gpus = json.loads(output)
         if isinstance(gpus, dict):
             gpus = [gpus]
 
@@ -369,7 +390,8 @@ def get_windows_gpu_list() -> list[GPUDeviceInfo]:
                 }
             )
         return gpu_info
-    except Exception as _:
+    except _DETECTION_OUTPUT_ERRORS as e:
+        logger.warning("解析 Windows 显卡信息失败: %s", e)
         return []
 
 
@@ -383,18 +405,12 @@ def get_lshw_gpus() -> list[GPUDeviceInfo]:
     if not shutil.which("lshw"):
         return []
 
+    output = _run_detection_command(["lshw", "-C", "display", "-json"])
+    if output is None:
+        return []
+
     try:
-        cmd = ["lshw", "-C", "display", "-json"]
-        result = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            encoding="utf-8",
-            text=True,
-            errors="ignore",
-            check=True,
-        )
-        data = json.loads(result.stdout)
+        data = json.loads(output)
         gpus = [data] if isinstance(data, dict) else data
 
         gpu_info: list[GPUDeviceInfo] = []
@@ -408,7 +424,8 @@ def get_lshw_gpus() -> list[GPUDeviceInfo]:
                 }
             )
         return gpu_info
-    except Exception:
+    except _DETECTION_OUTPUT_ERRORS as e:
+        logger.warning("解析 lshw 显卡信息失败: %s", e)
         return []
 
 
@@ -422,19 +439,13 @@ def get_nvidia_smi_gpus() -> list[GPUDeviceInfo]:
     if not shutil.which("nvidia-smi"):
         return []
 
+    output = _run_detection_command(["nvidia-smi", "--query-gpu=name,memory.total,driver_version", "--format=csv,noheader,nounits"])
+    if output is None:
+        return []
+
     try:
-        cmd = ["nvidia-smi", "--query-gpu=name,memory.total,driver_version", "--format=csv,noheader,nounits"]
-        result = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            encoding="utf-8",
-            text=True,
-            errors="ignore",
-            check=True,
-        )
         gpu_info: list[GPUDeviceInfo] = []
-        for line in result.stdout.strip().splitlines():
+        for line in output.strip().splitlines():
             if not line:
                 continue
             parts = [p.strip() for p in line.split(",")]
@@ -447,7 +458,8 @@ def get_nvidia_smi_gpus() -> list[GPUDeviceInfo]:
                 }
             )
         return gpu_info
-    except Exception:
+    except _DETECTION_OUTPUT_ERRORS as e:
+        logger.warning("解析 nvidia-smi 显卡信息失败: %s", e)
         return []
 
 
@@ -461,19 +473,13 @@ def get_lspci_gpus() -> list[GPUDeviceInfo]:
     if not shutil.which("lspci"):
         return []
 
+    output = _run_detection_command(["lspci", "-vmm", "-d", "::0300"])
+    if output is None:
+        return []
+
     try:
-        cmd = ["lspci", "-vmm", "-d", "::0300"]
-        result = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            encoding="utf-8",
-            text=True,
-            errors="ignore",
-            check=True,
-        )
         gpu_info: list[GPUDeviceInfo] = []
-        devices = result.stdout.strip().split("\n\n")
+        devices = output.strip().split("\n\n")
         for dev in devices:
             info = {line.split(":", 1)[0].strip(): line.split(":", 1)[1].strip() for line in dev.split("\n") if ":" in line}
             name = info.get("Device")
@@ -488,7 +494,8 @@ def get_lspci_gpus() -> list[GPUDeviceInfo]:
                 }
             )
         return gpu_info
-    except Exception:
+    except _DETECTION_OUTPUT_ERRORS as e:
+        logger.warning("解析 lspci 显卡信息失败: %s", e)
         return []
 
 

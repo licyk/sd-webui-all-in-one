@@ -152,7 +152,7 @@ class SDTrainerManager(BaseManager):
                 logger.info("重新安装 protobuf 成功")
                 return
             logger.info("protobuf 检查完成")
-        except Exception as e:
+        except (importlib.metadata.PackageNotFoundError, ValueError, RuntimeError) as e:
             traceback.print_exc()
             logger.error("检查 protobuf 时发送错误: %s", e)
 

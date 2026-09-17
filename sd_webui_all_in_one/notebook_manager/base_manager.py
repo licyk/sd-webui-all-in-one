@@ -246,7 +246,7 @@ class BaseManager:
                     url = model.get("url")
                     status = int(model.get("status", "1"))
                     filename = model.get("filename")
-            except Exception as e:
+            except (IndexError, TypeError, ValueError, AttributeError) as e:
                 logger.error("模型下载列表长度不合法: %s\n出现异常的列表:%s", e, model)
                 continue
             if url is None:

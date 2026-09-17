@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
+from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
 from sd_webui_all_in_one.base_manager.version_manager import (
     ManagedExtension,
@@ -19,6 +21,13 @@ from sd_webui_all_in_one.base_manager.snapshot import (
 from sd_webui_all_in_one.base_manager.environment_info import WebUiEnvironmentInfo, build_webui_environment_info
 
 from sd_webui_all_in_one.base_manager.sd_webui_base.extensions import list_sd_webui_extensions
+
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
 
 
 def check_sd_webui_updates(
@@ -88,7 +97,14 @@ def get_sd_webui_snapshot(
     try:
         with open(config_path, "r", encoding="utf-8") as f:
             settings = json.load(f)
-    except Exception:
+    except FileNotFoundError:
+        settings = {}
+    except (OSError, ValueError) as e:
+        logger.warning("读取 '%s' 配置文件失败, 快照中的扩展启用状态将按默认值记录: %s", config_path, e)
+        settings = {}
+
+    if not isinstance(settings, dict):
+        logger.warning("'%s' 配置文件内容不是 JSON 对象, 快照中的扩展启用状态将按默认值记录", config_path)
         settings = {}
 
     disabled_extensions = set(settings.get("disabled_extensions", []))

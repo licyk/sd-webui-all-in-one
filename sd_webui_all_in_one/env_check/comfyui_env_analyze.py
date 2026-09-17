@@ -274,7 +274,13 @@ def update_comfyui_component_requires_list(
         if requirement_path is None:
             continue
 
-        origin_requires = read_packages_from_requirements_file(requirement_path)
+        try:
+            origin_requires = read_packages_from_requirements_file(requirement_path)
+        except (OSError, UnicodeDecodeError) as e:
+            # 单个组件的依赖表损坏不应中断整个环境分析, 但需要让用户知道该组件未被检查
+            logger.error("读取 '%s' 的依赖表 '%s' 失败, 跳过该组件的依赖检查: %s", component_name, requirement_path, e)
+            continue
+
         requires = parse_requirement_list(origin_requires)
         update_comfyui_environment_dict(
             env_data=env_data,

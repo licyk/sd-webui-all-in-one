@@ -416,7 +416,7 @@ def _read_repository_head_from_git(path: Path) -> tuple[str | None, str | None, 
     """
     try:
         output = run_git_output(path, "show", "-s", "--format=%H%x1f%ci%x1f%s", "HEAD")
-    except Exception as exc:
+    except (RuntimeError, OSError) as exc:
         logger.error("执行 git show 读取 HEAD 失败: '%s'", exc)
         return None
 

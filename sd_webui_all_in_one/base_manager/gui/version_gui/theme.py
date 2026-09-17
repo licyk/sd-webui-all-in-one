@@ -32,7 +32,7 @@ def detect_system_theme() -> str:
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize") as key:
                 value, _value_type = winreg.QueryValueEx(key, "AppsUseLightTheme")
             return "light" if int(value) else "dark"
-        except Exception:
+        except (OSError, ValueError):
             return "light"
 
     if sys.platform == "darwin":
@@ -45,7 +45,7 @@ def detect_system_theme() -> str:
                 check=False,
             )
             return "dark" if "dark" in result.stdout.lower() else "light"
-        except Exception:
+        except (OSError, subprocess.SubprocessError):
             return "light"
 
     gtk_theme = os.environ.get("GTK_THEME", "").lower()
@@ -60,7 +60,7 @@ def detect_system_theme() -> str:
             check=False,
         )
         return "dark" if "dark" in result.stdout.lower() else "light"
-    except Exception:
+    except (OSError, subprocess.SubprocessError):
         return "light"
 
 

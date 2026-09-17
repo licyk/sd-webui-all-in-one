@@ -304,7 +304,7 @@ def switch_sd_webui_branch(
 
             try:
                 index = int(user_input)
-            except Exception:
+            except ValueError:
                 input_err = (1, None)
                 continue
 
