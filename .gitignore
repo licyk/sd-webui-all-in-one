@@ -9,3 +9,5 @@ launch.py
 /site
 .coverage
 .env
+uv.lock
+.venv/
