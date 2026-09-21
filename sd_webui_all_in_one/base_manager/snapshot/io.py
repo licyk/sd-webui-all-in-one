@@ -91,7 +91,8 @@ def comfyui_manager_snapshot_from_dict(data: JsonObject, snapshot_path: Path | N
                 continue
             info = raw_info if isinstance(raw_info, dict) else {}
             name = get_repo_name_from_url(url)
-            commit = info.get("hash") if isinstance(info.get("hash"), str) else None
+            raw_commit = info.get("hash")
+            commit = raw_commit if isinstance(raw_commit, str) else None
             disabled = info.get("disabled") if isinstance(info.get("disabled"), bool) else False
             logger.debug("解析 ComfyUI-Manager git 节点: %s (%s)", name, url)
             extensions.append(
