@@ -99,6 +99,7 @@ SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI
     
     |[AUTOMATIC1111/Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)|
     |---|
+    |[licyk/sd-webui-model-hub](https://github.com/licyk/sd-webui-model-hub)|
     |[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
     |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
     |[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|
@@ -124,6 +125,7 @@ SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI
     
     |[lllyasviel/Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)|
     |---|
+    |[licyk/sd-webui-model-hub](https://github.com/licyk/sd-webui-model-hub)|
     |[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
     |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
     |[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|
@@ -147,6 +149,7 @@ SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI
     
     |[Panchovix/Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)|
     |---|
+    |[licyk/sd-webui-model-hub](https://github.com/licyk/sd-webui-model-hub)|
     |[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
     |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
     |[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|
@@ -168,6 +171,7 @@ SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI
     
     |[Haoming02/Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic)|
     |---|
+    |[licyk/sd-webui-model-hub](https://github.com/licyk/sd-webui-model-hub)|
     |[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
     |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
     |[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|
@@ -187,6 +191,7 @@ SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI
     
     |[Haoming02/Stable-Diffusion-WebUI-Forge-Neo](https://github.com/Haoming02/sd-webui-forge-classic)|
     |---|
+    |[licyk/sd-webui-model-hub](https://github.com/licyk/sd-webui-model-hub)|
     |[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
     |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
     |[Haoming02/ADetailer-Neo](https://github.com/Haoming02/ADetailer-Neo)|
@@ -207,6 +212,7 @@ SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI
     
     |[lshqqytiger/Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)|
     |---|
+    |[licyk/sd-webui-model-hub](https://github.com/licyk/sd-webui-model-hub)|
     |[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
     |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
     |[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|
@@ -232,6 +238,7 @@ SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI
     
     |[vladmandic/SD.Next](https://github.com/vladmandic/sdnext)|
     |---|
+    |[licyk/sd-webui-model-hub](https://github.com/licyk/sd-webui-model-hub)|
     |[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
     |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
     |[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|

@@ -111,6 +111,11 @@ COMFYUI_CUSTOM_NODES_INFO_DICT: ComfyUiCustomNodeInfoList = [
         "url": "https://github.com/rgthree/rgthree-comfy",
         "save_dir": "custom_nodes/rgthree-comfy",
     },
+    {
+        "name": "comfyui-model-hub",
+        "url": "https://github.com/licyk/comfyui-model-hub",
+        "save_dir": "custom_nodes/comfyui-model-hub",
+    },
 ]
 
 COMFYUI_CUSTOM_NODE_LIST_PATH = "Comfy-Org/ComfyUI-Manager/refs/heads/main/custom-node-list.json"

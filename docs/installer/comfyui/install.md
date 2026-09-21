@@ -86,6 +86,7 @@
     |[licyk/ComfyUI-HakuImg](https://github.com/licyk/ComfyUI-HakuImg)|
     |[yolain/ComfyUI-Easy-Use](https://github.com/yolain/ComfyUI-Easy-Use)|
     |[rgthree/rgthree-comfy](https://github.com/rgthree/rgthree-comfy)|
+    |[licyk/comfyui-model-hub](https://github.com/licyk/comfyui-model-hub)|
     
 
 !!! note

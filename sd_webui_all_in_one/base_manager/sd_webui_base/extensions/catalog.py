@@ -28,6 +28,23 @@ SDWebUiExtensionInfoList = list[SDWebUiExtensionInfo]
 
 SD_WEBUI_EXTENSION_INFO_DICT: SDWebUiExtensionInfoList = [
     {
+        "name": "sd-webui-model-hub",
+        "url": "https://github.com/licyk/sd-webui-model-hub",
+        "save_dir": "extensions/sd-webui-model-hub",
+        "supported_branch": [
+            "sd_webui_main",
+            "sd_webui_dev",
+            "sd_webui_forge",
+            "sd_webui_reforge_main",
+            "sd_webui_reforge_dev",
+            "sd_webui_forge_classic",
+            "sd_webui_forge_neo",
+            "sd_webui_amdgpu",
+            "sd_next_main",
+            "sd_next_dev",
+        ],
+    },
+    {
         "name": "ultimate-upscale-for-automatic1111",
         "url": "https://github.com/Coyote-A/ultimate-upscale-for-automatic1111",
         "save_dir": "extensions/ultimate-upscale-for-automatic1111",
