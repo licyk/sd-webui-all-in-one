@@ -1,7 +1,10 @@
+import argparse
 import asyncio
 import sys
 import types
 from types import SimpleNamespace
+
+import pytest
 
 from sd_webui_all_in_one.base_manager import run_invokeai as invokeai_launcher
 
@@ -176,3 +179,46 @@ def test_invokeai_launcher_falls_back_after_failed_run(monkeypatch):
 
     assert run_calls == ["run", "run"]
     assert uvicorn_module.Server.serve is original_serve
+
+
+@pytest.mark.parametrize("failure_stage", ["parse", "run"])
+@pytest.mark.parametrize("native_option", [False, True])
+def test_invokeai_launcher_fallback_cleans_patch_arguments(monkeypatch, failure_stage, native_option):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--root")
+    if native_option:
+        parser.add_argument("--disable-auto-launch", action="store_true")
+    argv = ["run_invokeai.py", "--disable-auto-launch", "--root", "models", "--disable-auto-launch"]
+    monkeypatch.setattr(sys, "argv", argv.copy())
+    parsed_fallback = []
+    run_calls = []
+
+    class FakeInvokeAIArgs:
+        args = None
+        did_parse = False
+
+        @classmethod
+        def parse_args(cls):
+            if failure_stage == "parse":
+                raise RuntimeError("patched argument parsing failed")
+            cls.args = arg_parser_module._parser.parse_args()
+            cls.did_parse = True
+            return cls.args
+
+    def run_app():
+        run_calls.append("run")
+        if failure_stage == "run" and len(run_calls) == 1:
+            raise RuntimeError("patched startup failed")
+        assert uvicorn_module.Server.serve is original_serve
+        assert FakeInvokeAIArgs.args is None
+        assert FakeInvokeAIArgs.did_parse is False
+        parsed_fallback.append(arg_parser_module._parser.parse_args())
+
+    uvicorn_module, arg_parser_module, original_serve = _install_fake_invokeai_modules(monkeypatch, parser, FakeInvokeAIArgs, run_app)
+
+    invokeai_launcher.main()
+
+    assert len(run_calls) == (1 if failure_stage == "parse" else 2)
+    assert len(parsed_fallback) == 1
+    assert parsed_fallback[0].root == "models"
+    assert sys.argv == (argv if native_option else ["run_invokeai.py", "--root", "models"])

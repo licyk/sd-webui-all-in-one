@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import socket
+import sys
 import threading
 import time
 import traceback
@@ -98,6 +99,8 @@ def main() -> None:
         InvokeAIArgs.did_parse = False
 
         if not run_successful:
+            if not _parser_has_option(original_parser, "--disable-auto-launch"):
+                sys.argv[1:] = [arg for arg in sys.argv[1:] if arg != "--disable-auto-launch"]
             logger.warning("检测到异常, 尝试使用原始配置重新启动")
             run_app()
 
