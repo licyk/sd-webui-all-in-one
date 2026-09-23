@@ -10,6 +10,7 @@ from sd_webui_all_in_one.base_manager.base import (
     apply_git_base_config_and_github_mirror,
     apply_git_config_global_to_process,
     pre_download_model_for_webui,
+    EnvCheckName,
     EnvCheckTask,
     run_env_check_tasks,
 )
@@ -43,6 +44,17 @@ from sd_webui_all_in_one.config import (
 from sd_webui_all_in_one.base_manager.invokeai_base.components import _ensure_invokeai_package_installed, install_invokeai_component, install_pypatchmatch
 from sd_webui_all_in_one.base_manager.invokeai_base.model_management import import_model_to_invokeai
 from sd_webui_all_in_one.base_manager.invokeai_base.shared import logger
+
+
+class InvokeAIEnvCheckName(EnvCheckName):
+    """InvokeAI 环境检查任务名称。"""
+
+    INVOKEAI_PACKAGE = "invokeai-package"
+    INVOKEAI_PACKAGE_DEPENDENCIES = "invokeai-package-dependencies"
+    TORCH_LIBOMP = "torch-libomp"
+    TORCH_VERSION = "torch-version"
+    ONNXRUNTIME_GPU = "onnxruntime-gpu"
+
 
 INVOKEAI_RUNNER_SCRIPT = ROOT_PATH / "base_manager" / "run_invokeai.py"
 
@@ -268,12 +280,14 @@ def check_invokeai_env(
     )
 
     # 检查任务列表
-    tasks = [
-        EnvCheckTask("invokeai-package", _ensure_invokeai_package_installed, {"use_uv": use_uv, "custom_env": custom_env}),
-        EnvCheckTask("invokeai-package-dependencies", py_package_metadata_dependency_checker, {"package_name": "invokeai", "name": "InvokeAI", "use_uv": use_uv, "custom_env": custom_env}),
-        EnvCheckTask("torch-libomp", fix_torch_libomp, {}),
-        EnvCheckTask("torch-version", check_torch_version, {}),
-        EnvCheckTask("onnxruntime-gpu", check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
+    tasks: list[EnvCheckTask[InvokeAIEnvCheckName]] = [
+        EnvCheckTask(InvokeAIEnvCheckName.INVOKEAI_PACKAGE, _ensure_invokeai_package_installed, {"use_uv": use_uv, "custom_env": custom_env}),
+        EnvCheckTask(
+            InvokeAIEnvCheckName.INVOKEAI_PACKAGE_DEPENDENCIES, py_package_metadata_dependency_checker, {"package_name": "invokeai", "name": "InvokeAI", "use_uv": use_uv, "custom_env": custom_env}
+        ),
+        EnvCheckTask(InvokeAIEnvCheckName.TORCH_LIBOMP, fix_torch_libomp, {}),
+        EnvCheckTask(InvokeAIEnvCheckName.TORCH_VERSION, check_torch_version, {}),
+        EnvCheckTask(InvokeAIEnvCheckName.ONNXRUNTIME_GPU, check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
     ]
     run_env_check_tasks(
         tasks,

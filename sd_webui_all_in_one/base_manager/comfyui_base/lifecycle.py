@@ -12,6 +12,7 @@ from sd_webui_all_in_one.base_manager.base import (
     install_pytorch_for_webui,
     pre_download_model_for_webui,
     prepare_pytorch_install_info,
+    EnvCheckName,
     EnvCheckTask,
     run_env_check_tasks,
 )
@@ -37,6 +38,17 @@ from sd_webui_all_in_one.env_check import (
 from sd_webui_all_in_one.base_manager.comfyui_base.catalog import COMFYUI_CONFIG_PATH, COMFYUI_REPO_URL
 from sd_webui_all_in_one.base_manager.comfyui_base.extensions import COMFYUI_CUSTOM_NODES_INFO_DICT
 from sd_webui_all_in_one.base_manager.comfyui_base.shared import logger
+
+
+class ComfyUIEnvCheckName(EnvCheckName):
+    """ComfyUI 环境检查任务名称。"""
+
+    PYTHON_DEPENDENCIES = "python-dependencies"
+    COMFYUI_MANAGER_DEPENDENCIES = "comfyui-manager-dependencies"
+    COMFYUI_CONFLICTS = "comfyui-conflicts"
+    TORCH_LIBOMP = "torch-libomp"
+    TORCH_VERSION = "torch-version"
+    ONNXRUNTIME_GPU = "onnxruntime-gpu"
 
 
 def install_comfyui_config(
@@ -264,11 +276,11 @@ def check_comfyui_env(
     apply_git_config_global_to_process(custom_env)
 
     # 检查任务列表
-    tasks = [
-        EnvCheckTask("python-dependencies", py_dependency_checker, {"requirement_path": req_path, "name": "ComfyUI", "use_uv": use_uv, "custom_env": custom_env}),
-        EnvCheckTask("comfyui-manager-dependencies", check_comfyui_manager_dependence, {"comfyui_root_path": comfyui_path, "use_uv": use_uv, "custom_env": custom_env}),
+    tasks: list[EnvCheckTask[ComfyUIEnvCheckName]] = [
+        EnvCheckTask(ComfyUIEnvCheckName.PYTHON_DEPENDENCIES, py_dependency_checker, {"requirement_path": req_path, "name": "ComfyUI", "use_uv": use_uv, "custom_env": custom_env}),
+        EnvCheckTask(ComfyUIEnvCheckName.COMFYUI_MANAGER_DEPENDENCIES, check_comfyui_manager_dependence, {"comfyui_root_path": comfyui_path, "use_uv": use_uv, "custom_env": custom_env}),
         EnvCheckTask(
-            "comfyui-conflicts",
+            ComfyUIEnvCheckName.COMFYUI_CONFLICTS,
             comfyui_conflict_analyzer,
             {
                 "comfyui_root_path": comfyui_path,
@@ -278,9 +290,9 @@ def check_comfyui_env(
                 "custom_env": custom_env,
             },
         ),
-        EnvCheckTask("torch-libomp", fix_torch_libomp, {}),
-        EnvCheckTask("torch-version", check_torch_version, {}),
-        EnvCheckTask("onnxruntime-gpu", check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
+        EnvCheckTask(ComfyUIEnvCheckName.TORCH_LIBOMP, fix_torch_libomp, {}),
+        EnvCheckTask(ComfyUIEnvCheckName.TORCH_VERSION, check_torch_version, {}),
+        EnvCheckTask(ComfyUIEnvCheckName.ONNXRUNTIME_GPU, check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
     ]
     run_env_check_tasks(
         tasks,

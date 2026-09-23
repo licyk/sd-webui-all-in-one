@@ -25,6 +25,7 @@ logger = get_logger(
 
 
 from sd_webui_all_in_one.base_manager.base.models import (
+    CheckNameT,
     CpuEnvironmentInfo,
     EnvironmentCollectionError,
     EnvCheckTask,
@@ -116,19 +117,19 @@ def collect_host_environment_info() -> HostEnvironmentInfo:
 
 
 def select_env_check_tasks(
-    tasks: list[EnvCheckTask],
+    tasks: list[EnvCheckTask[CheckNameT]],
     include_checks: list[str] | None = None,
     exclude_checks: list[str] | None = None,
-) -> list[EnvCheckTask]:
+) -> list[EnvCheckTask[CheckNameT]]:
     """根据包含和排除列表筛选环境检查任务。
 
     Args:
-        tasks (list[EnvCheckTask]): 环境检查任务列表。
+        tasks (list[EnvCheckTask[CheckNameT]]): 环境检查任务列表。
         include_checks (list[str] | None): 仅执行的检查任务名称。
         exclude_checks (list[str] | None): 跳过的检查任务名称。
 
     Returns:
-        list[EnvCheckTask]: 筛选后的环境检查任务列表。
+        list[EnvCheckTask[CheckNameT]]: 筛选后的环境检查任务列表。
 
     Raises:
         ValueError: 检查任务名称未知时抛出。
@@ -149,7 +150,7 @@ def select_env_check_tasks(
 
 
 def run_env_check_tasks(
-    tasks: list[EnvCheckTask],
+    tasks: list[EnvCheckTask[CheckNameT]],
     *,
     include_checks: list[str] | None = None,
     exclude_checks: list[str] | None = None,
@@ -158,7 +159,7 @@ def run_env_check_tasks(
     """运行命名环境检查任务并聚合异常。
 
     Args:
-        tasks (list[EnvCheckTask]): 环境检查任务列表。
+        tasks (list[EnvCheckTask[CheckNameT]]): 环境检查任务列表。
         include_checks (list[str] | None): 仅执行的检查任务名称。
         exclude_checks (list[str] | None): 跳过的检查任务名称。
         error_message (str): 聚合异常消息。

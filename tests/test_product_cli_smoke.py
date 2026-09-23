@@ -1,4 +1,5 @@
 import argparse
+import sys
 
 import pytest
 
@@ -19,6 +20,63 @@ def _parser(*register_funcs):
     for register in register_funcs:
         register(subparsers)
     return parser
+
+
+@pytest.mark.parametrize(
+    ("module", "product"),
+    [
+        (sd_webui_cli, "sd_webui"),
+        (comfyui_cli, "comfyui"),
+        (fooocus_cli, "fooocus"),
+        (invokeai_cli, "invokeai"),
+        (sd_trainer_cli, "sd_trainer"),
+        (sd_scripts_cli, "sd_scripts"),
+        (qwen_tts_webui_cli, "qwen_tts_webui"),
+    ],
+)
+def test_env_check_choices_match_runtime_tasks(monkeypatch, tmp_path, capsys, module, product):
+    check_env = getattr(module, f"check_{product}_env")
+    implementation = sys.modules[check_env.__module__]
+    tasks = []
+    monkeypatch.setattr(implementation, "apply_git_base_config_and_github_mirror", lambda **kwargs: kwargs["origin_env"])
+    monkeypatch.setattr(implementation, "apply_git_config_global_to_process", lambda env: None)
+    monkeypatch.setattr(implementation, "get_pypi_mirror_config", lambda **kwargs: kwargs["origin_env"])
+    monkeypatch.setattr(implementation, "run_env_check_tasks", lambda selected_tasks, **kwargs: tasks.extend(selected_tasks))
+    (tmp_path / "requirements.txt").write_text("", encoding="utf-8")
+    if product == "invokeai":
+        check_env()
+    else:
+        check_env(tmp_path)
+
+    task_names = [task.name.value for task in tasks]
+    assert task_names
+    parser = _parser(getattr(module, f"register_{product}"))
+    root = product.replace("_", "-")
+    commands = ["check-env"] if product == "sd_scripts" else ["check-env", "launch"]
+    foreign_name = "python-dependencies" if product == "invokeai" else "invokeai-package"
+    for command in commands:
+        args = parser.parse_args([root, command])
+        assert args.include_checks is None
+        assert args.exclude_checks is None
+        with pytest.raises(SystemExit) as exc:
+            parser.parse_args([root, command, "--help"])
+        assert exc.value.code == 0
+        help_text = capsys.readouterr().out
+        choices_text = "{" + ",".join(task_names) + "}"
+        assert f"--include-check {choices_text}" in help_text
+        assert f"--exclude-check {choices_text}" in help_text
+
+        for flag, dest in [("--include-check", "include_checks"), ("--exclude-check", "exclude_checks")]:
+            arguments = [root, command]
+            for name in task_names:
+                arguments.extend([flag, name])
+            args = parser.parse_args(arguments)
+            assert getattr(args, dest) == task_names
+            for invalid_name in ["unknown-check", foreign_name]:
+                with pytest.raises(SystemExit) as exc:
+                    parser.parse_args([root, command, flag, invalid_name])
+                assert exc.value.code == 2
+                assert "invalid choice" in capsys.readouterr().err
 
 
 def test_apply_auto_mirror_uses_official_sources(monkeypatch):
@@ -613,7 +671,7 @@ def test_product_cli_launch_and_gui_smoke(monkeypatch, tmp_path, module, registe
             "--include-check",
             "torch-version",
             "--exclude-check",
-            "onnxruntime-gpu",
+            "torch-libomp",
             "--no-check-env",
             "--no-hotpatcher",
         ]
@@ -624,7 +682,7 @@ def test_product_cli_launch_and_gui_smoke(monkeypatch, tmp_path, module, registe
     assert calls[-1][1]["launch_args"] == "--listen --port 7861"
     assert calls[-1][1]["use_uv"] is False
     assert calls[-1][1]["include_checks"] == ["torch-version"]
-    assert calls[-1][1]["exclude_checks"] == ["onnxruntime-gpu"]
+    assert calls[-1][1]["exclude_checks"] == ["torch-libomp"]
     assert calls[-1][1]["check_launch_env"] is False
     assert calls[-1][1]["enable_hotpatcher"] is False
 

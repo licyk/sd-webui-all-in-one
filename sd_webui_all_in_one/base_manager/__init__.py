@@ -3,6 +3,7 @@
 from sd_webui_all_in_one.base_manager.base import (
     CpuEnvironmentInfo,
     EnvironmentCollectionError,
+    EnvCheckName,
     EnvCheckTask,
     GpuEnvironmentInfo,
     HostEnvironmentInfo,
@@ -353,6 +354,7 @@ __all__ = [
     # base.py - 基础功能模块
     "CpuEnvironmentInfo",
     "EnvironmentCollectionError",
+    "EnvCheckName",
     "EnvCheckTask",
     "GpuEnvironmentInfo",
     "HostEnvironmentInfo",

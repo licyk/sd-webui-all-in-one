@@ -14,6 +14,7 @@ from sd_webui_all_in_one.base_manager.base import (
     install_pytorch_for_webui,
     pre_download_model_for_webui,
     prepare_pytorch_install_info,
+    EnvCheckName,
     EnvCheckTask,
     run_env_check_tasks,
 )
@@ -34,6 +35,17 @@ from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 
 from sd_webui_all_in_one.base_manager.sd_scripts_base.catalog import SDScriptsBranchType, SD_SCRIPTS_BRANCH_INFO_DICT, SD_SCRIPTS_BRANCH_LIST
 from sd_webui_all_in_one.base_manager.sd_scripts_base.shared import logger
+
+
+class SDScriptsEnvCheckName(EnvCheckName):
+    """SD Scripts 环境检查任务名称。"""
+
+    PYTHON_DEPENDENCIES = "python-dependencies"
+    TORCH_LIBOMP = "torch-libomp"
+    TORCH_VERSION = "torch-version"
+    ONNXRUNTIME_GPU = "onnxruntime-gpu"
+    NUMPY = "numpy"
+
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -304,12 +316,12 @@ def check_sd_scripts_env(
                 )
 
         # 检查任务列表
-        tasks = [
-            EnvCheckTask("python-dependencies", py_dependency_checker, {"requirement_path": requirements_path, "name": "SD Scripts", "use_uv": use_uv, "custom_env": custom_env}),
-            EnvCheckTask("torch-libomp", fix_torch_libomp, {}),
-            EnvCheckTask("torch-version", check_torch_version, {}),
-            EnvCheckTask("onnxruntime-gpu", check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": False, "custom_env": custom_env}),
-            EnvCheckTask("numpy", check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
+        tasks: list[EnvCheckTask[SDScriptsEnvCheckName]] = [
+            EnvCheckTask(SDScriptsEnvCheckName.PYTHON_DEPENDENCIES, py_dependency_checker, {"requirement_path": requirements_path, "name": "SD Scripts", "use_uv": use_uv, "custom_env": custom_env}),
+            EnvCheckTask(SDScriptsEnvCheckName.TORCH_LIBOMP, fix_torch_libomp, {}),
+            EnvCheckTask(SDScriptsEnvCheckName.TORCH_VERSION, check_torch_version, {}),
+            EnvCheckTask(SDScriptsEnvCheckName.ONNXRUNTIME_GPU, check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": False, "custom_env": custom_env}),
+            EnvCheckTask(SDScriptsEnvCheckName.NUMPY, check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
         ]
         run_env_check_tasks(
             tasks,

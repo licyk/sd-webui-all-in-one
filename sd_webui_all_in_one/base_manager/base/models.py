@@ -1,8 +1,9 @@
 """共享管理类型。"""
 
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Generic, TypeVar
 
 from sd_webui_all_in_one.pytorch_manager import (
     PyTorchDeviceType,
@@ -21,11 +22,22 @@ logger = get_logger(
 )
 
 
+class EnvCheckName(str, Enum):
+    """兼容字符串参数的环境检查名称枚举基类。"""
+
+    def __str__(self) -> str:
+        """返回用于命令行帮助和日志的检查名称。"""
+        return self.value
+
+
+CheckNameT = TypeVar("CheckNameT", bound=EnvCheckName)
+
+
 @dataclass(frozen=True)
-class EnvCheckTask:
+class EnvCheckTask(Generic[CheckNameT]):
     """命名环境检查任务。"""
 
-    name: str
+    name: CheckNameT
     """稳定的检查任务名称。"""
 
     func: Callable[..., Any]

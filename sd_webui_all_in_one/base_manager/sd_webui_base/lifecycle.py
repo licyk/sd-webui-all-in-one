@@ -24,6 +24,7 @@ from sd_webui_all_in_one.base_manager.base import (
     clone_repo,
     install_pytorch_for_webui,
     pre_download_model_for_webui,
+    EnvCheckName,
     EnvCheckTask,
     run_env_check_tasks,
 )
@@ -41,6 +42,19 @@ from sd_webui_all_in_one.pkg_manager import pip_install
 from sd_webui_all_in_one.base_manager.sd_webui_base.catalog import SDWebUiBranchType, SD_WEBUI_BRANCH_INFO_DICT, SD_WEBUI_BRANCH_LIST, SD_WEBUI_CONFIG_PATH
 from sd_webui_all_in_one.base_manager.sd_webui_base.extensions import SDWebUiExtensionInfoList, SD_WEBUI_EXTENSION_INFO_DICT
 from sd_webui_all_in_one.base_manager.sd_webui_base.shared import logger
+
+
+class SDWebUiEnvCheckName(EnvCheckName):
+    """Stable Diffusion WebUI 环境检查任务名称。"""
+
+    SD_WEBUI_INVALID_REPO = "sd-webui-invalid-repo"
+    FORGE_NEO_ALERT = "forge-neo-alert"
+    PYTHON_DEPENDENCIES = "python-dependencies"
+    SD_WEBUI_EXTENSION_DEPENDENCIES = "sd-webui-extension-dependencies"
+    TORCH_LIBOMP = "torch-libomp"
+    TORCH_VERSION = "torch-version"
+    ONNXRUNTIME_GPU = "onnxruntime-gpu"
+
 
 SD_WEBUI_REPOSITORY_INFO_DICT: SDWebUiExtensionInfoList = [
     {
@@ -459,14 +473,16 @@ def check_sd_webui_env(
     )
 
     # 检查任务列表
-    tasks = [
-        EnvCheckTask("sd-webui-invalid-repo", fix_stable_diffusion_invaild_repo_url, {"sd_webui_path": sd_webui_path, "custom_env": custom_env}),
-        EnvCheckTask("forge-neo-alert", fix_forge_neo_alert, {"sd_webui_path": sd_webui_path}),
-        EnvCheckTask("python-dependencies", py_dependency_checker, {"requirement_path": active_req_path, "name": "Stable Diffusion WebUI", "use_uv": use_uv, "custom_env": custom_env}),
-        EnvCheckTask("sd-webui-extension-dependencies", install_extension_requirements, {"sd_webui_path": sd_webui_path, "custom_env": custom_env}),
-        EnvCheckTask("torch-libomp", fix_torch_libomp, {}),
-        EnvCheckTask("torch-version", check_torch_version, {}),
-        EnvCheckTask("onnxruntime-gpu", check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
+    tasks: list[EnvCheckTask[SDWebUiEnvCheckName]] = [
+        EnvCheckTask(SDWebUiEnvCheckName.SD_WEBUI_INVALID_REPO, fix_stable_diffusion_invaild_repo_url, {"sd_webui_path": sd_webui_path, "custom_env": custom_env}),
+        EnvCheckTask(SDWebUiEnvCheckName.FORGE_NEO_ALERT, fix_forge_neo_alert, {"sd_webui_path": sd_webui_path}),
+        EnvCheckTask(
+            SDWebUiEnvCheckName.PYTHON_DEPENDENCIES, py_dependency_checker, {"requirement_path": active_req_path, "name": "Stable Diffusion WebUI", "use_uv": use_uv, "custom_env": custom_env}
+        ),
+        EnvCheckTask(SDWebUiEnvCheckName.SD_WEBUI_EXTENSION_DEPENDENCIES, install_extension_requirements, {"sd_webui_path": sd_webui_path, "custom_env": custom_env}),
+        EnvCheckTask(SDWebUiEnvCheckName.TORCH_LIBOMP, fix_torch_libomp, {}),
+        EnvCheckTask(SDWebUiEnvCheckName.TORCH_VERSION, check_torch_version, {}),
+        EnvCheckTask(SDWebUiEnvCheckName.ONNXRUNTIME_GPU, check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
     ]
     run_env_check_tasks(
         tasks,

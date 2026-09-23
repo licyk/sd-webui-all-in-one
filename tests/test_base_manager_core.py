@@ -146,6 +146,11 @@ def test_pre_download_model_for_webui_skips_existing_or_missing_and_downloads_em
 
 
 def test_run_env_check_tasks_filters_and_aggregates_errors():
+    class CheckName(base_module.EnvCheckName):
+        ALPHA = "alpha"
+        BETA = "beta"
+        FAIL = "fail"
+
     calls = []
 
     def record(name):
@@ -155,10 +160,10 @@ def test_run_env_check_tasks_filters_and_aggregates_errors():
         calls.append("fail")
         raise RuntimeError("boom")
 
-    tasks = [
-        base_module.EnvCheckTask("alpha", record, {"name": "alpha"}),
-        base_module.EnvCheckTask("beta", record, {"name": "beta"}),
-        base_module.EnvCheckTask("fail", fail, {}),
+    tasks: list[base_module.EnvCheckTask[CheckName]] = [
+        base_module.EnvCheckTask(CheckName.ALPHA, record, {"name": "alpha"}),
+        base_module.EnvCheckTask(CheckName.BETA, record, {"name": "beta"}),
+        base_module.EnvCheckTask(CheckName.FAIL, fail, {}),
     ]
 
     base_module.run_env_check_tasks(tasks, include_checks=["alpha", "fail"], exclude_checks=["fail"], error_message="failed")

@@ -48,7 +48,7 @@ from sd_webui_all_in_one.cli_manager.auto_mirror import (
     add_auto_mirror_argument,
     with_auto_mirror,
 )
-from sd_webui_all_in_one.cli_manager.env_check import add_env_check_selection_arguments
+from sd_webui_all_in_one.base_manager.sd_trainer_base.lifecycle import SDTrainerEnvCheckName
 from sd_webui_all_in_one.cli_manager.environment_info import output_environment_info
 from sd_webui_all_in_one.cli_manager.snapshot import add_pre_operation_snapshot_arguments, create_pre_operation_snapshot, output_snapshot
 from sd_webui_all_in_one.cli_manager.snapshot_restore import (
@@ -868,7 +868,22 @@ def register_sd_trainer(
     check_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     check_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     check_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
-    add_env_check_selection_arguments(check_p)
+    check_p.add_argument(
+        "--include-check",
+        action="append",
+        default=None,
+        dest="include_checks",
+        choices=list(SDTrainerEnvCheckName),
+        help="仅执行指定环境检查任务, 可重复传入",
+    )
+    check_p.add_argument(
+        "--exclude-check",
+        action="append",
+        default=None,
+        dest="exclude_checks",
+        choices=list(SDTrainerEnvCheckName),
+        help="跳过指定环境检查任务, 可重复传入",
+    )
     add_auto_mirror_argument(check_p)
     check_p.set_defaults(
         func=with_auto_mirror(
@@ -921,7 +936,22 @@ def register_sd_trainer(
     launch_p.add_argument("--no-cuda-malloc", action="store_false", dest="use_cuda_malloc", help="禁用 CUDA Malloc 优化")
     launch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
     launch_p.add_argument("--no-check-env", action="store_false", dest="check_env", help="不检查运行环境完整性")
-    add_env_check_selection_arguments(launch_p)
+    launch_p.add_argument(
+        "--include-check",
+        action="append",
+        default=None,
+        dest="include_checks",
+        choices=list(SDTrainerEnvCheckName),
+        help="仅执行指定环境检查任务, 可重复传入",
+    )
+    launch_p.add_argument(
+        "--exclude-check",
+        action="append",
+        default=None,
+        dest="exclude_checks",
+        choices=list(SDTrainerEnvCheckName),
+        help="跳过指定环境检查任务, 可重复传入",
+    )
     launch_p.add_argument("--no-hotpatcher", action="store_false", dest="enable_hotpatcher", default=True, help="禁用补丁系统注入")
     launch_p.add_argument("--hotpatcher-runtime", action="store_true", dest="enable_hotpatcher_runtime", default=False, help="启用补丁系统 runtime host 连接")
     launch_p.add_argument("--hotpatcher-config", type=normalized_filepath, dest="hotpatcher_config_path", help="补丁系统配置文件路径")

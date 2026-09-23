@@ -8,6 +8,7 @@ from sd_webui_all_in_one.base_manager.base.model_downloads import install_webui_
 from sd_webui_all_in_one.base_manager.base.models import (
     CpuEnvironmentInfo,
     EnvironmentCollectionError,
+    EnvCheckName,
     EnvCheckTask,
     GpuEnvironmentInfo,
     HostEnvironmentInfo,
@@ -45,6 +46,7 @@ __all__ = [
     "pre_download_model_for_webui",
     "CpuEnvironmentInfo",
     "EnvironmentCollectionError",
+    "EnvCheckName",
     "EnvCheckTask",
     "GpuEnvironmentInfo",
     "HostEnvironmentInfo",

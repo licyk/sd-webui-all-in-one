@@ -11,6 +11,7 @@ from sd_webui_all_in_one.base_manager.base import (
     clone_repo,
     install_pytorch_for_webui,
     prepare_pytorch_install_info,
+    EnvCheckName,
     EnvCheckTask,
     run_env_check_tasks,
 )
@@ -30,6 +31,14 @@ from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 
 from sd_webui_all_in_one.base_manager.qwen_tts_webui_base.catalog import QWEN_TTS_WEBUI_PRESET_HF_PATH, QWEN_TTS_WEBUI_PRESET_MS_PATH, QWEN_TTS_WEBUI_REPO
 from sd_webui_all_in_one.base_manager.qwen_tts_webui_base.shared import logger
+
+
+class QwenTtsEnvCheckName(EnvCheckName):
+    """Qwen TTS WebUI 环境检查任务名称。"""
+
+    PYTHON_DEPENDENCIES = "python-dependencies"
+    TORCH_LIBOMP = "torch-libomp"
+    TORCH_VERSION = "torch-version"
 
 
 def install_qwen_tts_webui_config(
@@ -247,10 +256,10 @@ def check_qwen_tts_webui_env(
     )
 
     # 检查任务列表
-    tasks = [
-        EnvCheckTask("python-dependencies", py_dependency_checker, {"requirement_path": req_path, "name": "Qwen TTS WebUI", "use_uv": use_uv, "custom_env": custom_env}),
-        EnvCheckTask("torch-libomp", fix_torch_libomp, {}),
-        EnvCheckTask("torch-version", check_torch_version, {}),
+    tasks: list[EnvCheckTask[QwenTtsEnvCheckName]] = [
+        EnvCheckTask(QwenTtsEnvCheckName.PYTHON_DEPENDENCIES, py_dependency_checker, {"requirement_path": req_path, "name": "Qwen TTS WebUI", "use_uv": use_uv, "custom_env": custom_env}),
+        EnvCheckTask(QwenTtsEnvCheckName.TORCH_LIBOMP, fix_torch_libomp, {}),
+        EnvCheckTask(QwenTtsEnvCheckName.TORCH_VERSION, check_torch_version, {}),
     ]
     run_env_check_tasks(
         tasks,

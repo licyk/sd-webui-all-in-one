@@ -12,6 +12,7 @@ from sd_webui_all_in_one.base_manager.base import (
     install_pytorch_for_webui,
     pre_download_model_for_webui,
     prepare_pytorch_install_info,
+    EnvCheckName,
     EnvCheckTask,
     run_env_check_tasks,
 )
@@ -33,6 +34,17 @@ from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 
 from sd_webui_all_in_one.base_manager.sd_trainer_base.catalog import SDTrainerBranchType, SD_TRAINER_BRANCH_INFO_DICT, SD_TRAINER_BRANCH_LIST
 from sd_webui_all_in_one.base_manager.sd_trainer_base.shared import logger
+
+
+class SDTrainerEnvCheckName(EnvCheckName):
+    """SD Trainer 环境检查任务名称。"""
+
+    PYTHON_DEPENDENCIES = "python-dependencies"
+    TORCH_LIBOMP = "torch-libomp"
+    TORCH_VERSION = "torch-version"
+    ACCELERATE_BIN = "accelerate-bin"
+    ONNXRUNTIME_GPU = "onnxruntime-gpu"
+    NUMPY = "numpy"
 
 
 def install_sd_trainer(
@@ -251,13 +263,13 @@ def check_sd_trainer_env(
     )
 
     # 检查任务列表
-    tasks = [
-        EnvCheckTask("python-dependencies", py_dependency_checker, {"requirement_path": req_path, "name": "SD Trainer", "use_uv": use_uv, "custom_env": custom_env}),
-        EnvCheckTask("torch-libomp", fix_torch_libomp, {}),
-        EnvCheckTask("torch-version", check_torch_version, {}),
-        EnvCheckTask("accelerate-bin", check_accelerate_bin, {"base_path": sd_trainer_path, "use_uv": use_uv, "custom_env": custom_env}),
-        EnvCheckTask("onnxruntime-gpu", check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": False, "custom_env": custom_env}),
-        EnvCheckTask("numpy", check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
+    tasks: list[EnvCheckTask[SDTrainerEnvCheckName]] = [
+        EnvCheckTask(SDTrainerEnvCheckName.PYTHON_DEPENDENCIES, py_dependency_checker, {"requirement_path": req_path, "name": "SD Trainer", "use_uv": use_uv, "custom_env": custom_env}),
+        EnvCheckTask(SDTrainerEnvCheckName.TORCH_LIBOMP, fix_torch_libomp, {}),
+        EnvCheckTask(SDTrainerEnvCheckName.TORCH_VERSION, check_torch_version, {}),
+        EnvCheckTask(SDTrainerEnvCheckName.ACCELERATE_BIN, check_accelerate_bin, {"base_path": sd_trainer_path, "use_uv": use_uv, "custom_env": custom_env}),
+        EnvCheckTask(SDTrainerEnvCheckName.ONNXRUNTIME_GPU, check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": False, "custom_env": custom_env}),
+        EnvCheckTask(SDTrainerEnvCheckName.NUMPY, check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
     ]
     run_env_check_tasks(
         tasks,

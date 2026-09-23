@@ -12,6 +12,7 @@ from sd_webui_all_in_one.base_manager.base import (
     install_pytorch_for_webui,
     pre_download_model_for_webui,
     prepare_pytorch_install_info,
+    EnvCheckName,
     EnvCheckTask,
     run_env_check_tasks,
 )
@@ -38,6 +39,17 @@ from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 
 from sd_webui_all_in_one.base_manager.fooocus_base.catalog import FOOOCUS_BRANCH_INFO_DICT, FOOOCUS_BRANCH_LIST, FOOOCUS_PRESET_HF_PATH, FOOOCUS_PRESET_MS_PATH, FooocusBranchType
 from sd_webui_all_in_one.base_manager.fooocus_base.shared import logger
+
+
+class FooocusEnvCheckName(EnvCheckName):
+    """Fooocus 环境检查任务名称。"""
+
+    PYTHON_DEPENDENCIES = "python-dependencies"
+    TORCH_LIBOMP = "torch-libomp"
+    TORCH_VERSION = "torch-version"
+    ONNXRUNTIME_GPU = "onnxruntime-gpu"
+    NUMPY = "numpy"
+
 
 FOOOCUS_TRANSLATE_ZH_PATH = ROOT_PATH / "base_manager" / "config" / "fooocus_zh_cn.json"
 
@@ -304,12 +316,12 @@ def check_fooocus_env(
     )
 
     # 检查任务列表
-    tasks = [
-        EnvCheckTask("python-dependencies", py_dependency_checker, {"requirement_path": active_req_path, "name": "Fooocus", "use_uv": use_uv, "custom_env": custom_env}),
-        EnvCheckTask("torch-libomp", fix_torch_libomp, {}),
-        EnvCheckTask("torch-version", check_torch_version, {}),
-        EnvCheckTask("onnxruntime-gpu", check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
-        EnvCheckTask("numpy", check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
+    tasks: list[EnvCheckTask[FooocusEnvCheckName]] = [
+        EnvCheckTask(FooocusEnvCheckName.PYTHON_DEPENDENCIES, py_dependency_checker, {"requirement_path": active_req_path, "name": "Fooocus", "use_uv": use_uv, "custom_env": custom_env}),
+        EnvCheckTask(FooocusEnvCheckName.TORCH_LIBOMP, fix_torch_libomp, {}),
+        EnvCheckTask(FooocusEnvCheckName.TORCH_VERSION, check_torch_version, {}),
+        EnvCheckTask(FooocusEnvCheckName.ONNXRUNTIME_GPU, check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
+        EnvCheckTask(FooocusEnvCheckName.NUMPY, check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
     ]
     run_env_check_tasks(
         tasks,
