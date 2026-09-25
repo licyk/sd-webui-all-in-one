@@ -80,6 +80,7 @@ sd-webui-all-in-one comfyui check-env [选项]
   - `--comfyui-path <路径>`: ComfyUI 根目录。
   - `--no-github-mirror`: 不使用 Github 镜像源。
   - `--install-conflict`: 自动安装冲突组件依赖。
+  - `--disable-conflict`: 检测到冲突依赖时，自动计算并禁用最少数量的冲突组件（保留尽可能多的组件），然后继续安装依赖；优先于 `--install-conflict`。启用 `--interactive` 时改为在交互菜单中选择处理方式。
   - `--interactive`: 启用交互模式。
   - `--no-uv`: 不使用 uv。
   - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
@@ -104,6 +105,7 @@ sd-webui-all-in-one comfyui launch [选项]
   - `--no-uv`: 不使用 uv。
   - `--interactive`: 启用交互模式。
   - `--install-conflict`: 自动安装冲突组件依赖。
+  - `--disable-conflict`: 检测到冲突依赖时，自动计算并禁用最少数量的冲突组件（保留尽可能多的组件），然后继续安装依赖；优先于 `--install-conflict`。启用 `--interactive` 时改为在交互菜单中选择处理方式。
   - `--no-check-env`: 不检查运行环境完整性。
   - `--include-check <名称>`: 启动前仅执行指定环境检查任务，可重复传入。
   - `--exclude-check <名称>`: 启动前跳过指定环境检查任务，可重复传入。

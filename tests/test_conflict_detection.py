@@ -409,3 +409,77 @@ class TestNormalizePackageName:
 
     def test_uppercase(self):
         assert normalize_package_name("MyPackage") == "mypackage"
+
+
+# ============================================================================
+# detect_conflict_package: PEP 440 语义与对称性
+# ============================================================================
+
+
+class TestDetectConflictPackagePep440Semantics:
+    """测试基于版本区间求交集的冲突检测"""
+
+    @staticmethod
+    def _assert_symmetric(pkg1: str, pkg2: str, expected: bool) -> None:
+        assert detect_conflict_package(pkg1, pkg2) is expected
+        assert detect_conflict_package(pkg2, pkg1) is expected
+
+    def test_compatible_release_disjoint(self):
+        """~=1.2.0 vs ~=1.3.0: 冲突 (1.2.x 与 1.3.x 无交集)"""
+        self._assert_symmetric("x~=1.2.0", "x~=1.3.0", True)
+
+    def test_compatible_release_overlap(self):
+        """~=1.2.0 vs ~=1.2.5: 不冲突"""
+        self._assert_symmetric("x~=1.2.0", "x~=1.2.5", False)
+
+    def test_wildcard_vs_lower_bound_inside(self):
+        """==1.2.* vs >=1.2.5: 不冲突 (1.2.6 同时满足)"""
+        self._assert_symmetric("x==1.2.*", "x>=1.2.5", False)
+
+    def test_wildcard_vs_exact_inside(self):
+        """==1.2.* vs ==1.2.3: 不冲突"""
+        self._assert_symmetric("x==1.2.*", "x==1.2.3", False)
+
+    def test_wildcard_vs_wildcard_disjoint(self):
+        """==1.2.* vs ==1.3.*: 冲突"""
+        self._assert_symmetric("x==1.2.*", "x==1.3.*", True)
+
+    def test_wildcard_vs_not_equal_wildcard(self):
+        """==1.2.* vs !=1.2.*: 冲突"""
+        self._assert_symmetric("x==1.2.*", "x!=1.2.*", True)
+
+    def test_exact_vs_local_version(self):
+        """torch==2.1.0 vs torch==2.1.0+cu118: 不冲突 (2.1.0+cu118 同时满足)"""
+        self._assert_symmetric("torch==2.1.0", "torch==2.1.0+cu118", False)
+
+    def test_different_local_versions(self):
+        """torch==2.1.0+cu118 vs torch==2.1.0+cu121: 冲突"""
+        self._assert_symmetric("torch==2.1.0+cu118", "torch==2.1.0+cu121", True)
+
+    def test_not_equal_excludes_local_builds(self):
+        """!=1.0 vs ==1.0+cu1: 冲突 (!= 忽略候选版本的 local version)"""
+        self._assert_symmetric("x!=1.0", "x==1.0+cu1", True)
+
+    def test_less_than_excludes_own_prerelease(self):
+        """>=2.0rc1 vs <2.0: 冲突 (<2.0 不允许 2.0 的预发布版本)"""
+        self._assert_symmetric("x>=2.0rc1", "x<2.0", True)
+
+    def test_not_equal_collapses_single_point(self):
+        """!=1.5 vs >=1.5,<=1.5: 冲突"""
+        self._assert_symmetric("x!=1.5", "x>=1.5,<=1.5", True)
+
+    def test_arbitrary_equality_is_string_match(self):
+        """===1.0 vs ===1.0.0: 冲突 (=== 为字符串比较)"""
+        self._assert_symmetric("x===1.0", "x===1.0.0", True)
+
+    def test_open_interval_not_empty(self):
+        """>1.0 vs <1.0.1: 不冲突"""
+        self._assert_symmetric("x>1.0", "x<1.0.1", False)
+
+    def test_unparsable_version_is_ignored(self):
+        """无法解析的版本号不判定为冲突"""
+        self._assert_symmetric("x==not-a-version", "x==1.0", False)
+
+    def test_compatible_release_pair_constraint(self):
+        """~=1.2.0 vs ~=1.3.0 (单对约束): 冲突"""
+        assert _is_constraint_pair_conflicting("~=", "1.2.0", "~=", "1.3.0") is True

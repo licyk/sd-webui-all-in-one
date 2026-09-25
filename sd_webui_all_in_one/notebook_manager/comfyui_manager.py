@@ -179,6 +179,7 @@ class ComfyUIManager(BaseManager):
     def check_env(
         self,
         install_conflict_component_requirement: bool = True,
+        disable_conflict_component: bool = False,
         interactive_mode: bool = False,
         use_uv: bool = True,
         use_github_mirror: bool = False,
@@ -190,8 +191,10 @@ class ComfyUIManager(BaseManager):
         Args:
             install_conflict_component_requirement (bool):
                 检测到冲突依赖时是否按顺序安装组件依赖
+            disable_conflict_component (bool):
+                检测到冲突依赖时是否禁用冲突组件 (保留尽可能多的组件) 并继续安装依赖, 优先于按顺序安装冲突组件依赖
             interactive_mode (bool):
-                是否启用交互模式, 当检测到冲突依赖时将询问是否安装冲突组件依赖
+                是否启用交互模式, 当检测到冲突依赖时将询问处理方式
             use_uv (bool):
                 是否使用 uv 安装 Python 软件包
             use_github_mirror (bool):
@@ -204,6 +207,7 @@ class ComfyUIManager(BaseManager):
         check_comfyui_env(
             comfyui_path=self.workspace / self.workfolder,
             install_conflict_component_requirement=install_conflict_component_requirement,
+            disable_conflict_component=disable_conflict_component,
             interactive_mode=interactive_mode,
             use_uv=use_uv,
             use_github_mirror=use_github_mirror,

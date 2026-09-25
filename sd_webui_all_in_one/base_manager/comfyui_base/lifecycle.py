@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from functools import partial
 from pathlib import Path
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
@@ -36,7 +37,7 @@ from sd_webui_all_in_one.env_check import (
 )
 
 from sd_webui_all_in_one.base_manager.comfyui_base.catalog import COMFYUI_CONFIG_PATH, COMFYUI_REPO_URL
-from sd_webui_all_in_one.base_manager.comfyui_base.extensions import COMFYUI_CUSTOM_NODES_INFO_DICT
+from sd_webui_all_in_one.base_manager.comfyui_base.extensions import COMFYUI_CUSTOM_NODES_INFO_DICT, set_comfyui_custom_node_status
 from sd_webui_all_in_one.base_manager.comfyui_base.shared import logger
 
 
@@ -220,6 +221,7 @@ def update_comfyui(
 def check_comfyui_env(
     comfyui_path: Path,
     install_conflict_component_requirement: bool = False,
+    disable_conflict_component: bool = False,
     interactive_mode: bool = False,
     use_uv: bool = True,
     use_github_mirror: bool = False,
@@ -235,8 +237,10 @@ def check_comfyui_env(
             ComfyUI 根目录
         install_conflict_component_requirement (bool):
             检测到冲突依赖时是否按顺序安装组件依赖
+        disable_conflict_component (bool):
+            检测到冲突依赖时是否禁用冲突组件 (保留尽可能多的组件) 并继续安装依赖
         interactive_mode (bool):
-            是否启用交互模式, 当检测到冲突依赖时将询问是否安装冲突组件依赖
+            是否启用交互模式, 当检测到冲突依赖时将询问处理方式
         use_uv (bool):
             是否使用 uv 安装 Python 软件包
         use_github_mirror (bool):
@@ -285,9 +289,11 @@ def check_comfyui_env(
             {
                 "comfyui_root_path": comfyui_path,
                 "install_conflict_component_requirement": install_conflict_component_requirement,
+                "disable_conflict_component": disable_conflict_component,
                 "interactive_mode": interactive_mode,
                 "use_uv": use_uv,
                 "custom_env": custom_env,
+                "disable_component_callback": partial(set_comfyui_custom_node_status, comfyui_path, status=False),
             },
         ),
         EnvCheckTask(ComfyUIEnvCheckName.TORCH_LIBOMP, fix_torch_libomp, {}),

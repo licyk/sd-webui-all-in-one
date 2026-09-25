@@ -277,6 +277,7 @@ def restore(
 def check_env(
     comfyui_path: Path,
     install_conflict_component_requirement: bool = False,
+    disable_conflict_component: bool = False,
     interactive_mode: bool = False,
     use_uv: bool = True,
     use_github_mirror: bool = False,
@@ -294,8 +295,10 @@ def check_env(
             是否使用 uv 安装 Python 软件包
         install_conflict_component_requirement (bool):
             检测到冲突依赖时是否按顺序安装组件依赖
+        disable_conflict_component (bool):
+            检测到冲突依赖时是否禁用冲突组件 (保留尽可能多的组件) 并继续安装依赖
         interactive_mode (bool):
-            是否启用交互模式, 当检测到冲突依赖时将询问是否安装冲突组件依赖
+            是否启用交互模式, 当检测到冲突依赖时将询问处理方式
         use_github_mirror (bool):
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
@@ -310,6 +313,7 @@ def check_env(
     check_comfyui_env(
         comfyui_path=comfyui_path,
         install_conflict_component_requirement=install_conflict_component_requirement,
+        disable_conflict_component=disable_conflict_component,
         interactive_mode=interactive_mode,
         use_uv=use_uv,
         use_github_mirror=use_github_mirror,
@@ -332,6 +336,7 @@ def launch(
     use_uv: bool = True,
     interactive_mode: bool = False,
     install_conflict_component_requirement: bool = False,
+    disable_conflict_component: bool = False,
     check_launch_env: bool = True,
     include_checks: list[str] | None = None,
     exclude_checks: list[str] | None = None,
@@ -365,6 +370,8 @@ def launch(
             是否启用交互模式
         install_conflict_component_requirement (bool):
             检测到冲突依赖时是否按顺序安装组件依赖
+        disable_conflict_component (bool):
+            检测到冲突依赖时是否禁用冲突组件 (保留尽可能多的组件) 并继续安装依赖
         check_launch_env (bool):
             是否在启动前检查运行环境
         include_checks (list[str] | None):
@@ -389,6 +396,7 @@ def launch(
             check_comfyui_env(
                 comfyui_path=comfyui_path,
                 install_conflict_component_requirement=install_conflict_component_requirement,
+                disable_conflict_component=disable_conflict_component,
                 interactive_mode=interactive_mode,
                 use_uv=use_uv,
                 use_github_mirror=use_github_mirror,
@@ -955,6 +963,7 @@ def register_comfyui(
     check_p.add_argument("--comfyui-path", type=normalized_filepath, required=False, default=COMFYUI_ROOT_PATH, dest="comfyui_path", help="ComfyUI 根目录")
     check_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     check_p.add_argument("--install-conflict", action="store_true", dest="install_conflict_component_requirement", help="自动安装冲突组件依赖")
+    check_p.add_argument("--disable-conflict", action="store_true", dest="disable_conflict_component", help="自动禁用冲突组件 (保留尽可能多的组件) 并继续安装依赖")
     check_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
     check_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
     check_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
@@ -981,6 +990,7 @@ def register_comfyui(
             lambda args: check_env(
                 comfyui_path=args.comfyui_path,
                 install_conflict_component_requirement=args.install_conflict_component_requirement,
+                disable_conflict_component=args.disable_conflict_component,
                 interactive_mode=args.interactive_mode,
                 use_uv=args.use_uv,
                 use_github_mirror=args.use_github_mirror,
@@ -1005,6 +1015,7 @@ def register_comfyui(
     launch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
     launch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
     launch_p.add_argument("--install-conflict", action="store_true", dest="install_conflict_component_requirement", help="自动安装冲突组件依赖")
+    launch_p.add_argument("--disable-conflict", action="store_true", dest="disable_conflict_component", help="自动禁用冲突组件 (保留尽可能多的组件) 并继续安装依赖")
     launch_p.add_argument("--no-check-env", action="store_false", dest="check_env", help="不检查运行环境完整性")
     launch_p.add_argument(
         "--include-check",
@@ -1041,6 +1052,7 @@ def register_comfyui(
                 use_uv=args.use_uv,
                 interactive_mode=args.interactive_mode,
                 install_conflict_component_requirement=args.install_conflict_component_requirement,
+                disable_conflict_component=args.disable_conflict_component,
                 check_launch_env=args.check_env,
                 include_checks=args.include_checks,
                 exclude_checks=args.exclude_checks,

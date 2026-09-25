@@ -2,9 +2,12 @@
 
 from sd_webui_all_in_one.env_check.comfyui_env_analyze import (
     ComfyUIConflictAnalysisResult,
+    ComfyUIConflictResolution,
+    ComfyUIDisableCandidate,
     comfyui_conflict_analyzer,
     check_comfyui_component_dependencies,
     check_comfyui_manager_dependence,
+    resolve_conflict_components,
 )
 from sd_webui_all_in_one.env_check.fix_accelerate_bin import check_accelerate_bin
 from sd_webui_all_in_one.env_check.fix_dependencies import (
@@ -22,9 +25,12 @@ from sd_webui_all_in_one.env_check.check_torch_version import TorchVersionCheckR
 
 __all__ = [
     "ComfyUIConflictAnalysisResult",
+    "ComfyUIConflictResolution",
+    "ComfyUIDisableCandidate",
     "comfyui_conflict_analyzer",
     "check_comfyui_component_dependencies",
     "check_comfyui_manager_dependence",
+    "resolve_conflict_components",
     "check_accelerate_bin",
     "py_dependency_checker",
     "py_package_metadata_dependency_checker",
