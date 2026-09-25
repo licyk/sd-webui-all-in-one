@@ -84,6 +84,70 @@ def test_comfy_registry_switch_version_preserves_untracked_files(monkeypatch, tm
     assert 'version = "2.0.0"' in (install_path / "pyproject.toml").read_text(encoding="utf-8")
 
 
+def _install_demo_node(monkeypatch, implementation, tmp_path, node_id, version):
+    archive = tmp_path / f"{node_id}-{version}.zip"
+    _make_node_zip(archive, version=version)
+    monkeypatch.setattr(
+        implementation,
+        "fetch_comfy_registry_install_info",
+        lambda requested_id, version=None, _v=version: comfy_registry.ComfyRegistryNodeVersion(node_id=requested_id, version=_v, download_url="https://cdn.example/node.zip"),
+    )
+    monkeypatch.setattr(implementation, "download_file", lambda **_kwargs: archive)
+    comfy_registry.install_comfy_registry_node(tmp_path, node_id, run_postinstall=False)
+    return tmp_path / "custom_nodes" / node_id
+
+
+def test_comfy_registry_update_skips_node_already_on_latest_version(monkeypatch, tmp_path):
+    implementation = sys.modules[comfy_registry.install_comfy_registry_node.__module__]
+    install_path = _install_demo_node(monkeypatch, implementation, tmp_path, "demo-node", "1.0.0")
+
+    def fail_download(**_kwargs):
+        raise AssertionError("latest node must not be downloaded again")
+
+    monkeypatch.setattr(implementation, "download_file", fail_download)
+    monkeypatch.setattr(implementation, "_run_postinstall", lambda *_args, **_kwargs: pytest.fail("postinstall must not run"))
+
+    info = comfy_registry.switch_comfy_registry_node_version(tmp_path, "demo-node", None, target_path=install_path)
+
+    assert info.version == "1.0.0"
+    results = comfy_registry.update_comfy_registry_nodes([("demo-node", install_path)])
+    assert [(result.node_id, result.updated, result.version, result.error) for result in results] == [("demo-node", False, "1.0.0", None)]
+
+
+def test_update_comfy_registry_nodes_installs_only_outdated_nodes(monkeypatch, tmp_path):
+    implementation = sys.modules[comfy_registry.install_comfy_registry_node.__module__]
+    current_path = _install_demo_node(monkeypatch, implementation, tmp_path, "current-node", "1.0.0")
+    outdated_path = _install_demo_node(monkeypatch, implementation, tmp_path, "outdated-node", "1.0.0")
+    new_archive = tmp_path / "new.zip"
+    _make_node_zip(new_archive, version="2.0.0")
+    latest = {"current-node": "1.0.0", "outdated-node": "2.0.0"}
+
+    def fake_install_info(node_id, version=None):
+        if node_id == "broken-node":
+            raise RuntimeError("registry down")
+        return comfy_registry.ComfyRegistryNodeVersion(node_id=node_id, version=latest[node_id], download_url="https://cdn.example/node.zip")
+
+    downloads = []
+    postinstalls = []
+    monkeypatch.setattr(implementation, "fetch_comfy_registry_install_info", fake_install_info)
+    monkeypatch.setattr(implementation, "download_file", lambda **kwargs: downloads.append(kwargs["save_name"]) or new_archive)
+    monkeypatch.setattr(implementation, "_run_postinstall", lambda path, node_id, **_kwargs: postinstalls.append(node_id))
+
+    results = comfy_registry.update_comfy_registry_nodes(
+        [("current-node", current_path), ("outdated-node", outdated_path), ("broken-node", tmp_path / "custom_nodes" / "broken-node")],
+    )
+
+    assert [result.node_id for result in results] == ["current-node", "outdated-node", "broken-node"]
+    assert [result.updated for result in results] == [False, True, False]
+    assert str(results[2].error) == "registry down"
+    assert downloads == ["outdated-node.zip"]
+    assert postinstalls == ["outdated-node"]
+    outdated_info = comfy_registry.read_comfy_registry_info(outdated_path)
+    current_info = comfy_registry.read_comfy_registry_info(current_path)
+    assert outdated_info is not None and outdated_info.version == "2.0.0"
+    assert current_info is not None and current_info.version == "1.0.0"
+
+
 def test_fetch_all_comfy_registry_nodes_paginates_and_uses_cache(monkeypatch):
     implementation = sys.modules[comfy_registry.fetch_all_comfy_registry_nodes.__module__]
     comfy_registry.clear_comfy_registry_cache()

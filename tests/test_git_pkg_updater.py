@@ -1,5 +1,8 @@
 import importlib.metadata
+import shutil
+import subprocess
 import sys
+import threading
 from pathlib import Path
 
 import pytest
@@ -116,31 +119,151 @@ def test_git_query_helpers_and_main_branch_fallback(monkeypatch, tmp_path):
         git_warpper.get_current_branch(repo)
 
 
-def test_update_detached_repo_resets_remote_branch(monkeypatch, tmp_path):
+def _real_git(repo: Path, *args: str) -> str:
+    return subprocess.run(["git", "-C", repo.as_posix(), *args], check=True, capture_output=True, text=True).stdout.strip()
+
+
+@pytest.fixture
+def git_remote_pair(monkeypatch, tmp_path):
+    """创建本地裸仓库作为远程源, 并返回 (上游工作区, 本地克隆) 路径。"""
+    if shutil.which("git") is None:
+        pytest.skip("git is not available")
+    global_config = tmp_path / "gitconfig"
+    global_config.write_text("", encoding="utf-8")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", global_config.as_posix())
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    for key, value in {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"}.items():
+        monkeypatch.setenv(key, value)
+
+    origin = tmp_path / "origin.git"
+    upstream = tmp_path / "upstream"
+    local = tmp_path / "local"
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", origin.as_posix()], check=True)
+    subprocess.run(["git", "clone", "-q", origin.as_posix(), upstream.as_posix()], check=True)
+    _real_git(upstream, "checkout", "-q", "-b", "main")
+    (upstream / "file.txt").write_text("v1\n", encoding="utf-8")
+    _real_git(upstream, "add", "file.txt")
+    _real_git(upstream, "commit", "-q", "-m", "v1")
+    _real_git(upstream, "push", "-q", "origin", "main")
+    subprocess.run(["git", "clone", "-q", origin.as_posix(), local.as_posix()], check=True)
+    return upstream, local
+
+
+def _push_commit(upstream: Path, content: str) -> str:
+    (upstream / "file.txt").write_text(content, encoding="utf-8")
+    _real_git(upstream, "commit", "-q", "-am", content.strip())
+    _real_git(upstream, "push", "-q", "origin", "main")
+    return _real_git(upstream, "rev-parse", "HEAD")
+
+
+def _record_git_subcommands(monkeypatch) -> list[str]:
+    subcommands: list[str] = []
+    real_run_cmd = git_warpper.run_cmd
+
+    def recording_run_cmd(command, *args, **kwargs):
+        subcommands.append(command[command.index("-C") + 2] if "-C" in command else command[5])
+        return real_run_cmd(command, *args, **kwargs)
+
+    monkeypatch.setattr(git_warpper, "run_cmd", recording_run_cmd)
+    return subcommands
+
+
+def test_update_pulls_new_commits_and_skips_reset_when_up_to_date(monkeypatch, git_remote_pair):
+    upstream, local = git_remote_pair
+    new_commit = _push_commit(upstream, "v2\n")
+    subcommands = _record_git_subcommands(monkeypatch)
+
+    assert git_warpper.update(local, live=False) is True
+    assert _real_git(local, "rev-parse", "HEAD") == new_commit
+    assert subcommands == ["status", "fetch", "rev-parse", "reset"]
+
+    subcommands.clear()
+    assert git_warpper.update(local, live=False) is False
+    assert subcommands == ["status", "fetch", "rev-parse"]
+
+
+def test_update_resets_tracked_changes_even_when_up_to_date(git_remote_pair):
+    _upstream, local = git_remote_pair
+    (local / "file.txt").write_text("local edit\n", encoding="utf-8")
+    (local / "untracked.txt").write_text("keep\n", encoding="utf-8")
+
+    assert git_warpper.update(local, live=False) is True
+    assert (local / "file.txt").read_text(encoding="utf-8") == "v1\n"
+    assert (local / "untracked.txt").exists()
+
+
+def test_update_fixes_detached_head(git_remote_pair):
+    upstream, local = git_remote_pair
+    _real_git(local, "checkout", "-q", "--detach", "HEAD")
+    new_commit = _push_commit(upstream, "v2\n")
+
+    assert git_warpper.update(local, live=False) is True
+    assert _real_git(local, "branch", "--show-current") == "main"
+    assert _real_git(local, "rev-parse", "HEAD") == new_commit
+
+
+def test_update_falls_back_to_local_branch_without_upstream(git_remote_pair):
+    _upstream, local = git_remote_pair
+    _real_git(local, "branch", "--unset-upstream")
+    head = _real_git(local, "rev-parse", "HEAD")
+
+    assert git_warpper.update(local, live=False) is False
+    assert _real_git(local, "rev-parse", "HEAD") == head
+
+
+def test_update_rejects_non_git_directory(tmp_path):
+    if shutil.which("git") is None:
+        pytest.skip("git is not available")
+    with pytest.raises(ValueError):
+        git_warpper.update(tmp_path, live=False)
+
+
+def test_update_uses_submodule_flags_when_gitmodules_exists(monkeypatch, tmp_path):
     repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / ".gitmodules").write_text("", encoding="utf-8")
     calls = []
-
     monkeypatch.setattr(git_warpper, "get_git_exec", lambda: Path("/bin/git"))
-    monkeypatch.setattr(git_warpper, "is_git_repo", lambda _path: True)
-    monkeypatch.setattr(git_warpper, "check_point_offset", lambda _path: True)
-    monkeypatch.setattr(git_warpper, "fix_point_offset", lambda path: calls.append(("fix", path)))
-    monkeypatch.setattr(git_warpper, "get_current_branch", lambda _path: "main")
-    monkeypatch.setattr(git_warpper, "get_git_repo_current_remote_branch", lambda _path: "origin/main")
 
-    def fake_run_cmd(command, **kwargs):
-        calls.append((command, kwargs))
-        if command[-2:] == ["submodule", "status"]:
-            return " abc submodule\n"
+    def fake_run_cmd(command, **_kwargs):
+        calls.append(command)
+        if "status" in command:
+            return "# branch.oid aaa\n# branch.head main\n# branch.upstream origin/main\n"
+        if "rev-parse" in command:
+            return "bbb\n"
         return ""
 
     monkeypatch.setattr(git_warpper, "run_cmd", fake_run_cmd)
 
-    git_warpper.update(repo)
+    assert git_warpper.update(repo) is True
+    assert _git(repo, "submodule", "init") in calls
+    assert _git(repo, "fetch", "--recurse-submodules") in calls
+    assert _git(repo, "reset", "--hard", "origin/main", "--recurse-submodules") in calls
 
-    assert calls[0] == ("fix", repo)
-    assert _git(repo, "submodule", "init") in [c[0] for c in calls if isinstance(c[0], list)]
-    assert _git(repo, "fetch", "--all", "--recurse-submodules") in [c[0] for c in calls if isinstance(c[0], list)]
-    assert _git(repo, "reset", "--hard", "origin/main", "--recurse-submodules") in [c[0] for c in calls if isinstance(c[0], list)]
+
+def test_update_git_repositories_runs_in_parallel_and_collects_errors(monkeypatch, tmp_path):
+    from sd_webui_all_in_one.base_manager.base import update_git_repositories
+
+    paths = [tmp_path / name for name in ("a", "b", "bad", "c")]
+    barrier = threading.Barrier(len(paths), timeout=5)
+    calls = []
+
+    def fake_update(path, live=True, fetch=True):
+        calls.append((path.name, live, fetch))
+        barrier.wait()
+        if path.name == "bad":
+            raise RuntimeError("boom")
+        return path.name != "c"
+
+    monkeypatch.setattr(git_warpper, "update", fake_update)
+
+    results = update_git_repositories(paths, max_workers=len(paths), fetch=False)
+
+    assert [result.path for result in results] == paths
+    assert [result.updated for result in results] == [True, True, False, False]
+    assert isinstance(results[2].error, RuntimeError)
+    assert all(live is False and fetch is False for _name, live, fetch in calls)
+    assert update_git_repositories([]) == []
 
 
 def test_switch_branch_rolls_back_remote_on_failure(monkeypatch, tmp_path):
@@ -353,3 +476,43 @@ def test_update_submodule_switch_commit_and_git_config(monkeypatch, tmp_path):
         git_warpper.switch_commit(repo, "abc123")
     with pytest.raises(RuntimeError, match="配置 Git"):
         git_warpper.set_git_config(username="tester")
+
+
+def test_fetch_remote_is_non_interactive_and_retries_once(monkeypatch, tmp_path):
+    repo = tmp_path / "repo"
+    calls = []
+    monkeypatch.setattr(git_warpper, "get_git_exec", lambda: Path("/bin/git"))
+    monkeypatch.setattr(git_warpper, "FETCH_RETRY_DELAY", 0)
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", "/mirror/.gitconfig")
+
+    def flaky_run_cmd(command, **kwargs):
+        calls.append((command, kwargs["custom_env"]))
+        if len(calls) == 1:
+            raise RuntimeError("mirror reset connection")
+        return ""
+
+    monkeypatch.setattr(git_warpper, "run_cmd", flaky_run_cmd)
+    git_warpper.fetch_remote(repo, "--all", live=False)
+
+    assert [command for command, _env in calls] == [_git(repo, "fetch", "--all")] * 2
+    for _command, env in calls:
+        assert env["GIT_TERMINAL_PROMPT"] == "0"
+        assert env["GCM_INTERACTIVE"] == "never"
+        assert env["GIT_CONFIG_GLOBAL"] == "/mirror/.gitconfig"
+
+    calls.clear()
+    monkeypatch.setattr(git_warpper, "run_cmd", lambda command, **kwargs: calls.append(command) or (_ for _ in ()).throw(RuntimeError("down")))
+    with pytest.raises(RuntimeError, match="down"):
+        git_warpper.fetch_remote(repo, live=False)
+    assert len(calls) == 2
+
+
+def test_update_without_fetch_reuses_already_fetched_refs(monkeypatch, git_remote_pair):
+    upstream, local = git_remote_pair
+    new_commit = _push_commit(upstream, "v2\n")
+    _real_git(local, "fetch", "-q")
+    subcommands = _record_git_subcommands(monkeypatch)
+
+    assert git_warpper.update(local, live=False, fetch=False) is True
+    assert _real_git(local, "rev-parse", "HEAD") == new_commit
+    assert subcommands == ["status", "rev-parse", "reset"]

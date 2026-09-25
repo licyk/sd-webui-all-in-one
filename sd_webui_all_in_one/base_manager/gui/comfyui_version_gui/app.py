@@ -19,6 +19,7 @@ from sd_webui_all_in_one.base_manager.version_manager import (
 from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryState
 from sd_webui_all_in_one.base_manager.gui.version_gui import (
     BackgroundTaskMixin,
+    ExtensionCheckStatus,
     apply_gui_theme,
     apply_window_icon,
     configure_gui_fonts,
@@ -65,7 +66,8 @@ class ComfyUiVersionManagerApp(tk.Tk, BackgroundTaskMixin, KernelActionsMixin, E
         self._registry_extension_index: list[ExtensionIndexItem] = []
         self._extension_index_generation = 0
         self.filtered_extension_index: list[ExtensionIndexItem] = []
-        self.extension_manager = ComfyUiExtensionManager(self.comfyui_path, include_files=True)
+        self.extension_manager = ComfyUiExtensionManager(self.comfyui_path, include_files=True, use_github_mirror=self.use_github_mirror)
+        self.extension_update_status: dict[str, ExtensionCheckStatus] = {}
 
         self.title("ComfyUI 版本管理")
         apply_window_icon(self)

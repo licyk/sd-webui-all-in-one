@@ -466,13 +466,24 @@ def test_extension_manager_lifecycle_delegates_and_aggregates(monkeypatch, tmp_p
         manager.update_extension("plain-ext")
     assert updates == [git_ext]
 
-    def update_or_fail(path):
+    def update_or_fail(path, live=True, fetch=True):
+        assert live is False
         raise RuntimeError("bad update")
 
-    monkeypatch.setattr(version_extensions, "update_repository", update_or_fail)
+    monkeypatch.setattr(version_extensions.git_warpper, "update", update_or_fail)
     with pytest.raises(AggregateError) as exc:
         manager.update_all()
     assert len(exc.value.exceptions) == 1
+
+    batch_updates = []
+    monkeypatch.setattr(version_extensions.git_warpper, "update", lambda path, live=True, fetch=True: batch_updates.append((path, fetch)) or True)
+    with pytest.raises(AggregateError) as exc:
+        manager.update_extensions(["git-ext", "plain-ext", "git-ext"], fetch=False)
+    assert batch_updates == [(git_ext, False)]
+    assert len(exc.value.exceptions) == 1
+    batch_updates.clear()
+    assert manager.update_extensions(["git-ext"]) == ["git-ext"]
+    assert batch_updates == [(git_ext, True)]
 
     removed = []
     monkeypatch.setattr(version_extensions, "remove_files", lambda path: removed.append(path))
@@ -673,3 +684,55 @@ def test_check_extension_updates_resolves_registry_versions(tmp_path):
     assert result[0].latest_version == "1.1.0"
     assert result[0].has_update is True
     assert result[0].skipped is False
+
+
+def test_check_extension_updates_runs_in_parallel_and_configures_mirror_once(monkeypatch, tmp_path):
+    import threading
+
+    extensions = [version_manager.ManagedExtension(name=f"ext-{index}", path=tmp_path / f"ext-{index}", enabled=True, is_git_repo=True, source_type="git") for index in range(4)]
+    barrier = threading.Barrier(len(extensions), timeout=5)
+    mirror_calls = []
+    fetch_flags = []
+
+    def fake_check(path, fetch=True, **kwargs):
+        assert not kwargs, "mirror must be configured once before the parallel checks"
+        fetch_flags.append(fetch)
+        barrier.wait()
+        behind = int(path.name.rsplit("-", 1)[1])
+        return version_manager.RepositoryUpdateStatus(name=path.name, path=path, is_git_repo=True, has_update=behind > 0, behind=behind)
+
+    monkeypatch.setattr(version_checks, "configure_git_env", lambda **kwargs: mirror_calls.append(kwargs) or {})
+    monkeypatch.setattr(version_checks, "check_repository_update", fake_check)
+
+    result = version_manager.check_extension_updates(extensions, use_github_mirror=True, custom_github_mirror="https://mirror.example", max_workers=4)
+
+    assert [item.name for item in result] == [ext.name for ext in extensions]
+    assert [item.behind for item in result] == [0, 1, 2, 3]
+    assert [item.has_update for item in result] == [False, True, True, True]
+    assert mirror_calls == [{"use_github_mirror": True, "custom_github_mirror": "https://mirror.example"}]
+    assert fetch_flags == [True] * 4
+
+
+def test_extension_manager_check_updates_parallel_preserves_order(monkeypatch, tmp_path):
+    import threading
+
+    manager = version_manager.ExtensionManager(tmp_path, "extensions", lambda _name, _path: True, lambda _name, _enabled: None, use_github_mirror=True)
+    extensions = [
+        version_manager.ManagedExtension(name="a", path=tmp_path / "a", enabled=True, is_git_repo=True, source_type="git"),
+        version_manager.ManagedExtension(name="plain", path=tmp_path / "plain", enabled=True, is_git_repo=False, source_type="unknown"),
+        version_manager.ManagedExtension(name="b", path=tmp_path / "b", enabled=True, is_git_repo=True, source_type="git"),
+    ]
+    barrier = threading.Barrier(2, timeout=5)
+
+    def fake_check(path, fetch=True):
+        barrier.wait()
+        return version_manager.RepositoryUpdateStatus(name="", path=path, is_git_repo=True, has_update=path.name == "b", behind=int(path.name == "b"))
+
+    monkeypatch.setattr(manager, "list_extensions", lambda: extensions)
+    monkeypatch.setattr(version_extensions, "check_repository_update", fake_check)
+
+    result = manager.check_updates()
+
+    assert [item.name for item in result] == ["a", "plain", "b"]
+    assert [item.has_update for item in result] == [False, False, True]
+    assert result[1].is_git_repo is False

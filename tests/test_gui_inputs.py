@@ -394,3 +394,32 @@ def test_adaptive_index_list_user_scroll_cancels_refresh_restore(tk_root: tk.Tk)
 
     assert widget._pending_scroll_top is None  # pylint: disable=protected-access
     assert widget.canvas.canvasy(0) == user_scroll_top
+
+
+def test_extension_update_state_formatting() -> None:
+    from pathlib import Path
+
+    from sd_webui_all_in_one.base_manager.gui.version_gui import (
+        format_extension_update_state,
+        summarize_extension_update_check,
+        summarize_updated_extensions,
+    )
+    from sd_webui_all_in_one.base_manager.version_manager import ExtensionUpdateStatus, RepositoryUpdateStatus
+
+    path = Path("ext")
+    behind = RepositoryUpdateStatus(name="a", path=path, is_git_repo=True, has_update=True, behind=3)
+    latest = RepositoryUpdateStatus(name="b", path=path, is_git_repo=True)
+    failed = RepositoryUpdateStatus(name="c", path=path, is_git_repo=True, error="network down\ntrace")
+    plain = RepositoryUpdateStatus(name="d", path=path, is_git_repo=False, error="非 Git 仓库")
+    registry = ExtensionUpdateStatus(name="e", path=path, enabled=True, source_type="comfy-registry", is_git_repo=False, current_version="1.0", latest_version="1.1", has_update=True)
+    skipped = ExtensionUpdateStatus(name="f", path=path, enabled=True, source_type="file", is_git_repo=False, skipped=True)
+
+    assert format_extension_update_state(behind) == "有更新 (落后 3)"
+    assert format_extension_update_state(latest) == "已是最新"
+    assert format_extension_update_state(failed) == "检查失败: network down"
+    assert format_extension_update_state(plain) is None
+    assert format_extension_update_state(registry) == "有更新 (1.0 → 1.1)"
+    assert format_extension_update_state(skipped) is None
+    assert summarize_extension_update_check([behind, latest, failed, plain, registry, skipped]) == "检查更新完成: 2 个有更新, 共检查 4 个, 1 个检查失败"
+    assert summarize_updated_extensions([]) == "所有项目均已是最新版本"
+    assert summarize_updated_extensions(["x", "y"], kernel_updated=True) == "内核已更新\n已更新 2 个扩展:\n  • x\n  • y"

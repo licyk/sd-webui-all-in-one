@@ -15,6 +15,7 @@ from sd_webui_all_in_one.base_manager.version_manager import (
 )
 from sd_webui_all_in_one.base_manager.gui.version_gui import (
     BackgroundTaskMixin,
+    ExtensionCheckStatus,
     apply_gui_theme,
     apply_window_icon,
     configure_gui_fonts,
@@ -72,7 +73,9 @@ class InvokeAiVersionManagerApp(tk.Tk, BackgroundTaskMixin, KernelActionsMixin, 
             extension_dir_name="nodes",
             is_enabled=_invokeai_node_enabled,
             set_enabled=lambda name, enabled: _set_invokeai_node_enabled(self.nodes_path, name, enabled),
+            use_github_mirror=self.use_github_mirror,
         )
+        self.extension_update_status: dict[str, ExtensionCheckStatus] = {}
 
         self.title("InvokeAI 版本管理")
         apply_window_icon(self)

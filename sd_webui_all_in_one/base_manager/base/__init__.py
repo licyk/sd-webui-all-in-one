@@ -27,12 +27,16 @@ from sd_webui_all_in_one.base_manager.base.pytorch import (
     reinstall_pytorch,
 )
 from sd_webui_all_in_one.base_manager.base.repositories import (
+    DEFAULT_GIT_UPDATE_WORKERS,
+    MIRROR_GIT_UPDATE_WORKERS,
+    GitRepositoryUpdateResult,
     apply_git_base_config_and_github_mirror,
     apply_git_config_global_to_process,
     apply_github_raw_file_mirror,
     apply_hf_mirror,
     clone_repo,
     get_repo_name_from_url,
+    update_git_repositories,
 )
 from sd_webui_all_in_one.base_manager.base.runtime import launch_webui
 
@@ -67,5 +71,9 @@ __all__ = [
     "apply_hf_mirror",
     "clone_repo",
     "get_repo_name_from_url",
+    "update_git_repositories",
+    "DEFAULT_GIT_UPDATE_WORKERS",
+    "MIRROR_GIT_UPDATE_WORKERS",
+    "GitRepositoryUpdateResult",
     "launch_webui",
 ]

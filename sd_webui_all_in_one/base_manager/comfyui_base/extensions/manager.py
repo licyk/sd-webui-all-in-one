@@ -2,17 +2,25 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
+    DEFAULT_GIT_UPDATE_WORKERS,
+    MIRROR_GIT_UPDATE_WORKERS,
     get_repo_name_from_url,
+    update_git_repositories,
 )
 from sd_webui_all_in_one.base_manager.comfy_registry import (
+    fetch_comfy_registry_install_info,
     switch_comfy_registry_node_version,
     install_comfy_registry_node,
+    update_comfy_registry_nodes,
 )
 from sd_webui_all_in_one.base_manager.version_manager import (
+    ExtensionUpdateStatus,
     ManagedExtension,
+    check_extension_updates,
 )
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 
@@ -29,10 +37,12 @@ from sd_webui_all_in_one.base_manager.comfyui_base.extensions.local import (
 class ComfyUiExtensionManager:
     """ComfyUI 专属扩展管理器，支持 Git 和 Comfy Registry 节点。"""
 
-    def __init__(self, comfyui_path: Path, include_files: bool = True) -> None:
+    def __init__(self, comfyui_path: Path, include_files: bool = True, use_github_mirror: bool = False) -> None:
         self.root_path = Path(comfyui_path)
         self.extension_path = self.root_path / "custom_nodes"
         self.include_files = include_files
+        self.use_github_mirror = use_github_mirror
+        """是否正在使用 GitHub 镜像源, 用于选择较低的并行线程数以避免镜像源限流"""
 
     def list_extensions(self) -> list[ManagedExtension]:
         """获取本地 ComfyUI 自定义节点列表。
@@ -159,23 +169,106 @@ class ComfyUiExtensionManager:
             raise ValueError(f"'{ext.name}' 不是 Git 仓库或 Comfy Registry 节点，无法更新")
         git_warpper.update(ext.path)
 
-    def update_all(self) -> None:
-        """更新所有可更新的自定义节点。
+    def update_extensions(self, names: Iterable[str], fetch: bool = True) -> list[str]:
+        """批量更新指定的自定义节点。
+
+        Git 节点并行拉取更新, Comfy Registry 节点仅在版本变化时重新安装。
+
+        Args:
+            names (Iterable[str]):
+                自定义节点名称列表。
+            fetch (bool):
+                Git 节点是否先拉取远程更新; 刚执行过 `check_updates()` 时可关闭以复用已拉取的远程引用。
+
+        Returns:
+            list[str]:
+                实际发生更新的节点名称列表。
+
+        Raises:
+            FileNotFoundError:
+                存在未安装的节点时抛出。
+            AggregateError:
+                一个或多个节点更新失败时抛出。
+        """
+        wanted = list(dict.fromkeys(names))
+        extensions = {ext.name: ext for ext in self.list_extensions()}
+        missing = [name for name in wanted if name not in extensions]
+        if missing:
+            raise FileNotFoundError(f"扩展未安装: {', '.join(missing)}")
+        errors: list[Exception] = []
+        targets: list[ManagedExtension] = []
+        for name in wanted:
+            ext = extensions[name]
+            if ext.is_git_repo or ext.source_type == "comfy-registry":
+                targets.append(ext)
+            else:
+                errors.append(ValueError(f"'{ext.name}' 不是 Git 仓库或 Comfy Registry 节点，无法更新"))
+        return self._update_many(targets, errors, fetch=fetch)
+
+    def _update_many(self, extensions: list[ManagedExtension], errors: list[Exception], fetch: bool = True) -> list[str]:
+        """批量更新已解析的自定义节点并汇总结果。
+
+        Args:
+            extensions (list[ManagedExtension]):
+                已解析的自定义节点列表。
+            errors (list[Exception]):
+                已收集的错误列表。
+            fetch (bool):
+                Git 节点是否先拉取远程更新。
+
+        Returns:
+            list[str]:
+                实际发生更新的节点名称列表。
 
         Raises:
             AggregateError:
                 一个或多个节点更新失败时抛出。
         """
-        errors: list[Exception] = []
-        for ext in self.list_extensions():
-            if ext.source_type not in {"git", "comfy-registry"}:
-                continue
-            try:
-                self._update_extension(ext)
-            except Exception as e:
-                errors.append(e)
+        git_extensions = [ext for ext in extensions if ext.is_git_repo]
+        registry_extensions = [ext for ext in extensions if ext.source_type == "comfy-registry"]
+        git_results = update_git_repositories([ext.path for ext in git_extensions], use_github_mirror=self.use_github_mirror, fetch=fetch)
+        registry_results = update_comfy_registry_nodes([(ext.registry_id or _normalize_custom_node_name(ext.name), ext.path) for ext in registry_extensions])
+        updated: list[str] = []
+        for ext, result in [*zip(git_extensions, git_results), *zip(registry_extensions, registry_results)]:
+            if result.error is not None:
+                errors.append(result.error)
+            elif result.updated:
+                updated.append(ext.name)
         if errors:
             raise AggregateError("更新 ComfyUI 扩展时发生错误", errors)
+        return updated
+
+    def update_all(self) -> list[str]:
+        """更新所有可更新的自定义节点。
+
+        Returns:
+            list[str]:
+                实际发生更新的节点名称列表。
+
+        Raises:
+            AggregateError:
+                一个或多个节点更新失败时抛出。
+        """
+        return self._update_many([ext for ext in self.list_extensions() if ext.is_git_repo or ext.source_type == "comfy-registry"], [])
+
+    def check_updates(self, fetch: bool = True) -> list[ExtensionUpdateStatus]:
+        """并行检查所有自定义节点的更新状态。
+
+        Args:
+            fetch (bool):
+                是否先拉取 Git 远程引用。
+
+        Returns:
+            list[ExtensionUpdateStatus]:
+                与节点列表顺序一致的更新状态。
+        """
+
+        def resolve_registry_version(extension: ManagedExtension) -> str | None:
+            node_id = extension.registry_id or _normalize_custom_node_name(extension.name)
+            return fetch_comfy_registry_install_info(node_id).version or None
+
+        workers = MIRROR_GIT_UPDATE_WORKERS if self.use_github_mirror else DEFAULT_GIT_UPDATE_WORKERS
+        return check_extension_updates(self.list_extensions(), fetch=fetch, registry_version_resolver=resolve_registry_version, max_workers=workers)
 
     def uninstall_extension(self, name: str) -> None:
         """卸载自定义节点。

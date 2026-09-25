@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
@@ -47,6 +48,17 @@ class ComfyRegistryNodeVersion:
     status: str = ""
     created_at: str = ""
     raw: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class ComfyRegistryNodeUpdateResult:
+    """Comfy Registry 节点批量更新结果。"""
+
+    node_id: str
+    path: Path
+    updated: bool = False
+    version: str | None = None
+    error: Exception | None = None
 
 
 @dataclass(slots=True)

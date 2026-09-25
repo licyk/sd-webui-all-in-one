@@ -137,7 +137,7 @@ def fetch_repository(
         raise ValueError(f"'{path}' 不是有效的 Git 仓库")
     logger.info("开始拉取远程引用: %s", path)
     custom_env = configure_git_env(use_github_mirror=use_github_mirror, custom_github_mirror=custom_github_mirror) if use_github_mirror else None
-    _run_git_output(path, "fetch", "--all", "--prune", custom_env=custom_env)
+    git_warpper.fetch_remote(path, "--all", "--prune", live=False, custom_env=custom_env)
     logger.info("拉取远程引用完成: %s", path)
 
 
@@ -442,14 +442,18 @@ def switch_repository_commit(
 
 def update_repository(
     path: Path,
-) -> None:
+) -> bool:
     """
     更新仓库
 
     Args:
         path (Path):
             Git 仓库路径
+
+    Returns:
+        bool: 仓库发生更新时返回 True, 已是最新时返回 False
     """
     logger.info("更新仓库中: %s", path)
-    git_warpper.update(path)
+    updated = git_warpper.update(path)
     logger.info("更新仓库完成: %s", path)
+    return updated

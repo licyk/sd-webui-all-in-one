@@ -4,6 +4,12 @@ import http.client
 import os
 import urllib.parse
 import urllib.request
+from collections.abc import Sequence
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    as_completed,
+)
+from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -32,6 +38,26 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+DEFAULT_GIT_UPDATE_WORKERS = 8
+"""并行更新 Git 仓库时的默认线程数"""
+
+MIRROR_GIT_UPDATE_WORKERS = 4
+"""使用 Github 镜像源并行更新 Git 仓库时的默认线程数, 避免触发镜像源限流"""
+
+
+@dataclass(slots=True)
+class GitRepositoryUpdateResult:
+    """Git 仓库更新结果"""
+
+    path: Path
+    """Git 仓库路径"""
+
+    updated: bool = False
+    """仓库是否被更新到新的状态"""
+
+    error: Exception | None = None
+    """更新失败时的异常"""
 
 
 def clone_repo(
@@ -66,6 +92,63 @@ def clone_repo(
         )
         copy_files(src, path)
     logger.info("'%s' 下载到 '%s' 完成", Path(repo).name, path)
+
+
+def update_git_repositories(
+    paths: Sequence[Path],
+    max_workers: int | None = None,
+    use_github_mirror: bool = False,
+    fetch: bool = True,
+) -> list[GitRepositoryUpdateResult]:
+    """并行更新多个 Git 仓库
+
+    单个仓库更新失败不会中断其他仓库的更新, 失败信息记录在返回结果中。
+    Git 镜像源等全局配置需要在调用前完成。
+
+    Args:
+        paths (Sequence[Path]):
+            Git 仓库路径列表
+        max_workers (int | None):
+            并行线程数, 为 None 时根据是否使用镜像源选择默认值
+        use_github_mirror (bool):
+            是否正在使用 Github 镜像源, 仅用于选择默认并行线程数
+        fetch (bool):
+            是否先拉取远程更新; 刚完成更新检查时可关闭以复用已拉取的远程引用
+
+    Returns:
+        list[GitRepositoryUpdateResult]:
+            与输入顺序一致的更新结果列表
+    """
+    paths = list(paths)
+    if not paths:
+        return []
+    if max_workers is None:
+        max_workers = MIRROR_GIT_UPDATE_WORKERS if use_github_mirror else DEFAULT_GIT_UPDATE_WORKERS
+    max_workers = max(1, min(max_workers, len(paths)))
+    task_sum = len(paths)
+
+    def _update(path: Path) -> GitRepositoryUpdateResult:
+        result = GitRepositoryUpdateResult(path=path)
+        try:
+            result.updated = bool(git_warpper.update(path, live=False, fetch=fetch))
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            result.error = e
+        return result
+
+    logger.info("并行更新 %s 个 Git 仓库中, 线程数: %s", task_sum, max_workers)
+    results: list[GitRepositoryUpdateResult | None] = [None] * task_sum
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_index = {executor.submit(_update, path): index for index, path in enumerate(paths)}
+        for count, future in enumerate(as_completed(future_to_index), start=1):
+            result = future.result()
+            results[future_to_index[future]] = result
+            if result.error is not None:
+                logger.error("[%s/%s] 更新 '%s' 时发生错误: %s", count, task_sum, result.path.name, result.error)
+            elif result.updated:
+                logger.info("[%s/%s] 更新 '%s' 完成", count, task_sum, result.path.name)
+            else:
+                logger.info("[%s/%s] '%s' 已是最新版本", count, task_sum, result.path.name)
+    return [result for result in results if result is not None]
 
 
 def get_repo_name_from_url(

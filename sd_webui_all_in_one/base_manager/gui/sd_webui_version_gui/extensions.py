@@ -21,10 +21,10 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
 )
 
 
-from sd_webui_all_in_one.base_manager.gui.version_gui import GuiActionsMixinContext
+from sd_webui_all_in_one.base_manager.gui.version_gui import ExtensionUpdateCheckMixin, summarize_updated_extensions
 
 
-class ExtensionActionsMixin(GuiActionsMixinContext):
+class ExtensionActionsMixin(ExtensionUpdateCheckMixin):
     """提供 SD WebUI 扩展管理动作。"""
 
     def _create_extensions_tab(
@@ -34,6 +34,7 @@ class ExtensionActionsMixin(GuiActionsMixinContext):
         toolbar.pack(fill=tk.X, padx=8, pady=8)
         ttk.Button(toolbar, text="刷新扩展", command=self.refresh_extensions).pack(side=tk.LEFT)
         ttk.Button(toolbar, text="更新选中", command=self.update_selected_extension).pack(side=tk.LEFT, padx=(8, 0))
+        self._create_update_check_buttons(toolbar)
         ttk.Button(toolbar, text="切换版本", command=self.open_extension_commit_dialog).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Button(toolbar, text="切换分支", command=self.open_extension_branch_dialog).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Button(toolbar, text="启用/禁用", command=self.toggle_selected_extension).pack(side=tk.LEFT, padx=(8, 0))
@@ -97,12 +98,19 @@ class ExtensionActionsMixin(GuiActionsMixinContext):
         更新内核和所有 Git 扩展
         """
 
-        def _update_all() -> None:
+        def _update_all() -> tuple[bool, list[str]]:
+            kernel_updated = False
             if self.repository_state and self.repository_state.is_git_repo:
-                update_repository(self.sd_webui_path)
-            self.extension_manager.update_all()
+                kernel_updated = update_repository(self.sd_webui_path)
+            return kernel_updated, self.extension_manager.update_all()
 
-        self.run_background("一键更新中...", _update_all, lambda _value: self.refresh_all())
+        def _done(result: tuple[bool, list[str]]) -> None:
+            kernel_updated, updated = result
+            self.extension_update_status = {}
+            messagebox.showinfo("更新完成", summarize_updated_extensions(updated, kernel_updated=kernel_updated))
+            self.refresh_all()
+
+        self.run_background("一键更新中...", _update_all, _done)
 
     def update_selected_extension(
         self,
@@ -120,7 +128,7 @@ class ExtensionActionsMixin(GuiActionsMixinContext):
         def _update() -> None:
             self.extension_manager.update_extension(ext.name)
 
-        self.run_background("更新扩展中...", _update, lambda _value: self.refresh_extensions())
+        self.run_background("更新扩展中...", _update, lambda _value: (self._forget_extension_update_status(ext.name), self.refresh_extensions()))
 
     def toggle_selected_extension(
         self,
@@ -223,7 +231,7 @@ class ExtensionActionsMixin(GuiActionsMixinContext):
             ext.branch or "-",
             ext.commit or "-",
             ext.commit_date or "-",
-            "Git 仓库" if ext.is_git_repo else (ext.error or "非 Git 仓库"),
+            self._extension_state_text(ext.name, "Git 仓库" if ext.is_git_repo else (ext.error or "非 Git 仓库")),
         )
 
     def _apply_extension_enabled(

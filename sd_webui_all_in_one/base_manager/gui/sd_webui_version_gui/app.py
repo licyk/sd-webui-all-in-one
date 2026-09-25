@@ -19,6 +19,7 @@ from sd_webui_all_in_one.base_manager.version_manager import (
 from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryState
 from sd_webui_all_in_one.base_manager.gui.version_gui import (
     BackgroundTaskMixin,
+    ExtensionCheckStatus,
     apply_gui_theme,
     apply_window_icon,
     configure_gui_fonts,
@@ -70,7 +71,9 @@ class SDWebUiVersionManagerApp(tk.Tk, BackgroundTaskMixin, KernelActionsMixin, E
             extension_dir_name="extensions",
             is_enabled=lambda name, path: _sd_webui_extension_enabled(self.sd_webui_path, name, path),
             set_enabled=lambda name, enabled: _set_sd_webui_extension_enabled(self.sd_webui_path, name, enabled),
+            use_github_mirror=self.use_github_mirror,
         )
+        self.extension_update_status: dict[str, ExtensionCheckStatus] = {}
 
         self.title("Stable Diffusion WebUI 版本管理")
         apply_window_icon(self)

@@ -7,12 +7,12 @@ from typing import (
     TypedDict,
 )
 from pathlib import Path
-from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
     apply_git_base_config_and_github_mirror,
     apply_git_config_global_to_process,
     clone_repo,
     get_repo_name_from_url,
+    update_git_repositories,
 )
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
 from sd_webui_all_in_one.base_manager.version_manager import (
@@ -237,8 +237,9 @@ def update_invokeai_custom_nodes(
     invokeai_path: Path,
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
+    max_workers: int | None = None,
 ) -> None:
-    """更新 InvokeAI 扩展
+    """并行更新 InvokeAI 扩展
 
     Args:
         invokeai_path (Path):
@@ -247,6 +248,8 @@ def update_invokeai_custom_nodes(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
+        max_workers (int | None):
+            并行更新线程数, 为 None 时自动选择
 
     Raises:
         AggregateError:
@@ -263,16 +266,10 @@ def update_invokeai_custom_nodes(
     )
     apply_git_config_global_to_process(custom_env)
 
-    for ext in custom_nodes_path.iterdir():
-        if ext.is_file():
-            continue
-
-        logger.info("更新 '%s' 扩展中", ext.name)
-        try:
-            git_warpper.update(ext)
-        except Exception as e:
-            err.append(e)
-            logger.error("更新 '%s' 扩展时发生错误: %s", ext.name, e)
+    update_targets = [ext for ext in custom_nodes_path.iterdir() if not ext.is_file()]
+    for result in update_git_repositories(update_targets, max_workers=max_workers, use_github_mirror=use_github_mirror):
+        if result.error is not None:
+            err.append(result.error)
 
     if err:
         raise AggregateError("更新 InvokeAI 扩展时发生错误", err)

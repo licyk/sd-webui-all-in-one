@@ -20,9 +20,9 @@ from sd_webui_all_in_one.base_manager.base import (
     apply_git_config_global_to_process,
     clone_repo,
     get_repo_name_from_url,
+    update_git_repositories,
 )
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
-from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.mirror_manager import (
     GITHUB_MIRROR_LIST,
 )
@@ -303,8 +303,9 @@ def update_sd_webui_extensions(
     sd_webui_path: Path,
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
+    max_workers: int | None = None,
 ) -> None:
-    """更新 Stable Diffusion WebUI 扩展
+    """并行更新 Stable Diffusion WebUI 扩展
 
     Args:
         sd_webui_path (Path):
@@ -313,6 +314,8 @@ def update_sd_webui_extensions(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
+        max_workers (int | None):
+            并行更新线程数, 为 None 时自动选择
 
     Raises:
         AggregateError:
@@ -334,17 +337,9 @@ def update_sd_webui_extensions(
         raise FileNotFoundError("未找到 Stable Diffusion WebUI 扩展目录")
 
     update_targets = [ext for ext in extension_path.iterdir() if ext.is_dir() and (ext / ".git").exists()]
-    count = 0
-    task_sum = len(update_targets)
-
-    for ext in update_targets:
-        count += 1
-        logger.info("[%s/%s] 更新 '%s' 扩展中", count, task_sum, ext.name)
-        try:
-            git_warpper.update(ext)
-        except Exception as e:
-            err.append(e)
-            logger.error("[%s/%s] 更新 '%s' 扩展时发生错误: %s", count, task_sum, ext.name, e)
+    for result in update_git_repositories(update_targets, max_workers=max_workers, use_github_mirror=use_github_mirror):
+        if result.error is not None:
+            err.append(result.error)
 
     if err:
         raise AggregateError("更新 Stable Diffusion WebUI 扩展时发生错误", err)

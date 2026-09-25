@@ -25,10 +25,10 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
 )
 
 
-from sd_webui_all_in_one.base_manager.gui.version_gui import GuiActionsMixinContext
+from sd_webui_all_in_one.base_manager.gui.version_gui import ExtensionUpdateCheckMixin, summarize_updated_extensions
 
 
-class ExtensionActionsMixin(GuiActionsMixinContext):
+class ExtensionActionsMixin(ExtensionUpdateCheckMixin):
     """提供 ComfyUI 自定义节点管理动作。"""
 
     def _create_extensions_tab(
@@ -38,6 +38,7 @@ class ExtensionActionsMixin(GuiActionsMixinContext):
         toolbar.pack(fill=tk.X, padx=8, pady=8)
         ttk.Button(toolbar, text="刷新节点", command=self.refresh_extensions).pack(side=tk.LEFT)
         ttk.Button(toolbar, text="更新选中", command=self.update_selected_extension).pack(side=tk.LEFT, padx=(8, 0))
+        self._create_update_check_buttons(toolbar)
         ttk.Button(toolbar, text="切换版本", command=self.open_extension_commit_dialog).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Button(toolbar, text="切换分支", command=self.open_extension_branch_dialog).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Button(toolbar, text="启用/禁用", command=self.toggle_selected_extension).pack(side=tk.LEFT, padx=(8, 0))
@@ -86,7 +87,10 @@ class ExtensionActionsMixin(GuiActionsMixinContext):
             "unknown": "未知",
         }.get(ext.source_type, ext.source_type)
         version = ext.registry_version or ext.commit or "-"
-        state = "Git 仓库" if ext.is_git_repo else ("Comfy Registry" if ext.source_type == "comfy-registry" else (ext.error or "非 Git/文件安装"))
+        state = self._extension_state_text(
+            ext.name,
+            "Git 仓库" if ext.is_git_repo else ("Comfy Registry" if ext.source_type == "comfy-registry" else (ext.error or "非 Git/文件安装")),
+        )
         return (
             "✓" if ext.enabled else "",
             source_label,
@@ -127,12 +131,19 @@ class ExtensionActionsMixin(GuiActionsMixinContext):
         更新内核和所有 Git 自定义节点
         """
 
-        def _update_all() -> None:
+        def _update_all() -> tuple[bool, list[str]]:
+            kernel_updated = False
             if self.repository_state and self.repository_state.is_git_repo:
-                update_repository(self.comfyui_path)
-            self.extension_manager.update_all()
+                kernel_updated = update_repository(self.comfyui_path)
+            return kernel_updated, self.extension_manager.update_all()
 
-        self.run_background("一键更新中...", _update_all, lambda _value: self.refresh_all())
+        def _done(result: tuple[bool, list[str]]) -> None:
+            kernel_updated, updated = result
+            self.extension_update_status = {}
+            messagebox.showinfo("更新完成", summarize_updated_extensions(updated, kernel_updated=kernel_updated))
+            self.refresh_all()
+
+        self.run_background("一键更新中...", _update_all, _done)
 
     def update_selected_extension(
         self,
@@ -146,7 +157,11 @@ class ExtensionActionsMixin(GuiActionsMixinContext):
         if not ext.is_git_repo and ext.source_type != "comfy-registry":
             messagebox.showwarning("无法更新", f"'{ext.name}' 不是 Git 仓库或 Comfy Registry 节点")
             return
-        self.run_background("更新节点中...", lambda: self.extension_manager.update_extension(ext.name), lambda _value: self.refresh_extensions())
+        self.run_background(
+            "更新节点中...",
+            lambda: self.extension_manager.update_extension(ext.name),
+            lambda _value: (self._forget_extension_update_status(ext.name), self.refresh_extensions()),
+        )
 
     def toggle_selected_extension(
         self,

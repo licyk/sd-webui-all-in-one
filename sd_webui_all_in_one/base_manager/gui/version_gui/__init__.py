@@ -22,6 +22,13 @@ from sd_webui_all_in_one.base_manager.gui.version_gui.tasks import (
     BackgroundResult,
     BackgroundTaskMixin,
 )
+from sd_webui_all_in_one.base_manager.gui.version_gui.update_state import (
+    ExtensionCheckStatus,
+    ExtensionUpdateCheckMixin,
+    format_extension_update_state,
+    summarize_extension_update_check,
+    summarize_updated_extensions,
+)
 from sd_webui_all_in_one.base_manager.gui.version_gui.theme import (
     T,
     detect_system_theme,
@@ -48,4 +55,9 @@ __all__ = [
     "apply_gui_theme",
     "apply_window_icon",
     "configure_gui_fonts",
+    "ExtensionCheckStatus",
+    "ExtensionUpdateCheckMixin",
+    "format_extension_update_state",
+    "summarize_extension_update_check",
+    "summarize_updated_extensions",
 ]

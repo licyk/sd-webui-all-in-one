@@ -2,6 +2,7 @@
 
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-positional-arguments,too-many-locals
 
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import (
     Callable,
@@ -11,8 +12,11 @@ from typing import (
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
+    DEFAULT_GIT_UPDATE_WORKERS,
+    MIRROR_GIT_UPDATE_WORKERS,
     clone_repo,
     get_repo_name_from_url,
+    update_git_repositories,
 )
 from sd_webui_all_in_one.base_manager.repository_inspector import (
     inspect_repository,
@@ -41,6 +45,7 @@ ExtensionSourceType = Literal["git", "comfy-registry", "file", "unknown"]
 from sd_webui_all_in_one.base_manager.version_manager.models import ManagedExtension, RepositoryUpdateStatus
 from sd_webui_all_in_one.base_manager.version_manager.repository import (
     check_repository_update,
+    configure_git_env,
     switch_repository_branch,
     switch_repository_commit,
     update_repository,
@@ -63,6 +68,7 @@ class ExtensionManager:
         set_enabled: Callable[[str, bool], None],
         ignored_names: Iterable[str] | None = None,
         include_files: bool = False,
+        use_github_mirror: bool = False,
     ) -> None:
         """
         初始化扩展管理器
@@ -80,6 +86,8 @@ class ExtensionManager:
                 需要忽略的扩展名称
             include_files (bool):
                 是否允许把单文件扩展纳入列表
+            use_github_mirror (bool):
+                是否正在使用 GitHub 镜像源, 用于选择较低的并行线程数以避免镜像源限流
         """
         self.root_path = Path(root_path)
         self.extension_path = self.root_path / extension_dir_name
@@ -87,6 +95,7 @@ class ExtensionManager:
         self.set_enabled = set_enabled
         self.ignored_names = set(ignored_names or {"__pycache__"})
         self.include_files = include_files
+        self.use_github_mirror = use_github_mirror
         logger.info("初始化扩展管理器完成, 扩展目录: %s", self.extension_path)
 
     def list_extensions(self) -> list[ManagedExtension]:
@@ -200,30 +209,86 @@ class ExtensionManager:
         update_repository(ext_path)
         logger.info("更新扩展完成: %s", name)
 
-    def update_all(
+    def update_extensions(
         self,
-    ) -> None:
+        names: Iterable[str],
+        fetch: bool = True,
+    ) -> list[str]:
         """
-        更新所有 Git 扩展
+        并行更新指定的 Git 扩展
+
+        Args:
+            names (Iterable[str]):
+                扩展名称列表
+            fetch (bool):
+                是否先拉取远程更新; 刚执行过 `check_updates()` 时可关闭以复用已拉取的远程引用
+
+        Returns:
+            list[str]: 实际发生更新的扩展名称列表
 
         Raises:
             AggregateError:
                 一个或多个扩展更新失败
         """
         errors: list[Exception] = []
+        paths: list[Path] = []
+        for name in dict.fromkeys(names):
+            ext_path = self.extension_path / name
+            if git_warpper.is_git_repo(ext_path):
+                paths.append(ext_path)
+            else:
+                logger.warning("扩展 '%s' 不是 Git 仓库, 无法更新", name)
+                errors.append(ValueError(f"'{name}' 不是 Git 仓库，无法更新"))
+        return self._update_paths(paths, errors, fetch=fetch)
+
+    def update_all(
+        self,
+    ) -> list[str]:
+        """
+        并行更新所有 Git 扩展
+
+        Returns:
+            list[str]: 实际发生更新的扩展名称列表
+
+        Raises:
+            AggregateError:
+                一个或多个扩展更新失败
+        """
         logger.info("更新所有扩展中: %s", self.extension_path)
-        for ext in self.list_extensions():
-            if not ext.is_git_repo:
-                continue
-            try:
-                update_repository(ext.path)
-            except Exception as e:
-                logger.error("更新扩展 '%s' 时发生错误: %s", ext.name, e)
-                errors.append(e)
+        return self._update_paths([ext.path for ext in self.list_extensions() if ext.is_git_repo], [])
+
+    def _update_paths(
+        self,
+        paths: list[Path],
+        errors: list[Exception],
+        fetch: bool = True,
+    ) -> list[str]:
+        """
+        并行更新扩展路径并汇总结果
+
+        Args:
+            paths (list[Path]):
+                Git 扩展路径列表
+            errors (list[Exception]):
+                已收集的错误列表
+            fetch (bool):
+                是否先拉取远程更新
+
+        Returns:
+            list[str]: 实际发生更新的扩展名称列表
+
+        Raises:
+            AggregateError:
+                一个或多个扩展更新失败
+        """
+        results = update_git_repositories(paths, use_github_mirror=self.use_github_mirror, fetch=fetch)
+        errors.extend(result.error for result in results if result.error is not None)
         if errors:
             logger.error("更新扩展时发生错误, 共 %s 个扩展更新失败", len(errors))
             raise AggregateError("更新扩展时发生错误", errors)
-        logger.info("更新所有扩展完成: %s", self.extension_path)
+        updated = [result.path.name for result in results if result.updated]
+        logger.info("更新扩展完成: %s, 共 %s 个扩展发生更新", self.extension_path, len(updated))
+        return updated
 
     def check_updates(
         self,
@@ -232,7 +297,7 @@ class ExtensionManager:
         custom_github_mirror: str | list[str] | None = None,
     ) -> list[RepositoryUpdateStatus]:
         """
-        检查所有扩展是否存在远程更新
+        并行检查所有扩展是否存在远程更新
 
         Args:
             fetch (bool):
@@ -243,31 +308,32 @@ class ExtensionManager:
                 自定义 GitHub 镜像源
 
         Returns:
-            list[RepositoryUpdateStatus]: 扩展更新状态列表
+            list[RepositoryUpdateStatus]: 与扩展列表顺序一致的扩展更新状态列表
         """
-        result: list[RepositoryUpdateStatus] = []
         logger.info("检查扩展更新中: %s", self.extension_path)
-        for ext in self.list_extensions():
+        if fetch and use_github_mirror:
+            # 镜像源配置会写入共享的 Git 配置文件, 需要在并行检查前完成
+            configure_git_env(use_github_mirror=use_github_mirror, custom_github_mirror=custom_github_mirror)
+
+        def _check(ext: ManagedExtension) -> RepositoryUpdateStatus:
             if not ext.is_git_repo:
-                result.append(
-                    RepositoryUpdateStatus(
-                        name=ext.name,
-                        path=ext.path,
-                        is_git_repo=False,
-                        branch=ext.branch,
-                        current_commit=ext.commit,
-                        error=ext.error or "非 Git 仓库",
-                    )
+                return RepositoryUpdateStatus(
+                    name=ext.name,
+                    path=ext.path,
+                    is_git_repo=False,
+                    branch=ext.branch,
+                    current_commit=ext.commit,
+                    error=ext.error or "非 Git 仓库",
                 )
-                continue
-            status = check_repository_update(
-                ext.path,
-                fetch=fetch,
-                use_github_mirror=use_github_mirror,
-                custom_github_mirror=custom_github_mirror,
-            )
+            status = check_repository_update(ext.path, fetch=fetch)
             status.name = ext.name
-            result.append(status)
+            return status
+
+        extensions = self.list_extensions()
+        mirror = use_github_mirror or self.use_github_mirror
+        workers = MIRROR_GIT_UPDATE_WORKERS if mirror else DEFAULT_GIT_UPDATE_WORKERS
+        with ThreadPoolExecutor(max_workers=max(1, min(workers, len(extensions) or 1))) as executor:
+            result = list(executor.map(_check, extensions))
         logger.info("检查扩展更新完成: %s, 共 %s 个扩展", self.extension_path, len(result))
         return result
 

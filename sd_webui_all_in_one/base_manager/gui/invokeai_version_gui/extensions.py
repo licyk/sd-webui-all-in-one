@@ -23,10 +23,10 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
 )
 
 
-from sd_webui_all_in_one.base_manager.gui.version_gui import GuiActionsMixinContext
+from sd_webui_all_in_one.base_manager.gui.version_gui import ExtensionUpdateCheckMixin
 
 
-class ExtensionActionsMixin(GuiActionsMixinContext):
+class ExtensionActionsMixin(ExtensionUpdateCheckMixin):
     """提供 InvokeAI 扩展管理动作。"""
 
     def _create_extensions_tab(
@@ -36,6 +36,7 @@ class ExtensionActionsMixin(GuiActionsMixinContext):
         toolbar.pack(fill=tk.X, padx=8, pady=8)
         ttk.Button(toolbar, text="刷新扩展", command=self.refresh_extensions).pack(side=tk.LEFT)
         ttk.Button(toolbar, text="更新选中", command=self.update_selected_extension).pack(side=tk.LEFT, padx=(8, 0))
+        self._create_update_check_buttons(toolbar)
         ttk.Button(toolbar, text="切换版本", command=self.open_extension_commit_dialog).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Button(toolbar, text="切换分支", command=self.open_extension_branch_dialog).pack(side=tk.LEFT, padx=(8, 0))
         ttk.Button(toolbar, text="启用/禁用", command=self.toggle_selected_extension).pack(side=tk.LEFT, padx=(8, 0))
@@ -67,7 +68,15 @@ class ExtensionActionsMixin(GuiActionsMixinContext):
         self.render_extensions()
 
     def _extension_values(self, ext: ManagedExtension) -> tuple[str, str, str, str, str, str, str]:
-        return ("✓" if ext.enabled else "", ext.name, ext.url or "-", ext.branch or "-", ext.commit or "-", ext.commit_date or "-", "Git 仓库" if ext.is_git_repo else (ext.error or "非 Git 仓库"))
+        return (
+            "✓" if ext.enabled else "",
+            ext.name,
+            ext.url or "-",
+            ext.branch or "-",
+            ext.commit or "-",
+            ext.commit_date or "-",
+            self._extension_state_text(ext.name, "Git 仓库" if ext.is_git_repo else (ext.error or "非 Git 仓库")),
+        )
 
     def render_extensions(
         self,
@@ -102,7 +111,11 @@ class ExtensionActionsMixin(GuiActionsMixinContext):
         if not ext.is_git_repo:
             messagebox.showwarning("无法更新", f"'{ext.name}' 不是 Git 仓库")
             return
-        self.run_background("更新扩展中...", lambda: self.extension_manager.update_extension(ext.name), lambda _value: self.refresh_extensions())
+        self.run_background(
+            "更新扩展中...",
+            lambda: self.extension_manager.update_extension(ext.name),
+            lambda _value: (self._forget_extension_update_status(ext.name), self.refresh_extensions()),
+        )
 
     def toggle_selected_extension(
         self,

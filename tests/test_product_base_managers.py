@@ -5,6 +5,8 @@ from typing import Any, cast
 
 import pytest
 
+from sd_webui_all_in_one import git_warpper
+from sd_webui_all_in_one.base_manager.comfy_registry import ComfyRegistryNodeUpdateResult
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.base_manager import comfyui_base
 from sd_webui_all_in_one.base_manager import fooocus_base
@@ -231,9 +233,9 @@ def test_comfyui_custom_node_lifecycle(monkeypatch, tmp_path):
     (custom_nodes / "file.py").write_text("pass", encoding="utf-8")
 
     monkeypatch.setattr(implementation, "inspect_repository", _fake_repository_state)
-    monkeypatch.setattr(implementation.git_warpper, "get_current_branch_remote_url", _fail_old_git_info_reader)
-    monkeypatch.setattr(implementation.git_warpper, "get_current_commit", _fail_old_git_info_reader)
-    monkeypatch.setattr(implementation.git_warpper, "get_current_branch", _fail_old_git_info_reader)
+    monkeypatch.setattr(git_warpper, "get_current_branch_remote_url", _fail_old_git_info_reader)
+    monkeypatch.setattr(git_warpper, "get_current_commit", _fail_old_git_info_reader)
+    monkeypatch.setattr(git_warpper, "get_current_branch", _fail_old_git_info_reader)
 
     nodes = sorted(comfyui_base.list_comfyui_custom_nodes(tmp_path), key=lambda item: item["name"])
     assert [node["name"] for node in nodes] == ["disabled.disabled", "installed", "registry-node"]
@@ -269,7 +271,6 @@ def test_comfyui_custom_node_lifecycle(monkeypatch, tmp_path):
 def test_comfyui_custom_node_install_and_update_aggregate_errors(monkeypatch, tmp_path):
     _use_temp_git_config(monkeypatch, tmp_path)
     install_implementation = _implementation_module(comfyui_base, "install_comfyui_custom_node")
-    update_implementation = _implementation_module(comfyui_base, "update_comfyui_custom_nodes")
     custom_nodes = tmp_path / "custom_nodes"
     (custom_nodes / "ok" / ".git").mkdir(parents=True)
     (custom_nodes / "bad" / ".git").mkdir(parents=True)
@@ -297,12 +298,12 @@ def test_comfyui_custom_node_install_and_update_aggregate_errors(monkeypatch, tm
 
     updates = []
 
-    def fake_update(path):
+    def fake_update(path, live=True, fetch=True):
         updates.append(path.name)
         if path.name == "bad":
             raise RuntimeError("update bad")
 
-    monkeypatch.setattr(update_implementation.git_warpper, "update", fake_update)
+    monkeypatch.setattr(git_warpper, "update", fake_update)
     with pytest.raises(AggregateError):
         comfyui_base.update_comfyui_custom_nodes(tmp_path)
     assert sorted(updates) == ["bad", "ok"]
@@ -348,18 +349,33 @@ def test_comfyui_extension_manager_update_all_reuses_extension_scan(monkeypatch,
     git_updates = []
     registry_updates = []
 
-    def fake_registry_update(comfyui_path, *, node_id, version, target_path):
-        registry_updates.append((comfyui_path, node_id, version, target_path))
+    def fake_registry_update(nodes):
+        registry_updates.extend(nodes)
+        return [ComfyRegistryNodeUpdateResult(node_id=node_id, path=path, updated=True) for node_id, path in nodes]
+
+    def fake_git_update(path, live=True, fetch=True):
+        git_updates.append((path, live, fetch))
+        return False
 
     monkeypatch.setattr(manager, "list_extensions", fake_list_extensions)
-    monkeypatch.setattr(implementation.git_warpper, "update", lambda path: git_updates.append(path))
-    monkeypatch.setattr(implementation, "switch_comfy_registry_node_version", fake_registry_update)
+    monkeypatch.setattr(git_warpper, "update", fake_git_update)
+    monkeypatch.setattr(implementation, "update_comfy_registry_nodes", fake_registry_update)
 
-    manager.update_all()
+    assert manager.update_all() == ["registry-node"]
 
     assert scan_count == 1
-    assert git_updates == [git_path]
-    assert registry_updates == [(tmp_path, "registry-node", None, registry_path)]
+    assert git_updates == [(git_path, False, True)]
+    assert registry_updates == [("registry-node", registry_path)]
+
+    git_updates.clear()
+    registry_updates.clear()
+    with pytest.raises(AggregateError) as exc:
+        manager.update_extensions(["registry-node", "file.py", "git-node"], fetch=False)
+    assert git_updates == [(git_path, False, False)]
+    assert registry_updates == [("registry-node", registry_path)]
+    assert len(exc.value.exceptions) == 1
+    with pytest.raises(FileNotFoundError):
+        manager.update_extensions(["missing"])
 
 
 def test_launch_helpers_build_env_and_delegate(monkeypatch, tmp_path):
@@ -487,7 +503,7 @@ def test_install_sd_webui_orchestrates_branch_extensions_repositories_and_models
     monkeypatch.setattr(implementation, "get_pypi_mirror_config", lambda use_cn_mirror=True: {"PIP": str(use_cn_mirror)})
     monkeypatch.setattr(implementation, "apply_git_base_config_and_github_mirror", lambda **kwargs: {**kwargs["origin_env"], "GIT_CONFIG_GLOBAL": git_config_path})
     monkeypatch.setattr(implementation, "clone_repo", lambda **kwargs: calls.append(("clone", kwargs)))
-    monkeypatch.setattr(implementation.git_warpper, "switch_branch", lambda **kwargs: calls.append(("switch", kwargs)))
+    monkeypatch.setattr(git_warpper, "switch_branch", lambda **kwargs: calls.append(("switch", kwargs)))
     monkeypatch.setattr(implementation, "install_pytorch_for_webui", lambda **kwargs: calls.append(("pytorch", kwargs)))
     monkeypatch.setattr(implementation, "install_clip_package", lambda **kwargs: calls.append(("clip", kwargs)))
     monkeypatch.setattr(implementation, "install_requirements", lambda **kwargs: calls.append(("requirements", kwargs)))
@@ -561,9 +577,9 @@ def test_sd_webui_extension_lifecycle_and_model_uninstall(monkeypatch, tmp_path)
     (models / "other.txt").write_text("other", encoding="utf-8")
 
     monkeypatch.setattr(extension_implementation, "inspect_repository", _fake_repository_state)
-    monkeypatch.setattr(extension_implementation.git_warpper, "get_current_branch_remote_url", _fail_old_git_info_reader)
-    monkeypatch.setattr(extension_implementation.git_warpper, "get_current_commit", _fail_old_git_info_reader)
-    monkeypatch.setattr(extension_implementation.git_warpper, "get_current_branch", _fail_old_git_info_reader)
+    monkeypatch.setattr(git_warpper, "get_current_branch_remote_url", _fail_old_git_info_reader)
+    monkeypatch.setattr(git_warpper, "get_current_commit", _fail_old_git_info_reader)
+    monkeypatch.setattr(git_warpper, "get_current_branch", _fail_old_git_info_reader)
 
     infos = sorted(sd_webui_base.list_sd_webui_extensions(tmp_path), key=lambda item: item["name"])
     assert [(item["name"], item["status"]) for item in infos] == [("disabled", False), ("enabled", True), ("plain", True)]
@@ -618,12 +634,12 @@ def test_install_and_update_sd_webui_extensions_aggregate(monkeypatch, tmp_path)
 
     updates = []
 
-    def fake_update(path):
+    def fake_update(path, live=True, fetch=True):
         updates.append(path.name)
         if path.name == "bad":
             raise RuntimeError("bad")
 
-    monkeypatch.setattr(implementation.git_warpper, "update", fake_update)
+    monkeypatch.setattr(git_warpper, "update", fake_update)
     with pytest.raises(AggregateError):
         sd_webui_base.update_sd_webui_extensions(tmp_path)
     assert sorted(updates) == ["bad", "ok"]
@@ -765,9 +781,9 @@ def test_invokeai_custom_node_lifecycle_and_model_download(monkeypatch, tmp_path
     calls = []
 
     monkeypatch.setattr(extension_implementation, "inspect_repository", _fake_repository_state)
-    monkeypatch.setattr(extension_implementation.git_warpper, "get_current_branch_remote_url", _fail_old_git_info_reader)
-    monkeypatch.setattr(extension_implementation.git_warpper, "get_current_commit", _fail_old_git_info_reader)
-    monkeypatch.setattr(extension_implementation.git_warpper, "get_current_branch", _fail_old_git_info_reader)
+    monkeypatch.setattr(git_warpper, "get_current_branch_remote_url", _fail_old_git_info_reader)
+    monkeypatch.setattr(git_warpper, "get_current_commit", _fail_old_git_info_reader)
+    monkeypatch.setattr(git_warpper, "get_current_branch", _fail_old_git_info_reader)
 
     infos = sorted(invokeai_base.list_invokeai_custom_nodes(tmp_path), key=lambda item: item["name"])
     assert [(item["name"], item["status"]) for item in infos] == [("disabled", False), ("enabled", True)]
@@ -818,12 +834,12 @@ def test_install_update_uninstall_invokeai_custom_nodes(monkeypatch, tmp_path):
 
     updates = []
 
-    def fake_update(path):
+    def fake_update(path, live=True, fetch=True):
         updates.append(path.name)
         if path.name == "bad":
             raise RuntimeError("bad")
 
-    monkeypatch.setattr(implementation.git_warpper, "update", fake_update)
+    monkeypatch.setattr(git_warpper, "update", fake_update)
     with pytest.raises(AggregateError):
         invokeai_base.update_invokeai_custom_nodes(tmp_path)
     assert sorted(updates) == ["bad", "ok"]

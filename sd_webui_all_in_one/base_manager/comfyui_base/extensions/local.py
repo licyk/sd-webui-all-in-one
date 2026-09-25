@@ -9,17 +9,17 @@ from concurrent.futures import (
     ThreadPoolExecutor,
     as_completed,
 )
-from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.base_manager.base import (
     apply_github_raw_file_mirror,
     apply_git_base_config_and_github_mirror,
     apply_git_config_global_to_process,
+    update_git_repositories,
 )
 from sd_webui_all_in_one.base_manager.repository_inspector import inspect_repository
 from sd_webui_all_in_one.base_manager.comfy_registry import (
     read_comfy_registry_info,
     read_comfy_registry_nightly_id,
-    switch_comfy_registry_node_version,
+    update_comfy_registry_nodes,
 )
 from sd_webui_all_in_one.base_manager.snapshot import (
     ExtensionSnapshot,
@@ -317,8 +317,11 @@ def update_comfyui_custom_nodes(
     comfyui_path: Path,
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
+    max_workers: int | None = None,
 ) -> None:
     """更新 ComfyUI 扩展
+
+    Git 扩展并行拉取更新, Comfy Registry 节点仅在版本变化时重新安装。
 
     Args:
         comfyui_path (Path):
@@ -327,6 +330,8 @@ def update_comfyui_custom_nodes(
             是否使用 Github 镜像源
         custom_github_mirror (str | list[str] | None):
             自定义 Github 镜像源
+        max_workers (int | None):
+            并行更新线程数, 为 None 时自动选择
 
     Raises:
         AggregateError:
@@ -348,27 +353,14 @@ def update_comfyui_custom_nodes(
         raise FileNotFoundError("未找到 ComfyUI 扩展目录")
 
     update_targets = [ext for ext in custom_nodes_path.iterdir() if ext.is_dir() and (ext / ".git").exists()]
-    task_sum = len(update_targets)
-    count = 0
+    for result in update_git_repositories(update_targets, max_workers=max_workers, use_github_mirror=use_github_mirror):
+        if result.error is not None:
+            err.append(result.error)
 
-    for ext in update_targets:
-        count += 1
-        logger.info("[%s/%s] 更新 '%s' 扩展中", count, task_sum, ext.name)
-        try:
-            git_warpper.update(ext)
-        except Exception as e:
-            err.append(e)
-            logger.error("[%s/%s] 更新 '%s' 扩展时发生错误: %s", count, task_sum, ext.name, e)
-
-    cnr_targets = [item for item in list_comfyui_custom_nodes(comfyui_path) if item.get("source_type") == "comfy-registry"]
-    for item in cnr_targets:
-        node_id = item.get("registry_id") or _normalize_custom_node_name(item["name"])
-        try:
-            logger.info("更新 Comfy Registry 节点 '%s' 中", node_id)
-            switch_comfy_registry_node_version(comfyui_path, node_id=node_id, version=None, target_path=item["path"])
-        except Exception as e:
-            err.append(e)
-            logger.error("更新 Comfy Registry 节点 '%s' 时发生错误: %s", node_id, e)
+    cnr_targets = [
+        (item.get("registry_id") or _normalize_custom_node_name(item["name"]), item["path"]) for item in list_comfyui_custom_nodes(comfyui_path) if item.get("source_type") == "comfy-registry"
+    ]
+    err.extend(result.error for result in update_comfy_registry_nodes(cnr_targets, max_workers=max_workers) if result.error is not None)
 
     if err:
         raise AggregateError("更新 ComfyUI 扩展时发生错误", err)

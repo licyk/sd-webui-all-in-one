@@ -14,6 +14,7 @@ from sd_webui_all_in_one.base_manager.comfy_registry.index import (
 from sd_webui_all_in_one.base_manager.comfy_registry.install import (
     install_comfy_registry_node,
     switch_comfy_registry_node_version,
+    update_comfy_registry_nodes,
 )
 from sd_webui_all_in_one.base_manager.comfy_registry.local import (
     read_comfy_registry_info,
@@ -28,6 +29,7 @@ from sd_webui_all_in_one.base_manager.comfy_registry.models import (
     ComfyRegistryProgressCallback,
     ComfyRegistryInstallUnavailableError,
     ComfyRegistryNodeVersion,
+    ComfyRegistryNodeUpdateResult,
     ComfyRegistryNode,
     ComfyRegistryLocalInfo,
 )
@@ -42,6 +44,7 @@ __all__ = [
     "fetch_comfy_registry_extension_index",
     "install_comfy_registry_node",
     "switch_comfy_registry_node_version",
+    "update_comfy_registry_nodes",
     "read_comfy_registry_info",
     "read_comfy_registry_nightly_id",
     "COMFY_REGISTRY_BASE_URL",
@@ -52,6 +55,7 @@ __all__ = [
     "ComfyRegistryProgressCallback",
     "ComfyRegistryInstallUnavailableError",
     "ComfyRegistryNodeVersion",
+    "ComfyRegistryNodeUpdateResult",
     "ComfyRegistryNode",
     "ComfyRegistryLocalInfo",
 ]

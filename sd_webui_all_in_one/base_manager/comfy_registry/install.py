@@ -6,6 +6,11 @@ import os
 import shutil
 import sys
 import zipfile
+from collections.abc import Sequence
+from concurrent.futures import (
+    ThreadPoolExecutor,
+    as_completed,
+)
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from sd_webui_all_in_one.cmd import run_cmd
@@ -13,7 +18,10 @@ from sd_webui_all_in_one.downloader import download_file
 from sd_webui_all_in_one.pkg_manager import install_requirements
 
 from sd_webui_all_in_one.base_manager.comfy_registry.client import fetch_comfy_registry_install_info, logger
-from sd_webui_all_in_one.base_manager.comfy_registry.models import ComfyRegistryInstallUnavailableError, ComfyRegistryNodeVersion
+from sd_webui_all_in_one.base_manager.comfy_registry.local import read_comfy_registry_info
+from sd_webui_all_in_one.base_manager.comfy_registry.models import ComfyRegistryInstallUnavailableError, ComfyRegistryNodeUpdateResult, ComfyRegistryNodeVersion
+
+_DEFAULT_REGISTRY_CHECK_WORKERS = 8
 
 
 def _safe_zip_members(archive_path: Path) -> list[zipfile.ZipInfo]:
@@ -218,10 +226,40 @@ def switch_comfy_registry_node_version(
         )
 
     info = fetch_comfy_registry_install_info(node_id, version=version)
+    if version is None and _is_registry_node_current(target_path, info):
+        logger.info("Comfy Registry 节点 '%s' 已是最新版本 (%s), 跳过更新", node_id, info.version)
+        return info
+    _apply_registry_version(
+        node_id=node_id,
+        info=info,
+        requested_version=version,
+        target_path=target_path,
+        use_uv=use_uv,
+        custom_env=custom_env,
+        run_postinstall=run_postinstall,
+    )
+    return info
+
+
+def _is_registry_node_current(target_path: Path, info: ComfyRegistryNodeVersion) -> bool:
+    local_info = read_comfy_registry_info(target_path)
+    return local_info is not None and bool(info.version) and local_info.version.strip() == info.version.strip()
+
+
+def _apply_registry_version(
+    *,
+    node_id: str,
+    info: ComfyRegistryNodeVersion,
+    requested_version: str | None,
+    target_path: Path,
+    use_uv: bool,
+    custom_env: dict[str, str] | None,
+    run_postinstall: bool,
+) -> None:
     if not info.download_url:
         raise ComfyRegistryInstallUnavailableError(
             node_id=node_id,
-            version=version,
+            version=requested_version,
             reason="Registry install 元数据缺少 downloadUrl",
         )
 
@@ -235,4 +273,68 @@ def switch_comfy_registry_node_version(
 
     if run_postinstall:
         _run_postinstall(target_path, node_id, use_uv=use_uv, custom_env=custom_env)
-    return info
+
+
+def update_comfy_registry_nodes(
+    nodes: Sequence[tuple[str, Path]],
+    max_workers: int | None = None,
+    use_uv: bool = True,
+    custom_env: dict[str, str] | None = None,
+) -> list[ComfyRegistryNodeUpdateResult]:
+    """更新多个已安装的 Comfy Registry 节点到 Registry 默认版本。
+
+    并行查询 Registry 版本信息, 仅对版本与本地不一致的节点顺序执行下载和安装,
+    避免多个节点同时向同一 Python 环境安装依赖。
+
+    Args:
+        nodes (Sequence[tuple[str, Path]]):
+            节点 ID 与已安装路径列表。
+        max_workers (int | None):
+            并行查询线程数, 为 None 时使用默认值。
+        use_uv (bool):
+            是否使用 uv 安装 Python 依赖。
+        custom_env (dict[str, str] | None):
+            自定义安装环境变量。
+
+    Returns:
+        list[ComfyRegistryNodeUpdateResult]:
+            与输入顺序一致的节点更新结果列表。
+    """
+    results = [ComfyRegistryNodeUpdateResult(node_id=node_id, path=path) for node_id, path in nodes]
+    if not results:
+        return []
+    outdated: list[tuple[ComfyRegistryNodeUpdateResult, ComfyRegistryNodeVersion]] = []
+    logger.info("检查 %s 个 Comfy Registry 节点更新中", len(results))
+    with ThreadPoolExecutor(max_workers=max(1, min(max_workers or _DEFAULT_REGISTRY_CHECK_WORKERS, len(results)))) as executor:
+        future_to_result = {executor.submit(fetch_comfy_registry_install_info, result.node_id): result for result in results}
+        for future in as_completed(future_to_result):
+            result = future_to_result[future]
+            try:
+                info = future.result()
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                logger.error("获取 Comfy Registry 节点 '%s' 版本信息时发生错误: %s", result.node_id, e)
+                result.error = e
+                continue
+            result.version = info.version
+            if _is_registry_node_current(result.path, info):
+                logger.info("Comfy Registry 节点 '%s' 已是最新版本 (%s)", result.node_id, info.version)
+            else:
+                outdated.append((result, info))
+
+    for count, (result, info) in enumerate(outdated, start=1):
+        logger.info("[%s/%s] 更新 Comfy Registry 节点 '%s' 到 %s 中", count, len(outdated), result.node_id, info.version)
+        try:
+            _apply_registry_version(
+                node_id=result.node_id,
+                info=info,
+                requested_version=None,
+                target_path=result.path,
+                use_uv=use_uv,
+                custom_env=custom_env,
+                run_postinstall=True,
+            )
+            result.updated = True
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.error("更新 Comfy Registry 节点 '%s' 时发生错误: %s", result.node_id, e)
+            result.error = e
+    return results

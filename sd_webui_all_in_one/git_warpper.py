@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import time
 from pathlib import Path
 from functools import cache
 from typing import Literal, overload
@@ -22,6 +23,12 @@ logger = get_logger(
 )
 
 GIT_CONFIG_ARGS = ["-c", "safe.directory=*", "-c", "core.longpaths=true"]
+
+NON_INTERACTIVE_GIT_ENV = {"GIT_TERMINAL_PROMPT": "0", "GCM_INTERACTIVE": "never"}
+"""禁止 Git 与 Git Credential Manager 弹出交互式凭据输入的环境变量, 避免无人值守的拉取操作挂起"""
+
+FETCH_RETRY_DELAY = 2.0
+"""拉取失败后重试前的等待时间 (秒)"""
 
 
 @cache
@@ -256,13 +263,115 @@ def clone(
         raise RuntimeError(f"使用 Git 下载 {repo} 时发生错误: {e}") from e
 
 
-def update(
+def _read_update_state(
     path: Path,
-) -> None:
-    """更新 Git 仓库
+) -> tuple[str | None, str | None, str | None, bool]:
+    """通过一次 git status 读取更新所需的仓库状态
 
     Args:
-        path (Path): Git 仓库路径
+        path (Path):
+            Git 仓库路径
+
+    Returns:
+        (tuple[str | None, str | None, str | None, bool]):
+            当前提交, 当前分支 (指针游离时为 None), 上游分支 (未配置时为 None) 和已跟踪文件是否有改动
+
+    Raises:
+        RuntimeError:
+            执行 git status 失败时
+    """
+    output = run_git("status", "--porcelain=v2", "--branch", "--untracked-files=no", path=path, live=False)
+    commit = branch = upstream = None
+    dirty = False
+    for line in output.splitlines():
+        if line.startswith("# branch.oid "):
+            value = line.removeprefix("# branch.oid ").strip()
+            commit = None if value == "(initial)" else value
+        elif line.startswith("# branch.head "):
+            value = line.removeprefix("# branch.head ").strip()
+            branch = None if value == "(detached)" else value
+        elif line.startswith("# branch.upstream "):
+            upstream = line.removeprefix("# branch.upstream ").strip() or None
+        elif line and not line.startswith("#"):
+            dirty = True
+    return commit, branch, upstream, dirty
+
+
+def non_interactive_env(
+    base_env: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """生成禁止 Git 交互式凭据输入的环境变量
+
+    Args:
+        base_env (dict[str, str] | None):
+            基础环境变量, 为 None 时使用当前进程环境变量
+
+    Returns:
+        dict[str, str]:
+            附加了 `NON_INTERACTIVE_GIT_ENV` 的环境变量副本
+    """
+    env = (os.environ if base_env is None else base_env).copy()
+    env.update(NON_INTERACTIVE_GIT_ENV)
+    return env
+
+
+def fetch_remote(
+    path: Path,
+    *args: str,
+    live: bool = True,
+    custom_env: dict[str, str] | None = None,
+    retries: int = 1,
+) -> None:
+    """以非交互方式执行 git fetch, 失败时重试
+
+    Args:
+        path (Path):
+            Git 仓库路径
+        *args (str):
+            git fetch 参数
+        live (bool):
+            是否实时输出命令执行日志
+        custom_env (dict[str, str] | None):
+            基础环境变量, 为 None 时使用当前进程环境变量
+        retries (int):
+            失败后的重试次数
+
+    Raises:
+        RuntimeError:
+            重试后仍拉取失败时
+    """
+    env = non_interactive_env(custom_env)
+    for attempt in range(retries + 1):
+        try:
+            run_git("fetch", *args, path=path, custom_env=env, live=live)
+            return
+        except RuntimeError as e:
+            if attempt >= retries:
+                raise
+            logger.warning("拉取 '%s' 失败, %s 秒后重试 (%s/%s): %s", path, FETCH_RETRY_DELAY, attempt + 1, retries, e)
+            time.sleep(FETCH_RETRY_DELAY)
+
+
+def update(
+    path: Path,
+    live: bool = True,
+    fetch: bool = True,
+) -> bool:
+    """更新 Git 仓库
+
+    拉取当前分支的上游并重置到上游提交; 当前提交已与上游一致且已跟踪文件无改动时跳过重置。
+
+    Args:
+        path (Path):
+            Git 仓库路径
+        live (bool):
+            是否实时输出 Git 命令日志, 并行更新时应关闭以避免输出交错
+        fetch (bool):
+            是否先拉取远程更新; 刚完成更新检查时可关闭, 直接使用已拉取的远程引用
+
+    Returns:
+        bool:
+            仓库被重置到新的状态时返回 `True`, 已是最新时返回 `False`
 
     Raises:
         ValueError:
@@ -272,32 +381,48 @@ def update(
         RuntimeError:
             更新发生错误时
     """
-    if not is_git_repo(path):
-        raise ValueError(f"'{path}' 不是有效的 Git 仓库")
-
-    use_submodule = []
     logger.info("拉取 %s 更新中", path)
-    if check_point_offset(path):
+    try:
+        commit, branch, upstream, dirty = _read_update_state(path)
+    except RuntimeError as e:
+        if not is_git_repo(path):
+            raise ValueError(f"'{path}' 不是有效的 Git 仓库") from e
+        logger.error("读取 '%s' 仓库状态时发生错误: %s", path.as_posix(), e)
+        raise RuntimeError(f"更新 '{path}' 时发生错误: {e}") from e
+
+    if branch is None:
         fix_point_offset(path)
+        commit, branch, upstream, dirty = _read_update_state(path)
+    if branch is None:
+        raise FileNotFoundError(f"'{path}' 仓库不存在任何分支")
 
     try:
-        if run_git("submodule", "status", path=path, live=False).strip() != "":
+        use_submodule = []
+        if (path / ".gitmodules").is_file():
             use_submodule = ["--recurse-submodules"]
-            run_git("submodule", "init", path=path)
+            run_git("submodule", "init", path=path, live=live)
 
-        run_git("fetch", "--all", *use_submodule, path=path)
-        branch = get_current_branch(path)
-        remote_branch = get_git_repo_current_remote_branch(path)
+        if fetch:
+            # 配置了上游分支时 git fetch 只拉取该分支所属的远程源
+            fetch_remote(path, *([] if upstream else ["--all"]), *use_submodule, live=live)
 
-        if remote_branch is not None:
-            origin_branch = remote_branch
-        elif branch is not None:
-            origin_branch = branch
-        else:
-            raise FileNotFoundError(f"'{path}' 仓库不存在任何分支")
+        target = branch
+        target_commit = None
+        for ref in [upstream, branch] if upstream else [branch]:
+            try:
+                target_commit = run_git("rev-parse", "--verify", ref, path=path, live=False).strip()
+                target = ref
+                break
+            except RuntimeError:
+                logger.debug("'%s' 仓库中不存在引用 '%s'", path, ref)
 
-        run_git("reset", "--hard", origin_branch, *use_submodule, path=path)
-        logger.info("更新 '%s' 完成", path)
+        if target_commit is not None and target_commit == commit and not dirty:
+            logger.info("'%s' 已是最新版本", path)
+            return False
+
+        run_git("reset", "--hard", target, *use_submodule, path=path, live=live)
+        logger.info("更新 '%s' 完成: %s -> %s", path, (commit or "")[:7], (target_commit or target)[:7])
+        return True
     except RuntimeError as e:
         logger.error("更新 '%s' 时发生错误: %s", path.as_posix(), e)
         raise RuntimeError(f"更新 '{path}' 时发生错误: {e}") from e

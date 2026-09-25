@@ -2,6 +2,7 @@
 
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-positional-arguments,too-many-locals
 
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import (
     Callable,
@@ -10,6 +11,8 @@ from typing import (
 )
 
 from sd_webui_all_in_one.base_manager.base import (
+    DEFAULT_GIT_UPDATE_WORKERS,
+    MIRROR_GIT_UPDATE_WORKERS,
     get_pytorch_update_status,
 )
 from sd_webui_all_in_one.package_analyzer import PyWhlVersionComparison, get_package_version_from_library
@@ -42,7 +45,7 @@ from sd_webui_all_in_one.base_manager.version_manager.models import (
     WebUiUpdateStatus,
     WebUiUpdateSummary,
 )
-from sd_webui_all_in_one.base_manager.version_manager.repository import check_repository_update
+from sd_webui_all_in_one.base_manager.version_manager.repository import check_repository_update, configure_git_env
 
 
 def check_package_update(
@@ -118,8 +121,9 @@ def check_extension_updates(
     use_github_mirror: bool = False,
     custom_github_mirror: str | list[str] | None = None,
     registry_version_resolver: Callable[[ManagedExtension], str | None] | None = None,
+    max_workers: int | None = None,
 ) -> list[ExtensionUpdateStatus]:
-    """检查一组已安装扩展的更新状态。
+    """并行检查一组已安装扩展的更新状态。
 
     Args:
         extensions (Iterable[ManagedExtension]): 已安装扩展信息。
@@ -128,13 +132,18 @@ def check_extension_updates(
         custom_github_mirror (str | list[str] | None): 自定义 GitHub 镜像源。
         registry_version_resolver (Callable[[ManagedExtension], str | None] | None):
             Registry 扩展最新版本解析函数。
+        max_workers (int | None): 并行检查线程数, 为 None 时根据是否使用镜像源自动选择。
 
     Returns:
-        list[ExtensionUpdateStatus]: 每个扩展的详细更新状态。
+        list[ExtensionUpdateStatus]: 与输入顺序一致的扩展更新状态。
     """
-    result: list[ExtensionUpdateStatus] = []
+    extensions = list(extensions)
     logger.info("检查扩展更新中")
-    for extension in extensions:
+    if fetch and use_github_mirror:
+        # 镜像源配置会写入共享的 Git 配置文件, 需要在并行检查前完成
+        configure_git_env(use_github_mirror=use_github_mirror, custom_github_mirror=custom_github_mirror)
+
+    def _check(extension: ManagedExtension) -> ExtensionUpdateStatus:
         logger.debug("检查扩展更新: %s", extension.name)
         status = ExtensionUpdateStatus(
             name=extension.name,
@@ -148,12 +157,7 @@ def check_extension_updates(
             registry_id=extension.registry_id,
         )
         if extension.is_git_repo:
-            repository = check_repository_update(
-                extension.path,
-                fetch=fetch,
-                use_github_mirror=use_github_mirror,
-                custom_github_mirror=custom_github_mirror,
-            )
+            repository = check_repository_update(extension.path, fetch=fetch)
             status.remote_branch = repository.remote_branch
             status.current_version = repository.current_commit
             status.latest_version = repository.remote_commit
@@ -179,7 +183,12 @@ def check_extension_updates(
             status.skipped = True
             status.message = f"扩展来源 '{extension.source_type}' 不支持更新检查"
             logger.debug("扩展来源 '%s' 不支持更新检查, 已跳过: %s", extension.source_type, extension.name)
-        result.append(status)
+        return status
+
+    if max_workers is None:
+        max_workers = MIRROR_GIT_UPDATE_WORKERS if use_github_mirror else DEFAULT_GIT_UPDATE_WORKERS
+    with ThreadPoolExecutor(max_workers=max(1, min(max_workers, len(extensions) or 1))) as executor:
+        result = list(executor.map(_check, extensions))
     logger.info("检查扩展更新完成, 共 %s 个扩展", len(result))
     return result
 
