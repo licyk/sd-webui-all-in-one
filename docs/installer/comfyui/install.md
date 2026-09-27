@@ -76,7 +76,7 @@
     |[pythongosssss/ComfyUI-Custom-Scripts](https://github.com/pythongosssss/ComfyUI-Custom-Scripts)|
     |[ssitu/ComfyUI_UltimateSDUpscale](https://github.com/ssitu/ComfyUI_UltimateSDUpscale)|
     |[AlekPet/ComfyUI_Custom_Nodes_AlekPet](https://github.com/AlekPet/ComfyUI_Custom_Nodes_AlekPet)|
-    |[talesofai/comfyui-browser](https://github.com/talesofai/comfyui-browser)|
+    |[licyk/comfyui-image-browser](https://github.com/licyk/comfyui-image-browser)|
     |[ltdrdata/ComfyUI-Inspire-Pack](https://github.com/ltdrdata/ComfyUI-Inspire-Pack)|
     |[Suzie1/ComfyUI_Comfyroll_CustomNodes](https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes)|
     |[crystian/ComfyUI-Crystools](https://github.com/crystian/ComfyUI-Crystools)|

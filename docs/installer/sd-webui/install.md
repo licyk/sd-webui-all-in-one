@@ -103,7 +103,7 @@ SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI
     |[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
     |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
     |[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|
-    |[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|
+    |[licyk/sd-webui-image-browser](https://github.com/licyk/sd-webui-image-browser)|
     |[huchenlei/sd-webui-openpose-editor](https://github.com/huchenlei/sd-webui-openpose-editor)|
     |[licyk/sd-webui-prompt-all-in-one](https://github.com/licyk/sd-webui-prompt-all-in-one)|
     |[licyk/sd-webui-wd14-tagger](https://github.com/licyk/sd-webui-wd14-tagger)|
@@ -129,7 +129,7 @@ SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI
     |[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
     |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
     |[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|
-    |[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|
+    |[licyk/sd-webui-image-browser](https://github.com/licyk/sd-webui-image-browser)|
     |[huchenlei/sd-webui-openpose-editor](https://github.com/huchenlei/sd-webui-openpose-editor)|
     |[licyk/sd-webui-prompt-all-in-one](https://github.com/licyk/sd-webui-prompt-all-in-one)|
     |[licyk/sd-webui-wd14-tagger](https://github.com/licyk/sd-webui-wd14-tagger)|
@@ -153,7 +153,7 @@ SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI
     |[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
     |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
     |[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|
-    |[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|
+    |[licyk/sd-webui-image-browser](https://github.com/licyk/sd-webui-image-browser)|
     |[huchenlei/sd-webui-openpose-editor](https://github.com/huchenlei/sd-webui-openpose-editor)|
     |[licyk/sd-webui-prompt-all-in-one](https://github.com/licyk/sd-webui-prompt-all-in-one)|
     |[licyk/sd-webui-wd14-tagger](https://github.com/licyk/sd-webui-wd14-tagger)|
@@ -175,7 +175,7 @@ SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI
     |[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
     |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
     |[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|
-    |[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|
+    |[licyk/sd-webui-image-browser](https://github.com/licyk/sd-webui-image-browser)|
     |[licyk/sd-webui-prompt-all-in-one](https://github.com/licyk/sd-webui-prompt-all-in-one)|
     |[licyk/sd-webui-wd14-tagger](https://github.com/licyk/sd-webui-wd14-tagger)|
     |[hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans](https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans)|
@@ -196,7 +196,7 @@ SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI
     |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
     |[Haoming02/ADetailer-Neo](https://github.com/Haoming02/ADetailer-Neo)|
     |[licyk/sd-forge-neo-kohya-hrfix](https://github.com/licyk/sd-forge-neo-kohya-hrfix)|
-    |[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|
+    |[licyk/sd-webui-image-browser](https://github.com/licyk/sd-webui-image-browser)|
     |[licyk/sd-webui-prompt-all-in-one](https://github.com/licyk/sd-webui-prompt-all-in-one)|
     |[licyk/sd-webui-wd14-tagger](https://github.com/licyk/sd-webui-wd14-tagger)|
     |[hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans](https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans)|
@@ -216,7 +216,7 @@ SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI
     |[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
     |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
     |[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|
-    |[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|
+    |[licyk/sd-webui-image-browser](https://github.com/licyk/sd-webui-image-browser)|
     |[huchenlei/sd-webui-openpose-editor](https://github.com/huchenlei/sd-webui-openpose-editor)|
     |[licyk/sd-webui-prompt-all-in-one](https://github.com/licyk/sd-webui-prompt-all-in-one)|
     |[licyk/sd-webui-wd14-tagger](https://github.com/licyk/sd-webui-wd14-tagger)|
@@ -242,7 +242,7 @@ SD WebUI Installer 默认情况下安装的是 [Haoming02/Stable-Diffusion-WebUI
     |[Coyote-A/ultimate-upscale-for-automatic1111](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111)|
     |[DominikDoom/a1111-sd-webui-tagcomplete](https://github.com/DominikDoom/a1111-sd-webui-tagcomplete)|
     |[Bing-su/adetailer](https://github.com/Bing-su/adetailer)|
-    |[zanllp/sd-webui-infinite-image-browsing](https://github.com/zanllp/sd-webui-infinite-image-browsing)|
+    |[licyk/sd-webui-image-browser](https://github.com/licyk/sd-webui-image-browser)|
     |[huchenlei/sd-webui-openpose-editor](https://github.com/huchenlei/sd-webui-openpose-editor)|
     |[licyk/sd-webui-prompt-all-in-one](https://github.com/licyk/sd-webui-prompt-all-in-one)|
     |[hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans](https://github.com/hanamizuki-ai/stable-diffusion-webui-localization-zh_Hans)|

@@ -62,9 +62,9 @@ COMFYUI_CUSTOM_NODES_INFO_DICT: ComfyUiCustomNodeInfoList = [
         "save_dir": "custom_nodes/ComfyUI_Custom_Nodes_AlekPet",
     },
     {
-        "name": "comfyui-browser",
-        "url": "https://github.com/talesofai/comfyui-browser",
-        "save_dir": "custom_nodes/comfyui-browser",
+        "name": "comfyui-image-browser",
+        "url": "https://github.com/licyk/comfyui-image-browser",
+        "save_dir": "custom_nodes/comfyui-image-browser",
     },
     {
         "name": "ComfyUI-Inspire-Pack",

@@ -111,9 +111,9 @@ SD_WEBUI_EXTENSION_INFO_DICT: SDWebUiExtensionInfoList = [
         ],
     },
     {
-        "name": "sd-webui-infinite-image-browsing",
-        "url": "https://github.com/zanllp/sd-webui-infinite-image-browsing",
-        "save_dir": "extensions/sd-webui-infinite-image-browsing",
+        "name": "sd-webui-image-browser",
+        "url": "https://github.com/licyk/sd-webui-image-browser",
+        "save_dir": "extensions/sd-webui-image-browser",
         "supported_branch": [
             "sd_webui_main",
             "sd_webui_dev",
