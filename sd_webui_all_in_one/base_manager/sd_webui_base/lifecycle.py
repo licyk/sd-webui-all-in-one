@@ -140,14 +140,6 @@ SD_WEBUI_REPOSITORY_INFO_DICT: SDWebUiExtensionInfoList = [
             "sd_webui_forge",
         ],
     },
-    {
-        "name": "google_blockly_prototypes",
-        "url": "https://github.com/lllyasviel/google_blockly_prototypes",
-        "save_dir": "repositories/google_blockly_prototypes",
-        "supported_branch": [
-            "sd_webui_forge",
-        ],
-    },
 ]
 
 
