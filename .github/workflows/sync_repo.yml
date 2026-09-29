@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Sync to Gitee
-      uses: wearerequired/git-mirror-action@master
+      uses: wearerequired/git-mirror-action@v1.3.1
       env:
         SSH_PRIVATE_KEY: ${{ secrets.GITEE_RSA_PRIVATE_KEY }}
       with:
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Sync to Gitlab
-      uses: wearerequired/git-mirror-action@master
+      uses: wearerequired/git-mirror-action@v1.3.1
       env:
         SSH_PRIVATE_KEY: ${{ secrets.GITEE_RSA_PRIVATE_KEY }}
       with:

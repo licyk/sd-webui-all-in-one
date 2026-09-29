@@ -125,7 +125,7 @@ jobs:
 
       - name: Upload report
         if: ${{ always() && !inputs.dry_run }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-standalone-report
           path: ${{ runner.temp }}/python_standalone_report.json
