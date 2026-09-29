@@ -181,6 +181,7 @@ Authorization: Bearer <令牌>
 基础端点：
 
 - `GET /health`：健康检查，不需要鉴权。
+- `GET /api/v2/status`：服务运行状态，包括进程 ID、启动时间、运行秒数、按状态统计的任务数量和线程池占用（`workers.max`、`workers.busy`）。读取任务管理器，因此任务管理器卡死时该请求也会超时。
 - `GET /api/v2/methods`：获取已注册方法、方法元数据、任务状态列表和错误码列表。
 - `GET /api/v2/methods/<method>`：获取单个方法的元数据和结构化参数说明。
 - `POST /api/v2/call`：调用已注册 API 方法。

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import inspect
+import os
 import re
 import secrets
 import threading
@@ -363,6 +364,7 @@ class ApiTaskManager:
         self._order: deque[str] = deque()
         self._lock = threading.RLock()
         self._executor = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="api-job")
+        self._max_workers = max_workers
         self._max_retained = max_retained
 
     def create_task(self, method: str, params: dict[str, Any], handler: ApiJobHandler) -> ApiTask:
@@ -414,6 +416,21 @@ class ApiTaskManager:
         with self._lock:
             return [task.snapshot(include_result=False) for task in self._tasks.values()]
 
+    def status(self) -> dict[str, Any]:
+        """统计任务状态和线程池占用。
+
+        未完成的任务不会被淘汰，因此 pending 与 running 计数是精确的；终态计数只覆盖
+        仍被保留的记录。每个 running 任务占用一个工作线程。
+
+        Returns:
+            dict[str, Any]: 按状态统计的任务数量，以及线程池的容量和占用数量。
+        """
+        with self._lock:
+            counts = dict.fromkeys(API_TASK_STATUSES, 0)
+            for task in self._tasks.values():
+                counts[task.status] += 1
+        return {"tasks": counts, "workers": {"max": self._max_workers, "busy": counts["running"]}}
+
     def shutdown(self) -> None:
         """停止线程池，取消尚未开始的任务。"""
         self._executor.shutdown(wait=False, cancel_futures=True)
@@ -454,6 +471,7 @@ class ApiServer(ThreadingHTTPServer):
         self.method_specs = method_specs
         self.task_manager = task_manager or ApiTaskManager()
         self.max_request_body_size = max_request_body_size
+        self.started_at = time.time()
 
     def method_catalog(self) -> dict[str, Any]:
         """导出方法目录和 API 规范信息。
@@ -471,6 +489,22 @@ class ApiServer(ThreadingHTTPServer):
             "method_name_pattern": API_METHOD_NAME_PATTERN.pattern,
             "task_statuses": list(API_TASK_STATUSES),
             "error_codes": list(API_ERROR_CODES),
+        }
+
+    def server_status(self) -> dict[str, Any]:
+        """导出服务运行状态，供监管方判断服务是否仍在正常处理请求。
+
+        与 `/health` 不同，该状态需要读取任务管理器，任务管理器卡死时请求也会随之卡住。
+
+        Returns:
+            dict[str, Any]: 进程 ID、启动时间、运行秒数、任务统计和线程池占用。
+        """
+        return {
+            "status": "ok",
+            "pid": os.getpid(),
+            "started_at": self.started_at,
+            "uptime": time.time() - self.started_at,
+            **self.task_manager.status(),
         }
 
     def method_details(self, name: str) -> dict[str, Any] | None:
@@ -509,6 +543,10 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             return
 
         if not self._authorize():
+            return
+
+        if path == "/api/v2/status":
+            self._send_success(self.server.server_status())
             return
 
         if path == "/api/v2/methods":

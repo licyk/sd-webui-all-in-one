@@ -38,6 +38,14 @@ class ApiClient:
         """
         return self.request("GET", "/health")
 
+    def status(self) -> dict[str, Any]:
+        """获取 API 服务运行状态，需要鉴权。
+
+        Returns:
+            dict[str, Any]: 进程 ID、运行时间、任务统计和线程池占用。
+        """
+        return self.request("GET", "/api/v2/status")
+
     def methods(self) -> dict[str, Any]:
         """获取 API 方法目录。
 
