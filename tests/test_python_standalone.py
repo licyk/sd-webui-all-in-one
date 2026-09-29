@@ -575,3 +575,80 @@ def test_list_cli_requires_a_repo():
     args = _parse(["python-standalone", "list", "--no-hf", "--no-ms"])
     with pytest.raises(ValueError):
         args.func(args)
+
+
+# -- 临时输出模式 --------------------------------------------------------------
+
+
+def test_plan_tasks_temp_output_ignores_local_archive(tmp_path):
+    config = _config(tmp_path, [HF], temp_output=True)
+    (config.output_dir / REPO_PATH_LINUX_312).parent.mkdir(parents=True)
+    (config.output_dir / REPO_PATH_LINUX_312).write_bytes(b"zip")
+
+    task = sync.plan_tasks([("linux/amd64", _asset(LINUX_312))], {HF: set()}, config)[0]
+
+    assert task.action == "build"
+
+
+def test_validate_sync_config_temp_output_requires_target(tmp_path):
+    with pytest.raises(ValueError):
+        sync.validate_sync_config(_config(tmp_path, temp_output=True))
+    sync.validate_sync_config(_config(tmp_path, [HF], temp_output=True))
+
+
+def test_run_task_temp_output_deletes_archive_after_upload(tmp_path, fake_download):
+    config = _config(tmp_path, [HF], temp_output=True)
+    task = sync.plan_tasks([("linux/amd64", _asset(LINUX_312))], {HF: set()}, config)[0]
+    manager = FakeRepoManager()
+
+    result = sync.run_task(0, task, config, tmp_path / "work", manager, {HF: threading.Lock()}, threading.Event())
+
+    assert result.status == "success", result.error
+    assert manager.uploads[0]["files"] == ["linux/amd64/" + task.archive_name]
+    assert result.archive is None
+    assert result.size is not None and result.size > 0
+    assert result.sha256 is not None and len(result.sha256) == 64
+    assert not config.output_dir.exists()
+    assert not (tmp_path / "work" / task.slug).exists()
+
+    plan = SyncPlan(release_tag="20260924", source_repo="r", targets=[HF], tasks=[task])
+    resource = sync.build_sync_report(plan, [result], config)["resources"][0]
+    assert (resource["size"], resource["sha256"]) == (result.size, result.sha256)
+    assert "huggingface" in resource["urls"]
+
+
+def test_run_task_temp_output_keeps_archive_with_keep_temp(tmp_path, fake_download):
+    config = _config(tmp_path, [HF], temp_output=True, keep_temp=True)
+    task = sync.plan_tasks([("linux/amd64", _asset(LINUX_312))], {HF: set()}, config)[0]
+
+    result = sync.run_task(0, task, config, tmp_path / "work", FakeRepoManager(), {HF: threading.Lock()}, threading.Event())
+
+    assert result.archive == tmp_path / "work" / task.slug / "output" / task.archive_name
+    assert result.archive.is_file()
+
+
+def test_sync_cli_output_options(tmp_path, monkeypatch):
+    captured = {}
+
+    def fake_create_sync_plan(config, manager):
+        captured["config"] = config
+        return SyncPlan(release_tag="t", source_repo="r", targets=config.targets, tasks=[])
+
+    monkeypatch.setattr(python_standalone_cli, "create_repo_manager", lambda hf_token, ms_token: object())
+    monkeypatch.setattr(python_standalone_cli, "create_sync_plan", fake_create_sync_plan)
+
+    args = _parse(["python-standalone", "sync", "--temp-output"])
+    args.func(args)
+    assert captured["config"].temp_output is True
+
+    args = _parse(["python-standalone", "sync", "--output-dir", str(tmp_path / "dist")])
+    args.func(args)
+    assert captured["config"].temp_output is False
+    assert captured["config"].output_dir == tmp_path / "dist"
+
+    args = _parse(["python-standalone", "sync"])
+    args.func(args)
+    assert captured["config"].output_dir == Path("python_dist")
+
+    with pytest.raises(SystemExit):
+        _parse(["python-standalone", "sync", "--temp-output", "--output-dir", str(tmp_path)])

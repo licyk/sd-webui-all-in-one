@@ -105,11 +105,16 @@ jobs:
             --ms-repo-id "$INPUT_MS_REPO_ID"
             --path-in-repo "$INPUT_PATH_IN_REPO"
             --workers "$INPUT_WORKERS"
-            --output-dir "$RUNNER_TEMP/python_dist"
             --work-dir "$RUNNER_TEMP/python_work"
             --report-markdown "$GITHUB_STEP_SUMMARY"
             --report-json "$RUNNER_TEMP/python_standalone_report.json"
           )
+          # 有上传目标时打包结果只保存在临时目录, 上传完成后删除, 节省磁盘空间
+          if [ -n "$INPUT_HF_REPO_ID" ] || [ -n "$INPUT_MS_REPO_ID" ]; then
+            args+=(--temp-output)
+          else
+            args+=(--output-dir "$RUNNER_TEMP/python_dist")
+          fi
           if [ "$INPUT_FORCE" = "true" ]; then
             args+=(--force)
           fi

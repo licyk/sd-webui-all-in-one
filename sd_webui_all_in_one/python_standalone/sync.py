@@ -49,6 +49,7 @@ from sd_webui_all_in_one.python_standalone.types import (
     SyncPlan,
     SyncReport,
     SyncReportResource,
+    SyncStatus,
     SyncTask,
     SyncTaskResult,
 )
@@ -198,7 +199,7 @@ def plan_tasks(
         repo_path = build_repo_path(config.path_in_repo, platform, archive_name)
         present = [t for t, files in remote_files.items() if repo_path in files]
         missing = [t for t in remote_files if config.force or t not in present]
-        built = (output_dir / repo_path).is_file()
+        built = not config.temp_output and (output_dir / repo_path).is_file()
         if config.force:
             action: SyncAction = "build"
         elif remote_files:
@@ -303,6 +304,8 @@ def validate_sync_config(
         raise ValueError("任务并发数必须大于 0")
     if config.upload_threads < 1:
         raise ValueError("上传线程数必须大于 0")
+    if config.temp_output and not config.targets:
+        raise ValueError("打包结果只保存在临时目录时需要至少一个上传目标, 否则打包结果会在任务结束后被删除")
     if len({(t.source, t.repo_id) for t in config.targets}) != len(config.targets):
         raise ValueError("上传目标仓库重复")
     normalize_path_in_repo(config.path_in_repo)
@@ -320,6 +323,44 @@ def check_cancelled(
     """
     if cancel_event.is_set():
         raise InterruptedError("任务已取消")
+
+
+def archive_output_path(
+    task: SyncTask,
+    config: SyncConfig,
+    task_dir: Path,
+) -> Path:
+    """获取打包结果的保存路径
+
+    Args:
+        task (SyncTask): 任务
+        config (SyncConfig): 同步配置
+        task_dir (Path): 任务的临时目录
+    Returns:
+        Path: 启用 temp_output 时为任务临时目录中的路径, 否则为输出目录中与仓库相同的路径
+    """
+    if config.temp_output:
+        return task_dir / "output" / task.archive_name
+    return config.output_dir.resolve() / task.repo_path
+
+
+def archive_info(
+    archive: Path | None,
+) -> tuple[int | None, str | None]:
+    """获取打包结果的大小和 SHA256
+
+    Args:
+        archive (Path | None): 打包结果路径
+    Returns:
+        tuple[int | None, str | None]: 文件大小和 SHA256, 文件不存在时均为 None
+    """
+    if archive is None or not archive.is_file():
+        return None, None
+    digest = hashlib.sha256()
+    with archive.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return archive.stat().st_size, digest.hexdigest()
 
 
 def build_archive(
@@ -368,7 +409,7 @@ def build_archive(
     temp_archive.unlink(missing_ok=True)
     create_archive(source, temp_archive, progress=config.progress)
 
-    output = config.output_dir.resolve() / task.repo_path
+    output = archive_output_path(task, config, task_dir)
     output.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(str(temp_archive), str(output))
     shutil.rmtree(extract_dir, ignore_errors=True)
@@ -465,6 +506,23 @@ def run_task(
     task_dir.mkdir(parents=True, exist_ok=True)
     uploaded: list[RepoTarget] = []
     archive: Path | None = None
+    size: int | None = None
+    sha256: str | None = None
+    # 临时输出模式下打包结果随任务临时目录一起删除, 结果中不再记录其路径
+    archive_removed = config.temp_output and not config.keep_temp
+
+    def _result(status: SyncStatus, error: str | None = None) -> SyncTaskResult:
+        return SyncTaskResult(
+            task=task,
+            status=status,
+            uploaded=uploaded,
+            archive=None if archive_removed else archive,
+            size=size,
+            sha256=sha256,
+            error=error,
+            duration=time.monotonic() - start,
+        )
+
     try:
         check_cancelled(cancel_event)
         if task.action == "build":
@@ -473,20 +531,23 @@ def run_task(
         else:
             archive = config.output_dir.resolve() / task.repo_path
             logger.info("使用已有的打包结果: %s", archive)
+        size, sha256 = archive_info(archive)
 
         if manager is not None and task.missing_targets:
             check_cancelled(cancel_event)
             upload_archive(task, archive, config, manager, task_dir, target_locks, uploaded)
         logger.info("任务完成, 耗时 %.1f 秒", time.monotonic() - start)
-        return SyncTaskResult(task=task, status="success", uploaded=uploaded, archive=archive, duration=time.monotonic() - start)
+        return _result("success")
     except InterruptedError as e:
-        return SyncTaskResult(task=task, status="cancelled", uploaded=uploaded, archive=archive, error=str(e), duration=time.monotonic() - start)
+        return _result("cancelled", str(e))
     except Exception as e:
         logger.error("任务失败: %s", e, exc_info=logger.isEnabledFor(logging.DEBUG))
-        return SyncTaskResult(task=task, status="failed", uploaded=uploaded, archive=archive, error=str(e), duration=time.monotonic() - start)
+        return _result("failed", str(e))
     finally:
         if not config.keep_temp:
             shutil.rmtree(task_dir, ignore_errors=True)
+            if config.temp_output and archive is not None:
+                logger.info("已删除临时打包结果: %s", archive.name)
         _log_tag.reset(tag_token)
 
 
@@ -554,28 +615,12 @@ def run_sync(
     return ordered
 
 
-def _file_sha256(
-    path: Path,
-) -> str:
-    """计算文件 SHA256
-
-    Args:
-        path (Path): 文件路径
-    Returns:
-        str: SHA256
-    """
-    digest = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def task_resource(
     task: SyncTask,
     config: SyncConfig,
     available_targets: list[RepoTarget],
-    archive: Path | None = None,
+    size: int | None = None,
+    sha256: str | None = None,
 ) -> PythonStandaloneResource:
     """把任务转换为资源信息
 
@@ -583,12 +628,12 @@ def task_resource(
         task (SyncTask): 任务
         config (SyncConfig): 同步配置
         available_targets (list[RepoTarget]): 已有该文件的仓库, 用于生成下载链接
-        archive (Path | None): 本地打包结果, 存在时记录文件大小和 SHA256
+        size (int | None): 打包结果大小
+        sha256 (str | None): 打包结果 SHA256
     Returns:
         PythonStandaloneResource: 资源信息
     """
     system, arch = task.platform.split("/")
-    local = archive if archive is not None and archive.is_file() else None
     return {
         "type": RESOURCE_TYPE,
         "name": task.archive_name,
@@ -602,8 +647,8 @@ def task_resource(
         "variant": task.variant,
         "archive_format": task.archive_format,
         "path": task.repo_path,
-        "size": local.stat().st_size if local else None,
-        "sha256": _file_sha256(local) if local else None,
+        "size": size,
+        "sha256": sha256,
         "urls": {t.source: build_download_url(t, task.repo_path, config.revision) for t in available_targets},
     }
 
@@ -625,8 +670,11 @@ def build_sync_report(
     resources: list[SyncReportResource] = []
     for r in results:
         available = [t for t in plan.targets if t in r.task.present_targets or t in r.uploaded]
-        archive = r.archive or (config.output_dir.resolve() / r.task.repo_path)
-        resource = task_resource(r.task, config, available, archive)
+        size, sha256 = r.size, r.sha256
+        if size is None and not config.temp_output:
+            # 跳过的任务可能在输出目录中有之前的打包结果
+            size, sha256 = archive_info(config.output_dir.resolve() / r.task.repo_path)
+        resource = task_resource(r.task, config, available, size, sha256)
         resources.append(
             {
                 **resource,

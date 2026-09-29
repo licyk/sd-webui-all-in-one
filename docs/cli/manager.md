@@ -411,9 +411,10 @@ Release 与构建选项：
 - `--download-tool <工具>`：下载工具，可选 `aria2`、`requests`、`urllib`，默认 `requests`。
 - `--download-split <数量>`：单个文件下载分片数，默认 `5`。
 - `--no-verify-hash`：不校验下载文件的 SHA256。
-- `--output-dir <路径>`：打包结果保存目录，默认 `./python_dist`。
+- `--output-dir <路径>`：打包结果保存目录，默认 `./python_dist`；目录结构与仓库中的路径相同，之后运行时已打包过的文件可直接上传。
+- `--temp-output`：打包结果只保存在临时目录中，每个任务上传完成后立即删除，不写入 `--output-dir`；需要至少一个上传目标，不能与 `--output-dir`、`--no-upload` 同时使用。适合磁盘空间有限的环境，报告中仍会记录文件大小和 SHA256。
 - `--work-dir <路径>`：临时工作目录，默认使用系统临时目录。
-- `--keep-temp`：保留临时工作目录中的文件。
+- `--keep-temp`：保留临时工作目录中的文件；与 `--temp-output` 同时使用时打包结果也会保留在临时工作目录中。
 - `--progress` / `--no-progress`：是否显示进度条；默认只在单任务并发且在终端中运行时显示。
 - `--no-color`：不为任务日志标签着色。
 
@@ -492,7 +493,7 @@ sd-webui-all-in-one self-manager python-standalone releases [选项]
 - `--source-repo`、`--github-api-url`、`--github-token`：与 `sync` 相同。
 
 !!! info
-    仓库中的 GitHub Actions 工作流 `Sync Python Standalone` 只能手动触发，会执行 `sync` 并把 Markdown 报告和最新资源列表写入运行摘要，JSON 报告作为构件上传。
+    仓库中的 GitHub Actions 工作流 `Sync Python Standalone` 只能手动触发，会使用 `--temp-output` 执行 `sync` 并把 Markdown 报告和最新资源列表写入运行摘要，JSON 报告作为构件上传。
 
 ### HuggingFace / ModelScope 仓库管理
 调用 Python 内核中的 `RepoManager` 管理 HuggingFace / ModelScope 仓库文件。

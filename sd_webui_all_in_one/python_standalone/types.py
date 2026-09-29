@@ -146,7 +146,8 @@ class SyncConfig:
         path_in_repo (str): 仓库中的 Python 资源目录
         revision (str | None): 仓库分支
         public (bool): 仓库不存在需要创建时是否设为公开
-        output_dir (Path): 打包结果保存目录
+        output_dir (Path): 打包结果保存目录, temp_output 为 True 时不使用
+        temp_output (bool): 打包结果只保存在临时目录中, 任务上传完成后删除, 需要至少一个上传目标
         work_dir (Path | None): 临时工作目录, 为 None 时使用系统临时目录
         keep_temp (bool): 是否保留临时文件
         force (bool): 是否忽略仓库状态强制重新完成全部任务
@@ -171,6 +172,7 @@ class SyncConfig:
     revision: str | None = None
     public: bool = False
     output_dir: Path = field(default_factory=lambda: Path("python_dist"))
+    temp_output: bool = False
     work_dir: Path | None = None
     keep_temp: bool = False
     force: bool = False
@@ -254,7 +256,9 @@ class SyncTaskResult:
         task (SyncTask): 任务
         status (SyncStatus): 结果状态
         uploaded (list[RepoTarget]): 本次上传成功的目标
-        archive (Path | None): 打包结果路径
+        archive (Path | None): 打包结果路径, 打包结果已被删除时为 None
+        size (int | None): 打包结果大小
+        sha256 (str | None): 打包结果 SHA256
         error (str | None): 错误信息
         duration (float): 耗时 (秒)
     """
@@ -263,6 +267,8 @@ class SyncTaskResult:
     status: SyncStatus
     uploaded: list[RepoTarget] = field(default_factory=list)
     archive: Path | None = None
+    size: int | None = None
+    sha256: str | None = None
     error: str | None = None
     duration: float = 0.0
 

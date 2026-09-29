@@ -210,7 +210,8 @@ def python_standalone_sync_cli(
         path_in_repo=args.path_in_repo,
         revision=args.revision,
         public=args.public,
-        output_dir=args.output_dir,
+        output_dir=args.output_dir or Path("python_dist"),
+        temp_output=args.temp_output,
         work_dir=args.work_dir,
         keep_temp=args.keep_temp,
         force=args.force,
@@ -360,7 +361,9 @@ def register_python_standalone(
     sync_p.add_argument("--download-tool", choices=DOWNLOAD_TOOL_TYPE_LIST, default="requests", help="下载工具 (默认: requests)")
     sync_p.add_argument("--download-split", type=int, default=5, help="单个文件下载分片数 (默认: 5)")
     sync_p.add_argument("--no-verify-hash", action="store_false", dest="verify_hash", help="不校验下载文件的 SHA256")
-    sync_p.add_argument("--output-dir", type=normalized_filepath, default=Path("python_dist"), help="打包结果保存目录 (默认: ./python_dist)")
+    output_group = sync_p.add_mutually_exclusive_group()
+    output_group.add_argument("--output-dir", type=normalized_filepath, default=None, help="打包结果保存目录, 目录结构与仓库相同 (默认: ./python_dist)")
+    output_group.add_argument("--temp-output", action="store_true", help="打包结果只保存在临时目录中, 每个任务上传完成后删除; 需要至少一个上传目标")
     sync_p.add_argument("--work-dir", type=normalized_filepath, default=None, help="临时工作目录 (默认: 系统临时目录)")
     sync_p.add_argument("--keep-temp", action="store_true", help="保留临时工作目录中的文件")
     sync_p.add_argument("--progress", action=argparse.BooleanOptionalAction, default=None, help="是否显示进度条 (默认: 单任务并发且在终端中时显示)")
