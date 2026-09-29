@@ -11,3 +11,4 @@ launch.py
 .env
 uv.lock
 .venv/
+/python_dist

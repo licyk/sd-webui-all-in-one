@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import cast
 
 from sd_webui_all_in_one.cli_manager.argparse_helpers import add_subparsers_with_help
+from sd_webui_all_in_one.cli_manager.python_standalone_cli import register_python_standalone
 from sd_webui_all_in_one.proxy import (
     get_system_proxy_address,
     test_proxy_connectivity,
@@ -1237,6 +1238,9 @@ def register_manager(
             ms_token=args.ms_token,
         )
     )
+
+    # python-build-standalone 资源管理
+    register_python_standalone(sd_webui_all_in_one_sub)
 
     repo_p = sd_webui_all_in_one_sub.add_parser("repo", help="HuggingFace / ModelScope 仓库管理")
     repo_sub = add_subparsers_with_help(repo_p, dest="repo_action")

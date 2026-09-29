@@ -365,6 +365,135 @@ sd-webui-all-in-one self-manager portable upload <upload_path> [选项]
 
 至少需要配置 HuggingFace 或 ModelScope 中的一个目标。命令内部复用 `RepoManager` 的上传能力，会跳过远端已存在且 hash 相同的文件。
 
+### Python 资源管理
+下载 [python-build-standalone](https://github.com/astral-sh/python-build-standalone) 构建的 Python，重新打包后上传到 HuggingFace / ModelScope 仓库，并查询已上传的资源。安装器使用的 Python 即来自这些仓库。
+
+资源在仓库中的路径为 `<path-in-repo>/<系统>/<架构>/<文件名>`，例如 `python/linux/amd64/cpython-3.12.14+20260924-x86_64-unknown-linux-gnu-install_only.zip`。
+
+仓库通用选项（`sync` 和 `list` 共用）：
+
+- `--hf-repo-id <仓库>`：HuggingFace 仓库 ID，默认 `licyk/sd-webui-all-in-one`；传入空字符串或使用 `--no-hf` 时不使用。
+- `--hf-repo-type <类型>`：HuggingFace 仓库类型，可选 `model`、`dataset`、`space`，默认 `model`。
+- `--ms-repo-id <仓库>`：ModelScope 仓库 ID，默认 `licyks/sd-webui-all-in-one`；传入空字符串或使用 `--no-ms` 时不使用。
+- `--ms-repo-type <类型>`：ModelScope 仓库类型，默认 `model`。
+- `--revision <分支>`：仓库分支，默认使用仓库默认分支。
+- `--path-in-repo <路径>`：仓库中的 Python 资源目录，默认 `python`。
+- `--hf-token <令牌>`：HuggingFace Token；未传时读取 `HF_TOKEN`。
+- `--ms-token <令牌>`：ModelScope Token；未传时读取 `MODELSCOPE_API_TOKEN`。
+
+#### 下载、打包并上传
+```bash
+sd-webui-all-in-one self-manager python-standalone sync [选项]
+```
+
+命令会先读取目标仓库中已有的文件，只为缺失的部分创建任务：两个仓库都已有的文件跳过，只缺少其中一个仓库的文件只上传到缺失的仓库，本地输出目录中已打包过的文件直接上传。执行前会打印任务计划表，多线程执行时每个任务的日志带有不同颜色的标签。
+
+Release 与构建选项：
+
+- `--release-tag <标签>`：python-build-standalone 的 Release 标签，默认 `latest`；可用 `releases` 命令查看可选标签。
+- `--source-repo <仓库>`：python-build-standalone 发布仓库，默认 `astral-sh/python-build-standalone`。
+- `--github-api-url <地址>`：GitHub API 地址，默认 `https://api.github.com`。
+- `--github-token <令牌>`：GitHub Token；未传时读取 `GITHUB_TOKEN`，用于避免 API 速率限制。
+- `--versions <版本>`：逗号分隔的 Python 主次版本号，默认 `3.10,3.11,3.12,3.13,3.14`；每个版本取该 Release 中补丁版本最高的构建。
+- `--platforms <平台>`：逗号分隔的平台，默认全部内置平台：`windows/amd64`、`windows/aarch64`、`linux/amd64`、`linux/aarch64`、`macos/amd64`、`macos/aarch64`。
+- `--platform-map <系统/架构=三元组>`：添加或覆盖平台到构建目标三元组的映射，可重复使用，例如 `--platform-map linux/musl=x86_64-unknown-linux-musl`。
+- `--variant <变体>`：构建变体，默认 `install_only`，也可使用 `install_only_stripped`、`freethreaded-install_only` 等。
+- `--archive-format <格式>`：重新打包的格式，默认 `.zip`，可选 `.7z`、`.tar.gz`、`.tar.xz`、`.tar.zst` 等。压缩包根目录为 `python/`。
+
+任务选项：
+
+- `--no-upload`：只下载和打包，不读取仓库状态也不上传。
+- `--public`：仓库不存在需要创建时设为公开仓库。
+- `--force`：忽略仓库状态，强制重新下载、打包并上传全部任务。
+- `--dry-run`：只打印任务计划表，不执行任务。
+- `--workers <数量>`：同时执行的任务数，默认 `4`。
+- `--upload-threads <数量>`：单个仓库的上传线程数，默认 `1`。同一仓库的上传会依次进行，避免并发提交冲突。
+- `--download-tool <工具>`：下载工具，可选 `aria2`、`requests`、`urllib`，默认 `requests`。
+- `--download-split <数量>`：单个文件下载分片数，默认 `5`。
+- `--no-verify-hash`：不校验下载文件的 SHA256。
+- `--output-dir <路径>`：打包结果保存目录，默认 `./python_dist`。
+- `--work-dir <路径>`：临时工作目录，默认使用系统临时目录。
+- `--keep-temp`：保留临时工作目录中的文件。
+- `--progress` / `--no-progress`：是否显示进度条；默认只在单任务并发且在终端中运行时显示。
+- `--no-color`：不为任务日志标签着色。
+
+报告选项：
+
+- `--report-markdown <路径>`：任务完成后输出 Markdown 报告，`-` 表示标准输出。
+- `--report-json <路径>`：任务完成后输出 JSON 报告，`-` 表示标准输出。
+
+报告中每个资源包含类型、名称、版本、平台、变体、大小、SHA256、执行结果和各仓库的下载链接。有任务失败时退出码为 `1`，任务被中断时为 `130`。
+
+```json
+{
+  "type": "python-standalone",
+  "generated_at": "2026-09-29T00:00:00Z",
+  "source_repo": "astral-sh/python-build-standalone",
+  "release_tag": "20260924",
+  "targets": ["HuggingFace:licyk/sd-webui-all-in-one", "ModelScope:licyks/sd-webui-all-in-one"],
+  "summary": {"total": 29, "success": 29, "failed": 0, "skipped": 0, "cancelled": 0},
+  "resources": [
+    {
+      "type": "python-standalone",
+      "name": "cpython-3.12.14+20260924-x86_64-unknown-linux-gnu-install_only.zip",
+      "implementation": "cpython",
+      "version": "3.12.14",
+      "minor": "3.12",
+      "build_date": "20260924",
+      "platform": "linux",
+      "arch": "amd64",
+      "triple": "x86_64-unknown-linux-gnu",
+      "variant": "install_only",
+      "archive_format": ".zip",
+      "path": "python/linux/amd64/cpython-3.12.14+20260924-x86_64-unknown-linux-gnu-install_only.zip",
+      "size": 145392215,
+      "sha256": "...",
+      "urls": {
+        "huggingface": "https://huggingface.co/licyk/sd-webui-all-in-one/resolve/main/python/linux/amd64/...",
+        "modelscope": "https://modelscope.cn/models/licyks/sd-webui-all-in-one/resolve/master/python/linux/amd64/..."
+      },
+      "action": "build",
+      "status": "success",
+      "uploaded_to": ["huggingface", "modelscope"],
+      "error": null,
+      "duration": 17.1
+    }
+  ]
+}
+```
+
+#### 查询已上传的资源
+```bash
+sd-webui-all-in-one self-manager python-standalone list [选项]
+```
+
+默认只显示最新的构建：每个平台、Python 主次版本、变体和压缩包格式的组合只保留构建日期最新的一个。
+
+- `--all`：显示全部构建。
+- `--versions <版本>`：逗号分隔的主次版本号（如 `3.12`）或完整版本号（如 `3.12.14`）。
+- `--platforms <平台>`：逗号分隔的平台（如 `linux/amd64`）或系统（如 `linux`）。
+- `--variants <变体>`：逗号分隔的构建变体。
+- `--archive-formats <格式>`：逗号分隔的压缩包格式，如 `.zip,.tar.gz`。
+- `--build-date <日期>`：只显示该构建日期（即 Release 标签）的资源。
+- `--platform-map <系统/架构=三元组>`：用于解析自定义平台的文件名。
+- `--format <格式>`：输出格式，可选 `table`、`markdown`、`json`，默认 `table`。
+- `--output <路径>`：输出到文件，默认输出到标准输出。
+
+JSON 输出包含 `generated_at`、`sources`、`latest_only` 和 `resources`，`resources` 中每项的字段与同步报告相同（不含执行结果字段）。下载链接直接按仓库地址拼接，HuggingFace 地址可通过 `HF_ENDPOINT` 环境变量修改。
+
+#### 查看 python-build-standalone Release
+```bash
+sd-webui-all-in-one self-manager python-standalone releases [选项]
+```
+
+- `--limit <数量>`：显示数量，默认 `10`。
+- `--format <格式>`：输出格式，可选 `table`、`json`，默认 `table`。
+- `--output <路径>`：输出到文件，默认输出到标准输出。
+- `--source-repo`、`--github-api-url`、`--github-token`：与 `sync` 相同。
+
+!!! info
+    仓库中的 GitHub Actions 工作流 `Sync Python Standalone` 只能手动触发，会执行 `sync` 并把 Markdown 报告和最新资源列表写入运行摘要，JSON 报告作为构件上传。
+
 ### HuggingFace / ModelScope 仓库管理
 调用 Python 内核中的 `RepoManager` 管理 HuggingFace / ModelScope 仓库文件。
 

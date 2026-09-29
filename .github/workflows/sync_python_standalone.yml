@@ -1,0 +1,145 @@
+name: Sync Python Standalone
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: python-build-standalone Release 标签 (latest 表示最新版本)
+        required: false
+        default: latest
+      versions:
+        description: Python 主次版本号, 逗号分隔
+        required: false
+        default: "3.10,3.11,3.12,3.13,3.14"
+      platforms:
+        description: 平台, 逗号分隔 (windows/linux/macos + amd64/aarch64)
+        required: false
+        default: "windows/amd64,windows/aarch64,linux/amd64,linux/aarch64,macos/amd64,macos/aarch64"
+      variant:
+        description: 构建变体
+        required: false
+        default: install_only
+      archive_format:
+        description: 重新打包的格式
+        required: false
+        type: choice
+        default: ".zip"
+        options:
+          - ".zip"
+          - ".7z"
+          - ".tar.gz"
+          - ".tar.xz"
+          - ".tar.zst"
+      hf_repo_id:
+        description: HuggingFace 仓库 ID (留空则不上传到 HuggingFace)
+        required: false
+        default: licyk/sd-webui-all-in-one
+      ms_repo_id:
+        description: ModelScope 仓库 ID (留空则不上传到 ModelScope)
+        required: false
+        default: licyks/sd-webui-all-in-one
+      path_in_repo:
+        description: 仓库中的 Python 资源目录
+        required: false
+        default: python
+      workers:
+        description: 同时执行的任务数
+        required: false
+        default: "4"
+      force:
+        description: 忽略仓库状态, 强制重新下载、打包并上传全部任务
+        required: false
+        type: boolean
+        default: false
+      dry_run:
+        description: 只显示将要执行的任务
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: sync-python-standalone
+  cancel-in-progress: false
+
+jobs:
+  Sync-Python-Standalone:
+    name: Sync Python Standalone
+    runs-on: ubuntu-latest
+    env:
+      PYTHONIOENCODING: utf-8
+      PYTHONUNBUFFERED: 1
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+
+      - name: Setup Python and uv
+        uses: ./.github/actions/setup-portable-build
+
+      - name: Install SD WebUI All In One
+        run: uv pip install --system -e ".[download]"
+
+      - name: Download, package and upload Python
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
+          INPUT_RELEASE_TAG: ${{ inputs.release_tag }}
+          INPUT_VERSIONS: ${{ inputs.versions }}
+          INPUT_PLATFORMS: ${{ inputs.platforms }}
+          INPUT_VARIANT: ${{ inputs.variant }}
+          INPUT_ARCHIVE_FORMAT: ${{ inputs.archive_format }}
+          INPUT_HF_REPO_ID: ${{ inputs.hf_repo_id }}
+          INPUT_MS_REPO_ID: ${{ inputs.ms_repo_id }}
+          INPUT_PATH_IN_REPO: ${{ inputs.path_in_repo }}
+          INPUT_WORKERS: ${{ inputs.workers }}
+          INPUT_FORCE: ${{ inputs.force }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          args=(
+            --release-tag "$INPUT_RELEASE_TAG"
+            --versions "$INPUT_VERSIONS"
+            --platforms "$INPUT_PLATFORMS"
+            --variant "$INPUT_VARIANT"
+            --archive-format "$INPUT_ARCHIVE_FORMAT"
+            --hf-repo-id "$INPUT_HF_REPO_ID"
+            --ms-repo-id "$INPUT_MS_REPO_ID"
+            --path-in-repo "$INPUT_PATH_IN_REPO"
+            --workers "$INPUT_WORKERS"
+            --output-dir "$RUNNER_TEMP/python_dist"
+            --work-dir "$RUNNER_TEMP/python_work"
+            --report-markdown "$GITHUB_STEP_SUMMARY"
+            --report-json "$RUNNER_TEMP/python_standalone_report.json"
+          )
+          if [ "$INPUT_FORCE" = "true" ]; then
+            args+=(--force)
+          fi
+          if [ "$INPUT_DRY_RUN" = "true" ]; then
+            args+=(--dry-run)
+          fi
+          python -m sd_webui_all_in_one self-manager python-standalone sync "${args[@]}"
+
+      - name: Upload report
+        if: ${{ always() && !inputs.dry_run }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-standalone-report
+          path: ${{ runner.temp }}/python_standalone_report.json
+          if-no-files-found: ignore
+
+      - name: List latest uploaded Python
+        if: ${{ !inputs.dry_run }}
+        env:
+          INPUT_HF_REPO_ID: ${{ inputs.hf_repo_id }}
+          INPUT_MS_REPO_ID: ${{ inputs.ms_repo_id }}
+          INPUT_PATH_IN_REPO: ${{ inputs.path_in_repo }}
+        run: |
+          if [ -z "$INPUT_HF_REPO_ID" ] && [ -z "$INPUT_MS_REPO_ID" ]; then
+            exit 0
+          fi
+          python -m sd_webui_all_in_one self-manager python-standalone list \
+            --hf-repo-id "$INPUT_HF_REPO_ID" \
+            --ms-repo-id "$INPUT_MS_REPO_ID" \
+            --path-in-repo "$INPUT_PATH_IN_REPO" \
+            --format markdown \
+            --output "$RUNNER_TEMP/python_standalone_list.md"
+          cat "$RUNNER_TEMP/python_standalone_list.md" >> "$GITHUB_STEP_SUMMARY"
