@@ -17,6 +17,7 @@
 """
 
 import os
+import sys
 import atexit
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -31,7 +32,6 @@ from sd_webui_all_in_one.config import (
     SD_WEBUI_ALL_IN_ONE_SET_CONFIG,
     SD_WEBUI_ALL_IN_ONE_CACHE_PATH,
     SD_WEBUI_ALL_IN_ONE_DESKTOP_MODE,
-    DEFAULT_ENV_VARS,
     DEFAULT_GIT_CONFIG,
 )
 from sd_webui_all_in_one.proxy import (
@@ -40,7 +40,7 @@ from sd_webui_all_in_one.proxy import (
 )
 from sd_webui_all_in_one.env_manager import (
     generate_proxy_env_vars,
-    generate_cache_path_env_vars,
+    generate_managed_env_vars,
     generate_config_file_env_vars,
 )
 
@@ -68,17 +68,16 @@ def _apply_proxy() -> None:
                 _logger.debug("代理 %s 连通性测试失败，跳过代理配置", proxy_address)
 
 
-def _apply_cache_path() -> None:
+def _apply_managed_env_vars() -> None:
     if SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH:
         _logger.debug("设置缓存路径")
-        os.environ.update(generate_cache_path_env_vars(SD_WEBUI_ALL_IN_ONE_CACHE_PATH))
-
-
-def _apply_env_vars() -> None:
     if SD_WEBUI_ALL_IN_ONE_SET_CONFIG:
         _logger.debug("配置基础环境变量")
-        for k, v in DEFAULT_ENV_VARS:
-            os.environ[k] = v
+    generate_managed_env_vars(
+        cache_path=SD_WEBUI_ALL_IN_ONE_CACHE_PATH if SD_WEBUI_ALL_IN_ONE_SET_CACHE_PATH else None,
+        set_config=SD_WEBUI_ALL_IN_ONE_SET_CONFIG,
+        python_executable=Path(sys.executable) if SD_WEBUI_ALL_IN_ONE_SET_CONFIG else None,
+    ).apply(os.environ)
 
 
 def _apply_config_file() -> None:
@@ -93,8 +92,7 @@ def _apply_config_file() -> None:
 
 
 _apply_proxy()
-_apply_cache_path()
-_apply_env_vars()
+_apply_managed_env_vars()
 _apply_config_file()
 
 # pylint: disable=wrong-import-position

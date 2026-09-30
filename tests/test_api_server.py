@@ -97,6 +97,7 @@ def test_default_registry_uses_namespaced_real_callables():
     assert "sd_trainer.version.branch_presets" in methods
     assert "invokeai.model.list" in methods
     assert "system.proxy.get" in methods
+    assert "environment.managed_env_vars" in methods
     assert "mirror.resolve" in methods
     assert "hotpatcher.catalog" in methods
     assert "hotpatcher.default_config" in methods
@@ -245,6 +246,25 @@ def test_method_details_are_generated_from_real_signature():
             {"type": "array", "items": {"type": "string"}},
             {"type": "null"},
         ]
+    finally:
+        _stop_server(server, thread)
+
+
+def test_managed_env_vars_method_returns_grouped_environment(tmp_path):
+    methods = get_default_methods()
+    server, thread, base_url = _start_server(methods={"environment.managed_env_vars": methods["environment.managed_env_vars"]})
+    try:
+        status, payload = _request(
+            f"{base_url}/api/v2/call",
+            method="POST",
+            data={"method": "environment.managed_env_vars", "params": {"cache_path": tmp_path.as_posix()}},
+        )
+        assert status == 200
+        result = payload["result"]
+        assert set(result) == {"defaults", "overrides"}
+        assert result["defaults"]["HF_HOME"] == (tmp_path / "huggingface").as_posix()
+        assert result["overrides"]["PIP_TIMEOUT"] == "30"
+        assert "UV_PYTHON" not in result["overrides"]
     finally:
         _stop_server(server, thread)
 

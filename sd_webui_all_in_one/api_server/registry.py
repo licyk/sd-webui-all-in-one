@@ -45,6 +45,7 @@ from sd_webui_all_in_one.base_manager.version_manager import (
     update_repository,
 )
 from sd_webui_all_in_one.env_check import check_torch_version_status
+from sd_webui_all_in_one.env_manager import get_managed_env_vars
 from sd_webui_all_in_one.proxy import clean_proxy, get_system_proxy_address, set_proxy, test_proxy_connectivity
 from sd_webui_all_in_one.pytorch_manager import auto_detect_pytorch_device_category, export_pytorch_list, get_available_pytorch_device_type
 
@@ -379,6 +380,7 @@ def _register_model_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpe
 def _register_shared_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpec]) -> None:
     shared: dict[str, Callable[..., Any]] = {
         "environment.pytorch_version": check_torch_version_status,
+        "environment.managed_env_vars": get_managed_env_vars,
         "package.versions": fetch_pypi_versions,
         "pytorch.device_types": get_available_pytorch_device_type,
         "pytorch.device_category": auto_detect_pytorch_device_category,

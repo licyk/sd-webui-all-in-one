@@ -1,7 +1,6 @@
 """配置管理"""
 
 import os
-import sys
 import logging
 from pathlib import Path
 
@@ -17,36 +16,32 @@ LOGGER_COLOR = os.getenv("SD_WEBUI_ALL_IN_ONE_LOGGER_COLOR") not in ["0", "False
 RETRY_TIMES = int(os.getenv("SD_WEBUI_ALL_IN_ONE_RETRY_TIMES", str(3)))
 """重试次数"""
 
-DEFAULT_ENV_VARS = [
-    ["TF_CPP_MIN_LOG_LEVEL", "3"],
-    ["BITSANDBYTES_NOWELCOME", "1"],
-    ["GRADIO_ANALYTICS_ENABLED", "False"],
-    ["ClDeviceGlobalMemSizeAvailablePercent", "100"],
-    ["CUDA_MODULE_LOADING", "LAZY"],
-    ["TORCH_CUDNN_V8_API_ENABLED", "1"],
-    ["SAFETENSORS_FAST_GPU", "1"],
-    ["SYCL_CACHE_PERSISTENT", "1"],
-    ["PYTHONUTF8", "1"],
-    ["PYTHONIOENCODING", "utf-8"],
-    ["PYTHONUNBUFFERED", "1"],
-    ["PYTHONFAULTHANDLER", "1"],
-    [
-        "PYTHONWARNINGS",
-        "ignore:::torchvision.transforms.functional_tensor,ignore::UserWarning,ignore::FutureWarning,ignore::DeprecationWarning,ignore::SyntaxWarning",
-    ],
-    ["UV_HTTP_TIMEOUT", "30"],
-    ["UV_CONCURRENT_DOWNLOADS", "50"],
-    ["UV_INDEX_STRATEGY", "unsafe-best-match"],
-    ["PIP_DISABLE_PIP_VERSION_CHECK", "1"],
-    ["PIP_NO_WARN_SCRIPT_LOCATION", "0"],
-    ["PIP_TIMEOUT", "30"],
-    ["PIP_RETRIES", "5"],
-    ["PIP_PREFER_BINARY", "1"],
-    ["PIP_YES", "1"],
-    ["UV_PYTHON", Path(sys.executable).as_posix()],
-    ["UV_LINK_MODE", "copy"],
-]
-"""默认配置的环境变量"""
+DEFAULT_ENV_VARS: dict[str, str] = {
+    "TF_CPP_MIN_LOG_LEVEL": "3",
+    "BITSANDBYTES_NOWELCOME": "1",
+    "GRADIO_ANALYTICS_ENABLED": "False",
+    "ClDeviceGlobalMemSizeAvailablePercent": "100",
+    "CUDA_MODULE_LOADING": "LAZY",
+    "TORCH_CUDNN_V8_API_ENABLED": "1",
+    "SAFETENSORS_FAST_GPU": "1",
+    "SYCL_CACHE_PERSISTENT": "1",
+    "PYTHONUTF8": "1",
+    "PYTHONIOENCODING": "utf-8",
+    "PYTHONUNBUFFERED": "1",
+    "PYTHONFAULTHANDLER": "1",
+    "PYTHONWARNINGS": "ignore:::torchvision.transforms.functional_tensor,ignore::UserWarning,ignore::FutureWarning,ignore::DeprecationWarning,ignore::SyntaxWarning",
+    "UV_HTTP_TIMEOUT": "30",
+    "UV_CONCURRENT_DOWNLOADS": "50",
+    "UV_INDEX_STRATEGY": "unsafe-best-match",
+    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+    "PIP_NO_WARN_SCRIPT_LOCATION": "0",
+    "PIP_TIMEOUT": "30",
+    "PIP_RETRIES": "5",
+    "PIP_PREFER_BINARY": "1",
+    "PIP_YES": "1",
+    "UV_LINK_MODE": "copy",
+}
+"""默认配置的静态环境变量, `UV_PYTHON` 由 `env_manager.generate_managed_env_vars()` 根据 Python 解释器路径生成"""
 
 DEFAULT_GIT_CONFIG = r"""
 [safe]

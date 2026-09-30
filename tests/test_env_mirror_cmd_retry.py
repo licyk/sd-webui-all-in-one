@@ -2,6 +2,7 @@ import os
 import shlex
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -102,13 +103,15 @@ def test_configure_env_helpers_and_wandb_token(monkeypatch):
         monkeypatch.delenv(key, raising=False)
 
     env_manager.configure_pip()
-    assert os.environ["UV_PYTHON"]
+    assert os.environ["UV_PYTHON"] == Path(sys.executable).as_posix()
     assert os.environ["PIP_PREFER_BINARY"] == "1"
     assert os.environ["PIP_YES"] == "1"
 
-    monkeypatch.setattr(env_manager, "DEFAULT_ENV_VARS", [("EXTRA_ENV", "enabled")])
+    monkeypatch.setattr(env_manager, "DEFAULT_ENV_VARS", {"EXTRA_ENV": "enabled"})
+    monkeypatch.delenv("UV_PYTHON")
     env_manager.configure_env_var()
     assert os.environ["EXTRA_ENV"] == "enabled"
+    assert os.environ["UV_PYTHON"] == Path(sys.executable).as_posix()
 
     env_manager.config_wandb_token()
     assert "WANDB_API_KEY" not in os.environ

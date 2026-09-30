@@ -175,6 +175,7 @@ function Write-Env-Activate-Script {
 `$Env:PYTHONPYCACHEPREFIX = `"`$PSScriptRoot/cache/pycache`"
 `$Env:UV_CACHE_DIR = `"`$PSScriptRoot/cache/uv`"
 `$Env:UV_PYTHON = `"`$PSScriptRoot/python.exe`"
+`$Env:PIP_PYTHON = `"`$PSScriptRoot/python.exe`"
 
 
 

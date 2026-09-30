@@ -237,10 +237,10 @@ $script:HotpatcherPortSpecified = $PSBoundParameters.ContainsKey("HotpatcherPort
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # InvokeAI Installer 版本和检查更新间隔
-$script:INVOKEAI_INSTALLER_VERSION = 528
+$script:INVOKEAI_INSTALLER_VERSION = 529
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.5.15"
+$script:CORE_MINIMUM_VER = "2.5.16"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
@@ -4887,6 +4887,7 @@ function Main {
         `$python_cmd = Get-NormalizedFilePath `$python_cmd.Path
         if ((`$python_cmd) -and ((`$python_cmd.ToString().StartsWith(`$python_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)) -or (`$python_cmd.ToString().StartsWith(`$python_extra_path_prefix, [System.StringComparison]::OrdinalIgnoreCase)))) {
             `$env:UV_PYTHON = `$python_cmd
+            `$env:PIP_PYTHON = `$python_cmd
         }
     }
 
