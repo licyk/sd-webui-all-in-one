@@ -270,3 +270,86 @@ def test_legacy_rocm_windows_entry_keeps_radeon_find_links():
 
     assert info["dtype"] == "rocm_win"
     assert info["find_links"]["official"] == ["https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1"]
+
+
+def _torch_entry(name, dtype, torch_ver, xformers_ver=None, platform=("linux", "win32")):
+    return {"name": name, "dtype": dtype, "platform": list(platform), "torch_ver": torch_ver, "xformers_ver": xformers_ver}
+
+
+def test_find_pytorch_info_for_torch_requirement_ranks_table_entries(monkeypatch):
+    data = [
+        _torch_entry("Torch (CUDA)", "cu130", "torch torchvision"),
+        _torch_entry("Torch 2.7.1 (CUDA 12.6)", "cu126", "torch==2.7.1+cu126"),
+        _torch_entry("Torch 2.7.1 (CUDA 12.8) + xFormers", "cu128", "torch==2.7.1+cu128", "xformers==0.0.31.post1"),
+        _torch_entry("Torch 2.14.0 (CUDA 12.6) + xFormers", "cu126", "torch==2.14.0+cu126", "xformers==0.0.35"),
+        _torch_entry("Torch 2.14.0 (CUDA 13.0) + xFormers", "cu130", "torch==2.14.0+cu130", "xformers==0.0.35"),
+        _torch_entry("Torch 2.14.0 (CUDA 13.2)", "cu132", "torch==2.14.0+cu132"),
+        _torch_entry("Torch 2.15.0 (CUDA 13.2)", "cu132", "torch==2.15.0+cu132"),
+        _torch_entry("Torch 2.14.0 (CPU)", "cpu", "torch==2.14.0+cpu"),
+    ]
+    monkeypatch.setattr(version_manager.sys, "platform", "linux")
+    monkeypatch.setattr(version_manager, "PYTORCH_DOWNLOAD_DICT", data)
+    monkeypatch.setattr(version_manager, "get_available_pytorch_device_type", lambda: ["all", "cpu", "cu126", "cu128", "cu130", "cu132"])
+
+    def find(specs, preferred="cu130", category="cuda"):
+        info = version_manager.find_pytorch_info_for_torch_requirement(category, specs, preferred)
+        return None if info is None else info["name"]
+
+    # 首选类型优先于更新的 torch 版本
+    assert find([("<", "3.0"), (">=", "2.7.0")]) == "Torch 2.14.0 (CUDA 13.0) + xFormers"
+    # 首选类型无匹配时选择最新 torch 版本, 同版本优先包含 xFormers 的组合
+    assert find([("~=", "2.7.0")]) == "Torch 2.7.1 (CUDA 12.8) + xFormers"
+    assert find([("<", "3.0"), (">=", "2.7.0")], preferred=None) == "Torch 2.15.0 (CUDA 13.2)"
+    assert find([("==", "2.14.0")], preferred=None) == "Torch 2.14.0 (CUDA 13.0) + xFormers"
+    # 按设备分类过滤, 未固定 torch 版本的条目不参与匹配
+    assert find([(">=", "2.7.0")], category="cpu") == "Torch 2.14.0 (CPU)"
+    assert find([(">=", "3.0")]) is None
+
+
+def test_find_pytorch_info_for_torch_requirement_skips_unsupported_entries(monkeypatch):
+    data = [
+        _torch_entry("Torch 2.14.0 (CUDA 13.0) + xFormers", "cu130", "torch==2.14.0+cu130", "xformers==0.0.35"),
+        _torch_entry("Torch 2.11.0 (CUDA 12.8)", "cu128", "torch==2.11.0+cu128"),
+    ]
+    monkeypatch.setattr(version_manager.sys, "platform", "linux")
+    monkeypatch.setattr(version_manager, "PYTORCH_DOWNLOAD_DICT", data)
+    monkeypatch.setattr(version_manager, "SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY", False)
+    monkeypatch.setattr(version_manager, "get_available_pytorch_device_type", lambda: ["all", "cpu", "cu128"])
+
+    info = version_manager.find_pytorch_info_for_torch_requirement("cuda", [(">=", "2.7.0")], "cu128")
+
+    assert info is not None
+    assert info["name"] == "Torch 2.11.0 (CUDA 12.8)"
+
+
+def test_pytorch_package_extras_come_from_version_table(monkeypatch):
+    data = [
+        _torch_entry("Torch ROCm (Windows)", "rocm_win", "torch[device-all] torchvision[device-all] torchaudio"),
+        _torch_entry("Torch 2.12.0 (ROCm 7.14.0 Windows)", "rocm_win", "torch[device-all]==2.12.0+rocm7.14.0 torchvision[device-all]==0.27.0+rocm7.14.0"),
+        _torch_entry("Torch 2.9.1 (ROCm 7.2.1 Windows)", "rocm_win", "torch==2.9.1+rocm7.2.1"),
+        _torch_entry("Torch 2.14.0 (CUDA 13.0)", "cu130", "torch==2.14.0+cu130"),
+    ]
+    monkeypatch.setattr(version_manager, "PYTORCH_DOWNLOAD_DICT", data)
+
+    assert version_manager.get_pytorch_package_extras("rocm_win") == {"torch": ["device-all"], "torchvision": ["device-all"]}
+    assert version_manager.get_pytorch_package_extras("cu130") == {}
+    assert version_manager.add_pytorch_package_extras("torch<3.0,>=2.7.0 torchvision", "rocm_win") == "torch[device-all]<3.0,>=2.7.0 torchvision[device-all]"
+    assert version_manager.add_pytorch_package_extras("Torch[foo]~=2.7.0 torchaudio numpy", "rocm_win") == "Torch[foo,device-all]~=2.7.0 torchaudio numpy"
+    assert version_manager.add_pytorch_package_extras("torch<3.0,>=2.7.0 torchvision", "cu130") == "torch<3.0,>=2.7.0 torchvision"
+
+
+def test_real_version_table_declares_device_all_for_amd_multi_arch_types():
+    for dtype in ("rocm_win", "rocm_linux"):
+        assert version_manager.add_pytorch_package_extras("torch<3.0,>=2.7.0 torchvision", dtype) == "torch[device-all]<3.0,>=2.7.0 torchvision[device-all]"
+
+
+def test_has_pytorch_xformers_support_uses_version_table(monkeypatch):
+    data = [
+        _torch_entry("Torch 2.14.0 (CUDA 13.0) + xFormers", "cu130", "torch==2.14.0+cu130", "xformers==0.0.35"),
+        _torch_entry("Torch 2.14.0 (CUDA 13.2)", "cu132", "torch==2.14.0+cu132"),
+    ]
+    monkeypatch.setattr(version_manager, "PYTORCH_DOWNLOAD_DICT", data)
+
+    assert version_manager.has_pytorch_xformers_support("cu130") is True
+    assert version_manager.has_pytorch_xformers_support("cu132") is False
+    assert version_manager.has_pytorch_xformers_support("rocm_win") is False

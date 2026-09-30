@@ -61,6 +61,10 @@ from sd_webui_all_in_one.pytorch_manager.mirror_selector import (
 from sd_webui_all_in_one.pytorch_manager.version_manager import (
     export_pytorch_list,
     find_latest_pytorch_info,
+    find_pytorch_info_for_torch_requirement,
+    get_pytorch_package_extras,
+    add_pytorch_package_extras,
+    has_pytorch_xformers_support,
     display_pytorch_config,
     query_pytorch_info_from_library,
 )
@@ -123,6 +127,10 @@ __all__ = [
     # version_manager.py: 版本管理
     "export_pytorch_list",
     "find_latest_pytorch_info",
+    "find_pytorch_info_for_torch_requirement",
+    "get_pytorch_package_extras",
+    "add_pytorch_package_extras",
+    "has_pytorch_xformers_support",
     "display_pytorch_config",
     "query_pytorch_info_from_library",
 ]

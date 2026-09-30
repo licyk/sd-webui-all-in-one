@@ -38,8 +38,12 @@ from sd_webui_all_in_one.package_analyzer import (
     get_package_version_from_library,
 )
 from sd_webui_all_in_one.pytorch_manager import (
+    add_pytorch_package_extras,
+    auto_detect_available_pytorch_type,
     auto_detect_pytorch_device_category,
+    find_pytorch_info_for_torch_requirement,
     get_pytorch_mirror_type,
+    has_pytorch_xformers_support,
     PYTORCH_DEVICE_CATEGORY_LIST,
     PyTorchDeviceType,
     PyTorchDeviceTypeCategory,
@@ -96,6 +100,10 @@ def get_pytorch_mirror_type_for_ivnokeai(
 ) -> PyTorchDeviceType:
     """获取 InvokeAI 安装 PyTorch 所需的 PyTorch 镜像源类型
 
+    优先根据 PyTorch 版本表 (PYTORCH_DOWNLOAD_DICT) 进行判断: 在当前设备支持的版本组合中,
+    选择 torch 版本满足 InvokeAI 依赖约束的最佳组合 (优先自动检测到的设备类型, 其次更新的 torch 版本),
+    并使用该组合的设备类型。版本表中没有满足条件的组合时, 回退到根据 InvokeAI 依赖的 PyTorch 版本进行推断。
+
     Args:
         device_type (PyTorchDeviceTypeCategory):
             显卡设备类型
@@ -104,7 +112,21 @@ def get_pytorch_mirror_type_for_ivnokeai(
         PyTorchDeviceType:
             PyTorch 镜像源类型
     """
-    from sd_webui_all_in_one.base_manager.invokeai_base.lifecycle import get_invokeai_require_torch_version
+    from sd_webui_all_in_one.base_manager.invokeai_base.lifecycle import (
+        get_invokeai_require_torch_version,
+        get_invokeai_torch_version_specs,
+    )
+
+    torch_specs = get_invokeai_torch_version_specs()
+    if torch_specs is not None:
+        pytorch_info = find_pytorch_info_for_torch_requirement(
+            device_category=device_type,
+            torch_specs=torch_specs,
+            preferred_dtype=auto_detect_available_pytorch_type(),
+        )
+        if pytorch_info is not None:
+            logger.debug("根据 PyTorch 版本表选择 InvokeAI 使用的 PyTorch 版本组合: %s", pytorch_info["name"])
+            return pytorch_info["dtype"]
 
     torch_ver = get_invokeai_require_torch_version()
     return get_pytorch_mirror_type(torch_ver=torch_ver, device_type=device_type)
@@ -188,6 +210,7 @@ def _ensure_invokeai_package_installed(
 
 def sync_invokeai_component(
     device_type: PyTorchDeviceTypeCategory | None = None,
+    upgrade: bool = False,
     use_pypi_mirror: bool = False,
     use_uv: bool = True,
 ) -> None:
@@ -196,6 +219,8 @@ def sync_invokeai_component(
     Args:
         device_type (PyTorchDeviceTypeCategory | None):
             显卡设备类型
+        upgrade (bool):
+            是否将已安装的 PyTorch / xFormers 升级到镜像源中满足 InvokeAI 依赖约束的最新版本
         use_pypi_mirror (bool):
             是否使用国内 PyPI 镜像
         use_uv (bool):
@@ -224,11 +249,12 @@ def sync_invokeai_component(
         use_cn_mirror=use_pypi_mirror,
     )
 
-    # 配置安装 PyTorch 所需的包版本声明
-    pytorch_package = get_pytorch_for_invokeai()
+    # 配置安装 PyTorch 所需的包版本声明 (按 PyTorch 版本表补充所需的 extras, 如 AMD 多架构 wheel 的 device-all)
+    pytorch_package = add_pytorch_package_extras(get_pytorch_for_invokeai(), pytorch_mirror_type)
     xformers_package = get_xformers_for_invokeai()
-    torch_with_xformers = " ".join(pytorch_package.split() + xformers_package.split())
-    torch_without_xformers = " ".join(pytorch_package.split())
+    upgrade_args = ["--upgrade"] if upgrade else []
+    torch_with_xformers = " ".join(pytorch_package.split() + xformers_package.split() + upgrade_args)
+    torch_without_xformers = " ".join(pytorch_package.split() + upgrade_args)
 
     # 准备安装依赖的 PyPI 镜像源
     custom_env = get_pypi_mirror_config(use_pypi_mirror)
@@ -238,15 +264,24 @@ def sync_invokeai_component(
     logger.debug("安装的 PyTorch: %s", pytorch_package)
     logger.debug("安装的 xFormers: %s", xformers_package)
 
+    def _remove_stale_xformers() -> None:
+        if upgrade and get_package_version_from_library("xformers") is not None:
+            # 升级 PyTorch 后旧版 xFormers 与新版 PyTorch 不兼容, 需要卸载
+            logger.warning("未安装与新版 PyTorch 匹配的 xFormers, 卸载旧版 xFormers 以避免不兼容")
+            run_cmd([Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "xformers", "-y"])
+
     try:
         logger.info("同步 PyTorch 组件中")
-        if pytorch_mirror_type in ["cpu", "xpu", "ipex_legacy_arc", "rocm6.2", "all"]:
+        # PyTorch 版本表中没有该类型的 xFormers 版本组合时 (如 AMD 多架构 wheel), 镜像源中也没有匹配的 xFormers,
+        # 此时若继续安装 xFormers, 可能会从 PyPI 获取为 CUDA 构建的 xFormers
+        if pytorch_mirror_type in ["cpu", "xpu", "ipex_legacy_arc", "rocm6.2", "all"] or not has_pytorch_xformers_support(pytorch_mirror_type):
             logger.debug("使用无 xFormers 安装")
             install_pytorch_with_fallback(
                 torch_package=torch_without_xformers,
                 custom_env=custom_env_pytorch,
                 use_uv=use_uv,
             )
+            _remove_stale_xformers()
         else:
             try:
                 logger.debug("尝试加上 xFormer 进行安装")
@@ -262,6 +297,7 @@ def sync_invokeai_component(
                     custom_env=custom_env_pytorch,
                     use_uv=use_uv,
                 )
+                _remove_stale_xformers()
 
         logger.info("同步 InvokeAI 其他组件中")
         pip_install(
@@ -316,6 +352,7 @@ def install_invokeai_component(
 
         sync_invokeai_component(
             device_type=device_type,
+            upgrade=upgrade,
             use_pypi_mirror=use_pypi_mirror,
             use_uv=use_uv,
         )

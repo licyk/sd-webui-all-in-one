@@ -208,6 +208,7 @@ from sd_webui_all_in_one.base_manager.invokeai_base import (
     InvokeAILocalExtensionInfo,
     InvokeAILocalModelInfo,
     get_invokeai_require_torch_version,
+    get_invokeai_torch_version_specs,
     get_pytorch_mirror_type_for_ivnokeai,
     get_pytorch_for_invokeai,
     get_xformers_for_invokeai,
@@ -551,6 +552,7 @@ __all__ = [
     "InvokeAILocalModelInfo",
     # 函数
     "get_invokeai_require_torch_version",
+    "get_invokeai_torch_version_specs",
     "get_pytorch_mirror_type_for_ivnokeai",
     "get_pytorch_for_invokeai",
     "get_xformers_for_invokeai",

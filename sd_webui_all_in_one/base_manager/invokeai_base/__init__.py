@@ -30,6 +30,7 @@ from sd_webui_all_in_one.base_manager.invokeai_base.gui import (
 from sd_webui_all_in_one.base_manager.invokeai_base.lifecycle import (
     INVOKEAI_RUNNER_SCRIPT,
     get_invokeai_require_torch_version,
+    get_invokeai_torch_version_specs,
     init_invokeai_default_config,
     install_invokeai,
     update_invokeai,
@@ -82,6 +83,7 @@ __all__ = [
     "launch_invokeai_snapshot_gui",
     "INVOKEAI_RUNNER_SCRIPT",
     "get_invokeai_require_torch_version",
+    "get_invokeai_torch_version_specs",
     "init_invokeai_default_config",
     "install_invokeai",
     "update_invokeai",

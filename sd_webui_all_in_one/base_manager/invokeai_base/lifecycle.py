@@ -26,10 +26,10 @@ from sd_webui_all_in_one.mirror_manager import (
 )
 from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
 from sd_webui_all_in_one.package_analyzer import (
-    get_package_name,
-    get_package_version,
-    get_package_version_specs,
-    is_package_has_version,
+    evaluate_marker,
+    get_parse_bindings,
+    normalize_package_name,
+    parse_requirement,
     version_decrement,
     version_increment,
 )
@@ -59,6 +59,35 @@ class InvokeAIEnvCheckName(EnvCheckName):
 INVOKEAI_RUNNER_SCRIPT = ROOT_PATH / "base_manager" / "run_invokeai.py"
 
 
+def get_invokeai_torch_version_specs() -> list[tuple[str, str]] | None:
+    """获取 InvokeAI 在当前环境下对 torch 的版本约束
+
+    仅保留 marker 适用于当前环境的 torch 依赖声明 (例如会排除 `sys_platform == "darwin"`
+    和 `extra == "cuda"` 等不适用的声明), 并合并其中的版本约束。
+
+    Returns:
+        list[tuple[str, str]] | None:
+            torch 版本约束列表, 例如 `[("<", "3.0"), (">=", "2.7.0")]`; 未安装 InvokeAI 时返回 None
+    """
+    try:
+        invokeai_requires = importlib.metadata.requires("invokeai") or []
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+    bindings = get_parse_bindings()
+    specs: list[tuple[str, str]] = []
+    for require in invokeai_requires:
+        try:
+            name, _, version_specs, marker = parse_requirement(require, bindings)
+        except ValueError:
+            continue
+        if normalize_package_name(name) != "torch" or isinstance(version_specs, str) or not evaluate_marker(marker):
+            continue
+        specs.extend(version_specs)
+
+    return specs
+
+
 def get_invokeai_require_torch_version() -> str:
     """获取 InvokeAI 依赖的 PyTorch 版本
 
@@ -66,21 +95,9 @@ def get_invokeai_require_torch_version() -> str:
         str:
             PyTorch 版本
     """
-    try:
-        invokeai_requires = importlib.metadata.requires("invokeai") or []
-    except importlib.metadata.PackageNotFoundError:
-        return "2.2.2"
-
-    torch_version = "torch==2.2.2"
-
-    for require in invokeai_requires:
-        if get_package_name(require) == "torch" and is_package_has_version(require):
-            torch_version = require.split(";")[0]
-            break
-
-    specs = get_package_version_specs(torch_version)
+    specs = get_invokeai_torch_version_specs()
     if not specs:
-        return get_package_version(torch_version)
+        return "2.2.2"
 
     # 按操作符优先级选择最合适的版本约束:
     # 优先使用精确匹配 (==, ===), 其次使用下界 (>=, >), 最后使用上界 (<, <=)
