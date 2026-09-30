@@ -29,6 +29,12 @@ def normalize_pytorch_version_suffix(
 ) -> PyTorchDeviceType | None:
     """将 PyTorch 版本后缀规范化为设备类型。
 
+    ROCm 后缀的处理规则:
+    - `rocm_win` / `rocm_linux` 按原样返回
+    - Windows 平台上的 ROCm 后缀统一视为 `rocm_win`
+    - 其他平台上 PyTorch 官方 ROCm 后缀 (如 `rocm7.2`) 按原样返回, 其余 ROCm 后缀
+      (如 AMD 多架构 wheel 的 `rocm7.14.0`) 视为 `rocm_linux`
+
     Args:
         suffix (str):
             PyTorch 版本中的本地版本后缀。
@@ -42,10 +48,14 @@ def normalize_pytorch_version_suffix(
     platform_tag = sys.platform if platform_tag is None else platform_tag
     normalized_suffix = suffix.strip().casefold()
 
-    if normalized_suffix == "rocm_win":
-        return "rocm_win"
-    if platform_tag.casefold().startswith("win") and normalized_suffix.startswith("rocm"):
-        return "rocm_win"
+    if normalized_suffix in ("rocm_win", "rocm_linux"):
+        return cast(PyTorchDeviceType, normalized_suffix)
+    if normalized_suffix.startswith("rocm"):
+        if platform_tag.casefold().startswith("win"):
+            return "rocm_win"
+        if normalized_suffix in PYTORCH_DEVICE_LIST:
+            return cast(PyTorchDeviceType, normalized_suffix)
+        return "rocm_linux"
     if normalized_suffix in PYTORCH_DEVICE_LIST:
         return cast(PyTorchDeviceType, normalized_suffix)
     return None
@@ -175,12 +185,14 @@ def get_pytorch_mirror_type_rocm(
         PyTorchDeviceType: ROCm 类型的 PyTorch 镜像源类型
     """
     torch_version = CommonVersionComparison(torch_ver)
+    if sys.platform == "win32":
+        # 使用 AMD 多架构 wheel 提供的 Windows 版本 PyTorch (2.8.0 <= torch)
+        if torch_version < CommonVersionComparison("2.8.0"):
+            return "all"
+        return "rocm_win"
     if torch_version < CommonVersionComparison("2.4.0"):
         # torch < 2.4.0
         return "all"
-    if sys.platform == "win32":
-        # 使用 Windows 版本的 PyTorch
-        return "rocm_win"
     if CommonVersionComparison("2.4.0") <= torch_version < CommonVersionComparison("2.5.0"):
         # 2.4.0 <= torch < 2.5.0
         return "rocm6.1"

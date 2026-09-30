@@ -120,10 +120,8 @@ PYTORCH_MIRROR_NJU_DICT: PyTorchMirrorMap = {
 """PyTorch 国内镜像源 (NJU) 字典"""
 
 PYTORCH_ROCM_MIRROR_DICT: PyTorchMirrorMap = {
-    "rocm_rdna3": ("https://repo.amd.com/rocm/whl/gfx110X-dgpu", "index_url"),
-    "rocm_rdna3.5": ("https://repo.amd.com/rocm/whl/gfx1151", "index_url"),
-    "rocm_rdna4": ("https://repo.amd.com/rocm/whl/gfx120X-all", "index_url"),
-    "rocm_win": ("https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1", "find_links"),  # 非 PEP 503
+    "rocm_linux": ("https://repo.amd.com/rocm/whl-multi-arch", "index_url"),
+    "rocm_win": ("https://repo.amd.com/rocm/whl-multi-arch", "index_url"),
 }
 """
 PyTorch ROCm 镜像源字典

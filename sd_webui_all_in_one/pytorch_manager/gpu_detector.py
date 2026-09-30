@@ -132,57 +132,18 @@ class GPUDeviceInfo(TypedDict, total=False):
     """驱动版本"""
 
 
-ROCM_GFX_TARGET_PYTORCH_TYPE_MAP: dict[str, PyTorchDeviceType] = {
-    "gfx1200": "rocm_rdna4",
-    "gfx1201": "rocm_rdna4",
-    "gfx1151": "rocm_rdna3.5",
-    "gfx1100": "rocm_rdna3",
-    "gfx1101": "rocm_rdna3",
-    "gfx950": "rocm7.2",
-    "gfx942": "rocm7.2",
-    "gfx90a": "rocm7.2",
-    "gfx908": "rocm7.2",
-}
-"""ROCm gfx target 到 PyTorch 类型的映射
+ROCM_LINUX_PYTORCH_TYPE_LIST: list[PyTorchDeviceType] = ["rocm_linux", "rocm7.2"]
+"""Linux 上 AMD GPU 可用的 PyTorch ROCm 类型列表, 首项为自动检测时的首选类型
+
+- rocm_linux: AMD TheRock 多架构 wheel (通过 [device-all] 额外依赖覆盖 gfx908 ~ gfx1250 等全部支持的架构)
+- rocm7.2: PyTorch 官方 ROCm wheel
 
 参考:
 ```
-https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html
-https://rocm.docs.amd.com/projects/radeon-ryzen/en/latest/docs/compatibility/compatibilityrad.html
+https://github.com/Comfy-Org/ComfyUI-Standalone-Environments
+https://repo.amd.com/rocm/whl-multi-arch
 ```
 """
-
-ROCM_RDNA4_GPU_NAME_PATTERNS = (
-    r"\brx\s+9070\b",
-    r"\brx\s+9060\b",
-    r"\bai\s+pro\s+r9700\b",
-    r"\bai\s+pro\s+r9600d\b",
-)
-"""可自动匹配 RDNA4 ROCm wheel 的 AMD GPU 名称模式"""
-
-ROCM_RDNA3_GPU_NAME_PATTERNS = (
-    r"\brx\s+7900\b",
-    r"\brx\s+7800\b",
-    r"\brx\s+7700\b",
-    r"\bpro\s+w7900\b",
-    r"\bpro\s+w7800\b",
-    r"\bpro\s+w7700\b",
-    r"\bpro\s+v710\b",
-)
-"""可自动匹配 RDNA3 ROCm wheel 的 AMD GPU 名称模式"""
-
-ROCM_GENERIC_GPU_NAME_PATTERNS = (
-    r"\bmi355x\b",
-    r"\bmi350x\b",
-    r"\bmi325x\b",
-    r"\bmi300x\b",
-    r"\bmi300a\b",
-    r"\bmi250x\b",
-    r"\bmi250\b",
-    r"\bmi210\b",
-    r"\bmi100\b",
-)
-"""可自动匹配 PyTorch 官方 ROCm wheel 的 AMD GPU 名称模式"""
 
 
 def normalize_gpu_name(
@@ -199,26 +160,6 @@ def normalize_gpu_name(
             规范化后的 GPU 名称
     """
     return re.sub(r"[^a-z0-9]+", " ", name.casefold()).strip()
-
-
-def _match_gpu_name_patterns(
-    name: str,
-    patterns: tuple[str, ...],
-) -> bool:
-    """检查 GPU 名称是否匹配指定模式
-
-    Args:
-        name (str):
-            GPU 名称
-        patterns (tuple[str, ...]):
-            正则表达式模式列表
-
-    Returns:
-        bool:
-            匹配任一模式时返回 True
-    """
-    normalized_name = normalize_gpu_name(name)
-    return any(re.search(pattern, normalized_name) for pattern in patterns)
 
 
 def _is_amd_vendor(
@@ -260,103 +201,28 @@ def _is_amd_gpu_info(
     return "radeon" in normalized_name or "instinct" in normalized_name or re.search(r"\bmi\d{3}", normalized_name) is not None
 
 
-def get_rocm_gfx_targets() -> list[str]:
-    """通过 rocminfo 获取 ROCm gfx target 列表
+def get_amd_rocm_pytorch_type_list() -> list[PyTorchDeviceType]:
+    """获取当前平台上 AMD GPU 可用的 PyTorch ROCm 类型列表
 
     Returns:
-        list[str]:
-            去重后的 ROCm gfx target 列表
-    """
-    if not shutil.which("rocminfo"):
-        return []
-
-    output = _run_detection_command(["rocminfo"])
-    if output is None:
-        return []
-
-    targets: list[str] = []
-    for target in re.findall(r"\bgfx[0-9a-f]{3,4}\b", output.casefold()):
-        if target not in targets:
-            targets.append(target)
-    return targets
-
-
-def get_amd_rocm_pytorch_type_from_gfx_targets(
-    gfx_targets: list[str],
-) -> PyTorchDeviceType | None:
-    """根据 ROCm gfx target 获取 PyTorch 类型
-
-    Args:
-        gfx_targets (list[str]):
-            ROCm gfx target 列表
-
-    Returns:
-        PyTorchDeviceType | None:
-            匹配到的 PyTorch 类型, 未匹配时返回 None
-    """
-    for target in gfx_targets:
-        pytorch_type = ROCM_GFX_TARGET_PYTORCH_TYPE_MAP.get(target.casefold())
-        if pytorch_type is not None:
-            return pytorch_type
-    return None
-
-
-def get_amd_rocm_pytorch_type_from_gpu_names(
-    gpu_list: list[GPUDeviceInfo],
-) -> PyTorchDeviceType | None:
-    """根据 AMD GPU 名称获取 PyTorch 类型
-
-    Args:
-        gpu_list (list[GPUDeviceInfo]):
-            GPU 列表
-
-    Returns:
-        PyTorchDeviceType | None:
-            匹配到的 PyTorch 类型, 未匹配时返回 None
-    """
-    for gpu in gpu_list:
-        if not _is_amd_gpu_info(gpu):
-            continue
-        name = gpu.get("Name") or ""
-        if _match_gpu_name_patterns(name, ROCM_RDNA4_GPU_NAME_PATTERNS):
-            return "rocm_rdna4"
-        if _match_gpu_name_patterns(name, ROCM_RDNA3_GPU_NAME_PATTERNS):
-            return "rocm_rdna3"
-        if _match_gpu_name_patterns(name, ROCM_GENERIC_GPU_NAME_PATTERNS):
-            return "rocm7.2"
-    return None
-
-
-def get_amd_rocm_pytorch_type(
-    gpu_list: list[GPUDeviceInfo],
-) -> PyTorchDeviceType | None:
-    """获取 AMD GPU 适配的 PyTorch ROCm 类型
-
-    参考:
-    ```
-    https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html
-    https://rocm.docs.amd.com/projects/radeon-ryzen/en/latest/docs/compatibility/compatibilityrad.html
-    https://rocm.docs.amd.com/projects/radeon-ryzen/en/latest/docs/install/installrad/native_linux/install-pytorch.html
-    ```
-
-    Args:
-        gpu_list (list[GPUDeviceInfo]):
-            GPU 列表
-
-    Returns:
-        PyTorchDeviceType | None:
-            匹配到的 PyTorch ROCm 类型, 未匹配时返回 None
+        list[PyTorchDeviceType]:
+            可用的 PyTorch ROCm 类型列表, 首项为首选类型; 当前平台不支持 ROCm 时返回空列表
     """
     if sys.platform == "win32":
-        return "rocm_win"
-    if sys.platform != "linux":
-        return None
+        return ["rocm_win"]
+    if sys.platform == "linux":
+        return list(ROCM_LINUX_PYTORCH_TYPE_LIST)
+    return []
 
-    gfx_targets = get_rocm_gfx_targets()
-    if gfx_targets:
-        return get_amd_rocm_pytorch_type_from_gfx_targets(gfx_targets)
 
-    return get_amd_rocm_pytorch_type_from_gpu_names(gpu_list)
+def get_amd_rocm_pytorch_type() -> PyTorchDeviceType | None:
+    """获取 AMD GPU 首选的 PyTorch ROCm 类型
+
+    Returns:
+        PyTorchDeviceType | None:
+            首选的 PyTorch ROCm 类型, 当前平台不支持 ROCm 时返回 None
+    """
+    return next(iter(get_amd_rocm_pytorch_type_list()), None)
 
 
 def get_windows_gpu_list() -> list[GPUDeviceInfo]:
@@ -661,13 +527,8 @@ def get_available_pytorch_device_type() -> list[PyTorchDeviceType]:
         device_list.append("xpu")
         device_list.append("ipex_legacy_arc")
 
-    if amd_gpu_available and sys.platform == "linux":
-        amd_pytorch_type = get_amd_rocm_pytorch_type(gpu_list)
-        if amd_pytorch_type is not None:
-            device_list.append(amd_pytorch_type)
-
-    if amd_gpu_available and sys.platform == "win32":
-        device_list.append("rocm_win")
+    if amd_gpu_available:
+        device_list.extend(get_amd_rocm_pytorch_type_list())
 
     return device_list
 
@@ -719,12 +580,9 @@ def auto_detect_available_pytorch_type() -> PyTorchDeviceType:
         return "xpu"
 
     if amd_gpu_available:
-        if sys.platform == "linux":
-            amd_pytorch_type = get_amd_rocm_pytorch_type(gpu_list)
-            if amd_pytorch_type is not None:
-                return amd_pytorch_type
-        if sys.platform == "win32":
-            return "rocm_win"
+        amd_pytorch_type = get_amd_rocm_pytorch_type()
+        if amd_pytorch_type is not None:
+            return amd_pytorch_type
 
     return "cpu"
 

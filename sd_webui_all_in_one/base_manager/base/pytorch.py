@@ -187,15 +187,17 @@ def prepare_pytorch_install_info(
         _update_mirror(pytorch_mirror_type)
     elif torch_part and is_package_has_version(torch_part[0]):
         # 声明了 PyTorch 版本
-        if "+" in torch_part[0]:
-            # 存在类型声明
-            _update_mirror(cast(PyTorchDeviceType, torch_part[0].split("+")[-1]))
+        torch_version, separator, torch_suffix = get_package_version(torch_part[0]).partition("+")
+        suffix_dtype = normalize_pytorch_version_suffix(torch_suffix) if separator else None
+        if suffix_dtype is not None:
+            # 存在可识别的类型声明
+            _update_mirror(suffix_dtype)
         else:
-            # 不存在类型声明时
+            # 不存在类型声明或类型声明无法识别时
             mirror_device_type: PyTorchDeviceTypeCategory = auto_detect_pytorch_device_category() if device_type is None else cast(PyTorchDeviceTypeCategory, device_type)
             _update_mirror(
                 get_pytorch_mirror_type(
-                    torch_ver=get_package_version(torch_part[0]),
+                    torch_ver=torch_version,
                     device_type=mirror_device_type,
                 )
             )

@@ -36,6 +36,9 @@ PYTORCH_FIND_LINKS_MIRROR_OFFICIAL = "https://download.pytorch.org/whl/torch_sta
 PYTORCH_FIND_LINKS_MIRROR_ALIYUN = "https://mirrors.aliyun.com/pytorch-wheels/torch_stable.html"
 """PyTorch 阿里云镜像源 (非 PEP 503)"""
 
+PYTORCH_ROCM_WIN_LEGACY_FIND_LINKS_MIRROR = "https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1"
+"""PyTorch ROCm 7.2.1 Windows 旧版镜像源 (非 PEP 503, 仅适用于 Python 3.12)"""
+
 PyTorchMirrorKind: TypeAlias = Literal[
     "index_url",
     "extra_index_url",
@@ -93,9 +96,7 @@ PyTorchDeviceType: TypeAlias = Literal[
     "rocm7.1",
     "rocm7.14",
     "rocm7.2",
-    "rocm_rdna3",
-    "rocm_rdna3.5",
-    "rocm_rdna4",
+    "rocm_linux",
     "rocm_win",
     "xpu",
     "ipex_legacy_arc",

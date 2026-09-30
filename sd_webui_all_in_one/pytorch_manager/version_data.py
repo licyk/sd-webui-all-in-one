@@ -15,6 +15,7 @@ from sd_webui_all_in_one.pytorch_manager.types import (
     PYTORCH_FIND_LINKS_MIRROR_OFFICIAL,
     PYTORCH_IPEX_EXTRA_INDEX_MIRROR_CN,
     PYTORCH_IPEX_EXTRA_INDEX_MIRROR_US,
+    PYTORCH_ROCM_WIN_LEGACY_FIND_LINKS_MIRROR,
     PyTorchVersionInfoList,
 )
 
@@ -97,52 +98,14 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
         },
     },
     {
-        "name": "Torch ROCm (RDNA3)",
-        "dtype": "rocm_rdna3",
+        "name": "Torch ROCm (Linux)",
+        "dtype": "rocm_linux",
         "platform": ["linux"],
-        "torch_ver": "torch torchvision torchaudio rocm rocm-sdk-core rocm-sdk-devel",
+        "torch_ver": "torch[device-all] torchvision[device-all] torchaudio",
         "xformers_ver": None,
         "index_mirror": {
-            "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna3"][0]],
-            "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna3"][0]],
-        },
-        "extra_index_mirror": {
-            "official": [PYPI_INDEX_MIRROR_OFFICIAL],
-            "mirror": [PYPI_INDEX_MIRROR_TENCENT],
-        },
-        "find_links": {
-            "official": [],
-            "mirror": [],
-        },
-    },
-    {
-        "name": "Torch ROCm (RDNA3.5)",
-        "dtype": "rocm_rdna3.5",
-        "platform": ["linux"],
-        "torch_ver": "torch torchvision torchaudio rocm rocm-sdk-core rocm-sdk-devel",
-        "xformers_ver": None,
-        "index_mirror": {
-            "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna3.5"][0]],
-            "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna3.5"][0]],
-        },
-        "extra_index_mirror": {
-            "official": [PYPI_INDEX_MIRROR_OFFICIAL],
-            "mirror": [PYPI_INDEX_MIRROR_TENCENT],
-        },
-        "find_links": {
-            "official": [],
-            "mirror": [],
-        },
-    },
-    {
-        "name": "Torch ROCm (RDNA4)",
-        "dtype": "rocm_rdna4",
-        "platform": ["linux"],
-        "torch_ver": "torch torchvision torchaudio rocm rocm-sdk-core rocm-sdk-devel",
-        "xformers_ver": None,
-        "index_mirror": {
-            "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna4"][0]],
-            "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_rdna4"][0]],
+            "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_linux"][0]],
+            "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_linux"][0]],
         },
         "extra_index_mirror": {
             "official": [PYPI_INDEX_MIRROR_OFFICIAL],
@@ -157,19 +120,19 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
         "name": "Torch ROCm (Windows)",
         "dtype": "rocm_win",
         "platform": ["win32"],
-        "torch_ver": "torch torchvision torchaudio rocm rocm-sdk-core rocm-sdk-devel rocm-sdk-libraries-custom",
+        "torch_ver": "torch[device-all] torchvision[device-all] torchaudio",
         "xformers_ver": None,
         "index_mirror": {
+            "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_win"][0]],
+            "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_win"][0]],
+        },
+        "extra_index_mirror": {
             "official": [PYPI_INDEX_MIRROR_OFFICIAL],
             "mirror": [PYPI_INDEX_MIRROR_TENCENT],
         },
-        "extra_index_mirror": {
+        "find_links": {
             "official": [],
             "mirror": [],
-        },
-        "find_links": {
-            "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_win"][0]],
-            "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_win"][0]],
         },
     },
     {
@@ -2695,8 +2658,8 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
             "mirror": [],
         },
         "find_links": {
-            "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_win"][0]],
-            "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_win"][0]],
+            "official": [PYTORCH_ROCM_WIN_LEGACY_FIND_LINKS_MIRROR],
+            "mirror": [PYTORCH_ROCM_WIN_LEGACY_FIND_LINKS_MIRROR],
         },
     },
     {
@@ -3111,6 +3074,44 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
         "extra_index_mirror": {
             "official": [],
             "mirror": [],
+        },
+        "find_links": {
+            "official": [],
+            "mirror": [],
+        },
+    },
+    {
+        "name": "Torch 2.12.0 (ROCm 7.14.0 Linux)",
+        "dtype": "rocm_linux",
+        "platform": ["linux"],
+        "torch_ver": "torch[device-all]==2.12.0+rocm7.14.0 torchvision[device-all]==0.27.0+rocm7.14.0 torchaudio==2.11.0+rocm7.14.0",
+        "xformers_ver": None,
+        "index_mirror": {
+            "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_linux"][0]],
+            "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_linux"][0]],
+        },
+        "extra_index_mirror": {
+            "official": [PYPI_INDEX_MIRROR_OFFICIAL],
+            "mirror": [PYPI_INDEX_MIRROR_TENCENT],
+        },
+        "find_links": {
+            "official": [],
+            "mirror": [],
+        },
+    },
+    {
+        "name": "Torch 2.12.0 (ROCm 7.14.0 Windows)",
+        "dtype": "rocm_win",
+        "platform": ["win32"],
+        "torch_ver": "torch[device-all]==2.12.0+rocm7.14.0 torchvision[device-all]==0.27.0+rocm7.14.0 torchaudio==2.11.0+rocm7.14.0",
+        "xformers_ver": None,
+        "index_mirror": {
+            "official": [PYTORCH_ROCM_MIRROR_DICT["rocm_win"][0]],
+            "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm_win"][0]],
+        },
+        "extra_index_mirror": {
+            "official": [PYPI_INDEX_MIRROR_OFFICIAL],
+            "mirror": [PYPI_INDEX_MIRROR_TENCENT],
         },
         "find_links": {
             "official": [],

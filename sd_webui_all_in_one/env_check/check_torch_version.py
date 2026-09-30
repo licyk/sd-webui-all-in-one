@@ -1,6 +1,5 @@
 """检查当前环境的 PyTorch 版本正确性"""
 
-import sys
 from collections.abc import Sequence
 from typing import Literal, TypedDict
 
@@ -15,6 +14,7 @@ from sd_webui_all_in_one.pytorch_manager import (
     get_available_pytorch_device_type,
     get_gpu_list,
     has_gpus,
+    normalize_pytorch_version_suffix,
 )
 
 logger = get_logger(
@@ -77,6 +77,10 @@ def _is_rocm_version_compatible(
     - torch_type="rocm7.2.1" 可以匹配 available_types 中的 "rocm7.2"
     - torch_type="rocm6.2.4" 可以匹配 available_types 中的 "rocm6.2"
 
+    同时支持平台专用类型匹配，例如：
+    - Windows 上任意 ROCm 类型可以匹配 "rocm_win"
+    - Linux 上 AMD 多架构 wheel 类型 (如 "rocm7.14.0") 可以匹配 "rocm_linux"
+
     Args:
         torch_type: 当前安装的 PyTorch ROCm 类型
         available_types: 可用的设备类型列表
@@ -100,10 +104,7 @@ def _is_rocm_version_compatible(
             if torch_parts[0] == available_parts[0] and torch_parts[1] == available_parts[1]:
                 return True
 
-    if sys.platform == "win32" and "rocm_win" in available_types:
-        return True
-
-    return False
+    return normalize_pytorch_version_suffix(torch_type) in available_types
 
 
 def _is_ipex_version(

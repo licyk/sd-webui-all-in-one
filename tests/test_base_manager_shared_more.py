@@ -95,6 +95,44 @@ def test_prepare_pytorch_install_info_auto_and_custom_packages(monkeypatch):
     assert calls == [("mirror", "cu126", True)]
     assert env["PIP_EXTRA_INDEX_URL"] == "cu126-url"
 
+    calls.clear()
+    monkeypatch.setattr(sys, "platform", "linux")
+    torch_pkg, _xformers_pkg, env = base_pytorch.prepare_pytorch_install_info(
+        custom_pytorch_package="torch[device-all]==2.12.0+rocm7.14.0 torchvision[device-all]==0.27.0+rocm7.14.0",
+        use_cn_mirror=False,
+    )
+    assert torch_pkg is not None
+    assert torch_pkg.startswith("torch[device-all]==2.12.0+rocm7.14.0")
+    assert calls == [("mirror", "rocm_linux", False)]
+
+    calls.clear()
+    torch_pkg, _xformers_pkg, env = base_pytorch.prepare_pytorch_install_info(
+        custom_pytorch_package="torch==2.4.1+custom torchvision==0.19.1",
+        use_cn_mirror=False,
+    )
+    assert calls == [("type", "2.4.1", "cuda"), ("mirror", "cu124", False)]
+
+
+@pytest.mark.parametrize(
+    ("platform", "expected_dtype"),
+    [
+        ("linux", "rocm_linux"),
+        ("win32", "rocm_win"),
+    ],
+)
+def test_check_pytorch_version_normalizes_amd_multi_arch_suffix(monkeypatch, platform, expected_dtype):
+    calls = []
+    monkeypatch.setattr(sys, "platform", platform)
+    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda name: "2.12.0+rocm7.14.0" if name == "torch" else "")
+    monkeypatch.setattr(
+        base_pytorch,
+        "find_latest_pytorch_info",
+        lambda dtype: calls.append(dtype) or {"torch_ver": "torch[device-all]==2.12.0+rocm7.14.0 torchaudio==2.11.0+rocm7.14.0"},
+    )
+
+    assert base_module.check_pytorch_version() is False
+    assert calls == [expected_dtype]
+
 
 def test_reinstall_pytorch_list_install_and_interactive_auto(monkeypatch):
     info = {

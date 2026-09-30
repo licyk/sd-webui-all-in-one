@@ -12,7 +12,7 @@
 "@)][string]$InstallPath,
 
     [Parameter(HelpMessage=@"
-指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu113, cu117, cu118, cu121, cu124, cu126, cu128, cu129, cu130, rocm5.4.2, rocm5.6, rocm5.7, rocm6.0, rocm6.1, rocm6.2, rocm6.2.4, rocm6.3, rocm6.4, rocm7.1, rocm_rdna3, rocm_rdna3.5, rocm_rdna4, rocm_win, xpu, ipex_legacy_arc, cpu, directml, all
+指定安装 PyTorch 时使用的 PyTorch 镜像源类型, 可指定的类型: cu113, cu117, cu118, cu121, cu124, cu126, cu128, cu129, cu130, rocm5.4.2, rocm5.6, rocm5.7, rocm6.0, rocm6.1, rocm6.2, rocm6.2.4, rocm6.3, rocm6.4, rocm7.1, rocm_linux, rocm_win, xpu, ipex_legacy_arc, cpu, directml, all
 "@)][string]$PyTorchMirrorType,
 
     [Parameter(HelpMessage=@"

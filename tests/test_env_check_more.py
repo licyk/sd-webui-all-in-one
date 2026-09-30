@@ -15,7 +15,12 @@ def test_torch_version_compatibility_helpers(monkeypatch):
     assert check_torch_version._is_rocm_version_compatible("rocm7.2.1", ["rocm7.2"]) is True
     assert check_torch_version._is_rocm_version_compatible("rocm6.3", ["rocm6.2"]) is False
 
-    monkeypatch.setattr(check_torch_version.sys, "platform", "win32")
+    monkeypatch.setattr(sys, "platform", "linux")
+    assert check_torch_version._is_rocm_version_compatible("rocm7.14.0", ["rocm_linux", "rocm7.2"]) is True
+    assert check_torch_version._is_rocm_version_compatible("rocm7.14.0", ["rocm7.2"]) is False
+    assert check_torch_version._is_rocm_version_compatible("rocm6.3", ["rocm_win"]) is False
+
+    monkeypatch.setattr(sys, "platform", "win32")
     assert check_torch_version._is_rocm_version_compatible("rocm6.3", ["rocm_win"]) is True
 
     assert check_torch_version._is_ipex_version("gite9ebda2", ["xpu", "ipex_legacy_arc"]) is True

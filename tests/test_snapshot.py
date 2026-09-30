@@ -686,7 +686,9 @@ def test_preview_restore_plan_reports_pytorch_upgrade_as_modified(monkeypatch, t
         ("win32", "2.9.0+rocm9.0", "rocm_win", "https://torch.example/rocm-win"),
         ("win32", "2.9.0+rocm6.4", "rocm_win", "https://torch.example/rocm-win"),
         ("linux", "2.9.0+rocm6.4", "rocm6.4", "https://torch.example/rocm64"),
-        ("linux", "2.9.0+rocm9.0", "all", "https://torch.example/all"),
+        ("linux", "2.9.0+rocm9.0", "rocm_linux", "https://torch.example/rocm-linux"),
+        ("linux", "2.12.0+rocm7.14.0", "rocm_linux", "https://torch.example/rocm-linux"),
+        ("linux", "2.9.0+git7bcf7da", "all", "https://torch.example/all"),
     ],
 )
 def test_preview_restore_plan_normalizes_rocm_pytorch_suffix(monkeypatch, tmp_path, platform_tag, torch_version, expected_dtype, expected_url):
@@ -699,7 +701,8 @@ def test_preview_restore_plan_normalizes_rocm_pytorch_suffix(monkeypatch, tmp_pa
 
     mirror_by_dtype = {
         "all": ("https://torch.example/all", "index_url"),
-        "rocm_win": ("https://torch.example/rocm-win", "find_links"),
+        "rocm_win": ("https://torch.example/rocm-win", "index_url"),
+        "rocm_linux": ("https://torch.example/rocm-linux", "index_url"),
         "rocm6.4": ("https://torch.example/rocm64", "index_url"),
     }
     mirror_calls = []
