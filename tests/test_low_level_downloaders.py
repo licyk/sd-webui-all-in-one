@@ -2109,27 +2109,48 @@ def test_requests_downloader_target_lock_is_removed_after_error(tmp_path):
 
 def test_requests_downloader_target_lock_waits_across_processes(tmp_path):
     target = tmp_path / "model.bin"
+    ready = tmp_path / "child-ready"
+    process_timeout = 30
     command = (
         "from pathlib import Path; import sys; "
         "from sd_webui_all_in_one.downloader.requests_downloader.models import _target_download_lock; "
+        "Path(sys.argv[2]).touch(); "
         "\nwith _target_download_lock(Path(sys.argv[1])):\n print('acquired', flush=True)"
     )
 
-    with requests_models._target_download_lock(target):
-        process = subprocess.Popen(
-            [sys.executable, "-c", command, str(target)],
-            cwd=Path(__file__).parents[1],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        time.sleep(0.2)
-        assert process.poll() is None
+    process = None
+    try:
+        with requests_models._target_download_lock(target):
+            process = subprocess.Popen(
+                [sys.executable, "-c", command, str(target), str(ready)],
+                cwd=Path(__file__).parents[1],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            # Wait for imports to finish before checking lock contention. Cold
+            # starts on shared Windows runners can take several seconds.
+            deadline = time.monotonic() + process_timeout
+            while not ready.exists():
+                if process.poll() is not None:
+                    stdout, stderr = process.communicate(timeout=process_timeout)
+                    pytest.fail(f"Lock subprocess exited before becoming ready ({process.returncode}): {stdout}\n{stderr}")
+                assert time.monotonic() < deadline, "Lock subprocess did not become ready within 30 seconds"
+                time.sleep(0.05)
 
-    stdout, stderr = process.communicate(timeout=3)
-    assert process.returncode == 0, stderr
-    assert stdout.strip() == "acquired"
-    assert not requests_models._lock_path_for(target).exists()
+            # The child must remain blocked while the parent holds the lock.
+            with pytest.raises(subprocess.TimeoutExpired):
+                process.wait(timeout=0.5)
+
+        stdout, stderr = process.communicate(timeout=process_timeout)
+        assert process.returncode == 0, stderr
+        assert stdout.strip() == "acquired"
+        assert not requests_models._lock_path_for(target).exists()
+    finally:
+        if process is not None:
+            if process.poll() is None:
+                process.kill()
+            process.communicate(timeout=process_timeout)
 
 
 def test_requests_downloader_flushes_data_before_periodic_and_final_state(monkeypatch, tmp_path):
