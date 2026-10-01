@@ -19,13 +19,13 @@ def clean_uv_patch():
 
 
 def test_preprocess_command_keeps_windows_commands(monkeypatch):
-    monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.uv_pip.sys.platform", "win32")
+    monkeypatch.setattr("sys.platform", "win32")
 
     assert preprocess_command(["uv", "pip", "install", "demo"], shell=True) == ["uv", "pip", "install", "demo"]
 
 
 def test_preprocess_command_normalizes_posix_shell_commands(monkeypatch):
-    monkeypatch.setattr("sd_webui_all_in_one_hotpatcher_ext.uv_pip.sys.platform", "linux")
+    monkeypatch.setattr("sys.platform", "linux")
 
     assert preprocess_command(["uv", "pip", "install", "demo package"], shell=True) == "uv pip install 'demo package'"
     assert preprocess_command("uv pip install demo", shell=False) == ["uv", "pip", "install", "demo"]

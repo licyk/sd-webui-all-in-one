@@ -10,6 +10,7 @@ import pytest
 
 from sd_webui_all_in_one_hotpatcher import monkey_zoo, uninstall_import_hook
 from sd_webui_all_in_one_hotpatcher_ext import sd_trainer_browser_order
+from sd_webui_all_in_one_hotpatcher_ext.sd_trainer_browser_order import patches, replay
 
 MAIN_URL = "http://127.0.0.1:28000/lora/sd3.html"
 MONITOR_URL = "http://127.0.0.1:6008/"
@@ -76,17 +77,17 @@ def sync_replay(monkeypatch):
 
     events = []
     monkeypatch.setattr(
-        sd_trainer_browser_order,
+        replay,
         "_wait_for_tcp_port",
         lambda host, port, timeout, interval=0.2: events.append(("wait", host, port)) or True,
     )
-    monkeypatch.setattr(sd_trainer_browser_order.time, "sleep", lambda seconds: events.append(("sleep", seconds)))
+    monkeypatch.setattr(replay.time, "sleep", lambda seconds: events.append(("sleep", seconds)))
     monkeypatch.setattr(
-        sd_trainer_browser_order,
+        patches,
         "_start_replay",
         lambda requests: sd_trainer_browser_order.replay_browser_requests(
             requests,
-            monitor_delay=sd_trainer_browser_order._monitor_delay,
+            monitor_delay=patches._monitor_delay,
         ),
     )
     return events
@@ -107,7 +108,7 @@ def test_patch_opens_main_webui_before_monitor(monkeypatch, tmp_path, opened, sy
 
 def test_patch_defers_opening_until_app_startup_returns(monkeypatch, tmp_path, opened):
     captured = []
-    monkeypatch.setattr(sd_trainer_browser_order, "_start_replay", captured.append)
+    monkeypatch.setattr(patches, "_start_replay", captured.append)
     _create_fake_application(monkeypatch, tmp_path, NEXT_APPLICATION.format(urls=[MAIN_URL, MONITOR_URL]))
 
     sd_trainer_browser_order.patch_sd_trainer_browser_order()
@@ -125,8 +126,8 @@ def test_patch_waits_for_main_port_before_opening(monkeypatch, tmp_path, opened)
     main_url = f"http://127.0.0.1:{port}/"
     monkeypatch.setenv("MIKAZUKI_PORT", str(port))
     threads = []
-    start_replay = sd_trainer_browser_order._start_replay
-    monkeypatch.setattr(sd_trainer_browser_order, "_start_replay", lambda requests: threads.append(start_replay(requests)))
+    start_replay = patches._start_replay
+    monkeypatch.setattr(patches, "_start_replay", lambda requests: threads.append(start_replay(requests)))
     _create_fake_application(monkeypatch, tmp_path, NEXT_APPLICATION.format(urls=[main_url, MONITOR_URL]))
 
     try:
@@ -168,7 +169,7 @@ def test_patch_orders_requests_from_browser_controller(monkeypatch, tmp_path, op
 
 def test_patch_leaves_legacy_single_webui_untouched(monkeypatch, tmp_path, opened):
     monkeypatch.setattr(
-        sd_trainer_browser_order,
+        patches,
         "_start_replay",
         lambda _requests: (_ for _ in ()).throw(AssertionError("legacy branch must not be deferred")),
     )
@@ -177,7 +178,7 @@ def test_patch_leaves_legacy_single_webui_untouched(monkeypatch, tmp_path, opene
     sd_trainer_browser_order.patch_sd_trainer_browser_order()
     module = importlib.import_module(sd_trainer_browser_order.TARGET_MODULE)
 
-    assert not hasattr(module.app_startup, sd_trainer_browser_order._WRAPPER_MARKER_ATTR)
+    assert not hasattr(module.app_startup, patches._WRAPPER_MARKER_ATTR)
     asyncio.run(module.app_startup())
     assert opened == ["http://127.0.0.1:28000"]
 
@@ -240,10 +241,10 @@ def test_apply_from_config_ignores_disabled_config():
 
 def test_apply_from_config_reads_monitor_delay():
     sd_trainer_browser_order.apply_from_config({"enabled": True, "monitor_delay": "3"})
-    assert sd_trainer_browser_order._monitor_delay == 3.0
+    assert patches._monitor_delay == 3.0
 
     sd_trainer_browser_order.apply_from_config({"enabled": True, "monitor_delay": "bad"})
-    assert sd_trainer_browser_order._monitor_delay == sd_trainer_browser_order.DEFAULT_MONITOR_DELAY
+    assert patches._monitor_delay == sd_trainer_browser_order.DEFAULT_MONITOR_DELAY
 
 
 def _create_fake_application(monkeypatch, tmp_path, source):

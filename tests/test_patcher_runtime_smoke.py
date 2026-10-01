@@ -8,7 +8,7 @@ if str(PATCHER_ROOT) not in sys.path:
 
 from sd_webui_all_in_one_hotpatcher.runtime import audit
 from sd_webui_all_in_one_hotpatcher.runtime import browser
-from sd_webui_all_in_one_hotpatcher_ext import zluda
+from sd_webui_all_in_one_hotpatcher_ext.zluda import patches as zluda
 
 
 class FakeClient:

@@ -44,12 +44,34 @@ src/
   sd_webui_all_in_one_hotpatcher_ext/
     zluda/
       __init__.py
-    extension_index/
+      patches.py
+    xformers_cutlass/
       __init__.py
-    hf_endpoint_mirror/
-      __init__.py
+      patches.py
     uv_pip/
       __init__.py
+      patches.py
+    comfyui_auto_port/
+      __init__.py
+      patches.py
+    extension_index/
+      __init__.py
+      constants.py
+      mirror.py
+      patches.py
+      config.py
+    hf_endpoint_mirror/
+      __init__.py
+      urls.py
+      download.py
+      patches.py
+      config.py
+    sd_trainer_browser_order/
+      __init__.py
+      recording.py
+      replay.py
+      patches.py
+      config.py
   examples/
   tests/
   docs/

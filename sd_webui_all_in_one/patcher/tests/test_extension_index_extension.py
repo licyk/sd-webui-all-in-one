@@ -5,7 +5,7 @@ import textwrap
 
 import pytest
 
-import sd_webui_all_in_one_hotpatcher_ext.extension_index as extension_index_module
+import sd_webui_all_in_one_hotpatcher_ext.extension_index.mirror as extension_index_mirror
 from sd_webui_all_in_one_hotpatcher import monkey_zoo, uninstall_import_hook
 from sd_webui_all_in_one_hotpatcher_ext.extension_index import (
     A1111_EXTENSION_INDEX_RAW_FILE_PATH,
@@ -133,9 +133,9 @@ def test_apply_from_config_auto_a1111_keeps_original_when_github_accessible(monk
         """,
     )
     sys.path.insert(0, str(tmp_path))
-    monkeypatch.setattr(extension_index_module, "_github_direct_accessible", lambda: True)
+    monkeypatch.setattr(extension_index_mirror, "_github_direct_accessible", lambda: True)
     monkeypatch.setattr(
-        extension_index_module,
+        extension_index_mirror,
         "_apply_github_raw_file_mirror",
         lambda raw_file_path: pytest.fail("mirror should not be resolved when GitHub is accessible"),
     )
@@ -156,9 +156,9 @@ def test_apply_from_config_auto_a1111_uses_mirror_when_github_blocked(monkeypatc
     )
     sys.path.insert(0, str(tmp_path))
     calls = []
-    monkeypatch.setattr(extension_index_module, "_github_direct_accessible", lambda: False)
+    monkeypatch.setattr(extension_index_mirror, "_github_direct_accessible", lambda: False)
     monkeypatch.setattr(
-        extension_index_module,
+        extension_index_mirror,
         "_apply_github_raw_file_mirror",
         lambda raw_file_path: calls.append(raw_file_path) or "https://mirror.example/auto-index.json",
     )
@@ -179,8 +179,8 @@ def test_apply_from_config_auto_a1111_keeps_original_without_available_mirror(mo
         """,
     )
     sys.path.insert(0, str(tmp_path))
-    monkeypatch.setattr(extension_index_module, "_github_direct_accessible", lambda: False)
-    monkeypatch.setattr(extension_index_module, "_apply_github_raw_file_mirror", lambda raw_file_path: None)
+    monkeypatch.setattr(extension_index_mirror, "_github_direct_accessible", lambda: False)
+    monkeypatch.setattr(extension_index_mirror, "_apply_github_raw_file_mirror", lambda raw_file_path: None)
 
     apply_from_config({"webui": {"enabled": True, "url": "auto"}})
     module = importlib.import_module("modules.ui_extensions")
@@ -194,9 +194,9 @@ def test_patch_extension_index_comfyui_manager_rewrites_manager_core_channel_url
     write_manager_core_module(tmp_path / "manager_core.py", source_prefix)
     sys.path.insert(0, str(tmp_path))
     calls = []
-    monkeypatch.setattr(extension_index_module, "_github_direct_accessible", lambda: False)
+    monkeypatch.setattr(extension_index_mirror, "_github_direct_accessible", lambda: False)
     monkeypatch.setattr(
-        extension_index_module,
+        extension_index_mirror,
         "_apply_github_raw_file_mirror",
         lambda raw_file_path: calls.append(raw_file_path) or destination_prefix,
     )
@@ -225,9 +225,9 @@ def test_patch_extension_index_comfyui_manager_rewrites_manager_server_risky_lev
     write_manager_server_module(tmp_path / "manager_server.py", source_prefix)
     sys.path.insert(0, str(tmp_path))
     calls = []
-    monkeypatch.setattr(extension_index_module, "_github_direct_accessible", lambda: False)
+    monkeypatch.setattr(extension_index_mirror, "_github_direct_accessible", lambda: False)
     monkeypatch.setattr(
-        extension_index_module,
+        extension_index_mirror,
         "_apply_github_raw_file_mirror",
         lambda raw_file_path: calls.append(raw_file_path) or destination_prefix,
     )
@@ -250,9 +250,9 @@ def test_patch_extension_index_comfyui_manager_rewrites_manager_util_get_data_gi
     write_manager_util_module(tmp_path / "manager_util.py")
     sys.path.insert(0, str(tmp_path))
     calls = []
-    monkeypatch.setattr(extension_index_module, "_github_direct_accessible", lambda: False)
+    monkeypatch.setattr(extension_index_mirror, "_github_direct_accessible", lambda: False)
     monkeypatch.setattr(
-        extension_index_module,
+        extension_index_mirror,
         "_apply_github_raw_file_mirror",
         lambda raw_file_path: calls.append(raw_file_path) or destination_prefix,
     )
@@ -324,9 +324,9 @@ def test_apply_from_config_enables_selected_extension_index_patches(monkeypatch,
         A1111_EXTENSION_INDEX_RAW_FILE_PATH: "https://mirror.example/a1111-auto.json",
         COMFYUI_MANAGER_RAW_FILE_PATH: "https://mirror.example/comfyui-manager/main",
     }
-    monkeypatch.setattr(extension_index_module, "_github_direct_accessible", lambda: False)
+    monkeypatch.setattr(extension_index_mirror, "_github_direct_accessible", lambda: False)
     monkeypatch.setattr(
-        extension_index_module,
+        extension_index_mirror,
         "_apply_github_raw_file_mirror",
         lambda raw_file_path: calls.append(raw_file_path) or mirrors[raw_file_path],
     )
@@ -361,9 +361,9 @@ def test_apply_from_config_can_enable_webui_without_comfyui_manager(monkeypatch,
     )
     write_manager_core_module(tmp_path / "manager_core.py")
     sys.path.insert(0, str(tmp_path))
-    monkeypatch.setattr(extension_index_module, "_github_direct_accessible", lambda: False)
+    monkeypatch.setattr(extension_index_mirror, "_github_direct_accessible", lambda: False)
     monkeypatch.setattr(
-        extension_index_module,
+        extension_index_mirror,
         "_apply_github_raw_file_mirror",
         lambda raw_file_path: "https://mirror.example/a1111-auto.json",
     )
@@ -392,9 +392,9 @@ def test_apply_from_config_can_enable_comfyui_manager_without_webui(monkeypatch,
     )
     write_manager_core_module(tmp_path / "manager_core.py")
     sys.path.insert(0, str(tmp_path))
-    monkeypatch.setattr(extension_index_module, "_github_direct_accessible", lambda: False)
+    monkeypatch.setattr(extension_index_mirror, "_github_direct_accessible", lambda: False)
     monkeypatch.setattr(
-        extension_index_module,
+        extension_index_mirror,
         "_apply_github_raw_file_mirror",
         lambda raw_file_path: "https://mirror.example/comfyui-manager/main",
     )

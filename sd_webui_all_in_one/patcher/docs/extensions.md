@@ -22,12 +22,14 @@ sd_webui_all_in_one_hotpatcher_ext/
 当前已有：
 
 ```text
-src/sd_webui_all_in_one_hotpatcher_ext/zluda/__init__.py
-src/sd_webui_all_in_one_hotpatcher_ext/extension_index/__init__.py
-src/sd_webui_all_in_one_hotpatcher_ext/hf_endpoint_mirror/__init__.py
-src/sd_webui_all_in_one_hotpatcher_ext/uv_pip/__init__.py
-src/sd_webui_all_in_one_hotpatcher_ext/comfyui_auto_port/__init__.py
-src/sd_webui_all_in_one_hotpatcher_ext/sd_trainer_browser_order/__init__.py
+src/sd_webui_all_in_one_hotpatcher_ext/
+  zluda/                     __init__.py  patches.py
+  xformers_cutlass/          __init__.py  patches.py
+  uv_pip/                    __init__.py  patches.py
+  comfyui_auto_port/         __init__.py  patches.py
+  extension_index/           __init__.py  constants.py  mirror.py  patches.py  config.py
+  hf_endpoint_mirror/        __init__.py  urls.py  download.py  patches.py  config.py
+  sd_trainer_browser_order/  __init__.py  recording.py  replay.py  patches.py  config.py
 ```
 
 ## ComfyUI Auto Port 扩展
@@ -68,21 +70,34 @@ SD Trainer Next 分支（`wochenlong/lora-scripts-next`）启动时会打开两�
 
 ## 扩展模块推荐结构
 
+扩展包的 `__init__.py` 只负责重新导出符号：模块 docstring、`from .xxx import ...` 和 `__all__`，不放任何函数、类、常量或状态。实现全部写在同包的其它模块里。
+
 简单扩展：
 
 ```text
-sd_webui_all_in_one_hotpatcher_ext/foo/__init__.py
+sd_webui_all_in_one_hotpatcher_ext/foo/
+  __init__.py   # 只做重新导出
+  patches.py    # 补丁注册、apply_from_config() 和辅助函数
 ```
 
-复杂扩展：
+复杂扩展按职责继续拆分：
 
 ```text
 sd_webui_all_in_one_hotpatcher_ext/foo/
-  __init__.py
-  config.py
-  patches.py
+  __init__.py   # 只做重新导出
+  config.py     # apply_from_config()
+  patches.py    # 补丁注册
+  ...           # 其它按职责命名的模块, 例如 constants.py / mirror.py / urls.py
   docs.md
 ```
+
+约定：
+
+- `__init__.py` 只导出公开 API，下划线开头的私有名称不重新导出。
+- 子模块之间直接互相导入（`from .mirror import ...`），不要反过来从包的 `__init__.py` 导入，避免循环导入。
+- 测试需要替换私有函数或模块级状态时，要对实现所在的子模块打补丁（例如 `extension_index.mirror`），对包对象打补丁不会影响子模块内部的调用。
+
+`tests/test_extension_package_layout.py` 会检查每个扩展的 `__init__.py` 是否只包含重新导出，并固定各扩展的 `__all__`。
 
 不要求每个扩展都有独立文档，但复杂扩展应至少在 README 或 `src/docs/extensions.md` 中留下使用说明。
 
@@ -506,6 +521,8 @@ HF Endpoint Mirror 测试创建 fake `torch.hub`、fake `torchvision.datasets.ut
 - import-time patch 是否在入口内部调用 `install_import_hook()`。
 - 是否说明必须在目标模块 import 前调用。
 - 是否有 `apply_from_config()`。
+- `__init__.py` 是否只做重新导出，实现是否都在子模块里。
+- 是否在 `tests/test_extension_package_layout.py` 的 `EXPECTED_EXPORTS` 中登记公开 API。
 - 是否在 services catalog schema 中声明字段名、说明、类型和必要的 choices。
 - 是否能用 fake dependency 测试。
 - 是否没有把业务补丁塞进 `sd_webui_all_in_one_hotpatcher` core。
