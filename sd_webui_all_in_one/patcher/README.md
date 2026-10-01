@@ -604,19 +604,9 @@ from sd_webui_all_in_one_hotpatcher.runtime import patch_webbrowser
 patch_webbrowser(client)
 ```
 
-`patch_webbrowser` supports `mode="host"`, `"suppress"`, and `"passthrough"`.
-Host mode returns `True`, suppresses the operating-system browser, and emits one
-`browser.open` event when a runtime client exists. Suppress mode emits nothing;
-passthrough leaves a fresh process unmodified. Reapplying is idempotent. If the
-wrapper was already registered, switching to passthrough delegates to the
-original function, but fully removing the import hook requires a process restart.
-`webbrowser.open_new` and `open_new_tab` use the patched module-level `open` and
-therefore preserve the same single-event behavior.
+`patch_webbrowser` 支持 `mode="host"`、`"suppress"` 和 `"passthrough"` 三种模式。`host` 模式返回 `True`，阻止调用操作系统浏览器，并在存在运行时客户端时发送一次 `browser.open` 事件。`suppress` 模式不发送任何事件；`passthrough` 模式不会修改全新的进程。重复应用是幂等的。如果包装函数已经注册，切换到 `passthrough` 会转为调用原始函数，但要完全移除 import hook 需要重启进程。`webbrowser.open_new` 和 `open_new_tab` 使用被 patch 的模块级 `open`，因此同样只会发送一次事件。
 
-The desktop broker reserves 16 of its bounded 256 outbound-event slots for
-`browser.open`; ordinary events stop at 240 queued items. Browser events can use
-the reserve but cannot exceed the same 256-event hard limit. Admission failure
-never invokes the operating-system browser and never consumes a wire sequence.
+桌面端 broker 的出站事件队列上限为 256 个槽位，其中 16 个预留给 `browser.open`；普通事件在队列达到 240 项时不再入队。浏览器事件可以使用预留槽位，但同样不能超过 256 个事件的硬上限。入队失败时不会调用操作系统浏览器，也不会消耗传输序列号。
 
 文件操作：
 
