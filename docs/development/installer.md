@@ -106,3 +106,18 @@ SD Trainer Script 是特殊启动方式：训练命令由用户脚本在 `init.p
 - 更新模式是否能写出新管理脚本。
 - 构建模式是否能在 CI / 整合包构建中无交互运行。
 - 帮助信息中的文档链接是否仍指向 `https://licyk.github.io/sd-webui-all-in-one/installer/.../`。
+
+版本号使用 `.github/sync_installer_version.py` 维护，不需要手动逐个修改安装器：
+
+```bash
+# 仅将各安装器的 CORE_MINIMUM_VER 同步为 sd_webui_all_in_one/version.py 中的内核版本
+python .github/sync_installer_version.py
+
+# 递增内核版本 (默认递增 patch, 可指定 minor / major) 并将所有安装器的版本号加 1
+python .github/sync_installer_version.py --bump-core --bump-installer
+
+# 预览修改而不写入文件
+python .github/sync_installer_version.py --bump-core --bump-installer --dry-run
+```
+
+`--core-version X.Y.Z` 可以直接指定内核版本，`--installer comfyui fooocus` 可以只处理指定的安装器。`--bump-installer` 每运行一次都会递增一次版本号，提交前可以先用 `--dry-run` 确认。CI 中仍由 `.github/check_installer_version.ps1` 检查版本是否一致。
