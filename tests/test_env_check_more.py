@@ -6,61 +6,65 @@ from pathlib import Path
 import pytest
 
 check_torch_version = importlib.import_module("sd_webui_all_in_one.env_check.check_torch_version")
-fix_accelerate_bin = importlib.import_module("sd_webui_all_in_one.env_check.fix_accelerate_bin")
-fix_numpy = importlib.import_module("sd_webui_all_in_one.env_check.fix_numpy")
+check_torch_version_checker = importlib.import_module("sd_webui_all_in_one.env_check.check_torch_version.checker")
+check_torch_version_compatibility = importlib.import_module("sd_webui_all_in_one.env_check.check_torch_version.compatibility")
+fix_accelerate_bin = importlib.import_module("sd_webui_all_in_one.env_check.fix_accelerate_bin.fixer")
+fix_numpy = importlib.import_module("sd_webui_all_in_one.env_check.fix_numpy.checker")
 onnxruntime_gpu_check = importlib.import_module("sd_webui_all_in_one.env_check.onnxruntime_gpu_check")
+onnxruntime_gpu_check_resolver = importlib.import_module("sd_webui_all_in_one.env_check.onnxruntime_gpu_check.resolver")
+onnxruntime_gpu_check_fixer = importlib.import_module("sd_webui_all_in_one.env_check.onnxruntime_gpu_check.fixer")
 gpu_detector = importlib.import_module("sd_webui_all_in_one.pytorch_manager.gpu_detector")
 mirror_selector = importlib.import_module("sd_webui_all_in_one.pytorch_manager.mirror_selector")
 
 
 def test_torch_version_compatibility_helpers(monkeypatch):
-    assert check_torch_version._is_rocm_version_compatible("rocm7.2.1", ["rocm7.2"]) is True
-    assert check_torch_version._is_rocm_version_compatible("rocm6.3", ["rocm6.2"]) is False
+    assert check_torch_version_compatibility._is_rocm_version_compatible("rocm7.2.1", ["rocm7.2"]) is True
+    assert check_torch_version_compatibility._is_rocm_version_compatible("rocm6.3", ["rocm6.2"]) is False
 
     monkeypatch.setattr(sys, "platform", "linux")
-    assert check_torch_version._is_rocm_version_compatible("rocm7.14.1", ["rocm7", "rocm10", "rocm7.2"]) is True
-    assert check_torch_version._is_rocm_version_compatible("rocm10.0.0", ["rocm7", "rocm10", "rocm7.2"]) is True
-    assert check_torch_version._is_rocm_version_compatible("rocm10.0.0", ["rocm7", "rocm7.2"]) is False
-    assert check_torch_version._is_rocm_version_compatible("rocm10.0.0", ["rocm_linux", "rocm7.2"]) is True
-    assert check_torch_version._is_rocm_version_compatible("rocm7.14.0", ["rocm_linux", "rocm7.2"]) is False
-    assert check_torch_version._is_rocm_version_compatible("rocm7.14.0", ["rocm7.2"]) is False
-    assert check_torch_version._is_rocm_version_compatible("rocm6.3", ["rocm7"]) is False
+    assert check_torch_version_compatibility._is_rocm_version_compatible("rocm7.14.1", ["rocm7", "rocm10", "rocm7.2"]) is True
+    assert check_torch_version_compatibility._is_rocm_version_compatible("rocm10.0.0", ["rocm7", "rocm10", "rocm7.2"]) is True
+    assert check_torch_version_compatibility._is_rocm_version_compatible("rocm10.0.0", ["rocm7", "rocm7.2"]) is False
+    assert check_torch_version_compatibility._is_rocm_version_compatible("rocm10.0.0", ["rocm_linux", "rocm7.2"]) is True
+    assert check_torch_version_compatibility._is_rocm_version_compatible("rocm7.14.0", ["rocm_linux", "rocm7.2"]) is False
+    assert check_torch_version_compatibility._is_rocm_version_compatible("rocm7.14.0", ["rocm7.2"]) is False
+    assert check_torch_version_compatibility._is_rocm_version_compatible("rocm6.3", ["rocm7"]) is False
 
     monkeypatch.setattr(sys, "platform", "win32")
-    assert check_torch_version._is_rocm_version_compatible("rocm6.3", ["rocm7"]) is True
-    assert check_torch_version._is_rocm_version_compatible("rocm10.0.0", ["rocm_win"]) is True
-    assert check_torch_version._is_rocm_version_compatible("rocm6.3", ["rocm_win"]) is False
-    assert check_torch_version._is_rocm_version_compatible("rocm10.0.0", ["rocm7"]) is False
+    assert check_torch_version_compatibility._is_rocm_version_compatible("rocm6.3", ["rocm7"]) is True
+    assert check_torch_version_compatibility._is_rocm_version_compatible("rocm10.0.0", ["rocm_win"]) is True
+    assert check_torch_version_compatibility._is_rocm_version_compatible("rocm6.3", ["rocm_win"]) is False
+    assert check_torch_version_compatibility._is_rocm_version_compatible("rocm10.0.0", ["rocm7"]) is False
 
-    assert check_torch_version._is_ipex_version("gite9ebda2", ["xpu", "ipex_legacy_arc"]) is True
-    assert check_torch_version._is_ipex_version("gite9ebda2", ["xpu"]) is False
+    assert check_torch_version_compatibility._is_ipex_version("gite9ebda2", ["xpu", "ipex_legacy_arc"]) is True
+    assert check_torch_version_compatibility._is_ipex_version("gite9ebda2", ["xpu"]) is False
 
 
 def test_check_torch_version_handles_missing_cpu_and_compatible_gpu(monkeypatch):
-    monkeypatch.setattr(check_torch_version, "get_available_pytorch_device_type", lambda _gpu_list=None: ["rocm7.2", "xpu", "ipex_legacy_arc"])
-    monkeypatch.setattr(check_torch_version, "auto_detect_available_pytorch_type", lambda _gpu_list=None: "xpu")
-    monkeypatch.setattr(check_torch_version, "get_gpu_list", lambda: ["gpu"])
-    monkeypatch.setattr(check_torch_version, "has_gpus", lambda _gpu_list: True)
+    monkeypatch.setattr(check_torch_version_checker, "get_available_pytorch_device_type", lambda _gpu_list=None: ["rocm7.2", "xpu", "ipex_legacy_arc"])
+    monkeypatch.setattr(check_torch_version_checker, "auto_detect_available_pytorch_type", lambda _gpu_list=None: "xpu")
+    monkeypatch.setattr(check_torch_version_checker, "get_gpu_list", lambda: ["gpu"])
+    monkeypatch.setattr(check_torch_version_checker, "has_gpus", lambda _gpu_list: True)
 
-    monkeypatch.setattr(check_torch_version, "load_source_directly", lambda _name: {})
+    monkeypatch.setattr(check_torch_version_checker, "load_source_directly", lambda _name: {})
     check_torch_version.check_torch_version()
 
-    monkeypatch.setattr(check_torch_version, "load_source_directly", lambda _name: {"__version__": "2.4.0+cpu"})
+    monkeypatch.setattr(check_torch_version_checker, "load_source_directly", lambda _name: {"__version__": "2.4.0+cpu"})
     check_torch_version.check_torch_version()
 
-    monkeypatch.setattr(check_torch_version, "load_source_directly", lambda _name: {"__version__": "2.7.0+rocm7.2.1"})
+    monkeypatch.setattr(check_torch_version_checker, "load_source_directly", lambda _name: {"__version__": "2.7.0+rocm7.2.1"})
     check_torch_version.check_torch_version()
 
-    monkeypatch.setattr(check_torch_version, "load_source_directly", lambda _name: {"__version__": "2.1.0+gite9ebda2"})
+    monkeypatch.setattr(check_torch_version_checker, "load_source_directly", lambda _name: {"__version__": "2.1.0+gite9ebda2"})
     check_torch_version.check_torch_version()
 
 
 def test_check_torch_version_status_reports_structured_result(monkeypatch):
-    monkeypatch.setattr(check_torch_version, "get_available_pytorch_device_type", lambda _gpu_list=None: ["cu128"])
-    monkeypatch.setattr(check_torch_version, "auto_detect_available_pytorch_type", lambda _gpu_list=None: "cu128")
-    monkeypatch.setattr(check_torch_version, "get_gpu_list", lambda: ["gpu"])
-    monkeypatch.setattr(check_torch_version, "has_gpus", lambda _gpu_list: True)
-    monkeypatch.setattr(check_torch_version, "load_source_directly", lambda _name: {"__version__": "2.7.0+cu121"})
+    monkeypatch.setattr(check_torch_version_checker, "get_available_pytorch_device_type", lambda _gpu_list=None: ["cu128"])
+    monkeypatch.setattr(check_torch_version_checker, "auto_detect_available_pytorch_type", lambda _gpu_list=None: "cu128")
+    monkeypatch.setattr(check_torch_version_checker, "get_gpu_list", lambda: ["gpu"])
+    monkeypatch.setattr(check_torch_version_checker, "has_gpus", lambda _gpu_list: True)
+    monkeypatch.setattr(check_torch_version_checker, "load_source_directly", lambda _name: {"__version__": "2.7.0+cu121"})
 
     result = check_torch_version.check_torch_version_status()
 
@@ -75,11 +79,11 @@ def test_check_torch_version_status_reports_structured_result(monkeypatch):
 
 def test_check_torch_version_warning_reports_supported_type_before_installed_type(monkeypatch):
     warnings = []
-    monkeypatch.setattr(check_torch_version, "get_available_pytorch_device_type", lambda _gpu_list=None: ["cu128"])
-    monkeypatch.setattr(check_torch_version, "auto_detect_available_pytorch_type", lambda _gpu_list=None: "cu128")
-    monkeypatch.setattr(check_torch_version, "get_gpu_list", lambda: ["gpu"])
-    monkeypatch.setattr(check_torch_version, "has_gpus", lambda _gpu_list: True)
-    monkeypatch.setattr(check_torch_version, "load_source_directly", lambda _name: {"__version__": "2.7.0+cu121"})
+    monkeypatch.setattr(check_torch_version_checker, "get_available_pytorch_device_type", lambda _gpu_list=None: ["cu128"])
+    monkeypatch.setattr(check_torch_version_checker, "auto_detect_available_pytorch_type", lambda _gpu_list=None: "cu128")
+    monkeypatch.setattr(check_torch_version_checker, "get_gpu_list", lambda: ["gpu"])
+    monkeypatch.setattr(check_torch_version_checker, "has_gpus", lambda _gpu_list: True)
+    monkeypatch.setattr(check_torch_version_checker, "load_source_directly", lambda _name: {"__version__": "2.7.0+cu121"})
     monkeypatch.setattr(check_torch_version.logger, "warning", lambda *args: warnings.append(args))
 
     check_torch_version.check_torch_version()
@@ -104,7 +108,7 @@ def _patch_device(monkeypatch, platform, gpus, cuda_version=0.0, cuda_cap=0.0):
     monkeypatch.setattr(mirror_selector.sys, "platform", platform)
     monkeypatch.setattr(gpu_detector, "get_cuda_version", lambda: cuda_version)
     monkeypatch.setattr(gpu_detector, "get_cuda_comp_cap", lambda: cuda_cap)
-    monkeypatch.setattr(check_torch_version, "get_gpu_list", lambda: gpus)
+    monkeypatch.setattr(check_torch_version_checker, "get_gpu_list", lambda: gpus)
 
 
 @pytest.mark.parametrize(
@@ -130,7 +134,7 @@ def _patch_device(monkeypatch, platform, gpus, cuda_version=0.0, cuda_cap=0.0):
 )
 def test_check_torch_version_status_matches_auto_detection_rules(monkeypatch, platform, gpus, cuda_version, torch_version, expected_status):
     _patch_device(monkeypatch, platform, gpus, cuda_version=cuda_version)
-    monkeypatch.setattr(check_torch_version, "load_source_directly", lambda _name: {"__version__": torch_version})
+    monkeypatch.setattr(check_torch_version_checker, "load_source_directly", lambda _name: {"__version__": torch_version})
 
     result = check_torch_version.check_torch_version_status()
 
@@ -161,7 +165,7 @@ def test_auto_selected_pytorch_type_always_passes_environment_check(monkeypatch,
     # AMD 多架构 wheel 的版本后缀为具体的 ROCm 版本号
     suffix = {"rocm10": "rocm10.0.0", "rocm7": "rocm7.14.1"}.get(selected_type, selected_type)
     torch_version = "2.13.0" if selected_type == "all" else f"2.13.0+{suffix}"
-    monkeypatch.setattr(check_torch_version, "load_source_directly", lambda _name: {"__version__": torch_version})
+    monkeypatch.setattr(check_torch_version_checker, "load_source_directly", lambda _name: {"__version__": torch_version})
 
     result = check_torch_version.check_torch_version_status()
 
@@ -227,32 +231,32 @@ def test_check_accelerate_bin_reinstalls_for_kohya_repo(monkeypatch, tmp_path):
 
 def test_need_install_ort_ver_matrix(monkeypatch):
     def set_torch_info(torch_ver, cuda_ver, cudnn_ver):
-        monkeypatch.setattr(onnxruntime_gpu_check, "get_torch_cuda_ver_fast", lambda: (torch_ver, cuda_ver))
-        monkeypatch.setattr(onnxruntime_gpu_check, "get_torch_cuda_ver", lambda: (torch_ver, cuda_ver, cudnn_ver))
+        monkeypatch.setattr(onnxruntime_gpu_check_resolver, "get_torch_cuda_ver_fast", lambda: (torch_ver, cuda_ver))
+        monkeypatch.setattr(onnxruntime_gpu_check_resolver, "get_torch_cuda_ver", lambda: (torch_ver, cuda_ver, cudnn_ver))
 
-    monkeypatch.setattr(onnxruntime_gpu_check.importlib.metadata, "version", lambda _name: (_ for _ in ()).throw(importlib.metadata.PackageNotFoundError("onnxruntime-gpu")))
+    monkeypatch.setattr(onnxruntime_gpu_check_resolver.importlib.metadata, "version", lambda _name: (_ for _ in ()).throw(importlib.metadata.PackageNotFoundError("onnxruntime-gpu")))
     set_torch_info(None, None, None)
     assert onnxruntime_gpu_check.need_install_ort_ver(skip_if_missing=False) == onnxruntime_gpu_check.OrtType.CU130
 
     set_torch_info("2.8.0", "13.0", "9000")
-    monkeypatch.setattr(onnxruntime_gpu_check, "get_onnxruntime_support_cuda_version", lambda: ("12.8", "9"))
+    monkeypatch.setattr(onnxruntime_gpu_check_resolver, "get_onnxruntime_support_cuda_version", lambda: ("12.8", "9"))
     assert onnxruntime_gpu_check.need_install_ort_ver() == onnxruntime_gpu_check.OrtType.CU130
 
     set_torch_info("2.5.0", "12.1", "9000")
-    monkeypatch.setattr(onnxruntime_gpu_check, "get_onnxruntime_support_cuda_version", lambda: ("12.2", "8"))
+    monkeypatch.setattr(onnxruntime_gpu_check_resolver, "get_onnxruntime_support_cuda_version", lambda: ("12.2", "8"))
     assert onnxruntime_gpu_check.need_install_ort_ver() == onnxruntime_gpu_check.OrtType.CU121CUDNN9
 
     set_torch_info("2.4.0", "12.1", "8000")
-    monkeypatch.setattr(onnxruntime_gpu_check, "get_onnxruntime_support_cuda_version", lambda: ("11.8", "8"))
+    monkeypatch.setattr(onnxruntime_gpu_check_resolver, "get_onnxruntime_support_cuda_version", lambda: ("11.8", "8"))
     assert onnxruntime_gpu_check.need_install_ort_ver() == onnxruntime_gpu_check.OrtType.CU121CUDNN8
 
     set_torch_info("2.1.0", "11.8", "8000")
-    monkeypatch.setattr(onnxruntime_gpu_check, "get_onnxruntime_support_cuda_version", lambda: ("12.1", "8"))
+    monkeypatch.setattr(onnxruntime_gpu_check_resolver, "get_onnxruntime_support_cuda_version", lambda: ("12.1", "8"))
     assert onnxruntime_gpu_check.need_install_ort_ver() == onnxruntime_gpu_check.OrtType.CU118
 
-    monkeypatch.setattr(onnxruntime_gpu_check.sys, "platform", "win32")
+    monkeypatch.setattr(onnxruntime_gpu_check_resolver.sys, "platform", "win32")
     set_torch_info("2.5.0", "12.1", "9000")
-    monkeypatch.setattr(onnxruntime_gpu_check, "get_onnxruntime_support_cuda_version", lambda: (None, None))
+    monkeypatch.setattr(onnxruntime_gpu_check_resolver, "get_onnxruntime_support_cuda_version", lambda: (None, None))
     assert onnxruntime_gpu_check.need_install_ort_ver(skip_if_missing=False) == onnxruntime_gpu_check.OrtType.CU121CUDNN9
 
 
@@ -266,9 +270,9 @@ def test_check_onnxruntime_gpu_installs_with_cleaned_env(monkeypatch):
     original_env = env.copy()
     calls = []
 
-    monkeypatch.setattr(onnxruntime_gpu_check, "need_install_ort_ver", lambda _skip: onnxruntime_gpu_check.OrtType.CU118)
-    monkeypatch.setattr(onnxruntime_gpu_check, "run_cmd", lambda command: calls.append(("cmd", command)))
-    monkeypatch.setattr(onnxruntime_gpu_check, "pip_install", lambda *args, **kwargs: calls.append(("pip", args, kwargs)))
+    monkeypatch.setattr(onnxruntime_gpu_check_fixer, "need_install_ort_ver", lambda _skip: onnxruntime_gpu_check.OrtType.CU118)
+    monkeypatch.setattr(onnxruntime_gpu_check_fixer, "run_cmd", lambda command: calls.append(("cmd", command)))
+    monkeypatch.setattr(onnxruntime_gpu_check_fixer, "pip_install", lambda *args, **kwargs: calls.append(("pip", args, kwargs)))
 
     onnxruntime_gpu_check.check_onnxruntime_gpu(use_uv=False, skip_if_missing=False, custom_env=env)
 

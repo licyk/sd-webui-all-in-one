@@ -7,10 +7,16 @@ from pathlib import Path
 import pytest
 
 fix_dependencies = importlib.import_module("sd_webui_all_in_one.env_check.fix_dependencies")
+fix_dependencies_requirements = importlib.import_module("sd_webui_all_in_one.env_check.fix_dependencies.requirements")
+fix_dependencies_metadata = importlib.import_module("sd_webui_all_in_one.env_check.fix_dependencies.metadata")
 check_fooocus_args = importlib.import_module("sd_webui_all_in_one.env_check.check_fooocus_args")
 fix_forge_neo_alert = importlib.import_module("sd_webui_all_in_one.env_check.fix_forge_neo_alert")
-fix_torch = importlib.import_module("sd_webui_all_in_one.env_check.fix_torch")
+fix_forge_neo_alert_worker = importlib.import_module("sd_webui_all_in_one.env_check.fix_forge_neo_alert.worker")
+fix_forge_neo_alert_fixer = importlib.import_module("sd_webui_all_in_one.env_check.fix_forge_neo_alert.fixer")
+fix_torch = importlib.import_module("sd_webui_all_in_one.env_check.fix_torch.fixer")
 ext_installer = importlib.import_module("sd_webui_all_in_one.env_check.sd_webui_extension_dependency_installer")
+ext_installer_runner = importlib.import_module("sd_webui_all_in_one.env_check.sd_webui_extension_dependency_installer.runner")
+ext_installer_installer = importlib.import_module("sd_webui_all_in_one.env_check.sd_webui_extension_dependency_installer.installer")
 
 
 def test_run_extension_installer_sets_pythonpath_and_live_output(monkeypatch, tmp_path):
@@ -24,7 +30,7 @@ def test_run_extension_installer_sets_pythonpath_and_live_output(monkeypatch, tm
     def fake_run_cmd(command, custom_env, cwd):
         calls.append((command, custom_env, cwd))
 
-    monkeypatch.setattr(ext_installer, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(ext_installer_runner, "run_cmd", fake_run_cmd)
 
     assert ext_installer.run_extension_installer(webui, extension, custom_env=origin_env) is True
     assert origin_env == {"PYTHONPATH": "old", "KEEP": "1"}
@@ -33,7 +39,7 @@ def test_run_extension_installer_sets_pythonpath_and_live_output(monkeypatch, tm
     assert calls[0][1]["PYTHONPATH"].startswith(webui.as_posix())
     assert calls[0][2] == webui
 
-    monkeypatch.setattr(ext_installer, "run_cmd", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("bad install")))
+    monkeypatch.setattr(ext_installer_runner, "run_cmd", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("bad install")))
     assert ext_installer.run_extension_installer(webui, extension) is False
     assert ext_installer.run_extension_installer(webui, webui / "missing") is False
 
@@ -52,7 +58,7 @@ def test_install_extension_requirements_filters_disabled_and_builtin(monkeypatch
         (folder / "install.py").write_text("", encoding="utf-8")
     (webui / "config.json").write_text(json.dumps({"disabled_extensions": ["disabled", "builtin-disabled"]}), encoding="utf-8")
     calls = []
-    monkeypatch.setattr(ext_installer, "run_extension_installer", lambda sd_webui_base_path, extension_dir, custom_env=None: calls.append(extension_dir.name) or True)
+    monkeypatch.setattr(ext_installer_installer, "run_extension_installer", lambda sd_webui_base_path, extension_dir, custom_env=None: calls.append(extension_dir.name) or True)
 
     ext_installer.install_extension_requirements(webui, custom_env={"A": "B"})
     assert calls == ["enabled", "builtin-enabled"]
@@ -88,7 +94,7 @@ def test_fix_forge_neo_alert_worker_updates_moves_or_ignores(monkeypatch, tmp_pa
 
     moved = []
     config.write_text("{", encoding="utf-8")
-    monkeypatch.setattr(fix_forge_neo_alert, "move_files", lambda src, dst: moved.append((src, dst)))
+    monkeypatch.setattr(fix_forge_neo_alert_worker, "move_files", lambda src, dst: moved.append((src, dst)))
     try:
         fix_forge_neo_alert.fix_alert_worker(webui)
     finally:
@@ -129,7 +135,7 @@ def test_fix_forge_neo_alert_process_cleanup(monkeypatch, tmp_path):
     class FakeContext:
         Process = FakeProcess
 
-    monkeypatch.setattr(fix_forge_neo_alert.multiprocessing, "get_context", lambda mode: events.append(("ctx", mode)) or FakeContext())
+    monkeypatch.setattr(fix_forge_neo_alert_fixer.multiprocessing, "get_context", lambda mode: events.append(("ctx", mode)) or FakeContext())
 
     fix_forge_neo_alert.fix_forge_neo_alert(tmp_path)
 
@@ -179,8 +185,8 @@ def test_py_dependency_checker_installs_missing_and_wraps(monkeypatch, tmp_path)
     req.write_text("demo\n", encoding="utf-8")
     calls = []
 
-    monkeypatch.setattr(fix_dependencies, "validate_requirements", lambda path: calls.append(("validate", path)) or False)
-    monkeypatch.setattr(fix_dependencies, "install_requirements", lambda **kwargs: calls.append(("install", kwargs)))
+    monkeypatch.setattr(fix_dependencies_requirements, "validate_requirements", lambda path: calls.append(("validate", path)) or False)
+    monkeypatch.setattr(fix_dependencies_requirements, "install_requirements", lambda **kwargs: calls.append(("install", kwargs)))
 
     fix_dependencies.py_dependency_checker(req, use_uv=False, custom_env={"A": "B"})
 
@@ -189,7 +195,7 @@ def test_py_dependency_checker_installs_missing_and_wraps(monkeypatch, tmp_path)
         ("install", {"path": req, "use_uv": False, "cwd": tmp_path, "custom_env": {"A": "B"}}),
     ]
 
-    monkeypatch.setattr(fix_dependencies, "install_requirements", lambda **_kwargs: (_ for _ in ()).throw(RuntimeError("pip bad")))
+    monkeypatch.setattr(fix_dependencies_requirements, "install_requirements", lambda **_kwargs: (_ for _ in ()).throw(RuntimeError("pip bad")))
     with pytest.raises(RuntimeError, match="pip bad"):
         fix_dependencies.py_dependency_checker(req)
 
@@ -199,8 +205,8 @@ def test_py_dependency_checker_installs_missing_and_wraps(monkeypatch, tmp_path)
 
 def test_py_package_metadata_dependency_checker_installs_only_missing(monkeypatch):
     calls = []
-    monkeypatch.setattr(fix_dependencies, "get_missing_package_metadata_dependencies", lambda package_name: calls.append(("missing", package_name)) or [])
-    monkeypatch.setattr(fix_dependencies, "pip_install", lambda *args, **kwargs: calls.append(("pip", args, kwargs)))
+    monkeypatch.setattr(fix_dependencies_metadata, "get_missing_package_metadata_dependencies", lambda package_name: calls.append(("missing", package_name)) or [])
+    monkeypatch.setattr(fix_dependencies_metadata, "pip_install", lambda *args, **kwargs: calls.append(("pip", args, kwargs)))
 
     fix_dependencies.py_package_metadata_dependency_checker("demo[gpu]", name="Demo")
 
@@ -208,7 +214,7 @@ def test_py_package_metadata_dependency_checker_installs_only_missing(monkeypatc
 
     calls.clear()
     monkeypatch.setattr(
-        fix_dependencies,
+        fix_dependencies_metadata,
         "get_missing_package_metadata_dependencies",
         lambda package_name: calls.append(("missing", package_name)) or ["dep>=1.0", "pkg[extra]>=2.0"],
     )
@@ -222,8 +228,8 @@ def test_py_package_metadata_dependency_checker_installs_only_missing(monkeypatc
 
 
 def test_py_package_metadata_dependency_checker_wraps_install_error(monkeypatch):
-    monkeypatch.setattr(fix_dependencies, "get_missing_package_metadata_dependencies", lambda _package_name: ["dep>=1.0"])
-    monkeypatch.setattr(fix_dependencies, "pip_install", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("pip bad")))
+    monkeypatch.setattr(fix_dependencies_metadata, "get_missing_package_metadata_dependencies", lambda _package_name: ["dep>=1.0"])
+    monkeypatch.setattr(fix_dependencies_metadata, "pip_install", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("pip bad")))
 
     with pytest.raises(RuntimeError, match="pip bad"):
         fix_dependencies.py_package_metadata_dependency_checker("demo")

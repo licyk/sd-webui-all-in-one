@@ -85,9 +85,7 @@ def patch_webbrowser(
                     try:
                         browser.open(url)
                     except Exception as exc:
-                        active_state.browser_diagnostics.append(
-                            f"browser host event failed; opening remained suppressed: {exc}"
-                        )
+                        active_state.browser_diagnostics.append(f"browser host event failed; opening remained suppressed: {exc}")
                         del active_state.browser_diagnostics[:-100]
             return True
 

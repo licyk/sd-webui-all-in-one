@@ -62,6 +62,7 @@ pytest tests/test_version_manager.py
 - 不在测试中访问真实网络，不执行真实 `git clone`、`pip/uv install`、`aria2` 下载、WebUI 启动、GPU 检测或隧道启动。
 - 涉及 Windows / Linux / macOS 差异时，断言行为结果，不依赖目录遍历顺序、POSIX 权限、命令字符串转义细节或某个平台专有路径。
 - 需要模拟可选依赖缺失时，优先 monkeypatch 对应模块导入或入口函数，不通过卸载本机依赖实现。
+- monkeypatch 拆分为子包的模块（例如 `env_check/` 下的检查项）时，目标应是实际使用该名称的实现文件，而不是只做重新导出的 `__init__.py`，否则替换不会生效。
 - 修复 bug 时先补能复现问题的回归测试，再修实现；若现有行为本身不明确，应在测试名或断言中表达新的预期。
 
 常用的测试粒度：

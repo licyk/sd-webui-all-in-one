@@ -1,23 +1,11 @@
-"""Numpy 检查工具"""
+"""Numpy 版本检查与修复"""
 
 import importlib.metadata
 import sys
 
-from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.pkg_manager import pip_install
-from sd_webui_all_in_one.config import (
-    LOGGER_LEVEL,
-    LOGGER_COLOR,
-    LOGGER_NAME,
-)
 from sd_webui_all_in_one.package_analyzer import PyWhlVersionComparison
-
-
-logger = get_logger(
-    name=LOGGER_NAME,
-    level=LOGGER_LEVEL,
-    color=LOGGER_COLOR,
-)
+from sd_webui_all_in_one.env_check.shared import logger
 
 
 def check_numpy(

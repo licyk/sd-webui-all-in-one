@@ -35,7 +35,7 @@ Python 包入口定义在 `pyproject.toml`：
 | `pytorch_manager/` | GPU 检测、PyTorch 类型推断、版本列表、镜像选择和版本查询。 |
 | `model_downloader/` | 模型列表、模型搜索、模型下载和保存路径分类。 |
 | `tunnel/` | Cloudflare、Gradio、Ngrok、remote.moe、localhost.run、pinggy.io、Zrok 等内网穿透实现。 |
-| `env_check/` | WebUI 运行环境检查和常见依赖问题修复。 |
+| `env_check/` | WebUI 运行环境检查和常见依赖问题修复。每个检查项是一个子包，实现按职责拆分到子包内的文件，公开接口由子包的 `__init__.py` 重新导出。 |
 | `package_analyzer/` | Python 包版本、wheel 文件、requirements 和依赖约束解析。 |
 | `file_operations/` | 文件复制、移动、删除、软链接、压缩包解压和打包。 |
 | `mirror_manager.py` / `env_manager.py` | PyPI、GitHub、HuggingFace、uv / pip 环境变量和镜像配置。 |

@@ -6,6 +6,9 @@ import pytest
 
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.env_check import comfyui_env_analyze as analyzer
+from sd_webui_all_in_one.env_check.comfyui_env_analyze import actions as analyzer_actions
+from sd_webui_all_in_one.env_check.comfyui_env_analyze import checks as analyzer_checks
+from sd_webui_all_in_one.env_check.comfyui_env_analyze import environment as analyzer_environment
 
 
 def test_comfyui_environment_dict_updates_missing_and_conflict_lists(monkeypatch, tmp_path):
@@ -22,7 +25,8 @@ def test_comfyui_environment_dict_updates_missing_and_conflict_lists(monkeypatch
 
     env_data = analyzer.create_comfyui_environment_dict(comfyui)
     analyzer.update_comfyui_component_requires_list(env_data)
-    monkeypatch.setattr(analyzer, "is_package_installed", lambda package: "missing-pkg" not in package)
+    monkeypatch.setattr(analyzer_environment, "is_package_installed", lambda package: "missing-pkg" not in package)
+    monkeypatch.setattr(analyzer_checks, "is_package_installed", lambda package: "missing-pkg" not in package)
     analyzer.update_comfyui_component_missing_requires_list(env_data)
     analyzer.update_comfyui_component_conflict_requires_list(env_data, ["shared"])
 
@@ -55,7 +59,8 @@ def test_process_comfyui_env_analysis_detects_conflicts_and_missing_paths(monkey
     node.mkdir(parents=True)
     (comfyui / "requirements.txt").write_text("numpy<2\n", encoding="utf-8")
     (node / "requirements.txt").write_text("numpy>=2\n", encoding="utf-8")
-    monkeypatch.setattr(analyzer, "is_package_installed", lambda _package: True)
+    monkeypatch.setattr(analyzer_environment, "is_package_installed", lambda _package: True)
+    monkeypatch.setattr(analyzer_checks, "is_package_installed", lambda _package: True)
 
     env_data, req_list, conflicts = analyzer.process_comfyui_env_analysis(comfyui)
 
@@ -76,7 +81,8 @@ def test_check_comfyui_component_dependencies_returns_structured_result(monkeypa
     node.mkdir(parents=True)
     (comfyui / "requirements.txt").write_text("numpy<2\n", encoding="utf-8")
     (node / "requirements.txt").write_text("numpy>=2\nmissing-demo\n", encoding="utf-8")
-    monkeypatch.setattr(analyzer, "is_package_installed", lambda package: package != "missing-demo")
+    monkeypatch.setattr(analyzer_environment, "is_package_installed", lambda package: package != "missing-demo")
+    monkeypatch.setattr(analyzer_checks, "is_package_installed", lambda package: package != "missing-demo")
 
     result = analyzer.check_comfyui_component_dependencies(comfyui)
 
@@ -99,7 +105,7 @@ def test_comfyui_conflict_analyzer_installs_needed_requirements_and_aggregates(m
     reqs = [node_a / "requirements.txt", node_b / "requirements.txt"]
     calls = []
     monkeypatch.setattr(
-        analyzer,
+        analyzer_checks,
         "process_comfyui_env_analysis",
         lambda _path: (
             {},
@@ -121,7 +127,7 @@ def test_comfyui_conflict_analyzer_installs_needed_requirements_and_aggregates(m
         if path == node_b / "requirements.txt":
             raise RuntimeError("install bad")
 
-    monkeypatch.setattr(analyzer, "install_requirements", fake_install_requirements)
+    monkeypatch.setattr(analyzer_actions, "install_requirements", fake_install_requirements)
 
     with pytest.raises(AggregateError) as exc:
         analyzer.comfyui_conflict_analyzer(
@@ -141,7 +147,7 @@ def test_comfyui_conflict_analyzer_installs_needed_requirements_and_aggregates(m
 
     calls.clear()
     monkeypatch.setattr(
-        analyzer,
+        analyzer_checks,
         "process_comfyui_env_analysis",
         lambda _path: (
             {},
@@ -164,7 +170,7 @@ def test_comfyui_conflict_analyzer_batches_non_conflicting_requirements(monkeypa
     calls = []
     info_messages = []
     monkeypatch.setattr(
-        analyzer,
+        analyzer_checks,
         "process_comfyui_env_analysis",
         lambda _path: ({}, req_paths, []),
     )
@@ -173,7 +179,7 @@ def test_comfyui_conflict_analyzer_batches_non_conflicting_requirements(monkeypa
     def fake_install_requirements(path, use_uv, cwd, custom_env):
         calls.append((path, use_uv, cwd, custom_env))
 
-    monkeypatch.setattr(analyzer, "install_requirements", fake_install_requirements)
+    monkeypatch.setattr(analyzer_actions, "install_requirements", fake_install_requirements)
 
     analyzer.comfyui_conflict_analyzer(tmp_path, use_uv=False, custom_env={"PYTHONPATH": "old"})
 
@@ -196,7 +202,7 @@ def test_comfyui_conflict_analyzer_falls_back_to_sequential_when_batch_fails(mon
     req_paths = [(node_a / "requirements.txt").resolve(), (node_b / "requirements.txt").resolve()]
     calls = []
     monkeypatch.setattr(
-        analyzer,
+        analyzer_checks,
         "process_comfyui_env_analysis",
         lambda _path: ({}, req_paths, []),
     )
@@ -206,7 +212,7 @@ def test_comfyui_conflict_analyzer_falls_back_to_sequential_when_batch_fails(mon
         if isinstance(path, list):
             raise RuntimeError("batch bad")
 
-    monkeypatch.setattr(analyzer, "install_requirements", fake_install_requirements)
+    monkeypatch.setattr(analyzer_actions, "install_requirements", fake_install_requirements)
 
     analyzer.comfyui_conflict_analyzer(tmp_path, use_uv=False, custom_env={"PYTHONPATH": "old"})
 
@@ -231,7 +237,7 @@ def test_comfyui_conflict_analyzer_runs_install_scripts_sequentially(monkeypatch
     req_paths = [(node_a / "requirements.txt").resolve(), (node_b / "requirements.txt").resolve(), (node_c / "requirements.txt").resolve()]
     events = []
     info_messages = []
-    monkeypatch.setattr(analyzer, "process_comfyui_env_analysis", lambda _path: ({}, req_paths, ""))
+    monkeypatch.setattr(analyzer_checks, "process_comfyui_env_analysis", lambda _path: ({}, req_paths, ""))
     monkeypatch.setattr(analyzer.logger, "info", lambda message, *args: info_messages.append(message % args if args else message))
 
     def fake_install_requirements(path, use_uv, cwd, custom_env):
@@ -240,8 +246,8 @@ def test_comfyui_conflict_analyzer_runs_install_scripts_sequentially(monkeypatch
     def fake_run_cmd(command, cwd, custom_env):
         events.append(("install.py", command, cwd))
 
-    monkeypatch.setattr(analyzer, "install_requirements", fake_install_requirements)
-    monkeypatch.setattr(analyzer, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(analyzer_actions, "install_requirements", fake_install_requirements)
+    monkeypatch.setattr(analyzer_actions, "run_cmd", fake_run_cmd)
 
     analyzer.comfyui_conflict_analyzer(tmp_path, use_uv=False)
 
@@ -263,21 +269,21 @@ def test_check_comfyui_manager_dependence_installs_only_when_needed(monkeypatch,
 
     req = tmp_path / "manager_requirements.txt"
     req.write_text("demo\n", encoding="utf-8")
-    monkeypatch.setattr(analyzer, "validate_requirements", lambda path: calls.append(("validate", path)) or True)
-    monkeypatch.setattr(analyzer, "install_requirements", lambda **kwargs: calls.append(("install", kwargs)))
+    monkeypatch.setattr(analyzer_checks, "validate_requirements", lambda path: calls.append(("validate", path)) or True)
+    monkeypatch.setattr(analyzer_checks, "install_requirements", lambda **kwargs: calls.append(("install", kwargs)))
 
     analyzer.check_comfyui_manager_dependence(tmp_path, use_uv=False, custom_env={"A": "B"})
     assert calls == [("validate", req)]
 
     calls.clear()
-    monkeypatch.setattr(analyzer, "validate_requirements", lambda path: calls.append(("validate", path)) or False)
+    monkeypatch.setattr(analyzer_checks, "validate_requirements", lambda path: calls.append(("validate", path)) or False)
     analyzer.check_comfyui_manager_dependence(tmp_path, use_uv=False, custom_env={"A": "B"})
     assert calls == [
         ("validate", req),
         ("install", {"path": req, "use_uv": False, "custom_env": {"A": "B"}, "cwd": tmp_path}),
     ]
 
-    monkeypatch.setattr(analyzer, "install_requirements", lambda **_kwargs: (_ for _ in ()).throw(RuntimeError("pip bad")))
+    monkeypatch.setattr(analyzer_checks, "install_requirements", lambda **_kwargs: (_ for _ in ()).throw(RuntimeError("pip bad")))
     with pytest.raises(RuntimeError, match="pip bad"):
         analyzer.check_comfyui_manager_dependence(tmp_path)
 

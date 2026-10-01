@@ -1,17 +1,17 @@
 """冲突依赖检测算法测试
 
-测试 comfyui_env_analyze.py 中的冲突检测函数:
+测试 comfyui_env_analyze 中的冲突检测函数:
 - _is_constraint_pair_conflicting: 单对约束冲突检测
 - detect_conflict_package: 两个包声明之间的冲突检测
 - detect_conflict_package_from_list: 包列表中的冲突检测
 """
 
 from sd_webui_all_in_one.env_check.comfyui_env_analyze import (
-    _is_constraint_pair_conflicting,
     detect_conflict_package,
     detect_conflict_package_from_list,
-    normalize_package_name,
 )
+from sd_webui_all_in_one.env_check.comfyui_env_analyze.version_constraints import _is_constraint_pair_conflicting
+from sd_webui_all_in_one.package_analyzer import normalize_package_name
 
 
 # ============================================================================

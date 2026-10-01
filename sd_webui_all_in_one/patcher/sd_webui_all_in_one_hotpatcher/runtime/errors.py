@@ -28,6 +28,8 @@ DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES = (
     "sd_webui_all_in_one_hotpatcher",
     "sd_webui_all_in_one_hotpatcher_ext",
 )
+
+
 @dataclass
 class ExceptionReporter:
     """
@@ -906,6 +908,8 @@ def _local_value_payload(value: Any, budget: _LocalBudget) -> dict[str, Any]:
         "repr": text,
         "truncated": value_truncated or budget_truncated,
     }
+
+
 def _type_name(value: Any) -> str:
     value_type = type(value)
     return f"{value_type.__module__}.{value_type.__qualname__}"

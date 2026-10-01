@@ -10,6 +10,10 @@ from sd_webui_all_in_one.base_manager.comfyui_base import lifecycle
 from sd_webui_all_in_one.cli_manager import comfyui_cli
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.env_check import comfyui_env_analyze as analyzer
+from sd_webui_all_in_one.env_check.comfyui_env_analyze import actions as analyzer_actions
+from sd_webui_all_in_one.env_check.comfyui_env_analyze import checks as analyzer_checks
+from sd_webui_all_in_one.env_check.comfyui_env_analyze import environment as analyzer_environment
+from sd_webui_all_in_one.env_check.comfyui_env_analyze import resolution as analyzer_resolution
 from sd_webui_all_in_one.notebook_manager import comfyui_manager
 
 
@@ -159,8 +163,8 @@ def test_resolve_empty_conflicts():
 def _brute_force_mwis(neighbors: list[int], weights: list[int]) -> int:
     best = 0
     for mask in range(1 << len(neighbors)):
-        if all(not (neighbors[v] & mask) for v in analyzer._iter_mask_bits(mask)):
-            best = max(best, sum(weights[v] for v in analyzer._iter_mask_bits(mask)))
+        if all(not (neighbors[v] & mask) for v in analyzer_resolution._iter_mask_bits(mask)):
+            best = max(best, sum(weights[v] for v in analyzer_resolution._iter_mask_bits(mask)))
     return best
 
 
@@ -176,11 +180,11 @@ def test_max_weight_independent_set_matches_brute_force():
                         neighbors[j] |= 1 << i
             weights = [node_count + 1 + rng.randint(0, 1) for _ in range(node_count)]
 
-            chosen, optimal = analyzer._max_weight_independent_set(neighbors, weights, 10**6)
+            chosen, optimal = analyzer_resolution._max_weight_independent_set(neighbors, weights, 10**6)
 
             assert optimal is True
-            assert all(not (neighbors[v] & chosen) for v in analyzer._iter_mask_bits(chosen))
-            assert sum(weights[v] for v in analyzer._iter_mask_bits(chosen)) == _brute_force_mwis(neighbors, weights)
+            assert all(not (neighbors[v] & chosen) for v in analyzer_resolution._iter_mask_bits(chosen))
+            assert sum(weights[v] for v in analyzer_resolution._iter_mask_bits(chosen)) == _brute_force_mwis(neighbors, weights)
 
 
 def test_max_weight_independent_set_budget_returns_valid_set():
@@ -193,11 +197,11 @@ def test_max_weight_independent_set_budget_returns_valid_set():
                 neighbors[i] |= 1 << j
                 neighbors[j] |= 1 << i
 
-    chosen, optimal = analyzer._max_weight_independent_set(neighbors, [1] * node_count, 5)
+    chosen, optimal = analyzer_resolution._max_weight_independent_set(neighbors, [1] * node_count, 5)
 
     assert optimal is False
     assert chosen != 0
-    assert all(not (neighbors[v] & chosen) for v in analyzer._iter_mask_bits(chosen))
+    assert all(not (neighbors[v] & chosen) for v in analyzer_resolution._iter_mask_bits(chosen))
 
 
 # ============================================================================
@@ -207,7 +211,8 @@ def test_max_weight_independent_set_budget_returns_valid_set():
 
 def test_check_dependencies_includes_resolution_and_prefers_installed(monkeypatch, tmp_path):
     comfyui = _make_comfyui(tmp_path, "torch\n", {"a": "numpy<2\n", "b": "numpy>=2\n"})
-    monkeypatch.setattr(analyzer, "is_package_installed", lambda package: package != "numpy<2")
+    monkeypatch.setattr(analyzer_environment, "is_package_installed", lambda package: package != "numpy<2")
+    monkeypatch.setattr(analyzer_checks, "is_package_installed", lambda package: package != "numpy<2")
 
     result = analyzer.check_comfyui_component_dependencies(comfyui)
 
@@ -221,7 +226,8 @@ def test_disabling_resolution_clears_conflicts_on_reanalysis(monkeypatch, tmp_pa
         "numpy>=1.25\n",
         {"old": "numpy<1.24\n", "ok": "numpy>=1.20\n", "x": "protobuf<4\n", "z": "protobuf>=4\n", "w": "protobuf>=4\n"},
     )
-    monkeypatch.setattr(analyzer, "is_package_installed", lambda _package: True)
+    monkeypatch.setattr(analyzer_environment, "is_package_installed", lambda _package: True)
+    monkeypatch.setattr(analyzer_checks, "is_package_installed", lambda _package: True)
 
     resolution = analyzer.check_comfyui_component_dependencies(comfyui)["conflict_resolution"]
     for name in resolution["disable_components"]:
@@ -239,8 +245,9 @@ def test_disabling_resolution_clears_conflicts_on_reanalysis(monkeypatch, tmp_pa
 @pytest.fixture
 def install_calls(monkeypatch):
     calls: list = []
-    monkeypatch.setattr(analyzer, "is_package_installed", lambda _package: False)
-    monkeypatch.setattr(analyzer, "install_requirements", lambda path, use_uv, cwd, custom_env: calls.append(path))
+    monkeypatch.setattr(analyzer_environment, "is_package_installed", lambda _package: False)
+    monkeypatch.setattr(analyzer_checks, "is_package_installed", lambda _package: False)
+    monkeypatch.setattr(analyzer_actions, "install_requirements", lambda path, use_uv, cwd, custom_env: calls.append(path))
     return calls
 
 

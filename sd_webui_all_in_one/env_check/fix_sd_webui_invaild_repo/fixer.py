@@ -1,21 +1,10 @@
-"""修复 Stable Diffusion WebUI 无效模块仓库地址模块"""
+"""Stable Diffusion WebUI 无效组件仓库地址修复"""
 
 import os
 from pathlib import Path
 
-from sd_webui_all_in_one.config import (
-    LOGGER_LEVEL,
-    LOGGER_COLOR,
-    LOGGER_NAME,
-)
-from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one import git_warpper
-
-logger = get_logger(
-    name=LOGGER_NAME,
-    level=LOGGER_LEVEL,
-    color=LOGGER_COLOR,
-)
+from sd_webui_all_in_one.env_check.shared import logger
 
 
 def fix_stable_diffusion_invaild_repo_url(

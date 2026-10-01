@@ -5,7 +5,9 @@ from pathlib import Path
 import pytest
 
 onnx_check = importlib.import_module("sd_webui_all_in_one.env_check.onnxruntime_gpu_check")
-fix_repo = importlib.import_module("sd_webui_all_in_one.env_check.fix_sd_webui_invaild_repo")
+onnx_check_resolver = importlib.import_module("sd_webui_all_in_one.env_check.onnxruntime_gpu_check.resolver")
+onnx_check_fixer = importlib.import_module("sd_webui_all_in_one.env_check.onnxruntime_gpu_check.fixer")
+fix_repo = importlib.import_module("sd_webui_all_in_one.env_check.fix_sd_webui_invaild_repo.fixer")
 
 
 @pytest.mark.parametrize(
@@ -29,32 +31,32 @@ fix_repo = importlib.import_module("sd_webui_all_in_one.env_check.fix_sd_webui_i
     ],
 )
 def test_need_install_ort_ver_cuda_cudnn_matrix(monkeypatch, torch_info, ort_info, skip_if_missing, platform, installed_ort, expected):
-    monkeypatch.setattr(onnx_check, "get_torch_cuda_ver_fast", lambda: (torch_info[0], torch_info[1]))
-    monkeypatch.setattr(onnx_check, "get_torch_cuda_ver", lambda: torch_info)
-    monkeypatch.setattr(onnx_check, "get_onnxruntime_support_cuda_version", lambda: ort_info)
-    monkeypatch.setattr(onnx_check.sys, "platform", platform)
+    monkeypatch.setattr(onnx_check_resolver, "get_torch_cuda_ver_fast", lambda: (torch_info[0], torch_info[1]))
+    monkeypatch.setattr(onnx_check_resolver, "get_torch_cuda_ver", lambda: torch_info)
+    monkeypatch.setattr(onnx_check_resolver, "get_onnxruntime_support_cuda_version", lambda: ort_info)
+    monkeypatch.setattr(onnx_check_resolver.sys, "platform", platform)
 
     def fake_version(name):
         if name == "onnxruntime-gpu" and installed_ort:
             return "1.20.0"
-        raise onnx_check.importlib.metadata.PackageNotFoundError(name)
+        raise onnx_check_resolver.importlib.metadata.PackageNotFoundError(name)
 
-    monkeypatch.setattr(onnx_check.importlib.metadata, "version", fake_version)
+    monkeypatch.setattr(onnx_check_resolver.importlib.metadata, "version", fake_version)
 
     assert onnx_check.need_install_ort_ver(skip_if_missing=skip_if_missing) == expected
 
 
 def test_need_install_ort_ver_reads_cudnn_lazily(monkeypatch):
-    monkeypatch.setattr(onnx_check, "get_torch_cuda_ver_fast", lambda: ("2.9.0", "13.0"))
-    monkeypatch.setattr(onnx_check, "get_torch_cuda_ver", lambda: (_ for _ in ()).throw(AssertionError("cuDNN should not be read")))
-    monkeypatch.setattr(onnx_check, "get_onnxruntime_support_cuda_version", lambda: ("13.0", "9"))
+    monkeypatch.setattr(onnx_check_resolver, "get_torch_cuda_ver_fast", lambda: ("2.9.0", "13.0"))
+    monkeypatch.setattr(onnx_check_resolver, "get_torch_cuda_ver", lambda: (_ for _ in ()).throw(AssertionError("cuDNN should not be read")))
+    monkeypatch.setattr(onnx_check_resolver, "get_onnxruntime_support_cuda_version", lambda: ("13.0", "9"))
 
     assert onnx_check.need_install_ort_ver() is None
 
     calls = []
-    monkeypatch.setattr(onnx_check, "get_torch_cuda_ver_fast", lambda: ("2.5.0", "12.1"))
-    monkeypatch.setattr(onnx_check, "get_torch_cuda_ver", lambda: calls.append("cudnn") or ("2.5.0", "12.1", "9000"))
-    monkeypatch.setattr(onnx_check, "get_onnxruntime_support_cuda_version", lambda: ("12.1", "8"))
+    monkeypatch.setattr(onnx_check_resolver, "get_torch_cuda_ver_fast", lambda: ("2.5.0", "12.1"))
+    monkeypatch.setattr(onnx_check_resolver, "get_torch_cuda_ver", lambda: calls.append("cudnn") or ("2.5.0", "12.1", "9000"))
+    monkeypatch.setattr(onnx_check_resolver, "get_onnxruntime_support_cuda_version", lambda: ("12.1", "8"))
 
     assert onnx_check.need_install_ort_ver() == onnx_check.OrtType.CU121CUDNN9
     assert calls == ["cudnn"]
@@ -80,9 +82,9 @@ def test_check_onnxruntime_gpu_installs_expected_package_and_env(monkeypatch, or
     original_env = custom_env.copy()
     calls = []
 
-    monkeypatch.setattr(onnx_check, "need_install_ort_ver", lambda skip_if_missing: ort_type)
-    monkeypatch.setattr(onnx_check, "run_cmd", lambda command: calls.append(("run", command)))
-    monkeypatch.setattr(onnx_check, "pip_install", lambda *args, **kwargs: calls.append(("pip", args, kwargs)))
+    monkeypatch.setattr(onnx_check_fixer, "need_install_ort_ver", lambda skip_if_missing: ort_type)
+    monkeypatch.setattr(onnx_check_fixer, "run_cmd", lambda command: calls.append(("run", command)))
+    monkeypatch.setattr(onnx_check_fixer, "pip_install", lambda *args, **kwargs: calls.append(("pip", args, kwargs)))
 
     onnx_check.check_onnxruntime_gpu(use_uv=False, skip_if_missing=True, custom_env=custom_env)
 
@@ -119,13 +121,13 @@ def test_check_onnxruntime_gpu_installs_expected_package_and_env(monkeypatch, or
 
 
 def test_check_onnxruntime_gpu_skips_and_wraps_install_errors(monkeypatch):
-    monkeypatch.setattr(onnx_check, "need_install_ort_ver", lambda skip_if_missing: None)
-    monkeypatch.setattr(onnx_check, "pip_install", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should skip")))
+    monkeypatch.setattr(onnx_check_fixer, "need_install_ort_ver", lambda skip_if_missing: None)
+    monkeypatch.setattr(onnx_check_fixer, "pip_install", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should skip")))
     onnx_check.check_onnxruntime_gpu()
 
-    monkeypatch.setattr(onnx_check, "need_install_ort_ver", lambda skip_if_missing: onnx_check.OrtType.CU130)
-    monkeypatch.setattr(onnx_check, "run_cmd", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(onnx_check, "pip_install", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("pip bad")))
+    monkeypatch.setattr(onnx_check_fixer, "need_install_ort_ver", lambda skip_if_missing: onnx_check.OrtType.CU130)
+    monkeypatch.setattr(onnx_check_fixer, "run_cmd", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(onnx_check_fixer, "pip_install", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("pip bad")))
     with pytest.raises(RuntimeError, match="Onnxrunime GPU"):
         onnx_check.check_onnxruntime_gpu()
 

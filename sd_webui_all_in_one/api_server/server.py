@@ -58,6 +58,8 @@ API_ERROR_CODES = (
     "task_not_found",
     "unauthorized",
 )
+
+
 @dataclass(frozen=True, slots=True)
 class ApiMethodSpec:
     """真实 callable 的 API 注册信息，不保存重复参数 schema。"""
@@ -65,6 +67,7 @@ class ApiMethodSpec:
     handler: Callable[..., Any]
     description: str = ""
     bound_arguments: Mapping[str, Any] = field(default_factory=dict)
+
 
 @dataclass(frozen=True, slots=True)
 class RegisteredMethod:

@@ -186,11 +186,15 @@ def _run_help(
             _terminate_process(process)
             stdout, stderr = process.communicate()
             detail = (stdout + "\n" + stderr).strip()[-MAX_DIAGNOSTIC_OUTPUT:] or None
-            return "", "", LaunchArgumentDiagnostic(
-                "error",
-                "discovery_timeout",
-                f"WebUI help discovery exceeded {context.timeout_seconds:g} seconds",
-                detail,
+            return (
+                "",
+                "",
+                LaunchArgumentDiagnostic(
+                    "error",
+                    "discovery_timeout",
+                    f"WebUI help discovery exceeded {context.timeout_seconds:g} seconds",
+                    detail,
+                ),
             )
     finally:
         with _ACTIVE_PROCESSES_LOCK:
@@ -231,7 +235,7 @@ def _value_shape(
     help_text: str,
 ) -> tuple[LaunchArgumentValueKind, int, int | None, str | None, list[str], bool]:
     flags = list(_FLAG.finditer(spec))
-    tail = spec[flags[-1].end():].strip(" ,") if flags else ""
+    tail = spec[flags[-1].end() :].strip(" ,") if flags else ""
     choices_match = _CHOICES.search(tail)
     choices = sorted({item.strip() for item in choices_match.group(1).split(",") if item.strip()}) if choices_match else []
     metavar = choices_match.group(0) if choices_match else (tail or None)
@@ -571,27 +575,15 @@ def parse_argparse_help(
     parsed: list[tuple[str, str, str]] = []
     diagnostics: list[LaunchArgumentDiagnostic] = []
     unrecognized_declarations = 0
-    section_starts = [
-        index
-        for index, line in enumerate(lines)
-        if index not in usage_indices and (heading := _HEADING.match(line)) and not heading.group("name").startswith("usage")
-    ]
+    section_starts = [index for index, line in enumerate(lines) if index not in usage_indices and (heading := _HEADING.match(line)) and not heading.group("name").startswith("usage")]
     for section_position, start in enumerate(section_starts):
         end = section_starts[section_position + 1] if section_position + 1 < len(section_starts) else len(lines)
         heading = _HEADING.match(lines[start])
         assert heading is not None
         category = _category(heading.group("name"))
-        candidates = [
-            (index, len(lines[index]) - len(lines[index].lstrip()))
-            for index in range(start + 1, end)
-            if index not in usage_indices and _split_option_declaration(lines[index]) is not None
-        ]
+        candidates = [(index, len(lines[index]) - len(lines[index].lstrip())) for index in range(start + 1, end) if index not in usage_indices and _split_option_declaration(lines[index]) is not None]
         if not candidates:
-            unrecognized_declarations += sum(
-                1
-                for index in range(start + 1, end)
-                if index not in usage_indices and lines[index].lstrip().startswith("-")
-            )
+            unrecognized_declarations += sum(1 for index in range(start + 1, end) if index not in usage_indices and lines[index].lstrip().startswith("-"))
             continue
         declaration_indent = min(indent for _, indent in candidates)
         current: int | None = None
@@ -670,14 +662,7 @@ def parse_argparse_help(
 
 def _has_option_section(document: str) -> bool:
     lines = document.split("\n")
-    return any(
-        _HEADING.match(line)
-        and any(
-            _split_option_declaration(candidate) is not None
-            for candidate in lines[index + 1 :]
-        )
-        for index, line in enumerate(lines)
-    )
+    return any(_HEADING.match(line) and any(_split_option_declaration(candidate) is not None for candidate in lines[index + 1 :]) for index, line in enumerate(lines))
 
 
 def _select_help_document(
