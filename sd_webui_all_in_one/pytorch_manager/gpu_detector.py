@@ -492,14 +492,21 @@ def has_amd_gpu(
     return any(_is_amd_gpu_info(x) for x in gpu_list)
 
 
-def get_available_pytorch_device_type() -> list[PyTorchDeviceType]:
+def get_available_pytorch_device_type(
+    gpu_list: list[GPUDeviceInfo] | None = None,
+) -> list[PyTorchDeviceType]:
     """获取当前设备上可用的 PyTorch 设备类型
+
+    Args:
+        gpu_list (list[GPUDeviceInfo] | None):
+            GPU 列表, 为 None 时自动获取当前平台上的 GPU 列表
 
     Returns:
         list[PyTorchDeviceType]:
             可用的 PyTorch 设备类型列表
     """
-    gpu_list = get_gpu_list()
+    if gpu_list is None:
+        gpu_list = get_gpu_list()
     cuda_comp_cap = get_cuda_comp_cap()
     cuda_support_ver = get_cuda_version()
     device_list: list[PyTorchDeviceType] = ["all"]
@@ -541,14 +548,24 @@ def get_available_pytorch_device_type() -> list[PyTorchDeviceType]:
     return device_list
 
 
-def auto_detect_available_pytorch_type() -> PyTorchDeviceType:
+def auto_detect_available_pytorch_type(
+    gpu_list: list[GPUDeviceInfo] | None = None,
+) -> PyTorchDeviceType:
     """检测当前的设备并获取适配当前设备的 PyTorch 类型
+
+    当设备上没有显卡, 或者显卡不受 PyTorch 支持 (如不支持 XPU 的 Intel 核显, CUDA 版本过低的 NVIDIA 显卡) 时返回 `cpu`,
+    环境检查 (`check_torch_version_status`) 使用该结果判断 CPU 类型的 PyTorch 是否适合当前设备, 保证两者的判断标准一致。
+
+    Args:
+        gpu_list (list[GPUDeviceInfo] | None):
+            GPU 列表, 为 None 时自动获取当前平台上的 GPU 列表
 
     Returns:
         PyTorchDeviceType:
             支持当前设备的 PyTorch 类型
     """
-    gpu_list = get_gpu_list()
+    if gpu_list is None:
+        gpu_list = get_gpu_list()
     cuda_comp_cap = get_cuda_comp_cap()
     cuda_support_ver = get_cuda_version()
 
@@ -595,14 +612,21 @@ def auto_detect_available_pytorch_type() -> PyTorchDeviceType:
     return "cpu"
 
 
-def auto_detect_pytorch_device_category() -> PyTorchDeviceTypeCategory:
+def auto_detect_pytorch_device_category(
+    gpu_list: list[GPUDeviceInfo] | None = None,
+) -> PyTorchDeviceTypeCategory:
     """检测当前的设备并获取大致的 PyTorch 设备分类类型 (不带版本号)
+
+    Args:
+        gpu_list (list[GPUDeviceInfo] | None):
+            GPU 列表, 为 None 时自动获取当前平台上的 GPU 列表
 
     Returns:
         PyTorchDeviceTypeCategory:
             支持当前设备的通用类型
     """
-    gpu_list = get_gpu_list()
+    if gpu_list is None:
+        gpu_list = get_gpu_list()
     gpu_available = has_gpus(gpu_list)
     nvidia_gpu_available = has_nvidia_gpu(gpu_list)
     intel_xpu_available = has_intel_xpu(gpu_list)

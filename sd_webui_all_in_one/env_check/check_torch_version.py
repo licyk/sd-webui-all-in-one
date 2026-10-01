@@ -12,6 +12,7 @@ from sd_webui_all_in_one.config import (
 from sd_webui_all_in_one.utils import load_source_directly
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_TYPE_ALIAS_DICT,
+    auto_detect_available_pytorch_type,
     get_available_pytorch_device_type,
     get_gpu_list,
     has_gpus,
@@ -25,6 +26,9 @@ logger = get_logger(
 )
 
 
+CPU_PYTORCH_TYPES = ("all", "cpu")
+"""不使用 GPU 加速的 PyTorch 类型"""
+
 TorchVersionCheckStatus = Literal["missing", "cpu_with_gpu", "unsupported_type", "compatible"]
 """PyTorch 版本检查状态。"""
 
@@ -35,7 +39,7 @@ class TorchVersionCheckResult(TypedDict):
     Attributes:
         available_types (list[str]): 当前设备支持的 PyTorch 类型列表。
         gpu_list (list[str]): 当前检测到的 GPU 列表。
-        has_gpu (bool): 当前环境是否检测到可用 GPU。
+        has_gpu (bool): 当前环境是否检测到显卡 (不代表该显卡受 PyTorch 支持)。
         installed_version (str | None): 当前环境安装的 PyTorch 版本。
         installed_type (str | None): 当前环境安装的 PyTorch 类型。
         status (TorchVersionCheckStatus): PyTorch 版本检查状态。
@@ -50,7 +54,7 @@ class TorchVersionCheckResult(TypedDict):
     """当前检测到的 GPU 列表。"""
 
     has_gpu: bool
-    """当前环境是否检测到可用 GPU。"""
+    """当前环境是否检测到显卡 (不代表该显卡受 PyTorch 支持)。"""
 
     installed_version: str | None
     """当前环境安装的 PyTorch 版本。"""
@@ -128,11 +132,15 @@ def _is_ipex_version(
 def check_torch_version_status() -> TorchVersionCheckResult:
     """检查 PyTorch 版本可用性并返回结构化结果。
 
+    是否应当使用 GPU 版 PyTorch 的判断标准与自动选择 PyTorch 类型 (`auto_detect_available_pytorch_type`) 保持一致:
+    当自动选择的结果为 CPU 类型时 (设备上没有显卡, 或者显卡不受 PyTorch 支持), CPU 类型的 PyTorch 视为适合当前设备。
+
     Returns:
         TorchVersionCheckResult: PyTorch 版本检查结果。
     """
-    available_types = [str(item) for item in get_available_pytorch_device_type()]
     raw_gpu_list = get_gpu_list()
+    available_types = [str(item) for item in get_available_pytorch_device_type(raw_gpu_list)]
+    recommended_type = str(auto_detect_available_pytorch_type(raw_gpu_list))
     gpu_list = [str(item) for item in raw_gpu_list]
     has_gpu = has_gpus(raw_gpu_list)
     torch_data = load_source_directly("torch.version") or {}
@@ -150,8 +158,8 @@ def check_torch_version_status() -> TorchVersionCheckResult:
         }
 
     torch_type = torch_ver.split("+")[-1] if "+" in torch_ver else "all"
-    if has_gpu:
-        if torch_type in ("all", "cpu"):
+    if torch_type in CPU_PYTORCH_TYPES:
+        if recommended_type not in CPU_PYTORCH_TYPES:
             return {
                 "available_types": available_types,
                 "gpu_list": gpu_list,
@@ -162,7 +170,7 @@ def check_torch_version_status() -> TorchVersionCheckResult:
                 "is_compatible": False,
                 "message": "当前环境使用的 PyTorch 类型为 CPU, 而当前设备有可用的 GPU, 可尝试重装适配 GPU 的 PyTorch 以加速推理",
             }
-
+    elif has_gpu:
         if torch_type not in available_types:
             if _is_rocm_version_compatible(torch_type, available_types) or _is_ipex_version(torch_type, available_types):
                 return {
