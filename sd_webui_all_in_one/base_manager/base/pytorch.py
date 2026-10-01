@@ -285,6 +285,44 @@ def install_pytorch_for_webui(
     logger.info("PyTorch / xFormers 安装完成")
 
 
+def uninstall_stale_pytorch_packages(
+    *packages: str | list[str] | None,
+) -> None:
+    """卸载已安装但未包含在软件包声明中的 PyTorch 组件 (torchvision / torchaudio / xFormers)
+
+    使用 `--force-reinstall` 强制重装 PyTorch 时只会重装声明中的软件包, 未包含在声明中的旧版组件会残留在环境中,
+    并且与重装后的 PyTorch 不兼容, 因此需要卸载。
+
+    Args:
+        *packages (str | list[str] | None):
+            本次安装的软件包声明, 例如: `torch==2.8.0+cu128 torchvision==0.23.0+cu128`
+    """
+    requested_names: set[str] = set()
+    for package in packages:
+        if package is None:
+            continue
+        for item in package.split() if isinstance(package, str) else package:
+            requirement = Requirement.try_parse(item)
+            if requirement is not None:
+                requested_names.add(requirement.normalized_name)
+
+    stale_names: list[str] = []
+    for name in ("torchvision", "torchaudio", "xformers"):
+        if name in requested_names:
+            continue
+        try:
+            importlib.metadata.version(name)
+        except importlib.metadata.PackageNotFoundError:
+            continue
+        stale_names.append(name)
+
+    if len(stale_names) == 0:
+        return
+
+    logger.warning("卸载未包含在本次安装中的旧版 PyTorch 组件以避免不兼容: %s", ", ".join(stale_names))
+    run_cmd([Path(sys.executable).as_posix(), "-m", "pip", "uninstall", *stale_names, "-y"])
+
+
 def reinstall_pytorch(
     pytorch_name: str | None = None,
     pytorch_index: int | None = None,
@@ -329,17 +367,15 @@ def reinstall_pytorch(
         if _has_prerelease_extras_requirement(info["torch_ver"]):
             custom_env["UV_PRERELEASE"] = "allow"
         logger.info("安装 PyTorch 中")
-        _uninstall()
         install_pytorch_with_fallback(
             torch_package=info["torch_ver"],
             xformers_package=info["xformers_ver"],
             custom_env=custom_env,
             use_uv=use_uv,
+            force_reinstall=enable_force_reinstall,
         )
-
-    def _uninstall() -> None:
         if enable_force_reinstall:
-            run_cmd([Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "xformers", "-y"])
+            uninstall_stale_pytorch_packages(info["torch_ver"], info["xformers_ver"])
 
     def _get_torch_and_xformers_ver() -> tuple[str | None, str | None]:
         try:
@@ -402,13 +438,15 @@ def reinstall_pytorch(
                 logger.info("自动根据设备支持情况选择最佳 PyTorch 版本组合中")
                 pytorch, xformers, custom_env = prepare_pytorch_install_info(use_cn_mirror=use_pypi_mirror)
                 logger.info("安装 PyTorch 中")
-                _uninstall()
                 install_pytorch_with_fallback(
                     torch_package=pytorch,
                     xformers_package=xformers,
                     custom_env=custom_env,
                     use_uv=use_uv,
+                    force_reinstall=enable_force_reinstall,
                 )
+                if enable_force_reinstall:
+                    uninstall_stale_pytorch_packages(pytorch, xformers)
                 return
 
             try:
@@ -439,6 +477,7 @@ def install_pytorch_with_fallback(
     xformers_package: str | list[str] | None = None,
     custom_env: dict[str, str] | None = None,
     use_uv: bool = True,
+    force_reinstall: bool = False,
 ) -> None:
     """使用 Pip / uv 安装 PyTorch 和 Xformers, 当失败时尝试使用回退方式安装 PyTorch
 
@@ -451,6 +490,8 @@ def install_pytorch_with_fallback(
             自定义环境变量
         use_uv (bool):
             是否使用 uv
+        force_reinstall (bool):
+            是否使用 `--force-reinstall` 参数强制重装 PyTorch / xFormers, 此时 xFormers 会附加 `--no-deps` 参数以避免重复重装 PyTorch
 
     Raises:
         RuntimeError:
@@ -466,15 +507,36 @@ def install_pytorch_with_fallback(
             return package.split()
         return package.copy()
 
-    def _append_no_deps(
+    def _append_arg(
         package: list[str] | None,
+        arg: str,
     ) -> list[str] | None:
         if package is None:
             return None
-        package_with_no_deps = package.copy()
-        if "--no-deps" not in package_with_no_deps:
-            package_with_no_deps.append("--no-deps")
-        return package_with_no_deps
+        package_with_arg = package.copy()
+        if arg not in package_with_arg:
+            package_with_arg.append(arg)
+        return package_with_arg
+
+    def _append_no_deps(
+        package: list[str] | None,
+    ) -> list[str] | None:
+        return _append_arg(package, "--no-deps")
+
+    def _append_force_reinstall(
+        package: list[str] | None,
+    ) -> list[str] | None:
+        if not force_reinstall:
+            return package
+        return _append_arg(package, "--force-reinstall")
+
+    def _append_xformers_force_reinstall(
+        package: list[str] | None,
+    ) -> list[str] | None:
+        if not force_reinstall:
+            return package
+        # 强制重装 xFormers 时会连同其依赖的 PyTorch 再次重装, 使用 --no-deps 避免重复重装 PyTorch
+        return _append_force_reinstall(_append_no_deps(package))
 
     def _dedupe_mirror_values(
         values: list[str],
@@ -546,8 +608,8 @@ def install_pytorch_with_fallback(
 
     try:
         install_pytorch(
-            torch_package=torch_package,
-            xformers_package=xformers_package,
+            torch_package=_append_force_reinstall(_package_to_list(torch_package)) if force_reinstall else torch_package,
+            xformers_package=_append_xformers_force_reinstall(_package_to_list(xformers_package)) if force_reinstall else xformers_package,
             custom_env=custom_env,
             use_uv=use_uv,
         )
@@ -555,9 +617,10 @@ def install_pytorch_with_fallback(
         logger.warning("安装 PyTorch 时发生错误, 尝试使用回退方式安装 PyTorch")
         origin_torch_package = _package_to_list(torch_package)
         origin_xformers_package = _package_to_list(xformers_package)
-        fallback_torch_package = _append_no_deps(origin_torch_package)
-        fallback_xformers_package = _append_no_deps(origin_xformers_package)
+        fallback_torch_package = _append_force_reinstall(_append_no_deps(origin_torch_package))
+        fallback_xformers_package = _append_force_reinstall(_append_no_deps(origin_xformers_package))
         auto_pypi_mirror_env: dict[str, str] | None = None
+        reinstalled = False
         try:
             install_pytorch(
                 torch_package=fallback_torch_package,
@@ -565,6 +628,8 @@ def install_pytorch_with_fallback(
                 custom_env=custom_env,
                 use_uv=use_uv,
             )
+            reinstalled = True
+            # 此处仅补全依赖, 强制重装会从 PyPI 镜像源重新获取 PyTorch, 因此不使用 --force-reinstall
             auto_pypi_mirror_env = get_auto_pypi_mirror_config(custom_env=custom_env)
             install_pytorch(
                 torch_package=origin_torch_package,
@@ -576,8 +641,8 @@ def install_pytorch_with_fallback(
             logger.warning("使用回退方式安装 PyTorch 时发生错误, 尝试合并镜像源后安装 PyTorch")
             try:
                 install_pytorch(
-                    torch_package=origin_torch_package,
-                    xformers_package=origin_xformers_package,
+                    torch_package=origin_torch_package if reinstalled else _append_force_reinstall(origin_torch_package),
+                    xformers_package=origin_xformers_package if reinstalled else _append_xformers_force_reinstall(origin_xformers_package),
                     custom_env=_build_merged_pypi_mirror_env(auto_pypi_mirror_env=auto_pypi_mirror_env),
                     use_uv=use_uv,
                 )

@@ -25,6 +25,7 @@ from sd_webui_all_in_one.base_manager.base.pytorch import (
     install_pytorch_with_fallback,
     prepare_pytorch_install_info,
     reinstall_pytorch,
+    uninstall_stale_pytorch_packages,
 )
 from sd_webui_all_in_one.base_manager.base.repositories import (
     DEFAULT_GIT_UPDATE_WORKERS,
@@ -65,6 +66,7 @@ __all__ = [
     "install_pytorch_with_fallback",
     "prepare_pytorch_install_info",
     "reinstall_pytorch",
+    "uninstall_stale_pytorch_packages",
     "apply_git_base_config_and_github_mirror",
     "apply_git_config_global_to_process",
     "apply_github_raw_file_mirror",

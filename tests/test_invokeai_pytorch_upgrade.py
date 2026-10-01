@@ -121,7 +121,7 @@ def test_invokeai_update_forwards_upgrade_to_sync(monkeypatch):
 
     assert calls == [
         ("pip", ("invokeai", "--no-deps", "--upgrade")),
-        ("sync", {"device_type": "cuda", "upgrade": True, "use_pypi_mirror": False, "use_uv": True}),
+        ("sync", {"device_type": "cuda", "upgrade": True, "use_pypi_mirror": False, "use_uv": True, "force_reinstall_pytorch": False}),
     ]
 
 
@@ -153,3 +153,40 @@ def test_invokeai_sync_skips_xformers_without_removing_on_fresh_install(monkeypa
         ("pytorch_fallback", "torch[device-all]<3.0,>=2.7.0 torchvision[device-all]"),
         ("pip", ("invokeai==6.14.2",)),
     ]
+
+
+def test_invokeai_sync_force_reinstall_passes_force_reinstall_and_removes_stale_packages(monkeypatch):
+    calls = []
+    _patch_sync(monkeypatch, calls, xformers_installed=True)
+    monkeypatch.setattr(components, "install_pytorch", lambda **kwargs: calls.append(("pytorch", kwargs["torch_package"])))
+    monkeypatch.setattr(components, "uninstall_stale_pytorch_packages", lambda *packages: calls.append(("stale", packages)))
+
+    components.sync_invokeai_component(device_type="cuda", use_pypi_mirror=False, use_uv=True, force_reinstall_pytorch=True)
+
+    assert calls[0] == ("pytorch", "torch<3.0,>=2.7.0 torchvision xformers>=0.0.28.post1 --force-reinstall")
+    assert calls[1] == ("stale", ("torch<3.0,>=2.7.0 torchvision", "xformers>=0.0.28.post1"))
+    assert calls[2] == ("pip", ("invokeai==6.14.2",))
+    assert not any(call[0] == "run" for call in calls)
+
+
+def test_invokeai_sync_force_reinstall_without_xformers_marks_xformers_stale(monkeypatch):
+    calls = []
+    _patch_sync(monkeypatch, calls, xformers_installed=True)
+    monkeypatch.setattr(components, "get_pytorch_mirror_type_for_ivnokeai", lambda _device_type: "cpu")
+    monkeypatch.setattr(components, "install_pytorch_with_fallback", lambda **kwargs: calls.append(("pytorch_fallback", kwargs["torch_package"], kwargs["force_reinstall"])))
+    monkeypatch.setattr(components, "uninstall_stale_pytorch_packages", lambda *packages: calls.append(("stale", packages)))
+
+    components.sync_invokeai_component(device_type="cpu", use_pypi_mirror=False, use_uv=True, force_reinstall_pytorch=True)
+
+    assert calls[0] == ("pytorch_fallback", "torch<3.0,>=2.7.0 torchvision", True)
+    assert calls[1] == ("stale", ("torch<3.0,>=2.7.0 torchvision",))
+
+
+def test_reinstall_invokeai_pytorch_force_reinstalls_without_uninstall(monkeypatch):
+    calls = []
+    monkeypatch.setattr(components, "install_invokeai_component", lambda **kwargs: calls.append(("install", kwargs)))
+    monkeypatch.setattr(components, "run_cmd", lambda command: calls.append(("run", command)))
+
+    components.reinstall_invokeai_pytorch(device_type="cuda", use_pypi_mirror=False, use_uv=True)
+
+    assert calls == [("install", {"device_type": "cuda", "use_pypi_mirror": False, "use_uv": True, "force_reinstall_pytorch": True})]

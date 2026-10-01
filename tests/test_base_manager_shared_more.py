@@ -167,7 +167,7 @@ def test_reinstall_pytorch_list_install_and_interactive_auto(monkeypatch):
     monkeypatch.setattr(base_pytorch, "print_divider", lambda char: calls.append(("divider", char)))
     monkeypatch.setattr(base_pytorch, "query_pytorch_info_from_library", lambda pytorch_name=None, pytorch_index=None: calls.append(("query", pytorch_name, pytorch_index)) or info)
     monkeypatch.setattr(base_pytorch, "install_pytorch", lambda **kwargs: calls.append(("install", kwargs)))
-    monkeypatch.setattr(base_pytorch, "run_cmd", lambda command: calls.append(("run", command)))
+    monkeypatch.setattr(base_pytorch, "uninstall_stale_pytorch_packages", lambda *packages: calls.append(("stale", packages)))
 
     base_module.reinstall_pytorch(list_only=True)
     assert calls[:3] == [("divider", "="), ("display", [info]), ("divider", "=")]
@@ -179,6 +179,7 @@ def test_reinstall_pytorch_list_install_and_interactive_auto(monkeypatch):
     assert calls[1][1]["torch_package"] == "torch==2.8.0"
     assert calls[1][1]["custom_env"]["PIP_INDEX_URL"] == "index-official"
     assert calls[1][1]["use_uv"] is False
+    assert not any(call[0] == "stale" for call in calls)
 
     calls.clear()
     inputs = iter(["auto", "y"])
@@ -187,11 +188,74 @@ def test_reinstall_pytorch_list_install_and_interactive_auto(monkeypatch):
     monkeypatch.setattr(base_pytorch, "prepare_pytorch_install_info", lambda use_cn_mirror=True: ("torch-auto", "xformers-auto", {"AUTO": str(use_cn_mirror)}))
     base_module.reinstall_pytorch(interactive_mode=True, use_pypi_mirror=True, use_uv=True)
 
-    assert ("run", [Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "xformers", "-y"]) in calls
-    assert calls[-1] == (
+    assert calls[-2] == (
         "install",
-        {"torch_package": "torch-auto", "xformers_package": "xformers-auto", "custom_env": {"AUTO": "True"}, "use_uv": True},
+        {
+            "torch_package": ["torch-auto", "--force-reinstall"],
+            "xformers_package": ["xformers-auto", "--no-deps", "--force-reinstall"],
+            "custom_env": {"AUTO": "True"},
+            "use_uv": True,
+        },
     )
+    assert calls[-1] == ("stale", ("torch-auto", "xformers-auto"))
+
+    calls.clear()
+    base_module.reinstall_pytorch(pytorch_index=1, use_uv=True, force_reinstall=True)
+    assert calls[-2][1]["torch_package"] == ["torch==2.8.0", "--force-reinstall"]
+    assert calls[-2][1]["xformers_package"] == ["xformers==0.0.32", "--no-deps", "--force-reinstall"]
+    assert calls[-1] == ("stale", ("torch==2.8.0", "xformers==0.0.32"))
+
+
+def test_uninstall_stale_pytorch_packages_only_removes_installed_unrequested_packages(monkeypatch):
+    calls = []
+    installed = {"torchvision", "torchaudio", "xformers"}
+
+    def fake_version(name):
+        if name not in installed:
+            raise base_pytorch.importlib.metadata.PackageNotFoundError(name)
+        return "1.0"
+
+    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", fake_version)
+    monkeypatch.setattr(base_pytorch, "run_cmd", lambda command: calls.append(command))
+
+    base_pytorch.uninstall_stale_pytorch_packages("torch[device-all]==2.8.0+cu128 torchvision==0.23.0+cu128 --no-deps", None)
+    assert calls == [[Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "torchaudio", "xformers", "-y"]]
+
+    calls.clear()
+    installed.clear()
+    base_pytorch.uninstall_stale_pytorch_packages(["torch==2.8.0"])
+    assert calls == []
+
+    installed.update({"torchvision", "torchaudio", "xformers"})
+    base_pytorch.uninstall_stale_pytorch_packages("torch==2.8.0 torchvision torchaudio", ["xformers==0.0.32"])
+    assert calls == []
+
+
+def test_install_pytorch_with_fallback_force_reinstall_skips_dependency_completion(monkeypatch):
+    install_calls = []
+
+    def fake_install_pytorch(**kwargs):
+        install_calls.append(kwargs)
+        if len(install_calls) == 1:
+            raise RuntimeError("first failed")
+
+    monkeypatch.setattr(base_pytorch, "install_pytorch", fake_install_pytorch)
+    monkeypatch.setattr(base_pytorch, "get_auto_pypi_mirror_config", lambda custom_env=None: {"AUTO": "1"})
+
+    base_pytorch.install_pytorch_with_fallback(
+        torch_package="torch==2.8.0+cu128",
+        xformers_package=None,
+        custom_env={},
+        use_uv=False,
+        force_reinstall=True,
+    )
+
+    assert install_calls[0]["torch_package"] == ["torch==2.8.0+cu128", "--force-reinstall"]
+    assert install_calls[0]["xformers_package"] is None
+    assert install_calls[1]["torch_package"] == ["torch==2.8.0+cu128", "--no-deps", "--force-reinstall"]
+    # 补全依赖时不再强制重装, 避免从 PyPI 镜像源重新获取 PyTorch
+    assert install_calls[2]["torch_package"] == ["torch==2.8.0+cu128"]
+    assert len(install_calls) == 3
 
 
 def test_install_pytorch_with_fallback_preserves_env_and_package_inputs(monkeypatch):

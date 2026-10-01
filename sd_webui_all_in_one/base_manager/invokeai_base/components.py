@@ -17,6 +17,7 @@ from sd_webui_all_in_one.ansi_color import ANSIColor
 from sd_webui_all_in_one.base_manager.base import (
     prepare_pytorch_install_info,
     install_pytorch_with_fallback,
+    uninstall_stale_pytorch_packages,
 )
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.downloader import (
@@ -219,6 +220,7 @@ def sync_invokeai_component(
     upgrade: bool = False,
     use_pypi_mirror: bool = False,
     use_uv: bool = True,
+    force_reinstall_pytorch: bool = False,
 ) -> None:
     """同步 InvokeAI 组件
 
@@ -231,6 +233,8 @@ def sync_invokeai_component(
             是否使用国内 PyPI 镜像
         use_uv (bool):
             是否使用 uv 安装 Python 软件包
+        force_reinstall_pytorch (bool):
+            是否使用 `--force-reinstall` 参数强制重装 PyTorch / xFormers
 
     Raises:
         RuntimeError:
@@ -259,7 +263,8 @@ def sync_invokeai_component(
     pytorch_package = add_pytorch_package_extras(get_pytorch_for_invokeai(), pytorch_mirror_type)
     xformers_package = get_xformers_for_invokeai()
     upgrade_args = ["--upgrade"] if upgrade else []
-    torch_with_xformers = " ".join(pytorch_package.split() + xformers_package.split() + upgrade_args)
+    force_reinstall_args = ["--force-reinstall"] if force_reinstall_pytorch else []
+    torch_with_xformers = " ".join(pytorch_package.split() + xformers_package.split() + upgrade_args + force_reinstall_args)
     torch_without_xformers = " ".join(pytorch_package.split() + upgrade_args)
 
     # 准备安装依赖的 PyPI 镜像源
@@ -276,6 +281,12 @@ def sync_invokeai_component(
             logger.warning("未安装与新版 PyTorch 匹配的 xFormers, 卸载旧版 xFormers 以避免不兼容")
             run_cmd([Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "xformers", "-y"])
 
+    def _remove_stale_pytorch_packages(
+        *installed_packages: str,
+    ) -> None:
+        if force_reinstall_pytorch:
+            uninstall_stale_pytorch_packages(*installed_packages)
+
     try:
         logger.info("同步 PyTorch 组件中")
         # PyTorch 版本表中没有该类型的 xFormers 版本组合时 (如 AMD 多架构 wheel), 镜像源中也没有匹配的 xFormers,
@@ -286,8 +297,10 @@ def sync_invokeai_component(
                 torch_package=torch_without_xformers,
                 custom_env=custom_env_pytorch,
                 use_uv=use_uv,
+                force_reinstall=force_reinstall_pytorch,
             )
             _remove_stale_xformers()
+            _remove_stale_pytorch_packages(pytorch_package)
         else:
             try:
                 logger.debug("尝试加上 xFormer 进行安装")
@@ -296,14 +309,17 @@ def sync_invokeai_component(
                     custom_env=custom_env_pytorch,
                     use_uv=use_uv,
                 )
+                _remove_stale_pytorch_packages(pytorch_package, xformers_package)
             except RuntimeError:
                 logger.debug("尝试无 xFormers 安装")
                 install_pytorch_with_fallback(
                     torch_package=torch_without_xformers,
                     custom_env=custom_env_pytorch,
                     use_uv=use_uv,
+                    force_reinstall=force_reinstall_pytorch,
                 )
                 _remove_stale_xformers()
+                _remove_stale_pytorch_packages(pytorch_package)
 
         logger.info("同步 InvokeAI 其他组件中")
         pip_install(
@@ -324,6 +340,7 @@ def install_invokeai_component(
     upgrade: bool = False,
     use_pypi_mirror: bool = False,
     use_uv: bool = True,
+    force_reinstall_pytorch: bool = False,
 ) -> None:
     """安装 InvokeAI
 
@@ -338,6 +355,8 @@ def install_invokeai_component(
             是否使用国内 PyPI 镜像
         use_uv (bool):
             是否使用 uv 安装 Python 软件包
+        force_reinstall_pytorch (bool):
+            是否使用 `--force-reinstall` 参数强制重装 PyTorch / xFormers
 
     Raises:
         RuntimeError:
@@ -361,6 +380,7 @@ def install_invokeai_component(
             upgrade=upgrade,
             use_pypi_mirror=use_pypi_mirror,
             use_uv=use_uv,
+            force_reinstall_pytorch=force_reinstall_pytorch,
         )
     except RuntimeError as e:
         logger.error("安装 InvokeAI 失败: %s", e)
@@ -459,9 +479,6 @@ def reinstall_invokeai_pytorch(
             是否仅列出 PyTorch 列表并退出
     """
 
-    def _uninstall() -> None:
-        run_cmd([Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "torch", "torchvision", "torchaudio", "xformers", "-y"])
-
     def _install(
         d: PyTorchDeviceTypeCategory | None,
     ) -> None:
@@ -469,6 +486,7 @@ def reinstall_invokeai_pytorch(
             device_type=d,
             use_pypi_mirror=use_pypi_mirror,
             use_uv=use_uv,
+            force_reinstall_pytorch=True,
         )
 
     def _get_torch_and_xformers_ver() -> tuple[str | None, str | None]:
@@ -513,7 +531,6 @@ def reinstall_invokeai_pytorch(
                     logger.info("自动根据设备支持情况选择最佳 PyTorch 版本组合")
                     user_input = None
                 logger.info("重装 PyTorch 中")
-                _uninstall()
                 _install(cast(PyTorchDeviceTypeCategory, user_input))
                 logger.info("PyTorch 重装完成")
                 return
@@ -522,6 +539,5 @@ def reinstall_invokeai_pytorch(
                 continue
     else:
         logger.info("重装 PyTorch 中")
-        _uninstall()
         _install(device_type)
         logger.info("PyTorch 重装完成")

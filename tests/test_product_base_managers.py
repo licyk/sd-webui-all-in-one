@@ -694,6 +694,7 @@ def test_invokeai_dependency_selection_and_sync_fallback(monkeypatch):
             "torch_package": "torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1",
             "custom_env": {"TORCH": "cu124"},
             "use_uv": False,
+            "force_reinstall": False,
         },
     )
     assert calls[2] == ("pip", ("invokeai==4.2.0",), {"use_uv": False, "custom_env": {"PIP": "True"}})
