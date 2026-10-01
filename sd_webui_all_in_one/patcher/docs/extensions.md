@@ -27,6 +27,7 @@ src/sd_webui_all_in_one_hotpatcher_ext/extension_index/__init__.py
 src/sd_webui_all_in_one_hotpatcher_ext/hf_endpoint_mirror/__init__.py
 src/sd_webui_all_in_one_hotpatcher_ext/uv_pip/__init__.py
 src/sd_webui_all_in_one_hotpatcher_ext/comfyui_auto_port/__init__.py
+src/sd_webui_all_in_one_hotpatcher_ext/sd_trainer_browser_order/__init__.py
 ```
 
 ## ComfyUI Auto Port 扩展
@@ -42,6 +43,28 @@ src/sd_webui_all_in_one_hotpatcher_ext/comfyui_auto_port/__init__.py
 ```
 
 扩展会同时注册 import-time module patch，并在 `comfy.cli_args` 已经导入时立即处理现有模块。
+
+## SD Trainer 浏览器打开顺序扩展
+
+SD Trainer Next 分支（`wochenlong/lora-scripts-next`）启动时会打开两个界面：主界面（默认端口 28000）和训练监控界面（默认端口 6008）。两次 `browser.open()` 都发生在 `mikazuki.app.application.app_startup()` 里，而 uvicorn 要等这个 lifespan 钩子返回后才开始监听主界面端口；训练监控进程则在更早的时候就已经启动。结果是两个标签页几乎同时打开，先就绪并拿到焦点的往往是训练监控界面。
+
+`sd_trainer_browser_order` 给 `app_startup` 注册 function patch：
+
+1. `app_startup` 执行期间，把目标模块里的 `webbrowser` 全局变量换成记录代理，只记录打开请求，不真正打开浏览器。`--browser chrome/edge` 走的 `webbrowser.get()` 控制器同样会被记录。
+2. `app_startup` 返回后在后台线程回放：把端口等于 `MIKAZUKI_PORT` 的主界面排到最前，等待该端口可以连接（最多 30 秒，超时仍会打开）后打开主界面，间隔 `monitor_delay` 秒再按原顺序打开其余网址。
+
+回放调用的是标准库 `webbrowser.open`，所以和 `runtime.browser` 的 host / suppress 模式可以叠加。
+
+配置形式：
+
+```python
+{
+    "enabled": True,
+    "monitor_delay": 1,
+}
+```
+
+原版 `Akegarasu/lora-scripts` 的目标模块同名，但只有一个主界面。补丁在包装前会检查模块是否同时具备 `webbrowser`、`_resolve_browser` 和 `train_monitor_browser_url`，不满足时保持原函数不变，因此不会影响该分支。上游只在 Windows 且非 `--dev` 时自动打开浏览器，其它情况下没有请求被记录，也不会启动回放线程。
 
 ## 扩展模块推荐结构
 

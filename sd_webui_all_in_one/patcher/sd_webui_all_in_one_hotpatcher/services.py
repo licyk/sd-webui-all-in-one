@@ -109,6 +109,10 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "comfyui_auto_port": {
             "enabled": True,
         },
+        "sd_trainer_browser_order": {
+            "enabled": True,
+            "monitor_delay": 1,
+        },
         "zluda": {
             "enabled": False,
             "compat": False,
@@ -369,6 +373,22 @@ SETTING_SCHEMA: dict[str, Any] = {
                 "type": "bool",
                 "title": "启用",
                 "description": "检测 ComfyUI 默认端口 8188，并在被占用时自动选择后续可用端口。",
+            },
+        },
+    },
+    "extensions.sd_trainer_browser_order": {
+        "title": "SD Trainer 浏览器打开顺序",
+        "description": "SD Trainer Next 启动时先打开主界面，再打开训练监控界面。只有单个主界面的分支不受影响。",
+        "settings": {
+            "enabled": {
+                "type": "bool",
+                "title": "启用",
+                "description": "等待主界面端口就绪后先打开主界面，随后再打开训练监控界面。",
+            },
+            "monitor_delay": {
+                "type": "int",
+                "title": "监控界面延迟",
+                "description": "打开主界面后，打开训练监控界面前等待的秒数。",
             },
         },
     },
@@ -1205,6 +1225,18 @@ def _apply_extension_config(config: dict[str, Any], result: dict[str, Any]) -> N
             result,
         )
 
+    sd_trainer_browser_order = _section(extensions, "sd_trainer_browser_order")
+    if sd_trainer_browser_order.get("enabled"):
+        from sd_webui_all_in_one_hotpatcher_ext.sd_trainer_browser_order import (
+            apply_from_config as apply_sd_trainer_browser_order,
+        )
+
+        _apply_step(
+            "extensions.sd_trainer_browser_order",
+            lambda: apply_sd_trainer_browser_order(sd_trainer_browser_order),
+            result,
+        )
+
     zluda = _section(extensions, "zluda")
     if zluda.get("enabled"):
         from sd_webui_all_in_one_hotpatcher_ext.zluda import apply_from_config as apply_zluda
@@ -1327,6 +1359,13 @@ def _warn_disabled_but_active(config: dict[str, Any], result: dict[str, Any], st
                 "message": "ComfyUI auto-port patch remains registered; process restart is required to remove it",
             }
         )
+    if not _section(extensions, "sd_trainer_browser_order").get("enabled") and _is_sd_trainer_browser_order_patch_registered():
+        result["warnings"].append(
+            {
+                "feature": "extensions.sd_trainer_browser_order",
+                "message": "SD Trainer browser order patch remains registered; process restart is required to remove it",
+            }
+        )
     if not _section(extensions, "uv_pip").get("enabled") and _is_uv_pip_patch_installed():
         result["warnings"].append(
             {
@@ -1354,6 +1393,8 @@ def _attach_feature_state(features: dict[str, Any], defaults: dict[str, Any], st
     features["runtime.browser"]["registered"] = is_webbrowser_patch_registered(state=state)
     features["extensions.comfyui_auto_port"]["default"] = defaults["extensions"]["comfyui_auto_port"]
     features["extensions.comfyui_auto_port"]["active"] = _is_comfyui_auto_port_patch_registered()
+    features["extensions.sd_trainer_browser_order"]["default"] = defaults["extensions"]["sd_trainer_browser_order"]
+    features["extensions.sd_trainer_browser_order"]["active"] = _is_sd_trainer_browser_order_patch_registered()
     features["extensions.zluda"]["default"] = defaults["extensions"]["zluda"]
     features["extensions.zluda"]["active"] = False
     features["extensions.extension_index"]["default"] = defaults["extensions"]["extension_index"]
@@ -1383,6 +1424,17 @@ def _is_comfyui_auto_port_patch_registered() -> bool:
         )
 
         return is_comfyui_auto_port_patch_registered()
+    except Exception:
+        return False
+
+
+def _is_sd_trainer_browser_order_patch_registered() -> bool:
+    try:
+        from sd_webui_all_in_one_hotpatcher_ext.sd_trainer_browser_order import (
+            is_sd_trainer_browser_order_patch_registered,
+        )
+
+        return is_sd_trainer_browser_order_patch_registered()
     except Exception:
         return False
 
