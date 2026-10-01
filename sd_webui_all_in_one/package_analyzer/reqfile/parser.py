@@ -25,7 +25,6 @@ from urllib.parse import (
     urljoin,
     urlsplit,
 )
-from urllib.request import url2pathname
 
 from sd_webui_all_in_one.package_analyzer.errors import (
     Diagnostic,
@@ -42,6 +41,7 @@ from sd_webui_all_in_one.package_analyzer.filenames import (
     is_archive_filename,
 )
 from sd_webui_all_in_one.package_analyzer.local_project import (
+    file_url_path_to_local_path,
     get_local_project_name,
     is_installable_dir,
 )
@@ -458,7 +458,7 @@ class _FileParser:
             if scheme_match.group(1).lower() != "file":
                 self.warn(f"未读取远程依赖文件: {option} {resolved}", source.path, source.lineno)
                 return
-            resolved = url2pathname(unquote(urlsplit(resolved).path))
+            resolved = file_url_path_to_local_path(urlsplit(resolved).path)
 
         self.parse_file(resolved, constraint, parent=source)
 
@@ -633,7 +633,7 @@ class _FileParser:
         scheme = split.scheme.lower()
 
         if scheme == "file":
-            return self._path_entry(url2pathname(unquote(split.path)), extras, marker, common)
+            return self._path_entry(file_url_path_to_local_path(split.path), extras, marker, common)
 
         vcs = scheme.split("+", 1)[0] if "+" in scheme else None
         if common["editable"] and vcs is None:

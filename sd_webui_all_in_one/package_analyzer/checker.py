@@ -20,10 +20,8 @@ from typing import (
     Callable,
 )
 from urllib.parse import (
-    unquote,
     urlsplit,
 )
-from urllib.request import url2pathname
 
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
@@ -36,6 +34,7 @@ from sd_webui_all_in_one.package_analyzer.errors import (
     InvalidRequirement,
     UndefinedEnvironmentName,
 )
+from sd_webui_all_in_one.package_analyzer.local_project import file_url_path_to_local_path
 from sd_webui_all_in_one.package_analyzer.installed import (
     InstalledDistribution,
     get_installed_distribution,
@@ -220,7 +219,7 @@ def _origin_matches(
             return False
         dir_info = direct_url.get("dir_info")
         recorded_editable = isinstance(dir_info, dict) and bool(dir_info.get("editable"))
-        return _same_path(Path(url2pathname(unquote(split.path))), path) and recorded_editable == editable
+        return _same_path(Path(file_url_path_to_local_path(split.path)), path) and recorded_editable == editable
 
     if url is None or _normalize_url(recorded) != _normalize_url(url):
         return False

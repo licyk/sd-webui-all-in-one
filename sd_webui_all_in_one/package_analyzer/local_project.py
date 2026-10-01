@@ -9,8 +9,10 @@
 from __future__ import annotations
 
 import configparser
+import os
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -31,6 +33,35 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+
+def file_url_path_to_local_path(
+    path: str,
+    windows: bool | None = None,
+) -> str:
+    """将 ``file:`` URL 的路径部分转换为本地文件系统路径
+
+    Args:
+        path (str):
+            URL 的路径部分, 可包含百分号转义
+        windows (bool | None):
+            是否按 Windows 路径规则转换, 为 ``None`` 时根据当前系统判断
+
+    Returns:
+        str: 本地文件系统路径
+    """
+    local_path = unquote(path)
+    if windows is None:
+        windows = os.name == "nt"
+    if not windows:
+        return local_path
+
+    # ``/C:/dir`` 与旧式 ``/C|/dir`` 均表示盘符路径, 需要去掉前导斜杠
+    if len(local_path) >= 3 and local_path[0] == "/" and local_path[1].isalpha() and local_path[2] in ":|":
+        local_path = local_path[1:]
+    if len(local_path) >= 2 and local_path[0].isalpha() and local_path[1] == "|":
+        local_path = f"{local_path[0]}:{local_path[2:]}"
+    return local_path.replace("/", "\\")
 
 
 def is_installable_dir(

@@ -8,6 +8,7 @@
 
 import io
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -21,6 +22,7 @@ from sd_webui_all_in_one.package_analyzer.errors import (
     UnsupportedOption,
 )
 from sd_webui_all_in_one.package_analyzer.local_project import (
+    file_url_path_to_local_path,
     get_local_project_name,
     is_installable_dir,
 )
@@ -344,7 +346,7 @@ class TestNestedFiles:
         # 嵌套文件的相对路径相对于引用它的文件解析; 约束文件中的 -r 引入的是普通依赖 (与 pip 一致)
         assert [entry.name for entry in parsed.entries] == ["torch", "nested", "deepest", "extra-req", "last"]
         assert [(entry.name, entry.constraint) for entry in parsed.constraints] == [("numpy", True)]
-        assert [path.split("/")[-1] for path in parsed.includes] == ["more.txt", "deeper.txt", "cons.txt", "from-constraint.txt"]
+        assert [Path(path).name for path in parsed.includes] == ["more.txt", "deeper.txt", "cons.txt", "from-constraint.txt"]
         assert parsed.entries[2].source.path.endswith("deeper.txt")
         assert parsed.diagnostics == []
         assert parsed.path == str(tmp_path / "main.txt")
@@ -408,6 +410,19 @@ class TestNestedFiles:
 
 
 class TestLocalProject:
+    @pytest.mark.parametrize(
+        ("url_path", "windows", "expected"),
+        [
+            ("/workspace/demo%20pkg/req.txt", False, "/workspace/demo pkg/req.txt"),
+            ("/C:/Users/demo%20pkg/req.txt", True, "C:\\Users\\demo pkg\\req.txt"),
+            ("/C|/Users/demo", True, "C:\\Users\\demo"),
+            ("//server/share/req.txt", True, "\\\\server\\share\\req.txt"),
+            ("/relative/root", True, "\\relative\\root"),
+        ],
+    )
+    def test_file_url_path_to_local_path(self, url_path, windows, expected):
+        assert file_url_path_to_local_path(url_path, windows=windows) == expected
+
     def test_reads_static_name_from_pyproject(self, tmp_path):
         _make_project(tmp_path, "My.Project")
         assert is_installable_dir(tmp_path) is True
