@@ -25,6 +25,8 @@ jobs:
             -InstallPath "${{ github.workspace }}/comfyui" `
             -PyTorchMirrorType rocm_win `
             -BuildMode `
+            -BuildWithTorch 141 `
+            -BuildWithTorchReinstall `
             -BuildWithLaunch `
             -DisableAutoMirror `
             -DisablePyPIMirror `
