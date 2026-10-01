@@ -8,13 +8,20 @@ from sd_webui_all_in_one.pytorch_manager import version_manager
     ("suffix", "platform_tag", "expected"),
     [
         (" CU128 ", "linux", "cu128"),
-        ("rocm6.4", "win32", "rocm_win"),
-        ("rocm_win", "linux", "rocm_win"),
-        ("rocm_linux", "win32", "rocm_linux"),
-        ("rocm7.14.0", "win32", "rocm_win"),
+        ("rocm6.4", "win32", "rocm7"),
+        ("rocm_win", "linux", "rocm7"),
+        ("rocm_linux", "win32", "rocm7"),
+        ("rocm7", "linux", "rocm7"),
+        ("rocm10", "win32", "rocm10"),
+        ("rocm7.14.0", "win32", "rocm7"),
+        ("rocm7.2.1", "win32", "rocm7"),
+        ("rocm10.0.0", "win32", "rocm10"),
         ("rocm7.2", "linux", "rocm7.2"),
-        ("rocm7.14.0", "linux", "rocm_linux"),
-        ("ROCm7.10.0a20251015", "linux", "rocm_linux"),
+        ("rocm7.14", "linux", "rocm7.14"),
+        ("rocm7.14.1", "linux", "rocm7"),
+        ("rocm7.13.0", "linux", "rocm7"),
+        ("rocm10.0.0", "linux", "rocm10"),
+        ("ROCm7.10.0a20251015", "linux", "rocm7"),
         ("git7bcf7da", "linux", None),
     ],
 )
@@ -26,8 +33,10 @@ def test_infer_pytorch_device_type_from_versions():
     versions = ["1.0.0", "2.9.0+rocm6.4"]
 
     assert mirror_selector.infer_pytorch_device_type(versions, "linux") == "rocm6.4"
-    assert mirror_selector.infer_pytorch_device_type(["2.12.0+rocm7.14.0"], "linux") == "rocm_linux"
-    assert mirror_selector.infer_pytorch_device_type(["2.12.0+rocm7.14.0"], "win32") == "rocm_win"
+    assert mirror_selector.infer_pytorch_device_type(["2.12.0+rocm7.14.1"], "linux") == "rocm7"
+    assert mirror_selector.infer_pytorch_device_type(["2.12.0+rocm7.14.1"], "win32") == "rocm7"
+    assert mirror_selector.infer_pytorch_device_type(["2.13.0+rocm10.0.0"], "linux") == "rocm10"
+    assert mirror_selector.infer_pytorch_device_type(["2.13.0+rocm10.0.0"], "win32") == "rocm10"
 
 
 @pytest.mark.parametrize(
@@ -71,8 +80,8 @@ def test_cuda_mirror_type_version_capability_matrix(monkeypatch, torch_ver, cuda
         ("2.12.0", "linux", "rocm7.2"),
         ("2.3.9", "win32", "all"),
         ("2.7.1", "win32", "all"),
-        ("2.8.0", "win32", "rocm_win"),
-        ("2.12.0", "win32", "rocm_win"),
+        ("2.8.0", "win32", "rocm7"),
+        ("2.12.0", "win32", "rocm7"),
     ],
 )
 def test_rocm_mirror_type_platform_and_version_boundaries(monkeypatch, torch_ver, platform, expected):
@@ -236,23 +245,121 @@ def test_query_pytorch_info_index_boundaries(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("platform", "dtype", "expected_name"),
+    ("platform", "dtype", "expected_name", "expected_torch_ver", "expected_index"),
     [
-        ("linux", "rocm_linux", "Torch 2.12.0 (ROCm 7.14.0 Linux)"),
-        ("win32", "rocm_win", "Torch 2.12.0 (ROCm 7.14.0 Windows)"),
+        (
+            "linux",
+            "rocm7",
+            "Torch 2.13.0 (ROCm 7.14.0 Linux)",
+            "torch[device-all]==2.13.0+rocm7.14.0 torchvision[device-all]==0.28.0+rocm7.14.0 torchaudio==2.11.0.2+rocm7.14.0",
+            "https://repo.amd.com/rocm/whl-multi-arch",
+        ),
+        (
+            "win32",
+            "rocm7",
+            "Torch 2.12.0 (ROCm 7.14.1)",
+            "torch[device-all]==2.12.0+rocm7.14.1 torchvision[device-all]==0.27.0+rocm7.14.1 torchaudio==2.11.0+rocm7.14.1",
+            "https://repo.amd.com/rocm/whl-multi-arch",
+        ),
+        (
+            "linux",
+            "rocm10",
+            "Torch 2.13.0 (ROCm 10.0.0)",
+            "torch[device-all]==2.13.0+rocm10.0.0 torchvision[device-all]==0.28.0+rocm10.0.0 torchaudio==2.11.0.2+rocm10.0.0",
+            "https://stable.repo.amd.com/rocm/whl-next",
+        ),
+        (
+            "win32",
+            "rocm10",
+            "Torch 2.13.0 (ROCm 10.0.0)",
+            "torch[device-all]==2.13.0+rocm10.0.0 torchvision[device-all]==0.28.0+rocm10.0.0 torchaudio==2.11.0.2+rocm10.0.0",
+            "https://stable.repo.amd.com/rocm/whl-next",
+        ),
+        # 旧版类型名称等价于 rocm7
+        (
+            "linux",
+            "rocm_linux",
+            "Torch 2.13.0 (ROCm 7.14.0 Linux)",
+            "torch[device-all]==2.13.0+rocm7.14.0 torchvision[device-all]==0.28.0+rocm7.14.0 torchaudio==2.11.0.2+rocm7.14.0",
+            "https://repo.amd.com/rocm/whl-multi-arch",
+        ),
+        (
+            "win32",
+            "rocm_win",
+            "Torch 2.12.0 (ROCm 7.14.1)",
+            "torch[device-all]==2.12.0+rocm7.14.1 torchvision[device-all]==0.27.0+rocm7.14.1 torchaudio==2.11.0+rocm7.14.1",
+            "https://repo.amd.com/rocm/whl-multi-arch",
+        ),
     ],
 )
-def test_find_latest_amd_multi_arch_pytorch_info(monkeypatch, platform, dtype, expected_name):
+def test_find_latest_amd_multi_arch_pytorch_info(monkeypatch, platform, dtype, expected_name, expected_torch_ver, expected_index):
     monkeypatch.setattr(version_manager.sys, "platform", platform)
-    monkeypatch.setattr(version_manager, "get_available_pytorch_device_type", lambda: ["all", dtype])
+    monkeypatch.setattr(version_manager, "get_available_pytorch_device_type", lambda: ["all", "rocm7", "rocm10"])
 
     info = version_manager.find_latest_pytorch_info(dtype)
 
     assert info["name"] == expected_name
-    assert info["torch_ver"] == "torch[device-all]==2.12.0+rocm7.14.0 torchvision[device-all]==0.27.0+rocm7.14.0 torchaudio==2.11.0+rocm7.14.0"
-    assert info["index_mirror"]["official"] == ["https://repo.amd.com/rocm/whl-multi-arch"]
+    assert info["torch_ver"] == expected_torch_ver
+    assert info["index_mirror"]["official"] == [expected_index]
     assert info["extra_index_mirror"]["official"] == ["https://pypi.python.org/simple"]
     assert info["find_links"]["official"] == []
+
+
+AMD_MULTI_ARCH_VERSION_TABLE = {
+    # (dtype, torch 版本): (torchvision 版本, torchaudio 版本, ROCm 版本, 支持的平台)
+    ("rocm7", "2.8.0"): ("0.23.0a0", "2.8.0a0", "7.13.0", ["linux"]),
+    ("rocm7", "2.9.1"): ("0.24.0", "2.9.0", "7.13.0", ["win32"]),
+    ("rocm7", "2.10.0"): ("0.25.0", "2.10.0", "7.14.1", ["win32", "linux"]),
+    ("rocm7", "2.11.0"): ("0.26.0", "2.11.0", "7.14.1", ["win32", "linux"]),
+    ("rocm7", "2.12.0"): ("0.27.0", "2.11.0", "7.14.1", ["win32", "linux"]),
+    ("rocm7", "2.13.0"): ("0.28.0", "2.11.0.2", "7.14.0", ["linux"]),
+    ("rocm10", "2.11.0"): ("0.26.0", "2.11.0", "10.0.0", ["win32", "linux"]),
+    ("rocm10", "2.12.0"): ("0.27.0", "2.11.0", "10.0.0", ["win32", "linux"]),
+    ("rocm10", "2.13.0"): ("0.28.0", "2.11.0.2", "10.0.0", ["win32", "linux"]),
+}
+
+
+def test_amd_multi_arch_version_table_covers_rocm7_and_rocm10():
+    from sd_webui_all_in_one.pytorch_manager.mirror_data import PYTORCH_ROCM_MIRROR_DICT
+    from sd_webui_all_in_one.pytorch_manager.version_data import PYTORCH_DOWNLOAD_DICT
+
+    pinned = {}
+    for info in PYTORCH_DOWNLOAD_DICT:
+        if info["dtype"] not in ("rocm7", "rocm10") or "[device-all]==" not in info["torch_ver"]:
+            continue
+        torch_spec = info["torch_ver"].split()[0]
+        torch_ver = torch_spec.split("==")[1].split("+")[0]
+        pinned[(info["dtype"], torch_ver)] = info
+
+    assert set(pinned) == set(AMD_MULTI_ARCH_VERSION_TABLE)
+    for (dtype, torch_ver), (vision_ver, audio_ver, rocm_ver, platform) in AMD_MULTI_ARCH_VERSION_TABLE.items():
+        info = pinned[(dtype, torch_ver)]
+        assert info["torch_ver"] == f"torch[device-all]=={torch_ver}+rocm{rocm_ver} torchvision[device-all]=={vision_ver}+rocm{rocm_ver} torchaudio=={audio_ver}+rocm{rocm_ver}"
+        assert info["platform"] == platform
+        assert info["xformers_ver"] is None
+        assert info["index_mirror"]["official"] == info["index_mirror"]["mirror"] == [PYTORCH_ROCM_MIRROR_DICT[dtype][0]]
+
+
+def test_amd_multi_arch_types_only_use_device_all_packages():
+    from sd_webui_all_in_one.pytorch_manager.version_data import PYTORCH_DOWNLOAD_DICT
+
+    legacy = "Torch 2.9.1 (ROCm 7.2.1 Windows)"
+    entries = [info for info in PYTORCH_DOWNLOAD_DICT if info["dtype"] in ("rocm7", "rocm10") and info["name"] != legacy]
+
+    assert {"Torch (ROCm 7)", "Torch (ROCm 10)"} <= {info["name"] for info in entries}
+    assert not any(info["dtype"] in ("rocm_linux", "rocm_win") for info in PYTORCH_DOWNLOAD_DICT)
+    for info in entries:
+        packages = info["torch_ver"].split()
+        assert packages[0].startswith("torch[device-all]")
+        assert packages[1].startswith("torchvision[device-all]")
+
+
+def test_unpinned_amd_multi_arch_entries_do_not_mix_in_pypi():
+    # 未固定版本时若混入 PyPI 镜像源, uv 的 unsafe-best-match 策略会选中 PyPI 上版本号更高的非 ROCm 版 PyTorch
+    for name in ("Torch (ROCm 7)", "Torch (ROCm 10)"):
+        info = version_manager.query_pytorch_info_from_library(pytorch_name=name)
+        assert info["torch_ver"] == "torch[device-all] torchvision[device-all] torchaudio"
+        assert info["extra_index_mirror"] == {"official": [], "mirror": []}
 
 
 def test_removed_rdna_pytorch_types_are_absent():
@@ -262,13 +369,13 @@ def test_removed_rdna_pytorch_types_are_absent():
     removed = {"rocm_rdna3", "rocm_rdna3.5", "rocm_rdna4"}
     assert removed.isdisjoint(PYTORCH_DEVICE_LIST)
     assert removed.isdisjoint(item["dtype"] for item in PYTORCH_DOWNLOAD_DICT)
-    assert "rocm_linux" in PYTORCH_DEVICE_LIST
+    assert {"rocm7", "rocm10", "rocm_linux", "rocm_win"} <= set(PYTORCH_DEVICE_LIST)
 
 
 def test_legacy_rocm_windows_entry_keeps_radeon_find_links():
     info = version_manager.query_pytorch_info_from_library(pytorch_name="Torch 2.9.1 (ROCm 7.2.1 Windows)")
 
-    assert info["dtype"] == "rocm_win"
+    assert info["dtype"] == "rocm7"
     assert info["find_links"]["official"] == ["https://repo.radeon.com/rocm/windows/rocm-rel-7.2.1"]
 
 
@@ -324,22 +431,23 @@ def test_find_pytorch_info_for_torch_requirement_skips_unsupported_entries(monke
 
 def test_pytorch_package_extras_come_from_version_table(monkeypatch):
     data = [
-        _torch_entry("Torch ROCm (Windows)", "rocm_win", "torch[device-all] torchvision[device-all] torchaudio"),
-        _torch_entry("Torch 2.12.0 (ROCm 7.14.0 Windows)", "rocm_win", "torch[device-all]==2.12.0+rocm7.14.0 torchvision[device-all]==0.27.0+rocm7.14.0"),
-        _torch_entry("Torch 2.9.1 (ROCm 7.2.1 Windows)", "rocm_win", "torch==2.9.1+rocm7.2.1"),
+        _torch_entry("Torch (ROCm 7)", "rocm7", "torch[device-all] torchvision[device-all] torchaudio"),
+        _torch_entry("Torch 2.12.0 (ROCm 7.14.1)", "rocm7", "torch[device-all]==2.12.0+rocm7.14.1 torchvision[device-all]==0.27.0+rocm7.14.1"),
+        _torch_entry("Torch 2.9.1 (ROCm 7.2.1 Windows)", "rocm7", "torch==2.9.1+rocm7.2.1"),
         _torch_entry("Torch 2.14.0 (CUDA 13.0)", "cu130", "torch==2.14.0+cu130"),
     ]
     monkeypatch.setattr(version_manager, "PYTORCH_DOWNLOAD_DICT", data)
 
+    assert version_manager.get_pytorch_package_extras("rocm7") == {"torch": ["device-all"], "torchvision": ["device-all"]}
     assert version_manager.get_pytorch_package_extras("rocm_win") == {"torch": ["device-all"], "torchvision": ["device-all"]}
     assert version_manager.get_pytorch_package_extras("cu130") == {}
-    assert version_manager.add_pytorch_package_extras("torch<3.0,>=2.7.0 torchvision", "rocm_win") == "torch[device-all]<3.0,>=2.7.0 torchvision[device-all]"
+    assert version_manager.add_pytorch_package_extras("torch<3.0,>=2.7.0 torchvision", "rocm7") == "torch[device-all]<3.0,>=2.7.0 torchvision[device-all]"
     assert version_manager.add_pytorch_package_extras("Torch[foo]~=2.7.0 torchaudio numpy", "rocm_win") == "Torch[foo,device-all]~=2.7.0 torchaudio numpy"
     assert version_manager.add_pytorch_package_extras("torch<3.0,>=2.7.0 torchvision", "cu130") == "torch<3.0,>=2.7.0 torchvision"
 
 
 def test_real_version_table_declares_device_all_for_amd_multi_arch_types():
-    for dtype in ("rocm_win", "rocm_linux"):
+    for dtype in ("rocm7", "rocm10", "rocm_win", "rocm_linux"):
         assert version_manager.add_pytorch_package_extras("torch<3.0,>=2.7.0 torchvision", dtype) == "torch[device-all]<3.0,>=2.7.0 torchvision[device-all]"
 
 
@@ -352,4 +460,5 @@ def test_has_pytorch_xformers_support_uses_version_table(monkeypatch):
 
     assert version_manager.has_pytorch_xformers_support("cu130") is True
     assert version_manager.has_pytorch_xformers_support("cu132") is False
+    assert version_manager.has_pytorch_xformers_support("rocm7") is False
     assert version_manager.has_pytorch_xformers_support("rocm_win") is False

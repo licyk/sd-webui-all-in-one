@@ -128,13 +128,13 @@ def test_invokeai_update_forwards_upgrade_to_sync(monkeypatch):
 def test_invokeai_sync_adds_device_all_and_skips_xformers_for_amd_multi_arch(monkeypatch):
     calls = []
     _patch_sync(monkeypatch, calls, xformers_installed=True)
-    monkeypatch.setattr(components, "get_pytorch_mirror_type_for_ivnokeai", lambda _device_type: "rocm_win")
+    monkeypatch.setattr(components, "get_pytorch_mirror_type_for_ivnokeai", lambda _device_type: "rocm7")
     monkeypatch.setattr(components, "install_pytorch", lambda **_kwargs: (_ for _ in ()).throw(AssertionError("xformers should not be attempted")))
     monkeypatch.setattr(components, "install_pytorch_with_fallback", lambda **kwargs: calls.append(("pytorch_fallback", kwargs["torch_package"], kwargs["custom_env"])))
 
     components.sync_invokeai_component(device_type="rocm", upgrade=True, use_pypi_mirror=False, use_uv=True)
 
-    assert calls[0] == ("pytorch_fallback", "torch[device-all]<3.0,>=2.7.0 torchvision[device-all] --upgrade", {"TORCH": "rocm_win"})
+    assert calls[0] == ("pytorch_fallback", "torch[device-all]<3.0,>=2.7.0 torchvision[device-all] --upgrade", {"TORCH": "rocm7"})
     # 旧版 xFormers 与升级后的 PyTorch 不兼容, 需要卸载
     assert calls[1][0] == "run"
     assert calls[1][1][1:] == ["-m", "pip", "uninstall", "xformers", "-y"]
@@ -144,7 +144,7 @@ def test_invokeai_sync_adds_device_all_and_skips_xformers_for_amd_multi_arch(mon
 def test_invokeai_sync_skips_xformers_without_removing_on_fresh_install(monkeypatch):
     calls = []
     _patch_sync(monkeypatch, calls, xformers_installed=False)
-    monkeypatch.setattr(components, "get_pytorch_mirror_type_for_ivnokeai", lambda _device_type: "rocm_linux")
+    monkeypatch.setattr(components, "get_pytorch_mirror_type_for_ivnokeai", lambda _device_type: "rocm10")
     monkeypatch.setattr(components, "install_pytorch_with_fallback", lambda **kwargs: calls.append(("pytorch_fallback", kwargs["torch_package"])))
 
     components.sync_invokeai_component(device_type="rocm", use_pypi_mirror=False, use_uv=True)

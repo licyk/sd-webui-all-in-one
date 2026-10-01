@@ -21,6 +21,7 @@ from sd_webui_all_in_one.pytorch_manager.types import (
     PyTorchVersionInfo,
     PyTorchDeviceType,
     PyTorchDeviceTypeCategory,
+    resolve_pytorch_device_type,
 )
 from sd_webui_all_in_one.pytorch_manager.version_data import (
     PYTORCH_DOWNLOAD_DICT,
@@ -121,6 +122,7 @@ def find_latest_pytorch_info(
             PyTorch 支持的设备类型无效时
     """
 
+    dtype = resolve_pytorch_device_type(dtype)
     pytorch_list = export_pytorch_list()
     pytorch_info_list = [x for x in pytorch_list if x["dtype"] == dtype]
     if not pytorch_info_list:
@@ -264,6 +266,9 @@ def find_pytorch_info_for_torch_requirement(
 
         return PYTORCH_DEVICE_LIST.index(candidate["dtype"]) > PYTORCH_DEVICE_LIST.index(current["dtype"])
 
+    if preferred_dtype is not None:
+        preferred_dtype = resolve_pytorch_device_type(preferred_dtype)
+
     best: PyTorchVersionInfo | None = None
     for info in export_pytorch_list():
         if not info["supported"] or _get_pytorch_device_category(info["dtype"]) != device_category:
@@ -282,7 +287,7 @@ def get_pytorch_package_extras(
 ) -> dict[str, list[str]]:
     """从 PyTorch 版本表中获取指定设备类型的 PyTorch 软件包所需的 extras
 
-    例如 AMD 多架构 wheel (`rocm_win` / `rocm_linux`) 需要通过 `torch[device-all]` 安装 GPU 设备库。
+    例如 AMD 多架构 wheel (`rocm7` / `rocm10`) 需要通过 `torch[device-all]` 安装 GPU 设备库。
 
     Args:
         dtype (PyTorchDeviceType):
@@ -292,6 +297,7 @@ def get_pytorch_package_extras(
         dict[str, list[str]]:
             规范化软件包名到 extras 列表的映射, 例如 `{"torch": ["device-all"]}`
     """
+    dtype = resolve_pytorch_device_type(dtype)
     bindings = get_parse_bindings()
     package_extras: dict[str, list[str]] = {}
     for info in PYTORCH_DOWNLOAD_DICT:
@@ -361,4 +367,5 @@ def has_pytorch_xformers_support(
         bool:
             版本表中存在该设备类型且包含 xFormers 的版本组合时返回 True
     """
+    dtype = resolve_pytorch_device_type(dtype)
     return any(info["dtype"] == dtype and info.get("xformers_ver") is not None for info in PYTORCH_DOWNLOAD_DICT)

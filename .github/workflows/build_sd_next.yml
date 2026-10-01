@@ -25,7 +25,7 @@ jobs:
             -InstallPath "${{ github.workspace }}/sd_next" `
             -PyTorchMirrorType cu130 `
             -BuildMode `
-            -BuildWithTorch 174 `
+            -BuildWithTorch 179 `
             -BuildWithTorchReinstall `
             -BuildWithLaunch `
             -InstallBranch "sd_next_main" `

@@ -132,17 +132,25 @@ class GPUDeviceInfo(TypedDict, total=False):
     """驱动版本"""
 
 
-ROCM_LINUX_PYTORCH_TYPE_LIST: list[PyTorchDeviceType] = ["rocm_linux", "rocm7.2"]
-"""Linux 上 AMD GPU 可用的 PyTorch ROCm 类型列表, 首项为自动检测时的首选类型
+ROCM_MULTI_ARCH_PYTORCH_TYPE_LIST: list[PyTorchDeviceType] = ["rocm7", "rocm10"]
+"""AMD GPU 可用的 AMD 多架构 wheel 类型列表 (Windows / Linux 通用), 首项为自动检测时的首选类型
 
-- rocm_linux: AMD TheRock 多架构 wheel (通过 [device-all] 额外依赖覆盖 gfx908 ~ gfx1250 等全部支持的架构)
-- rocm7.2: PyTorch 官方 ROCm wheel
+- rocm7: ROCm 7 的 AMD TheRock 多架构 wheel (通过 [device-all] 额外依赖覆盖 gfx908 ~ gfx1250 等全部支持的架构)
+- rocm10: ROCm 10 的 AMD TheRock 多架构 wheel
 
 参考:
 ```
 https://github.com/Comfy-Org/ComfyUI-Standalone-Environments
 https://repo.amd.com/rocm/whl-multi-arch
+https://stable.repo.amd.com/rocm/whl-next
 ```
+"""
+
+ROCM_LINUX_PYTORCH_TYPE_LIST: list[PyTorchDeviceType] = [*ROCM_MULTI_ARCH_PYTORCH_TYPE_LIST, "rocm7.2"]
+"""Linux 上 AMD GPU 可用的 PyTorch ROCm 类型列表, 首项为自动检测时的首选类型
+
+- rocm7 / rocm10: AMD TheRock 多架构 wheel
+- rocm7.2: PyTorch 官方 ROCm wheel
 """
 
 
@@ -209,7 +217,7 @@ def get_amd_rocm_pytorch_type_list() -> list[PyTorchDeviceType]:
             可用的 PyTorch ROCm 类型列表, 首项为首选类型; 当前平台不支持 ROCm 时返回空列表
     """
     if sys.platform == "win32":
-        return ["rocm_win"]
+        return list(ROCM_MULTI_ARCH_PYTORCH_TYPE_LIST)
     if sys.platform == "linux":
         return list(ROCM_LINUX_PYTORCH_TYPE_LIST)
     return []

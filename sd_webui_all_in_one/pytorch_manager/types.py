@@ -96,6 +96,8 @@ PyTorchDeviceType: TypeAlias = Literal[
     "rocm7.1",
     "rocm7.14",
     "rocm7.2",
+    "rocm7",
+    "rocm10",
     "rocm_linux",
     "rocm_win",
     "xpu",
@@ -109,6 +111,34 @@ PyTorchDeviceType: TypeAlias = Literal[
 
 PYTORCH_DEVICE_LIST: list[PyTorchDeviceType] = cast(list[PyTorchDeviceType], list(get_args(PyTorchDeviceType)))
 """PyTorch 支持的设备类型列表"""
+
+PYTORCH_DEVICE_TYPE_ALIAS_DICT: dict[PyTorchDeviceType, PyTorchDeviceType] = {
+    "rocm_linux": "rocm7",
+    "rocm_win": "rocm7",
+}
+"""
+PyTorch 设备类型别名字典
+
+- `rocm7` / `rocm10`: AMD 多架构 wheel (ROCm 7 / ROCm 10), 同时适用于 Windows 和 Linux
+- `rocm_linux` / `rocm_win`: 旧版类型名称, 等价于 `rocm7`
+"""
+
+
+def resolve_pytorch_device_type(
+    dtype: PyTorchDeviceType,
+) -> PyTorchDeviceType:
+    """将 PyTorch 设备类型别名解析为实际的设备类型
+
+    Args:
+        dtype (PyTorchDeviceType):
+            PyTorch 设备类型或其别名
+
+    Returns:
+        PyTorchDeviceType:
+            实际的 PyTorch 设备类型, 不是别名时按原样返回
+    """
+    return PYTORCH_DEVICE_TYPE_ALIAS_DICT.get(dtype, dtype)
+
 
 PyTorchMirrorMap = dict[PyTorchDeviceType, PyTorchMirrorInfo]
 """

@@ -11,6 +11,7 @@ from sd_webui_all_in_one.config import (
 )
 from sd_webui_all_in_one.utils import load_source_directly
 from sd_webui_all_in_one.pytorch_manager import (
+    PYTORCH_DEVICE_TYPE_ALIAS_DICT,
     get_available_pytorch_device_type,
     get_gpu_list,
     has_gpus,
@@ -78,8 +79,9 @@ def _is_rocm_version_compatible(
     - torch_type="rocm6.2.4" 可以匹配 available_types 中的 "rocm6.2"
 
     同时支持平台专用类型匹配，例如：
-    - Windows 上任意 ROCm 类型可以匹配 "rocm_win"
-    - Linux 上 AMD 多架构 wheel 类型 (如 "rocm7.14.0") 可以匹配 "rocm_linux"
+    - Windows 上的 ROCm 类型根据 ROCm 主版本号匹配 "rocm7" / "rocm10"
+    - Linux 上 AMD 多架构 wheel 类型 (如 "rocm7.14.1", "rocm10.0.0") 根据 ROCm 主版本号匹配 "rocm7" / "rocm10"
+    - 旧版类型名称 "rocm_win" / "rocm_linux" 等价于 "rocm7"
 
     Args:
         torch_type: 当前安装的 PyTorch ROCm 类型
@@ -104,7 +106,7 @@ def _is_rocm_version_compatible(
             if torch_parts[0] == available_parts[0] and torch_parts[1] == available_parts[1]:
                 return True
 
-    return normalize_pytorch_version_suffix(torch_type) in available_types
+    return normalize_pytorch_version_suffix(torch_type) in {PYTORCH_DEVICE_TYPE_ALIAS_DICT.get(x, x) for x in available_types}
 
 
 def _is_ipex_version(

@@ -105,7 +105,7 @@ ComfyUI Installer 支持使用命令参数设置安装 ComfyUI 的参数，支�
 - `-CorePrefix` `<内核路径前缀>`：设置内核路径前缀。可填写内核目录名、相对路径或绝对路径；绝对路径会在运行时转换为相对于安装器脚本目录的内核路径前缀。未指定时会按预设目录自动识别，未找到时使用 `core`。
 - `-InstallPath` `<安装 ComfyUI 的绝对路径>`：指定 ComfyUI Installer 安装 ComfyUI 的路径，使用绝对路径表示。
     例如：`./comfyui_installer.ps1 -InstallPath "D:\Download"`，这将指定安装到 D:\Download 路径。
-- `-PyTorchMirrorType` `<PyTorch 镜像源类型>`：指定安装 PyTorch 时使用的镜像源类型。可指定的类型包括：`cu113`, `cu117`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`, `cu130`, `rocm5.4.2`, `rocm5.6`, `rocm5.7`, `rocm6.0`, `rocm6.1`, `rocm6.2`, `rocm6.2.4`, `rocm6.3`, `rocm6.4`, `rocm7.1`, `rocm_linux`, `rocm_win`, `xpu`, `ipex_legacy_arc`, `cpu`, `directml`, `all`
+- `-PyTorchMirrorType` `<PyTorch 镜像源类型>`：指定安装 PyTorch 时使用的镜像源类型。可指定的类型包括：`cu113`, `cu117`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`, `cu130`, `rocm5.4.2`, `rocm5.6`, `rocm5.7`, `rocm6.0`, `rocm6.1`, `rocm6.2`, `rocm6.2.4`, `rocm6.3`, `rocm6.4`, `rocm7.1`, `rocm7.2`, `rocm7`, `rocm10`, `xpu`, `ipex_legacy_arc`, `cpu`, `directml`, `all`
 - `-InstallPythonVersion` `<Python 版本>`：指定要安装的 Python 版本。可选值：`3.10`, `3.11`, `3.12`, `3.13`, `3.14`
 - `-RestoreFromSnapshot`：启用快照重建模式，根据快照文件重新准备 Python 版本并恢复环境。
 - `-SnapshotPath` `<快照文件>`：指定用于快照重建的环境快照 JSON 文件路径。启用快照重建模式时需要和 `-RestoreFromSnapshot` 同时使用。

@@ -103,7 +103,24 @@ def test_prepare_pytorch_install_info_auto_and_custom_packages(monkeypatch):
     )
     assert torch_pkg is not None
     assert torch_pkg.startswith("torch[device-all]==2.12.0+rocm7.14.0")
-    assert calls == [("mirror", "rocm_linux", False)]
+    assert calls == [("mirror", "rocm7", False)]
+    assert "UV_PRERELEASE" not in env
+
+    calls.clear()
+    torch_pkg, _xformers_pkg, env = base_pytorch.prepare_pytorch_install_info(
+        custom_pytorch_package="torch[device-all]==2.13.0+rocm10.0.0 torchvision[device-all]==0.28.0+rocm10.0.0",
+        use_cn_mirror=False,
+    )
+    assert calls == [("mirror", "rocm10", False)]
+
+    # 带有 extras 且固定为预发布版本的软件包需要允许 uv 使用预发布版本
+    calls.clear()
+    torch_pkg, _xformers_pkg, env = base_pytorch.prepare_pytorch_install_info(
+        custom_pytorch_package="torch[device-all]==2.8.0+rocm7.13.0 torchvision[device-all]==0.23.0a0+rocm7.13.0 torchaudio==2.8.0a0+rocm7.13.0",
+        use_cn_mirror=False,
+    )
+    assert calls == [("mirror", "rocm7", False)]
+    assert env["UV_PRERELEASE"] == "allow"
 
     calls.clear()
     torch_pkg, _xformers_pkg, env = base_pytorch.prepare_pytorch_install_info(
@@ -114,20 +131,22 @@ def test_prepare_pytorch_install_info_auto_and_custom_packages(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("platform", "expected_dtype"),
+    ("platform", "torch_version", "expected_dtype"),
     [
-        ("linux", "rocm_linux"),
-        ("win32", "rocm_win"),
+        ("linux", "2.12.0+rocm7.14.0", "rocm7"),
+        ("win32", "2.12.0+rocm7.14.0", "rocm7"),
+        ("linux", "2.12.0+rocm10.0.0", "rocm10"),
+        ("win32", "2.12.0+rocm10.0.0", "rocm10"),
     ],
 )
-def test_check_pytorch_version_normalizes_amd_multi_arch_suffix(monkeypatch, platform, expected_dtype):
+def test_check_pytorch_version_normalizes_amd_multi_arch_suffix(monkeypatch, platform, torch_version, expected_dtype):
     calls = []
     monkeypatch.setattr(sys, "platform", platform)
-    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda name: "2.12.0+rocm7.14.0" if name == "torch" else "")
+    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda name: torch_version if name == "torch" else "")
     monkeypatch.setattr(
         base_pytorch,
         "find_latest_pytorch_info",
-        lambda dtype: calls.append(dtype) or {"torch_ver": "torch[device-all]==2.12.0+rocm7.14.0 torchaudio==2.11.0+rocm7.14.0"},
+        lambda dtype: calls.append(dtype) or {"torch_ver": f"torch[device-all]=={torch_version} torchaudio==2.11.0"},
     )
 
     assert base_module.check_pytorch_version() is False

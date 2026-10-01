@@ -120,10 +120,14 @@ PYTORCH_MIRROR_NJU_DICT: PyTorchMirrorMap = {
 """PyTorch 国内镜像源 (NJU) 字典"""
 
 PYTORCH_ROCM_MIRROR_DICT: PyTorchMirrorMap = {
-    "rocm_linux": ("https://repo.amd.com/rocm/whl-multi-arch", "index_url"),
-    "rocm_win": ("https://repo.amd.com/rocm/whl-multi-arch", "index_url"),
+    "rocm7": ("https://repo.amd.com/rocm/whl-multi-arch", "index_url"),
+    "rocm10": ("https://stable.repo.amd.com/rocm/whl-next", "index_url"),
 }
 """
-PyTorch ROCm 镜像源字典
-- 参考: https://github.com/Comfy-Org/ComfyUI-Standalone-Environments
+PyTorch ROCm (AMD 多架构 wheel) 镜像源字典
+
+- rocm7: ROCm 7, 提供 PyTorch 2.8.0 ~ 2.13.0
+- rocm10: ROCm 10, 提供 PyTorch 2.11.0 ~ 2.13.0
+
+参考: https://github.com/Comfy-Org/ComfyUI-Standalone-Environments
 """

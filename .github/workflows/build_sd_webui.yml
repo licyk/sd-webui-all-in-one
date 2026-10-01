@@ -25,7 +25,7 @@ jobs:
             -InstallPath "${{ github.workspace }}/sd_webui" `
             -PyTorchMirrorType cu130 `
             -BuildMode `
-            -BuildWithTorch 174 `
+            -BuildWithTorch 179 `
             -BuildWithTorchReinstall `
             -BuildWithLaunch `
             -InstallBranch "sd_webui_dev" `

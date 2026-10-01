@@ -25,8 +25,11 @@ from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_confi
 from sd_webui_all_in_one.package_analyzer import (
     PyWhlVersionComparison,
     get_package_name,
+    get_parse_bindings,
     is_package_has_version,
+    is_prerelease_version,
     get_package_version,
+    parse_requirement,
 )
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
@@ -124,6 +127,35 @@ def check_pytorch_version() -> bool:
     return status.has_update
 
 
+def _has_prerelease_extras_requirement(
+    packages: str | None,
+) -> bool:
+    """检查软件包声明中是否存在带有 extras 且固定为预发布版本的软件包
+
+    带有 extras 的软件包 (如 `torchvision[device-all]==0.23.0a0+rocm7.13.0`) 会通过 extras 依赖同为预发布版本的软件包,
+    而 uv 默认只允许直接声明的软件包使用预发布版本, 此时需要允许 uv 使用预发布版本才能完成依赖解析。
+
+    Args:
+        packages (str | None):
+            以空格分隔的软件包声明
+
+    Returns:
+        bool:
+            存在带有 extras 且固定为预发布版本的软件包时返回 True
+    """
+    bindings = get_parse_bindings()
+    for package in (packages or "").split():
+        try:
+            _, extras, version_specs, _ = parse_requirement(package, bindings)
+        except ValueError:
+            continue
+        if not extras or isinstance(version_specs, str):
+            continue
+        if any(op in ("==", "===") and is_prerelease_version(ver.split("+")[0]) for op, ver in version_specs):
+            return True
+    return False
+
+
 def prepare_pytorch_install_info(
     pytorch_mirror_type: PyTorchDeviceType | None = None,
     custom_pytorch_package: str | None = None,
@@ -209,6 +241,8 @@ def prepare_pytorch_install_info(
         extra_index_url=mirrors["extra_index_url"],
         find_links=mirrors["find_links"],
     )
+    if _has_prerelease_extras_requirement(torch_ver):
+        custom_env["UV_PRERELEASE"] = "allow"
 
     return (torch_ver, xformers_ver, custom_env)
 
@@ -301,6 +335,8 @@ def reinstall_pytorch(
             extra_index_url=info["extra_index_mirror"]["mirror"] if use_pypi_mirror else info["extra_index_mirror"]["official"],
             find_links=info["find_links"]["mirror"] if use_pypi_mirror else info["find_links"]["official"],
         )
+        if _has_prerelease_extras_requirement(info["torch_ver"]):
+            custom_env["UV_PRERELEASE"] = "allow"
         logger.info("安装 PyTorch 中")
         _uninstall()
         install_pytorch_with_fallback(

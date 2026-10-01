@@ -1,5 +1,6 @@
 """镜像选择处理"""
 
+import re
 import sys
 from collections.abc import Iterable
 from typing import cast
@@ -19,8 +20,37 @@ from sd_webui_all_in_one.pytorch_manager.types import (
     PyTorchMirrorInfo,
     PyTorchDeviceTypeCategory,
     PyTorchDeviceType,
+    resolve_pytorch_device_type,
 )
 from sd_webui_all_in_one.utils import load_source_directly
+
+
+ROCM_MULTI_ARCH_MIN_MAJOR_VERSION_DICT: dict[PyTorchDeviceType, int] = {
+    "rocm10": 10,
+    "rocm7": 7,
+}
+"""AMD 多架构 wheel 类型对应的最低 ROCm 主版本号, 按主版本号从高到低排列"""
+
+
+def _get_rocm_multi_arch_type(
+    suffix: str,
+) -> PyTorchDeviceType:
+    """根据 ROCm 版本后缀的主版本号获取 AMD 多架构 wheel 类型
+
+    Args:
+        suffix (str):
+            ROCm 版本后缀, 例如 `rocm7.14.1`, `rocm10.0.0`
+
+    Returns:
+        PyTorchDeviceType:
+            AMD 多架构 wheel 类型, 无法解析主版本号时返回 `rocm7`
+    """
+    matched = re.match(r"rocm(\d+)", suffix)
+    major = int(matched.group(1)) if matched else 0
+    for dtype, min_major in ROCM_MULTI_ARCH_MIN_MAJOR_VERSION_DICT.items():
+        if major >= min_major:
+            return dtype
+    return "rocm7"
 
 
 def normalize_pytorch_version_suffix(
@@ -30,10 +60,10 @@ def normalize_pytorch_version_suffix(
     """将 PyTorch 版本后缀规范化为设备类型。
 
     ROCm 后缀的处理规则:
-    - `rocm_win` / `rocm_linux` 按原样返回
-    - Windows 平台上的 ROCm 后缀统一视为 `rocm_win`
+    - `rocm7` / `rocm10` 按原样返回, 旧版类型名称 `rocm_win` / `rocm_linux` 视为 `rocm7`
+    - Windows 平台上的 ROCm 后缀统一视为 AMD 多架构 wheel, 根据 ROCm 主版本号返回 `rocm7` / `rocm10`
     - 其他平台上 PyTorch 官方 ROCm 后缀 (如 `rocm7.2`) 按原样返回, 其余 ROCm 后缀
-      (如 AMD 多架构 wheel 的 `rocm7.14.0`) 视为 `rocm_linux`
+      (如 AMD 多架构 wheel 的 `rocm7.14.1`, `rocm10.0.0`) 根据 ROCm 主版本号返回 `rocm7` / `rocm10`
 
     Args:
         suffix (str):
@@ -48,14 +78,14 @@ def normalize_pytorch_version_suffix(
     platform_tag = sys.platform if platform_tag is None else platform_tag
     normalized_suffix = suffix.strip().casefold()
 
-    if normalized_suffix in ("rocm_win", "rocm_linux"):
-        return cast(PyTorchDeviceType, normalized_suffix)
+    if normalized_suffix in ("rocm_win", "rocm_linux") or normalized_suffix in ROCM_MULTI_ARCH_MIN_MAJOR_VERSION_DICT:
+        return resolve_pytorch_device_type(cast(PyTorchDeviceType, normalized_suffix))
     if normalized_suffix.startswith("rocm"):
         if platform_tag.casefold().startswith("win"):
-            return "rocm_win"
+            return _get_rocm_multi_arch_type(normalized_suffix)
         if normalized_suffix in PYTORCH_DEVICE_LIST:
             return cast(PyTorchDeviceType, normalized_suffix)
-        return "rocm_linux"
+        return _get_rocm_multi_arch_type(normalized_suffix)
     if normalized_suffix in PYTORCH_DEVICE_LIST:
         return cast(PyTorchDeviceType, normalized_suffix)
     return None
@@ -189,7 +219,7 @@ def get_pytorch_mirror_type_rocm(
         # 使用 AMD 多架构 wheel 提供的 Windows 版本 PyTorch (2.8.0 <= torch)
         if torch_version < CommonVersionComparison("2.8.0"):
             return "all"
-        return "rocm_win"
+        return "rocm7"
     if torch_version < CommonVersionComparison("2.4.0"):
         # torch < 2.4.0
         return "all"
@@ -353,6 +383,7 @@ def get_pytorch_mirror(
         ValueError:
             未找到对应的 PyTorch 镜像源时
     """
+    dtype = resolve_pytorch_device_type(dtype)
     url = PYTORCH_MIRROR_NJU_DICT.get(dtype) if use_cn_mirror else PYTORCH_MIRROR_DICT.get(dtype)
 
     if url is None:
