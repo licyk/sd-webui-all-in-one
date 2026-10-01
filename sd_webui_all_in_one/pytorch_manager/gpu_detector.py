@@ -132,11 +132,11 @@ class GPUDeviceInfo(TypedDict, total=False):
     """驱动版本"""
 
 
-ROCM_MULTI_ARCH_PYTORCH_TYPE_LIST: list[PyTorchDeviceType] = ["rocm7", "rocm10"]
+ROCM_MULTI_ARCH_PYTORCH_TYPE_LIST: list[PyTorchDeviceType] = ["rocm10", "rocm7"]
 """AMD GPU 可用的 AMD 多架构 wheel 类型列表 (Windows / Linux 通用), 首项为自动检测时的首选类型
 
-- rocm7: ROCm 7 的 AMD TheRock 多架构 wheel (通过 [device-all] 额外依赖覆盖 gfx908 ~ gfx1250 等全部支持的架构)
-- rocm10: ROCm 10 的 AMD TheRock 多架构 wheel
+- rocm10: ROCm 10 的 AMD TheRock 多架构 wheel (通过 [device-all] 额外依赖覆盖 gfx908 ~ gfx1250 等全部支持的架构)
+- rocm7: ROCm 7 的 AMD TheRock 多架构 wheel
 
 参考:
 ```
@@ -149,7 +149,7 @@ https://stable.repo.amd.com/rocm/whl-next
 ROCM_LINUX_PYTORCH_TYPE_LIST: list[PyTorchDeviceType] = [*ROCM_MULTI_ARCH_PYTORCH_TYPE_LIST, "rocm7.2"]
 """Linux 上 AMD GPU 可用的 PyTorch ROCm 类型列表, 首项为自动检测时的首选类型
 
-- rocm7 / rocm10: AMD TheRock 多架构 wheel
+- rocm10 / rocm7: AMD TheRock 多架构 wheel
 - rocm7.2: PyTorch 官方 ROCm wheel
 """
 

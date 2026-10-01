@@ -81,7 +81,7 @@ def _is_rocm_version_compatible(
     同时支持平台专用类型匹配，例如：
     - Windows 上的 ROCm 类型根据 ROCm 主版本号匹配 "rocm7" / "rocm10"
     - Linux 上 AMD 多架构 wheel 类型 (如 "rocm7.14.1", "rocm10.0.0") 根据 ROCm 主版本号匹配 "rocm7" / "rocm10"
-    - 旧版类型名称 "rocm_win" / "rocm_linux" 等价于 "rocm7"
+    - 旧版类型名称 "rocm_win" / "rocm_linux" 等价于 "rocm10"
 
     Args:
         torch_type: 当前安装的 PyTorch ROCm 类型

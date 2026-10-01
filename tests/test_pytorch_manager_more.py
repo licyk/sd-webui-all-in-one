@@ -9,8 +9,8 @@ from sd_webui_all_in_one.pytorch_manager import version_manager
     [
         (" CU128 ", "linux", "cu128"),
         ("rocm6.4", "win32", "rocm7"),
-        ("rocm_win", "linux", "rocm7"),
-        ("rocm_linux", "win32", "rocm7"),
+        ("rocm_win", "linux", "rocm10"),
+        ("rocm_linux", "win32", "rocm10"),
         ("rocm7", "linux", "rocm7"),
         ("rocm10", "win32", "rocm10"),
         ("rocm7.14.0", "win32", "rocm7"),
@@ -275,20 +275,20 @@ def test_query_pytorch_info_index_boundaries(monkeypatch):
             "torch[device-all]==2.13.0+rocm10.0.0 torchvision[device-all]==0.28.0+rocm10.0.0 torchaudio==2.11.0.2+rocm10.0.0",
             "https://stable.repo.amd.com/rocm/whl-next",
         ),
-        # 旧版类型名称等价于 rocm7
+        # 旧版类型名称等价于 rocm10
         (
             "linux",
             "rocm_linux",
-            "Torch 2.13.0 (ROCm 7.14.0 Linux)",
-            "torch[device-all]==2.13.0+rocm7.14.0 torchvision[device-all]==0.28.0+rocm7.14.0 torchaudio==2.11.0.2+rocm7.14.0",
-            "https://repo.amd.com/rocm/whl-multi-arch",
+            "Torch 2.13.0 (ROCm 10.0.0)",
+            "torch[device-all]==2.13.0+rocm10.0.0 torchvision[device-all]==0.28.0+rocm10.0.0 torchaudio==2.11.0.2+rocm10.0.0",
+            "https://stable.repo.amd.com/rocm/whl-next",
         ),
         (
             "win32",
             "rocm_win",
-            "Torch 2.12.0 (ROCm 7.14.1)",
-            "torch[device-all]==2.12.0+rocm7.14.1 torchvision[device-all]==0.27.0+rocm7.14.1 torchaudio==2.11.0+rocm7.14.1",
-            "https://repo.amd.com/rocm/whl-multi-arch",
+            "Torch 2.13.0 (ROCm 10.0.0)",
+            "torch[device-all]==2.13.0+rocm10.0.0 torchvision[device-all]==0.28.0+rocm10.0.0 torchaudio==2.11.0.2+rocm10.0.0",
+            "https://stable.repo.amd.com/rocm/whl-next",
         ),
     ],
 )
@@ -434,6 +434,7 @@ def test_pytorch_package_extras_come_from_version_table(monkeypatch):
         _torch_entry("Torch (ROCm 7)", "rocm7", "torch[device-all] torchvision[device-all] torchaudio"),
         _torch_entry("Torch 2.12.0 (ROCm 7.14.1)", "rocm7", "torch[device-all]==2.12.0+rocm7.14.1 torchvision[device-all]==0.27.0+rocm7.14.1"),
         _torch_entry("Torch 2.9.1 (ROCm 7.2.1 Windows)", "rocm7", "torch==2.9.1+rocm7.2.1"),
+        _torch_entry("Torch 2.13.0 (ROCm 10.0.0)", "rocm10", "torch[device-all]==2.13.0+rocm10.0.0 torchvision[device-all]==0.28.0+rocm10.0.0"),
         _torch_entry("Torch 2.14.0 (CUDA 13.0)", "cu130", "torch==2.14.0+cu130"),
     ]
     monkeypatch.setattr(version_manager, "PYTORCH_DOWNLOAD_DICT", data)

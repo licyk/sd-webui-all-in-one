@@ -100,9 +100,9 @@ def test_gpu_classification_helpers():
         ("linux", [], 0.0, 0.0, "cpu", "cpu"),
         ("linux", [_gpu("NVIDIA RTX 4090", "NVIDIA")], 12.8, 8.9, "cu128", "cuda"),
         ("linux", [_gpu("Intel(R) Arc A770", "Intel")], 0.0, 0.0, "xpu", "xpu"),
-        ("linux", [_gpu("AMD Radeon RX 7900", "Advanced Micro Devices")], 0.0, 0.0, "rocm7", "rocm"),
-        ("linux", [_gpu("AMD Radeon RX 7600", "Advanced Micro Devices")], 0.0, 0.0, "rocm7", "rocm"),
-        ("win32", [_gpu("AMD Radeon RX 7900", "Advanced Micro Devices")], 0.0, 0.0, "rocm7", "rocm"),
+        ("linux", [_gpu("AMD Radeon RX 7900", "Advanced Micro Devices")], 0.0, 0.0, "rocm10", "rocm"),
+        ("linux", [_gpu("AMD Radeon RX 7600", "Advanced Micro Devices")], 0.0, 0.0, "rocm10", "rocm"),
+        ("win32", [_gpu("AMD Radeon RX 7900", "Advanced Micro Devices")], 0.0, 0.0, "rocm10", "rocm"),
         ("darwin", [], 0.0, 0.0, "all", "mps"),
     ],
 )
@@ -128,13 +128,13 @@ def test_auto_detect_pytorch_type_and_category(monkeypatch, platform, gpus, cuda
         "AMD Radeon Something",
     ],
 )
-def test_auto_detect_amd_gpu_uses_rocm7(monkeypatch, name):
+def test_auto_detect_amd_gpu_uses_rocm10(monkeypatch, name):
     monkeypatch.setattr(gpu_detector.sys, "platform", "linux")
     monkeypatch.setattr(gpu_detector, "get_gpu_list", lambda: [_gpu(name, "Advanced Micro Devices")])
     monkeypatch.setattr(gpu_detector, "get_cuda_version", lambda: 0.0)
     monkeypatch.setattr(gpu_detector, "get_cuda_comp_cap", lambda: 0.0)
 
-    assert gpu_detector.auto_detect_available_pytorch_type() == "rocm7"
+    assert gpu_detector.auto_detect_available_pytorch_type() == "rocm10"
 
 
 @pytest.mark.parametrize(
@@ -225,9 +225,9 @@ def test_get_pytorch_mirror_and_query_library(monkeypatch):
     assert mirror_selector.get_pytorch_mirror("cpu", use_cn_mirror=True) == ("cn-cpu", "index_url")
     assert mirror_selector.get_pytorch_mirror("rocm7") == ("rocm-7", "find_links")
     assert mirror_selector.get_pytorch_mirror("rocm10") == ("rocm-10", "index_url")
-    # 旧版类型名称等价于 rocm7
-    assert mirror_selector.get_pytorch_mirror("rocm_win") == ("rocm-7", "find_links")
-    assert mirror_selector.get_pytorch_mirror("rocm_linux") == ("rocm-7", "find_links")
+    # 旧版类型名称等价于 rocm10
+    assert mirror_selector.get_pytorch_mirror("rocm_win") == ("rocm-10", "index_url")
+    assert mirror_selector.get_pytorch_mirror("rocm_linux") == ("rocm-10", "index_url")
     with pytest.raises(ValueError):
         mirror_selector.get_pytorch_mirror("missing")
 

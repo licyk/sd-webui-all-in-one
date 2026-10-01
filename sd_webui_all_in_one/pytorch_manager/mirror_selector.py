@@ -60,7 +60,7 @@ def normalize_pytorch_version_suffix(
     """将 PyTorch 版本后缀规范化为设备类型。
 
     ROCm 后缀的处理规则:
-    - `rocm7` / `rocm10` 按原样返回, 旧版类型名称 `rocm_win` / `rocm_linux` 视为 `rocm7`
+    - `rocm7` / `rocm10` 按原样返回, 旧版类型名称 `rocm_win` / `rocm_linux` 视为 `rocm10`
     - Windows 平台上的 ROCm 后缀统一视为 AMD 多架构 wheel, 根据 ROCm 主版本号返回 `rocm7` / `rocm10`
     - 其他平台上 PyTorch 官方 ROCm 后缀 (如 `rocm7.2`) 按原样返回, 其余 ROCm 后缀
       (如 AMD 多架构 wheel 的 `rocm7.14.1`, `rocm10.0.0`) 根据 ROCm 主版本号返回 `rocm7` / `rocm10`

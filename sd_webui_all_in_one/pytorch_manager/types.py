@@ -113,14 +113,14 @@ PYTORCH_DEVICE_LIST: list[PyTorchDeviceType] = cast(list[PyTorchDeviceType], lis
 """PyTorch 支持的设备类型列表"""
 
 PYTORCH_DEVICE_TYPE_ALIAS_DICT: dict[PyTorchDeviceType, PyTorchDeviceType] = {
-    "rocm_linux": "rocm7",
-    "rocm_win": "rocm7",
+    "rocm_linux": "rocm10",
+    "rocm_win": "rocm10",
 }
 """
 PyTorch 设备类型别名字典
 
 - `rocm7` / `rocm10`: AMD 多架构 wheel (ROCm 7 / ROCm 10), 同时适用于 Windows 和 Linux
-- `rocm_linux` / `rocm_win`: 旧版类型名称, 等价于 `rocm7`
+- `rocm_linux` / `rocm_win`: 旧版类型名称, 等价于 `rocm10`
 """
 
 
