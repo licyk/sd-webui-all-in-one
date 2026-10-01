@@ -487,10 +487,6 @@ def test_catalog_reports_registered_patches():
     comfyui_auto_port_settings = features["extensions.comfyui_auto_port"]["settings"]
     assert comfyui_auto_port_settings["enabled"]["type"] == "bool"
     assert comfyui_auto_port_settings["enabled"]["default"] is True
-    sd_trainer_browser_order_settings = features["extensions.sd_trainer_browser_order"]["settings"]
-    assert sd_trainer_browser_order_settings["enabled"]["default"] is True
-    assert sd_trainer_browser_order_settings["monitor_delay"]["type"] == "int"
-    assert sd_trainer_browser_order_settings["monitor_delay"]["default"] == 1
     assert extension_index_settings["webui.enabled"]["type"] == "bool"
     assert extension_index_settings["webui.enabled"]["default"] is False
     assert extension_index_settings["webui.url"]["type"] == "str"

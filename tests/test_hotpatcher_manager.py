@@ -308,7 +308,7 @@ print(json.dumps({{
     result = json.loads(output)
 
     assert result["parent_marker"] == "1"
-    assert result["parent_result"]["applied"] == ["extensions.comfyui_auto_port", "extensions.sd_trainer_browser_order"]
+    assert result["parent_result"]["applied"] == ["extensions.comfyui_auto_port"]
     assert result["parent_result"]["errors"] == []
     assert (
         any(warning.get("feature") == "core.import_hook" and "already installed" in warning.get("message", "") for warning in result["parent_result"].get("warnings", []))

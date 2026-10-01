@@ -66,12 +66,6 @@ src/
       download.py
       patches.py
       config.py
-    sd_trainer_browser_order/
-      __init__.py
-      recording.py
-      replay.py
-      patches.py
-      config.py
   examples/
   tests/
   docs/

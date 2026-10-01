@@ -246,16 +246,6 @@ apply_from_config({"enabled": True})
 
 该扩展必须在 `main.py` 导入 `comfy.cli_args` 前注册。通过 Hotpatcher bootstrap 加载配置时会满足这个时序；目标模块已经导入时，扩展也会立即调整现有参数对象。
 
-### SD Trainer 浏览器打开顺序
-
-`sd_trainer_browser_order` 扩展会补丁 SD Trainer Next 分支的 `mikazuki.app.application.app_startup()`：启动时先等主界面端口就绪并打开主界面，再打开训练监控界面。只有单个主界面的原版 lora-scripts 不受影响。
-
-```python
-from sd_webui_all_in_one_hotpatcher_ext.sd_trainer_browser_order import apply_from_config
-
-apply_from_config({"enabled": True, "monitor_delay": 1})
-```
-
 ### ZLUDA 扩展
 
 ZLUDA 扩展位于 `sd_webui_all_in_one_hotpatcher_ext.zluda`，抽自原来的 `swlpatches/zluda_companion.py`，并额外包含原 `torch_zluda_timer` hotfix。
