@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import platform
 import sys
+from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 from importlib import metadata
 from pathlib import Path
 
@@ -26,6 +28,9 @@ from sd_webui_all_in_one.base_manager.snapshot.models import (
     logger,
     utc_now_iso,
 )
+
+REPOSITORY_SNAPSHOT_WORKERS = 8
+"""并行采集本地仓库快照的线程数, 仅涉及本地 Git 调用"""
 
 
 def collect_python_info() -> PythonSnapshot:
@@ -112,6 +117,61 @@ def _parse_wheel_metadata(raw_wheel: str | None) -> WheelSnapshot | None:
     )
 
 
+def _read_metadata_name_version(metadata_path: Path) -> tuple[str | None, str | None]:
+    name: str | None = None
+    version: str | None = None
+    with metadata_path.open(encoding="utf-8", errors="replace") as file:
+        for line in file:
+            if not line.strip():
+                # 空行之后是正文, Name 和 Version 只会出现在头部
+                break
+            if line[0] in " \t":
+                continue
+            key, sep, value = line.partition(":")
+            if sep == "":
+                continue
+            normalized_key = key.strip().lower()
+            if normalized_key == "name":
+                name = name or value.strip()
+            elif normalized_key == "version":
+                version = version or value.strip()
+            if name and version:
+                break
+    return name or None, version or None
+
+
+def _distribution_name_version(dist: metadata.Distribution) -> tuple[str, str] | None:
+    """读取发行版名称和版本
+
+    优先只扫描元数据文件头部, 避免为每个发行版完整解析 METADATA; 无法定位元数据文件时回退到标准解析。
+
+    Args:
+        dist (metadata.Distribution):
+            已安装的发行版。
+
+    Returns:
+        tuple[str, str] | None: 发行版名称和版本, 无法读取名称时返回 None。
+    """
+    dist_path = getattr(dist, "_path", None)
+    if isinstance(dist_path, Path):
+        candidates = [dist_path] if dist_path.is_file() else [dist_path / "METADATA", dist_path / "PKG-INFO"]
+        for candidate in candidates:
+            try:
+                name, version = _read_metadata_name_version(candidate)
+            except OSError:
+                continue
+            if name and version:
+                return name, version
+
+    try:
+        name = dist.metadata["Name"]
+    except KeyError:
+        return None
+    if not name:
+        return None
+    return name, dist.version
+
+
 def collect_installed_packages() -> list[PackageSnapshot]:
     """采集当前 Python 环境已安装软件包信息
 
@@ -121,14 +181,11 @@ def collect_installed_packages() -> list[PackageSnapshot]:
     packages: list[PackageSnapshot] = []
     logger.info("开始采集已安装 Python 包")
     for dist in metadata.distributions():
-        try:
-            name = dist.metadata["Name"]
-        except KeyError:
+        name_version = _distribution_name_version(dist)
+        if name_version is None:
             logger.debug("跳过无名称的发行版")
             continue
-        if not name:
-            logger.debug("跳过名称为空的发行版")
-            continue
+        name, version = name_version
 
         direct_url = _parse_direct_url(_read_distribution_text(dist, "direct_url.json"))
         installer_raw = _read_distribution_text(dist, "INSTALLER")
@@ -138,7 +195,7 @@ def collect_installed_packages() -> list[PackageSnapshot]:
         packages.append(
             PackageSnapshot(
                 name=name,
-                version=dist.version,
+                version=version,
                 installer=installer_raw.strip() if installer_raw else None,
                 requested=requested_raw is not None,
                 editable=_editable_from_direct_url(direct_url),
@@ -147,7 +204,7 @@ def collect_installed_packages() -> list[PackageSnapshot]:
                 wheel=wheel,
             )
         )
-        logger.debug("采集到包: %s %s", name, dist.version)
+        logger.debug("采集到包: %s %s", name, version)
 
     result = sorted(packages, key=lambda item: item.name.lower())
     logger.info("已采集 %s 个已安装 Python 包", len(result))
@@ -218,6 +275,23 @@ def collect_repository_snapshot(path: Path) -> RepositorySnapshot:
     return snapshot
 
 
+def collect_repository_snapshots(paths: Sequence[Path]) -> list[RepositorySnapshot]:
+    """并行采集多个 Git 仓库快照
+
+    Args:
+        paths (Sequence[Path]):
+            Git 仓库路径列表。
+
+    Returns:
+        list[RepositorySnapshot]: 与输入顺序一致的 Git 仓库快照列表。
+    """
+    paths = list(paths)
+    if len(paths) <= 1:
+        return [collect_repository_snapshot(path) for path in paths]
+    with ThreadPoolExecutor(max_workers=min(REPOSITORY_SNAPSHOT_WORKERS, len(paths))) as executor:
+        return list(executor.map(collect_repository_snapshot, paths))
+
+
 def collect_git_extensions(
     extension_dir: Path,
     enabled_resolver: ExtensionEnabledResolver | None = None,
@@ -244,11 +318,14 @@ def collect_git_extensions(
 
     logger.info("开始采集 Git 扩展: %s", extension_dir)
     extensions: list[ExtensionSnapshot] = []
+    ext_paths: list[Path] = []
     for ext_path in sorted(extension_dir.iterdir(), key=lambda item: item.name.lower()):
         if ext_path.name in ignored_names or not ext_path.is_dir():
             logger.debug("跳过忽略或非目录的条目: %s", ext_path)
             continue
-        repo = collect_repository_snapshot(ext_path)
+        ext_paths.append(ext_path)
+
+    for ext_path, repo in zip(ext_paths, collect_repository_snapshots(ext_paths)):
         if not repo.is_git_repo:
             logger.warning("跳过非 Git 仓库的扩展: %s", ext_path)
             continue

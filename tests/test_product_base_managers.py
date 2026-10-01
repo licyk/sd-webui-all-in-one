@@ -68,7 +68,7 @@ def test_product_update_checkers_delegate_with_product_capabilities(
     assert kwargs.get("kernel_package_name") == kernel_package
 
 
-def _fake_repository_state(path: Path) -> RepositoryState:
+def _fake_repository_state(path: Path, details: bool = True) -> RepositoryState:
     is_git_repo = (path / ".git").exists()
     return RepositoryState(
         path=path,

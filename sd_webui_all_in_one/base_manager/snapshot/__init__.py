@@ -14,6 +14,7 @@ from sd_webui_all_in_one.base_manager.snapshot.collection import (
     repository_state_to_snapshot,
     repository_dirty,
     collect_repository_snapshot,
+    collect_repository_snapshots,
     collect_git_extensions,
     build_webui_snapshot,
 )
@@ -66,6 +67,7 @@ __all__ = [
     "repository_state_to_snapshot",
     "repository_dirty",
     "collect_repository_snapshot",
+    "collect_repository_snapshots",
     "collect_git_extensions",
     "build_webui_snapshot",
     "load_snapshot",

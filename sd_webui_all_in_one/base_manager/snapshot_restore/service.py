@@ -16,6 +16,7 @@ from sd_webui_all_in_one.base_manager.snapshot_restore.extensions import (
     _ensure_kernel_target_exists,
     _requires_existing_kernel_target,
     _uses_package_kernel,
+    ensure_git_restore_targets_clean,
     restore_extensions,
     restore_git_repository,
 )
@@ -149,6 +150,8 @@ def restore_webui_snapshot(
     if _requires_existing_kernel_target(snapshot):
         _ensure_kernel_target_exists(webui_path)
     logger.debug("快照 WebUI 类型: %s, 名称: %s", snapshot.webui.type, snapshot.webui.name)
+    # 先确认所有 Git 仓库可安全恢复, 再开始修改 Python 包、内核和扩展
+    ensure_git_restore_targets_clean(snapshot=snapshot, webui_path=webui_path, options=options)
 
     git_env = apply_git_base_config_and_github_mirror(
         use_github_mirror=options.use_github_mirror,

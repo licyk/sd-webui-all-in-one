@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryState
+from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryProbe, RepositoryState
 from sd_webui_all_in_one.base_manager import (
     comfy_registry,
     comfyui_base,
@@ -744,9 +744,7 @@ def test_preview_restore_plan_blocks_dirty_kernel_without_force(monkeypatch, tmp
     (tmp_path / "demo").mkdir()
 
     monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
-    monkeypatch.setattr(restore_extensions.git_warpper, "is_git_repo", lambda _path: True)
-    monkeypatch.setattr(restore_extensions, "repository_dirty", lambda _path, _include_untracked: True)
-    monkeypatch.setattr(restore_extensions.git_warpper, "get_current_commit", lambda _path: "123456")
+    monkeypatch.setattr(restore_extensions, "probe_repository", lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="123456", dirty=True))
 
     blocked = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -799,9 +797,7 @@ def test_preview_restore_plan_blocks_kernel_when_dirty_state_unknown(monkeypatch
     (tmp_path / "demo").mkdir()
 
     monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
-    monkeypatch.setattr(restore_extensions.git_warpper, "is_git_repo", lambda _path: True)
-    monkeypatch.setattr(restore_extensions, "repository_dirty", lambda _path, _include_untracked: None)
-    monkeypatch.setattr(restore_extensions.git_warpper, "get_current_commit", lambda _path: "123456")
+    monkeypatch.setattr(restore_extensions, "probe_repository", lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="123456", dirty=None))
 
     blocked = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -824,7 +820,8 @@ def test_restore_git_repository_refuses_reset_when_dirty_state_unknown(monkeypat
     )
     switched = []
     monkeypatch.setattr(restore_extensions, "_ensure_git_target", lambda _repo, _path: True)
-    monkeypatch.setattr(restore_extensions, "repository_dirty", lambda _path, _include_untracked: None)
+    monkeypatch.setattr(restore_extensions, "probe_repository", lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="123456", dirty=None))
+    monkeypatch.setattr(restore_extensions, "repository_has_commit", lambda _path, _commit: False)
     monkeypatch.setattr(restore_extensions, "fetch_repository", lambda _path: None)
     monkeypatch.setattr(restore_extensions.git_warpper, "switch_commit", lambda path, commit: switched.append((path, commit)))
 
@@ -952,9 +949,7 @@ def test_preview_restore_plan_prunes_comfyui_extensions_with_disabled_name(monke
     snapshot_utils.save_snapshot(snapshot, output)
 
     monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
-    monkeypatch.setattr(restore_extensions.git_warpper, "is_git_repo", lambda _path: True)
-    monkeypatch.setattr(restore_extensions, "repository_dirty", lambda _path, _include_untracked: False)
-    monkeypatch.setattr(restore_extensions.git_warpper, "get_current_commit", lambda _path: "123456")
+    monkeypatch.setattr(restore_extensions, "probe_repository", lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="123456", dirty=False))
 
     plan = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -997,9 +992,7 @@ def test_preview_restore_plan_marks_enabled_only_extension_change_as_modified(mo
     snapshot_utils.save_snapshot(snapshot, output)
 
     monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
-    monkeypatch.setattr(restore_extensions.git_warpper, "is_git_repo", lambda _path: True)
-    monkeypatch.setattr(restore_extensions, "repository_dirty", lambda _path, _include_untracked: False)
-    monkeypatch.setattr(restore_extensions.git_warpper, "get_current_commit", lambda _path: "abcdef")
+    monkeypatch.setattr(restore_extensions, "probe_repository", lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="abcdef", dirty=False))
 
     plan = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -1038,9 +1031,7 @@ def test_preview_restore_plan_reports_dirty_extension_blocker(monkeypatch, tmp_p
     snapshot_utils.save_snapshot(snapshot, output)
 
     monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
-    monkeypatch.setattr(restore_extensions.git_warpper, "is_git_repo", lambda _path: True)
-    monkeypatch.setattr(restore_extensions, "repository_dirty", lambda _path, _include_untracked: True)
-    monkeypatch.setattr(restore_extensions.git_warpper, "get_current_commit", lambda _path: "123456")
+    monkeypatch.setattr(restore_extensions, "probe_repository", lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="123456", dirty=True))
 
     blocked = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -1249,8 +1240,8 @@ def test_restore_git_repository_requires_clean_worktree_unless_forced(monkeypatc
         commit="abcdef",
     )
 
-    monkeypatch.setattr(restore_extensions.git_warpper, "is_git_repo", lambda _path: True)
-    monkeypatch.setattr(restore_extensions, "repository_dirty", lambda _path, _include_untracked: True)
+    monkeypatch.setattr(restore_extensions, "probe_repository", lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="123456", dirty=True))
+    monkeypatch.setattr(restore_extensions, "repository_has_commit", lambda _path, _commit: False)
 
     with pytest.raises(RuntimeError, match="存在未提交变更"):
         restore_utils.restore_git_repository(repo, target, restore_utils.SnapshotRestoreOptions())
@@ -1498,3 +1489,180 @@ def test_product_snapshot_cli_parse_smoke(monkeypatch, tmp_path):
                 "custom_github_mirror": "https://mirror.example",
             }
         ]
+
+
+def test_distribution_name_version_fast_path_matches_importlib_metadata():
+    from importlib import metadata
+
+    distributions = list(metadata.distributions())
+    assert distributions
+
+    for dist in distributions:
+        expected_name = dist.metadata["Name"]
+        if not expected_name:
+            continue
+        assert snapshot_collection._distribution_name_version(dist) == (expected_name, dist.version)
+
+
+def test_distribution_name_version_reads_only_metadata_header(tmp_path):
+    from importlib import metadata
+
+    dist_info = tmp_path / "demo-1.0.dist-info"
+    dist_info.mkdir()
+    (dist_info / "METADATA").write_text(
+        "Metadata-Version: 2.1\nName: Demo.Pkg\nVersion: 1.0+local\nSummary: demo\n\nName: not-a-header\nVersion: 9.9\n",
+        encoding="utf-8",
+    )
+
+    assert snapshot_collection._distribution_name_version(metadata.PathDistribution(dist_info)) == ("Demo.Pkg", "1.0+local")
+
+
+def test_collect_repository_snapshots_preserves_input_order(monkeypatch, tmp_path):
+    paths = [tmp_path / f"repo-{index}" for index in range(20)]
+    monkeypatch.setattr(
+        snapshot_collection,
+        "collect_repository_snapshot",
+        lambda path: snapshot_utils.RepositorySnapshot(path=path, name=path.name, is_git_repo=True),
+    )
+
+    assert [item.path for item in snapshot_utils.collect_repository_snapshots(paths)] == paths
+
+
+def _git_repo_snapshot(path: Path, commit: str = "abcdef") -> snapshot_utils.RepositorySnapshot:
+    return snapshot_utils.RepositorySnapshot(path=path, name=path.name, is_git_repo=True, url="https://example.test/repo.git", commit=commit)
+
+
+def _track_git_restore_calls(monkeypatch, has_commit: bool) -> list[tuple]:
+    calls: list[tuple] = []
+    monkeypatch.setattr(restore_extensions, "repository_has_commit", lambda _path, _commit: has_commit)
+    monkeypatch.setattr(restore_extensions, "fetch_repository", lambda path: calls.append(("fetch", path)))
+    monkeypatch.setattr(restore_extensions.git_warpper, "switch_commit", lambda path, commit: calls.append(("switch", path, commit)))
+    return calls
+
+
+def test_restore_git_repository_skips_fetch_and_reset_when_already_at_snapshot_commit(monkeypatch, tmp_path):
+    target = tmp_path / "repo"
+    target.mkdir()
+    full_commit = "abcdef" + "0" * 34
+    monkeypatch.setattr(restore_extensions, "probe_repository", lambda path: RepositoryProbe(path=path, is_git_repo=True, commit=full_commit, dirty=False))
+    calls = _track_git_restore_calls(monkeypatch, has_commit=True)
+
+    assert restore_utils.restore_git_repository(_git_repo_snapshot(target), target, restore_utils.SnapshotRestoreOptions()) is True
+    assert calls == []
+
+
+def test_restore_git_repository_resets_dirty_repo_at_snapshot_commit_when_forced(monkeypatch, tmp_path):
+    target = tmp_path / "repo"
+    target.mkdir()
+    monkeypatch.setattr(restore_extensions, "probe_repository", lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="abcdef", dirty=True))
+    calls = _track_git_restore_calls(monkeypatch, has_commit=True)
+
+    assert restore_utils.restore_git_repository(_git_repo_snapshot(target), target, restore_utils.SnapshotRestoreOptions(force_git_reset=True)) is True
+    # 强制恢复仍需重置工作区以丢弃未提交变更, 但 commit 已在本地无需拉取。
+    assert calls == [("switch", target, "abcdef")]
+
+
+@pytest.mark.parametrize(("has_commit", "expected_fetch"), [(True, False), (False, True)])
+def test_restore_git_repository_fetches_only_when_snapshot_commit_missing_locally(monkeypatch, tmp_path, has_commit, expected_fetch):
+    target = tmp_path / "repo"
+    target.mkdir()
+    monkeypatch.setattr(restore_extensions, "probe_repository", lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="123456", dirty=False))
+    calls = _track_git_restore_calls(monkeypatch, has_commit=has_commit)
+
+    assert restore_utils.restore_git_repository(_git_repo_snapshot(target), target, restore_utils.SnapshotRestoreOptions()) is True
+    assert calls == ([("fetch", target)] if expected_fetch else []) + [("switch", target, "abcdef")]
+
+
+def test_restore_webui_snapshot_blocks_dirty_repositories_before_modifying_environment(monkeypatch, tmp_path):
+    webui_path = tmp_path / "ComfyUI"
+    custom_nodes = webui_path / "custom_nodes"
+    for name in ("CleanNode", "DirtyNode", "UnknownNode"):
+        (custom_nodes / name).mkdir(parents=True)
+    snapshot = _webui_snapshot(webui_path)
+    snapshot.webui.type = "comfyui"
+    snapshot.kernel = _git_repo_snapshot(webui_path)
+    snapshot.extensions = [_extension_snapshot(name, custom_nodes / name, True) for name in ("CleanNode", "DirtyNode", "UnknownNode", "MissingNode")]
+    output = tmp_path / "snapshot.json"
+    snapshot_utils.save_snapshot(snapshot, output)
+
+    dirty_by_name = {"ComfyUI": False, "CleanNode": False, "DirtyNode": True, "UnknownNode": None}
+    monkeypatch.setattr(
+        restore_extensions,
+        "probe_repository",
+        lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="abcdef", dirty=dirty_by_name[path.name]),
+    )
+
+    def fail_restore(*_args, **_kwargs):
+        raise AssertionError("nothing should be modified while a repository is dirty")
+
+    monkeypatch.setattr(restore_service, "restore_python_packages", fail_restore)
+    monkeypatch.setattr(restore_service, "restore_git_repository", fail_restore)
+    monkeypatch.setattr(restore_service, "restore_extensions", fail_restore)
+
+    with pytest.raises(RuntimeError, match="存在未提交变更") as exc_info:
+        restore_utils.restore_webui_snapshot(snapshot_path=output, webui_path=webui_path, expected_webui_type="comfyui")
+
+    message = str(exc_info.value)
+    assert "DirtyNode" in message
+    assert "UnknownNode" in message
+    assert "CleanNode" not in message
+
+    events = []
+    monkeypatch.setattr(restore_service, "apply_git_base_config_and_github_mirror", lambda **kwargs: kwargs["origin_env"])
+    monkeypatch.setattr(restore_service, "restore_python_packages", lambda snapshot, options: events.append("packages"))
+    monkeypatch.setattr(restore_service, "restore_git_repository", lambda repo, target_path, options: events.append("kernel"))
+    monkeypatch.setattr(restore_service, "restore_extensions", lambda snapshot, webui_path, options: events.append("extensions"))
+
+    restore_utils.restore_webui_snapshot(
+        snapshot_path=output,
+        webui_path=webui_path,
+        expected_webui_type="comfyui",
+        options=restore_utils.SnapshotRestoreOptions(force_git_reset=True),
+    )
+
+    assert events == ["packages", "kernel", "extensions"]
+
+
+def test_restore_extensions_continues_after_failure_and_reports_all_errors(monkeypatch, tmp_path):
+    from sd_webui_all_in_one.custom_exceptions import AggregateError
+
+    webui_path = tmp_path / "ComfyUI"
+    custom_nodes = webui_path / "custom_nodes"
+    custom_nodes.mkdir(parents=True)
+    names = [f"Node{index:02d}" for index in range(12)]
+    snapshot = _webui_snapshot(webui_path)
+    snapshot.webui.type = "comfyui"
+    snapshot.extensions = [_extension_snapshot(name, custom_nodes / name, True) for name in names]
+
+    statuses = []
+    removed = []
+    monkeypatch.setattr(
+        restore_extensions,
+        "_extension_tools",
+        lambda _type: restore_utils.ExtensionRestoreTools(
+            directory_name="custom_nodes",
+            set_status=lambda path, name, enabled: statuses.append(name),
+            uninstall=lambda path, name: removed.append(name),
+            strip_disabled_suffix=True,
+        ),
+    )
+    failing = {"Node03", "Node07"}
+
+    def fake_restore(repo, target_path, options):
+        if repo.name in failing:
+            raise RuntimeError(f"failed {repo.name}")
+        return True
+
+    monkeypatch.setattr(restore_extensions, "restore_git_repository", fake_restore)
+
+    with pytest.raises(AggregateError) as exc_info:
+        restore_extensions.restore_extensions(snapshot, webui_path, restore_utils.SnapshotRestoreOptions(prune_extensions=True))
+
+    assert sorted(str(error) for error in exc_info.value.exceptions) == ["failed Node03", "failed Node07"]
+    # 其余扩展照常恢复并按快照顺序设置启用状态, 失败时不执行清理。
+    assert statuses == [name for name in names if name not in failing]
+    assert removed == []
+
+    failing.discard("Node07")
+    with pytest.raises(RuntimeError, match="failed Node03"):
+        restore_extensions.restore_extensions(snapshot, webui_path, restore_utils.SnapshotRestoreOptions())

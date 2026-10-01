@@ -54,6 +54,31 @@ class RepositoryState:
     error: str | None = None
 
 
+@dataclass(slots=True)
+class RepositoryProbe:
+    """
+    Git 仓库工作区探测结果
+
+    Attributes:
+        path (Path):
+            仓库路径
+        is_git_repo (bool):
+            是否为 Git 仓库
+        commit (str | None):
+            当前提交 ID, 无法读取或仓库尚无提交时为 None
+        branch (str | None):
+            当前分支, detached HEAD 或无法读取时为 None
+        dirty (bool | None):
+            是否存在未提交变更, 无法确认时为 None
+    """
+
+    path: Path
+    is_git_repo: bool
+    commit: str | None = None
+    branch: str | None = None
+    dirty: bool | None = None
+
+
 def run_git_output(path: Path, *args: str) -> str:
     """
     执行 Git 命令并返回输出
@@ -449,7 +474,7 @@ def _read_repository_head_from_git_dir(git_dir: Path) -> tuple[str | None, str |
     return commit, commit_date, message
 
 
-def inspect_repository(path: Path) -> RepositoryState:
+def inspect_repository(path: Path, details: bool = True) -> RepositoryState:
     """
     读取仓库状态
 
@@ -458,13 +483,16 @@ def inspect_repository(path: Path) -> RepositoryState:
     Args:
         path (Path):
             仓库路径
+        details (bool):
+            是否读取提交时间和提交信息; 关闭后优先直接解析 Git 目录, 不启动 Git 进程,
+            此时提交时间和提交信息可能为 None
 
     Returns:
         RepositoryState: 仓库状态
     """
     path = Path(path)
     state = RepositoryState(path=path, is_git_repo=False, name=path.name)
-    logger.info("开始检查仓库: '%s'", path)
+    logger.debug("开始检查仓库: '%s'", path)
     if not path.exists():
         state.error = "路径不存在"
         logger.warning("仓库路径不存在: '%s'", path)
@@ -479,12 +507,18 @@ def inspect_repository(path: Path) -> RepositoryState:
     state.is_git_repo = True
     state.branch = _read_repository_branch(git_dir)
     state.url = _read_repository_remote_url(git_dir, state.branch)
-    head_info = _read_repository_head_from_git(path)
+    head_info: tuple[str | None, str | None, str | None] | None = None
+    if not details:
+        commit = _read_head_commit(git_dir)
+        if commit is not None:
+            head_info = (commit, None, None)
+    if head_info is None:
+        head_info = _read_repository_head_from_git(path)
     if head_info is None:
         logger.warning("git show 读取 HEAD 失败, 回退到本地 Git 目录解析: '%s'", path)
         head_info = _read_repository_head_from_git_dir(git_dir)
     state.commit, state.commit_date, state.message = head_info
-    logger.info(
+    logger.debug(
         "仓库检查完成: '%s', 分支 '%s', 提交 '%s', 远程地址 '%s'",
         path,
         state.branch,
@@ -492,3 +526,86 @@ def inspect_repository(path: Path) -> RepositoryState:
         state.url,
     )
     return state
+
+
+def _parse_porcelain_v2_status(output: str) -> tuple[str | None, str | None, bool]:
+    """
+    解析 git status --porcelain=v2 --branch 的输出
+
+    Args:
+        output (str):
+            Git 命令输出
+
+    Returns:
+        tuple[str | None, str | None, bool]: 当前提交 ID、当前分支和是否存在未提交变更
+    """
+    commit: str | None = None
+    branch: str | None = None
+    dirty = False
+    for line in output.splitlines():
+        if line.startswith("# branch.oid "):
+            value = line.removeprefix("# branch.oid ").strip()
+            commit = value if _is_full_commit_hash(value) else None
+        elif line.startswith("# branch.head "):
+            value = line.removeprefix("# branch.head ").strip()
+            branch = None if value == "(detached)" else value
+        elif line and not line.startswith("#"):
+            dirty = True
+            break
+    return commit, branch, dirty
+
+
+def probe_repository(path: Path) -> RepositoryProbe:
+    """
+    使用单次 Git 调用探测仓库的当前提交、分支和工作区变更状态
+
+    Args:
+        path (Path):
+            仓库路径
+
+    Returns:
+        RepositoryProbe: 仓库工作区探测结果
+    """
+    path = Path(path)
+    try:
+        output = run_git_output(path, "status", "--porcelain=v2", "--branch")
+    except (RuntimeError, OSError) as exc:
+        logger.debug("git status 探测仓库失败, 回退到逐项检查: '%s': %s", path, exc)
+        try:
+            is_git_repo = git_warpper.is_git_repo(path)
+        except OSError:
+            is_git_repo = False
+        if not is_git_repo:
+            return RepositoryProbe(path=path, is_git_repo=False)
+        # 仓库存在但无法读取工作区状态, dirty 保持 None 交由调用方按最保守方式处理
+        git_dir = _resolve_git_dir(path)
+        return RepositoryProbe(
+            path=path,
+            is_git_repo=True,
+            commit=_read_head_commit(git_dir) if git_dir is not None else None,
+            branch=_read_repository_branch(git_dir) if git_dir is not None else None,
+        )
+
+    commit, branch, dirty = _parse_porcelain_v2_status(output)
+    logger.debug("仓库探测完成: '%s', 提交 '%s', 分支 '%s', dirty=%s", path, commit, branch, dirty)
+    return RepositoryProbe(path=path, is_git_repo=True, commit=commit, branch=branch, dirty=dirty)
+
+
+def repository_has_commit(path: Path, commit: str) -> bool:
+    """
+    检查仓库本地对象库中是否已存在指定提交
+
+    Args:
+        path (Path):
+            仓库路径
+        commit (str):
+            提交 ID
+
+    Returns:
+        bool: 本地是否已存在该提交
+    """
+    try:
+        run_git_output(path, "cat-file", "-e", f"{commit}^{{commit}}")
+    except (RuntimeError, OSError):
+        return False
+    return True

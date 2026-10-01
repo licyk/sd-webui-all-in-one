@@ -5,10 +5,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import TypedDict
-from concurrent.futures import (
-    ThreadPoolExecutor,
-    as_completed,
-)
 from sd_webui_all_in_one.base_manager.base import (
     apply_github_raw_file_mirror,
     apply_git_base_config_and_github_mirror,
@@ -23,7 +19,7 @@ from sd_webui_all_in_one.base_manager.comfy_registry import (
 )
 from sd_webui_all_in_one.base_manager.snapshot import (
     ExtensionSnapshot,
-    collect_repository_snapshot,
+    collect_repository_snapshots,
 )
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from sd_webui_all_in_one.file_manager import (
@@ -208,11 +204,6 @@ def list_comfyui_custom_nodes(
             ComfyUI 本地扩展列表
     """
 
-    try:
-        from tqdm import tqdm
-    except ImportError:
-        from sd_webui_all_in_one.simple_tqdm import SimpleTqdm as tqdm
-
     info_list: ComfyUiLocalExtensionInfoList = []
     ext_dirs = _iter_comfyui_custom_node_paths(comfyui_path, include_files=include_files)
 
@@ -221,7 +212,8 @@ def list_comfyui_custom_nodes(
         if path.name == "__pycache__":
             return None
 
-        repo_state = inspect_repository(path)
+        # 列表不需要提交时间和提交信息, 直接解析 Git 目录以避免为每个扩展启动 Git 进程
+        repo_state = inspect_repository(path, details=False)
         source_type = "git" if repo_state.is_git_repo else ("file" if path.is_file() else "unknown")
         registry_id = None
         registry_version = None
@@ -251,16 +243,14 @@ def list_comfyui_custom_nodes(
         }
 
     logger.info("获取 ComfyUI 扩展列表中")
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        future_to_ext = {executor.submit(_process_extension, ext): ext for ext in ext_dirs}
-        for future in tqdm(as_completed(future_to_ext), total=len(ext_dirs), desc="获取 ComfyUI 扩展数据"):
-            try:
-                result = future.result(timeout=5)
-                if result:
-                    info_list.append(result)
-            except Exception as e:
-                ext_name = future_to_ext[future][0]
-                logger.error("处理扩展 '%s' 时发生异常: %s", ext_name, e)
+    for ext in ext_dirs:
+        try:
+            result = _process_extension(ext)
+        except Exception as e:
+            logger.error("处理扩展 '%s' 时发生异常: %s", ext[0], e)
+            continue
+        if result:
+            info_list.append(result)
 
     logger.info("获取 ComfyUI 扩展列表中完成")
     return info_list
@@ -380,12 +370,15 @@ def collect_comfyui_extensions(comfyui_path: Path) -> list[ExtensionSnapshot]:
             自定义节点快照列表，包含 Git、Comfy Registry 和文件节点。
     """
     extensions: list[ExtensionSnapshot] = []
-    for info in list_comfyui_custom_nodes(comfyui_path, include_files=True):
+    info_list = list_comfyui_custom_nodes(comfyui_path, include_files=True)
+    git_paths = [info["path"] for info in info_list if info.get("source_type") == "git"]
+    repositories = dict(zip(git_paths, collect_repository_snapshots(git_paths)))
+    for info in info_list:
         name = info["name"]
         path = info["path"]
         source_type = info.get("source_type") or "unknown"
         if source_type == "git":
-            repo = collect_repository_snapshot(path)
+            repo = repositories[path]
             extensions.append(
                 ExtensionSnapshot(
                     name=name,
