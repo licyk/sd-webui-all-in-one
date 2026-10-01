@@ -7,7 +7,7 @@ from importlib import metadata
 from types import ModuleType
 from typing import Any
 
-from sd_webui_all_in_one.package_analyzer import PyWhlVersionComparison
+from sd_webui_all_in_one.package_analyzer import Version
 from sd_webui_all_in_one_hotpatcher import install_import_hook, monkey_zoo
 from sd_webui_all_in_one_hotpatcher.logger import get_hotpatcher_logger
 
@@ -151,4 +151,4 @@ def _register_cutlass_module_patch() -> None:
 
 
 def _version_at_least(version: str, minimum: str) -> bool:
-    return PyWhlVersionComparison(version).compare_versions(version, minimum, ignore_local=True) >= 0
+    return Version.parse(version).without_local() >= Version.parse(minimum).without_local()

@@ -15,7 +15,7 @@ from sd_webui_all_in_one.base_manager.base import (
     MIRROR_GIT_UPDATE_WORKERS,
     get_pytorch_update_status,
 )
-from sd_webui_all_in_one.package_analyzer import PyWhlVersionComparison, get_package_version_from_library
+from sd_webui_all_in_one.package_analyzer import Version, get_package_version_from_library
 
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from sd_webui_all_in_one.logger import get_logger
@@ -86,7 +86,7 @@ def check_package_update(
         latest_version = candidates[0].version if candidates else None
         newest_prerelease = next((item.version for item in versions if item.is_prerelease), None)
         # 预发布通道只在走在正式通道前面时才值得单独报告。
-        if newest_prerelease is not None and (latest_version is None or PyWhlVersionComparison(latest_version) < PyWhlVersionComparison(newest_prerelease)):
+        if newest_prerelease is not None and (latest_version is None or Version.parse(latest_version) < Version.parse(newest_prerelease)):
             latest_prerelease = newest_prerelease
         if latest_version is not None:
             error = None
@@ -94,7 +94,7 @@ def check_package_update(
             error = "未获取到 PyPI 正式发布版本"
         else:
             error = "未获取到 PyPI 版本列表"
-        has_update = latest_version is not None and (current_version is None or PyWhlVersionComparison(current_version) < PyWhlVersionComparison(latest_version))
+        has_update = latest_version is not None and (current_version is None or Version.parse(current_version) < Version.parse(latest_version))
     except Exception as exc:
         latest_version = None
         has_update = False

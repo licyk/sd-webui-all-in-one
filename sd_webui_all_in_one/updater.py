@@ -7,7 +7,7 @@ from pathlib import Path
 
 from sd_webui_all_in_one.mirror_manager import get_auto_pypi_mirror_config
 from sd_webui_all_in_one.cmd import run_cmd
-from sd_webui_all_in_one.package_analyzer import PyWhlVersionComparison
+from sd_webui_all_in_one.package_analyzer import Version
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
@@ -41,7 +41,7 @@ def check_and_update_uv(
     """
     try:
         ver = importlib.metadata.version("uv")
-        if PyWhlVersionComparison(ver) >= PyWhlVersionComparison(UV_MINIMUM_VER):
+        if Version.parse(ver) >= Version.parse(UV_MINIMUM_VER):
             return
         logger.info("更新 uv 中")
     except importlib.metadata.PackageNotFoundError:
@@ -75,7 +75,7 @@ def check_and_update_pip(
     """
     try:
         ver = importlib.metadata.version("pip")
-        if PyWhlVersionComparison(ver) >= PyWhlVersionComparison(PIP_MINIMUM_VER):
+        if Version.parse(ver) >= Version.parse(PIP_MINIMUM_VER):
             return
         logger.info("更新 Pip 中")
     except Exception:
@@ -131,7 +131,7 @@ def check_aria2_version() -> bool:
     if ver is None:
         return True
     try:
-        return PyWhlVersionComparison(ver) < PyWhlVersionComparison(ARIA2_MINIMUM_VER)
+        return Version.parse(ver) < Version.parse(ARIA2_MINIMUM_VER)
     except ValueError as e:
         logger.warning("无法解析 Aria2 版本 '%s', 视为需要更新: %s", ver, e)
         return True

@@ -14,12 +14,12 @@ INVOKEAI_6_14_REQUIRES = [
 
 def test_invokeai_torch_version_specs_only_keep_applicable_markers(monkeypatch):
     monkeypatch.setattr(lifecycle.importlib.metadata, "requires", lambda name: INVOKEAI_6_14_REQUIRES if name == "invokeai" else [])
-    monkeypatch.setattr(lifecycle, "get_parse_bindings", lambda: {"sys_platform": "linux", "platform_machine": "x86_64"})
+    monkeypatch.setattr(lifecycle, "default_environment", lambda: {"sys_platform": "linux", "platform_machine": "x86_64"})
 
     assert lifecycle.get_invokeai_torch_version_specs() == [("<", "3.0"), (">=", "2.7.0")]
     assert lifecycle.get_invokeai_require_torch_version() == "2.7.0"
 
-    monkeypatch.setattr(lifecycle, "get_parse_bindings", lambda: {"sys_platform": "darwin", "platform_machine": "arm64"})
+    monkeypatch.setattr(lifecycle, "default_environment", lambda: {"sys_platform": "darwin", "platform_machine": "arm64"})
     assert lifecycle.get_invokeai_torch_version_specs() == [("<", "2.8.0"), (">=", "2.7.0")]
 
 

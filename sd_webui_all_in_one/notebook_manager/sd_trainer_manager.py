@@ -22,7 +22,7 @@ from sd_webui_all_in_one.env_manager import (
     configure_env_var,
     configure_pip,
 )
-from sd_webui_all_in_one.package_analyzer import PyWhlVersionComparison
+from sd_webui_all_in_one.package_analyzer import Version
 from sd_webui_all_in_one.pkg_manager import (
     install_manager_depend,
     pip_install,
@@ -146,7 +146,7 @@ class SDTrainerManager(BaseManager):
         logger.info("检查 protobuf 版本问题中")
         try:
             ver = importlib.metadata.version("protobuf")
-            if PyWhlVersionComparison(ver) != PyWhlVersionComparison("3.20.0"):
+            if Version.parse(ver) != Version.parse("3.20.0"):
                 logger.info("重新安装 protobuf 中")
                 pip_install("protobuf==3.20.0", use_uv=use_uv)
                 logger.info("重新安装 protobuf 成功")

@@ -13,7 +13,7 @@ from typing import (
 from sd_webui_all_in_one.base_manager.base import (
     get_repo_name_from_url,
 )
-from sd_webui_all_in_one.package_analyzer import CommonVersionComparison, PyWhlVersionComparison, get_package_version_from_library, is_prerelease_version, parse_version_component
+from sd_webui_all_in_one.package_analyzer import CommonVersionComparison, Version, get_package_version_from_library
 
 from sd_webui_all_in_one.config import LOGGER_COLOR, LOGGER_LEVEL, LOGGER_NAME
 from sd_webui_all_in_one.logger import get_logger
@@ -228,9 +228,26 @@ def fetch_comfyui_custom_node_index(index_url: str, timeout: int | None = 20) ->
     return items
 
 
+def _is_prerelease_version(
+    version: str,
+) -> bool:
+    """判断版本号是否为预发布版本 (含 pre-release 段或 dev 段)
+
+    Args:
+        version (str):
+            版本号字符串
+
+    Returns:
+        bool:
+            版本号为预发布版本时返回 ``True``. 不符合 PEP 440 的版本号无从判断, 按正式版本处理
+    """
+    parsed = Version.try_parse(version)
+    return parsed is not None and parsed.is_prerelease
+
+
 def _pypi_version_sort_key(
     version: str,
-) -> tuple[int, PyWhlVersionComparison | CommonVersionComparison]:
+) -> tuple[int, Version | CommonVersionComparison]:
     """构造 PyPI 版本号排序键
 
     PyPI 发布的版本号遵循 PEP 440, 用 PEP 440 比较器排序才能把 ``1.0.post1`` 排在
@@ -243,14 +260,15 @@ def _pypi_version_sort_key(
             版本号字符串
 
     Returns:
-        tuple[int, PyWhlVersionComparison | CommonVersionComparison]:
+        tuple[int, Version | CommonVersionComparison]:
             排序键. 第 1 项区分可解析与不可解析版本号, 保证两类版本号之间不会
             跨比较器比较.
     """
-    if parse_version_component(version) is None:
+    parsed = Version.try_parse(version)
+    if parsed is None:
         logger.debug("版本号 '%s' 不符合 PEP 440, 使用通用比较器排序", version)
         return (0, CommonVersionComparison(version))
-    return (1, PyWhlVersionComparison(version))
+    return (1, parsed)
 
 
 def fetch_pypi_versions(
@@ -320,7 +338,7 @@ def fetch_pypi_versions(
                 upload_time=upload_time,
                 summary=summary,
                 is_current=version == current_version,
-                is_prerelease=is_prerelease_version(str(version)),
+                is_prerelease=_is_prerelease_version(str(version)),
             )
         )
 

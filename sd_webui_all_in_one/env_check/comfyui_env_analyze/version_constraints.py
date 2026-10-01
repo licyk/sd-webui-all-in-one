@@ -3,8 +3,8 @@
 from typing import NamedTuple
 
 from sd_webui_all_in_one.package_analyzer import (
-    PyWhlVersionComparison,
-    PyWhlVersionComponent,
+    Specifier,
+    Version,
 )
 from sd_webui_all_in_one.env_check.shared import logger
 
@@ -12,7 +12,7 @@ from sd_webui_all_in_one.env_check.shared import logger
 class _VersionBound(NamedTuple):
     """版本区间的端点"""
 
-    version: PyWhlVersionComponent
+    version: Version
     """端点版本 (不含 local version)"""
 
     inclusive: bool
@@ -42,28 +42,26 @@ class _ConstraintEffect(NamedTuple):
     """精确匹配要求的 local version"""
 
 
-_VERSION_COMPARATOR = PyWhlVersionComparison("0")
-"""用于解析与比较版本号的比较器"""
-
-
 _UNBOUNDED_RANGE = _VersionRange(None, None)
 """无界版本区间"""
 
 
 def _compare_version_components(
-    v1: PyWhlVersionComponent,
-    v2: PyWhlVersionComponent,
+    v1: Version,
+    v2: Version,
 ) -> int:
     """按 PEP 440 规则比较两个版本 (忽略 local version)"""
-    return _VERSION_COMPARATOR.compare_version_objects(v1, v2, ignore_local=True)
+    left = v1.without_local()
+    right = v2.without_local()
+    return (left > right) - (left < right)
 
 
 def _release_floor(
     epoch: int,
     release: tuple[int, ...],
-) -> PyWhlVersionComponent:
+) -> Version:
     """返回以指定 release 段开头的最小版本 ``X.Y.dev0``"""
-    return PyWhlVersionComponent(epoch=epoch, release=release, pre_l=None, pre_n=None, post_n=None, dev_n=0, local=None, is_wildcard=False)
+    return Version(epoch=epoch, release=release, dev=0)
 
 
 def _prefix_range(
@@ -152,27 +150,27 @@ def _version_constraint_effect(
         ValueError:
             版本号或操作符无法解析时
     """
-    parsed = _VERSION_COMPARATOR.parse_version(version)
-    public = parsed._replace(local=None, is_wildcard=False)
+    spec = Specifier(op, version)
+    parsed = spec.parsed_version
+    if parsed is None:
+        raise ValueError(f"无法解析版本号: {version}")
+    public = parsed.without_local()
 
     if op in ("==", "===", "!="):
-        if parsed.is_wildcard:
+        if spec.is_wildcard:
             matched = _prefix_range(parsed.epoch, parsed.release)
         else:
             point = _VersionBound(public, True)
             matched = _VersionRange(point, point)
         if op == "!=":
             # 带 local version 的排除只排除某个特定构建, 不影响版本区间
-            if parsed.local is not None and not parsed.is_wildcard:
+            if parsed.local is not None:
                 return None
             return _ConstraintEffect(None, matched, None)
-        local = parsed.local.lower() if parsed.local is not None and not parsed.is_wildcard else None
-        return _ConstraintEffect(matched, None, local)
+        return _ConstraintEffect(matched, None, parsed.local)
 
     if op == "~=":
         # ~= X.Y.Z 等价于 >= X.Y.Z, == X.Y.*
-        if len(parsed.release) < 2:
-            raise ValueError(f"~= 操作符不能用于单段版本号: {version}")
         upper = _prefix_range(parsed.epoch, parsed.release[:-1]).upper
         return _ConstraintEffect(_VersionRange(_VersionBound(public, True), upper), None, None)
 
@@ -185,13 +183,10 @@ def _version_constraint_effect(
     if op == "<=":
         return _ConstraintEffect(_VersionRange(None, _VersionBound(public, True)), None, None)
 
-    if op == "<":
-        # PEP 440: < V 不允许 V 的预发布版本 (除非 V 本身是预发布版本), 因此上界取 V.dev0
-        if parsed.pre_l is None and parsed.dev_n is None and parsed.post_n is None:
-            return _ConstraintEffect(_VersionRange(None, _VersionBound(_release_floor(parsed.epoch, parsed.release), False)), None, None)
-        return _ConstraintEffect(_VersionRange(None, _VersionBound(public, False)), None, None)
-
-    raise ValueError(f"未知的版本约束操作符: {op}")
+    # op == "<". < V 不允许 V 的预发布版本 (除非 V 本身是预发布版本), 因此上界取 V.dev0
+    if not parsed.is_prerelease and not parsed.is_postrelease:
+        return _ConstraintEffect(_VersionRange(None, _VersionBound(_release_floor(parsed.epoch, parsed.release), False)), None, None)
+    return _ConstraintEffect(_VersionRange(None, _VersionBound(public, False)), None, None)
 
 
 def _are_version_constraints_satisfiable(

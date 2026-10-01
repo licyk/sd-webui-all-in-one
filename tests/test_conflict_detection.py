@@ -11,7 +11,7 @@ from sd_webui_all_in_one.env_check.comfyui_env_analyze import (
     detect_conflict_package_from_list,
 )
 from sd_webui_all_in_one.env_check.comfyui_env_analyze.version_constraints import _is_constraint_pair_conflicting
-from sd_webui_all_in_one.package_analyzer import normalize_package_name
+from sd_webui_all_in_one.package_analyzer import normalize_name
 
 
 # ============================================================================
@@ -385,7 +385,7 @@ class TestDetectConflictPackageFromList:
 
 
 # ============================================================================
-# normalize_package_name: 包名规范化
+# normalize_name: 包名规范化
 # ============================================================================
 
 
@@ -393,22 +393,22 @@ class TestNormalizePackageName:
     """测试包名规范化"""
 
     def test_hyphen(self):
-        assert normalize_package_name("my-package") == "my-package"
+        assert normalize_name("my-package") == "my-package"
 
     def test_underscore(self):
-        assert normalize_package_name("my_package") == "my-package"
+        assert normalize_name("my_package") == "my-package"
 
     def test_dot(self):
-        assert normalize_package_name("my.package") == "my-package"
+        assert normalize_name("my.package") == "my-package"
 
     def test_mixed(self):
-        assert normalize_package_name("My_Package.Name") == "my-package-name"
+        assert normalize_name("My_Package.Name") == "my-package-name"
 
     def test_consecutive_separators(self):
-        assert normalize_package_name("my__package") == "my-package"
+        assert normalize_name("my__package") == "my-package"
 
     def test_uppercase(self):
-        assert normalize_package_name("MyPackage") == "mypackage"
+        assert normalize_name("MyPackage") == "mypackage"
 
 
 # ============================================================================

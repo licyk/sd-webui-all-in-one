@@ -17,19 +17,15 @@ from sd_webui_all_in_one.pytorch_manager import (
     display_pytorch_config,
     export_pytorch_list,
     find_latest_pytorch_info,
+    find_torch_requirement,
     normalize_pytorch_version_suffix,
     PyTorchDeviceType,
     PyTorchDeviceTypeCategory,
 )
 from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
 from sd_webui_all_in_one.package_analyzer import (
-    PyWhlVersionComparison,
-    get_package_name,
-    get_parse_bindings,
-    is_package_has_version,
-    is_prerelease_version,
-    get_package_version,
-    parse_requirement,
+    Requirement,
+    Version,
 )
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
@@ -83,11 +79,8 @@ def get_pytorch_update_status() -> PyTorchUpdateStatus:
             has_update=current_version is None,
             error=str(exc),
         )
-    latest_torch_spec = next(
-        (package for package in (latest_info.get("torch_ver") or "").split() if get_package_name(package) == "torch" and is_package_has_version(package)),
-        None,
-    )
-    if latest_torch_spec is None:
+    latest_torch = find_torch_requirement(latest_info.get("torch_ver") or "")
+    if latest_torch is None or not latest_torch.specifier:
         return PyTorchUpdateStatus(
             installed=current_version is not None,
             current_version=current_version,
@@ -98,14 +91,14 @@ def get_pytorch_update_status() -> PyTorchUpdateStatus:
             error=f"PyTorch 版本表中的 '{resolved_dtype}' 类型缺少可比较的 torch 版本",
         )
 
-    latest_version = get_package_version(latest_torch_spec)
+    latest_version = latest_torch.specifier.specifiers[0].version
     return PyTorchUpdateStatus(
         installed=current_version is not None,
         current_version=current_version,
         device_type=resolved_dtype,
         latest_version=latest_version,
         latest_name=latest_info.get("name"),
-        has_update=current_version is None or PyWhlVersionComparison(current_version) < PyWhlVersionComparison(latest_version),
+        has_update=current_version is None or Version.parse(current_version) < Version.parse(latest_version),
     )
 
 
@@ -143,16 +136,14 @@ def _has_prerelease_extras_requirement(
         bool:
             存在带有 extras 且固定为预发布版本的软件包时返回 True
     """
-    bindings = get_parse_bindings()
     for package in (packages or "").split():
-        try:
-            _, extras, version_specs, _ = parse_requirement(package, bindings)
-        except ValueError:
+        requirement = Requirement.try_parse(package)
+        if requirement is None or not requirement.extras:
             continue
-        if not extras or isinstance(version_specs, str):
-            continue
-        if any(op in ("==", "===") and is_prerelease_version(ver.split("+")[0]) for op, ver in version_specs):
-            return True
+        for spec in requirement.specifier:
+            pinned_version = spec.parsed_version
+            if spec.operator in ("==", "===") and pinned_version is not None and pinned_version.is_prerelease:
+                return True
     return False
 
 
@@ -188,7 +179,7 @@ def prepare_pytorch_install_info(
         )
         mirrors[kind] = url
 
-    torch_part: list[str] = []
+    torch_requirement: Requirement | None = None
     mirrors: dict[str, str | list[str] | None] = {
         "index_url": [],
         "extra_index_url": [],
@@ -210,16 +201,16 @@ def prepare_pytorch_install_info(
         xformers_ver = pytorch_info["xformers_ver"]
     else:
         device_type = None
-        torch_part = [x for x in custom_pytorch_package.split() if get_package_name(x) == "torch"]
+        torch_requirement = find_torch_requirement(custom_pytorch_package)
         torch_ver = custom_pytorch_package
         xformers_ver = custom_xformers_package
 
     # 配置 PyTorch 镜像源
     if pytorch_mirror_type is not None:
         _update_mirror(pytorch_mirror_type)
-    elif torch_part and is_package_has_version(torch_part[0]):
+    elif torch_requirement is not None and torch_requirement.specifier:
         # 声明了 PyTorch 版本
-        torch_version, separator, torch_suffix = get_package_version(torch_part[0]).partition("+")
+        torch_version, separator, torch_suffix = torch_requirement.specifier.specifiers[0].version.partition("+")
         suffix_dtype = normalize_pytorch_version_suffix(torch_suffix) if separator else None
         if suffix_dtype is not None:
             # 存在可识别的类型声明

@@ -6,14 +6,9 @@ import sys
 from sd_webui_all_in_one.ansi_color import ANSIColor
 from sd_webui_all_in_one.config import SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY
 from sd_webui_all_in_one.package_analyzer import (
-    PyWhlVersionComparison,
-    check_version_constraint,
-    get_package_name,
-    get_parse_bindings,
-    normalize_package_name,
-    parse_requirement,
-    get_package_version,
-    is_package_has_version,
+    Requirement,
+    Specifier,
+    Version,
 )
 from sd_webui_all_in_one.pytorch_manager.gpu_detector import get_available_pytorch_device_type
 from sd_webui_all_in_one.pytorch_manager.types import (
@@ -29,6 +24,27 @@ from sd_webui_all_in_one.pytorch_manager.version_data import (
 )
 
 
+def find_torch_requirement(
+    text: str,
+) -> Requirement | None:
+    """从 PyTorch 包版本声明中查找 torch 的依赖声明
+
+    Args:
+        text (str):
+            以空格分隔的 PyTorch 包版本声明, 例如 `torch==2.8.0+cu128 torchvision==0.23.0+cu128`
+
+    Returns:
+        Requirement | None:
+            torch 的依赖声明, 未找到时返回 None
+    """
+    for package in text.split():
+        requirement = Requirement.try_parse(package)
+        if requirement is not None and requirement.normalized_name == "torch":
+            return requirement
+
+    return None
+
+
 def _extract_torch_version(
     text: str,
 ) -> str:
@@ -42,14 +58,11 @@ def _extract_torch_version(
         str:
             torch 版本号, 未声明版本时返回 `0.0`
     """
-    for package in text.split():
-        if get_package_name(package) != "torch":
-            continue
-        if is_package_has_version(package):
-            return get_package_version(package)
+    requirement = find_torch_requirement(text)
+    if requirement is None or not requirement.specifier:
         return "0.0"
 
-    return "0.0"
+    return requirement.specifier.specifiers[0].version
 
 
 def _get_pytorch_device_category(
@@ -137,7 +150,7 @@ def find_latest_pytorch_info(
     for info in supported_pytorch_info_list[1:]:
         current_ver = _extract_torch_version(info.get("torch_ver") or "")
         history_ver = _extract_torch_version(latest_info.get("torch_ver") or "")
-        if PyWhlVersionComparison(current_ver) > PyWhlVersionComparison(history_ver):
+        if Version.parse(current_ver) > Version.parse(history_ver):
             latest_info = info
 
     return latest_info
@@ -244,8 +257,7 @@ def find_pytorch_info_for_torch_requirement(
     """
 
     def _satisfies(version: str) -> bool:
-        comparison = PyWhlVersionComparison(version)
-        return all(check_version_constraint(version, op, spec_version, comparison) for op, spec_version in torch_specs)
+        return all(Specifier(op, spec_version).matches(version) for op, spec_version in torch_specs)
 
     def _is_better(candidate: PyTorchVersionInfo, current: PyTorchVersionInfo) -> bool:
         candidate_preferred = candidate["dtype"] == preferred_dtype
@@ -254,8 +266,8 @@ def find_pytorch_info_for_torch_requirement(
             return candidate_preferred
 
         # 忽略本地版本号 (如 +cu130), 使同一 torch 版本的不同设备类型组合进入后续比较
-        candidate_ver = PyWhlVersionComparison(_extract_torch_version(candidate.get("torch_ver") or "").split("+")[0])
-        current_ver = PyWhlVersionComparison(_extract_torch_version(current.get("torch_ver") or "").split("+")[0])
+        candidate_ver = Version.parse(_extract_torch_version(candidate.get("torch_ver") or "")).without_local()
+        current_ver = Version.parse(_extract_torch_version(current.get("torch_ver") or "")).without_local()
         if candidate_ver != current_ver:
             return candidate_ver > current_ver
 
@@ -298,20 +310,16 @@ def get_pytorch_package_extras(
             规范化软件包名到 extras 列表的映射, 例如 `{"torch": ["device-all"]}`
     """
     dtype = resolve_pytorch_device_type(dtype)
-    bindings = get_parse_bindings()
     package_extras: dict[str, list[str]] = {}
     for info in PYTORCH_DOWNLOAD_DICT:
         if info["dtype"] != dtype:
             continue
         for package in (info.get("torch_ver") or "").split():
-            try:
-                name, extras, _, _ = parse_requirement(package, bindings)
-            except ValueError:
+            requirement = Requirement.try_parse(package)
+            if requirement is None or not requirement.extras:
                 continue
-            if not extras:
-                continue
-            merged_extras = package_extras.setdefault(normalize_package_name(name), [])
-            merged_extras.extend(extra for extra in extras if extra not in merged_extras)
+            merged_extras = package_extras.setdefault(requirement.normalized_name, [])
+            merged_extras.extend(extra for extra in requirement.extras if extra not in merged_extras)
 
     return package_extras
 
@@ -336,20 +344,18 @@ def add_pytorch_package_extras(
     if not package_extras:
         return packages
 
-    bindings = get_parse_bindings()
     result: list[str] = []
     for package in packages.split():
-        try:
-            name, extras, version_specs, _ = parse_requirement(package, bindings)
-        except ValueError:
+        requirement = Requirement.try_parse(package)
+        if requirement is None or requirement.url is not None:
             result.append(package)
             continue
-        required_extras = package_extras.get(normalize_package_name(name))
-        if not required_extras or isinstance(version_specs, str):
+        required_extras = package_extras.get(requirement.normalized_name)
+        if not required_extras:
             result.append(package)
             continue
-        merged_extras = list(extras) + [extra for extra in required_extras if extra not in extras]
-        result.append(f"{name}[{','.join(merged_extras)}]{','.join(f'{op}{ver}' for op, ver in version_specs)}")
+        merged_extras = list(requirement.extras) + [extra for extra in required_extras if extra not in requirement.extras]
+        result.append(f"{requirement.name}[{','.join(merged_extras)}]{requirement.specifier}")
 
     return " ".join(result)
 

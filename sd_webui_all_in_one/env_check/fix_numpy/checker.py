@@ -4,7 +4,7 @@ import importlib.metadata
 import sys
 
 from sd_webui_all_in_one.pkg_manager import pip_install
-from sd_webui_all_in_one.package_analyzer import PyWhlVersionComparison
+from sd_webui_all_in_one.package_analyzer import Version
 from sd_webui_all_in_one.env_check.shared import logger
 
 
@@ -31,7 +31,7 @@ def check_numpy(
 
     try:
         numpy_ver = importlib.metadata.version("numpy")
-        if PyWhlVersionComparison(numpy_ver) >= PyWhlVersionComparison("2"):
+        if Version.parse(numpy_ver) >= Version.parse("2"):
             logger.info("降级 Numpy 中")
             pip_install("numpy<2", use_uv=use_uv, custom_env=custom_env)
             logger.info("Numpy 降级完成")

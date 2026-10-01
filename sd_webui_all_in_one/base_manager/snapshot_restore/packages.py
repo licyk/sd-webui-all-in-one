@@ -11,7 +11,7 @@ from sd_webui_all_in_one.base_manager.snapshot import PackageSnapshot, WebUiSnap
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_config
 from sd_webui_all_in_one.mirror_manager import get_pypi_mirror_config
-from sd_webui_all_in_one.package_analyzer import normalize_package_name
+from sd_webui_all_in_one.package_analyzer import normalize_name
 from sd_webui_all_in_one.pkg_manager import pip_install
 from sd_webui_all_in_one.pytorch_manager import get_pytorch_mirror, infer_pytorch_device_type
 
@@ -22,7 +22,7 @@ PROTECTED_PACKAGE_NAMES = {"sd-webui-all-in-one", "pip", "wheel", "uv"}
 
 
 def _normalized_package_name(name: str) -> str:
-    return normalize_package_name(name)
+    return normalize_name(name)
 
 
 def _is_protected_package(name: str) -> bool:

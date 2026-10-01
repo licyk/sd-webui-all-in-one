@@ -34,7 +34,7 @@ from sd_webui_all_in_one.pkg_manager import (
     pip_install,
 )
 from sd_webui_all_in_one.package_analyzer import (
-    get_package_name,
+    Requirement,
     get_package_version_from_library,
 )
 from sd_webui_all_in_one.pytorch_manager import (
@@ -150,8 +150,11 @@ def get_pytorch_for_invokeai() -> str:
     torchaudio_added = False
 
     for require in invokeai_requires:
+        requirement = Requirement.try_parse(require)
+        if requirement is None:
+            continue
+        package_name = requirement.normalized_name
         require = require.split(";")[0].strip()
-        package_name = get_package_name(require)
 
         if package_name == "torch" and not torch_added:
             pytorch_ver.append(require)
@@ -181,8 +184,11 @@ def get_xformers_for_invokeai() -> str:
         invokeai_requires = []
 
     for require in invokeai_requires:
+        requirement = Requirement.try_parse(require)
+        if requirement is None:
+            continue
+        package_name = requirement.normalized_name
         require = require.split(";")[0].strip()
-        package_name = get_package_name(require)
         if package_name == "xformers":
             pytorch_ver.append(require)
             break

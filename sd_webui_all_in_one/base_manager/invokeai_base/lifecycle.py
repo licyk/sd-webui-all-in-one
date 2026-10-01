@@ -26,10 +26,8 @@ from sd_webui_all_in_one.mirror_manager import (
 )
 from sd_webui_all_in_one.model_downloader import ModelDownloadUrlType
 from sd_webui_all_in_one.package_analyzer import (
-    evaluate_marker,
-    get_parse_bindings,
-    normalize_package_name,
-    parse_requirement,
+    Requirement,
+    default_environment,
     version_decrement,
     version_increment,
 )
@@ -74,16 +72,15 @@ def get_invokeai_torch_version_specs() -> list[tuple[str, str]] | None:
     except importlib.metadata.PackageNotFoundError:
         return None
 
-    bindings = get_parse_bindings()
+    environment = default_environment()
     specs: list[tuple[str, str]] = []
     for require in invokeai_requires:
-        try:
-            name, _, version_specs, marker = parse_requirement(require, bindings)
-        except ValueError:
+        requirement = Requirement.try_parse(require)
+        if requirement is None or requirement.normalized_name != "torch" or requirement.url is not None:
             continue
-        if normalize_package_name(name) != "torch" or isinstance(version_specs, str) or not evaluate_marker(marker):
+        if not requirement.applies_to(environment):
             continue
-        specs.extend(version_specs)
+        specs.extend((spec.operator, spec.version) for spec in requirement.specifier)
 
     return specs
 

@@ -1,17 +1,23 @@
 """ComfyUI 环境组件信息收集"""
 
+import posixpath
 from pathlib import Path
+from urllib.parse import (
+    unquote,
+    urlsplit,
+)
 
 from sd_webui_all_in_one.utils import (
     remove_duplicate_object_from_list,
 )
 from sd_webui_all_in_one.package_analyzer import (
-    get_package_name,
-    is_package_has_version,
+    EntryKind,
+    Requirement,
+    RequirementEntry,
+    UndefinedEnvironmentName,
     is_package_installed,
-    normalize_package_name,
-    parse_requirement_list,
-    read_packages_from_requirements_file,
+    normalize_name,
+    parse_requirements_file,
 )
 from sd_webui_all_in_one.env_check.shared import logger
 from sd_webui_all_in_one.env_check.comfyui_env_analyze.models import (
@@ -20,6 +26,125 @@ from sd_webui_all_in_one.env_check.comfyui_env_analyze.models import (
     ComfyUIConflictItem,
     ComfyUIConflictGroup,
 )
+
+
+def _guess_name_from_vcs_url(
+    url: str,
+) -> str | None:
+    """从 VCS URL 的仓库名猜测软件包名
+
+    仓库名与软件包名并不一定一致, 仅在 URL 未通过 ``#egg=`` 声明软件包名时作为兜底.
+
+    Args:
+        url (str):
+            VCS URL, 如 ``git+https://github.com/user/repo.git@main``
+
+    Returns:
+        (str | None):
+            猜测的软件包名, 无法提取时为 ``None``
+    """
+    path = urlsplit(url).path
+    if "@" in path:
+        path = path.rsplit("@", 1)[0]
+    name = posixpath.basename(unquote(path).rstrip("/"))
+    if name.endswith(".git"):
+        name = name[:-4]
+    return name or None
+
+
+def _requirement_entry_to_declaration(
+    entry: RequirementEntry,
+) -> str | None:
+    """将依赖文件条目转换为不含 extras 与环境标记的软件包声明
+
+    Args:
+        entry (RequirementEntry):
+            依赖文件条目
+
+    Returns:
+        (str | None):
+            软件包声明, 如 ``numpy<2``; 无法确定软件包名时为 ``None``
+    """
+    if entry.kind == EntryKind.NAMED and entry.requirement is not None:
+        requirement = entry.requirement
+        name = requirement.name.lower()
+        return name if requirement.url is not None else f"{name}{requirement.specifier}"
+
+    name = entry.name
+    if name is None and entry.vcs is not None and entry.url is not None:
+        name = _guess_name_from_vcs_url(entry.url)
+    if name is None:
+        return None
+
+    name = name.lower()
+    if entry.version is not None and not entry.editable:
+        return f"{name}=={entry.version}"
+    return name
+
+
+def read_requirement_declarations(
+    requirement_path: Path,
+) -> list[str]:
+    """读取依赖文件, 返回适用于当前环境的软件包声明列表
+
+    按 requirements 文件格式解析 (含 ``-r`` 引用的嵌套文件, ``-e`` 可编辑条目, URL 与本地路径条目).
+    声明了 ``# skip_verify`` 或环境标记不适用于当前环境的条目会被排除;
+    无法解析的行与无法确定软件包名的条目只产生警告.
+
+    Args:
+        requirement_path (Path):
+            依赖文件路径
+
+    Returns:
+        list[str]:
+            软件包声明列表, 每个条目对应一项, 如 ``["torch==2.3.0", "protobuf>=4.25.3,<5"]``
+
+    Raises:
+        OSError:
+            依赖文件不存在或无法读取时
+        UnicodeDecodeError:
+            依赖文件无法解码时
+    """
+    parsed = parse_requirements_file(requirement_path)
+    for diagnostic in parsed.diagnostics:
+        if diagnostic.severity == "error":
+            logger.warning("%s, 已跳过", diagnostic)
+        else:
+            logger.debug("%s", diagnostic)
+
+    declarations: list[str] = []
+    for entry in parsed.entries:
+        if entry.skip_verify:
+            continue
+        try:
+            if not entry.applies_to():
+                continue
+        except UndefinedEnvironmentName as e:
+            logger.warning("%s: 无法对 '%s' 的环境标记求值, 已跳过: %s", entry.source, entry, e)
+            continue
+        declaration = _requirement_entry_to_declaration(entry)
+        if declaration is None:
+            logger.warning("%s: 无法确定 '%s' 的软件包名, 已跳过该条目的检查", entry.source, entry)
+            continue
+        declarations.append(declaration)
+
+    return declarations
+
+
+def _has_version_constraint(
+    package: str,
+) -> bool:
+    """判断软件包声明是否带有版本约束 (URL 依赖视为带有版本约束)"""
+    requirement = Requirement.try_parse(package)
+    return requirement is not None and (requirement.url is not None or bool(requirement.specifier))
+
+
+def _package_name(
+    package: str,
+) -> str:
+    """获取软件包声明中规范化后的软件包名, 声明无法解析时按整个字符串规范化"""
+    requirement = Requirement.try_parse(package)
+    return requirement.normalized_name if requirement is not None else normalize_name(package.strip())
 
 
 def create_comfyui_environment_dict(
@@ -149,13 +274,12 @@ def update_comfyui_component_requires_list(
             continue
 
         try:
-            origin_requires = read_packages_from_requirements_file(requirement_path)
+            requires = read_requirement_declarations(requirement_path)
         except (OSError, UnicodeDecodeError) as e:
             # 单个组件的依赖表损坏不应中断整个环境分析, 但需要让用户知道该组件未被检查
             logger.error("读取 '%s' 的依赖表 '%s' 失败, 跳过该组件的依赖检查: %s", component_name, requirement_path, e)
             continue
 
-        requires = parse_requirement_list(origin_requires)
         update_comfyui_environment_dict(
             env_data=env_data,
             component_name=component_name,
@@ -215,7 +339,7 @@ def update_comfyui_component_conflict_requires_list(
 
         for conflict_package in conflict_package_list:
             for package in requires:
-                if is_package_has_version(package) and get_package_name(conflict_package) == get_package_name(package):
+                if _has_version_constraint(package) and _package_name(conflict_package) == _package_name(package):
                     has_conflict_requires = True
                     conflict_requires.append(package)
 
@@ -288,14 +412,14 @@ def collect_conflict_components(
         list[ComfyUIConflictGroup]:
             结构化的冲突组列表
     """
-    conflict_package_list = remove_duplicate_object_from_list([normalize_package_name(x) for x in conflict_package_list])
+    conflict_package_list = remove_duplicate_object_from_list([_package_name(x) for x in conflict_package_list])
     conflicts: list[ComfyUIConflictGroup] = []
 
     for conflict_package in conflict_package_list:
         group_components: list[ComfyUIConflictItem] = []
         for component_name, details in env_data.items():
             for conflict_component_package in details.get("conflict_requires"):
-                if normalize_package_name(get_package_name(conflict_component_package)) == normalize_package_name(conflict_package):
+                if _package_name(conflict_component_package) == conflict_package:
                     group_components.append(
                         {
                             "component": component_name,
@@ -307,7 +431,7 @@ def collect_conflict_components(
         if group_components:
             conflicts.append(
                 {
-                    "package": get_package_name(conflict_package),
+                    "package": conflict_package,
                     "components": group_components,
                 }
             )
@@ -326,4 +450,4 @@ def fitter_has_version_package(
     Returns:
         list[str]: 仅包含版本号的 Python 软件包列表
     """
-    return [p for p in package_list if is_package_has_version(p)]
+    return [p for p in package_list if _has_version_constraint(p)]

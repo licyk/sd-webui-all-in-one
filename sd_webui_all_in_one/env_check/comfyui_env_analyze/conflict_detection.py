@@ -3,11 +3,7 @@
 from sd_webui_all_in_one.utils import (
     remove_duplicate_object_from_list,
 )
-from sd_webui_all_in_one.package_analyzer import (
-    get_package_name,
-    normalize_package_name,
-    parse_package_spec,
-)
+from sd_webui_all_in_one.package_analyzer import Requirement
 from sd_webui_all_in_one.env_check.shared import logger
 from sd_webui_all_in_one.env_check.comfyui_env_analyze.version_constraints import (
     _are_version_constraints_satisfiable,
@@ -33,12 +29,15 @@ def detect_conflict_package(
     Returns:
         bool: 如果 Python 软件包版本声明出现冲突则返回 ``True``
     """
-    _, specs1, is_url1 = parse_package_spec(pkg1)
-    _, specs2, is_url2 = parse_package_spec(pkg2)
+    requirement1 = Requirement.try_parse(pkg1)
+    requirement2 = Requirement.try_parse(pkg2)
 
-    # URL 依赖或无版本约束不参与冲突检测
-    if is_url1 or is_url2 or not specs1 or not specs2:
+    # 无法解析的声明, URL 依赖或无版本约束不参与冲突检测
+    if requirement1 is None or requirement2 is None or not requirement1.specifier or not requirement2.specifier:
         return False
+
+    specs1 = [(spec.operator, spec.version) for spec in requirement1.specifier]
+    specs2 = [(spec.operator, spec.version) for spec in requirement2.specifier]
 
     logger.debug("冲突依赖检测: pkg1: %s, specs1: %s, pkg2: %s, specs2: %s", pkg1, specs1, pkg2, specs2)
     conflicting = not _are_version_constraints_satisfiable(specs1 + specs2)
@@ -65,19 +64,24 @@ def detect_conflict_package_from_list(
     """
     # 1. 一次性解析所有包, 按规范化包名分组
     groups: dict[str, list[str]] = {}
+    names: dict[str, str] = {}
     for pkg in package_list:
-        name = normalize_package_name(get_package_name(pkg))
-        groups.setdefault(name, []).append(pkg)
+        requirement = Requirement.try_parse(pkg)
+        if requirement is None:
+            logger.debug("忽略无法解析的软件包声明: %s", pkg)
+            continue
+        groups.setdefault(requirement.normalized_name, []).append(pkg)
+        names.setdefault(requirement.normalized_name, requirement.name)
 
     # 2. 只对同名包组内的约束进行冲突检测
     conflict_packages: list[str] = []
-    for _norm_name, entries in groups.items():
+    for normalized_name, entries in groups.items():
         if len(entries) < 2:
             continue
 
         for i in range(len(entries)):
             for j in range(i + 1, len(entries)):
                 if detect_conflict_package(entries[i], entries[j]):
-                    conflict_packages.append(get_package_name(entries[i]))
+                    conflict_packages.append(names[normalized_name])
 
     return remove_duplicate_object_from_list(conflict_packages)
