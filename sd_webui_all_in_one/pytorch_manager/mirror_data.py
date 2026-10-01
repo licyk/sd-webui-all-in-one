@@ -129,5 +129,7 @@ PyTorch ROCm (AMD 多架构 wheel) 镜像源字典
 - rocm7: ROCm 7, 提供 PyTorch 2.8.0 ~ 2.13.0
 - rocm10: ROCm 10, 提供 PyTorch 2.11.0 ~ 2.13.0
 
-参考: https://github.com/Comfy-Org/ComfyUI-Standalone-Environments
+参考:
+- https://github.com/Comfy-Org/ComfyUI-Standalone-Environments
+- https://rocm.docs.amd.com/projects/ai-ecosystem/en/latest/frameworks/pytorch/install.html?fam=all
 """
