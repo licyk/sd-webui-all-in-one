@@ -17,11 +17,13 @@ def _fake_torch(
     *,
     cuda=None,
     hip=None,
+    rocm=None,
+    xpu=None,
     mps_built=False,
 ):
     return SimpleNamespace(
         __version__=version,
-        version=SimpleNamespace(__version__=version, cuda=cuda, hip=hip),
+        version=SimpleNamespace(__version__=version, cuda=cuda, hip=hip, rocm=rocm, xpu=xpu),
         backends=SimpleNamespace(mps=SimpleNamespace(is_built=lambda: mps_built)),
     )
 
@@ -45,6 +47,8 @@ def test_get_expected_pytorch_type(software_name, expected):
         (_fake_torch("2.9.1+cu130", cuda="13.0"), "win32", "cuda"),
         (_fake_torch("2.9.1+rocm7.2.1", hip="7.2.1"), "win32", "rocm"),
         (_fake_torch("2.9.1+xpu"), "win32", "xpu"),
+        (_fake_torch("2.9.1", rocm="7.2.1"), "win32", "rocm"),
+        (_fake_torch("2.9.1", xpu="2025.3.1"), "win32", "xpu"),
         (_fake_torch("2.9.1", mps_built=True), "darwin", "mps"),
         (_fake_torch("2.9.1+cpu"), "linux", "cpu"),
         (_fake_torch("2.9.1"), "linux", "unknown"),
@@ -79,3 +83,14 @@ def test_finalize_action_checks_pytorch_before_archive():
     archive_index = action.index("- name: Archive")
 
     assert check_index < docs_index < archive_index
+
+
+def test_detect_pytorch_type_reports_rocm_and_xpu_versions():
+    rocm_info = check_portable_pytorch_type.detect_pytorch_type(
+        _fake_torch("2.9.1+rocm7.2.1", hip="7.2.53211", rocm="7.2.1"),
+        platform="win32",
+    )
+    xpu_info = check_portable_pytorch_type.detect_pytorch_type(_fake_torch("2.9.1+xpu", xpu="2025.3.1"), platform="win32")
+
+    assert (rocm_info.hip_version, rocm_info.rocm_version, rocm_info.xpu_version) == ("7.2.53211", "7.2.1", None)
+    assert (xpu_info.rocm_version, xpu_info.xpu_version) == (None, "2025.3.1")

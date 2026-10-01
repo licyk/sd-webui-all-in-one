@@ -15,6 +15,8 @@ class PyTorchTypeInfo:
     detected_type: str
     cuda_version: str | None
     hip_version: str | None
+    rocm_version: str | None
+    xpu_version: str | None
     mps_built: bool
 
 
@@ -41,12 +43,14 @@ def detect_pytorch_type(torch_module: ModuleType, platform: str = sys.platform) 
     version = str(getattr(torch_module, "__version__", getattr(torch_version, "__version__", "unknown")))
     cuda_version = getattr(torch_version, "cuda", None)
     hip_version = getattr(torch_version, "hip", None)
+    rocm_version = getattr(torch_version, "rocm", None)
+    xpu_version = getattr(torch_version, "xpu", None)
     normalized_version = version.casefold()
     mps_built = _get_mps_built(torch_module)
 
-    if hip_version or "+rocm" in normalized_version:
+    if hip_version or rocm_version or "+rocm" in normalized_version:
         detected_type = "rocm"
-    elif "+xpu" in normalized_version:
+    elif xpu_version or "+xpu" in normalized_version:
         detected_type = "xpu"
     elif cuda_version or "+cu" in normalized_version:
         detected_type = "cuda"
@@ -62,6 +66,8 @@ def detect_pytorch_type(torch_module: ModuleType, platform: str = sys.platform) 
         detected_type=detected_type,
         cuda_version=str(cuda_version) if cuda_version else None,
         hip_version=str(hip_version) if hip_version else None,
+        rocm_version=str(rocm_version) if rocm_version else None,
+        xpu_version=str(xpu_version) if xpu_version else None,
         mps_built=mps_built,
     )
 
@@ -73,7 +79,8 @@ def validate_pytorch_type(software_name: str, torch_module: ModuleType, platform
     if info.detected_type != expected_type:
         raise RuntimeError(
             f"PyTorch type mismatch: expected {expected_type}, detected {info.detected_type} "
-            f"(torch={info.version}, cuda={info.cuda_version}, hip={info.hip_version}, mps_built={info.mps_built})"
+            f"(torch={info.version}, cuda={info.cuda_version}, hip={info.hip_version}, rocm={info.rocm_version}, "
+            f"xpu={info.xpu_version}, mps_built={info.mps_built})"
         )
     return info
 
@@ -96,7 +103,8 @@ def main(argv: list[str] | None = None) -> int:
 
     print(
         f"PyTorch accelerator check passed: type={info.detected_type}, torch={info.version}, "
-        f"cuda={info.cuda_version}, hip={info.hip_version}, mps_built={info.mps_built}"
+        f"cuda={info.cuda_version}, hip={info.hip_version}, rocm={info.rocm_version}, xpu={info.xpu_version}, "
+        f"mps_built={info.mps_built}"
     )
     return 0
 
