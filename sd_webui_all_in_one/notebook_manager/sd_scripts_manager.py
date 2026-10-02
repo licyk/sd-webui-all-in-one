@@ -41,6 +41,8 @@ from sd_webui_all_in_one.base_manager import (
     clone_repo,
     install_pytorch_with_fallback,
 )
+from sd_webui_all_in_one.base_manager.base import EnvCheckTask, select_env_check_tasks
+from sd_webui_all_in_one.base_manager.sd_scripts_base.lifecycle import SDScriptsEnvCheckName
 
 
 logger = get_logger(
@@ -203,23 +205,27 @@ class SDScriptsManager(BaseManager):
         self,
         use_uv: bool = True,
         requirements_file: str | None = "requirements.txt",
+        include_checks: list[str] | None = None,
+        exclude_checks: list[str] | None = None,
     ) -> None:
         """检查 sd-scripts 运行环境
 
         Args:
             use_uv (bool): 使用 uv 安装依赖
             requirements_file (str | None): 依赖文件名
+            include_checks (list[str] | None): 仅执行的环境检查任务名称。
+            exclude_checks (list[str] | None): 跳过的环境检查任务名称。
         """
         sd_webui_path = self.workspace / self.workfolder
         requirement_path = sd_webui_path / (requirements_file or "requirements.txt")
-        py_dependency_checker(
-            requirement_path=requirement_path,
-            name="sd-scripts",
-            use_uv=use_uv,
-        )
-        fix_torch_libomp()
-        check_onnxruntime_gpu(use_uv=use_uv, skip_if_missing=False)
-        check_numpy(use_uv=use_uv)
+        tasks: list[EnvCheckTask[SDScriptsEnvCheckName]] = [
+            EnvCheckTask(SDScriptsEnvCheckName.PYTHON_DEPENDENCIES, py_dependency_checker, {"requirement_path": requirement_path, "name": "sd-scripts", "use_uv": use_uv}),
+            EnvCheckTask(SDScriptsEnvCheckName.TORCH_LIBOMP, fix_torch_libomp, {}),
+            EnvCheckTask(SDScriptsEnvCheckName.ONNXRUNTIME_GPU, check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": False}),
+            EnvCheckTask(SDScriptsEnvCheckName.NUMPY, check_numpy, {"use_uv": use_uv}),
+        ]
+        for task in select_env_check_tasks(tasks, include_checks=include_checks, exclude_checks=exclude_checks):
+            task.func(**task.kwargs)
 
     def install(
         self,

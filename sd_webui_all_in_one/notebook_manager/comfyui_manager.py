@@ -185,6 +185,8 @@ class ComfyUIManager(BaseManager):
         use_github_mirror: bool = False,
         custom_github_mirror: str | list[str] | None = None,
         use_pypi_mirror: bool = False,
+        include_checks: list[str] | None = None,
+        exclude_checks: list[str] | None = None,
     ) -> None:
         """检查 ComfyUI 运行环境
 
@@ -203,6 +205,10 @@ class ComfyUIManager(BaseManager):
                 自定义 Github 镜像源
             use_pypi_mirror (bool):
                 是否使用国内 PyPI 镜像源
+            include_checks (list[str] | None):
+                仅执行的环境检查任务名称。
+            exclude_checks (list[str] | None):
+                跳过的环境检查任务名称。
         """
         check_comfyui_env(
             comfyui_path=self.workspace / self.workfolder,
@@ -213,6 +219,8 @@ class ComfyUIManager(BaseManager):
             use_github_mirror=use_github_mirror,
             custom_github_mirror=custom_github_mirror,
             use_pypi_mirror=use_pypi_mirror,
+            include_checks=include_checks,
+            exclude_checks=exclude_checks,
         )
 
     def get_launch_command(

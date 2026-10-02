@@ -142,6 +142,8 @@ class FooocusManager(BaseManager):
         use_pypi_mirror: bool = False,
         use_github_mirror: bool = False,
         custom_github_mirror: str | list[str] | None = None,
+        include_checks: list[str] | None = None,
+        exclude_checks: list[str] | None = None,
     ) -> None:
         """检查 Fooocus 运行环境
 
@@ -154,6 +156,10 @@ class FooocusManager(BaseManager):
                 是否使用 Github 镜像源
             custom_github_mirror (str | list[str] | None):
                 自定义 Github 镜像源
+            include_checks (list[str] | None):
+                仅执行的环境检查任务名称。
+            exclude_checks (list[str] | None):
+                跳过的环境检查任务名称。
         """
         check_fooocus_env(
             fooocus_path=self.workspace / self.workfolder,
@@ -161,6 +167,8 @@ class FooocusManager(BaseManager):
             use_pypi_mirror=use_pypi_mirror,
             use_github_mirror=use_github_mirror,
             custom_github_mirror=custom_github_mirror,
+            include_checks=include_checks,
+            exclude_checks=exclude_checks,
         )
 
     def get_launch_command(

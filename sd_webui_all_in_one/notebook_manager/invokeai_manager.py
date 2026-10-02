@@ -103,6 +103,8 @@ class InvokeAIManager(BaseManager):
         use_pypi_mirror: bool = False,
         use_github_mirror: bool = False,
         custom_github_mirror: str | list[str] | None = None,
+        include_checks: list[str] | None = None,
+        exclude_checks: list[str] | None = None,
     ) -> None:
         """检查 InvokeAI 运行环境
 
@@ -115,12 +117,18 @@ class InvokeAIManager(BaseManager):
                 是否使用 Github 镜像源
             custom_github_mirror (str | list[str] | None):
                 自定义 Github 镜像源
+            include_checks (list[str] | None):
+                仅执行的环境检查任务名称。
+            exclude_checks (list[str] | None):
+                跳过的环境检查任务名称。
         """
         check_invokeai_env(
             use_uv=use_uv,
             use_pypi_mirror=use_pypi_mirror,
             use_github_mirror=use_github_mirror,
             custom_github_mirror=custom_github_mirror,
+            include_checks=include_checks,
+            exclude_checks=exclude_checks,
         )
 
     def run(
