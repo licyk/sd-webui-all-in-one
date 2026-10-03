@@ -79,6 +79,57 @@ class RepositoryProbe:
     dirty: bool | None = None
 
 
+@dataclass(slots=True)
+class RepositoryTrackingState:
+    """
+    Git 仓库当前分支与上游分支的跟踪状态
+
+    Attributes:
+        commit (str | None):
+            当前提交 ID, 仓库尚无提交时为 None
+        branch (str | None):
+            当前分支, detached HEAD 时为 None
+        upstream (str | None):
+            上游分支的短名称 (如 origin/main), 未配置时为 None
+        upstream_exists (bool):
+            上游引用在本地是否存在, 仅在存在时 ahead/behind 有效
+        ahead (int):
+            本地领先上游的提交数
+        behind (int):
+            本地落后上游的提交数
+        dirty (bool):
+            已跟踪文件是否存在未提交变更
+    """
+
+    commit: str | None = None
+    branch: str | None = None
+    upstream: str | None = None
+    upstream_exists: bool = False
+    ahead: int = 0
+    behind: int = 0
+    dirty: bool = False
+
+
+@dataclass(slots=True)
+class BranchUpstream:
+    """
+    Git 配置中当前分支的上游信息
+
+    Attributes:
+        remote (str):
+            上游远程源名称, 为 "." 时上游是本地分支
+        merge (str):
+            上游分支的完整引用 (如 refs/heads/main)
+        tracking_ref (str | None):
+            按默认 fetch refspec 映射得到的远程跟踪引用 (如 refs/remotes/origin/main);
+            远程源使用自定义 refspec 时为 None
+    """
+
+    remote: str
+    merge: str
+    tracking_ref: str | None = None
+
+
 def run_git_output(path: Path, *args: str) -> str:
     """
     执行 Git 命令并返回输出
@@ -214,6 +265,31 @@ def _read_repository_branch(git_dir: Path) -> str | None:
     return None
 
 
+def _load_git_config(git_dir: Path) -> configparser.ConfigParser | None:
+    """
+    解析仓库的 Git config 文件
+
+    Args:
+        git_dir (Path):
+            .git 目录路径
+
+    Returns:
+        configparser.ConfigParser | None: 解析结果, 文件不存在或解析失败时返回 None
+    """
+    config_path = _resolve_common_git_dir(git_dir) / "config"
+    if not config_path.is_file():
+        logger.debug("未找到 Git config 文件: '%s'", config_path)
+        return None
+
+    parser = configparser.ConfigParser(interpolation=None, strict=False)
+    try:
+        parser.read(config_path, encoding="utf-8")
+    except configparser.Error:
+        logger.error("解析 Git config 失败: '%s'", config_path)
+        return None
+    return parser
+
+
 def _read_repository_remote_url(git_dir: Path, branch: str | None) -> str | None:
     """
     从 Git 配置读取当前分支远程地址
@@ -227,17 +303,8 @@ def _read_repository_remote_url(git_dir: Path, branch: str | None) -> str | None
     Returns:
         str | None: 远程地址
     """
-    common_git_dir = _resolve_common_git_dir(git_dir)
-    config_path = common_git_dir / "config"
-    if not config_path.is_file():
-        logger.debug("未找到 Git config 文件: '%s'", config_path)
-        return None
-
-    parser = configparser.ConfigParser(interpolation=None, strict=False)
-    try:
-        parser.read(config_path, encoding="utf-8")
-    except configparser.Error:
-        logger.error("解析 Git config 失败: '%s'", config_path)
+    parser = _load_git_config(git_dir)
+    if parser is None:
         return None
 
     remote_name = "origin"
@@ -528,6 +595,40 @@ def inspect_repository(path: Path, details: bool = True) -> RepositoryState:
     return state
 
 
+def _parse_porcelain_v2_tracking(output: str) -> RepositoryTrackingState:
+    """
+    解析 git status --porcelain=v2 --branch 的输出, 包括上游分支和领先/落后提交数
+
+    Args:
+        output (str):
+            Git 命令输出
+
+    Returns:
+        RepositoryTrackingState: 仓库跟踪状态
+    """
+    state = RepositoryTrackingState()
+    for line in output.splitlines():
+        if line.startswith("# branch.oid "):
+            value = line.removeprefix("# branch.oid ").strip()
+            state.commit = value if _is_full_commit_hash(value) else None
+        elif line.startswith("# branch.head "):
+            value = line.removeprefix("# branch.head ").strip()
+            state.branch = None if value == "(detached)" else value
+        elif line.startswith("# branch.upstream "):
+            state.upstream = line.removeprefix("# branch.upstream ").strip() or None
+        elif line.startswith("# branch.ab "):
+            # 仅当上游引用在本地存在时 Git 才会输出 branch.ab, 格式为 "+<ahead> -<behind>"
+            parts = line.removeprefix("# branch.ab ").split()
+            if len(parts) == 2 and parts[0][1:].isdigit() and parts[1][1:].isdigit():
+                state.ahead, state.behind = int(parts[0][1:]), int(parts[1][1:])
+                state.upstream_exists = True
+        elif line and not line.startswith("#"):
+            # branch 头部信息总在变更条目之前输出, 发现变更即可停止解析
+            state.dirty = True
+            break
+    return state
+
+
 def _parse_porcelain_v2_status(output: str) -> tuple[str | None, str | None, bool]:
     """
     解析 git status --porcelain=v2 --branch 的输出
@@ -539,20 +640,8 @@ def _parse_porcelain_v2_status(output: str) -> tuple[str | None, str | None, boo
     Returns:
         tuple[str | None, str | None, bool]: 当前提交 ID、当前分支和是否存在未提交变更
     """
-    commit: str | None = None
-    branch: str | None = None
-    dirty = False
-    for line in output.splitlines():
-        if line.startswith("# branch.oid "):
-            value = line.removeprefix("# branch.oid ").strip()
-            commit = value if _is_full_commit_hash(value) else None
-        elif line.startswith("# branch.head "):
-            value = line.removeprefix("# branch.head ").strip()
-            branch = None if value == "(detached)" else value
-        elif line and not line.startswith("#"):
-            dirty = True
-            break
-    return commit, branch, dirty
+    state = _parse_porcelain_v2_tracking(output)
+    return state.commit, state.branch, state.dirty
 
 
 def probe_repository(path: Path) -> RepositoryProbe:
@@ -609,3 +698,114 @@ def repository_has_commit(path: Path, commit: str) -> bool:
     except (RuntimeError, OSError):
         return False
     return True
+
+
+def read_repository_tracking_state(path: Path) -> RepositoryTrackingState:
+    """
+    使用单次 Git 调用读取仓库的当前提交、分支、上游分支、领先/落后提交数和已跟踪文件变更状态
+
+    不扫描未跟踪文件, 与更新流程判断工作区是否有改动的方式一致。
+
+    Args:
+        path (Path):
+            仓库路径
+
+    Returns:
+        RepositoryTrackingState: 仓库跟踪状态
+
+    Raises:
+        RuntimeError:
+            执行 git status 失败时
+    """
+    output = run_git_output(Path(path), "status", "--porcelain=v2", "--branch", "--untracked-files=no")
+    state = _parse_porcelain_v2_tracking(output)
+    logger.debug(
+        "仓库跟踪状态: '%s', 分支 '%s', 上游 '%s', 领先 %s, 落后 %s, dirty=%s",
+        path,
+        state.branch,
+        state.upstream,
+        state.ahead,
+        state.behind,
+        state.dirty,
+    )
+    return state
+
+
+def _maps_branch_to_tracking_ref(refspec: str, merge: str, tracking_ref: str) -> bool:
+    """
+    判断 fetch refspec 是否把上游分支映射到指定的远程跟踪引用
+
+    Args:
+        refspec (str):
+            remote.<name>.fetch 配置值
+        merge (str):
+            上游分支的完整引用
+        tracking_ref (str):
+            期望的远程跟踪引用
+
+    Returns:
+        bool: refspec 是否产生该映射
+    """
+    src, sep, dst = refspec.strip().removeprefix("+").partition(":")
+    if not sep:
+        return False
+    if src == merge and dst == tracking_ref:
+        return True
+    if src.endswith("/*") and dst.endswith("/*") and merge.startswith(src[:-1]):
+        return dst[:-1] + merge.removeprefix(src[:-1]) == tracking_ref
+    return False
+
+
+def read_branch_upstream(path: Path, branch: str | None) -> BranchUpstream | None:
+    """
+    从 Git config 读取分支的上游配置, 不启动 Git 进程
+
+    Args:
+        path (Path):
+            仓库路径
+        branch (str | None):
+            分支名称
+
+    Returns:
+        BranchUpstream | None: 上游配置, 分支未配置上游或无法解析配置时返回 None
+    """
+    if branch is None:
+        return None
+    git_dir = _resolve_git_dir(Path(path))
+    parser = _load_git_config(git_dir) if git_dir is not None else None
+    if parser is None:
+        return None
+    remote = parser.get(f'branch "{branch}"', "remote", fallback="").strip()
+    merge = parser.get(f'branch "{branch}"', "merge", fallback="").strip()
+    if not remote or not merge:
+        return None
+    upstream = BranchUpstream(remote=remote, merge=merge)
+    if remote != "." and merge.startswith("refs/heads/"):
+        expected = f"refs/remotes/{remote}/{merge.removeprefix('refs/heads/')}"
+        refspec = parser.get(f'remote "{remote}"', "fetch", fallback="")
+        if _maps_branch_to_tracking_ref(refspec, merge, expected):
+            upstream.tracking_ref = expected
+    return upstream
+
+
+def read_ref_commit(path: Path, *refs: str) -> str | None:
+    """
+    依次从 loose refs 和 packed-refs 读取引用对应的提交, 不启动 Git 进程
+
+    Args:
+        path (Path):
+            仓库路径
+        *refs (str):
+            候选完整引用名称, 按顺序尝试
+
+    Returns:
+        str | None: 第一个可解析引用对应的提交哈希, 均无法解析时返回 None
+    """
+    git_dir = _resolve_git_dir(Path(path))
+    if git_dir is None:
+        return None
+    for ref in refs:
+        commit = _read_ref_commit(git_dir, ref)
+        if commit is not None:
+            return commit
+    return None

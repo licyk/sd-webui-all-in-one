@@ -1,4 +1,6 @@
 import json
+import shutil
+import subprocess
 import zlib
 
 import pytest
@@ -252,41 +254,203 @@ def test_filter_extension_index_by_keyword_and_tag():
     assert [item.name for item in filter_extension_index(registry_items, "registry author")] == ["Registry Node"]
 
 
-def test_check_repository_update_reports_ahead_behind(monkeypatch, tmp_path):
-    repo_path = tmp_path / "repo"
-    state = repository_inspector.RepositoryState(
-        path=repo_path,
-        is_git_repo=True,
-        name="repo",
-        branch="main",
-        commit="local",
+def _real_git(repo, *args):
+    return subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True, text=True).stdout.strip()
+
+
+@pytest.fixture
+def git_remote_pair(monkeypatch, tmp_path):
+    """创建本地裸仓库作为远程源, 并返回 (上游工作区, 本地克隆) 路径。"""
+    if shutil.which("git") is None:
+        pytest.skip("git is not available")
+    global_config = tmp_path / "gitconfig"
+    global_config.write_text("", encoding="utf-8")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", global_config.as_posix())
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    for key, value in {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"}.items():
+        monkeypatch.setenv(key, value)
+
+    origin = tmp_path / "origin.git"
+    upstream = tmp_path / "upstream"
+    local = tmp_path / "local"
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(origin)], check=True)
+    subprocess.run(["git", "clone", "-q", str(origin), str(upstream)], check=True)
+    _real_git(upstream, "checkout", "-q", "-b", "main")
+    (upstream / "file.txt").write_text("v1\n", encoding="utf-8")
+    _real_git(upstream, "add", "file.txt")
+    _real_git(upstream, "commit", "-q", "-m", "v1")
+    _real_git(upstream, "push", "-q", "origin", "main")
+    subprocess.run(["git", "clone", "-q", str(origin), str(local)], check=True)
+    return upstream, local
+
+
+def _push_commits(upstream, count):
+    for index in range(count):
+        (upstream / "file.txt").write_text(f"upstream {index}\n", encoding="utf-8")
+        _real_git(upstream, "commit", "-q", "-am", f"upstream {index}")
+    _real_git(upstream, "push", "-q", "origin", "main")
+    return _real_git(upstream, "rev-parse", "HEAD")
+
+
+def _record_git_commands(monkeypatch):
+    commands = []
+    real_run_cmd = version_repository.git_warpper.run_cmd
+
+    def recording_run_cmd(command, *args, **kwargs):
+        commands.append(command[command.index("-C") + 2 :] if "-C" in command else command)
+        return real_run_cmd(command, *args, **kwargs)
+
+    monkeypatch.setattr(version_repository.git_warpper, "run_cmd", recording_run_cmd)
+    return commands
+
+
+def test_check_repository_update_fetches_upstream_only_and_reads_state_with_one_git_call(monkeypatch, git_remote_pair):
+    upstream, local = git_remote_pair
+    remote_head = _push_commits(upstream, 3)
+    (local / "local.txt").write_text("local\n", encoding="utf-8")
+    _real_git(local, "add", "local.txt")
+    _real_git(local, "commit", "-q", "-m", "local")
+    (local / "file.txt").write_text("modified\n", encoding="utf-8")
+    commands = _record_git_commands(monkeypatch)
+
+    status = version_manager.check_repository_update(local)
+
+    assert [command[0] for command in commands] == ["fetch", "status"]
+    assert commands[0] == ["fetch", "--no-tags", "origin", "+refs/heads/main:refs/remotes/origin/main"]
+    assert status.error is None
+    assert status.remote_branch == "origin/main"
+    assert (status.ahead, status.behind) == (1, 3)
+    assert status.has_update is True
+    assert status.is_dirty is True
+    assert status.current_commit == _real_git(local, "rev-parse", "HEAD")
+    assert status.remote_commit == remote_head
+
+
+def test_check_repository_update_without_fetch_reuses_existing_refs_and_ignores_untracked(monkeypatch, git_remote_pair):
+    upstream, local = git_remote_pair
+    _push_commits(upstream, 2)
+    (local / "untracked.bin").write_text("model\n", encoding="utf-8")
+    commands = _record_git_commands(monkeypatch)
+
+    status = version_manager.check_repository_update(local, fetch=False)
+
+    assert [command[0] for command in commands] == ["status"]
+    assert status.behind == 0
+    assert status.has_update is False
+    assert status.is_dirty is False
+
+
+def test_check_then_update_without_fetch_applies_checked_update(git_remote_pair):
+    upstream, local = git_remote_pair
+    remote_head = _push_commits(upstream, 1)
+
+    assert version_manager.check_repository_update(local).has_update is True
+    assert version_repository.git_warpper.update(local, live=False, fetch=False) is True
+    assert _real_git(local, "rev-parse", "HEAD") == remote_head
+
+
+def test_check_repository_update_falls_back_to_origin_branch_without_upstream(git_remote_pair):
+    upstream, local = git_remote_pair
+    remote_head = _push_commits(upstream, 1)
+    _real_git(local, "branch", "--unset-upstream")
+
+    status = version_manager.check_repository_update(local)
+
+    assert status.error is None
+    assert status.remote_branch == "origin/main"
+    assert status.behind == 1
+    assert status.remote_commit == remote_head
+
+
+def test_check_repository_update_skips_fetch_for_detached_head(monkeypatch, git_remote_pair):
+    _upstream, local = git_remote_pair
+    _real_git(local, "checkout", "-q", "--detach")
+    commands = _record_git_commands(monkeypatch)
+
+    status = version_manager.check_repository_update(local)
+
+    assert [command[0] for command in commands] == ["status"]
+    assert status.has_update is False
+    assert status.error == "未找到远程跟踪分支"
+
+
+def test_check_repository_update_reports_fetch_failure(git_remote_pair):
+    _upstream, local = git_remote_pair
+    _real_git(local, "remote", "set-url", "origin", str(local.parent / "missing.git"))
+
+    status = version_manager.check_repository_update(local)
+
+    assert status.has_update is False
+    assert status.error
+
+
+def test_fetch_repository_upstream_bounds_slow_fetches(monkeypatch, tmp_path):
+    calls = []
+    monkeypatch.setattr(version_repository, "_upstream_fetch_args", lambda _path, _branch: ["--no-tags", "origin"])
+    monkeypatch.setattr(version_repository.git_warpper, "fetch_remote", lambda path, *args, **kwargs: calls.append((args, kwargs)))
+    monkeypatch.delenv("GIT_HTTP_LOW_SPEED_TIME", raising=False)
+    monkeypatch.setenv("GIT_HTTP_LOW_SPEED_LIMIT", "5")
+
+    version_repository.fetch_repository_upstream(tmp_path, "main")
+
+    ((args, kwargs),) = calls
+    assert args == ("--no-tags", "origin")
+    assert kwargs["timeout"] == version_repository.CHECK_FETCH_TIMEOUT
+    assert kwargs["custom_env"]["GIT_HTTP_LOW_SPEED_TIME"] == "20"
+    assert kwargs["custom_env"]["GIT_HTTP_LOW_SPEED_LIMIT"] == "5"
+
+
+def _write_git_config(repo_path, config):
+    git_path = repo_path / ".git"
+    git_path.mkdir(parents=True)
+    (git_path / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
+    (git_path / "config").write_text(config, encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    ("config", "expected"),
+    [
+        (
+            '[remote "upstream"]\n\tfetch = +refs/heads/*:refs/remotes/upstream/*\n[branch "main"]\n\tremote = upstream\n\tmerge = refs/heads/dev\n',
+            ["--no-tags", "upstream", "+refs/heads/dev:refs/remotes/upstream/dev"],
+        ),
+        (
+            '[remote "origin"]\n\tfetch = +refs/heads/main:refs/remotes/origin/main\n[branch "main"]\n\tremote = origin\n\tmerge = refs/heads/main\n',
+            ["--no-tags", "origin", "+refs/heads/main:refs/remotes/origin/main"],
+        ),
+        (
+            '[remote "origin"]\n\tfetch = +refs/heads/*:refs/remotes/custom/*\n[branch "main"]\n\tremote = origin\n\tmerge = refs/heads/main\n',
+            ["--no-tags", "origin"],
+        ),
+        ('[branch "main"]\n\tremote = .\n\tmerge = refs/heads/base\n', None),
+        ("", ["--no-tags", "origin", "+refs/heads/main:refs/remotes/origin/main"]),
+    ],
+)
+def test_upstream_fetch_args_follow_branch_config(tmp_path, config, expected):
+    _write_git_config(tmp_path, config)
+
+    assert version_repository._upstream_fetch_args(tmp_path, "main") == expected
+    assert version_repository._upstream_fetch_args(tmp_path, None) is None
+
+
+def test_parse_porcelain_v2_tracking_reads_upstream_and_ahead_behind():
+    output = "\n".join(
+        [
+            "# branch.oid " + "a" * 40,
+            "# branch.head main",
+            "# branch.upstream origin/main",
+            "# branch.ab +2 -5",
+            "1 .M N... 100644 100644 100644 abc abc file.py",
+        ]
     )
 
-    def fake_git_output(path, *args, custom_env=None):
-        assert path == repo_path
-        if args == ("status", "--porcelain"):
-            return " M file.py"
-        if args == ("rev-parse", "HEAD"):
-            return "a" * 40
-        if args == ("rev-parse", "origin/main"):
-            return "b" * 40
-        if args == ("rev-list", "--left-right", "--count", "HEAD...origin/main"):
-            return "1\t3"
-        raise AssertionError(args)
+    state = repository_inspector._parse_porcelain_v2_tracking(output)
 
-    monkeypatch.setattr(version_repository, "inspect_repository", lambda path: state)
-    monkeypatch.setattr(version_repository, "fetch_repository", lambda *args, **kwargs: None)
-    monkeypatch.setattr(version_repository, "_resolve_update_remote_ref", lambda path, branch: "origin/main")
-    monkeypatch.setattr(version_repository, "_run_git_output", fake_git_output)
+    assert (state.commit, state.branch, state.upstream) == ("a" * 40, "main", "origin/main")
+    assert (state.upstream_exists, state.ahead, state.behind, state.dirty) == (True, 2, 5, True)
 
-    status = version_manager.check_repository_update(repo_path, use_github_mirror=True, custom_github_mirror="https://mirror.example")
-
-    assert status.has_update is True
-    assert status.ahead == 1
-    assert status.behind == 3
-    assert status.is_dirty is True
-    assert status.current_commit == "a" * 40
-    assert status.remote_commit == "b" * 40
+    gone = repository_inspector._parse_porcelain_v2_tracking("# branch.oid (initial)\n# branch.head (detached)\n# branch.upstream origin/gone\n")
+    assert (gone.commit, gone.branch, gone.upstream, gone.upstream_exists) == (None, None, "origin/gone", False)
 
 
 def test_extension_manager_check_updates_keeps_non_git_entries(monkeypatch, tmp_path):
@@ -533,6 +697,56 @@ def test_check_webui_updates_aggregates_kernel_extensions_and_pytorch(monkeypatc
         skipped_count=1,
         error_count=0,
     )
+
+
+def test_check_webui_updates_configures_mirror_once_and_overlaps_kernel_with_extensions(monkeypatch, tmp_path):
+    import threading
+
+    extensions = [version_manager.ManagedExtension(f"ext-{index}", tmp_path / f"ext-{index}", True, True, source_type="git") for index in range(2)]
+    # 内核与全部扩展必须同时处于检查中才能通过屏障, 证明内核检查不再串行阻塞扩展检查
+    barrier = threading.Barrier(len(extensions) + 1, timeout=5)
+    mirror_calls = []
+
+    def fake_check(path, fetch=True, **kwargs):
+        assert not kwargs, "mirror must be configured once before the parallel checks"
+        assert fetch is True
+        barrier.wait()
+        return version_manager.RepositoryUpdateStatus(name=path.name, path=path, is_git_repo=True, has_update=path == tmp_path, behind=int(path == tmp_path))
+
+    monkeypatch.setattr(version_checks, "configure_git_env", lambda **kwargs: mirror_calls.append(kwargs) or {})
+    monkeypatch.setattr(version_checks, "check_repository_update", fake_check)
+
+    result = version_manager.check_webui_updates(
+        "demo",
+        "Demo WebUI",
+        tmp_path,
+        extension_loader=lambda: extensions,
+        options=version_manager.WebUiUpdateOptions(include_pytorch=False, use_github_mirror=True, custom_github_mirror="https://mirror.example"),
+    )
+
+    assert mirror_calls == [{"use_github_mirror": True, "custom_github_mirror": "https://mirror.example"}]
+    assert result.kernel is not None and result.kernel.has_update is True
+    assert [item.name for item in result.extensions] == ["ext-0", "ext-1"]
+    assert result.summary.error_count == 0
+
+
+def test_check_webui_updates_reports_extension_loader_failure(monkeypatch, tmp_path):
+    def broken_loader():
+        raise OSError("boom")
+
+    monkeypatch.setattr(version_checks, "check_repository_update", lambda path, **_kwargs: version_manager.RepositoryUpdateStatus(name=path.name, path=path, is_git_repo=True))
+
+    result = version_manager.check_webui_updates(
+        "demo",
+        "Demo WebUI",
+        tmp_path,
+        extension_loader=broken_loader,
+        options=version_manager.WebUiUpdateOptions(include_pytorch=False, fetch=False),
+    )
+
+    assert result.errors == ["加载扩展失败: boom"]
+    assert result.extensions == []
+    assert result.kernel is not None
 
 
 def test_check_package_update_records_versions(monkeypatch):

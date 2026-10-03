@@ -2,7 +2,10 @@
 
 # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-positional-arguments,too-many-locals
 
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import (
+    Future,
+    ThreadPoolExecutor,
+)
 from pathlib import Path
 from typing import (
     Callable,
@@ -114,6 +117,64 @@ def check_package_update(
     )
 
 
+def _check_extension_update(
+    extension: ManagedExtension,
+    fetch: bool,
+    registry_version_resolver: Callable[[ManagedExtension], str | None] | None,
+) -> ExtensionUpdateStatus:
+    """检查单个扩展的更新状态。
+
+    Args:
+        extension (ManagedExtension): 已安装扩展信息。
+        fetch (bool): 是否先获取 Git 远程引用。
+        registry_version_resolver (Callable[[ManagedExtension], str | None] | None):
+            Registry 扩展最新版本解析函数。
+
+    Returns:
+        ExtensionUpdateStatus: 扩展更新状态。
+    """
+    logger.debug("检查扩展更新: %s", extension.name)
+    status = ExtensionUpdateStatus(
+        name=extension.name,
+        path=extension.path,
+        enabled=extension.enabled,
+        source_type=extension.source_type,
+        is_git_repo=extension.is_git_repo,
+        url=extension.url,
+        branch=extension.branch,
+        current_version=extension.registry_version or extension.commit,
+        registry_id=extension.registry_id,
+    )
+    if extension.is_git_repo:
+        repository = check_repository_update(extension.path, fetch=fetch)
+        status.remote_branch = repository.remote_branch
+        status.current_version = repository.current_commit
+        status.latest_version = repository.remote_commit
+        status.ahead = repository.ahead
+        status.behind = repository.behind
+        status.has_update = repository.has_update
+        status.error = repository.error
+        status.message = "存在远程更新" if repository.has_update else (repository.error or "已是最新版本")
+    elif extension.source_type == "comfy-registry" and registry_version_resolver is not None:
+        try:
+            status.latest_version = registry_version_resolver(extension)
+            if status.latest_version is None:
+                status.error = "未获取到 Registry 最新版本"
+            elif status.current_version is None:
+                status.error = "未获取到已安装的 Registry 版本"
+            else:
+                status.has_update = status.current_version != status.latest_version
+                status.message = "存在 Registry 更新" if status.has_update else "已是最新版本"
+        except Exception as exc:
+            status.error = str(exc)
+            logger.error("检查 Registry 扩展更新失败: %s", exc)
+    else:
+        status.skipped = True
+        status.message = f"扩展来源 '{extension.source_type}' 不支持更新检查"
+        logger.debug("扩展来源 '%s' 不支持更新检查, 已跳过: %s", extension.source_type, extension.name)
+    return status
+
+
 def check_extension_updates(
     extensions: Iterable[ManagedExtension],
     *,
@@ -143,52 +204,10 @@ def check_extension_updates(
         # 镜像源配置会写入共享的 Git 配置文件, 需要在并行检查前完成
         configure_git_env(use_github_mirror=use_github_mirror, custom_github_mirror=custom_github_mirror)
 
-    def _check(extension: ManagedExtension) -> ExtensionUpdateStatus:
-        logger.debug("检查扩展更新: %s", extension.name)
-        status = ExtensionUpdateStatus(
-            name=extension.name,
-            path=extension.path,
-            enabled=extension.enabled,
-            source_type=extension.source_type,
-            is_git_repo=extension.is_git_repo,
-            url=extension.url,
-            branch=extension.branch,
-            current_version=extension.registry_version or extension.commit,
-            registry_id=extension.registry_id,
-        )
-        if extension.is_git_repo:
-            repository = check_repository_update(extension.path, fetch=fetch)
-            status.remote_branch = repository.remote_branch
-            status.current_version = repository.current_commit
-            status.latest_version = repository.remote_commit
-            status.ahead = repository.ahead
-            status.behind = repository.behind
-            status.has_update = repository.has_update
-            status.error = repository.error
-            status.message = "存在远程更新" if repository.has_update else (repository.error or "已是最新版本")
-        elif extension.source_type == "comfy-registry" and registry_version_resolver is not None:
-            try:
-                status.latest_version = registry_version_resolver(extension)
-                if status.latest_version is None:
-                    status.error = "未获取到 Registry 最新版本"
-                elif status.current_version is None:
-                    status.error = "未获取到已安装的 Registry 版本"
-                else:
-                    status.has_update = status.current_version != status.latest_version
-                    status.message = "存在 Registry 更新" if status.has_update else "已是最新版本"
-            except Exception as exc:
-                status.error = str(exc)
-                logger.error("检查 Registry 扩展更新失败: %s", exc)
-        else:
-            status.skipped = True
-            status.message = f"扩展来源 '{extension.source_type}' 不支持更新检查"
-            logger.debug("扩展来源 '%s' 不支持更新检查, 已跳过: %s", extension.source_type, extension.name)
-        return status
-
     if max_workers is None:
         max_workers = MIRROR_GIT_UPDATE_WORKERS if use_github_mirror else DEFAULT_GIT_UPDATE_WORKERS
     with ThreadPoolExecutor(max_workers=max(1, min(max_workers, len(extensions) or 1))) as executor:
-        result = list(executor.map(_check, extensions))
+        result = list(executor.map(lambda extension: _check_extension_update(extension, fetch, registry_version_resolver), extensions))
     logger.info("检查扩展更新完成, 共 %s 个扩展", len(result))
     return result
 
@@ -220,38 +239,48 @@ def check_webui_updates(
     options = options or WebUiUpdateOptions()
     logger.info("检查 WebUI 更新中: %s (%s)", display_name, webui_type)
     errors: list[str] = []
-    kernel: RepositoryUpdateStatus | PackageUpdateStatus | None = None
-    if options.include_kernel:
-        if kernel_package_name is None:
-            kernel = check_repository_update(
-                webui_path,
-                fetch=options.fetch,
-                use_github_mirror=options.use_github_mirror,
-                custom_github_mirror=options.custom_github_mirror,
-            )
-        else:
-            kernel = check_package_update(
+    extensions_to_check: list[ManagedExtension] = []
+    if options.include_extensions and extension_loader is not None:
+        try:
+            extensions_to_check = list(extension_loader())
+        except Exception as exc:
+            errors.append(f"加载扩展失败: {exc}")
+            logger.error("加载扩展失败: %s", exc)
+
+    check_git_kernel = options.include_kernel and kernel_package_name is None
+    if options.fetch and options.use_github_mirror and (check_git_kernel or extensions_to_check):
+        # 镜像源测速并写入共享的 Git 配置文件, 只在所有并行检查开始前执行一次
+        configure_git_env(use_github_mirror=True, custom_github_mirror=options.custom_github_mirror)
+
+    # 内核与扩展共用一个线程池, 内核最先提交, 使其拉取与扩展检查重叠而不是串行等待
+    workers = MIRROR_GIT_UPDATE_WORKERS if options.use_github_mirror else DEFAULT_GIT_UPDATE_WORKERS
+    with ThreadPoolExecutor(max_workers=max(1, min(workers, len(extensions_to_check) + 1))) as executor:
+        kernel_future: Future[RepositoryUpdateStatus | PackageUpdateStatus] | None = None
+        if check_git_kernel:
+            kernel_future = executor.submit(check_repository_update, webui_path, fetch=options.fetch)
+        elif options.include_kernel and kernel_package_name is not None:
+            kernel_future = executor.submit(
+                check_package_update,
                 kernel_package_name,
                 display_name,
                 options.pypi_index_url,
                 timeout=options.timeout,
                 allow_prerelease=options.allow_prerelease,
             )
+        if extensions_to_check:
+            logger.info("检查扩展更新中")
+        extension_futures = [executor.submit(_check_extension_update, extension, options.fetch, registry_version_resolver) for extension in extensions_to_check]
 
-    pytorch = get_pytorch_update_status() if options.include_pytorch else None
-    extensions: list[ExtensionUpdateStatus] = []
-    if options.include_extensions and extension_loader is not None:
+        pytorch = get_pytorch_update_status() if options.include_pytorch else None
+        kernel = kernel_future.result() if kernel_future is not None else None
+        extensions: list[ExtensionUpdateStatus] = []
         try:
-            extensions = check_extension_updates(
-                extension_loader(),
-                fetch=options.fetch,
-                use_github_mirror=options.use_github_mirror,
-                custom_github_mirror=options.custom_github_mirror,
-                registry_version_resolver=registry_version_resolver,
-            )
+            extensions = [future.result() for future in extension_futures]
         except Exception as exc:
-            errors.append(f"加载扩展失败: {exc}")
-            logger.error("加载扩展失败: %s", exc)
+            errors.append(f"检查扩展更新失败: {exc}")
+            logger.error("检查扩展更新失败: %s", exc)
+    if extensions_to_check:
+        logger.info("检查扩展更新完成, 共 %s 个扩展", len(extensions))
 
     kernel_has_update = bool(kernel and kernel.has_update)
     pytorch_has_update = bool(pytorch and pytorch.has_update)

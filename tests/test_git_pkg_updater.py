@@ -507,6 +507,41 @@ def test_fetch_remote_is_non_interactive_and_retries_once(monkeypatch, tmp_path)
     assert len(calls) == 2
 
 
+@pytest.mark.parametrize(
+    "message",
+    [
+        "remote: Repository not found.",
+        "fatal: repository 'https://github.com/a/b/' not found",
+        "fatal: could not read Username for 'https://github.com': terminal prompts disabled",
+        "fatal: couldn't find remote ref refs/heads/gone",
+    ],
+)
+def test_fetch_remote_does_not_retry_permanent_errors(monkeypatch, tmp_path, message):
+    calls = []
+    monkeypatch.setattr(git_warpper, "get_git_exec", lambda: Path("/bin/git"))
+    monkeypatch.setattr(git_warpper, "FETCH_RETRY_DELAY", 0)
+    monkeypatch.setattr(git_warpper, "run_cmd", lambda command, **kwargs: calls.append(command) or (_ for _ in ()).throw(RuntimeError(message)))
+
+    with pytest.raises(RuntimeError):
+        git_warpper.fetch_remote(tmp_path, live=False)
+    assert len(calls) == 1
+
+
+def test_fetch_remote_converts_timeout_without_retry(monkeypatch, tmp_path):
+    calls = []
+    monkeypatch.setattr(git_warpper, "get_git_exec", lambda: Path("/bin/git"))
+
+    def hanging_run_cmd(command, **kwargs):
+        calls.append(kwargs["timeout"])
+        raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+
+    monkeypatch.setattr(git_warpper, "run_cmd", hanging_run_cmd)
+
+    with pytest.raises(RuntimeError, match="超时"):
+        git_warpper.fetch_remote(tmp_path, live=False, timeout=5)
+    assert calls == [5]
+
+
 def test_update_without_fetch_reuses_already_fetched_refs(monkeypatch, git_remote_pair):
     upstream, local = git_remote_pair
     new_commit = _push_commit(upstream, "v2\n")

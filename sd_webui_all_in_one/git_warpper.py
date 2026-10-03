@@ -1,7 +1,9 @@
 """Git 调用工具"""
 
 import os
+import re
 import shutil
+import subprocess
 import time
 from pathlib import Path
 from functools import cache
@@ -29,6 +31,13 @@ NON_INTERACTIVE_GIT_ENV = {"GIT_TERMINAL_PROMPT": "0", "GCM_INTERACTIVE": "never
 
 FETCH_RETRY_DELAY = 2.0
 """拉取失败后重试前的等待时间 (秒)"""
+
+PERMANENT_FETCH_ERROR_PATTERN = re.compile(
+    r"repository not found|repository '[^']*' not found|authentication failed|could not read username|"
+    r"terminal prompts disabled|does not appear to be a git repository|couldn't find remote ref",
+    re.IGNORECASE,
+)
+"""重试也无法恢复的拉取错误 (仓库不存在、凭据缺失、远程分支不存在等), 匹配时跳过重试"""
 
 
 @cache
@@ -321,8 +330,11 @@ def fetch_remote(
     live: bool = True,
     custom_env: dict[str, str] | None = None,
     retries: int = 1,
+    timeout: float | None = None,
 ) -> None:
     """以非交互方式执行 git fetch, 失败时重试
+
+    仓库不存在、缺少凭据等重试也无法恢复的错误不会重试; 超时也不会重试, 以免成倍延长等待时间。
 
     Args:
         path (Path):
@@ -335,18 +347,22 @@ def fetch_remote(
             基础环境变量, 为 None 时使用当前进程环境变量
         retries (int):
             失败后的重试次数
+        timeout (float | None):
+            单次拉取的超时时间 (秒), 为 None 时不限制
 
     Raises:
         RuntimeError:
-            重试后仍拉取失败时
+            重试后仍拉取失败或拉取超时时
     """
     env = non_interactive_env(custom_env)
     for attempt in range(retries + 1):
         try:
-            run_git("fetch", *args, path=path, custom_env=env, live=live)
+            run_git("fetch", *args, path=path, custom_env=env, live=live, timeout=timeout)
             return
+        except subprocess.TimeoutExpired as e:
+            raise RuntimeError(f"拉取 '{path}' 超时 ({timeout} 秒)") from e
         except RuntimeError as e:
-            if attempt >= retries:
+            if attempt >= retries or PERMANENT_FETCH_ERROR_PATTERN.search(str(e)):
                 raise
             logger.warning("拉取 '%s' 失败, %s 秒后重试 (%s/%s): %s", path, FETCH_RETRY_DELAY, attempt + 1, retries, e)
             time.sleep(FETCH_RETRY_DELAY)

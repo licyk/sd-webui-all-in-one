@@ -16,6 +16,9 @@ from sd_webui_all_in_one.base_manager.base import (
 )
 from sd_webui_all_in_one.base_manager.repository_inspector import (
     inspect_repository,
+    read_branch_upstream,
+    read_ref_commit,
+    read_repository_tracking_state,
     run_git_output,
 )
 from sd_webui_all_in_one.mirror_manager import GITHUB_MIRROR_LIST
@@ -36,6 +39,13 @@ DEFAULT_EXTENSION_INDEX_URL = "https://raw.githubusercontent.com/AUTOMATIC1111/s
 
 ExtensionSourceType = Literal["git", "comfy-registry", "file", "unknown"]
 """扩展安装来源类型"""
+
+
+CHECK_FETCH_TIMEOUT = 300.0
+"""检查更新时单次拉取的超时时间 (秒), 防止连接挂起导致检查无法结束"""
+
+CHECK_FETCH_GIT_ENV = {"GIT_HTTP_LOW_SPEED_LIMIT": "1000", "GIT_HTTP_LOW_SPEED_TIME": "20"}
+"""检查更新时的 HTTP 低速中止阈值: 连续 20 秒低于 1000 字节/秒时中止拉取, 避免停滞的镜像连接长时间占用线程"""
 
 
 from sd_webui_all_in_one.base_manager.version_manager.models import BranchInfo, CommitInfo, RepositoryUpdateStatus
@@ -171,26 +181,6 @@ def _resolve_update_remote_ref(path: Path, branch: str | None) -> str | None:
     return None
 
 
-def _read_repository_dirty(path: Path) -> bool:
-    """
-    检查 Git 工作区是否有未提交改动
-
-    Args:
-        path (Path):
-            Git 仓库路径
-
-    Returns:
-        bool: 存在未提交改动时返回 True
-
-    Raises:
-        RuntimeError:
-            执行 Git 命令失败时
-    """
-    is_dirty = bool(_run_git_output(path, "status", "--porcelain"))
-    logger.debug("仓库工作区是否包含未提交改动: %s", is_dirty)
-    return is_dirty
-
-
 def _read_ahead_behind(path: Path, remote_ref: str) -> tuple[int, int]:
     """
     读取本地与远程引用的领先/落后提交数
@@ -213,6 +203,70 @@ def _read_ahead_behind(path: Path, remote_ref: str) -> tuple[int, int]:
     return int(parts[0]), int(parts[1])
 
 
+def _upstream_fetch_args(path: Path, branch: str | None) -> list[str] | None:
+    """
+    生成检查更新时仅拉取当前分支上游所需的 git fetch 参数
+
+    Args:
+        path (Path):
+            Git 仓库路径
+        branch (str | None):
+            当前分支
+
+    Returns:
+        list[str] | None: git fetch 参数, 无需联网拉取 (detached HEAD 或上游为本地分支) 时返回 None
+    """
+    if branch is None:
+        logger.debug("仓库处于 detached HEAD 状态, 跳过拉取: %s", path)
+        return None
+    upstream = read_branch_upstream(path, branch)
+    if upstream is None:
+        # 未配置上游时沿用 origin/<分支> 作为更新检查的远程引用
+        return ["--no-tags", "origin", f"+refs/heads/{branch}:refs/remotes/origin/{branch}"]
+    if upstream.remote == ".":
+        logger.debug("上游为本地分支, 跳过拉取: %s", path)
+        return None
+    if upstream.tracking_ref is None:
+        # 远程源使用自定义 refspec, 交给 Git 按配置更新远程跟踪引用
+        return ["--no-tags", upstream.remote]
+    return ["--no-tags", upstream.remote, f"+{upstream.merge}:{upstream.tracking_ref}"]
+
+
+def fetch_repository_upstream(
+    path: Path,
+    branch: str | None,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """
+    仅拉取当前分支的上游分支, 用于检查更新
+
+    相比拉取全部远程源的分支和标签, 只需协商一个引用; 同时限制拉取时间, 避免连接挂起。
+
+    Args:
+        path (Path):
+            Git 仓库路径
+        branch (str | None):
+            当前分支
+        use_github_mirror (bool):
+            是否启用 GitHub 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 GitHub 镜像源
+
+    Raises:
+        RuntimeError:
+            拉取失败或超时时
+    """
+    args = _upstream_fetch_args(path, branch)
+    if args is None:
+        return
+    custom_env = configure_git_env(use_github_mirror=use_github_mirror, custom_github_mirror=custom_github_mirror) if use_github_mirror else os.environ.copy()
+    for key, value in CHECK_FETCH_GIT_ENV.items():
+        custom_env.setdefault(key, value)
+    logger.debug("拉取上游分支: %s (git fetch %s)", path, " ".join(args))
+    git_warpper.fetch_remote(path, *args, live=False, custom_env=custom_env, timeout=CHECK_FETCH_TIMEOUT)
+
+
 def check_repository_update(
     path: Path,
     fetch: bool = True,
@@ -221,6 +275,9 @@ def check_repository_update(
 ) -> RepositoryUpdateStatus:
     """
     检查 Git 仓库是否存在远程更新
+
+    只拉取当前分支的上游, 然后通过一次 git status 读取上游、领先/落后提交数和工作区状态,
+    远程提交直接从引用文件读取。正常情况下每个仓库只需一次拉取和一次本地 Git 调用。
 
     Args:
         path (Path):
@@ -236,7 +293,7 @@ def check_repository_update(
         RepositoryUpdateStatus: 仓库更新状态
     """
     logger.info("检查仓库更新中: %s", path)
-    state = inspect_repository(path)
+    state = inspect_repository(path, details=False)
     status = RepositoryUpdateStatus(
         name=state.name,
         path=state.path,
@@ -252,16 +309,25 @@ def check_repository_update(
 
     try:
         if fetch:
-            fetch_repository(path, use_github_mirror=use_github_mirror, custom_github_mirror=custom_github_mirror)
-        status.is_dirty = _read_repository_dirty(path)
-        status.remote_branch = _resolve_update_remote_ref(path, state.branch)
-        if status.remote_branch is None:
-            status.error = "未找到远程跟踪分支"
-            logger.warning("未找到远程跟踪分支, 跳过更新检查: %s", path)
-            return status
-        status.current_commit = _run_git_output(path, "rev-parse", "HEAD")
-        status.remote_commit = _run_git_output(path, "rev-parse", status.remote_branch)
-        status.ahead, status.behind = _read_ahead_behind(path, status.remote_branch)
+            fetch_repository_upstream(path, state.branch, use_github_mirror=use_github_mirror, custom_github_mirror=custom_github_mirror)
+        tracking = read_repository_tracking_state(path)
+        status.is_dirty = tracking.dirty
+        status.current_commit = tracking.commit or status.current_commit
+        if tracking.upstream is not None and tracking.upstream_exists:
+            status.remote_branch = tracking.upstream
+            status.ahead, status.behind = tracking.ahead, tracking.behind
+        else:
+            status.remote_branch = _resolve_update_remote_ref(path, tracking.branch) if tracking.branch is not None else None
+            if status.remote_branch is None:
+                status.error = "未找到远程跟踪分支"
+                logger.warning("未找到远程跟踪分支, 跳过更新检查: %s", path)
+                return status
+            status.ahead, status.behind = _read_ahead_behind(path, status.remote_branch)
+        status.remote_commit = read_ref_commit(
+            path,
+            f"refs/remotes/{status.remote_branch}",
+            f"refs/heads/{status.remote_branch}",
+        ) or _run_git_output(path, "rev-parse", "--verify", status.remote_branch)
         status.has_update = status.behind > 0
         status.error = None
         logger.info("仓库更新检查完成: %s, 当前提交 %s, 远程提交 %s, 是否有更新: %s", path, status.current_commit, status.remote_commit, status.has_update)
