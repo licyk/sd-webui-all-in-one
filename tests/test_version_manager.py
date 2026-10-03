@@ -270,7 +270,6 @@ def git_remote_pair(monkeypatch, tmp_path):
     for key, value in {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"}.items():
         monkeypatch.setenv(key, value)
 
-    # 路径统一使用正斜杠: Windows 上 Git 遇到含反斜杠的本地路径会经 sh.exe 启动 upload-pack
     origin = tmp_path / "origin.git"
     upstream = tmp_path / "upstream"
     local = tmp_path / "local"

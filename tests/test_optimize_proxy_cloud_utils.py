@@ -228,7 +228,11 @@ def test_tcmalloc_common_colab_and_idempotent(monkeypatch, tmp_path):
     def fake_run(command, **kwargs):
         return subprocess.CompletedProcess(command, 0, stdout=outputs[tuple(command)], stderr="")
 
-    monkeypatch.delenv("LD_PRELOAD", raising=False)
+    # 被测代码直接写入 os.environ; LD_PRELOAD 原本不存在时 delenv 不会记录任何状态,
+    # 先 setenv 让 monkeypatch 记录原始状态, 保证测试结束后移除写入的值, 避免泄漏给后续测试
+    # (Windows 上 Git 自带的 sh.exe 会按 LD_PRELOAD 加载不存在的库而崩溃)
+    monkeypatch.setenv("LD_PRELOAD", "")
+    monkeypatch.delenv("LD_PRELOAD")
     monkeypatch.setattr(tcmalloc, "is_colab_environment", lambda: False)
     monkeypatch.setattr(tcmalloc.subprocess, "run", fake_run)
 
