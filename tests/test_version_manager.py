@@ -255,7 +255,7 @@ def test_filter_extension_index_by_keyword_and_tag():
 
 
 def _real_git(repo, *args):
-    return subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True, text=True).stdout.strip()
+    return subprocess.run(["git", "-C", repo.as_posix(), *args], check=True, capture_output=True, text=True).stdout.strip()
 
 
 @pytest.fixture
@@ -270,17 +270,18 @@ def git_remote_pair(monkeypatch, tmp_path):
     for key, value in {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"}.items():
         monkeypatch.setenv(key, value)
 
+    # 路径统一使用正斜杠: Windows 上 Git 遇到含反斜杠的本地路径会经 sh.exe 启动 upload-pack
     origin = tmp_path / "origin.git"
     upstream = tmp_path / "upstream"
     local = tmp_path / "local"
-    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(origin)], check=True)
-    subprocess.run(["git", "clone", "-q", str(origin), str(upstream)], check=True)
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", origin.as_posix()], check=True)
+    subprocess.run(["git", "clone", "-q", origin.as_posix(), upstream.as_posix()], check=True)
     _real_git(upstream, "checkout", "-q", "-b", "main")
     (upstream / "file.txt").write_text("v1\n", encoding="utf-8")
     _real_git(upstream, "add", "file.txt")
     _real_git(upstream, "commit", "-q", "-m", "v1")
     _real_git(upstream, "push", "-q", "origin", "main")
-    subprocess.run(["git", "clone", "-q", str(origin), str(local)], check=True)
+    subprocess.run(["git", "clone", "-q", origin.as_posix(), local.as_posix()], check=True)
     return upstream, local
 
 
@@ -376,7 +377,7 @@ def test_check_repository_update_skips_fetch_for_detached_head(monkeypatch, git_
 
 def test_check_repository_update_reports_fetch_failure(git_remote_pair):
     _upstream, local = git_remote_pair
-    _real_git(local, "remote", "set-url", "origin", str(local.parent / "missing.git"))
+    _real_git(local, "remote", "set-url", "origin", (local.parent / "missing.git").as_posix())
 
     status = version_manager.check_repository_update(local)
 
