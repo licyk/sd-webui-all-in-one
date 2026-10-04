@@ -28,6 +28,7 @@ jobs:
               'build_kohya_gui.yml',
               'build_musubi_tuner.yml',
               'build_qwen_tts_webui.yml',
+              'build_qwen_tts_webui_rocm.yml',
               'build_sd_next.yml',
               'build_sd_scripts.yml',
               'build_sd_trainer.yml',

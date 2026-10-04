@@ -317,6 +317,7 @@ Windows / Linux / macOS 平台安装、启动和管理 [Qwen TTS WebUI](https://
 |Build [SD Scripts](https://github.com/kohya-ss/sd-scripts) Portable|[![Build SD Scripts](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_scripts.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_scripts.yml)|
 |Build [Musubi Tuner](https://github.com/kohya-ss/musubi-tuner) Portable|[![Build Musubi Tuner](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml)|
 |Build [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) Portable|[![Build Qwen TTS WebUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui.yml)|
+|Build [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) (ROCm) Portable|[![Build Qwen TTS WebUI ROCm](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui_rocm.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui_rocm.yml)|
 
 ***
 
