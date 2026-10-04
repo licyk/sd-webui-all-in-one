@@ -619,7 +619,13 @@ Musubi Tuner 当前不属于 Hanafubuki 支持的实例类型。使用 [Bash TUI
 支持 Qwen TTS WebUI Installer / Hanafubuki 进行管理。
 
 
+**NVIDIA 显卡版本：**
+
 [下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&platform=windows&channel=nightly&software=qwen_tts_webui_cuda){ .md-button .md-button--primary }
+
+**AMD 显卡版本：**
+
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&platform=windows&channel=nightly&software=qwen_tts_webui_rocm){ .md-button .md-button--primary }
 
 ### Qwen TTS WebUI Installer 管理方式
 - configure_env.bat：首次使用 Qwen TTS WebUI Installer 需要运行一次，保证能正常运行
