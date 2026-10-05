@@ -110,9 +110,6 @@ RVC Next WebUI Installer 默认启用了 PyPI镜像源加速下载 Python 软件
 !!! note
     **配置文件**的优先级高于**系统代理**配置，所以当同时使用了两种方式配置代理，脚本将优先使用**配置文件**中的代理配置。
 
-!!! note
-    RVC Next WebUI 自带的代理设置会被禁用（启动时总是附加 `--disable-proxy`），代理统一由 RVC Next WebUI Installer 设置，因此在 `launch_args.txt` 中填写 `--proxy` 不会生效。
-
 #### 禁用自动设置代理
 !!! info
     该设置可通过 [管理 RVC Next WebUI Installer 设置](#rvc-next-webui-installer_1) 中提到的 `settings.ps1` 进行修改。
@@ -166,11 +163,11 @@ RVC Next WebUI Installer 通过“内核路径前缀”找到要启动和管理�
 !!! info
     该设置可通过 [管理 RVC Next WebUI Installer 设置](#rvc-next-webui-installer_1) 中提到的 `settings.ps1` 进行修改。
 
-运行 `launch.ps1` 时，会先检查 RVC Next WebUI 的运行环境，再启动 RVC Next WebUI。RVC Next WebUI 自带的环境检查会被跳过（启动时总是附加 `--skip-check`），环境检查统一由 RVC Next WebUI Installer 负责。检查包含以下任务：
+运行 `launch.ps1` 时，会先检查 RVC Next WebUI 的运行环境，再启动 RVC Next WebUI。检查包含以下任务：
 
 | 任务名称 | 作用 |
 | --- | --- |
-| `python-dependencies` | 检查 RVC Next WebUI 的 `requirements.txt` 以及 `rvc-next` 软件包自身声明的依赖，缺失时自动安装。如果 PyTorch 未安装或版本低于 2.7.1，将不会自动安装，而是报错并提示使用 PyTorch 重装工具（`reinstall_pytorch.ps1`）重新安装 PyTorch。 |
+| `python-dependencies` | 检查 RVC Next WebUI 的 `requirements.txt` 中的依赖，缺失时自动安装。 |
 | `torch-libomp` | 检测并修复 PyTorch 的 libomp 问题。 |
 | `torch-version` | 检查当前安装的 PyTorch 类型是否适合当前设备，例如有可用显卡却安装了 CPU 版本的 PyTorch 时给出警告。 |
 

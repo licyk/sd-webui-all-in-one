@@ -117,7 +117,7 @@ D:/rvc-next-webui
 运行 `reinstall_pytorch.ps1` 脚本，并根据脚本提示的内容进行操作。
 
 !!! warning
-    RVC Next 需要 2.7.1 及以上版本的 PyTorch，并且不支持 DirectML 版本的 PyTorch。`reinstall_pytorch.ps1` 列出的 PyTorch 版本中可能包含不满足要求的版本，选择时请注意；如果安装的 PyTorch 版本低于 2.7.1，启动前的环境检查会报错并提示重新安装 PyTorch。
+    RVC Next 需要 2.7.1 及以上版本的 PyTorch，并且不支持 DirectML 版本的 PyTorch。`reinstall_pytorch.ps1` 列出的 PyTorch 版本中可能包含不满足要求的版本，选择时请注意。
 
 ### 卸载 RVC Next WebUI
 使用 RVC Next WebUI Installer 安装 RVC Next WebUI 后，主要文件都存放在 `rvc-next-webui` 文件夹中。确认模型、实验、输出文件等重要数据（默认位于 `rvc-next-webui/core/data`）已经备份后，删除该文件夹即可卸载 RVC Next WebUI。

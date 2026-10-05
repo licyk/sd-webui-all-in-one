@@ -38,7 +38,7 @@ RVC Next WebUI Installer 支持使用命令参数设置安装 RVC Next WebUI 的
 - `-InstallPath` `<安装 RVC Next WebUI 的绝对路径>`：指定 RVC Next WebUI Installer 安装 RVC Next WebUI 的路径，使用绝对路径表示。
     例如：`./rvc_next_webui_installer.ps1 -InstallPath "D:\Download"`，这将指定安装到 D:\Download 路径。
 - `-PyTorchMirrorType` `<PyTorch 镜像源类型>`：指定安装 PyTorch 时使用的镜像源类型。可指定的类型包括：`cu113`, `cu117`, `cu118`, `cu121`, `cu124`, `cu126`, `cu128`, `cu129`, `cu130`, `rocm5.4.2`, `rocm5.6`, `rocm5.7`, `rocm6.0`, `rocm6.1`, `rocm6.2`, `rocm6.2.4`, `rocm6.3`, `rocm6.4`, `rocm7.1`, `rocm7.2`, `rocm7`, `rocm10`, `xpu`, `ipex_legacy_arc`, `cpu`, `directml`, `all`
-    RVC Next 不支持 DirectML，指定 `directml` 时安装会直接报错并终止；如果所选类型对应的 PyTorch 版本低于 2.7.1（如较旧的 CUDA / ROCm 类型），安装同样会报错并终止。
+    RVC Next 需要 2.7.1 及以上版本的 PyTorch，并且不支持 DirectML，请选择对应 PyTorch 版本满足要求的类型。
 - `-InstallPythonVersion` `<Python 版本>`：指定要安装的 Python 版本。可选值：`3.10`, `3.11`, `3.12`, `3.13`, `3.14`
 - `-RestoreFromSnapshot`：启用快照重建模式，根据快照文件重新准备 Python 版本并恢复环境。
 - `-SnapshotPath` `<快照文件>`：指定用于快照重建的环境快照 JSON 文件路径。启用快照重建模式时需要和 `-RestoreFromSnapshot` 同时使用。
@@ -60,7 +60,7 @@ RVC Next WebUI Installer 支持使用命令参数设置安装 RVC Next WebUI 的
 - `-BuildWithTorchReinstall`：(需添加 `-BuildMode`及`-BuildWithTorch`) 执行 PyTorch 指定版本安装时使用强制重新安装模式。
 - `-BuildWithUpdate`：(需添加 `-BuildMode`) 安装流程结束后调用 `update.ps1` 脚本，更新 RVC Next WebUI 内核。
 - `-BuildWithLaunch`：(需添加 `-BuildMode`) 安装流程结束后调用 `launch.ps1` 脚本，执行启动前的环境检查，但跳过启动 RVC Next WebUI。
-- `-PyTorchPackage` `<PyTorch 软件包>`：指定安装的 PyTorch 版本，RVC Next 需要 2.7.1 及以上版本的 PyTorch，低于该版本时安装会直接报错并终止。如：`-PyTorchPackage "torch==2.8.0+cu128 torchvision==0.23.0+cu128 torchaudio==2.8.0+cu128"`
+- `-PyTorchPackage` `<PyTorch 软件包>`：指定安装的 PyTorch 版本，RVC Next 需要 2.7.1 及以上版本的 PyTorch。如：`-PyTorchPackage "torch==2.8.0+cu128 torchvision==0.23.0+cu128 torchaudio==2.8.0+cu128"`
 - `-NoCleanCache`：安装结束后保留下载的 Python 软件包缓存。
 - `-InstallHanafubuki`：安装当前平台和架构对应的 Hanafubuki 启动器，并将根级 Python / Git 移入当前内核路径前缀目录。
 - `-NoPause`：脚本执行完成后不暂停, 直接退出。

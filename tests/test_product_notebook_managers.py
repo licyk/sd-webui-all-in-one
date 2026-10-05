@@ -410,27 +410,6 @@ def test_sd_scripts_deprecated_compat_repo_and_helpers(monkeypatch, tmp_path):
     assert calls[-1] == ("kaggle", tmp_path / "kaggle")
 
 
-def test_rvc_next_webui_launch_command_pins_tunnel_port_and_managed_args(tmp_path):
-    manager = rvc_next_webui_manager.RvcNextWebUIManager(tmp_path, "app", port=7870)
-
-    command = manager.parse_cmd_str_to_list(manager.get_launch_command(["--host", "0.0.0.0", "--access-token", "secret"]))
-    assert command[2:] == [
-        "--host",
-        "0.0.0.0",
-        "--access-token",
-        "secret",
-        "--port",
-        "7870",
-        "--strict-port",
-        "--no-browser",
-        "--skip-check",
-        "--disable-proxy",
-    ]
-
-    command = manager.parse_cmd_str_to_list(manager.get_launch_command("--port 9000 --no-browser"))
-    assert command[2:] == ["--port", "9000", "--no-browser", "--skip-check", "--disable-proxy"]
-
-
 def test_rvc_next_webui_run_maps_hf_mirror_to_download_settings(monkeypatch, tmp_path):
     manager = rvc_next_webui_manager.RvcNextWebUIManager(tmp_path, "app")
     manager.launch = lambda **kwargs: None

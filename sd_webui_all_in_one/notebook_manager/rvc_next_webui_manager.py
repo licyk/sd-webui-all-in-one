@@ -26,10 +26,7 @@ from sd_webui_all_in_one.base_manager import (
     update_rvc_next_webui,
     check_rvc_next_webui_env,
 )
-from sd_webui_all_in_one.base_manager.rvc_next_webui_base.runtime import (
-    apply_rvc_next_hf_mirror,
-    apply_rvc_next_managed_launch_args,
-)
+from sd_webui_all_in_one.base_manager.rvc_next_webui_base.runtime import apply_rvc_next_hf_mirror
 
 logger = get_logger(
     name=LOGGER_NAME,
@@ -40,37 +37,6 @@ logger = get_logger(
 
 class RvcNextWebUIManager(BaseManager):
     """RVC Next WebUI 管理工具"""
-
-    def __init__(
-        self,
-        workspace: str | Path,
-        workfolder: str,
-        hf_token: str | None = None,
-        ms_token: str | None = None,
-        port: int = 7868,
-    ) -> None:
-        """管理工具初始化
-
-        Args:
-            workspace (str | Path):
-                工作区路径
-            workfolder (str):
-                工作区的文件夹名称
-            hf_token (str | None):
-                HuggingFace Token
-            ms_token (str | None):
-                ModelScope Token
-            port (int):
-                内网穿透端口, 同时作为 RVC Next WebUI 的监听端口
-        """
-        super().__init__(
-            workspace=workspace,
-            workfolder=workfolder,
-            hf_token=hf_token,
-            ms_token=ms_token,
-            port=port,
-        )
-        self.port = port
 
     def mount_drive(
         self,
@@ -152,23 +118,18 @@ class RvcNextWebUIManager(BaseManager):
     ) -> str:
         """获取 RVC Next WebUI 启动命令
 
-        未指定 ``--port`` 时使用内网穿透端口并启用 ``--strict-port``, 保证 RVC Next WebUI 的监听端口和内网穿透端口一致.
-
         Args:
             params (list[str] | str | None): 启动 RVC Next WebUI 的参数
         Returns:
             str: 完整的启动 RVC Next WebUI 的命令
         """
         rvc_next_webui_path = self.workspace / self.workfolder
-        args: list[str] = []
-        if params is not None:
-            args = self.parse_cmd_str_to_list(params) if isinstance(params, str) else list(params)
-        if "--port" not in args:
-            args += ["--port", str(self.port), "--strict-port"]
-        if "--no-browser" not in args:
-            args.append("--no-browser")
         cmd = [Path(sys.executable).as_posix(), (rvc_next_webui_path / "launch.py").as_posix()]
-        cmd += apply_rvc_next_managed_launch_args(args)
+        if params is not None:
+            if isinstance(params, str):
+                cmd += self.parse_cmd_str_to_list(params)
+            else:
+                cmd += params
         return self.parse_cmd_list_to_str(cmd)
 
     def apply_hf_mirror_env(self) -> None:

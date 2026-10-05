@@ -22,7 +22,6 @@ from sd_webui_all_in_one.optimize import (
     apply_pytorch_alloc_conf,
 )
 
-from sd_webui_all_in_one.base_manager.rvc_next_webui_base.catalog import RVC_NEXT_WEBUI_MANAGED_LAUNCH_ARGS
 from sd_webui_all_in_one.base_manager.rvc_next_webui_base.shared import logger
 
 RVC_NEXT_DOWNLOAD_SOURCE_ENV = "RVC_NEXT_DOWNLOADS__SOURCE"
@@ -61,25 +60,6 @@ def apply_rvc_next_hf_mirror(
     custom_env[RVC_NEXT_DOWNLOAD_ENDPOINT_ENV] = endpoint
     logger.info("RVC Next 使用 HuggingFace 镜像源: %s", endpoint)
     return custom_env
-
-
-def apply_rvc_next_managed_launch_args(
-    launch_args: list[str] | None,
-) -> list[str]:
-    """补充 RVC Next WebUI 固定使用的启动参数
-
-    RVC Next WebUI 自带的运行环境检查和代理设置由 SD WebUI All In One 接管, 因此始终传入对应的禁用参数.
-
-    Args:
-        launch_args (list[str] | None):
-            用户设置的启动参数
-
-    Returns:
-        list[str]:
-            补充固定参数后的启动参数
-    """
-    args = list(launch_args or [])
-    return args + [arg for arg in RVC_NEXT_WEBUI_MANAGED_LAUNCH_ARGS if arg not in args]
 
 
 def prepare_rvc_next_webui_launch(
@@ -168,7 +148,7 @@ def prepare_rvc_next_webui_launch(
         webui_path=rvc_next_webui_path,
         launch_script="launch.py",
         webui_name="RVC Next WebUI",
-        launch_args=apply_rvc_next_managed_launch_args(launch_args),
+        launch_args=launch_args or [],
         custom_env=custom_env,
     )
 

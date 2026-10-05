@@ -1,7 +1,7 @@
 # CLI - RVC Next WebUI
 
 ## RVC Next WebUI
-RVC Next WebUI 是 [RVC Next](https://github.com/licyk/rvc-next) 的启动器，提供 RVC 语音转换、模型训练和实时变声功能。RVC Next 需要 2.7.1 及以上版本的 PyTorch，不支持 DirectML。
+RVC Next WebUI 是 [RVC Next](https://github.com/licyk/rvc-next) 的启动器，提供 RVC 语音转换、模型训练和实时变声功能。RVC Next 需要 2.7.1 及以上版本的 PyTorch，不支持 DirectML。安装时请选择满足要求的 PyTorch 类型和版本。
 
 !!! note
     本页中包含镜像源设置的子命令默认启用自动镜像源选择，并支持 `--no-auto-mirror`。自动模式会根据网络检测结果强制覆盖 PyPI、Github 和 HuggingFace 镜像源参数；需要手动调整 `--no-*mirror` 或 `--custom-*` 时，请同时添加 `--no-auto-mirror`。
@@ -14,7 +14,7 @@ sd-webui-all-in-one rvc-next-webui install [选项]
 - **高级选项**:
   - `--rvc-next-webui-path <路径>`: RVC Next WebUI 根目录，默认为配置文件中的路径。
   - `--pytorch-mirror-type <类型>`: 设置使用的 PyTorch 镜像源类型。
-  - `--custom-pytorch-package <包名>`: 自定义 PyTorch 软件包版本声明。选择的 PyTorch 低于 2.7.1 或为 DirectML 版本时安装会直接失败。
+  - `--custom-pytorch-package <包名>`: 自定义 PyTorch 软件包版本声明。
   - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
   - `--no-uv`: 不使用 uv 安装 Python 软件包。
   - `--no-github-mirror`: 不使用 Github 镜像源。
@@ -87,7 +87,7 @@ sd-webui-all-in-one rvc-next-webui launch [选项]
 
 - **高级选项**:
   - `--rvc-next-webui-path <路径>`: RVC Next WebUI 根目录。
-  - `--launch-args <参数>`: 启动参数 (请使用引号包裹，例如 `"--port 7870 --no-browser"`)。启动时会固定追加 `--skip-check --disable-proxy`，由 SD WebUI All In One 负责运行环境检查和代理设置。
+  - `--launch-args <参数>`: 启动参数 (请使用引号包裹，例如 `"--port 7870 --no-browser"`)。
   - `--no-hf-mirror`: 禁用 HuggingFace 镜像源。
   - `--custom-hf-mirror <URL>`: 自定义 HuggingFace 镜像源。
   - `--no-github-mirror`: 禁用 Github 镜像源。
@@ -149,4 +149,4 @@ sd-webui-all-in-one rvc-next-webui reinstall-pytorch [选项]
     RVC Next 不读取 `HF_ENDPOINT`。启用 HuggingFace 镜像源时，`launch` 会设置 `RVC_NEXT_DOWNLOADS__SOURCE=custom` 和 `RVC_NEXT_DOWNLOADS__ENDPOINT=<镜像源地址>`，让 RVC Next 通过镜像源下载模型；已手动设置这两个环境变量时不会覆盖。此时 RVC Next 设置界面中的下载源会被环境变量固定，需要在 RVC Next 中自行选择下载源时请使用 `--no-hf-mirror`。
 
 !!! note
-    运行环境检查任务包括 `python-dependencies`、`torch-libomp` 和 `torch-version`。`python-dependencies` 会同时检查 `requirements.txt` 和 RVC Next 自身声明的依赖；PyTorch 未安装或低于 2.7.1 时不会自动安装依赖，请先使用 `reinstall-pytorch` 重装 PyTorch。
+    运行环境检查任务包括 `python-dependencies`、`torch-libomp` 和 `torch-version`。

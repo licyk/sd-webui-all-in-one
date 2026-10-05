@@ -53,12 +53,3 @@ def get_rvc_next_webui_launch_argument_catalog(
 
 
 RVC_NEXT_WEBUI_REPO = "https://github.com/licyk/rvc-next-webui"
-
-RVC_NEXT_PACKAGE_NAME = "rvc-next"
-"""RVC Next WebUI 依赖的 RVC Next 软件包名称"""
-
-RVC_NEXT_TORCH_MIN_VERSION = "2.7.1"
-"""RVC Next 需要的最低 PyTorch 版本"""
-
-RVC_NEXT_WEBUI_MANAGED_LAUNCH_ARGS = ("--skip-check", "--disable-proxy")
-"""启动时固定传入的参数, 运行环境检查和代理由 SD WebUI All In One 负责"""

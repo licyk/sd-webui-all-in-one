@@ -59,28 +59,6 @@ ERROR: THESE PACKAGES DO NOT MATCH THE HASHES FROM THE REQUIREMENTS FILE. If you
 
 这是因为下载下来的 Python 软件包出现了损坏，Pip 无法进行安装，需要将 `rvc-next-webui/cache/pip` 文件夹删除，再重新运行 RVC Next WebUI Installer。
 
-### 安装时提示不支持 DirectML 或 PyTorch 版本过低
-运行 RVC Next WebUI Installer 时出现以下类似的错误。
-
-```
-RVC Next WebUI 不支持 DirectML 版本的 PyTorch, 请选择其他类型的 PyTorch
-```
-
-```
-RVC Next WebUI 需要 2.7.1 及以上版本的 PyTorch, 当前选择的 PyTorch 版本为 ...
-```
-
-这是因为 RVC Next 需要 2.7.1 及以上版本的 PyTorch，并且不支持 DirectML。请检查 `-PyTorchMirrorType` / `-PyTorchPackage` 参数，更换为支持的 PyTorch 类型或版本后重新运行 RVC Next WebUI Installer。参数说明可阅读 [使用命令运行 RVC Next WebUI Installer](advanced.md#rvc-next-webui-installer_1)。
-
-### 启动时提示 PyTorch 未安装或版本过低
-运行 `launch.ps1` 时出现以下类似的错误。
-
-```
-当前环境的 PyTorch 未安装或版本低于 2.7.1, 请使用 PyTorch 重装工具重新安装 PyTorch
-```
-
-这是因为启动前的环境检查发现当前环境中的 PyTorch 不满足 RVC Next 的要求，环境检查不会自动安装 PyTorch。请运行 `reinstall_pytorch.ps1`，选择 2.7.1 及以上版本且非 DirectML 的 PyTorch 重新安装后，再运行 `launch.ps1`。
-
 ### CUDA out of memory
 关闭其他占用显存的程序后重试；训练模型时可尝试在 RVC Next WebUI 中降低批大小（batch size）。
 

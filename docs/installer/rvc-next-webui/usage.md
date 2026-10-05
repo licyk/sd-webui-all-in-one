@@ -58,14 +58,8 @@ RVC Next WebUI Installer 默认生成的 `launch_args.txt` 不包含任何启动
     
     如果修改启动参数导致无法正常启动，可将 `launch_args.txt` 清空，恢复为默认的空启动参数。
 
-!!! warning
-    RVC Next WebUI Installer 启动 RVC Next WebUI 时总是会附加 `--skip-check --disable-proxy` 启动参数，运行环境检查和代理设置由 RVC Next WebUI Installer 负责，因此不需要在 `launch_args.txt` 中填写这两个参数。
-    
-    也因为这个原因，RVC Next WebUI 自带的 `--torch-backend`、`--reinstall-torch`、`--index-url`、`--proxy` 参数在 RVC Next WebUI Installer 中不会生效：
-    
-    - 重装或切换 PyTorch 请使用 `reinstall_pytorch.ps1`。
-    - PyPI 镜像源请参考 [设置 PyPI 镜像源](config.md#pypi)。
-    - 代理请参考 [配置代理](config.md#_4)。
+!!! note
+    RVC Next WebUI 启动时会先执行自带的运行环境检查和代理设置，相关的启动参数（`--skip-check`、`--torch-backend`、`--reinstall-torch`、`--index-url`、`--proxy`、`--disable-proxy`）可阅读 [启动参数 · licyk/rvc-next-webui](https://github.com/licyk/rvc-next-webui?tab=readme-ov-file#%E5%90%AF%E5%8A%A8%E5%8F%82%E6%95%B0)。通常不需要修改这些参数，重装或切换 PyTorch 建议使用 `reinstall_pytorch.ps1`。
 
 ### RVC Next WebUI 的数据目录
 RVC Next 的所有数据（设置文件 `settings.toml`、数据库、模型、实验和输出）默认保存在内核目录的 `data` 文件夹中，即 `rvc-next-webui/core/data`（`core` 为默认的内核路径前缀，以实际内核目录为准）。备份、迁移或重装 RVC Next WebUI 时，请优先备份该文件夹。

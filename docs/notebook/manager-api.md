@@ -96,7 +96,7 @@ cmd = comfyui.get_launch_command("--listen 0.0.0.0")
 | `FooocusManager` | 支持根据 preset 配置预下载模型。 |
 | `InvokeAIManager` | 支持设置 `INVOKEAI_ROOT` 并导入下载的模型。 |
 | `QwenTTSWebUIManager` | 面向 Qwen TTS WebUI，默认持久化输出和 `config.json`。 |
-| `RvcNextWebUIManager` | 面向 RVC Next WebUI，默认持久化 `data` 目录 (设置、数据库、模型、实验和输出)；启动命令自动使用内网穿透端口并追加 `--strict-port`、`--no-browser`、`--skip-check` 和 `--disable-proxy`。 |
+| `RvcNextWebUIManager` | 面向 RVC Next WebUI，默认持久化 `data` 目录 (设置、数据库、模型、实验和输出)；启用 HuggingFace 镜像源时会同步设置 RVC Next 的下载源。 |
 | `SDTrainerManager` | 安装后会检查 `protobuf` 版本，并启动 `gui.py` 或 `kohya_gui.py`。 |
 | `SDTrainerScriptsManager` | 面向训练脚本环境，支持配置 WandB Token 和 Git 用户信息。 |
 

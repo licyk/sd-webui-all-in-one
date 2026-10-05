@@ -67,7 +67,7 @@ sudo apt install libportaudio2
     通常这些参数不需要配置，保持默认即可，如有需要再根据说明进行配置。
 
 !!! warning
-    RVC Next 需要 2.7.1 及以上版本的 PyTorch，并且不支持 DirectML 版本的 PyTorch。RVC Next WebUI Installer 在开始安装前会检查将要安装的 PyTorch，如果通过 `-PyTorchMirrorType directml` 选择了 DirectML，或者通过 `-PyTorchPackage` 指定了低于 2.7.1 的 PyTorch 版本，安装会直接报错并终止，需要更换 PyTorch 类型或版本后重新运行 RVC Next WebUI Installer。
+    RVC Next 需要 2.7.1 及以上版本的 PyTorch，并且不支持 DirectML 版本的 PyTorch。通过 `-PyTorchMirrorType` / `-PyTorchPackage` 指定 PyTorch 时，请选择满足要求的 PyTorch 类型和版本。
 
 在 RVC Next WebUI Installer 成功安装 RVC Next WebUI 后，在`rvc-next-webui`文件夹中可以看到 RVC Next WebUI 的文件和各种管理脚本。如果出现某个步骤运行失败，可尝试重新运行 RVC Next WebUI Installer。
 
