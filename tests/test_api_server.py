@@ -92,7 +92,7 @@ def test_default_registry_uses_namespaced_real_callables():
     assert "comfyui.extension.commits" in methods
     assert "sd_webui.extension.list" in methods
     assert "sd_webui.version.branch_presets" in methods
-    assert all(f"{webui_type}.environment.collect" in methods for webui_type in ("sd_webui", "comfyui", "fooocus", "invokeai", "sd_trainer", "sd_scripts", "qwen_tts_webui"))
+    assert all(f"{webui_type}.environment.collect" in methods for webui_type in ("sd_webui", "comfyui", "fooocus", "invokeai", "sd_trainer", "sd_scripts", "qwen_tts_webui", "rvc_next_webui"))
     assert "fooocus.version.branch_presets" in methods
     assert "sd_trainer.version.branch_presets" in methods
     assert "invokeai.model.list" in methods

@@ -261,6 +261,21 @@ from sd_webui_all_in_one.base_manager.qwen_tts_webui_base import (
     get_qwen_tts_webui_snapshot,
 )
 
+from sd_webui_all_in_one.base_manager.rvc_next_webui_base import (
+    RVC_NEXT_WEBUI_REPO,
+    install_rvc_next_webui,
+    update_rvc_next_webui,
+    check_rvc_next_webui_env,
+    get_rvc_next_webui_launch_argument_catalog,
+    prepare_rvc_next_webui_launch,
+    launch_rvc_next_webui,
+    launch_rvc_next_webui_version_gui,
+    launch_rvc_next_webui_snapshot_gui,
+    check_rvc_next_webui_updates,
+    get_rvc_next_webui_environment_info,
+    get_rvc_next_webui_snapshot,
+)
+
 from sd_webui_all_in_one.base_manager.sd_scripts_base import (
     SDScriptsBranchType,
     SDScriptsBranchInfo,
@@ -603,6 +618,21 @@ __all__ = [
     "get_qwen_tts_webui_snapshot",
     "get_qwen_tts_webui_environment_info",
     "check_qwen_tts_webui_updates",
+    # rvc_next_webui_base - RVC Next WebUI 管理模块
+    # 常量
+    "RVC_NEXT_WEBUI_REPO",
+    # 函数
+    "install_rvc_next_webui",
+    "update_rvc_next_webui",
+    "check_rvc_next_webui_env",
+    "get_rvc_next_webui_launch_argument_catalog",
+    "prepare_rvc_next_webui_launch",
+    "launch_rvc_next_webui",
+    "launch_rvc_next_webui_version_gui",
+    "launch_rvc_next_webui_snapshot_gui",
+    "get_rvc_next_webui_snapshot",
+    "get_rvc_next_webui_environment_info",
+    "check_rvc_next_webui_updates",
     # sd_scripts_base.py - SD Scripts 管理模块
     # 类型定义
     "SDScriptsBranchType",

@@ -1,0 +1,790 @@
+"""RVC Next WebUI 命令行工具"""
+
+import argparse
+import shlex
+import sys
+import traceback
+from pathlib import Path
+
+from sd_webui_all_in_one.cli_manager.argparse_helpers import add_subparsers_with_help
+from sd_webui_all_in_one.base_manager import (
+    DEFAULT_RUNTIME_PORT,
+    check_rvc_next_webui_updates,
+    install_rvc_next_webui,
+    update_rvc_next_webui,
+    check_rvc_next_webui_env,
+    launch_rvc_next_webui,
+    launch_rvc_next_webui_version_gui,
+    launch_rvc_next_webui_snapshot_gui,
+    reinstall_pytorch as reinstall_base_pytorch,
+    get_rvc_next_webui_environment_info,
+    get_rvc_next_webui_snapshot,
+)
+from sd_webui_all_in_one.config import (
+    RVC_NEXT_WEBUI_ROOT_PATH,
+    SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR,
+    SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH,
+    LOGGER_NAME,
+    LOGGER_LEVEL,
+    LOGGER_COLOR,
+)
+from sd_webui_all_in_one.cli_manager.auto_mirror import (
+    add_auto_mirror_argument,
+    with_auto_mirror,
+)
+from sd_webui_all_in_one.base_manager.rvc_next_webui_base.lifecycle import RvcNextEnvCheckName
+from sd_webui_all_in_one.cli_manager.environment_info import output_environment_info
+from sd_webui_all_in_one.cli_manager.snapshot import add_pre_operation_snapshot_arguments, create_pre_operation_snapshot, output_snapshot
+from sd_webui_all_in_one.cli_manager.snapshot_restore import (
+    add_restore_arguments,
+    restore_snapshot,
+)
+from sd_webui_all_in_one.cli_manager.snapshot_gui import add_snapshot_gui_arguments
+from sd_webui_all_in_one.cli_manager.update_status import output_update_check_result
+from sd_webui_all_in_one.base_manager.version_manager import WebUiUpdateOptions
+from sd_webui_all_in_one.pytorch_manager import (
+    PYTORCH_DEVICE_LIST,
+    PyTorchDeviceType,
+)
+from sd_webui_all_in_one.utils import normalized_filepath
+from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
+from sd_webui_all_in_one.logger import get_logger
+
+logger = get_logger(
+    name=LOGGER_NAME,
+    level=LOGGER_LEVEL,
+    color=LOGGER_COLOR,
+)
+
+
+def install(
+    rvc_next_webui_path: Path,
+    pytorch_mirror_type: PyTorchDeviceType | None = None,
+    custom_pytorch_package: str | None = None,
+    use_pypi_mirror: bool = True,
+    use_uv: bool = True,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """安装 RVC Next WebUI
+
+    Args:
+        rvc_next_webui_path (Path):
+            RVC Next WebUI 根目录
+        pytorch_mirror_type (PyTorchDeviceType | None):
+            设置使用的 PyTorch 镜像源类型
+        custom_pytorch_package (str | None):
+            自定义 PyTorch 软件包版本声明, 例如: `torch==2.8.0+cu128 torchvision==0.23.0+cu128`
+        use_pypi_mirror (bool):
+            是否使用国内 PyPI 镜像源
+        use_uv (bool):
+            是否使用 uv 安装 Python 软件包
+        use_github_mirror (bool):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+    """
+    install_rvc_next_webui(
+        rvc_next_webui_path=rvc_next_webui_path,
+        pytorch_mirror_type=pytorch_mirror_type,
+        custom_pytorch_package=custom_pytorch_package,
+        use_pypi_mirror=use_pypi_mirror,
+        use_uv=use_uv,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
+def update(
+    rvc_next_webui_path: Path,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+    snapshot_enabled: bool = True,
+    snapshot_dir: Path | None = None,
+) -> None:
+    """更新 RVC Next WebUI
+
+    Args:
+        rvc_next_webui_path (Path):
+            RVC Next WebUI 根目录。
+        use_github_mirror (bool):
+            是否使用 GitHub 镜像源。
+        custom_github_mirror (str | list[str] | None):
+            自定义 GitHub 镜像源。
+        snapshot_enabled (bool):
+            是否启用操作前自动快照。
+        snapshot_dir (Path | None):
+            快照文件目录。
+    """
+    _create_pre_operation_snapshot(
+        rvc_next_webui_path=rvc_next_webui_path,
+        operation_name="更新 RVC Next WebUI",
+        snapshot_enabled=snapshot_enabled,
+        snapshot_dir=snapshot_dir,
+    )
+    update_rvc_next_webui(
+        rvc_next_webui_path=rvc_next_webui_path,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
+def _create_pre_operation_snapshot(
+    rvc_next_webui_path: Path,
+    operation_name: str,
+    snapshot_enabled: bool = True,
+    snapshot_dir: Path | None = None,
+    show_gui_warning: bool = False,
+) -> None:
+    create_pre_operation_snapshot(
+        lambda: get_rvc_next_webui_snapshot(rvc_next_webui_path=rvc_next_webui_path, include_packages=True),
+        operation_name=operation_name,
+        snapshot_enabled=snapshot_enabled,
+        snapshot_dir=snapshot_dir,
+        show_gui_warning=show_gui_warning,
+    )
+
+
+def snapshot(
+    rvc_next_webui_path: Path,
+    output: Path | None = None,
+    include_packages: bool = True,
+) -> None:
+    """生成 RVC Next WebUI 环境快照
+
+    Args:
+        rvc_next_webui_path (Path):
+            RVC Next WebUI 根目录。
+        output (Path | None):
+            快照输出路径或目录。
+        include_packages (bool):
+            是否采集当前 Python 包列表。
+    """
+    output_snapshot(
+        lambda: get_rvc_next_webui_snapshot(
+            rvc_next_webui_path=rvc_next_webui_path,
+            include_packages=include_packages,
+        ),
+        output=output,
+    )
+
+
+def export_environment(
+    rvc_next_webui_path: Path,
+    output: Path,
+    include_packages: bool = True,
+    overwrite: bool = False,
+) -> Path:
+    """导出 RVC Next WebUI 环境信息。
+
+    Args:
+        rvc_next_webui_path (Path): RVC Next WebUI 根目录。
+        output (Path): 精确输出文件路径。
+        include_packages (bool): 是否采集当前 Python 包列表。
+        overwrite (bool): 是否允许覆盖已有文件。
+
+    Returns:
+        Path: 已写入的环境信息文件路径。
+    """
+    return output_environment_info(
+        lambda: get_rvc_next_webui_environment_info(rvc_next_webui_path, include_packages),
+        output,
+        overwrite=overwrite,
+    )
+
+
+def restore(
+    snapshot_path: Path,
+    rvc_next_webui_path: Path,
+    prune_packages: bool = False,
+    prune_extensions: bool = False,
+    force_git_reset: bool = False,
+    use_uv: bool = True,
+    use_pypi_mirror: bool = True,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """恢复 RVC Next WebUI 环境快照
+
+    Args:
+        snapshot_path (Path):
+            快照 JSON 文件路径。
+        rvc_next_webui_path (Path):
+            RVC Next WebUI 根目录。
+        prune_packages (bool):
+            是否卸载快照外 Python 包。
+        prune_extensions (bool):
+            是否删除快照外扩展。
+        force_git_reset (bool):
+            是否允许覆盖 Git 仓库未提交变更。
+        use_uv (bool):
+            是否使用 uv 执行 Python 包安装。
+        use_pypi_mirror (bool):
+            是否使用 PyPI 镜像源。
+        use_github_mirror (bool):
+            是否使用 GitHub 镜像源。
+        custom_github_mirror (str | list[str] | None):
+            自定义 GitHub 镜像源。
+    """
+    restore_snapshot(
+        snapshot_path=snapshot_path,
+        webui_path=rvc_next_webui_path,
+        expected_webui_type="rvc_next_webui",
+        prune_packages=prune_packages,
+        prune_extensions=prune_extensions,
+        force_git_reset=force_git_reset,
+        use_uv=use_uv,
+        use_pypi_mirror=use_pypi_mirror,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
+def check_env(
+    rvc_next_webui_path: Path,
+    use_uv: bool = True,
+    use_pypi_mirror: bool = False,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+    include_checks: list[str] | None = None,
+    exclude_checks: list[str] | None = None,
+) -> None:
+    """检查 RVC Next WebUI 运行环境
+
+    Args:
+        rvc_next_webui_path (Path):
+            RVC Next WebUI 根目录
+        use_uv (bool):
+            是否使用 uv 安装 Python 软件包
+        use_pypi_mirror (bool):
+            是否使用国内 PyPI 镜像源
+        use_github_mirror (bool):
+            是否使用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+        include_checks (list[str] | None):
+            仅执行的环境检查任务名称。
+        exclude_checks (list[str] | None):
+            跳过的环境检查任务名称。
+    """
+    check_rvc_next_webui_env(
+        rvc_next_webui_path=rvc_next_webui_path,
+        use_uv=use_uv,
+        use_pypi_mirror=use_pypi_mirror,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+        include_checks=include_checks,
+        exclude_checks=exclude_checks,
+    )
+
+
+def launch(
+    rvc_next_webui_path: Path,
+    launch_args: list[str] | None = None,
+    use_hf_mirror: bool = False,
+    custom_hf_mirror: str | list[str] | None = None,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+    use_pypi_mirror: bool = False,
+    use_cuda_malloc: bool = True,
+    use_uv: bool = True,
+    check_launch_env: bool = True,
+    include_checks: list[str] | None = None,
+    exclude_checks: list[str] | None = None,
+    enable_hotpatcher: bool = False,
+    hotpatcher_config_path: str | Path | None = None,
+    hotpatcher_port: int = DEFAULT_RUNTIME_PORT,
+    enable_hotpatcher_runtime: bool = False,
+) -> None:
+    """启动 RVC Next WebUI
+
+    Args:
+        rvc_next_webui_path (Path):
+            RVC Next WebUI 根目录
+        launch_args (list[str] | None):
+            启动 RVC Next WebUI 的参数
+        use_hf_mirror (bool):
+            是否启用 HuggingFace 镜像源
+        custom_hf_mirror (str | list[str] | None):
+            自定义 HuggingFace 镜像源
+        use_github_mirror (bool):
+            是否启用 Github 镜像源
+        custom_github_mirror (str | list[str] | None):
+            自定义 Github 镜像源
+        use_pypi_mirror (bool):
+            是否启用 PyPI 镜像源
+        use_cuda_malloc (bool):
+            是否启用 CUDA Malloc 显存优化
+        use_uv (bool):
+            是否使用 uv 安装 Python 软件包
+        check_launch_env (bool):
+            是否在启动前检查运行环境
+        include_checks (list[str] | None):
+            仅执行的环境检查任务名称。
+        exclude_checks (list[str] | None):
+            跳过的环境检查任务名称。
+        enable_hotpatcher (bool):
+            是否启用补丁系统注入
+        hotpatcher_config_path (str | Path | None):
+            补丁系统配置文件路径
+        hotpatcher_port (int):
+            补丁系统 runtime 通信端口
+        enable_hotpatcher_runtime (bool):
+            是否启用补丁系统 runtime host 连接
+
+    Raises:
+        Exception:
+            启动前环境检查失败并需要继续抛出时抛出。
+    """
+    if check_launch_env:
+        try:
+            check_rvc_next_webui_env(
+                rvc_next_webui_path=rvc_next_webui_path,
+                use_uv=use_uv,
+                use_pypi_mirror=use_pypi_mirror,
+                use_github_mirror=use_github_mirror,
+                custom_github_mirror=custom_github_mirror,
+                include_checks=include_checks,
+                exclude_checks=exclude_checks,
+            )
+        except Exception as e:
+            if SD_WEBUI_ALL_IN_ONE_RAISE_CHECK_ENV_ERROR_ON_LAUNCH:
+                raise e
+
+            traceback.print_exc()
+            logger.error("检查 RVC Next WebUI 运行环境时发生了错误: %s", e)
+            logger.warning("该问题并非致命, 但这可能会导致 RVC Next WebUI 运行时发生问题")
+
+    if isinstance(launch_args, str):
+        launch_args = shlex.split(launch_args)
+    elif launch_args is None:
+        launch_args = []
+
+    try:
+        launch_rvc_next_webui(
+            rvc_next_webui_path=rvc_next_webui_path,
+            launch_args=launch_args,
+            use_hf_mirror=use_hf_mirror,
+            custom_hf_mirror=custom_hf_mirror,
+            use_github_mirror=use_github_mirror,
+            custom_github_mirror=custom_github_mirror,
+            use_pypi_mirror=use_pypi_mirror,
+            use_cuda_malloc=use_cuda_malloc,
+            enable_hotpatcher=enable_hotpatcher,
+            hotpatcher_config_path=hotpatcher_config_path,
+            hotpatcher_port=hotpatcher_port,
+            enable_hotpatcher_runtime=enable_hotpatcher_runtime,
+        )
+    except WebUiRuntimeError as e:
+        if SD_WEBUI_ALL_IN_ONE_RAISE_WEBUI_RUNTIME_ERROR:
+            raise e
+
+        logger.error("运行 RVC Next WebUI 时异常退出: %s", e)
+        sys.exit(1)
+
+
+def launch_version_gui(
+    rvc_next_webui_path: Path,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+    snapshot_enabled: bool = True,
+    snapshot_dir: Path | None = None,
+) -> None:
+    """启动 RVC Next WebUI 版本管理 GUI
+
+    Args:
+        rvc_next_webui_path (Path):
+            RVC Next WebUI 根目录。
+        use_github_mirror (bool):
+            是否使用 GitHub 镜像源。
+        custom_github_mirror (str | list[str] | None):
+            自定义 GitHub 镜像源。
+        snapshot_enabled (bool):
+            是否启用操作前自动快照。
+        snapshot_dir (Path | None):
+            快照文件目录。
+    """
+    _create_pre_operation_snapshot(
+        rvc_next_webui_path=rvc_next_webui_path,
+        operation_name="启动 RVC Next WebUI 版本管理 GUI",
+        snapshot_enabled=snapshot_enabled,
+        snapshot_dir=snapshot_dir,
+        show_gui_warning=True,
+    )
+    launch_rvc_next_webui_version_gui(
+        rvc_next_webui_path=rvc_next_webui_path,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
+def reinstall_pytorch(
+    rvc_next_webui_path: Path,
+    pytorch_name: str | None = None,
+    pytorch_index: int | None = None,
+    use_pypi_mirror: bool = True,
+    use_uv: bool = True,
+    interactive_mode: bool = False,
+    list_only: bool = False,
+    force_reinstall: bool = False,
+    snapshot_enabled: bool = True,
+    snapshot_dir: Path | None = None,
+) -> None:
+    """为 RVC Next WebUI 重装 PyTorch
+
+    Args:
+        rvc_next_webui_path (Path):
+            RVC Next WebUI 根目录。
+        pytorch_name (str | None):
+            PyTorch 版本条目名称。
+        pytorch_index (int | None):
+            PyTorch 版本条目索引。
+        use_pypi_mirror (bool):
+            是否使用 PyPI 镜像源。
+        use_uv (bool):
+            是否使用 uv 执行 Python 包安装。
+        interactive_mode (bool):
+            是否启用交互模式。
+        list_only (bool):
+            是否仅列出可选 PyTorch 版本并退出。
+        force_reinstall (bool):
+            是否强制重新安装。
+        snapshot_enabled (bool):
+            是否启用操作前自动快照。
+        snapshot_dir (Path | None):
+            快照文件目录。
+    """
+    if not list_only:
+        _create_pre_operation_snapshot(
+            rvc_next_webui_path=rvc_next_webui_path,
+            operation_name="重装 RVC Next WebUI PyTorch",
+            snapshot_enabled=snapshot_enabled,
+            snapshot_dir=snapshot_dir,
+        )
+    reinstall_base_pytorch(
+        pytorch_name=pytorch_name,
+        pytorch_index=pytorch_index,
+        use_pypi_mirror=use_pypi_mirror,
+        use_uv=use_uv,
+        interactive_mode=interactive_mode,
+        list_only=list_only,
+        force_reinstall=force_reinstall,
+    )
+
+
+def launch_snapshot_gui(
+    rvc_next_webui_path: Path,
+    snapshot_dir: Path | None = None,
+    use_uv: bool = True,
+    use_pypi_mirror: bool = True,
+    use_github_mirror: bool = False,
+    custom_github_mirror: str | list[str] | None = None,
+) -> None:
+    """启动 RVC Next WebUI 快照管理 GUI
+
+    Args:
+        rvc_next_webui_path (Path):
+            RVC Next WebUI 根目录。
+        snapshot_dir (Path | None):
+            快照文件目录。
+        use_uv (bool):
+            是否使用 uv 执行 Python 包安装。
+        use_pypi_mirror (bool):
+            是否使用 PyPI 镜像源。
+        use_github_mirror (bool):
+            是否使用 GitHub 镜像源。
+        custom_github_mirror (str | list[str] | None):
+            自定义 GitHub 镜像源。
+    """
+    launch_rvc_next_webui_snapshot_gui(
+        rvc_next_webui_path=rvc_next_webui_path,
+        snapshot_dir=snapshot_dir,
+        use_uv=use_uv,
+        use_pypi_mirror=use_pypi_mirror,
+        use_github_mirror=use_github_mirror,
+        custom_github_mirror=custom_github_mirror,
+    )
+
+
+def register_rvc_next_webui(
+    subparsers: "argparse._SubParsersAction",
+) -> None:
+    """注册 RVC Next WebUI 模块及其子命令
+
+    Args:
+        subparsers (argparse._SubParsersAction):
+            子命令行解析器
+    """
+    rvc_next_webui_parser: argparse.ArgumentParser = subparsers.add_parser("rvc-next-webui", help="RVC Next WebUI 相关命令")
+    rvc_next_webui_sub = add_subparsers_with_help(rvc_next_webui_parser, dest="rvc_next_webui_action")
+
+    # reinstall-pytorch
+    reinstall_pytorch_p = rvc_next_webui_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
+    reinstall_pytorch_p.add_argument("--rvc-next-webui-path", type=normalized_filepath, required=False, default=RVC_NEXT_WEBUI_ROOT_PATH, dest="rvc_next_webui_path", help="RVC Next WebUI 根目录")
+    reinstall_pytorch_p.add_argument("--name", type=str, dest="name", help="PyTorch 版本组合名称")
+    reinstall_pytorch_p.add_argument("--index", type=int, dest="index", help="PyTorch 版本组合索引值")
+    reinstall_pytorch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
+    reinstall_pytorch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 PyTorch 软件包")
+    reinstall_pytorch_p.add_argument("--interactive", action="store_true", dest="interactive_mode", help="启用交互模式")
+    reinstall_pytorch_p.add_argument("--list-only", action="store_true", dest="list_only", help="列出 PyTorch 列表并退出")
+    reinstall_pytorch_p.add_argument("--force-reinstall", action="store_true", dest="force_reinstall", help="强制重装 PyTorch")
+    add_pre_operation_snapshot_arguments(reinstall_pytorch_p)
+    add_auto_mirror_argument(reinstall_pytorch_p)
+    reinstall_pytorch_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: reinstall_pytorch(
+                rvc_next_webui_path=args.rvc_next_webui_path,
+                pytorch_name=args.name,
+                pytorch_index=args.index,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_uv=args.use_uv,
+                interactive_mode=args.interactive_mode,
+                list_only=args.list_only,
+                force_reinstall=args.force_reinstall,
+                snapshot_enabled=args.snapshot_enabled,
+                snapshot_dir=args.snapshot_dir,
+            )
+        )
+    )
+
+    # install
+    install_p = rvc_next_webui_sub.add_parser("install", help="安装 RVC Next WebUI")
+    install_p.add_argument("--rvc-next-webui-path", type=normalized_filepath, required=False, default=RVC_NEXT_WEBUI_ROOT_PATH, dest="rvc_next_webui_path", help="RVC Next WebUI 根目录")
+    install_p.add_argument("--pytorch-mirror-type", type=str, dest="pytorch_mirror_type", choices=PYTORCH_DEVICE_LIST, help="PyTorch 镜像源类型")
+    install_p.add_argument("--custom-pytorch-package", type=str, dest="custom_pytorch_package", help="自定义 PyTorch 软件包版本声明")
+    install_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
+    install_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
+    install_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    install_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    add_auto_mirror_argument(install_p)
+    install_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: install(
+                rvc_next_webui_path=args.rvc_next_webui_path,
+                pytorch_mirror_type=args.pytorch_mirror_type,
+                custom_pytorch_package=args.custom_pytorch_package,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_uv=args.use_uv,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
+    )
+
+    # update
+    update_p = rvc_next_webui_sub.add_parser("update", help="更新 RVC Next WebUI")
+    update_p.add_argument("--rvc-next-webui-path", type=normalized_filepath, required=False, default=RVC_NEXT_WEBUI_ROOT_PATH, dest="rvc_next_webui_path", help="RVC Next WebUI 根目录")
+    update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    add_pre_operation_snapshot_arguments(update_p)
+    add_auto_mirror_argument(update_p)
+    update_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: update(
+                rvc_next_webui_path=args.rvc_next_webui_path,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+                snapshot_enabled=args.snapshot_enabled,
+                snapshot_dir=args.snapshot_dir,
+            )
+        )
+    )
+
+    # check-update
+    check_update_p = rvc_next_webui_sub.add_parser("check-update", help="检查 RVC Next WebUI 内核更新")
+    check_update_p.add_argument("--rvc-next-webui-path", type=normalized_filepath, required=False, default=RVC_NEXT_WEBUI_ROOT_PATH, dest="rvc_next_webui_path", help="RVC Next WebUI 根目录")
+    check_update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    check_update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    add_auto_mirror_argument(check_update_p)
+    check_update_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: output_update_check_result(
+                check_rvc_next_webui_updates(
+                    args.rvc_next_webui_path,
+                    WebUiUpdateOptions(
+                        include_extensions=False,
+                        use_github_mirror=args.use_github_mirror,
+                        custom_github_mirror=args.custom_github_mirror,
+                    ),
+                )
+            )
+        )
+    )
+
+    # snapshot
+    snapshot_p = rvc_next_webui_sub.add_parser("snapshot", help="生成 RVC Next WebUI 环境快照")
+    snapshot_p.add_argument("--rvc-next-webui-path", type=normalized_filepath, required=False, default=RVC_NEXT_WEBUI_ROOT_PATH, dest="rvc_next_webui_path", help="RVC Next WebUI 根目录")
+    snapshot_p.add_argument("--output", type=normalized_filepath, default=None, help="输出目录路径, 未传时保存到默认快照目录")
+    snapshot_p.add_argument("--no-packages", action="store_false", dest="include_packages", help="不记录当前 Python 环境已安装软件包")
+    snapshot_p.set_defaults(
+        func=lambda args: snapshot(
+            rvc_next_webui_path=args.rvc_next_webui_path,
+            output=args.output,
+            include_packages=args.include_packages,
+        )
+    )
+
+    # export-environment
+    environment_p = rvc_next_webui_sub.add_parser("export-environment", help="导出 RVC Next WebUI 环境信息")
+    environment_p.add_argument("--rvc-next-webui-path", type=normalized_filepath, required=False, default=RVC_NEXT_WEBUI_ROOT_PATH, dest="rvc_next_webui_path", help="RVC Next WebUI 根目录")
+    environment_p.add_argument("--output", type=normalized_filepath, required=True, help="环境信息 JSON 输出文件路径")
+    environment_p.add_argument("--no-packages", action="store_false", dest="include_packages", help="不记录当前 Python 环境已安装软件包")
+    environment_p.add_argument("--force", action="store_true", dest="overwrite", help="覆盖已有输出文件")
+    environment_p.set_defaults(
+        func=lambda args: export_environment(
+            rvc_next_webui_path=args.rvc_next_webui_path,
+            output=args.output,
+            include_packages=args.include_packages,
+            overwrite=args.overwrite,
+        )
+    )
+
+    # restore
+    restore_p = rvc_next_webui_sub.add_parser("restore", help="恢复 RVC Next WebUI 环境快照")
+    add_restore_arguments(restore_p, "--rvc-next-webui-path", "rvc_next_webui_path", RVC_NEXT_WEBUI_ROOT_PATH)
+    restore_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: restore(
+                snapshot_path=args.snapshot_path,
+                rvc_next_webui_path=args.rvc_next_webui_path,
+                prune_packages=args.prune_packages,
+                prune_extensions=args.prune_extensions,
+                force_git_reset=args.force_git_reset,
+                use_uv=args.use_uv,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
+    )
+
+    # check-env
+    check_p = rvc_next_webui_sub.add_parser("check-env", help="检查 RVC Next WebUI 运行环境")
+    check_p.add_argument("--rvc-next-webui-path", type=normalized_filepath, required=False, default=RVC_NEXT_WEBUI_ROOT_PATH, dest="rvc_next_webui_path", help="RVC Next WebUI 根目录")
+    check_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
+    check_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
+    check_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    check_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    check_p.add_argument(
+        "--include-check",
+        action="append",
+        default=None,
+        dest="include_checks",
+        choices=list(RvcNextEnvCheckName),
+        help="仅执行指定环境检查任务, 可重复传入",
+    )
+    check_p.add_argument(
+        "--exclude-check",
+        action="append",
+        default=None,
+        dest="exclude_checks",
+        choices=list(RvcNextEnvCheckName),
+        help="跳过指定环境检查任务, 可重复传入",
+    )
+    add_auto_mirror_argument(check_p)
+    check_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: check_env(
+                rvc_next_webui_path=args.rvc_next_webui_path,
+                use_uv=args.use_uv,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+                include_checks=args.include_checks,
+                exclude_checks=args.exclude_checks,
+            )
+        )
+    )
+
+    # launch
+    launch_p = rvc_next_webui_sub.add_parser("launch", help="启动 RVC Next WebUI")
+    launch_p.add_argument("--rvc-next-webui-path", type=normalized_filepath, required=False, default=RVC_NEXT_WEBUI_ROOT_PATH, dest="rvc_next_webui_path", help="RVC Next WebUI 根目录")
+    launch_p.add_argument("--launch-args", type=str, dest="launch_args", help='启动参数 (请使用引号包裹，例如 "--port 7870 --no-browser")')
+    launch_p.add_argument("--no-hf-mirror", action="store_false", dest="use_hf_mirror", help="禁用 HuggingFace 镜像源")
+    launch_p.add_argument("--custom-hf-mirror", type=str, dest="custom_hf_mirror", help="自定义 HuggingFace 镜像源")
+    launch_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="禁用 Github 镜像源")
+    launch_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    launch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="禁用 PyPI 镜像源")
+    launch_p.add_argument("--no-cuda-malloc", action="store_false", dest="use_cuda_malloc", help="禁用 CUDA Malloc 优化")
+    launch_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv")
+    launch_p.add_argument("--no-check-env", action="store_false", dest="check_env", help="不检查运行环境完整性")
+    launch_p.add_argument(
+        "--include-check",
+        action="append",
+        default=None,
+        dest="include_checks",
+        choices=list(RvcNextEnvCheckName),
+        help="仅执行指定环境检查任务, 可重复传入",
+    )
+    launch_p.add_argument(
+        "--exclude-check",
+        action="append",
+        default=None,
+        dest="exclude_checks",
+        choices=list(RvcNextEnvCheckName),
+        help="跳过指定环境检查任务, 可重复传入",
+    )
+    launch_p.add_argument("--no-hotpatcher", action="store_false", dest="enable_hotpatcher", default=True, help="禁用补丁系统注入")
+    launch_p.add_argument("--hotpatcher-runtime", action="store_true", dest="enable_hotpatcher_runtime", default=False, help="启用补丁系统 runtime host 连接")
+    launch_p.add_argument("--hotpatcher-config", type=normalized_filepath, dest="hotpatcher_config_path", help="补丁系统配置文件路径")
+    launch_p.add_argument("--hotpatcher-port", type=int, dest="hotpatcher_port", default=DEFAULT_RUNTIME_PORT, help="补丁系统 runtime 通信端口")
+    add_auto_mirror_argument(launch_p)
+    launch_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: launch(
+                rvc_next_webui_path=args.rvc_next_webui_path,
+                launch_args=args.launch_args,
+                use_hf_mirror=args.use_hf_mirror,
+                custom_hf_mirror=args.custom_hf_mirror,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_cuda_malloc=args.use_cuda_malloc,
+                use_uv=args.use_uv,
+                check_launch_env=args.check_env,
+                include_checks=args.include_checks,
+                exclude_checks=args.exclude_checks,
+                enable_hotpatcher=args.enable_hotpatcher,
+                enable_hotpatcher_runtime=args.enable_hotpatcher_runtime,
+                hotpatcher_config_path=args.hotpatcher_config_path,
+                hotpatcher_port=args.hotpatcher_port,
+            )
+        )
+    )
+
+    # gui
+    gui_parser = rvc_next_webui_sub.add_parser("gui", help="图形界面工具")
+    gui_sub = add_subparsers_with_help(gui_parser, dest="gui_action")
+
+    version_gui_p = gui_sub.add_parser("version-manager", help="启动 RVC Next WebUI 版本管理 GUI")
+    version_gui_p.add_argument("--rvc-next-webui-path", type=normalized_filepath, required=False, default=RVC_NEXT_WEBUI_ROOT_PATH, dest="rvc_next_webui_path", help="RVC Next WebUI 根目录")
+    version_gui_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
+    version_gui_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
+    add_pre_operation_snapshot_arguments(version_gui_p)
+    add_auto_mirror_argument(version_gui_p)
+    version_gui_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: launch_version_gui(
+                rvc_next_webui_path=args.rvc_next_webui_path,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+                snapshot_enabled=args.snapshot_enabled,
+                snapshot_dir=args.snapshot_dir,
+            )
+        )
+    )
+
+    snapshot_gui_p = gui_sub.add_parser("snapshot-manager", help="启动 RVC Next WebUI 快照管理 GUI")
+    add_snapshot_gui_arguments(snapshot_gui_p, "--rvc-next-webui-path", "rvc_next_webui_path", RVC_NEXT_WEBUI_ROOT_PATH)
+    snapshot_gui_p.set_defaults(
+        func=with_auto_mirror(
+            lambda args: launch_snapshot_gui(
+                rvc_next_webui_path=args.rvc_next_webui_path,
+                snapshot_dir=args.snapshot_dir,
+                use_uv=args.use_uv,
+                use_pypi_mirror=args.use_pypi_mirror,
+                use_github_mirror=args.use_github_mirror,
+                custom_github_mirror=args.custom_github_mirror,
+            )
+        )
+    )

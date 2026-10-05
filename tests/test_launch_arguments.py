@@ -13,7 +13,7 @@ import pytest
 import sd_webui_all_in_one.launch_arguments as launch_arguments_module
 import sd_webui_all_in_one.base_manager.invokeai_base.catalog as invokeai_catalog
 from sd_webui_all_in_one.api_server import registry
-from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, qwen_tts_webui_base, sd_trainer_base, sd_webui_base
+from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, qwen_tts_webui_base, rvc_next_webui_base, sd_trainer_base, sd_webui_base
 from sd_webui_all_in_one.launch_arguments import (
     CATALOG_SCHEMA_VERSION,
     LaunchArgumentValueKind,
@@ -632,6 +632,19 @@ def get_args_parser():
         encoding="utf-8",
     )
 
+    rvc_path = tmp_path / "rvc"
+    (rvc_path / "rvc_next_webui").mkdir(parents=True)
+    (rvc_path / "rvc_next_webui" / "__init__.py").write_text("", encoding="utf-8")
+    (rvc_path / "rvc_next_webui" / "cmd_args.py").write_text(
+        """import argparse
+def get_args_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-browser", action="store_true")
+    return parser
+""",
+        encoding="utf-8",
+    )
+
     invoke_parser = argparse.ArgumentParser()
     invoke_parser.add_argument("--invoke-model")
     original_import_module = invokeai_catalog.importlib.import_module
@@ -647,6 +660,7 @@ def get_args_parser():
         "trainer": sd_trainer_base.get_sd_trainer_launch_argument_catalog(trainer_path),
         "kohya": sd_trainer_base.get_sd_trainer_launch_argument_catalog(kohya_path),
         "qwen": qwen_tts_webui_base.get_qwen_tts_webui_launch_argument_catalog(qwen_path),
+        "rvc": rvc_next_webui_base.get_rvc_next_webui_launch_argument_catalog(rvc_path),
         "invokeai": invokeai_base.get_invokeai_launch_argument_catalog(tmp_path / "invokeai"),
     }
 
@@ -656,6 +670,7 @@ def get_args_parser():
     assert {argument.name for argument in catalogs["trainer"].arguments} >= {"listen", "help"}
     assert {argument.name for argument in catalogs["kohya"].arguments} >= {"headless", "help"}
     assert {argument.name for argument in catalogs["qwen"].arguments} >= {"server_port", "help"}
+    assert {argument.name for argument in catalogs["rvc"].arguments} >= {"no_browser", "help"}
     assert {argument.name for argument in catalogs["invokeai"].arguments} >= {"invoke_model", "help"}
     methods = registry.get_default_methods()
     assert {
@@ -665,6 +680,7 @@ def get_args_parser():
         "invokeai.launch.arguments_catalog",
         "sd_trainer.launch.arguments_catalog",
         "qwen_tts_webui.launch.arguments_catalog",
+        "rvc_next_webui.launch.arguments_catalog",
     }.issubset(methods)
 
 

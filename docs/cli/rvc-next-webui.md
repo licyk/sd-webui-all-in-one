@@ -1,0 +1,152 @@
+# CLI - RVC Next WebUI
+
+## RVC Next WebUI
+RVC Next WebUI 是 [RVC Next](https://github.com/licyk/rvc-next) 的启动器，提供 RVC 语音转换、模型训练和实时变声功能。RVC Next 需要 2.7.1 及以上版本的 PyTorch，不支持 DirectML。
+
+!!! note
+    本页中包含镜像源设置的子命令默认启用自动镜像源选择，并支持 `--no-auto-mirror`。自动模式会根据网络检测结果强制覆盖 PyPI、Github 和 HuggingFace 镜像源参数；需要手动调整 `--no-*mirror` 或 `--custom-*` 时，请同时添加 `--no-auto-mirror`。
+
+### 安装 RVC Next WebUI
+```bash
+sd-webui-all-in-one rvc-next-webui install [选项]
+```
+
+- **高级选项**:
+  - `--rvc-next-webui-path <路径>`: RVC Next WebUI 根目录，默认为配置文件中的路径。
+  - `--pytorch-mirror-type <类型>`: 设置使用的 PyTorch 镜像源类型。
+  - `--custom-pytorch-package <包名>`: 自定义 PyTorch 软件包版本声明。选择的 PyTorch 低于 2.7.1 或为 DirectML 版本时安装会直接失败。
+  - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
+  - `--no-uv`: 不使用 uv 安装 Python 软件包。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+
+### 更新 RVC Next WebUI
+```bash
+sd-webui-all-in-one rvc-next-webui update [选项]
+```
+
+- **高级选项**:
+  - `--rvc-next-webui-path <路径>`: RVC Next WebUI 根目录。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+  - `--no-snapshot`: 禁用操作前自动创建环境快照。
+  - `--snapshot-dir <路径>`: 操作前自动快照目录；未传时使用默认快照目录。
+
+### 检查 RVC Next WebUI 更新
+```bash
+sd-webui-all-in-one rvc-next-webui check-update [选项]
+```
+
+- **高级选项**:
+  - `--rvc-next-webui-path <路径>`: RVC Next WebUI 根目录。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+
+### 生成环境快照
+```bash
+sd-webui-all-in-one rvc-next-webui snapshot [选项]
+```
+
+- **高级选项**:
+  - `--rvc-next-webui-path <路径>`: RVC Next WebUI 根目录。
+  - `--output <路径>`: 输出目录路径；未传时保存到默认快照目录并自动生成带时间戳的文件名。
+  - `--no-packages`: 不记录当前 Python 环境已安装软件包。
+
+### 恢复环境快照
+```bash
+sd-webui-all-in-one rvc-next-webui restore <快照文件> [选项]
+```
+
+- **高级选项**:
+  - `--rvc-next-webui-path <路径>`: RVC Next WebUI 根目录。
+  - `--prune-packages`: 卸载快照外 Python 软件包，受保护的管理器和基础安装工具不会卸载。
+  - `--prune-extensions`: 删除快照外扩展。
+  - `--force-git-reset`: 允许覆盖 Git 仓库未提交变更。
+  - `--no-uv`: 不使用 uv 安装 Python 软件包。
+  - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+  - `--include-check <名称>`: 仅执行指定环境检查任务，可重复传入。
+  - `--exclude-check <名称>`: 跳过指定环境检查任务，可重复传入。
+
+### 检查运行环境
+```bash
+sd-webui-all-in-one rvc-next-webui check-env [选项]
+```
+
+- **高级选项**:
+  - `--rvc-next-webui-path <路径>`: RVC Next WebUI 根目录。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--no-uv`: 不使用 uv。
+  - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
+
+### 启动 RVC Next WebUI
+```bash
+sd-webui-all-in-one rvc-next-webui launch [选项]
+```
+
+- **高级选项**:
+  - `--rvc-next-webui-path <路径>`: RVC Next WebUI 根目录。
+  - `--launch-args <参数>`: 启动参数 (请使用引号包裹，例如 `"--port 7870 --no-browser"`)。启动时会固定追加 `--skip-check --disable-proxy`，由 SD WebUI All In One 负责运行环境检查和代理设置。
+  - `--no-hf-mirror`: 禁用 HuggingFace 镜像源。
+  - `--custom-hf-mirror <URL>`: 自定义 HuggingFace 镜像源。
+  - `--no-github-mirror`: 禁用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+  - `--no-pypi-mirror`: 禁用 PyPI 镜像源。
+  - `--no-cuda-malloc`: 禁用 CUDA Malloc 优化。
+  - `--no-uv`: 不使用 uv。
+  - `--no-check-env`: 不检查运行环境完整性。
+  - `--include-check <名称>`: 启动前仅执行指定环境检查任务，可重复传入。
+  - `--exclude-check <名称>`: 启动前跳过指定环境检查任务，可重复传入。
+  - `--no-hotpatcher`: 禁用 Hotpatcher 补丁系统注入，默认启用。
+  - `--hotpatcher-runtime`: 启用 Hotpatcher runtime host 连接，默认只做本地补丁注入。
+  - `--hotpatcher-config <路径>`: Hotpatcher 配置文件路径。未指定时使用默认配置路径或内置默认配置。
+  - `--hotpatcher-port <端口>`: Hotpatcher runtime 通信端口，仅在 `--hotpatcher-runtime` 启用时生效。
+
+### 版本管理 GUI
+```bash
+sd-webui-all-in-one rvc-next-webui gui version-manager [选项]
+```
+
+- **高级选项**:
+  - `--rvc-next-webui-path <路径>`: RVC Next WebUI 根目录。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+  - `--no-snapshot`: 禁用启动前自动创建环境快照。
+  - `--snapshot-dir <路径>`: 启动前自动快照目录；未传时使用默认快照目录。
+
+### 快照管理 GUI
+```bash
+sd-webui-all-in-one rvc-next-webui gui snapshot-manager [选项]
+```
+
+- **高级选项**:
+  - `--rvc-next-webui-path <路径>`: RVC Next WebUI 根目录。
+  - `--snapshot-dir <路径>`: 快照目录。
+  - `--no-uv`: 不使用 uv 安装 Python 软件包。
+  - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
+  - `--no-github-mirror`: 不使用 Github 镜像源。
+  - `--custom-github-mirror <URL>`: 自定义 Github 镜像源。
+
+### 重装 PyTorch
+```bash
+sd-webui-all-in-one rvc-next-webui reinstall-pytorch [选项]
+```
+
+- **高级选项**:
+  - `--rvc-next-webui-path <路径>`: RVC Next WebUI 根目录。
+  - `--name <名称>`: PyTorch 版本组合名称。
+  - `--index <索引>`: PyTorch 版本组合索引值。
+  - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
+  - `--no-uv`: 不使用 uv 安装 PyTorch 软件包。
+  - `--interactive`: 启用交互模式。
+  - `--list-only`: 列出 PyTorch 列表并退出。
+  - `--force-reinstall`: 强制重装 PyTorch。
+  - `--no-snapshot`: 禁用操作前自动创建环境快照。
+  - `--snapshot-dir <路径>`: 操作前自动快照目录；未传时使用默认快照目录。
+
+!!! note
+    RVC Next 不读取 `HF_ENDPOINT`。启用 HuggingFace 镜像源时，`launch` 会设置 `RVC_NEXT_DOWNLOADS__SOURCE=custom` 和 `RVC_NEXT_DOWNLOADS__ENDPOINT=<镜像源地址>`，让 RVC Next 通过镜像源下载模型；已手动设置这两个环境变量时不会覆盖。此时 RVC Next 设置界面中的下载源会被环境变量固定，需要在 RVC Next 中自行选择下载源时请使用 `--no-hf-mirror`。
+
+!!! note
+    运行环境检查任务包括 `python-dependencies`、`torch-libomp` 和 `torch-version`。`python-dependencies` 会同时检查 `requirements.txt` 和 RVC Next 自身声明的依赖；PyTorch 未安装或低于 2.7.1 时不会自动安装依赖，请先使用 `reinstall-pytorch` 重装 PyTorch。

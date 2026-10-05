@@ -11,6 +11,7 @@
 | `fooocus_installer.ps1` | Fooocus |
 | `invokeai_installer.ps1` | InvokeAI |
 | `qwen_tts_webui_installer.ps1` | Qwen TTS WebUI |
+| `rvc_next_webui_installer.ps1` | RVC Next WebUI |
 | `sd_trainer_installer.ps1` | SD Trainer / Kohya GUI |
 | `sd_trainer_script_installer.ps1` | sd-scripts / ai-toolkit / finetrainers / diffusion-pipe / musubi-tuner |
 

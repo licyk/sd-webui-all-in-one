@@ -62,6 +62,7 @@ _✨一键筑基，万象生辉_
   - [SD-Trainer Installer](#sd-trainer-installer)
   - [SD-Trainer-Script Installer](#sd-trainer-script-installer)
   - [Qwen TTS WebUI Installer](#qwen-tts-webui-installer)
+  - [RVC Next WebUI Installer](#rvc-next-webui-installer)
   - [Python Installer](#python-installer)
   - [Installer 自动化构建状态](#installer-自动化构建状态)
 - [项目协议](#项目协议)
@@ -108,6 +109,7 @@ SD WebUI All In One 提供本地安装、整合包下载、Hanafubuki 图形管�
 - [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe)
 - [musubi-tuner](https://github.com/kohya-ss/musubi-tuner)
 - [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui)
+- [RVC Next WebUI](https://github.com/licyk/rvc-next-webui)
 
 完整命令说明请阅读：[命令行工具文档](https://licyk.github.io/sd-webui-all-in-one/cli)。
 
@@ -288,6 +290,12 @@ Windows / Linux / macOS 平台安装和管理 [sd-scripts](https://github.com/ko
 Windows / Linux / macOS 平台安装、启动和管理 [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui)。
 
 使用说明：[Qwen TTS WebUI Installer 文档](https://licyk.github.io/sd-webui-all-in-one/installer/qwen-tts-webui)。
+
+
+## RVC Next WebUI Installer
+Windows / Linux / macOS 平台安装、启动和管理 [RVC Next WebUI](https://github.com/licyk/rvc-next-webui)。
+
+使用说明：[RVC Next WebUI Installer 文档](https://licyk.github.io/sd-webui-all-in-one/installer/rvc-next-webui)。
 
 
 ## Python Installer

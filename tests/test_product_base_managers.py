@@ -12,6 +12,7 @@ from sd_webui_all_in_one.base_manager import comfyui_base
 from sd_webui_all_in_one.base_manager import fooocus_base
 from sd_webui_all_in_one.base_manager import invokeai_base
 from sd_webui_all_in_one.base_manager import qwen_tts_webui_base
+from sd_webui_all_in_one.base_manager import rvc_next_webui_base
 from sd_webui_all_in_one.base_manager import sd_scripts_base
 from sd_webui_all_in_one.base_manager import sd_trainer_base
 from sd_webui_all_in_one.base_manager import sd_webui_base
@@ -39,6 +40,7 @@ def _use_temp_git_config(monkeypatch, tmp_path):
         (sd_trainer_base, "check_sd_trainer_updates", "sd_trainer", "SD Trainer", False, None),
         (sd_scripts_base, "check_sd_scripts_updates", "sd_scripts", "SD Scripts", False, None),
         (qwen_tts_webui_base, "check_qwen_tts_webui_updates", "qwen_tts_webui", "Qwen TTS WebUI", False, None),
+        (rvc_next_webui_base, "check_rvc_next_webui_updates", "rvc_next_webui", "RVC Next WebUI", False, None),
     ],
 )
 def test_product_update_checkers_delegate_with_product_capabilities(

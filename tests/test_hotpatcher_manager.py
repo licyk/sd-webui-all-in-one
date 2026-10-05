@@ -671,6 +671,7 @@ def test_base_launch_functions_inject_hotpatcher_env(monkeypatch, tmp_path):
     from sd_webui_all_in_one.base_manager import comfyui_base
     from sd_webui_all_in_one.base_manager import fooocus_base
     from sd_webui_all_in_one.base_manager import qwen_tts_webui_base
+    from sd_webui_all_in_one.base_manager import rvc_next_webui_base
     from sd_webui_all_in_one.base_manager import sd_trainer_base
     from sd_webui_all_in_one.base_manager import sd_webui_base
 
@@ -679,6 +680,7 @@ def test_base_launch_functions_inject_hotpatcher_env(monkeypatch, tmp_path):
         (comfyui_base, comfyui_base.launch_comfyui, "comfyui_path"),
         (fooocus_base, fooocus_base.launch_fooocus, "fooocus_path"),
         (qwen_tts_webui_base, qwen_tts_webui_base.launch_qwen_tts_webui, "qwen_tts_webui_path"),
+        (rvc_next_webui_base, rvc_next_webui_base.launch_rvc_next_webui, "rvc_next_webui_path"),
         (sd_trainer_base, sd_trainer_base.launch_sd_trainer, "sd_trainer_path"),
     )
 
@@ -812,6 +814,7 @@ def test_invokeai_launch_delegates_to_launch_webui(monkeypatch, tmp_path):
         ("register_comfyui", "comfyui"),
         ("register_fooocus", "fooocus"),
         ("register_qwen_tts_webui", "qwen-tts-webui"),
+        ("register_rvc_next_webui", "rvc-next-webui"),
         ("register_sd_trainer", "sd-trainer"),
         ("register_invokeai", "invokeai"),
     ),
@@ -822,6 +825,7 @@ def test_webui_launch_cli_hotpatcher_parser(register_name, command, tmp_path):
         "register_comfyui": "sd_webui_all_in_one.cli_manager.comfyui_cli",
         "register_fooocus": "sd_webui_all_in_one.cli_manager.fooocus_cli",
         "register_qwen_tts_webui": "sd_webui_all_in_one.cli_manager.qwen_tts_webui_cli",
+        "register_rvc_next_webui": "sd_webui_all_in_one.cli_manager.rvc_next_webui_cli",
         "register_sd_trainer": "sd_webui_all_in_one.cli_manager.sd_trainer_cli",
         "register_invokeai": "sd_webui_all_in_one.cli_manager.invokeai_cli",
     }

@@ -100,6 +100,9 @@ SD_SCRIPTS_ROOT_PATH = Path(os.getenv("SD_SCRIPTS_ROOT", (SD_WEBUI_ALL_IN_ONE_LA
 QWEN_TTS_WEBUI_ROOT_PATH = Path(os.getenv("QWEN_TTS_WEBUI_ROOT", (SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / "qwen-tts-webui").as_posix()))
 """Qwen TTS WebUI 根目录"""
 
+RVC_NEXT_WEBUI_ROOT_PATH = Path(os.getenv("RVC_NEXT_WEBUI_ROOT", (SD_WEBUI_ALL_IN_ONE_LAUNCH_PATH / "rvc-next-webui").as_posix()))
+"""RVC Next WebUI 根目录"""
+
 SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR = os.getenv("SD_WEBUI_ALL_IN_ONE_EXTRA_PYPI_MIRROR") in ["1", "True", "true"]
 """是否启用 SD WebUI All In One 自带的额外 PyPI 镜像源"""
 

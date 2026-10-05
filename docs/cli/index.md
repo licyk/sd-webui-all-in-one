@@ -7,6 +7,7 @@
 - [Fooocus](fooocus.md)
 - [InvokeAI](invokeai.md)
 - [Qwen TTS WebUI](qwen-tts-webui.md)
+- [RVC Next WebUI](rvc-next-webui.md)
 - [SD Trainer](sd-trainer.md)
 - [SD Scripts](sd-scripts.md)
 - [管理器命令](manager.md)

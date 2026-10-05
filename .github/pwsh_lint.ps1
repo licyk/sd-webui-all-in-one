@@ -117,7 +117,8 @@ function New-InstallerManagedScripts {
         @{ File = "sd_trainer_installer.ps1"; Path = "sd_trainer" },
         @{ File = "sd_trainer_script_installer.ps1"; Path = "sd_trainer_script" },
         @{ File = "stable_diffusion_webui_installer.ps1"; Path = "sd_webui" },
-        @{ File = "qwen_tts_webui_installer.ps1"; Path = "qwen_tts_webui" }
+        @{ File = "qwen_tts_webui_installer.ps1"; Path = "qwen_tts_webui" },
+        @{ File = "rvc_next_webui_installer.ps1"; Path = "rvc_next_webui" }
     )
 
     $generationFailures = @()

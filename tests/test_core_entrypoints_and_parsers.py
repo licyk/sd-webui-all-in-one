@@ -415,6 +415,7 @@ def test_cli_main_dispatches_registered_callback(monkeypatch):
         "register_fooocus",
         "register_comfyui",
         "register_qwen_tts_webui",
+        "register_rvc_next_webui",
         "register_manager",
     ]:
         monkeypatch.setattr(cli, name, noop_register)
@@ -440,6 +441,7 @@ def test_cli_main_prints_help_without_subcommand(monkeypatch, capsys):
         "register_fooocus",
         "register_comfyui",
         "register_qwen_tts_webui",
+        "register_rvc_next_webui",
         "register_manager",
     ]:
         monkeypatch.setattr(cli, name, noop_register)
@@ -462,6 +464,7 @@ def test_cli_main_prints_help_without_subcommand(monkeypatch, capsys):
         (["fooocus"], "usage: sd-webui-all-in-one fooocus [-h]"),
         (["comfyui"], "usage: sd-webui-all-in-one comfyui [-h]"),
         (["qwen-tts-webui"], "usage: sd-webui-all-in-one qwen-tts-webui [-h]"),
+        (["rvc-next-webui"], "usage: sd-webui-all-in-one rvc-next-webui [-h]"),
         (["self-manager"], "usage: sd-webui-all-in-one self-manager [-h]"),
         (["sd-webui", "extension"], "usage: sd-webui-all-in-one sd-webui extension [-h]"),
         (["self-manager", "check"], "usage: sd-webui-all-in-one self-manager check [-h]"),

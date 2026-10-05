@@ -48,7 +48,8 @@ $installerList = @(
     @{ Path = Join-Path $installerPath "sd_trainer_installer.ps1"; Flag = "SD_TRAINER_INSTALLER_VERSION" },
     @{ Path = Join-Path $installerPath "sd_trainer_script_installer.ps1"; Flag = "SD_TRAINER_SCRIPT_INSTALLER_VERSION" },
     @{ Path = Join-Path $installerPath "stable_diffusion_webui_installer.ps1"; Flag = "SD_WEBUI_INSTALLER_VERSION" },
-    @{ Path = Join-Path $installerPath "qwen_tts_webui_installer.ps1"; Flag = "QWEN_TTS_WEBUI_INSTALLER_VERSION" }
+    @{ Path = Join-Path $installerPath "qwen_tts_webui_installer.ps1"; Flag = "QWEN_TTS_WEBUI_INSTALLER_VERSION" },
+    @{ Path = Join-Path $installerPath "rvc_next_webui_installer.ps1"; Flag = "RVC_NEXT_WEBUI_INSTALLER_VERSION" }
 )
 
 $hasError = $false

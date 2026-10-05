@@ -2,7 +2,7 @@
 
 ![SD WebUI All In One 头图](./assets/images/home/head-image.jpg)
 
-SD WebUI All In One 是一组用于安装、下载、启动和管理 AI WebUI / 训练工具的文档与脚本集合。你可以用它快速运行 Stable Diffusion WebUI、ComfyUI、Fooocus、InvokeAI、Qwen TTS WebUI、SD Trainer 和 sd-scripts 相关工具。
+SD WebUI All In One 是一组用于安装、下载、启动和管理 AI WebUI / 训练工具的文档与脚本集合。你可以用它快速运行 Stable Diffusion WebUI、ComfyUI、Fooocus、InvokeAI、Qwen TTS WebUI、RVC Next WebUI、SD Trainer 和 sd-scripts 相关工具。
 
 [开始选择使用方式 :material-arrow-right:](./quick-start/index.md){ .md-button .md-button--primary }
 [云端运行](./quick-start/cloud.md){ .md-button }
@@ -37,7 +37,7 @@ SD WebUI All In One 是一组用于安装、下载、启动和管理 AI WebUI / 
 
     ---
 
-    使用 Installer 安装并管理 SD WebUI、ComfyUI、Fooocus、InvokeAI、Qwen TTS WebUI、SD Trainer 等工具。
+    使用 Installer 安装并管理 SD WebUI、ComfyUI、Fooocus、InvokeAI、Qwen TTS WebUI、RVC Next WebUI、SD Trainer 等工具。
 
     [:octicons-arrow-right-24: 查看安装器文档](./installer/index.md)
 

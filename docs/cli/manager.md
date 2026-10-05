@@ -139,7 +139,7 @@ sd-webui-all-in-one self-manager get pytorch-device-type --category
 sd-webui-all-in-one <webui> export-environment --output <文件路径> [选项]
 ```
 
-其中 `<webui>` 可以是 `sd-webui`、`comfyui`、`fooocus`、`invokeai`、`sd-trainer`、`sd-scripts` 或 `qwen-tts-webui`。高级选项：
+其中 `<webui>` 可以是 `sd-webui`、`comfyui`、`fooocus`、`invokeai`、`sd-trainer`、`sd-scripts`、`qwen-tts-webui` 或 `rvc-next-webui`。高级选项：
 
 - 对应的 `--*-path <路径>`：指定 WebUI 根目录；未传时使用该产品的默认目录。
 - `--no-packages`：不在嵌套快照中记录当前 Python 包列表。
@@ -235,7 +235,7 @@ pending,running,succeeded,failed,canceled
 - `package.*`、`pytorch.*`、`system.*`：与具体 WebUI 无关的公共能力。
 - `hotpatcher.*`：Hotpatcher 配置和 runtime 操作。
 
-其中 `<webui>` 是 `sd_webui`、`comfyui`、`fooocus`、`invokeai`、`sd_trainer`、`sd_scripts` 或 `qwen_tts_webui`。只注册对应实现实际支持的能力；例如扩展 Registry 方法只存在于 `comfyui.extension.*`。
+其中 `<webui>` 是 `sd_webui`、`comfyui`、`fooocus`、`invokeai`、`sd_trainer`、`sd_scripts`、`qwen_tts_webui` 或 `rvc_next_webui`。只注册对应实现实际支持的能力；例如扩展 Registry 方法只存在于 `comfyui.extension.*`。
 
 方法名已经确定具体 WebUI，因此不再传递 `webui_type`。参数结构完全跟随真实函数签名：普通参数直接平铺，真实函数本身使用 dataclass 等结构化对象时则由 schema 展示其子字段。
 

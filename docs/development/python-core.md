@@ -18,6 +18,7 @@ Python 包入口定义在 `pyproject.toml`：
 - `register_fooocus`
 - `register_invokeai`
 - `register_qwen_tts_webui`
+- `register_rvc_next_webui`
 - `register_sd_trainer`
 - `register_sd_scripts`
 - `register_manager`

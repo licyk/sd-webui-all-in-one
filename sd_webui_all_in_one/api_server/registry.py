@@ -14,7 +14,7 @@ from sd_webui_all_in_one.base_manager.library_catalog import (
     pytorch_catalog,
 )
 from sd_webui_all_in_one.api_server.server import ApiMethodRegistry, ApiMethodSpec
-from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, qwen_tts_webui_base, sd_scripts_base, sd_trainer_base, sd_webui_base
+from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, qwen_tts_webui_base, rvc_next_webui_base, sd_scripts_base, sd_trainer_base, sd_webui_base
 from sd_webui_all_in_one.base_manager import resolve_auto_mirror_settings
 from sd_webui_all_in_one.base_manager.comfy_registry import fetch_comfy_registry_versions
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
@@ -338,6 +338,39 @@ def _register_qwen_tts_webui_methods(methods: dict[str, Callable[..., Any] | Api
     _add(methods, "qwen_tts_webui.pytorch.catalog", _bound(pytorch_catalog, webui_type="qwen_tts_webui"))
 
 
+def _register_rvc_next_webui_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpec]) -> None:
+    _add(methods, "rvc_next_webui.version.status", inspect_repository)
+    _add(methods, "rvc_next_webui.version.branches", list_branches)
+    _add(methods, "rvc_next_webui.version.commits", list_commits)
+    _add(methods, "rvc_next_webui.version.switch_branch", switch_repository_branch)
+    _add(methods, "rvc_next_webui.version.switch_commit", switch_repository_commit)
+    _add(methods, "rvc_next_webui.version.update", rvc_next_webui_base.update_rvc_next_webui)
+    _add(methods, "rvc_next_webui.version.check_updates", rvc_next_webui_base.check_rvc_next_webui_updates)
+    _add(methods, "rvc_next_webui.environment.collect", rvc_next_webui_base.get_rvc_next_webui_environment_info)
+    _add(methods, "rvc_next_webui.snapshot.list", list_webui_snapshots)
+    _add(methods, "rvc_next_webui.snapshot.read", load_snapshot)
+    _add(
+        methods,
+        "rvc_next_webui.snapshot.create",
+        _bound(create_webui_snapshot, snapshot_factory=rvc_next_webui_base.get_rvc_next_webui_snapshot),
+    )
+    _add(methods, "rvc_next_webui.snapshot.delete", delete_snapshot)
+    _add(methods, "rvc_next_webui.snapshot.collect", rvc_next_webui_base.get_rvc_next_webui_snapshot)
+    _add(
+        methods,
+        "rvc_next_webui.snapshot.preview_restore",
+        _bound(preview_webui_snapshot_restore, expected_webui_type="rvc_next_webui"),
+    )
+    _add(
+        methods,
+        "rvc_next_webui.snapshot.restore",
+        _bound(restore_webui_snapshot, expected_webui_type="rvc_next_webui"),
+    )
+    _add(methods, "rvc_next_webui.launch.prepare", rvc_next_webui_base.prepare_rvc_next_webui_launch)
+    _add(methods, "rvc_next_webui.launch.arguments_catalog", rvc_next_webui_base.get_rvc_next_webui_launch_argument_catalog)
+    _add(methods, "rvc_next_webui.pytorch.catalog", _bound(pytorch_catalog, webui_type="rvc_next_webui"))
+
+
 def _register_webui_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpec]) -> None:
     _register_sd_webui_methods(methods)
     _register_comfyui_methods(methods)
@@ -346,6 +379,7 @@ def _register_webui_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpe
     _register_sd_trainer_methods(methods)
     _register_sd_scripts_methods(methods)
     _register_qwen_tts_webui_methods(methods)
+    _register_rvc_next_webui_methods(methods)
 
 
 def _register_model_methods(methods: dict[str, Callable[..., Any] | ApiMethodSpec]) -> None:

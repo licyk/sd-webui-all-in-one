@@ -81,3 +81,6 @@ SD WebUI All In One 支持通过环境变量来调整其行为。
 - `QWEN_TTS_WEBUI_ROOT`
   
   Qwen TTS WebUI 根目录。
+- `RVC_NEXT_WEBUI_ROOT`
+  
+  RVC Next WebUI 根目录。
