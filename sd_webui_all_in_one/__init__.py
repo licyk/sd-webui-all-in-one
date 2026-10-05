@@ -107,6 +107,7 @@ from sd_webui_all_in_one.notebook_manager import (
     SDScriptsManager,
     SDTrainerScriptsManager,
     QwenTTSWebUIManager,
+    RvcNextWebUIManager,
 )
 
 __all__ = [
@@ -119,6 +120,7 @@ __all__ = [
     "SDScriptsManager",
     "SDTrainerScriptsManager",
     "QwenTTSWebUIManager",
+    "RvcNextWebUIManager",
     "VERSION",
     "logger",
 ]

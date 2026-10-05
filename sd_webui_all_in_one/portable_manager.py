@@ -396,6 +396,14 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "Qwen TTS WebUI (Intel)",
         "description": "Qwen TTS WebUI 的 Intel 显卡整合包，使用 XPU 版 PyTorch，支持使用 Qwen3 TTS 生成语音。",
     },
+    "rvc_next_webui_cuda": {
+        "display_name": "RVC Next WebUI (NVIDIA)",
+        "description": "RVC Next WebUI 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，支持 RVC 语音转换、模型训练和实时变声。",
+    },
+    "rvc_next_webui_rocm": {
+        "display_name": "RVC Next WebUI (AMD)",
+        "description": "RVC Next WebUI 的 AMD 显卡整合包，使用 ROCm 版 PyTorch，支持 RVC 语音转换、模型训练和实时变声。",
+    },
 }
 """整合包软件元数据
 

@@ -9,6 +9,7 @@ from sd_webui_all_in_one.notebook_manager.sd_trainer_manager import SDTrainerMan
 from sd_webui_all_in_one.notebook_manager.sd_scripts_manager import SDScriptsManager
 from sd_webui_all_in_one.notebook_manager.sd_trainer_scripts_manager import SDTrainerScriptsManager
 from sd_webui_all_in_one.notebook_manager.qwen_tts_webui_manager import QwenTTSWebUIManager
+from sd_webui_all_in_one.notebook_manager.rvc_next_webui_manager import RvcNextWebUIManager
 
 __all__ = [
     "BaseManager",
@@ -17,6 +18,7 @@ __all__ = [
     "FooocusManager",
     "InvokeAIManager",
     "QwenTTSWebUIManager",
+    "RvcNextWebUIManager",
     "SDTrainerManager",
     "SDScriptsManager",
     "SDTrainerScriptsManager",

@@ -1,7 +1,7 @@
 # 整合包下载与使用
 
 ## 简介
-基于 [sd-webui-all-in-one/Installer](../installer/index.md) 全自动构建的整合包，下载解压后即可使用。Stable Diffusion WebUI、ComfyUI、InvokeAI、Fooocus、SD Trainer、Qwen TTS WebUI 六类产品及其受支持变体已经内置 Hanafubuki 便携版，解压后优先运行 `hanafubuki-launcher.exe`；Installer 生成的 PowerShell 管理脚本继续作为直接管理和故障恢复入口。
+基于 [sd-webui-all-in-one/Installer](../installer/index.md) 全自动构建的整合包，下载解压后即可使用。Stable Diffusion WebUI、ComfyUI、InvokeAI、Fooocus、SD Trainer、Qwen TTS WebUI、RVC Next WebUI 七类产品及其受支持变体已经内置 Hanafubuki 便携版，解压后优先运行 `hanafubuki-launcher.exe`；Installer 生成的 PowerShell 管理脚本继续作为直接管理和故障恢复入口。
 
 可以使用 [AI 整合包下载器](../tools/portable-downloader.md) 下载并自动解压整合包。Windows 整合包通常使用 7z 格式；若系统不支持该格式，请使用 [7-Zip](https://7-zip.org/) / [Bandizip](https://www.bandisoft.com/bandizip/) 或其他支持 7z 格式的工具解压。Linux 和 macOS 整合包使用 `tar.gz` 格式。运行 `hanafubuki-launcher.exe` 不要求先执行 `configure_env.bat`；只有直接运行 PowerShell 管理脚本时，才需要先完成环境配置。
 
@@ -27,7 +27,7 @@ xattr -dr com.apple.quarantine "/完整的整合包解压目录"
 
 整合包中的 PowerShell 管理脚本来自对应 Installer，文件名和功能基本统一，区别主要是脚本内部管理的 WebUI / 工具不同。例如 `launch.ps1` 在 Stable Diffusion WebUI 整合包中启动 Stable Diffusion WebUI，在 ComfyUI 整合包中启动 ComfyUI；`settings.ps1` 也是同一类设置管理入口，只是写入的本地配置会作用到当前整合包目录。
 
-不同整合包不一定包含全部脚本，以解压目录中实际文件为准。SD Trainer Script 类整合包使用 `init.ps1` 初始化环境，并通过 `train.ps1` 编写和运行训练命令；Qwen TTS WebUI 整合包没有 `download_models.ps1`。
+不同整合包不一定包含全部脚本，以解压目录中实际文件为准。SD Trainer Script 类整合包使用 `init.ps1` 初始化环境，并通过 `train.ps1` 编写和运行训练命令；Qwen TTS WebUI 和 RVC Next WebUI 整合包没有 `download_models.ps1`。
 
 | 脚本 | 作用 | 备注 |
 | --- | --- | --- |
@@ -63,7 +63,7 @@ xattr -dr com.apple.quarantine "/完整的整合包解压目录"
 | `启动.bat` | `launch.ps1` | 启动对应 WebUI / 工具。 |
 | `更新内核.bat` | `update.ps1` | 更新当前整合包管理的 WebUI / 工具。 |
 | `更新扩展.bat` | `update_extension.ps1` / `update_node.ps1` | 更新 SD WebUI 扩展或 ComfyUI / InvokeAI 自定义节点。 |
-| `下载模型.bat` | `download_models.ps1` | 打开模型下载脚本。Qwen TTS WebUI 整合包通常没有该入口。 |
+| `下载模型.bat` | `download_models.ps1` | 打开模型下载脚本。Qwen TTS WebUI 和 RVC Next WebUI 整合包通常没有该入口。 |
 | `切换分支.bat` | `switch_branch.ps1` | 切换支持分支管理的 WebUI / 工具分支。 |
 | `重装 PyTorch.bat` | `reinstall_pytorch.ps1` | 切换或重装 PyTorch。 |
 | `版本管理.bat` | `version_manager.ps1` | 打开版本管理功能。 |
@@ -75,6 +75,7 @@ xattr -dr com.apple.quarantine "/完整的整合包解压目录"
 | `重新运行安装 Fooocus.bat` | `launch_fooocus_installer.ps1` | 重新运行 Fooocus Installer。 |
 | `重新运行安装 InvokeAI.bat` | `launch_invokeai_installer.ps1` | 重新运行 InvokeAI Installer。 |
 | `重新运行安装 Qwen TTS WebUI.bat` | `launch_qwen_tts_webui_installer.ps1` | 重新运行 Qwen TTS WebUI Installer。 |
+| `重新运行安装 RVC Next WebUI.bat` | `launch_rvc_next_webui_installer.ps1` | 重新运行 RVC Next WebUI Installer。 |
 | `重新运行安装 SD Trainer.bat` | `launch_sd_trainer_installer.ps1` | 重新运行 SD Trainer Installer。 |
 | `重新运行安装 SD Trainer Script.bat` | `launch_sd_trainer_script_installer.ps1` | 重新运行 SD Trainer Script Installer。 |
 | `重新运行安装 SD WebUI.bat` | `launch_stable_diffusion_webui_installer.ps1` | 重新运行 SD WebUI Installer。 |
@@ -643,6 +644,42 @@ Musubi Tuner 当前不属于 Hanafubuki 支持的实例类型。使用 [Bash TUI
 
 ### Hanafubuki 管理方式
 优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 Qwen TTS WebUI 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。终端用户也可以通过 [Bash TUI / CLI Launcher](../tools/launcher-tui.md) 选择项目 `qwen_tts_webui`，将 `INSTALL_PATH` 指向整合包解压目录。
+
+详细 Hanafubuki 使用说明可阅读：[Hanafubuki 使用说明](https://hanafubuki.netlify.app/docs)
+
+
+## RVC Next WebUI
+![RVC Next WebUI 整合包预览](../assets/images/portable/portable/rvc-next-webui.jpg)
+
+**支持 RVC 语音转换、模型训练和实时变声。**
+
+支持 RVC Next WebUI Installer / Hanafubuki 进行管理。RVC Next 所需的模型在首次使用时由 RVC Next 自动下载，设置、模型、实验和输出文件保存在 `core/data` 文件夹中。
+
+
+**NVIDIA 显卡版本：**
+
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&platform=windows&channel=nightly&software=rvc_next_webui_cuda){ .md-button .md-button--primary }
+
+**AMD 显卡版本：**
+
+[下载 Nightly 版 :material-download:](https://licyk-tools.netlify.app/#/sd_portable/download?source=modelscope&platform=windows&channel=nightly&software=rvc_next_webui_rocm){ .md-button .md-button--primary }
+
+### RVC Next WebUI Installer 管理方式
+- configure_env.bat：首次使用 RVC Next WebUI Installer 需要运行一次，保证能正常运行
+- launch.ps1：启动 RVC Next WebUI
+- update.ps1：更新 RVC Next WebUI
+- reinstall_pytorch.ps1：切换 / 重装 PyTorch (RVC Next 需要 2.7.1 及以上版本的 PyTorch)
+- version_manager.ps1：管理 RVC Next WebUI 的版本
+- snapshot_manager.ps1：打开快照管理器，创建和恢复环境快照
+- settings.ps1：RVC Next WebUI Installer 设置
+- terminal.ps1：打开终端并进入 RVC Next WebUI 环境
+- activate.ps1：激活 RVC Next WebUI 环境
+- launch_rvc_next_webui_installer.ps1：运行 RVC Next WebUI Installer 并执行安装任务
+
+详细 RVC Next WebUI Installer 使用说明可阅读：[RVC Next WebUI Installer](../installer/rvc-next-webui/index.md)
+
+### Hanafubuki 管理方式
+优先运行解压目录中的 `hanafubuki-launcher.exe`。首次启动完成后，Hanafubuki 会发现旁边的 RVC Next WebUI 并将其作为实例；如果未自动发现，使用“添加实例 -> 导入现有实例”或“扫描系统”。
 
 详细 Hanafubuki 使用说明可阅读：[Hanafubuki 使用说明](https://hanafubuki.netlify.app/docs)
 

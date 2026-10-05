@@ -53,6 +53,7 @@ _✨一键筑基，万象生辉_
   - [InvokeAI Colab NoteBook](#invokeai-colab-notebook)
   - [Fooocus Colab Jupyter NoteBook](#fooocus-colab-jupyter-notebook)
   - [Qwen TTS WebUI Colab Jupyter NoteBook](#qwen-tts-webui-colab-jupyter-notebook)
+  - [RVC Next WebUI Colab Jupyter NoteBook](#rvc-next-webui-colab-jupyter-notebook)
   - [旧版 Notebook](#旧版-notebook)
 - [Installer](#installer)
   - [SD WebUI Installer](#sd-webui-installer)
@@ -135,6 +136,7 @@ SD WebUI All In One 提供本地安装、整合包下载、Hanafubuki 图形管�
 - [diffusion-pipe](https://github.com/tdrussell/diffusion-pipe)
 - [musubi-tuner](https://github.com/kohya-ss/musubi-tuner)
 - [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui)
+- [RVC Next WebUI](https://github.com/licyk/rvc-next-webui)
 
 详细使用方法可查看 Notebook 中的说明，使用时请按顺序执行 Jupyter Notebook 单元。
 
@@ -218,6 +220,12 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 [qwen_tts_webui_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/qwen_tts_webui_colab.ipynb) [[源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/qwen_tts_webui_colab.ipynb)]：适用于 Colab 一键部署 [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui)。
 
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/qwen_tts_webui_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
+
+## RVC Next WebUI Colab Jupyter NoteBook
+[rvc_next_webui_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/rvc_next_webui_colab.ipynb) [[源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/rvc_next_webui_colab.ipynb)]：适用于 Colab 一键部署 [RVC Next WebUI](https://github.com/licyk/rvc-next-webui)。
+
+Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/rvc_next_webui_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 ***
 
@@ -326,6 +334,8 @@ Windows / Linux / macOS 平台安装、启动和管理 [RVC Next WebUI](https://
 |Build [Musubi Tuner](https://github.com/kohya-ss/musubi-tuner) Portable|[![Build Musubi Tuner](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_musubi_tuner.yml)|
 |Build [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) Portable|[![Build Qwen TTS WebUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui.yml)|
 |Build [Qwen TTS WebUI](https://github.com/licyk/qwen-tts-webui) (ROCm) Portable|[![Build Qwen TTS WebUI ROCm](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui_rocm.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_qwen_tts_webui_rocm.yml)|
+|Build [RVC Next WebUI](https://github.com/licyk/rvc-next-webui) Portable|[![Build RVC Next WebUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_rvc_next_webui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_rvc_next_webui.yml)|
+|Build [RVC Next WebUI](https://github.com/licyk/rvc-next-webui) (ROCm) Portable|[![Build RVC Next WebUI ROCm](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_rvc_next_webui_rocm.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_rvc_next_webui_rocm.yml)|
 
 ***
 

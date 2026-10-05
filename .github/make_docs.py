@@ -418,6 +418,10 @@ https://space.bilibili.com/46497516
                     "launch_qwen_tts_webui_installer.ps1",
                     "重新运行安装 Qwen TTS WebUI.bat",
                 ),
+                (
+                    "launch_rvc_next_webui_installer.ps1",
+                    "重新运行安装 RVC Next WebUI.bat",
+                ),
                 ("launch_sd_trainer_installer.ps1", "重新运行安装 SD Trainer.bat"),
                 (
                     "launch_sd_trainer_script_installer.ps1",

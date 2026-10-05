@@ -17,6 +17,7 @@ Colab 版 Notebook 支持图形化方式配置参数。用户通常不需要打�
 | Fooocus | [进入 Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/fooocus_colab.ipynb) | 运行 Fooocus。 |
 | InvokeAI | [进入 Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/invokeai_colab.ipynb) | 运行 InvokeAI。 |
 | Qwen TTS WebUI | [进入 Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/qwen_tts_webui_colab.ipynb) | 运行 Qwen TTS WebUI。 |
+| RVC Next WebUI | [进入 Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/rvc_next_webui_colab.ipynb) | 运行 RVC Next WebUI。 |
 | SD Trainer / SD Trainer Next / Kohya GUI | [进入 Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/sd_trainer_colab.ipynb) | 运行训练 WebUI。 |
 
 更完整的新手流程见 [Notebook 快速开始](./quick-start.md)。
@@ -30,6 +31,7 @@ Colab 版 Notebook 支持图形化方式配置参数。用户通常不需要打�
 - Fooocus。
 - InvokeAI。
 - Qwen TTS WebUI。
+- RVC Next WebUI。
 - SD Trainer、SD Trainer Next、Kohya GUI。
 - sd-scripts、ai-toolkit、finetrainers、diffusion-pipe、musubi-tuner。
 - HDM 训练脚本。

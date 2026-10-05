@@ -6,7 +6,7 @@
 
 | 类型 | 文件示例 | 维护重点 |
 | --- | --- | --- |
-| Colab WebUI | `stable_diffusion_webui_colab.ipynb`、`comfyui_colab.ipynb`、`fooocus_colab.ipynb`、`invokeai_colab.ipynb`、`qwen_tts_webui_colab.ipynb` | 图形化参数、默认参数直接运行、内网穿透、Drive 挂载和模型下载。 |
+| Colab WebUI | `stable_diffusion_webui_colab.ipynb`、`comfyui_colab.ipynb`、`fooocus_colab.ipynb`、`invokeai_colab.ipynb`、`qwen_tts_webui_colab.ipynb`、`rvc_next_webui_colab.ipynb` | 图形化参数、默认参数直接运行、内网穿透、Drive 挂载和模型下载。 |
 | Colab 训练 | `sd_trainer_colab.ipynb`、`sd_scripts_colab.ipynb` | 训练工具安装、素材路径、模型保存和训练命令入口。 |
 | Kaggle 训练 | `sd_trainer_kaggle.ipynb`、`sd_scripts_kaggle.ipynb`、`sd_trainer_scripts_kaggle.ipynb`、`hdm_train_kaggle.ipynb` | Kaggle Input 导入、输出保存、HuggingFace / ModelScope 上传下载、NSFW 风险提示。 |
 | All In One | `sd_webui_all_in_one.ipynb`、`sd_webui_all_in_one_colab.ipynb` | 多产品选择、统一参数配置和 Manager 组合调用。 |
@@ -30,6 +30,7 @@ Notebook 中的产品管理逻辑应优先通过这些类完成：
 - `FooocusManager`
 - `InvokeAIManager`
 - `QwenTTSWebUIManager`
+- `RvcNextWebUIManager`
 - `SDTrainerManager`
 - `SDTrainerScriptsManager`
 

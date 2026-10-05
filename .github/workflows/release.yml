@@ -43,6 +43,10 @@ jobs:
             gh_tag: qwen_tts_webui_installer
             gt_id:  573107
             files: installer/qwen_tts_webui_installer.ps1
+          - name: RVC-Next-WebUI-Installer
+            gh_tag: rvc_next_webui_installer
+            gt_id: 1184731
+            files: installer/rvc_next_webui_installer.ps1
           - name: Archive-Configs
             gh_tag: archive
             gt_id: 435278

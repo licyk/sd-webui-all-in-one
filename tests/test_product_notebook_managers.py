@@ -11,6 +11,7 @@ from sd_webui_all_in_one.notebook_manager import comfyui_manager
 from sd_webui_all_in_one.notebook_manager import fooocus_manager
 from sd_webui_all_in_one.notebook_manager import invokeai_manager
 from sd_webui_all_in_one.notebook_manager import qwen_tts_webui_manager
+from sd_webui_all_in_one.notebook_manager import rvc_next_webui_manager
 from sd_webui_all_in_one.notebook_manager import sd_scripts_manager
 from sd_webui_all_in_one.notebook_manager import sd_trainer_manager
 from sd_webui_all_in_one.notebook_manager import sd_trainer_scripts_manager
@@ -52,6 +53,7 @@ def test_product_notebook_launch_commands_and_run_delegate(monkeypatch, tmp_path
         (comfyui_manager.ComfyUIManager, "ComfyUI", "main.py"),
         (fooocus_manager.FooocusManager, "Fooocus", "launch.py"),
         (qwen_tts_webui_manager.QwenTTSWebUIManager, "Qwen TTS WebUI", "launch.py"),
+        (rvc_next_webui_manager.RvcNextWebUIManager, "RVC Next WebUI", "launch.py"),
         (sd_trainer_manager.SDTrainerManager, "SD Trainer", "gui.py"),
         (sd_webui_manager.SDWebUIManager, "Stable Diffusion WebUI", "launch.py"),
     ]
@@ -145,6 +147,7 @@ def test_mount_drive_links_expected_product_paths(monkeypatch, tmp_path):
         (comfyui_manager.ComfyUIManager, "comfyui_output", ["output", "user", "input", "extra_model_paths.yaml"]),
         (fooocus_manager.FooocusManager, "fooocus_output", ["outputs", "presets", "language", "wildcards", "config.txt"]),
         (qwen_tts_webui_manager.QwenTTSWebUIManager, "qwen_tts_webui_output", ["outputs", "config.json"]),
+        (rvc_next_webui_manager.RvcNextWebUIManager, "rvc_next_webui_output", ["data"]),
         (sd_trainer_manager.SDTrainerManager, "sd_trainer_output", ["outputs", "output", "config", "train", "logs"]),
         (
             sd_webui_manager.SDWebUIManager,
@@ -191,6 +194,7 @@ def test_notebook_check_env_methods_delegate(monkeypatch, tmp_path):
         (sd_trainer_manager, sd_trainer_manager.SDTrainerManager, "check_sd_trainer_env", "sd_trainer_path"),
         (sd_trainer_scripts_manager, sd_trainer_scripts_manager.SDTrainerScriptsManager, "check_sd_scripts_env", "sd_scripts_path"),
         (sd_webui_manager, sd_webui_manager.SDWebUIManager, "check_sd_webui_env", "sd_webui_path"),
+        (rvc_next_webui_manager, rvc_next_webui_manager.RvcNextWebUIManager, "check_rvc_next_webui_env", "rvc_next_webui_path"),
     ]
 
     for module, cls, attr, path_kw in mappings:
@@ -404,3 +408,57 @@ def test_sd_scripts_deprecated_compat_repo_and_helpers(monkeypatch, tmp_path):
     assert calls[1][0] == "upload"
     assert calls[2] == ("archive", {"url": "https://example.test/a.zip", "local_dir": tmp_path / "out", "name": "a.zip"})
     assert calls[-1] == ("kaggle", tmp_path / "kaggle")
+
+
+def test_rvc_next_webui_launch_command_pins_tunnel_port_and_managed_args(tmp_path):
+    manager = rvc_next_webui_manager.RvcNextWebUIManager(tmp_path, "app", port=7870)
+
+    command = manager.parse_cmd_str_to_list(manager.get_launch_command(["--host", "0.0.0.0", "--access-token", "secret"]))
+    assert command[2:] == [
+        "--host",
+        "0.0.0.0",
+        "--access-token",
+        "secret",
+        "--port",
+        "7870",
+        "--strict-port",
+        "--no-browser",
+        "--skip-check",
+        "--disable-proxy",
+    ]
+
+    command = manager.parse_cmd_str_to_list(manager.get_launch_command("--port 9000 --no-browser"))
+    assert command[2:] == ["--port", "9000", "--no-browser", "--skip-check", "--disable-proxy"]
+
+
+def test_rvc_next_webui_run_maps_hf_mirror_to_download_settings(monkeypatch, tmp_path):
+    manager = rvc_next_webui_manager.RvcNextWebUIManager(tmp_path, "app")
+    manager.launch = lambda **kwargs: None
+    monkeypatch.setenv("HF_ENDPOINT", "https://hf.example")
+    monkeypatch.delenv("RVC_NEXT_DOWNLOADS__SOURCE", raising=False)
+    monkeypatch.delenv("RVC_NEXT_DOWNLOADS__ENDPOINT", raising=False)
+
+    manager.run()
+
+    assert os.environ["RVC_NEXT_DOWNLOADS__SOURCE"] == "custom"
+    assert os.environ["RVC_NEXT_DOWNLOADS__ENDPOINT"] == "https://hf.example"
+
+
+def test_rvc_next_webui_install_orchestrates_without_xformers_or_models(monkeypatch, tmp_path):
+    calls = []
+    manager = rvc_next_webui_manager.RvcNextWebUIManager(tmp_path, "app")
+    for name in ("set_mirror", "configure_pip", "configure_env_var", "install_manager_depend", "set_cuda_malloc"):
+        monkeypatch.setattr(rvc_next_webui_manager, name, lambda *args, _name=name, **kwargs: calls.append((_name, kwargs)))
+    monkeypatch.setattr(rvc_next_webui_manager, "install_rvc_next_webui", lambda **kwargs: calls.append(("install", kwargs)))
+    monkeypatch.setattr(rvc_next_webui_manager, "update_rvc_next_webui", lambda **kwargs: calls.append(("update", kwargs)))
+    monkeypatch.setattr(manager.repo_manager, "configure_tokens", lambda **kwargs: calls.append(("tokens", kwargs)), raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    manager.install(pytorch_mirror_type="cu128", use_uv=False, enable_tcmalloc=False)
+
+    install = dict(calls)["install"]
+    assert install["rvc_next_webui_path"] == tmp_path / "app"
+    assert install["pytorch_mirror_type"] == "cu128"
+    assert install["use_uv"] is False
+    assert "custom_xformers_package" not in install
+    assert dict(calls)["update"]["rvc_next_webui_path"] == tmp_path / "app"

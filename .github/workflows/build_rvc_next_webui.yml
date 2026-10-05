@@ -1,0 +1,51 @@
+name: Build RVC Next WebUI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  Build-RVC-Next-WebUI:
+    name: Build RVC Next WebUI
+    runs-on: windows-latest
+    env:
+      PYTHONIOENCODING: utf-8
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v7
+
+      - name: Setup portable build
+        uses: ./.github/actions/setup-portable-build
+
+      - name: Launch RVC Next WebUI Installer
+        env:
+          SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY: 1
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/installer/rvc_next_webui_installer.ps1" `
+            -InstallPath "${{ github.workspace }}/rvc_next_webui" `
+            -PyTorchMirrorType cu130 `
+            -BuildMode `
+            -BuildWithLaunch `
+            -DisableAutoMirror `
+            -DisablePyPIMirror `
+            -DisableGithubMirror `
+            -InstallHanafubuki `
+            -DisableHuggingFaceMirror
+
+      - name: Install FFmpeg
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/.github/install_ffmpeg.ps1" `
+            -InstallPath "${{ github.workspace }}/rvc_next_webui/git/bin"
+
+      - name: Finalize portable package
+        uses: ./.github/actions/finalize-portable
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
+        with:
+          install-path: ${{ github.workspace }}/rvc_next_webui
+          software-name: rvc_next_webui_cuda
+          upload-path: ${{ github.workspace }}/sd-webui-all-in-one
+          hf-repo-id: licyk/sd-webui-all-in-one
+          ms-repo-id: licyks/sd-webui-all-in-one

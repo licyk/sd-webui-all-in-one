@@ -18,6 +18,7 @@ Colab 版 Notebook 的参数通过图形化表单呈现。大多数情况下不�
 | Fooocus | [Open in Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/fooocus_colab.ipynb) | [fooocus_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/fooocus_colab.ipynb) |
 | InvokeAI | [Open in Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/invokeai_colab.ipynb) | [invokeai_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/invokeai_colab.ipynb) |
 | Qwen TTS WebUI | [Open in Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/qwen_tts_webui_colab.ipynb) | [qwen_tts_webui_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/qwen_tts_webui_colab.ipynb) |
+| RVC Next WebUI | [Open in Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/rvc_next_webui_colab.ipynb) | [rvc_next_webui_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/rvc_next_webui_colab.ipynb) |
 | SD Trainer / SD Trainer Next / Kohya GUI | [Open in Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/sd_trainer_colab.ipynb) | [sd_trainer_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/sd_trainer_colab.ipynb) |
 | sd-scripts | [Open in Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/sd_scripts_colab.ipynb) | [sd_scripts_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/sd_scripts_colab.ipynb) |
 | HDM Train | [Open in Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/hdm_train_kaggle.ipynb) | [hdm_train_kaggle.ipynb](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/hdm_train_kaggle.ipynb) |
@@ -74,6 +75,7 @@ Colab Notebook 通过各产品 Manager 的 `mount_drive()` 方法挂载 Google D
 | `ComfyUIManager` | `MyDrive/comfyui_output` | `output`、`user`、`input`、`extra_model_paths.yaml` |
 | `FooocusManager` | `MyDrive/fooocus_output` | `outputs`、`presets`、`language`、`wildcards`、`config.txt` |
 | `QwenTTSWebUIManager` | `MyDrive/qwen_tts_webui_output` | `outputs`、`config.json` |
+| `RvcNextWebUIManager` | `MyDrive/rvc_next_webui_output` | `data` |
 | `SDTrainerManager` | `MyDrive/sd_trainer_output` | `outputs`、`output`、`config`、`train`、`logs` |
 | `InvokeAIManager` | `MyDrive/invokeai_output` | 设置 `INVOKEAI_ROOT` 到该目录 |
 
