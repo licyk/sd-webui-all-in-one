@@ -17,6 +17,6 @@
 
 支持部署的 Fooocus 分支如下。
 
-- [lllyasviel/Fooocus](https://github.com/lllyasviel/Fooocus)
+- [licyk/Fooocus](https://github.com/licyk/Fooocus)
 - [MoonRide303/Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE)
 - [runew0lf/RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)

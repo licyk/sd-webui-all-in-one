@@ -39,11 +39,11 @@
 [Gitee Raw 下载 :material-download:](https://gitee.com/licyk/sd-webui-all-in-one/raw/main/installer/fooocus_installer.ps1){ .md-button }
 [GitLab Raw 下载 :material-download:](https://gitlab.com/licyk/sd-webui-all-in-one/-/raw/main/installer/fooocus_installer.ps1){ .md-button }
 
-Fooocus Installer 默认情况下安装的是 [lllyasviel/Fooocus](https://github.com/lllyasviel/Fooocus) 分支，如果需要指定安装的分支，需要在 Fooocus Installer 所在路径创建配置文件，以下为不同配置文件对应的 Fooocus 分支。
+Fooocus Installer 默认情况下安装的是 [licyk/Fooocus](https://github.com/licyk/Fooocus) 分支，如果需要指定安装的分支，需要在 Fooocus Installer 所在路径创建配置文件，以下为不同配置文件对应的 Fooocus 分支。
 
 |配置文件名|对应安装的分支|
 |---|---|
-|`install_fooocus_main.txt`|[lllyasviel/Fooocus](https://github.com/lllyasviel/Fooocus)|
+|`install_fooocus_main.txt`|[licyk/Fooocus](https://github.com/licyk/Fooocus)|
 |`install_fooocus_mre_main.txt`|[MoonRide303/Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE)|
 |`install_ruined_fooocus_main.txt`|[runew0lf/RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)|
 

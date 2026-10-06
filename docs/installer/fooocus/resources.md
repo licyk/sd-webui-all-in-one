@@ -15,5 +15,5 @@
     如果自动镜像源选择保持启用，模型下载源会由 Python CLI 自动决定，并会覆盖 `disable_model_mirror.txt` 的手动设置。需要固定使用 HuggingFace 或 ModelScope 时，请先在管理脚本同级目录创建 `disable_auto_mirror.txt`，或运行管理脚本时传入 `-DisableAutoMirror`。
 
 ### Fooocus 使用方法
-- [Fooocus Advanced · lllyasviel/Fooocus · Discussion #117](https://github.com/lllyasviel/Fooocus/discussions/117)
-- [Fooocus Advanced 2 · lllyasviel/Fooocus · Discussion #830](https://github.com/lllyasviel/Fooocus/discussions/830)
+- [Fooocus Advanced · licyk/Fooocus · Discussion #117](https://github.com/licyk/Fooocus/discussions/117)
+- [Fooocus Advanced 2 · licyk/Fooocus · Discussion #830](https://github.com/licyk/Fooocus/discussions/830)

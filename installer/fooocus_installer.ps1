@@ -2551,7 +2551,7 @@ function Add-Shortcut {
         `$git_remote = `$(git -C (Join-NormalizedPath `$PSScriptRoot `$env:CORE_PREFIX) remote get-url origin)
         `$array = `$git_remote -split `"/`"
         `$branch = `"`$(`$array[-2])/`$(`$array[-1])`"
-        if ((`$branch -eq `"lllyasviel/Fooocus`") -or (`$branch -eq `"lllyasviel/Fooocus.git`")) {
+        if ((`$branch -eq `"licyk/Fooocus`") -or (`$branch -eq `"licyk/Fooocus.git`")) {
             `$filename = `"Fooocus`"
         } elseif ((`$branch -eq `"MoonRide303/Fooocus-MRE`") -or (`$branch -eq `"MoonRide303/Fooocus-MRE.git`")) {
             `$filename = `"Fooocus-MRE`"
@@ -3431,7 +3431,7 @@ function Get-LocalSetting {
     }
 
     `$git_repo_map = @{
-        `"lllyasviel/Fooocus`"      = `"fooocus_main`"
+        `"licyk/Fooocus`"      = `"fooocus_main`"
         `"MoonRide303/Fooocus-MRE`" = `"ruined_fooocus_main`"
         `"runew0lf/RuinedFooocus`"  = `"fooocus_mre_main`"
     }
@@ -5310,7 +5310,7 @@ Fooocus Installer 文档：https://licyk.github.io/sd-webui-all-in-one/installer
 ########## GitHub 项目 ##########
 
 sd-webui-all-in-one 项目地址：https://github.com/licyk/sd-webui-all-in-one
-Fooocus 项目地址：https://github.com/lllyasviel/Fooocus
+Fooocus 项目地址：https://github.com/licyk/Fooocus
 支持的 Fooocus 分支列表：https://licyk.github.io/sd-webui-all-in-one/installer/fooocus/
 
 

@@ -37,7 +37,7 @@
 要设置 Fooocus 的启动参数，可以在和 `launch.ps1` 脚本同级的目录创建一个`launch_args.txt` 文件，在文件内写上启动参数，运行 Fooocus 启动脚本时将自动读取该文件内的启动参数并应用。
 
 !!! note
-    Fooocus 支持的启动参数可阅读：[All CMD Flags · lllyasviel/Fooocus](https://github.com/lllyasviel/Fooocus?tab=readme-ov-file#all-cmd-flags)。
+    Fooocus 支持的启动参数可阅读：[All CMD Flags · licyk/Fooocus](https://github.com/licyk/Fooocus?tab=readme-ov-file#all-cmd-flags)。
     
     如果修改启动参数导致无法正常启动，可将启动参数设置为默认启动参数。
     
@@ -62,7 +62,7 @@ Hotpatcher 默认只做本地补丁注入。需要 runtime host 连接时，可�
 
 支持切换到的分支如下。
 
-- [lllyasviel/Fooocus](https://github.com/lllyasviel/Fooocus)
+- [licyk/Fooocus](https://github.com/licyk/Fooocus)
 - [MoonRide303/Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE)
 - [runew0lf/RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)
 

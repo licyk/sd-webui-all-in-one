@@ -101,7 +101,7 @@ SD WebUI All In One 提供本地安装、整合包下载、Hanafubuki 图形管�
 - [SD.Next](https://github.com/vladmandic/sdnext)
 - [ComfyUI](https://github.com/Comfy-Org/ComfyUI)
 - [InvokeAI](https://github.com/invoke-ai/InvokeAI)
-- [Fooocus](https://github.com/lllyasviel/Fooocus)
+- [Fooocus](https://github.com/licyk/Fooocus)
 - [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE)
 - [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)
 - [SD-Trainer](https://github.com/Akegarasu/lora-scripts)
@@ -130,7 +130,7 @@ SD WebUI All In One 提供本地安装、整合包下载、Hanafubuki 图形管�
 - [SD.Next](https://github.com/vladmandic/sdnext)
 - [ComfyUI](https://github.com/Comfy-Org/ComfyUI)
 - [InvokeAI](https://github.com/invoke-ai/InvokeAI)
-- [Fooocus](https://github.com/lllyasviel/Fooocus)
+- [Fooocus](https://github.com/licyk/Fooocus)
 - [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE)
 - [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)
 - [SD-Trainer](https://github.com/Akegarasu/lora-scripts)
@@ -217,7 +217,7 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 
 
 ## Fooocus Colab Jupyter NoteBook
-[fooocus_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_colab.ipynb) [[源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/fooocus_colab.ipynb)]：适用于 Colab 一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus) / [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE) / [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)，可在环境配置单元的 `Fooocus 分支` 选项中选择。
+[fooocus_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_colab.ipynb) [[源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/fooocus_colab.ipynb)]：适用于 Colab 一键部署 [Fooocus](https://github.com/licyk/Fooocus) / [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE) / [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)，可在环境配置单元的 `Fooocus 分支` 选项中选择。
 
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
@@ -280,7 +280,7 @@ Windows / Linux / macOS 平台安装、启动和管理 [InvokeAI](https://github
 
 
 ## Fooocus Installer
-Windows / Linux / macOS 平台安装、启动和管理 [Fooocus](https://github.com/lllyasviel/Fooocus) / [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE) / [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)。
+Windows / Linux / macOS 平台安装、启动和管理 [Fooocus](https://github.com/licyk/Fooocus) / [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE) / [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)。
 
 使用说明：[Fooocus Installer 文档](https://licyk.github.io/sd-webui-all-in-one/installer/fooocus)。
 
@@ -331,7 +331,7 @@ Windows / Linux / macOS 平台安装、启动和管理 [RVC Next WebUI](https://
 |Build [ComfyUI](https://github.com/Comfy-Org/ComfyUI) (macOS MPS) Portable|[![Build ComfyUI macOS MPS](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui_macos.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui_macos.yml)|
 |Build [ComfyUI](https://github.com/Comfy-Org/ComfyUI) (ROCm) Portable|[![Build ComfyUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui_rocm.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui_rocm.yml)|
 |Build [ComfyUI](https://github.com/Comfy-Org/ComfyUI) (XPU) Portable|[![Build ComfyUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui_xpu.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui_xpu.yml)|
-|Build [Fooocus](https://github.com/lllyasviel/Fooocus) Portable|[![Build Fooocus](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_fooocus.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_fooocus.yml)|
+|Build [Fooocus](https://github.com/licyk/Fooocus) Portable|[![Build Fooocus](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_fooocus.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_fooocus.yml)|
 |Build [InvokeAI](https://github.com/invoke-ai/InvokeAI) Portable|[![Build InvokeAI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_invokeai.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_invokeai.yml)|
 |Build [SD-Trainer](https://github.com/Akegarasu/lora-scripts) Portable|[![Build SD-Trainer](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_trainer.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_trainer.yml)|
 |Build [SD Trainer Next](https://github.com/wochenlong/lora-scripts-next) Portable|[![Build SD Trainer Next](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_trainer_next.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_trainer_next.yml)|
