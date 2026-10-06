@@ -159,6 +159,7 @@ class RvcNextWebUIManager(BaseManager):
         self,
         pytorch_mirror_type: PyTorchDeviceType | None = None,
         custom_pytorch_package: str | None = None,
+        custom_xformers_package: str | None = None,
         use_pypi_mirror: bool = False,
         use_uv: bool = True,
         use_github_mirror: bool = False,
@@ -187,6 +188,8 @@ class RvcNextWebUIManager(BaseManager):
                 设置使用的 PyTorch 镜像源类型
             custom_pytorch_package (str | None):
                 自定义 PyTorch 软件包版本声明, 例如: `torch==2.8.0+cu128 torchvision==0.23.0+cu128`
+            custom_xformers_package (str | None):
+                自定义 xFormers 软件包版本声明, 例如: `xformers==0.0.32.post2`
             use_pypi_mirror (bool):
                 是否使用国内 PyPI 镜像源
             use_uv (bool):
@@ -261,6 +264,7 @@ class RvcNextWebUIManager(BaseManager):
             rvc_next_webui_path=rvc_next_webui_path,
             pytorch_mirror_type=pytorch_mirror_type,
             custom_pytorch_package=custom_pytorch_package,
+            custom_xformers_package=custom_xformers_package,
             use_pypi_mirror=use_pypi_mirror,
             use_uv=use_uv,
             use_github_mirror=use_github_mirror,

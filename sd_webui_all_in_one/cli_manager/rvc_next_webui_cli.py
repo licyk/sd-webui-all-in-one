@@ -61,6 +61,7 @@ def install(
     rvc_next_webui_path: Path,
     pytorch_mirror_type: PyTorchDeviceType | None = None,
     custom_pytorch_package: str | None = None,
+    custom_xformers_package: str | None = None,
     use_pypi_mirror: bool = True,
     use_uv: bool = True,
     use_github_mirror: bool = False,
@@ -75,6 +76,8 @@ def install(
             设置使用的 PyTorch 镜像源类型
         custom_pytorch_package (str | None):
             自定义 PyTorch 软件包版本声明, 例如: `torch==2.8.0+cu128 torchvision==0.23.0+cu128`
+        custom_xformers_package (str | None):
+            自定义 xFormers 软件包版本声明, 例如: `xformers==0.0.32.post2`
         use_pypi_mirror (bool):
             是否使用国内 PyPI 镜像源
         use_uv (bool):
@@ -88,6 +91,7 @@ def install(
         rvc_next_webui_path=rvc_next_webui_path,
         pytorch_mirror_type=pytorch_mirror_type,
         custom_pytorch_package=custom_pytorch_package,
+        custom_xformers_package=custom_xformers_package,
         use_pypi_mirror=use_pypi_mirror,
         use_uv=use_uv,
         use_github_mirror=use_github_mirror,
@@ -552,6 +556,7 @@ def register_rvc_next_webui(
     install_p.add_argument("--rvc-next-webui-path", type=normalized_filepath, required=False, default=RVC_NEXT_WEBUI_ROOT_PATH, dest="rvc_next_webui_path", help="RVC Next WebUI 根目录")
     install_p.add_argument("--pytorch-mirror-type", type=str, dest="pytorch_mirror_type", choices=PYTORCH_DEVICE_LIST, help="PyTorch 镜像源类型")
     install_p.add_argument("--custom-pytorch-package", type=str, dest="custom_pytorch_package", help="自定义 PyTorch 软件包版本声明")
+    install_p.add_argument("--custom-xformers-package", type=str, dest="custom_xformers_package", help="自定义 xFormers 软件包版本声明")
     install_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
     install_p.add_argument("--no-uv", action="store_false", dest="use_uv", help="不使用 uv 安装 Python 软件包")
     install_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
@@ -563,6 +568,7 @@ def register_rvc_next_webui(
                 rvc_next_webui_path=args.rvc_next_webui_path,
                 pytorch_mirror_type=args.pytorch_mirror_type,
                 custom_pytorch_package=args.custom_pytorch_package,
+                custom_xformers_package=args.custom_xformers_package,
                 use_pypi_mirror=args.use_pypi_mirror,
                 use_uv=args.use_uv,
                 use_github_mirror=args.use_github_mirror,

@@ -43,6 +43,7 @@ def install_rvc_next_webui(
     rvc_next_webui_path: Path,
     pytorch_mirror_type: PyTorchDeviceType | None = None,
     custom_pytorch_package: str | None = None,
+    custom_xformers_package: str | None = None,
     use_pypi_mirror: bool = True,
     use_uv: bool = True,
     use_github_mirror: bool = False,
@@ -57,6 +58,8 @@ def install_rvc_next_webui(
             设置使用的 PyTorch 镜像源类型
         custom_pytorch_package (str | None):
             自定义 PyTorch 软件包版本声明, 例如: `torch==2.8.0+cu128 torchvision==0.23.0+cu128`
+        custom_xformers_package (str | None):
+            自定义 xFormers 软件包版本声明, 例如: `xformers==0.0.32.post2`
         use_pypi_mirror (bool):
             是否使用国内 PyPI 镜像源
         use_uv (bool):
@@ -72,10 +75,11 @@ def install_rvc_next_webui(
     """
     logger.info("准备 RVC Next WebUI 安装配置")
 
-    # 准备 PyTorch 安装信息, RVC Next 不需要 xFormers
-    pytorch_package, _, custom_env_pytorch = prepare_pytorch_install_info(
+    # 准备 PyTorch 安装信息
+    pytorch_package, xformers_package, custom_env_pytorch = prepare_pytorch_install_info(
         pytorch_mirror_type=pytorch_mirror_type,
         custom_pytorch_package=custom_pytorch_package,
+        custom_xformers_package=custom_xformers_package,
         use_cn_mirror=use_pypi_mirror,
     )
 
@@ -91,6 +95,7 @@ def install_rvc_next_webui(
     apply_git_config_global_to_process(custom_env)
 
     logger.debug("安装的 PyTorch 版本: %s", pytorch_package)
+    logger.debug("安装的 xformers: %s", xformers_package)
 
     logger.info("RVC Next WebUI 安装配置准备完成")
     logger.info("开始安装 RVC Next WebUI, 安装路径: %s", rvc_next_webui_path)
@@ -103,7 +108,7 @@ def install_rvc_next_webui(
 
     install_pytorch_for_webui(
         pytorch_package=pytorch_package,
-        xformers_package=None,
+        xformers_package=xformers_package,
         custom_env=custom_env_pytorch,
         use_uv=use_uv,
     )

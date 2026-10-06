@@ -93,6 +93,10 @@ PyTorch 版本编号可运行 reinstall_pytorch.ps1 脚本进行查看
 "@)][string]$PyTorchPackage,
 
     [Parameter(HelpMessage=@"
+指定要安装 xFormers 版本, 需搭配 -PyTorchPackage 使用并选择与 PyTorch 匹配的版本, 如 -xFormersPackage "xformers==0.0.32.post2"
+"@)][string]$xFormersPackage,
+
+    [Parameter(HelpMessage=@"
 安装结束后保留下载 Python 软件包缓存
 "@)][switch]$NoCleanCache,
 
@@ -544,6 +548,10 @@ function Get-LaunchCoreArgs {
     if ($script:PyTorchPackage) {
         $launch_params.Add("--custom-pytorch-package") | Out-Null
         $launch_params.Add($script:PyTorchPackage) | Out-Null
+    }
+    if ($script:xFormersPackage) {
+        $launch_params.Add("--custom-xformers-package") | Out-Null
+        $launch_params.Add($script:xFormersPackage) | Out-Null
     }
     return $launch_params
 }

@@ -423,7 +423,8 @@ def test_rvc_next_webui_run_maps_hf_mirror_to_download_settings(monkeypatch, tmp
     assert os.environ["RVC_NEXT_DOWNLOADS__ENDPOINT"] == "https://hf.example"
 
 
-def test_rvc_next_webui_install_orchestrates_without_xformers_or_models(monkeypatch, tmp_path):
+@pytest.mark.parametrize("custom_xformers_package", [None, "xformers==0.0.33"])
+def test_rvc_next_webui_install_forwards_xformers_without_models(monkeypatch, tmp_path, custom_xformers_package):
     calls = []
     manager = rvc_next_webui_manager.RvcNextWebUIManager(tmp_path, "app")
     for name in ("set_mirror", "configure_pip", "configure_env_var", "install_manager_depend", "set_cuda_malloc"):
@@ -433,11 +434,11 @@ def test_rvc_next_webui_install_orchestrates_without_xformers_or_models(monkeypa
     monkeypatch.setattr(manager.repo_manager, "configure_tokens", lambda **kwargs: calls.append(("tokens", kwargs)), raising=False)
     monkeypatch.chdir(tmp_path)
 
-    manager.install(pytorch_mirror_type="cu128", use_uv=False, enable_tcmalloc=False)
+    manager.install(pytorch_mirror_type="cu128", custom_xformers_package=custom_xformers_package, use_uv=False, enable_tcmalloc=False)
 
     install = dict(calls)["install"]
     assert install["rvc_next_webui_path"] == tmp_path / "app"
     assert install["pytorch_mirror_type"] == "cu128"
     assert install["use_uv"] is False
-    assert "custom_xformers_package" not in install
+    assert install["custom_xformers_package"] == custom_xformers_package
     assert dict(calls)["update"]["rvc_next_webui_path"] == tmp_path / "app"

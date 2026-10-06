@@ -21,12 +21,21 @@ def _use_temp_git_config(monkeypatch, tmp_path):
     return config_path.as_posix()
 
 
-def test_install_rvc_next_webui_orchestrates_without_xformers(monkeypatch, tmp_path):
+@pytest.mark.parametrize(
+    ("custom_pytorch_package", "custom_xformers_package", "resolved_xformers_package"),
+    [(None, None, "xformers"), (None, None, None), ("torch==2.9.0+cu128", "xformers==0.0.33", "xformers==0.0.33")],
+)
+def test_install_rvc_next_webui_preserves_xformers(monkeypatch, tmp_path, custom_pytorch_package, custom_xformers_package, resolved_xformers_package):
     calls = []
     git_config_path = _use_temp_git_config(monkeypatch, tmp_path)
     (tmp_path / "requirements.txt").write_text("rvc-next\n", encoding="utf-8")
 
-    monkeypatch.setattr(lifecycle, "prepare_pytorch_install_info", lambda **kwargs: ("torch==2.9.0+cu128", "xformers", {"TORCH": "env"}))
+    def prepare_pytorch_install_info(**kwargs):
+        assert kwargs["custom_pytorch_package"] == custom_pytorch_package
+        assert kwargs["custom_xformers_package"] == custom_xformers_package
+        return "torch==2.9.0+cu128", resolved_xformers_package, {"TORCH": "env"}
+
+    monkeypatch.setattr(lifecycle, "prepare_pytorch_install_info", prepare_pytorch_install_info)
     monkeypatch.setattr(lifecycle, "get_pypi_mirror_config", lambda use_cn_mirror=True: {"PIP": str(use_cn_mirror)})
     monkeypatch.setattr(
         lifecycle,
@@ -39,6 +48,8 @@ def test_install_rvc_next_webui_orchestrates_without_xformers(monkeypatch, tmp_p
 
     rvc_next_webui_base.install_rvc_next_webui(
         tmp_path,
+        custom_pytorch_package=custom_pytorch_package,
+        custom_xformers_package=custom_xformers_package,
         use_pypi_mirror=False,
         use_uv=False,
         use_github_mirror=True,
@@ -49,7 +60,7 @@ def test_install_rvc_next_webui_orchestrates_without_xformers(monkeypatch, tmp_p
     assert calls[0] == ("clone", {"repo": rvc_next_webui_base.RVC_NEXT_WEBUI_REPO, "path": tmp_path})
     assert calls[1] == (
         "pytorch",
-        {"pytorch_package": "torch==2.9.0+cu128", "xformers_package": None, "custom_env": {"TORCH": "env"}, "use_uv": False},
+        {"pytorch_package": "torch==2.9.0+cu128", "xformers_package": resolved_xformers_package, "custom_env": {"TORCH": "env"}, "use_uv": False},
     )
     assert calls[2][0] == "requirements"
     assert calls[2][1]["path"] == tmp_path / "requirements.txt"
@@ -109,10 +120,11 @@ def test_prepare_launch_applies_mirror_and_keeps_launch_args(monkeypatch, tmp_pa
     assert "RVC_NEXT_DOWNLOADS__SOURCE" not in info.custom_env
 
 
-def test_cli_install_forwards_pytorch_options_without_model_or_xformers_options(monkeypatch, tmp_path):
+@pytest.mark.parametrize("custom_xformers_package", [None, "xformers==0.0.33"])
+def test_cli_install_forwards_pytorch_and_xformers_options_without_model_options(monkeypatch, tmp_path, custom_xformers_package):
     parser = _parser()
     calls = []
-    monkeypatch.setattr(rvc_next_webui_cli, "install", lambda **kwargs: calls.append(kwargs))
+    monkeypatch.setattr(rvc_next_webui_cli, "install_rvc_next_webui", lambda **kwargs: calls.append(kwargs))
 
     args = parser.parse_args(
         [
@@ -123,13 +135,17 @@ def test_cli_install_forwards_pytorch_options_without_model_or_xformers_options(
             "--no-auto-mirror",
             "--pytorch-mirror-type",
             "cu128",
+            "--custom-pytorch-package",
+            "torch==2.9.0+cu128",
         ]
+        + (["--custom-xformers-package", custom_xformers_package] if custom_xformers_package else [])
     )
     args.func(args)
 
     assert calls[-1]["rvc_next_webui_path"] == tmp_path
     assert calls[-1]["pytorch_mirror_type"] == "cu128"
-    assert "custom_xformers_package" not in calls[-1]
-    for option in ("--custom-xformers-package", "--no-pre-download-model", "--model-resource"):
+    assert calls[-1]["custom_pytorch_package"] == "torch==2.9.0+cu128"
+    assert calls[-1]["custom_xformers_package"] == custom_xformers_package
+    for option in ("--no-pre-download-model", "--model-resource"):
         with pytest.raises(SystemExit):
             parser.parse_args(["rvc-next-webui", "install", option, "x"])

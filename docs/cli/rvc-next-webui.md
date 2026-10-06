@@ -15,6 +15,7 @@ sd-webui-all-in-one rvc-next-webui install [选项]
   - `--rvc-next-webui-path <路径>`: RVC Next WebUI 根目录，默认为配置文件中的路径。
   - `--pytorch-mirror-type <类型>`: 设置使用的 PyTorch 镜像源类型。
   - `--custom-pytorch-package <包名>`: 自定义 PyTorch 软件包版本声明。
+  - `--custom-xformers-package <包名>`: 自定义 xFormers 软件包版本声明，需搭配 `--custom-pytorch-package` 使用。
   - `--no-pypi-mirror`: 不使用国内 PyPI 镜像源。
   - `--no-uv`: 不使用 uv 安装 Python 软件包。
   - `--no-github-mirror`: 不使用 Github 镜像源。
