@@ -96,11 +96,14 @@ SD WebUI All In One 提供本地安装、整合包下载、Hanafubuki 图形管�
 - [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)
 - [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)
 - [Stable-Diffusion-WebUI-Forge-Neo](https://github.com/Haoming02/sd-webui-forge-classic)
+- [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic/tree/classic)
 - [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)
-- [SD.Next](https://github.com/vladmandic/automatic)
+- [SD.Next](https://github.com/vladmandic/sdnext)
 - [ComfyUI](https://github.com/Comfy-Org/ComfyUI)
 - [InvokeAI](https://github.com/invoke-ai/InvokeAI)
 - [Fooocus](https://github.com/lllyasviel/Fooocus)
+- [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE)
+- [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)
 - [SD-Trainer](https://github.com/Akegarasu/lora-scripts)
 - [SD Trainer Next](https://github.com/wochenlong/lora-scripts-next)
 - [Kohya GUI](https://github.com/bmaltais/kohya_ss)
@@ -122,11 +125,14 @@ SD WebUI All In One 提供本地安装、整合包下载、Hanafubuki 图形管�
 - [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)
 - [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge)
 - [Stable-Diffusion-WebUI-Forge-Neo](https://github.com/Haoming02/sd-webui-forge-classic)
+- [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic/tree/classic)
 - [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu)
-- [SD.Next](https://github.com/vladmandic/automatic)
+- [SD.Next](https://github.com/vladmandic/sdnext)
 - [ComfyUI](https://github.com/Comfy-Org/ComfyUI)
 - [InvokeAI](https://github.com/invoke-ai/InvokeAI)
 - [Fooocus](https://github.com/lllyasviel/Fooocus)
+- [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE)
+- [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)
 - [SD-Trainer](https://github.com/Akegarasu/lora-scripts)
 - [SD Trainer Next](https://github.com/wochenlong/lora-scripts-next)
 - [Kohya GUI](https://github.com/bmaltais/kohya_ss)
@@ -193,7 +199,7 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 
 
 ## Stable Diffusion WebUI Colab NoteBook
-[stable_diffusion_webui_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/stable_diffusion_webui_colab.ipynb) [[源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/stable_diffusion_webui_colab.ipynb)]：适用于 Colab 一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-Forge-Neo](https://github.com/Haoming02/sd-webui-forge-classic) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/automatic)。
+[stable_diffusion_webui_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/stable_diffusion_webui_colab.ipynb) [[源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/stable_diffusion_webui_colab.ipynb)]：适用于 Colab 一键部署 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-Forge-Neo](https://github.com/Haoming02/sd-webui-forge-classic) / [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic/tree/classic) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/sdnext)。
 
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/stable_diffusion_webui_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
@@ -211,7 +217,7 @@ Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-
 
 
 ## Fooocus Colab Jupyter NoteBook
-[fooocus_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_colab.ipynb) [[源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/fooocus_colab.ipynb)]：适用于 Colab 一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus)。
+[fooocus_colab.ipynb](https://github.com/licyk/sd-webui-all-in-one/releases/download/archive/fooocus_colab.ipynb) [[源码](https://github.com/licyk/sd-webui-all-in-one/blob/main/notebook/fooocus_colab.ipynb)]：适用于 Colab 一键部署 [Fooocus](https://github.com/lllyasviel/Fooocus) / [Fooocus-MRE](https://github.com/MoonRide303/Fooocus-MRE) / [RuinedFooocus](https://github.com/runew0lf/RuinedFooocus)，可在环境配置单元的 `Fooocus 分支` 选项中选择。
 
 Colab 链接：<a href="https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/fooocus_colab.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
@@ -256,7 +262,7 @@ Installer 是适用于 Windows / Linux / macOS 的 WebUI / 训练工具安装与
 
 
 ## SD WebUI Installer
-Windows / Linux / macOS 平台安装、启动和管理 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-Forge-Neo](https://github.com/Haoming02/sd-webui-forge-classic) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/automatic)。
+Windows / Linux / macOS 平台安装、启动和管理 [Stable-Diffusion-WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable-Diffusion-WebUI-Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) / [Stable-Diffusion-WebUI-reForge](https://github.com/Panchovix/stable-diffusion-webui-reForge) / [Stable-Diffusion-WebUI-Forge-Neo](https://github.com/Haoming02/sd-webui-forge-classic) / [Stable-Diffusion-WebUI-Forge-Classic](https://github.com/Haoming02/sd-webui-forge-classic/tree/classic) / [Stable-Diffusion-WebUI-AMDGPU](https://github.com/lshqqytiger/stable-diffusion-webui-amdgpu) / [SD.Next](https://github.com/vladmandic/sdnext)。
 
 使用说明：[SD WebUI Installer 文档](https://licyk.github.io/sd-webui-all-in-one/installer/sd-webui)。
 
@@ -319,7 +325,7 @@ Windows / Linux / macOS 平台安装、启动和管理 [RVC Next WebUI](https://
 |Build [SD WebUI Forge Neo](https://github.com/Haoming02/sd-webui-forge-classic) Portable|[![SD WebUI Forge Neo](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_forge_neo.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_forge_neo.yml)|
 |Build [SD WebUI Forge Neo](https://github.com/Haoming02/sd-webui-forge-classic) (ROCm) Portable|[![SD WebUI Forge Neo ROCm](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_forge_neo_rocm.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_forge_neo_rocm.yml)|
 |Build [SD WebUI Forge Neo](https://github.com/Haoming02/sd-webui-forge-classic) (XPU) Portable|[![SD WebUI Forge Neo XPU](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_forge_neo_xpu.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_webui_forge_neo_xpu.yml)|
-|Build [SD Next](https://github.com/vladmandic/automatic) Portable|[![Build SD WebUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_next.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_next.yml)|
+|Build [SD Next](https://github.com/vladmandic/sdnext) Portable|[![Build SD WebUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_next.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_sd_next.yml)|
 |Build [ComfyUI](https://github.com/Comfy-Org/ComfyUI) Portable|[![Build ComfyUI](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui.yml)|
 |Build [ComfyUI](https://github.com/Comfy-Org/ComfyUI) (Linux NVIDIA) Portable|[![Build ComfyUI Linux NVIDIA](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui_linux.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui_linux.yml)|
 |Build [ComfyUI](https://github.com/Comfy-Org/ComfyUI) (macOS MPS) Portable|[![Build ComfyUI macOS MPS](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui_macos.yml/badge.svg)](https://github.com/licyk/sd-webui-all-in-one/actions/workflows/build_comfyui_macos.yml)|
