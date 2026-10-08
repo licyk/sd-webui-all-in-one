@@ -228,10 +228,10 @@ $script:HotpatcherPortSet = $PSBoundParameters.ContainsKey("HotpatcherPort")
     $env:CORE_PREFIX = Resolve-CorePrefix -BasePath $script:InstallPath -PrefixList $prefix_list -ConfiguredPrefix $origin_core_prefix
 }
 # RVC Next WebUI Installer 版本和检查更新间隔
-$script:RVC_NEXT_WEBUI_INSTALLER_VERSION = 103
+$script:RVC_NEXT_WEBUI_INSTALLER_VERSION = 104
 $script:UPDATE_TIME_SPAN = 3600
 # SD WebUI All In One 内核最低版本
-$script:CORE_MINIMUM_VER = "2.6.7"
+$script:CORE_MINIMUM_VER = "2.6.8"
 # PATH
 & {
     $sep = $([System.IO.Path]::PathSeparator)
