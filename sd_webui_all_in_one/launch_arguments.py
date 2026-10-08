@@ -12,7 +12,7 @@ import signal
 import subprocess
 import sys
 import threading
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Generator, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
 from enum import Enum
@@ -113,7 +113,7 @@ _PARSER_LOAD_LOCK = threading.RLock()
 
 
 @contextmanager
-def _temporary_parser_argv() -> Iterator[None]:
+def _temporary_parser_argv() -> Generator[None, None, None]:
     """加载第三方参数模块时隐藏宿主进程的命令行参数。"""
     original_argv = sys.argv
     program = original_argv[0] if original_argv else str(sys.executable)

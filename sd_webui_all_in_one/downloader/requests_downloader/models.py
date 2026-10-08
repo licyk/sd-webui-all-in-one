@@ -4,7 +4,7 @@ import hashlib
 import importlib
 import os
 import threading
-from collections.abc import Iterator, Sequence
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -196,7 +196,7 @@ def _verify_existing_file(
 
 
 @contextmanager
-def _posix_target_download_lock(lock_path: Path) -> Iterator[None]:
+def _posix_target_download_lock(lock_path: Path) -> Generator[None, None, None]:
     """获取可安全删除的 POSIX 文件锁。"""
     fcntl = importlib.import_module("fcntl")
     flock = getattr(fcntl, "flock")
@@ -231,7 +231,7 @@ def _posix_target_download_lock(lock_path: Path) -> Iterator[None]:
 
 
 @contextmanager
-def _windows_target_download_lock(target_file: Path) -> Iterator[None]:
+def _windows_target_download_lock(target_file: Path) -> Generator[None, None, None]:
     """使用 Windows 命名互斥量协调同一目标，不创建磁盘锁文件。"""
     import ctypes
     from ctypes import wintypes
@@ -270,7 +270,7 @@ def _windows_target_download_lock(target_file: Path) -> Iterator[None]:
 
 
 @contextmanager
-def _target_download_lock(target_file: Path) -> Iterator[None]:
+def _target_download_lock(target_file: Path) -> Generator[None, None, None]:
     """同一目标采用等待语义，并通过系统锁覆盖跨进程任务。"""
     normalized_target = target_file.resolve()
     with _TARGET_PATH_LOCKS_GUARD:

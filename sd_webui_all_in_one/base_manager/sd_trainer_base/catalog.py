@@ -6,7 +6,6 @@ import importlib
 import os
 from pathlib import Path
 from typing import (
-    cast,
     TypeAlias,
     Literal,
     TypedDict,
@@ -87,7 +86,7 @@ SDTrainerBranchType: TypeAlias = Literal[
     "kohya_gui_main",
 ]
 
-SD_TRAINER_BRANCH_LIST: list[SDTrainerBranchType] = cast(list[SDTrainerBranchType], list(get_args(SDTrainerBranchType)))
+SD_TRAINER_BRANCH_LIST: list[SDTrainerBranchType] = list(get_args(SDTrainerBranchType))
 
 
 class SDTrainerBranchInfo(TypedDict):

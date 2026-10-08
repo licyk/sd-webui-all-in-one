@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib.util
 import os
 import sys
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Generator, Iterable, Sequence
 from contextlib import contextmanager
 from importlib.abc import Loader, MetaPathFinder
 from importlib.machinery import ModuleSpec, SourceFileLoader
@@ -30,7 +30,7 @@ class LoadingSkipper:
         return fullname in self.currently_loading
 
     @contextmanager
-    def __call__(self, module: str | ModuleType) -> Iterator[None]:
+    def __call__(self, module: str | ModuleType) -> Generator[None, None, None]:
         fullname = module.__name__ if isinstance(module, ModuleType) else module
         self.currently_loading.append(fullname)
         try:

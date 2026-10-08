@@ -9,7 +9,7 @@ import sys
 from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 from typing import (
-    Iterator,
+    Generator,
     cast,
 )
 from pathlib import Path
@@ -61,7 +61,7 @@ from sd_webui_all_in_one.base_manager.invokeai_base.shared import logger
 @contextmanager
 def _temporary_invokeai_root(
     invokeai_path: Path | None,
-) -> Iterator[None]:
+) -> Generator[None, None, None]:
     """临时指定 InvokeAI 根目录"""
     if invokeai_path is None:
         yield

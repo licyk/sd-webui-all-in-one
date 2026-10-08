@@ -7,7 +7,7 @@ import importlib
 import importlib.util
 import os
 import sys
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Generator, Sequence
 from contextlib import contextmanager, nullcontext, redirect_stdout
 from importlib.abc import Loader, MetaPathFinder
 from importlib.machinery import ModuleSpec, SourceFileLoader
@@ -437,7 +437,7 @@ class MonkeyZoo:
         return item.casefold() in self.monkeys
 
     @contextmanager
-    def __call__(self, module: str | ModuleType) -> Iterator[Monkey]:
+    def __call__(self, module: str | ModuleType) -> Generator[Monkey, None, None]:
         fullname = module.__name__ if isinstance(module, ModuleType) else module
         key = fullname.casefold()
         monkey = self.monkeys.get(key, Monkey())
@@ -488,7 +488,7 @@ class LoadingSkipper:
         return fullname in self.currently_loading
 
     @contextmanager
-    def __call__(self, module: str | ModuleType) -> Iterator[None]:
+    def __call__(self, module: str | ModuleType) -> Generator[None, None, None]:
         fullname = module.__name__ if isinstance(module, ModuleType) else module
         self.currently_loading.append(fullname)
         try:

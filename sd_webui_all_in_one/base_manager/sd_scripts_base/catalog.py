@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import (
-    cast,
     TypeAlias,
     TypedDict,
     Literal,
@@ -34,7 +33,7 @@ SDScriptsBranchType: TypeAlias = Literal[
     "musubi_tuner_main",
 ]
 
-SD_SCRIPTS_BRANCH_LIST: list[SDScriptsBranchType] = cast(list[SDScriptsBranchType], list(get_args(SDScriptsBranchType)))
+SD_SCRIPTS_BRANCH_LIST: list[SDScriptsBranchType] = list(get_args(SDScriptsBranchType))
 
 
 class SDScriptsBranchInfo(TypedDict):

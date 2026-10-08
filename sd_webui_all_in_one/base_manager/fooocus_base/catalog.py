@@ -6,7 +6,6 @@ import importlib
 import os
 from pathlib import Path
 from typing import (
-    cast,
     TypeAlias,
     TypedDict,
     Literal,
@@ -81,7 +80,7 @@ FooocusBranchType: TypeAlias = Literal[
     "fooocus_mre_main",
 ]
 
-FOOOCUS_BRANCH_LIST: list[FooocusBranchType] = cast(list[FooocusBranchType], list(get_args(FooocusBranchType)))
+FOOOCUS_BRANCH_LIST: list[FooocusBranchType] = list(get_args(FooocusBranchType))
 
 
 class FooocusBranchInfo(TypedDict):

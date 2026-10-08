@@ -6,7 +6,6 @@ import importlib
 import os
 import importlib.metadata
 from typing import (
-    cast,
     TypedDict,
     Literal,
     TypeAlias,
@@ -89,7 +88,7 @@ SDWebUiBranchType: TypeAlias = Literal[
     "sd_next_dev",
 ]
 
-SD_WEBUI_BRANCH_LIST: list[SDWebUiBranchType] = cast(list[SDWebUiBranchType], list(get_args(SDWebUiBranchType)))
+SD_WEBUI_BRANCH_LIST: list[SDWebUiBranchType] = list(get_args(SDWebUiBranchType))
 
 
 class SDWebUiBranchInfo(TypedDict):

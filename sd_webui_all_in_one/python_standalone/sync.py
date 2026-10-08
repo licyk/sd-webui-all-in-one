@@ -16,7 +16,7 @@ import shutil
 import tempfile
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Generator
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -122,7 +122,7 @@ class TaskTagFormatter(logging.Formatter):
 def task_log_tags(
     color: bool = True,
     tag_width: int = 0,
-) -> Iterator[None]:
+) -> Generator[None, None, None]:
     """在上下文中为 SD WebUI All In One 的日志添加任务标签
 
     所有任务的日志经过同一个 Handler 输出, 由 Handler 的锁保证多线程输出时每行不会交错
