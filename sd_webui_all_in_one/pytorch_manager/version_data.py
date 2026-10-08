@@ -3708,6 +3708,25 @@ PYTORCH_DOWNLOAD_DICT: PyTorchVersionInfoList = [
         },
     },
     {
+        "name": "Torch 2.14.0 (ROCm 10.1.0)",
+        "dtype": "rocm10",
+        "platform": ["win32", "linux"],
+        "torch_ver": "torch[device-all]==2.14.0+rocm10.1.0 torchvision[device-all]==0.29.0a0+rocm10.1.0 torchaudio==2.11.0.3+rocm10.1.0",
+        "xformers_ver": None,
+        "index_mirror": {
+            "official": [PYTORCH_ROCM_MIRROR_DICT["rocm10"][0]],
+            "mirror": [PYTORCH_ROCM_MIRROR_DICT["rocm10"][0]],
+        },
+        "extra_index_mirror": {
+            "official": [PYPI_INDEX_MIRROR_OFFICIAL],
+            "mirror": [PYPI_INDEX_MIRROR_TENCENT],
+        },
+        "find_links": {
+            "official": [],
+            "mirror": [],
+        },
+    },
+    {
         "name": "Torch 2.14.0 (XPU)",
         "dtype": "xpu",
         "platform": ["win32", "linux"],

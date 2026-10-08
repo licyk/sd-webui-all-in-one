@@ -264,30 +264,30 @@ def test_query_pytorch_info_index_boundaries(monkeypatch):
         (
             "linux",
             "rocm10",
-            "Torch 2.13.0 (ROCm 10.0.0)",
-            "torch[device-all]==2.13.0+rocm10.0.0 torchvision[device-all]==0.28.0+rocm10.0.0 torchaudio==2.11.0.2+rocm10.0.0",
+            "Torch 2.14.0 (ROCm 10.1.0)",
+            "torch[device-all]==2.14.0+rocm10.1.0 torchvision[device-all]==0.29.0a0+rocm10.1.0 torchaudio==2.11.0.3+rocm10.1.0",
             "https://stable.repo.amd.com/rocm/whl-next",
         ),
         (
             "win32",
             "rocm10",
-            "Torch 2.13.0 (ROCm 10.0.0)",
-            "torch[device-all]==2.13.0+rocm10.0.0 torchvision[device-all]==0.28.0+rocm10.0.0 torchaudio==2.11.0.2+rocm10.0.0",
+            "Torch 2.14.0 (ROCm 10.1.0)",
+            "torch[device-all]==2.14.0+rocm10.1.0 torchvision[device-all]==0.29.0a0+rocm10.1.0 torchaudio==2.11.0.3+rocm10.1.0",
             "https://stable.repo.amd.com/rocm/whl-next",
         ),
         # 旧版类型名称等价于 rocm10
         (
             "linux",
             "rocm_linux",
-            "Torch 2.13.0 (ROCm 10.0.0)",
-            "torch[device-all]==2.13.0+rocm10.0.0 torchvision[device-all]==0.28.0+rocm10.0.0 torchaudio==2.11.0.2+rocm10.0.0",
+            "Torch 2.14.0 (ROCm 10.1.0)",
+            "torch[device-all]==2.14.0+rocm10.1.0 torchvision[device-all]==0.29.0a0+rocm10.1.0 torchaudio==2.11.0.3+rocm10.1.0",
             "https://stable.repo.amd.com/rocm/whl-next",
         ),
         (
             "win32",
             "rocm_win",
-            "Torch 2.13.0 (ROCm 10.0.0)",
-            "torch[device-all]==2.13.0+rocm10.0.0 torchvision[device-all]==0.28.0+rocm10.0.0 torchaudio==2.11.0.2+rocm10.0.0",
+            "Torch 2.14.0 (ROCm 10.1.0)",
+            "torch[device-all]==2.14.0+rocm10.1.0 torchvision[device-all]==0.29.0a0+rocm10.1.0 torchaudio==2.11.0.3+rocm10.1.0",
             "https://stable.repo.amd.com/rocm/whl-next",
         ),
     ],
@@ -316,6 +316,7 @@ AMD_MULTI_ARCH_VERSION_TABLE = {
     ("rocm10", "2.11.0"): ("0.26.0", "2.11.0", "10.0.0", ["win32", "linux"]),
     ("rocm10", "2.12.0"): ("0.27.0", "2.11.0", "10.0.0", ["win32", "linux"]),
     ("rocm10", "2.13.0"): ("0.28.0", "2.11.0.2", "10.0.0", ["win32", "linux"]),
+    ("rocm10", "2.14.0"): ("0.29.0a0", "2.11.0.3", "10.1.0", ["win32", "linux"]),
 }
 
 
