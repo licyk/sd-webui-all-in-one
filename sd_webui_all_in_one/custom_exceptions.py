@@ -66,3 +66,23 @@ class RetrySignalError(Exception):
     """仅供装饰器内部使用的重试信号异常"""
 
     pass  # pylint: disable=unnecessary-pass
+
+
+class ProcessTreeTerminated(SystemExit):
+    """启动器收到终止信号 (例如 SIGTERM / SIGHUP) 时引发的异常
+
+    继承自 SystemExit, 不会被 `except Exception` 捕获, 未被处理时会以 128 + 信号值作为退出代码静默退出。
+
+    Attributes:
+        signum (int): 收到的信号值
+    """
+
+    def __init__(self, signum: int) -> None:
+        """初始化终止信号异常
+
+        Args:
+            signum (int):
+                收到的信号值
+        """
+        super().__init__(128 + signum)
+        self.signum = signum

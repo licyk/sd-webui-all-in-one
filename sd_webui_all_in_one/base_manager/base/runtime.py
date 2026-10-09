@@ -2,6 +2,7 @@
 
 import os
 import sys
+import signal
 from pathlib import Path
 
 from sd_webui_all_in_one.config import (
@@ -10,12 +11,15 @@ from sd_webui_all_in_one.config import (
     LOGGER_NAME,
 )
 from sd_webui_all_in_one.logger import get_logger
-from sd_webui_all_in_one.cmd import run_cmd
+from sd_webui_all_in_one.process_tree import run_process_tree
 from sd_webui_all_in_one.utils import (
     print_divider,
     append_python_path,
 )
-from sd_webui_all_in_one.custom_exceptions import WebUiRuntimeError
+from sd_webui_all_in_one.custom_exceptions import (
+    WebUiRuntimeError,
+    ProcessTreeTerminated,
+)
 from sd_webui_all_in_one.base_manager.hotpatcher_manager import (
     HOTPATCHER_ENV_PREFIX,
     ensure_hotpatcher_pythonpath_first,
@@ -37,6 +41,8 @@ def launch_webui(
 ) -> None:
     """运行 WebUI
 
+    WebUI 退出, 被 Ctrl+C 中断, 启动器收到终止信号或崩溃时, WebUI 的整个进程树都会被清理。
+
     Args:
         webui_path (Path):
             WebUI 的根目录
@@ -52,6 +58,8 @@ def launch_webui(
     Raises:
         WebUiRuntimeError:
             运行 WebUI 时出现错误
+        ProcessTreeTerminated:
+            启动器收到终止信号时, 在 WebUI 进程树清理完成后引发
     """
     if launch_args is None:
         launch_args = []
@@ -77,10 +85,13 @@ def launch_webui(
     print_divider("=")
     try:
         try:
-            run_cmd(cmd, custom_env=custom_env, cwd=webui_path)
+            run_process_tree(cmd, custom_env=custom_env, cwd=webui_path)
         finally:
             print_divider("=")
     except KeyboardInterrupt:
         logger.info("已关闭 %s", webui_name)
+    except ProcessTreeTerminated as e:
+        logger.info("收到 %s 信号, 已关闭 %s", signal.Signals(e.signum).name, webui_name)
+        raise
     except RuntimeError as e:
         raise WebUiRuntimeError(f"运行 {webui_name} 时出现错误: {e}") from e

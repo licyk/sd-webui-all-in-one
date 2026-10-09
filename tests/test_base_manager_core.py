@@ -79,7 +79,7 @@ def test_launch_webui_builds_command_env_and_wraps_runtime_errors(monkeypatch, t
     captured = {}
     events = []
 
-    def fake_run_cmd(command, custom_env=None, cwd=None):
+    def fake_run_process_tree(command, custom_env=None, cwd=None):
         events.append("run")
         captured["command"] = command
         captured["custom_env"] = custom_env
@@ -88,7 +88,7 @@ def test_launch_webui_builds_command_env_and_wraps_runtime_errors(monkeypatch, t
     def fake_print_divider(char=None):
         events.append(("divider", char))
 
-    monkeypatch.setattr(base_runtime, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(base_runtime, "run_process_tree", fake_run_process_tree)
     monkeypatch.setattr(base_runtime, "print_divider", fake_print_divider)
     base_module.launch_webui(webui, "launch.py", launch_args=["--api"], custom_env={"PYTHONPATH": "existing"})
 
@@ -97,11 +97,11 @@ def test_launch_webui_builds_command_env_and_wraps_runtime_errors(monkeypatch, t
     assert captured["custom_env"]["PYTHONPATH"].split(os.pathsep)[:2] == [webui.as_posix(), "existing"]
     assert events == [("divider", "="), "run", ("divider", "=")]
 
-    def fail_run_cmd(*_args, **_kwargs):
+    def fail_run_process_tree(*_args, **_kwargs):
         events.append("run_fail")
         raise RuntimeError("boom")
 
-    monkeypatch.setattr(base_runtime, "run_cmd", fail_run_cmd)
+    monkeypatch.setattr(base_runtime, "run_process_tree", fail_run_process_tree)
     events.clear()
 
     with pytest.raises(WebUiRuntimeError) as exc:

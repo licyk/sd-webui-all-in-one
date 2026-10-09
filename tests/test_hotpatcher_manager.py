@@ -322,12 +322,12 @@ def test_launch_webui_keeps_hotpatcher_pythonpath_first(monkeypatch, tmp_path):
 
     captured = {}
 
-    def fake_run_cmd(cmd, custom_env=None, cwd=None):
+    def fake_run_process_tree(cmd, custom_env=None, cwd=None):
         captured["cmd"] = cmd
         captured["custom_env"] = custom_env
         captured["cwd"] = cwd
 
-    monkeypatch.setattr(base_runtime, "run_cmd", fake_run_cmd)
+    monkeypatch.setattr(base_runtime, "run_process_tree", fake_run_process_tree)
     env = apply_hotpatcher_launch_env({"PYTHONPATH": "existing"}, enabled=True)
 
     launch_webui(tmp_path, "launch.py", launch_args=["--demo"], custom_env=env)
