@@ -394,7 +394,7 @@ Release 与构建选项：
 - `--source-repo <仓库>`：python-build-standalone 发布仓库，默认 `astral-sh/python-build-standalone`。
 - `--github-api-url <地址>`：GitHub API 地址，默认 `https://api.github.com`。
 - `--github-token <令牌>`：GitHub Token；未传时读取 `GITHUB_TOKEN`，用于避免 API 速率限制。
-- `--versions <版本>`：逗号分隔的 Python 主次版本号，默认 `3.10,3.11,3.12,3.13,3.14`；每个版本取该 Release 中补丁版本最高的构建。
+- `--versions <版本>`：逗号分隔的 Python 主次版本号，默认 `3.10,3.11,3.12,3.13,3.14,3.15`；每个版本取该 Release 中补丁版本最高的构建。
 - `--platforms <平台>`：逗号分隔的平台，默认全部内置平台：`windows/amd64`、`windows/aarch64`、`linux/amd64`、`linux/aarch64`、`macos/amd64`、`macos/aarch64`。
 - `--platform-map <系统/架构=三元组>`：添加或覆盖平台到构建目标三元组的映射，可重复使用，例如 `--platform-map linux/musl=x86_64-unknown-linux-musl`。
 - `--variant <变体>`：构建变体，默认 `install_only`，也可使用 `install_only_stripped`、`freethreaded-install_only` 等。

@@ -32,7 +32,7 @@ DEFAULT_VARIANT = "install_only"
 DEFAULT_ARCHIVE_FORMAT = ".zip"
 """默认重新打包格式"""
 
-DEFAULT_VERSIONS: list[str] = ["3.10", "3.11", "3.12", "3.13", "3.14"]
+DEFAULT_VERSIONS: list[str] = ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
 """默认处理的 Python 主次版本号"""
 
 DEFAULT_PLATFORMS: dict[str, str] = {
