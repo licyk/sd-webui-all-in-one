@@ -40,7 +40,7 @@ python-docstring-checker 负责检查文档字符串完整性和参数说明。�
 python -m python_docstring_checker .
 ```
 
-pytest 工作流会在 Python 3.10 到 3.14 上运行：
+pytest 工作流会在 Python 3.10 到 3.15 上运行：
 
 ```bash
 pytest

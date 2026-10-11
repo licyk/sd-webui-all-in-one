@@ -4,7 +4,7 @@
 
 ## Python
 
-- 支持 Python 3.10+，`pyproject.toml` 中 pytest 覆盖 3.10 到 3.14。
+- 支持 Python 3.10+，`pyproject.toml` 中 pytest 覆盖 3.10 到 3.15。
 - 使用 4 空格缩进，Ruff 配置 `line-length = 200`，格式化倾向双引号。
 - 路径处理优先使用 `pathlib.Path`，需要传给命令、环境变量或日志时再转字符串。
 - 外部命令走 `run_cmd()`，下载走 `downloader`，日志走 `get_logger()`。
