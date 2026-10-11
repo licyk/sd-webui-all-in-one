@@ -2,6 +2,7 @@
     const siteScriptConfig = {
         src: "https://licyk-umami.netlify.app/script.js",
         "data-website-id": "308fc79d-d064-456b-9e02-5d45b944e030",
+        defer: "",
     };
 
     function loadSiteScript() {
@@ -14,24 +15,15 @@
         for (const [key, value] of Object.entries(siteScriptConfig)) {
             script.setAttribute(key, value);
         }
-        script.async = true;
 
         document.head.appendChild(script);
     }
 
-    // Inject after the window load event so a slow or unreachable analytics
-    // host can never delay page load.
-    function scheduleSiteScript() {
-        if ("requestIdleCallback" in window) {
-            window.requestIdleCallback(loadSiteScript, { timeout: 3000 });
-        } else {
-            window.setTimeout(loadSiteScript, 0);
-        }
-    }
-
-    if (document.readyState === "complete") {
-        scheduleSiteScript();
+    if (typeof document$ !== "undefined") {
+        document$.subscribe(loadSiteScript);
+    } else if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", loadSiteScript);
     } else {
-        window.addEventListener("load", scheduleSiteScript, { once: true });
+        loadSiteScript();
     }
 })();
