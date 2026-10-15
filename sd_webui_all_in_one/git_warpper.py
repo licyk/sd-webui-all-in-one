@@ -39,6 +39,18 @@ PERMANENT_FETCH_ERROR_PATTERN = re.compile(
 )
 """重试也无法恢复的拉取错误 (仓库不存在、凭据缺失、远程分支不存在等), 匹配时跳过重试"""
 
+STALE_LOCK_AGE = 60.0
+"""Git 锁文件存在超过该时间 (秒) 时视为残留锁, 可安全删除"""
+
+LOCK_WAIT_TIMEOUT = 5.0
+"""Git 锁文件未达到残留时间时, 等待其被正在运行的 Git 进程释放的最长时间 (秒)"""
+
+LOCK_POLL_INTERVAL = 0.5
+"""等待 Git 锁文件释放时的检查间隔 (秒)"""
+
+LOCK_FILE_PATTERN = re.compile(r"['\"‘“]([^'\"’”\r\n]+?\.lock)['\"’”]")
+"""从 Git 错误输出中提取锁文件路径, 不依赖错误信息的语言"""
+
 
 @cache
 def get_git_exec() -> Path:
@@ -82,6 +94,134 @@ def build_git_command(
         command.extend(["-C", path.as_posix()])
     command.extend(args)
     return command
+
+
+def _resolve_git_dirs(
+    path: Path,
+) -> tuple[Path, Path] | None:
+    """从文件系统解析 Git 仓库的 Git 目录和公共 Git 目录
+
+    支持普通仓库、子模块和工作树 (`.git` 为指向实际 Git 目录的文件)。
+
+    Args:
+        path (Path):
+            Git 仓库路径
+
+    Returns:
+        (tuple[Path, Path] | None):
+            Git 目录与公共 Git 目录, 无法解析时返回 None
+    """
+    dot_git = path / ".git"
+    try:
+        if dot_git.is_dir():
+            git_dir = dot_git
+        elif dot_git.is_file():
+            content = dot_git.read_text(encoding="utf-8", errors="ignore").strip()
+            if not content.startswith("gitdir:"):
+                return None
+            git_dir = path / content.removeprefix("gitdir:").strip()
+        else:
+            return None
+        git_dir = git_dir.resolve()
+        common_dir = git_dir
+        commondir_file = git_dir / "commondir"
+        if commondir_file.is_file():
+            common_dir = (git_dir / commondir_file.read_text(encoding="utf-8", errors="ignore").strip()).resolve()
+    except OSError:
+        return None
+    return git_dir, common_dir
+
+
+def _find_lock_files(
+    path: Path,
+    error_text: str,
+) -> list[Path]:
+    """查找可能导致 Git 命令失败的锁文件
+
+    包括错误输出中提到的锁文件, 以及仓库与子模块的 `index.lock`。
+    仅返回存在且位于该仓库 Git 目录内的锁文件, 避免误删其他文件。
+
+    Args:
+        path (Path):
+            Git 仓库路径
+        error_text (str):
+            Git 命令的错误信息, 实时输出日志时可能不包含 Git 的错误输出
+
+    Returns:
+        list[Path]:
+            存在的锁文件路径列表
+    """
+    dirs = _resolve_git_dirs(path)
+    if dirs is None:
+        return []
+    git_dir, common_dir = dirs
+
+    candidates = [path / p for p in LOCK_FILE_PATTERN.findall(error_text)]
+    candidates.append(git_dir / "index.lock")
+    for root, dirnames, filenames in os.walk(common_dir / "modules"):
+        dirnames[:] = [d for d in dirnames if d != "objects"]
+        if "index.lock" in filenames:
+            candidates.append(Path(root) / "index.lock")
+
+    locks: list[Path] = []
+    for candidate in candidates:
+        try:
+            lock = candidate.resolve()
+            if lock in locks or not lock.is_file():
+                continue
+        except OSError:
+            continue
+        if lock.is_relative_to(git_dir) or lock.is_relative_to(common_dir):
+            locks.append(lock)
+    return locks
+
+
+def _clear_stale_locks(
+    path: Path,
+    error_text: str,
+) -> bool:
+    """清理 Git 仓库中残留的锁文件
+
+    存在时间超过 `STALE_LOCK_AGE` 的锁文件视为残留并删除; 较新的锁文件可能属于正在运行的 Git 进程,
+    最多等待 `LOCK_WAIT_TIMEOUT` 秒让其自行释放, 不会删除。
+
+    Args:
+        path (Path):
+            Git 仓库路径
+        error_text (str):
+            Git 命令的错误信息
+
+    Returns:
+        bool:
+            找到锁文件且已全部删除或释放时返回 `True`, 可重试 Git 命令
+    """
+    locks = _find_lock_files(path, error_text)
+    if not locks:
+        return False
+
+    deadline = time.monotonic() + LOCK_WAIT_TIMEOUT
+    for lock in locks:
+        while True:
+            try:
+                age = time.time() - lock.stat().st_mtime
+            except FileNotFoundError:
+                break
+            except OSError as e:
+                logger.debug("读取 Git 锁文件 '%s' 状态失败: %s", lock, e)
+                return False
+            if age >= STALE_LOCK_AGE:
+                logger.warning("删除 '%s' 仓库中残留的 Git 锁文件 '%s' (已存在 %.0f 秒)", path, lock, age)
+                try:
+                    lock.unlink(missing_ok=True)
+                except OSError as e:
+                    logger.error("删除 Git 锁文件 '%s' 失败: %s", lock, e)
+                    return False
+                break
+            if time.monotonic() >= deadline:
+                logger.debug("Git 锁文件 '%s' 仍被占用 (已存在 %.0f 秒), 不进行删除", lock, age)
+                return False
+            time.sleep(LOCK_POLL_INTERVAL)
+    return True
 
 
 @overload
@@ -211,6 +351,8 @@ def run_git(
     """
     执行 Git 命令
 
+    指定了仓库路径且命令失败时, 若仓库中存在残留的 Git 锁文件 (如 `index.lock`), 清理后重试一次。
+
     Args:
         *args (str):
             Git 参数
@@ -231,13 +373,27 @@ def run_git(
 
     Returns:
         str | None: 命令输出
+
+    Raises:
+        RuntimeError:
+            Git 命令执行失败, 且无可清理的残留锁文件或清理后重试仍失败时
     """
     command = build_git_command(*args, path=path)
-    if custom_env is None and live is True and shell == DEFAULT_SUBPROCESS_SHELL and cwd is None and check is True and timeout is None:
-        return run_cmd(command)
-    if custom_env is None and shell == DEFAULT_SUBPROCESS_SHELL and cwd is None and check is True and timeout is None:
-        return run_cmd(command, live=live)
-    return run_cmd(command, custom_env=custom_env, live=live, shell=shell, cwd=cwd, check=check, timeout=timeout)
+
+    def _run() -> str | None:
+        if custom_env is None and live is True and shell == DEFAULT_SUBPROCESS_SHELL and cwd is None and check is True and timeout is None:
+            return run_cmd(command)
+        if custom_env is None and shell == DEFAULT_SUBPROCESS_SHELL and cwd is None and check is True and timeout is None:
+            return run_cmd(command, live=live)
+        return run_cmd(command, custom_env=custom_env, live=live, shell=shell, cwd=cwd, check=check, timeout=timeout)
+
+    try:
+        return _run()
+    except RuntimeError as e:
+        if path is None or not _clear_stale_locks(path, str(e)):
+            raise
+        logger.warning("已清理 '%s' 仓库中的 Git 锁文件, 重新执行 Git 命令", path)
+        return _run()
 
 
 def clone(
