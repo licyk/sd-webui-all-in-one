@@ -412,6 +412,22 @@ PORTABLE_SOFTWARE_METADATA: dict[str, PortableSoftwareMetadata] = {
         "display_name": "RVC Next WebUI (Intel)",
         "description": "RVC Next WebUI 的 Intel 显卡整合包，使用 XPU 版 PyTorch，支持 RVC 语音转换、模型训练和实时变声。",
     },
+    "mizuoto_tts_webui_cuda": {
+        "display_name": "Mizuoto TTS WebUI (NVIDIA)",
+        "description": "Mizuoto TTS WebUI 的 NVIDIA 显卡整合包，使用 CUDA 版 PyTorch，支持使用多种 TTS 引擎生成语音。",
+    },
+    "mizuoto_tts_webui_mps": {
+        "display_name": "Mizuoto TTS WebUI (Apple Silicon)",
+        "description": "Mizuoto TTS WebUI 的 Apple Silicon 整合包，使用 MPS 版 PyTorch，支持使用多种 TTS 引擎生成语音。",
+    },
+    "mizuoto_tts_webui_rocm": {
+        "display_name": "Mizuoto TTS WebUI (AMD)",
+        "description": "Mizuoto TTS WebUI 的 AMD 显卡整合包，使用 ROCm 版 PyTorch，支持使用多种 TTS 引擎生成语音。",
+    },
+    "mizuoto_tts_webui_xpu": {
+        "display_name": "Mizuoto TTS WebUI (Intel)",
+        "description": "Mizuoto TTS WebUI 的 Intel 显卡整合包，使用 XPU 版 PyTorch，支持使用多种 TTS 引擎生成语音。",
+    },
 }
 """整合包软件元数据
 

@@ -47,6 +47,10 @@ jobs:
             gh_tag: rvc_next_webui_installer
             gt_id: 1184731
             files: installer/rvc_next_webui_installer.ps1
+          - name: Mizuoto-TTS-WebUI-Installer
+            gh_tag: mizuoto_tts_webui_installer
+            gt_id: 1209015
+            files: installer/mizuoto_tts_webui_installer.ps1
           - name: Archive-Configs
             gh_tag: archive
             gt_id: 435278

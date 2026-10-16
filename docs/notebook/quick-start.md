@@ -23,6 +23,7 @@ Notebook 是 SD WebUI All In One 的云端运行入口。只想尽快启动 WebU
 | InvokeAI | [进入 Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/invokeai_colab.ipynb) | 在 Colab 中运行 InvokeAI。 |
 | Qwen TTS WebUI | [进入 Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/qwen_tts_webui_colab.ipynb) | 在 Colab 中运行 Qwen TTS WebUI。 |
 | RVC Next WebUI | [进入 Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/rvc_next_webui_colab.ipynb) | 在 Colab 中运行 RVC Next WebUI。 |
+| Mizuoto TTS WebUI | [进入 Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/mizuoto_tts_webui_colab.ipynb) | 在 Colab 中运行 Mizuoto TTS WebUI。 |
 | SD Trainer / SD Trainer Next / Kohya GUI | [进入 Colab](https://colab.research.google.com/github/licyk/sd-webui-all-in-one/blob/main/notebook/sd_trainer_colab.ipynb) | 在 Colab 中运行训练 WebUI。 |
 
 ## 图形化配置

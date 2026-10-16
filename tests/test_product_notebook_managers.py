@@ -12,6 +12,7 @@ from sd_webui_all_in_one.notebook_manager import fooocus_manager
 from sd_webui_all_in_one.notebook_manager import invokeai_manager
 from sd_webui_all_in_one.notebook_manager import qwen_tts_webui_manager
 from sd_webui_all_in_one.notebook_manager import rvc_next_webui_manager
+from sd_webui_all_in_one.notebook_manager import mizuoto_tts_webui_manager
 from sd_webui_all_in_one.notebook_manager import sd_scripts_manager
 from sd_webui_all_in_one.notebook_manager import sd_trainer_manager
 from sd_webui_all_in_one.notebook_manager import sd_trainer_scripts_manager
@@ -54,6 +55,7 @@ def test_product_notebook_launch_commands_and_run_delegate(monkeypatch, tmp_path
         (fooocus_manager.FooocusManager, "Fooocus", "launch.py"),
         (qwen_tts_webui_manager.QwenTTSWebUIManager, "Qwen TTS WebUI", "launch.py"),
         (rvc_next_webui_manager.RvcNextWebUIManager, "RVC Next WebUI", "launch.py"),
+        (mizuoto_tts_webui_manager.MizuotoTTSWebUIManager, "Mizuoto TTS WebUI", "launch.py"),
         (sd_trainer_manager.SDTrainerManager, "SD Trainer", "gui.py"),
         (sd_webui_manager.SDWebUIManager, "Stable Diffusion WebUI", "launch.py"),
     ]
@@ -148,6 +150,7 @@ def test_mount_drive_links_expected_product_paths(monkeypatch, tmp_path):
         (fooocus_manager.FooocusManager, "fooocus_output", ["outputs", "presets", "language", "wildcards", "config.txt"]),
         (qwen_tts_webui_manager.QwenTTSWebUIManager, "qwen_tts_webui_output", ["outputs", "config.json"]),
         (rvc_next_webui_manager.RvcNextWebUIManager, "rvc_next_webui_output", ["data"]),
+        (mizuoto_tts_webui_manager.MizuotoTTSWebUIManager, "mizuoto_tts_webui_output", ["data"]),
         (sd_trainer_manager.SDTrainerManager, "sd_trainer_output", ["outputs", "output", "config", "train", "logs"]),
         (
             sd_webui_manager.SDWebUIManager,
@@ -195,6 +198,7 @@ def test_notebook_check_env_methods_delegate(monkeypatch, tmp_path):
         (sd_trainer_scripts_manager, sd_trainer_scripts_manager.SDTrainerScriptsManager, "check_sd_scripts_env", "sd_scripts_path"),
         (sd_webui_manager, sd_webui_manager.SDWebUIManager, "check_sd_webui_env", "sd_webui_path"),
         (rvc_next_webui_manager, rvc_next_webui_manager.RvcNextWebUIManager, "check_rvc_next_webui_env", "rvc_next_webui_path"),
+        (mizuoto_tts_webui_manager, mizuoto_tts_webui_manager.MizuotoTTSWebUIManager, "check_mizuoto_tts_webui_env", "mizuoto_tts_webui_path"),
     ]
 
     for module, cls, attr, path_kw in mappings:
@@ -442,3 +446,37 @@ def test_rvc_next_webui_install_forwards_xformers_without_models(monkeypatch, tm
     assert install["use_uv"] is False
     assert install["custom_xformers_package"] == custom_xformers_package
     assert dict(calls)["update"]["rvc_next_webui_path"] == tmp_path / "app"
+
+
+def test_mizuoto_tts_webui_run_maps_hf_mirror_to_download_settings(monkeypatch, tmp_path):
+    manager = mizuoto_tts_webui_manager.MizuotoTTSWebUIManager(tmp_path, "app")
+    manager.launch = lambda **kwargs: None
+    monkeypatch.setenv("HF_ENDPOINT", "https://hf.example")
+    monkeypatch.delenv("MIZUOTO_DOWNLOADS__SOURCE", raising=False)
+    monkeypatch.delenv("MIZUOTO_DOWNLOADS__ENDPOINT", raising=False)
+
+    manager.run()
+
+    assert os.environ["MIZUOTO_DOWNLOADS__SOURCE"] == "custom"
+    assert os.environ["MIZUOTO_DOWNLOADS__ENDPOINT"] == "https://hf.example"
+
+
+@pytest.mark.parametrize("custom_xformers_package", [None, "xformers==0.0.33"])
+def test_mizuoto_tts_webui_install_forwards_xformers_without_models(monkeypatch, tmp_path, custom_xformers_package):
+    calls = []
+    manager = mizuoto_tts_webui_manager.MizuotoTTSWebUIManager(tmp_path, "app")
+    for name in ("set_mirror", "configure_pip", "configure_env_var", "install_manager_depend", "set_cuda_malloc"):
+        monkeypatch.setattr(mizuoto_tts_webui_manager, name, lambda *args, _name=name, **kwargs: calls.append((_name, kwargs)))
+    monkeypatch.setattr(mizuoto_tts_webui_manager, "install_mizuoto_tts_webui", lambda **kwargs: calls.append(("install", kwargs)))
+    monkeypatch.setattr(mizuoto_tts_webui_manager, "update_mizuoto_tts_webui", lambda **kwargs: calls.append(("update", kwargs)))
+    monkeypatch.setattr(manager.repo_manager, "configure_tokens", lambda **kwargs: calls.append(("tokens", kwargs)), raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    manager.install(pytorch_mirror_type="cu128", custom_xformers_package=custom_xformers_package, use_uv=False, enable_tcmalloc=False)
+
+    install = dict(calls)["install"]
+    assert install["mizuoto_tts_webui_path"] == tmp_path / "app"
+    assert install["pytorch_mirror_type"] == "cu128"
+    assert install["use_uv"] is False
+    assert install["custom_xformers_package"] == custom_xformers_package
+    assert dict(calls)["update"]["mizuoto_tts_webui_path"] == tmp_path / "app"

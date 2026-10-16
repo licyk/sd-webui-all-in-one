@@ -524,7 +524,9 @@ def register_mizuoto_tts_webui(
 
     # reinstall-pytorch
     reinstall_pytorch_p = mizuoto_tts_webui_sub.add_parser("reinstall-pytorch", help="重装 PyTorch")
-    reinstall_pytorch_p.add_argument("--mizuoto-tts-webui-path", type=normalized_filepath, required=False, default=MIZUOTO_TTS_WEBUI_ROOT_PATH, dest="mizuoto_tts_webui_path", help="Mizuoto TTS WebUI 根目录")
+    reinstall_pytorch_p.add_argument(
+        "--mizuoto-tts-webui-path", type=normalized_filepath, required=False, default=MIZUOTO_TTS_WEBUI_ROOT_PATH, dest="mizuoto_tts_webui_path", help="Mizuoto TTS WebUI 根目录"
+    )
     reinstall_pytorch_p.add_argument("--name", type=str, dest="name", help="PyTorch 版本组合名称")
     reinstall_pytorch_p.add_argument("--index", type=int, dest="index", help="PyTorch 版本组合索引值")
     reinstall_pytorch_p.add_argument("--no-pypi-mirror", action="store_false", dest="use_pypi_mirror", help="不使用国内 PyPI 镜像源")
@@ -598,7 +600,9 @@ def register_mizuoto_tts_webui(
 
     # check-update
     check_update_p = mizuoto_tts_webui_sub.add_parser("check-update", help="检查 Mizuoto TTS WebUI 内核更新")
-    check_update_p.add_argument("--mizuoto-tts-webui-path", type=normalized_filepath, required=False, default=MIZUOTO_TTS_WEBUI_ROOT_PATH, dest="mizuoto_tts_webui_path", help="Mizuoto TTS WebUI 根目录")
+    check_update_p.add_argument(
+        "--mizuoto-tts-webui-path", type=normalized_filepath, required=False, default=MIZUOTO_TTS_WEBUI_ROOT_PATH, dest="mizuoto_tts_webui_path", help="Mizuoto TTS WebUI 根目录"
+    )
     check_update_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     check_update_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     add_auto_mirror_argument(check_update_p)
@@ -632,7 +636,9 @@ def register_mizuoto_tts_webui(
 
     # export-environment
     environment_p = mizuoto_tts_webui_sub.add_parser("export-environment", help="导出 Mizuoto TTS WebUI 环境信息")
-    environment_p.add_argument("--mizuoto-tts-webui-path", type=normalized_filepath, required=False, default=MIZUOTO_TTS_WEBUI_ROOT_PATH, dest="mizuoto_tts_webui_path", help="Mizuoto TTS WebUI 根目录")
+    environment_p.add_argument(
+        "--mizuoto-tts-webui-path", type=normalized_filepath, required=False, default=MIZUOTO_TTS_WEBUI_ROOT_PATH, dest="mizuoto_tts_webui_path", help="Mizuoto TTS WebUI 根目录"
+    )
     environment_p.add_argument("--output", type=normalized_filepath, required=True, help="环境信息 JSON 输出文件路径")
     environment_p.add_argument("--no-packages", action="store_false", dest="include_packages", help="不记录当前 Python 环境已安装软件包")
     environment_p.add_argument("--force", action="store_true", dest="overwrite", help="覆盖已有输出文件")
@@ -763,7 +769,9 @@ def register_mizuoto_tts_webui(
     gui_sub = add_subparsers_with_help(gui_parser, dest="gui_action")
 
     version_gui_p = gui_sub.add_parser("version-manager", help="启动 Mizuoto TTS WebUI 版本管理 GUI")
-    version_gui_p.add_argument("--mizuoto-tts-webui-path", type=normalized_filepath, required=False, default=MIZUOTO_TTS_WEBUI_ROOT_PATH, dest="mizuoto_tts_webui_path", help="Mizuoto TTS WebUI 根目录")
+    version_gui_p.add_argument(
+        "--mizuoto-tts-webui-path", type=normalized_filepath, required=False, default=MIZUOTO_TTS_WEBUI_ROOT_PATH, dest="mizuoto_tts_webui_path", help="Mizuoto TTS WebUI 根目录"
+    )
     version_gui_p.add_argument("--no-github-mirror", action="store_false", dest="use_github_mirror", help="不使用 Github 镜像源")
     version_gui_p.add_argument("--custom-github-mirror", type=str, dest="custom_github_mirror", help="自定义 Github 镜像源")
     add_pre_operation_snapshot_arguments(version_gui_p)

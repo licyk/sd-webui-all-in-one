@@ -31,6 +31,8 @@ jobs:
               'build_qwen_tts_webui_rocm.yml',
               'build_rvc_next_webui.yml',
               'build_rvc_next_webui_rocm.yml',
+              'build_mizuoto_tts_webui.yml',
+              'build_mizuoto_tts_webui_rocm.yml',
               'build_sd_next.yml',
               'build_sd_scripts.yml',
               'build_sd_trainer.yml',
