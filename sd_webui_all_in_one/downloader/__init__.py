@@ -6,8 +6,12 @@ from sd_webui_all_in_one.downloader.types import (
     DEFAULT_USER_AGENT,
 )
 from sd_webui_all_in_one.downloader.multi_thread import MultiThreadDownloader
-from sd_webui_all_in_one.downloader.aria2_server import Aria2RpcServer
-from sd_webui_all_in_one.downloader.aria2_downloader import aria2
+from sd_webui_all_in_one.downloader.aria2_server import (
+    Aria2RpcServer,
+    Aria2cRpcServer,
+    Aria2NextRpcServer,
+)
+from sd_webui_all_in_one.downloader.aria2_downloader import aria2, resolve_aria2_server_class
 from sd_webui_all_in_one.downloader.requests_downloader import download_file_from_url
 from sd_webui_all_in_one.downloader.urllib_downloader import download_file_from_url_urllib
 from sd_webui_all_in_one.downloader.hash_utils import compare_sha256
@@ -25,6 +29,8 @@ __all__ = [
     # 类
     "MultiThreadDownloader",
     "Aria2RpcServer",
+    "Aria2cRpcServer",
+    "Aria2NextRpcServer",
     # 下载函数
     "aria2",
     "download_file_from_url",
@@ -32,6 +38,7 @@ __all__ = [
     "download_file",
     "download_executer",
     "download_archive_and_unpack",
+    "resolve_aria2_server_class",
     # 工具函数
     "compare_sha256",
 ]

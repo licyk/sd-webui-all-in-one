@@ -1,12 +1,11 @@
 """下载器"""
 
-import shutil
 import threading
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from sd_webui_all_in_one.downloader.aria2_downloader import aria2
+from sd_webui_all_in_one.downloader.aria2_downloader import aria2, resolve_aria2_server_class
 from sd_webui_all_in_one.downloader.requests_downloader import (
     DEFAULT_MAX_CONNECTION_PER_SERVER,
     DEFAULT_MIN_SPLIT_SIZE,
@@ -307,8 +306,8 @@ def download_file(
     path.mkdir(parents=True, exist_ok=True)
 
     selected_tool: DownloadToolType = tool or "requests"
-    if selected_tool == "aria2" and shutil.which("aria2c") is None:
-        logger.warning("未安装 Aria2, 将切换到 requests 进行下载")
+    if selected_tool == "aria2" and resolve_aria2_server_class() is None:
+        logger.warning("未找到可用的 aria2 或 aria2-next, 将切换到 requests 进行下载")
         selected_tool = "requests"
 
     if selected_tool == "requests" and not _is_requests_available():

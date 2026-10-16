@@ -1,7 +1,10 @@
 """Aria2 RPC 服务器"""
 
+import hashlib
+import importlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import time
@@ -23,12 +26,15 @@ from sd_webui_all_in_one.utils import (
     is_port_in_use,
 )
 from sd_webui_all_in_one.downloader.types import DEFAULT_USER_AGENT
+from sd_webui_all_in_one.package_analyzer import Version
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
+    ARIA2_NEXT_MINIMUM_VER,
     LOGGER_LEVEL,
     LOGGER_COLOR,
     LOGGER_NAME,
     ROOT_PATH,
+    SD_WEBUI_ALL_IN_ONE_CACHE_PATH,
 )
 
 
@@ -41,16 +47,39 @@ logger = get_logger(
 ARIA2_CONFIG_PATH = ROOT_PATH / "downloader" / "aria2.conf"
 """Aria2 配置文件"""
 
+ARIA2_NEXT_CONFIG_PATH = ROOT_PATH / "downloader" / "aria2-next.conf"
+"""Aria2 Next 配置文件"""
+
+ARIA2_NEXT_STATE_PATH = SD_WEBUI_ALL_IN_ONE_CACHE_PATH / "aria2-next"
+"""Aria2 Next 持久化引擎状态目录, 保存断点续传进度"""
+
+ARIA2_NEXT_UNSUPPORTED_DOWNLOAD_OPTIONS = (
+    "piece-length",
+    "allow-piece-length-change",
+    "always-resume",
+    "conditional-get",
+    "max-resume-failure-tries",
+)
+"""aria2-next 不支持或已弃用的 aria2 下载任务选项"""
+
 
 class Aria2RpcServer:
     """
-    aria2 RPC 服务器管理器（上下文管理器）
+    aria2 RPC 服务器管理器基类（上下文管理器）
 
     自动启动和关闭 aria2 RPC 服务器, 提供下载功能
 
     支持进程监控、自动重试、崩溃检测等功能
 
+    子类需要实现`find_executable()`和`_builtin_options()`, 并可通过`config_path`指定配置文件:
+    - `Aria2cRpcServer`: 使用 aria2c 可执行文件
+    - `Aria2NextRpcServer`: 使用 aria2-next 可执行文件
+
     Attributes:
+        product_name (str):
+            下载器名称, 用于日志和错误信息
+        config_path (Path | None):
+            启动时使用的配置文件路径
         port (int):
             RPC 服务器监听端口
         secret (str | None):
@@ -73,7 +102,7 @@ class Aria2RpcServer:
         rpc_url (str):
             RPC 服务器 URL 地址
         process (subprocess.Popen | None):
-            aria2c 进程对象
+            aria2 进程对象
         _session_file (Any | None):
             临时会话文件
         _is_external_server (bool):
@@ -82,7 +111,7 @@ class Aria2RpcServer:
     Examples:
         ```python
         # 使用配置文件启动（默认）
-        with Aria2RpcServer(port=6800) as aria2:
+        with Aria2cRpcServer(port=6800) as aria2:
             # 下载单个文件
             aria2.download("https://example.com/file.zip", save_path="/tmp")
 
@@ -92,14 +121,17 @@ class Aria2RpcServer:
         # 退出上下文后自动关闭服务器
 
         # 使用硬编码参数启动（向后兼容）
-        with Aria2RpcServer(port=6800, use_config_file=False) as aria2:
+        with Aria2cRpcServer(port=6800, use_config_file=False) as aria2:
             aria2.download("https://example.com/file.zip", save_path="/tmp")
 
         # 多实例并发下载时, 禁用外部服务器复用以避免相互干扰
-        with Aria2RpcServer(port=6800, use_external_server=False) as aria2:
+        with Aria2cRpcServer(port=6800, use_external_server=False) as aria2:
             aria2.download("https://example.com/file.zip", save_path="/tmp")
         ```
     """
+
+    product_name: str = "aria2"
+    config_path: Path | None = None
 
     def __init__(
         self,
@@ -149,6 +181,77 @@ class Aria2RpcServer:
         self._session_file: Any | None = None
         self._is_external_server: bool = False  # 标记是否连接到外部服务器
 
+    @classmethod
+    def find_executable(
+        cls,
+    ) -> str | None:
+        """
+        查找下载器可执行文件
+
+        Returns:
+            (str | None): 可执行文件路径, 未找到时返回 None
+
+        Raises:
+            NotImplementedError: 基类未实现该方法
+        """
+        raise NotImplementedError(f"{cls.__name__} 未实现 find_executable()")
+
+    @classmethod
+    def is_available(
+        cls,
+    ) -> bool:
+        """
+        检查下载器可执行文件是否可用
+
+        Returns:
+            bool: 找到可执行文件时返回 True
+        """
+        return cls.find_executable() is not None
+
+    def _builtin_options(
+        self,
+    ) -> list[str]:
+        """
+        获取不使用配置文件时的内置启动参数
+
+        Returns:
+            list[str]: 内置启动参数列表
+
+        Raises:
+            NotImplementedError: 基类未实现该方法
+        """
+        raise NotImplementedError(f"{type(self).__name__} 未实现 _builtin_options()")
+
+    def _extra_args(
+        self,
+    ) -> list[str]:
+        """
+        获取额外的启动参数, 在启动进程前调用
+
+        Returns:
+            list[str]: 额外启动参数列表
+        """
+        return []
+
+    def _prepare_download_options(
+        self,
+        urls: list[str],
+        options: dict[str, Any],
+    ) -> dict[str, Any]:
+        """
+        在添加下载任务前将 aria2 下载任务选项转换为当前下载器支持的选项
+
+        Args:
+            urls (list[str]):
+                下载任务的链接列表
+            options (dict[str, Any]):
+                aria2 下载任务选项
+
+        Returns:
+            (dict[str, Any]): 转换后的下载任务选项
+        """
+        return options
+
     def __enter__(
         self,
     ) -> "Aria2RpcServer":
@@ -192,12 +295,13 @@ class Aria2RpcServer:
 
         Raises:
             RuntimeError:
-                未找到 aria2c 命令或服务器启动超时
+                未找到下载器可执行文件或服务器启动超时
         """
 
-        # 检查 aria2c 是否可用
-        if shutil.which("aria2c") is None:
-            raise RuntimeError("未找到 aria2c 命令, 请先安装 aria2")
+        # 检查下载器是否可用
+        executable = self.find_executable()
+        if executable is None:
+            raise RuntimeError(f"未找到 {self.product_name} 可执行文件, 请先安装 {self.product_name}")
 
         # 检查端口是否已被占用
         if is_port_in_use(self.port):
@@ -220,69 +324,47 @@ class Aria2RpcServer:
         self._session_file.close()
 
         # 构建启动命令
-        if self.use_config_file and ARIA2_CONFIG_PATH.exists():
+        config_path = self.config_path
+        if self.use_config_file and config_path is not None and config_path.exists():
             # 使用配置文件启动
             cmd = [
-                "aria2c",
-                f"--conf-path={ARIA2_CONFIG_PATH.as_posix()}",
+                executable,
+                f"--conf-path={config_path.as_posix()}",
                 f"--rpc-listen-port={self.port}",
-                f"--dir={self.download_dir.as_posix()}",
-                "--console-log-level=error",
-                f"--log-level={self.log_level}",
-                f"--save-session={self._session_file.name}",
-                f"--user-agent={self.user_agent}",
             ]
-
-            if self.secret:
-                cmd.append(f"--rpc-secret={self.secret}")
-
-            if self.log_file:
-                cmd.append(f"--log={self.log_file.as_posix()}")
-
-            logger.debug("使用配置文件启动 aria2: %s", ARIA2_CONFIG_PATH)
+            logger.debug("使用配置文件启动 %s: %s", self.product_name, config_path)
         else:
             # 使用硬编码参数启动（向后兼容）
             cmd = [
-                "aria2c",
+                executable,
                 "--enable-rpc=true",
                 f"--rpc-listen-port={self.port}",
                 "--rpc-listen-all=false",
                 "--rpc-allow-origin-all=true",
-                f"--dir={self.download_dir.as_posix()}",
-                "--max-concurrent-downloads=16",
-                "--max-connection-per-server=16",
-                "--split=32",
-                "--min-split-size=20M",
-                "--piece-length=1M",
-                "--continue=true",
-                "--file-allocation=none",
-                "--console-log-level=error",
-                f"--log-level={self.log_level}",
-                f"--save-session={self._session_file.name}",
-                "--save-session-interval=10",
-                "--connect-timeout=60",
-                "--timeout=60",
-                "--retry-wait=10",
-                "--max-tries=5",
-                "--check-certificate=false",
-                "--http-accept-gzip=true",
-                "--referer=*",
-                f"--user-agent={self.user_agent}",
+                *self._builtin_options(),
             ]
-
-            if self.secret:
-                cmd.append(f"--rpc-secret={self.secret}")
-
-            if self.log_file:
-                cmd.append(f"--log={self.log_file.as_posix()}")
-
             if not self.use_config_file:
-                logger.debug("使用硬编码参数启动 aria2")
+                logger.debug("使用硬编码参数启动 %s", self.product_name)
             else:
-                logger.warning("配置文件不存在: %s, 使用硬编码参数启动 aria2", ARIA2_CONFIG_PATH)
+                logger.warning("配置文件不存在: %s, 使用硬编码参数启动 %s", config_path, self.product_name)
+
+        cmd += [
+            f"--dir={self.download_dir.as_posix()}",
+            "--console-log-level=error",
+            f"--log-level={self.log_level}",
+            f"--save-session={self._session_file.name}",
+            f"--user-agent={self.user_agent}",
+        ]
+
+        if self.secret:
+            cmd.append(f"--rpc-secret={self.secret}")
+
+        if self.log_file:
+            cmd.append(f"--log={self.log_file.as_posix()}")
 
         # 启动 aria2 进程
         try:
+            cmd += self._extra_args()
             self.process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.DEVNULL,
@@ -535,6 +617,7 @@ class Aria2RpcServer:
 
         if options:
             download_options.update(options)
+        download_options = self._prepare_download_options(urls, download_options)
 
         # 添加下载任务
         try:
@@ -597,6 +680,7 @@ class Aria2RpcServer:
 
             if options:
                 download_options.update(options)
+            download_options = self._prepare_download_options([url], download_options)
 
             try:
                 gid: str = self._rpc_call("aria2.addUri", [[url], download_options])
@@ -915,3 +999,231 @@ class Aria2RpcServer:
             list[dict[str, Any]]: 已停止任务列表
         """
         return self._rpc_call("aria2.tellStopped", [offset, num])
+
+
+class Aria2cRpcServer(Aria2RpcServer):
+    """
+    使用 aria2c 可执行文件的 aria2 RPC 服务器管理器
+
+    启动时使用`aria2.conf`配置文件
+    """
+
+    product_name: str = "aria2"
+    config_path: Path | None = ARIA2_CONFIG_PATH
+
+    @classmethod
+    def find_executable(
+        cls,
+    ) -> str | None:
+        """
+        查找 aria2c 可执行文件
+
+        Returns:
+            (str | None): aria2c 可执行文件路径, 未找到时返回 None
+        """
+        return shutil.which("aria2c")
+
+    def _builtin_options(
+        self,
+    ) -> list[str]:
+        """
+        获取不使用配置文件时 aria2c 的内置启动参数
+
+        Returns:
+            list[str]: 内置启动参数列表
+        """
+        return [
+            "--max-concurrent-downloads=16",
+            "--max-connection-per-server=16",
+            "--split=32",
+            "--min-split-size=20M",
+            "--piece-length=1M",
+            "--continue=true",
+            "--file-allocation=none",
+            "--save-session-interval=10",
+            "--connect-timeout=60",
+            "--timeout=60",
+            "--retry-wait=10",
+            "--max-tries=5",
+            "--check-certificate=false",
+            "--http-accept-gzip=true",
+            "--referer=*",
+        ]
+
+
+class Aria2NextRpcServer(Aria2RpcServer):
+    """
+    使用 aria2-next 可执行文件的 aria2 RPC 服务器管理器
+
+    仅支持`ARIA2_NEXT_MINIMUM_VER`及以上版本。启动时使用`aria2-next.conf`配置文件,
+    下载任务选项会转换为 aria2-next 支持的选项
+
+    aria2-next 不会在下载文件旁写入控制文件, 断点进度只保存在`--state-dir`中并以 GID 为索引,
+    因此使用持久化的状态目录, 并根据保存路径生成固定的 GID, 使中断的任务在下次启动时能够正确续传
+    """
+
+    product_name: str = "aria2-next"
+    config_path: Path | None = ARIA2_NEXT_CONFIG_PATH
+
+    @classmethod
+    def find_executable(
+        cls,
+    ) -> str | None:
+        """
+        查找满足最低版本要求的 aria2-next 可执行文件
+
+        依次检查 PATH 中的 aria2-next 和 aria2-next Python 软件包提供的可执行文件,
+        以支持未将 Python 脚本目录加入 PATH 的环境
+
+        Returns:
+            (str | None): aria2-next 可执行文件路径, 未找到满足版本要求的可执行文件时返回 None
+        """
+        candidates: list[str] = []
+        executable = shutil.which("aria2-next")
+        if executable is not None:
+            candidates.append(executable)
+
+        try:
+            aria2_next_module = importlib.import_module("aria2_next")
+            candidates.append(aria2_next_module.find_aria2_next_bin())
+        except ImportError:
+            pass
+        except (AttributeError, OSError) as e:
+            logger.debug("通过 aria2-next 软件包查找可执行文件失败: %s", e)
+
+        for candidate in dict.fromkeys(candidates):
+            version = get_aria2_next_version(candidate)
+            if version is None:
+                logger.debug("无法获取 aria2-next 版本, 跳过: %s", candidate)
+                continue
+            if Version.parse(version) < Version.parse(ARIA2_NEXT_MINIMUM_VER):
+                logger.warning("aria2-next 版本 %s 低于最低要求 %s, 跳过: %s", version, ARIA2_NEXT_MINIMUM_VER, candidate)
+                continue
+            return candidate
+        return None
+
+    def _builtin_options(
+        self,
+    ) -> list[str]:
+        """
+        获取不使用配置文件时 aria2-next 的内置启动参数
+
+        Returns:
+            list[str]: 内置启动参数列表
+        """
+        return [
+            "--max-concurrent-downloads=16",
+            "--max-connection-per-server=16",
+            "--split=32",
+            "--min-split-size=20M",
+            "--continue=true",
+            "--file-allocation=none",
+            "--save-session-interval=10",
+            "--connect-timeout=60",
+            "--timeout=60",
+            "--retry-wait=10",
+            "--max-tries=5",
+            "--check-certificate=false",
+            "--http-accept-gzip=true",
+            "--referer=*",
+        ]
+
+    def _extra_args(
+        self,
+    ) -> list[str]:
+        """
+        使用持久化的引擎状态目录, 保存断点续传进度
+
+        Returns:
+            list[str]: 额外启动参数列表
+        """
+        ARIA2_NEXT_STATE_PATH.mkdir(parents=True, exist_ok=True)
+        return [f"--state-dir={ARIA2_NEXT_STATE_PATH.as_posix()}"]
+
+    def _prepare_download_options(
+        self,
+        urls: list[str],
+        options: dict[str, Any],
+    ) -> dict[str, Any]:
+        """
+        将 aria2 下载任务选项转换为 aria2-next 支持的选项
+
+        - 移除 aria2-next 不支持或已弃用的选项
+        - 未指定`gid`时根据保存路径生成固定的 GID, 并清理当前进程中同 GID 的已结束任务记录
+
+        Args:
+            urls (list[str]):
+                下载任务的链接列表
+            options (dict[str, Any]):
+                aria2 下载任务选项
+
+        Returns:
+            (dict[str, Any]): 转换后的下载任务选项
+        """
+        prepared = dict(options)
+        dropped = [key for key in ARIA2_NEXT_UNSUPPORTED_DOWNLOAD_OPTIONS if prepared.pop(key, None) is not None]
+        if dropped:
+            logger.debug("aria2-next 不支持以下下载选项, 已忽略: %s", ", ".join(dropped))
+
+        if "gid" not in prepared:
+            save_dir = Path(prepared.get("dir", self.download_dir))
+            save_name = prepared.get("out") or _filename_from_url(urls[0])
+            gid = make_download_gid(save_dir / save_name)
+            prepared["gid"] = gid
+            try:
+                # 同一进程内重复下载同一文件时, 需要先移除已结束任务的记录才能复用 GID
+                self._rpc_call("aria2.removeDownloadResult", [gid], retry_count=1)
+            except RuntimeError:
+                pass
+        return prepared
+
+
+def get_aria2_next_version(
+    executable: str,
+) -> str | None:
+    """
+    获取 aria2-next 可执行文件的版本号
+
+    Args:
+        executable (str):
+            aria2-next 可执行文件路径
+
+    Returns:
+        (str | None): 版本号, 获取失败时返回 None
+    """
+    try:
+        result = subprocess.run(
+            [executable, "--version"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="ignore",
+            timeout=30,
+            check=False,
+            creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+        )
+    except (OSError, subprocess.SubprocessError) as e:
+        logger.debug("获取 aria2-next 版本失败: %s", e)
+        return None
+
+    version_match = re.search(r"aria2[ -]next version (\d+\.\d+\.\d+)", result.stdout, flags=re.IGNORECASE)
+    return version_match.group(1) if version_match else None
+
+
+def make_download_gid(
+    save_path: Path,
+) -> str:
+    """
+    根据保存路径生成固定的 aria2 GID
+
+    aria2-next 以 GID 为索引保存断点进度, 同一保存路径使用相同的 GID 才能在重新启动后续传
+
+    Args:
+        save_path (Path):
+            下载文件的保存路径
+
+    Returns:
+        str: 16 位十六进制 GID
+    """
+    normalized_path = os.path.normcase(os.path.abspath(save_path))
+    return hashlib.sha256(normalized_path.encode("utf-8")).hexdigest()[:16]

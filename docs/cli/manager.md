@@ -624,6 +624,8 @@ sd-webui-all-in-one self-manager download-file <下载链接> [选项]
 
 `requests` 和 `aria2` 后端共享上述 `32/16/20 MiB/1 MiB` 任务默认值。`aria2.conf` 也使用相同的连接和分段默认值；通过统一下载入口发起任务时，RPC 的单任务选项会显式覆盖配置文件中的同名值。较高连接数可提升大文件吞吐，但服务端可能据此限流或返回 `429`；小于 `min-split-size` 的文件不会使用全部分段。
 
+选择 `aria2` 时，未找到 `aria2c` 会自动改用 `aria2-next`（需 3.0.4 及以上版本，必要时通过 Pip / uv 安装或升级 `aria2-next` 软件包），仍不可用时降级到 `requests`。`aria2-next` 使用独立的 `aria2-next.conf`，断点进度保存在缓存目录的 `aria2-next` 子目录中，不支持 `piece-length`。
+
 ### 压缩包解压和压缩
 调用 Python 内核中的压缩包工具解压或创建压缩包。
 

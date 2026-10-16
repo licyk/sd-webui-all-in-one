@@ -26,7 +26,7 @@ def test_download_file_falls_back_from_aria2_to_requests(monkeypatch, tmp_path):
         return path / (save_name or "download.bin")
 
     monkeypatch.setitem(sys.modules, "requests", types.ModuleType("requests"))
-    monkeypatch.setattr(downloader_module.shutil, "which", lambda name: None if name == "aria2c" else "/bin/tool")
+    monkeypatch.setattr(downloader_module, "resolve_aria2_server_class", lambda: None)
     monkeypatch.setattr(downloader_module, "download_executer", fake_download_executer)
 
     result = downloader_module.download_file("https://example.test/file.bin", path=tmp_path / "downloads", save_name="x.bin", tool="aria2", progress=False)
@@ -34,6 +34,21 @@ def test_download_file_falls_back_from_aria2_to_requests(monkeypatch, tmp_path):
     assert result == tmp_path / "downloads" / "x.bin"
     assert (tmp_path / "downloads").is_dir()
     assert calls == [("https://example.test/file.bin", tmp_path / "downloads", "x.bin", "requests", False)]
+
+
+def test_download_file_keeps_aria2_when_resolver_finds_aria2_next(monkeypatch, tmp_path):
+    calls = []
+
+    def fake_download_executer(url, path, save_name, tool, progress, **_kwargs):
+        calls.append(tool)
+        return path / (save_name or "download.bin")
+
+    monkeypatch.setattr(downloader_module, "resolve_aria2_server_class", lambda: object)
+    monkeypatch.setattr(downloader_module, "download_executer", fake_download_executer)
+
+    downloader_module.download_file("https://example.test/file.bin", path=tmp_path, tool="aria2", progress=False)
+
+    assert calls == ["aria2"]
 
 
 def test_download_file_rejects_save_name_outside_target(monkeypatch, tmp_path):
@@ -89,7 +104,7 @@ def test_download_file_falls_back_to_urllib_when_requests_missing(monkeypatch, t
 
     monkeypatch.setattr(builtins, "__import__", fake_import)
     monkeypatch.setattr(downloader_module, "try_install_optional_dependency", fake_try_install_optional_dependency)
-    monkeypatch.setattr(downloader_module.shutil, "which", lambda name: None if name == "aria2c" else "/bin/tool")
+    monkeypatch.setattr(downloader_module, "resolve_aria2_server_class", lambda: None)
     monkeypatch.setattr(downloader_module, "download_executer", fake_download_executer)
 
     result = downloader_module.download_file("https://example.test/file.bin", path=tmp_path / "downloads", tool="aria2")

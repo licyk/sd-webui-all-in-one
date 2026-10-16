@@ -1,12 +1,17 @@
 """Aria2 下载工具"""
 
+import importlib
 import threading
 import urllib.request
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from sd_webui_all_in_one.downloader.aria2_server import Aria2RpcServer
+from sd_webui_all_in_one.downloader.aria2_server import (
+    Aria2cRpcServer,
+    Aria2NextRpcServer,
+    Aria2RpcServer,
+)
 from sd_webui_all_in_one.downloader.requests_downloader.api import _normalize_options
 from sd_webui_all_in_one.downloader.requests_downloader.http import _filename_from_url, _normalize_urls
 from sd_webui_all_in_one.downloader.requests_downloader.models import (
@@ -19,8 +24,10 @@ from sd_webui_all_in_one.downloader.requests_downloader.models import (
 )
 from sd_webui_all_in_one.downloader.types import ExistingFilePolicy, validate_download_file_name
 from sd_webui_all_in_one.downloader.hash_utils import compare_hash, normalize_hash_algorithm
+from sd_webui_all_in_one.optional_dependency import try_install_optional_dependency
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
+    ARIA2_NEXT_MINIMUM_VER,
     LOGGER_LEVEL,
     LOGGER_COLOR,
     LOGGER_NAME,
@@ -31,6 +38,67 @@ logger = get_logger(
     level=LOGGER_LEVEL,
     color=LOGGER_COLOR,
 )
+
+
+ARIA2_NEXT_PACKAGE_SPEC = f"aria2-next>={ARIA2_NEXT_MINIMUM_VER}"
+"""aria2-next Python 软件包安装要求"""
+
+ARIA2_CHECKSUM_ALGORITHM_NAMES = {
+    "sha1": "sha-1",
+    "sha256": "sha-256",
+    "sha512": "sha-512",
+}
+"""hashlib 算法名称到 aria2 checksum 选项算法名称的映射"""
+
+_server_class_lock: threading.Lock = threading.Lock()
+_server_class_resolved: bool = False
+_server_class: type[Aria2RpcServer] | None = None
+
+
+def _detect_aria2_server_class() -> type[Aria2RpcServer] | None:
+    """
+    依次检测 aria2c 和满足最低版本要求的 aria2-next, 均未找到时尝试安装或升级 aria2-next
+
+    Returns:
+        (type[Aria2RpcServer] | None): 可用的 aria2 RPC 服务器类, 均不可用时返回 None
+    """
+    if Aria2cRpcServer.is_available():
+        logger.debug("使用 aria2c 作为 aria2 下载器")
+        return Aria2cRpcServer
+
+    if Aria2NextRpcServer.is_available():
+        logger.debug("未找到 aria2c, 使用 aria2-next 作为 aria2 下载器")
+        return Aria2NextRpcServer
+
+    logger.warning("未找到 aria2 和可用的 aria2-next, 尝试自动安装 %s", ARIA2_NEXT_PACKAGE_SPEC)
+    if not try_install_optional_dependency(ARIA2_NEXT_PACKAGE_SPEC, "aria2-next"):
+        return None
+
+    importlib.invalidate_caches()
+    if Aria2NextRpcServer.is_available():
+        logger.info("aria2-next 安装成功, 使用 aria2-next 作为 aria2 下载器")
+        return Aria2NextRpcServer
+
+    logger.warning("安装 aria2-next 后仍未找到满足版本要求 (>= %s) 的 aria2-next 可执行文件", ARIA2_NEXT_MINIMUM_VER)
+    return None
+
+
+def resolve_aria2_server_class() -> type[Aria2RpcServer] | None:
+    """
+    获取当前环境可用的 aria2 RPC 服务器类
+
+    优先使用 aria2c, 未找到时使用满足最低版本要求的 aria2-next, 两者均不可用时尝试通过 Pip / uv 安装或升级 aria2-next。
+    检测结果在进程内缓存, 避免批量下载时重复检测或重复安装, 线程安全
+
+    Returns:
+        (type[Aria2RpcServer] | None): 可用的 aria2 RPC 服务器类, 均不可用时返回 None
+    """
+    global _server_class_resolved, _server_class
+    with _server_class_lock:
+        if not _server_class_resolved:
+            _server_class = _detect_aria2_server_class()
+            _server_class_resolved = True
+        return _server_class
 
 
 class _Aria2ServerPool:
@@ -60,11 +128,17 @@ class _Aria2ServerPool:
 
         Returns:
             Aria2RpcServer: 共享的服务器实例
+
+        Raises:
+            RuntimeError: aria2 和 aria2-next 均不可用
         """
         with self._lock:
             if self._server is None:
-                logger.debug("创建共享 Aria2RpcServer 实例")
-                self._server = Aria2RpcServer(use_external_server=False)
+                server_class = resolve_aria2_server_class()
+                if server_class is None:
+                    raise RuntimeError("未找到可用的 aria2 或 aria2-next, 请先安装 aria2")
+                logger.debug("创建共享 %s 实例", server_class.__name__)
+                self._server = server_class(use_external_server=False)
                 self._server.__enter__()  # pylint: disable=unnecessary-dunder-call
 
             self._ref_count += 1
@@ -285,7 +359,7 @@ def aria2(
         if effective_existing_policy == "resume":
             options["continue"] = "true"
         if hash_value and _is_full_hash(hash_value, normalized_hash_algorithm):
-            options["checksum"] = f"{normalized_hash_algorithm}={hash_value.strip().lower()}"
+            options["checksum"] = f"{ARIA2_CHECKSUM_ALGORITHM_NAMES[normalized_hash_algorithm]}={hash_value.strip().lower()}"
         result = server.download(
             url=urls,
             save_path=path,

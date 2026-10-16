@@ -2738,7 +2738,7 @@ def test_aria2_server_pool_refcounts_and_aria2_wrapper(monkeypatch, tmp_path):
             save_name = kwargs["save_name"] or requests_http._filename_from_url(kwargs["url"][0])
             return kwargs["save_path"] / save_name
 
-    monkeypatch.setattr(aria2_downloader, "Aria2RpcServer", lambda use_external_server=False: FakeServer())
+    monkeypatch.setattr(aria2_downloader, "resolve_aria2_server_class", lambda: lambda use_external_server=False: FakeServer())
 
     pool = aria2_downloader._Aria2ServerPool()
     first = pool.acquire()
@@ -2822,7 +2822,16 @@ def test_aria2_server_pool_refcounts_and_aria2_wrapper(monkeypatch, tmp_path):
         hash_value=full_sha512,
         hash_algorithm="sha512",
     )
-    assert events[-2][1]["options"]["checksum"] == f"sha512={full_sha512}"
+    assert events[-2][1]["options"]["checksum"] == f"sha-512={full_sha512}"
+
+    full_sha256 = hashlib.sha256(b"payload").hexdigest().upper()
+    aria2_downloader.aria2(
+        "https://example.test/full256.bin",
+        path=tmp_path,
+        progress=False,
+        hash_value=full_sha256,
+    )
+    assert events[-2][1]["options"]["checksum"] == f"sha-256={full_sha256.lower()}"
 
     before_invalid_call = list(events)
     with pytest.raises(ValueError, match="max_connection_per_server"):
@@ -2937,7 +2946,7 @@ def test_aria2_start_reuses_external_server_and_stop_skips(monkeypatch, tmp_path
     monkeypatch.setattr(aria2_server.shutil, "which", lambda name: "/bin/aria2c" if name == "aria2c" else None)
     monkeypatch.setattr(aria2_server, "is_port_in_use", lambda _port: True)
 
-    server = aria2_server.Aria2RpcServer(port=6800, download_dir=tmp_path, use_external_server=True)
+    server = aria2_server.Aria2cRpcServer(port=6800, download_dir=tmp_path, use_external_server=True)
     monkeypatch.setattr(server, "_test_connection", lambda: True)
     monkeypatch.setattr(server, "_rpc_call", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should not stop external")))
 
@@ -2981,12 +2990,13 @@ def test_aria2_start_uses_free_port_and_stop_cleans_session(monkeypatch, tmp_pat
     monkeypatch.setattr(aria2_server.subprocess, "Popen", FakeProcess)
     monkeypatch.setattr(aria2_server.Aria2RpcServer, "_test_connection", lambda _self: True)
 
-    server = aria2_server.Aria2RpcServer(port=6800, download_dir=tmp_path, use_config_file=False, use_external_server=False)
+    server = aria2_server.Aria2cRpcServer(port=6800, download_dir=tmp_path, use_config_file=False, use_external_server=False)
     server._start_server()
 
     assert server.port == 6801
     assert server.rpc_url == "http://localhost:6801/jsonrpc"
-    assert commands[0][0][:3] == ["aria2c", "--enable-rpc=true", "--rpc-listen-port=6801"]
+    assert commands[0][0][:3] == ["/bin/aria2c", "--enable-rpc=true", "--rpc-listen-port=6801"]
+    assert "--split=32" in commands[0][0]
     session_path = Path(server._session_file.name)
     assert session_path.exists()
 
@@ -2997,6 +3007,283 @@ def test_aria2_start_uses_free_port_and_stop_cleans_session(monkeypatch, tmp_pat
     assert rpc_calls[0][0] == "aria2.shutdown"
     assert server.process.waits == [5]
     assert not session_path.exists()
+
+
+def _reset_aria2_server_class_cache(monkeypatch):
+    monkeypatch.setattr(aria2_downloader, "_server_class_resolved", False)
+    monkeypatch.setattr(aria2_downloader, "_server_class", None)
+
+
+def test_resolve_aria2_server_class_prefers_aria2c(monkeypatch):
+    _reset_aria2_server_class_cache(monkeypatch)
+    monkeypatch.setattr(aria2_server.Aria2cRpcServer, "find_executable", classmethod(lambda _cls: "/bin/aria2c"))
+    monkeypatch.setattr(aria2_server.Aria2NextRpcServer, "find_executable", classmethod(lambda _cls: "/bin/aria2-next"))
+    monkeypatch.setattr(aria2_downloader, "try_install_optional_dependency", lambda *_args: pytest.fail("不应安装 aria2-next"))
+
+    assert aria2_downloader.resolve_aria2_server_class() is aria2_server.Aria2cRpcServer
+
+
+def test_resolve_aria2_server_class_uses_existing_aria2_next(monkeypatch):
+    _reset_aria2_server_class_cache(monkeypatch)
+    monkeypatch.setattr(aria2_server.Aria2cRpcServer, "find_executable", classmethod(lambda _cls: None))
+    monkeypatch.setattr(aria2_server.Aria2NextRpcServer, "find_executable", classmethod(lambda _cls: "/bin/aria2-next"))
+    monkeypatch.setattr(aria2_downloader, "try_install_optional_dependency", lambda *_args: pytest.fail("不应安装 aria2-next"))
+
+    assert aria2_downloader.resolve_aria2_server_class() is aria2_server.Aria2NextRpcServer
+
+
+def test_resolve_aria2_server_class_installs_aria2_next(monkeypatch):
+    _reset_aria2_server_class_cache(monkeypatch)
+    installed = False
+    install_calls = []
+
+    def fake_install(package_name, display_name=None):
+        nonlocal installed
+        install_calls.append(package_name)
+        installed = True
+        return True
+
+    monkeypatch.setattr(aria2_server.Aria2cRpcServer, "find_executable", classmethod(lambda _cls: None))
+    monkeypatch.setattr(aria2_server.Aria2NextRpcServer, "find_executable", classmethod(lambda _cls: "/bin/aria2-next" if installed else None))
+    monkeypatch.setattr(aria2_downloader, "try_install_optional_dependency", fake_install)
+
+    assert aria2_downloader.resolve_aria2_server_class() is aria2_server.Aria2NextRpcServer
+    assert aria2_downloader.resolve_aria2_server_class() is aria2_server.Aria2NextRpcServer
+    assert install_calls == ["aria2-next>=3.0.4"]
+
+
+@pytest.mark.parametrize("install_result", [False, True])
+def test_resolve_aria2_server_class_caches_unavailable_result(monkeypatch, install_result):
+    _reset_aria2_server_class_cache(monkeypatch)
+    install_calls = []
+
+    def fake_install(package_name, display_name=None):
+        install_calls.append(package_name)
+        return install_result
+
+    monkeypatch.setattr(aria2_server.Aria2cRpcServer, "find_executable", classmethod(lambda _cls: None))
+    monkeypatch.setattr(aria2_server.Aria2NextRpcServer, "find_executable", classmethod(lambda _cls: None))
+    monkeypatch.setattr(aria2_downloader, "try_install_optional_dependency", fake_install)
+
+    assert aria2_downloader.resolve_aria2_server_class() is None
+    assert aria2_downloader.resolve_aria2_server_class() is None
+    assert install_calls == ["aria2-next>=3.0.4"]
+
+
+def test_aria2_server_pool_raises_when_aria2_unavailable(monkeypatch):
+    monkeypatch.setattr(aria2_downloader, "resolve_aria2_server_class", lambda: None)
+    pool = aria2_downloader._Aria2ServerPool()
+
+    with pytest.raises(RuntimeError, match="aria2-next"):
+        pool.acquire()
+    assert pool._ref_count == 0
+
+
+def test_aria2_next_find_executable_uses_package_finder(monkeypatch):
+    monkeypatch.setattr(aria2_server.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(aria2_server, "get_aria2_next_version", lambda _exe: "3.0.4")
+    fake_module = types.ModuleType("aria2_next")
+    fake_module.find_aria2_next_bin = lambda: "/venv/bin/aria2-next"
+    monkeypatch.setitem(sys.modules, "aria2_next", fake_module)
+
+    assert aria2_server.Aria2NextRpcServer.find_executable() == "/venv/bin/aria2-next"
+
+    def raise_not_found():
+        raise FileNotFoundError("missing")
+
+    fake_module.find_aria2_next_bin = raise_not_found
+    assert aria2_server.Aria2NextRpcServer.find_executable() is None
+
+    monkeypatch.setattr(aria2_server.shutil, "which", lambda name: "/usr/bin/aria2-next" if name == "aria2-next" else None)
+    assert aria2_server.Aria2NextRpcServer.find_executable() == "/usr/bin/aria2-next"
+
+
+def test_aria2_next_find_executable_skips_outdated_versions(monkeypatch):
+    versions = {"/usr/bin/aria2-next": "2.8.6", "/venv/bin/aria2-next": "3.1.0"}
+    monkeypatch.setattr(aria2_server.shutil, "which", lambda name: "/usr/bin/aria2-next" if name == "aria2-next" else None)
+    monkeypatch.setattr(aria2_server, "get_aria2_next_version", versions.get)
+    fake_module = types.ModuleType("aria2_next")
+    fake_module.find_aria2_next_bin = lambda: "/venv/bin/aria2-next"
+    monkeypatch.setitem(sys.modules, "aria2_next", fake_module)
+
+    assert aria2_server.Aria2NextRpcServer.find_executable() == "/venv/bin/aria2-next"
+
+    versions["/venv/bin/aria2-next"] = "3.0.3"
+    assert aria2_server.Aria2NextRpcServer.find_executable() is None
+
+    versions["/venv/bin/aria2-next"] = None
+    assert aria2_server.Aria2NextRpcServer.find_executable() is None
+
+
+@pytest.mark.parametrize(
+    ("stdout", "expected"),
+    [
+        ("aria2-next version 3.0.4\nCopyright\n", "3.0.4"),
+        ("Aria2 Next version 2.8.6\nMaintained since 2026\n", "2.8.6"),
+        ("aria2 version 1.37.0\n", None),
+    ],
+)
+def test_get_aria2_next_version_parses_output(monkeypatch, stdout, expected):
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr="")
+
+    monkeypatch.setattr(aria2_server.subprocess, "run", fake_run)
+
+    assert aria2_server.get_aria2_next_version("/bin/aria2-next") == expected
+    assert calls == [["/bin/aria2-next", "--version"]]
+
+
+def test_get_aria2_next_version_handles_launch_error(monkeypatch):
+    def fake_run(*_args, **_kwargs):
+        raise OSError("exec format error")
+
+    monkeypatch.setattr(aria2_server.subprocess, "run", fake_run)
+
+    assert aria2_server.get_aria2_next_version("/bin/aria2-next") is None
+
+
+def test_make_download_gid_is_stable_per_path(tmp_path):
+    gid = aria2_server.make_download_gid(tmp_path / "model.safetensors")
+
+    assert gid == aria2_server.make_download_gid(tmp_path / "model.safetensors")
+    assert gid != aria2_server.make_download_gid(tmp_path / "other.safetensors")
+    assert len(gid) == 16
+    int(gid, 16)
+
+
+def test_aria2_next_prepares_download_options(tmp_path):
+    server = aria2_server.Aria2NextRpcServer(download_dir=tmp_path)
+    rpc_calls = []
+
+    def fake_rpc(method, params=None, retry_count=3):
+        rpc_calls.append((method, params, retry_count))
+        raise RuntimeError("GID is not found")
+
+    server._rpc_call = fake_rpc
+    options = {
+        "dir": tmp_path.as_posix(),
+        "out": "a.bin",
+        "split": "32",
+        "max-connection-per-server": "16",
+        "min-split-size": "1048576",
+        "piece-length": "1048576",
+        "allow-piece-length-change": "false",
+        "always-resume": "true",
+        "conditional-get": "false",
+        "max-resume-failure-tries": "0",
+        "continue": "true",
+    }
+
+    prepared = server._prepare_download_options(["https://example.test/a.bin"], options)
+
+    gid = aria2_server.make_download_gid(tmp_path / "a.bin")
+    assert prepared == {
+        "dir": tmp_path.as_posix(),
+        "out": "a.bin",
+        "split": "32",
+        "max-connection-per-server": "16",
+        "min-split-size": "1048576",
+        "continue": "true",
+        "gid": gid,
+    }
+    assert "piece-length" in options
+    assert rpc_calls == [("aria2.removeDownloadResult", [gid], 1)]
+
+    without_out = server._prepare_download_options(["https://example.test/files/b.bin?x=1"], {"dir": tmp_path.as_posix()})
+    assert without_out["gid"] == aria2_server.make_download_gid(tmp_path / "b.bin")
+
+    rpc_calls.clear()
+    explicit = server._prepare_download_options(["https://example.test/a.bin"], {"dir": tmp_path.as_posix(), "gid": "0123456789abcdef"})
+    assert explicit["gid"] == "0123456789abcdef"
+    assert rpc_calls == []
+
+    aria2c_server = aria2_server.Aria2cRpcServer(download_dir=tmp_path)
+    assert aria2c_server._prepare_download_options(["https://example.test/a.bin"], options) == options
+
+
+def test_aria2_next_download_sends_prepared_options(tmp_path):
+    server = aria2_server.Aria2NextRpcServer(download_dir=tmp_path)
+    calls = []
+
+    def fake_rpc(method, params=None, retry_count=3):
+        calls.append((method, params))
+        return "OK" if method == "aria2.removeDownloadResult" else "gid-1"
+
+    server._rpc_call = fake_rpc
+    server.download("https://example.test/a.bin", save_path=tmp_path, options={"split": "4", "always-resume": "true"}, wait_complete=False)
+
+    gid = aria2_server.make_download_gid(tmp_path / "a.bin")
+    assert calls == [
+        ("aria2.removeDownloadResult", [gid]),
+        ("aria2.addUri", [["https://example.test/a.bin"], {"dir": tmp_path.as_posix(), "split": "4", "gid": gid}]),
+    ]
+
+
+@pytest.mark.parametrize("use_config_file", [True, False])
+def test_aria2_next_start_uses_own_config_and_persistent_state_dir(monkeypatch, tmp_path, use_config_file):
+    commands = []
+
+    class FakeProcess:
+        stderr = None
+
+        def __init__(self, command, **_kwargs):
+            commands.append(command)
+
+        def poll(self):
+            return None
+
+        def wait(self, timeout=None):
+            return 0
+
+    state_dir = tmp_path / "cache" / "aria2-next"
+    monkeypatch.setattr(aria2_server, "ARIA2_NEXT_STATE_PATH", state_dir)
+    monkeypatch.setattr(aria2_server.Aria2NextRpcServer, "find_executable", classmethod(lambda _cls: "/venv/bin/aria2-next"))
+    monkeypatch.setattr(aria2_server, "is_port_in_use", lambda _port: False)
+    monkeypatch.setattr(aria2_server.subprocess, "Popen", FakeProcess)
+    monkeypatch.setattr(aria2_server.Aria2RpcServer, "_test_connection", lambda _self: True)
+
+    server = aria2_server.Aria2NextRpcServer(port=6800, download_dir=tmp_path, use_config_file=use_config_file, use_external_server=False)
+    server._start_server()
+
+    command = commands[0]
+    assert command[0] == "/venv/bin/aria2-next"
+    if use_config_file:
+        assert f"--conf-path={aria2_server.ARIA2_NEXT_CONFIG_PATH.as_posix()}" in command
+    else:
+        assert "--split=32" in command
+        assert not any(arg.startswith("--piece-length=") for arg in command)
+    assert f"--state-dir={state_dir.as_posix()}" in command
+    assert state_dir.is_dir()
+
+    server._rpc_call = lambda *_args, **_kwargs: None
+    server._stop_server()
+
+    assert state_dir.is_dir()
+
+
+def test_aria2_next_config_uses_only_native_options():
+    config_keys = {line.split("=", 1)[0].strip() for line in aria2_server.ARIA2_NEXT_CONFIG_PATH.read_text(encoding="utf-8").splitlines() if line.strip() and not line.lstrip().startswith("#")}
+    unsupported_keys = {
+        "stream-max-connections",
+        "piece-length",
+        "disk-cache",
+        "no-file-allocation-limit",
+        "auto-save-interval",
+        "bt-detach-seed-only",
+        "bt-tracker-connect-timeout",
+        "bt-tracker-timeout",
+        "dht-entry-point",
+        "dht-entry-point6",
+        "enable-dht6",
+        "peer-agent",
+        "peer-id-prefix",
+    }
+
+    assert {"split", "max-connection-per-server", "min-split-size", "state-save-interval"} <= config_keys
+    assert not config_keys & unsupported_keys
 
 
 def test_aria2_stop_kills_timeout_process_and_removes_session(tmp_path):
