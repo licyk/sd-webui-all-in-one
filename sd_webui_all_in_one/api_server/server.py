@@ -536,7 +536,7 @@ class ApiServer(ThreadingHTTPServer):
 class ApiRequestHandler(BaseHTTPRequestHandler):
     """API HTTP 请求处理器。"""
 
-    server: ApiServer
+    server: ApiServer  # ty: ignore[invalid-mutable-override]
 
     def do_GET(self) -> None:
         """处理 GET 请求。"""
