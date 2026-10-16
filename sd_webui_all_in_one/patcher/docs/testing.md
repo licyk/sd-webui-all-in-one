@@ -5,37 +5,45 @@
 ## 推荐命令
 
 ```bash
-env PYTHONDONTWRITEBYTECODE=1 /root/micromamba/envs/py311/bin/python -m pytest src/tests
+env PYTHONDONTWRITEBYTECODE=1 /root/micromamba/envs/py311/bin/python -m pytest sd_webui_all_in_one/patcher/tests
 ```
 
 `PYTHONDONTWRITEBYTECODE=1` 可以避免生成 `__pycache__`，保持工作区清爽。
 
 ## 测试文件职责
 
+测试按被测模块分目录存放。`tests/` 及其子目录都不是 Python 包（没有 `__init__.py`），pytest 以文件名导入测试模块，所以**所有测试文件和辅助模块的文件名必须全局唯一**，辅助模块使用 `<主题>_test_helpers.py` 命名。
+
 ```text
-src/tests/conftest.py
-  把 src 加入 sys.path。
+tests/conftest.py
+  把 patcher 根目录加入 sys.path。
 
-src/tests/test_sd_webui_all_in_one_hotpatcher.py
-  import hook 核心能力。
+tests/core/
+  test_hotpatcher_hook.py          import hook 核心能力
+  test_hotpatcher_state.py         核心模块不使用 global 语句
+  test_stack_shadow.py             traceback filename 隐藏，source/zip loader，env bootstrap
 
-src/tests/test_stack_shadow.py
-  traceback filename 隐藏，source/zip loader，env bootstrap。
+tests/services/
+  test_services_config.py          默认配置、配置合并、配置文件、catalog、请求处理
+  test_services_apply.py           apply_config 启用核心补丁与扩展补丁
+  test_services_bootstrap.py       服务控制通道与 bootstrap
 
-src/tests/test_runtime.py
-  TCP JSONL、config、progress、browser、fileops、faults、audit、errors、logs。
+tests/runtime/
+  runtime_test_helpers.py          JsonlHost 等 runtime 测试宿主
+  test_runtime_client.py           TCP JSONL、config、progress、browser、fileops、faults、audit
+  test_runtime_errors.py           异常上报与 error capture
+  test_runtime_caught_exceptions.py  已捕获异常追踪
+  test_runtime_logs.py             日志采集
+  test_runtime_bootstrap.py        runtime bootstrap
+  test_transport_mode.py           传输模式选择
+  legacy_transport_test_helpers.py / test_legacy_*.py
+                                   旧版 JSONL 传输超时与服务通道
+  desktop_broker_test_helpers.py / test_desktop_broker_*.py
+                                   桌面端代理 HTTP、事件队列、诊断、命令与 bootstrap
 
-src/tests/test_zluda_extension.py
-  ZLUDA 扩展，fake torch，源码 patch。
-
-src/tests/test_extension_index_extension.py
-  Extension Index 扩展，fake WebUI/ComfyUI-Manager 模块，bytecode/function patch。
-
-src/tests/test_hf_endpoint_mirror_extension.py
-  HF Endpoint Mirror 扩展，fake torch/torchvision/ComfyUI WD14/modules.util，URL rewrite 和下载函数替换。
-
-src/tests/test_uv_pip_extension.py
-  uv Pip 扩展，fake subprocess.run，验证命令改写和 wrapper 卸载策略。
+tests/extensions/
+  test_extension_package_layout.py 扩展包结构与公开 API
+  test_<扩展名>_extension.py       各扩展测试，例如 ZLUDA、Extension Index、HF Endpoint Mirror、uv Pip
 ```
 
 ## 测试 import hook 的固定套路
@@ -148,7 +156,7 @@ zip loader 测试类似，只是把模块写进 zip，然后把 zip 路径插入
 
 ## Runtime 测试
 
-`test_runtime.py` 里的 `JsonlHost` 是一个最小测试宿主：
+`runtime/runtime_test_helpers.py` 里的 `JsonlHost` 是一个最小测试宿主：
 
 - 后台线程开 TCP server。
 - 每个连接一个 handler 线程。

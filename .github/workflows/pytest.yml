@@ -5,6 +5,7 @@ on:
     paths:
       - "sd_webui_all_in_one/**"
       - "tests/**"
+      - "conftest.py"
       - "pyproject.toml"
       - ".github/actions/finalize-portable/action.yml"
       - ".github/check_portable_pytorch_type.py"
@@ -14,6 +15,7 @@ on:
     paths:
       - "sd_webui_all_in_one/**"
       - "tests/**"
+      - "conftest.py"
       - "pyproject.toml"
       - ".github/actions/finalize-portable/action.yml"
       - ".github/check_portable_pytorch_type.py"

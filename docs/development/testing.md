@@ -46,19 +46,49 @@ pytest 工作流会在 Python 3.10 到 3.15 上运行：
 pytest
 ```
 
-本地可先针对相关测试文件运行，例如：
+本地可先针对相关测试目录或文件运行，例如：
 
 ```bash
-pytest tests/test_package_analyzer.py
-pytest tests/test_version_manager.py
+pytest tests/package_analyzer
+pytest tests/base_manager/version_manager/test_repository_updates.py
 ```
+
+## 测试目录结构
+
+`tests/` 按 `sd_webui_all_in_one/` 的模块划分子目录，每个子目录都是 Python 包（包含 `__init__.py`）：
+
+| 目录 | 覆盖范围 |
+| --- | --- |
+| `tests/core/` | 包顶层的基础模块：环境变量、镜像源、代理、命令执行、进程树、重试、日志、TOML、进度条、整合包管理等 |
+| `tests/git/` | `git_warpper` 的命令封装、仓库更新和锁文件处理 |
+| `tests/files/` | `file_manager`、`archive_manager`、`optional_dependency` |
+| `tests/downloader/` | 下载入口与各下载器；`requests_downloader/`、`aria2/` 子目录分别对应同名实现 |
+| `tests/api_server/` | API 方法注册、任务与 HTTP 协议 |
+| `tests/base_manager/` | 基础管理器；`base/`、`products/`（各 WebUI 管理器）、`snapshot/`、`version_manager/`、`hotpatcher_manager/`、`gui/` 对应同名模块 |
+| `tests/cli_manager/` | 命令行注册、解析与子命令分发 |
+| `tests/notebook_manager/` | Notebook 管理器 |
+| `tests/env_check/` | 环境检查与修复；`comfyui_env_analyze/` 对应 ComfyUI 环境分析 |
+| `tests/package_analyzer/` | 软件包规范解析；`reqfile/` 对应依赖文件解析 |
+| `tests/pytorch_manager/`、`tests/python_standalone/`、`tests/tunnel/`、`tests/optimize/`、`tests/launch_arguments/`、`tests/repo_manager/`、`tests/model_downloader/` | 对应同名模块 |
+| `tests/patcher/` | 从主测试集验证 patcher 运行时的冒烟测试 |
+| `tests/github_scripts/` | `.github/` 下的 CI 脚本 |
+| `tests/support/` | 跨目录共享的测试辅助工具 |
+
+组织测试时遵循以下约定：
+
+- 新测试放入被测模块对应的目录和文件；单个测试文件过大时按功能拆分，而不是继续追加。
+- 同一目录内多个测试文件共享的辅助函数放在该目录的 `helpers.py`，共享夹具放在该目录的 `conftest.py`；跨目录共享的辅助工具放在 `tests/support/`，跨目录共享的夹具放在 `tests/conftest.py`。
+- 新增子目录时同时添加空的 `__init__.py`，避免不同目录中的同名测试文件冲突。
+- 需要定位项目根目录时基于 `Path(__file__).parents[N]` 计算，移动文件后同步调整层级。
 
 ## 测试贡献准则
 
 新增或修改 Python 功能时，优先补充可离线运行的 pytest 用例。测试应验证行为边界、异常包装、命令参数、环境变量合并、路径处理和平台分支，而不是依赖真实外部服务。
 
-- 测试文件放在 `tests/`，命名为 `test_*.py`；patcher 自身测试仍放在 `sd_webui_all_in_one/patcher/tests/`。
+- 测试文件放在 `tests/` 下与被测模块对应的子目录中，命名为 `test_*.py`；patcher 自身测试仍放在 `sd_webui_all_in_one/patcher/tests/`，结构说明见 patcher 的测试文档。
 - 优先使用 `tmp_path`、`monkeypatch`、fake subprocess result、fake downloader、fake API client，避免污染用户环境。
+- 测试产生的文件（例如 `.gitconfig`、缓存、快照、下载结果）只能写入 `tmp_path` 等临时目录。项目根目录的 `conftest.py` 会把运行时启动目录、缓存目录和工作目录切换到会话临时目录，每个测试结束后恢复 `os.environ`；若测试在项目目录中遗留了新文件，测试会话会失败并列出这些文件。
+- 修改环境变量使用 `monkeypatch.setenv` / `monkeypatch.delenv`，不要直接写 `os.environ`，也不要依赖其他测试遗留的环境变量。
 - 不在测试中访问真实网络，不执行真实 `git clone`、`pip/uv install`、`aria2` 下载、WebUI 启动、GPU 检测或隧道启动。
 - 涉及 Windows / Linux / macOS 差异时，断言行为结果，不依赖目录遍历顺序、POSIX 权限、命令字符串转义细节或某个平台专有路径。
 - 需要模拟可选依赖缺失时，优先 monkeypatch 对应模块导入或入口函数，不通过卸载本机依赖实现。
@@ -72,11 +102,11 @@ pytest tests/test_version_manager.py
 - 产品级 manager：参数化覆盖相同行为，避免为每个产品复制大量重复断言。
 - 文档或配置改动：至少跑相关静态搜索或文档构建，确认链接、标题和工作流说明没有失效。
 
-本地补测建议先跑变更相关文件，再跑完整回归：
+本地补测建议先跑变更相关目录或文件，再跑完整回归：
 
 ```bash
-pytest tests/test_pytorch_manager_more.py
-pytest tests/test_low_level_downloaders.py tests/test_downloader_file_ops.py
+pytest tests/pytorch_manager
+pytest tests/downloader tests/files
 pytest
 ```
 

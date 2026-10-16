@@ -1,0 +1,246 @@
+"""桌面端代理事件队列测试"""
+
+import json
+import time
+import types
+
+import pytest
+from desktop_broker_test_helpers import ScriptedRequester, make_client
+
+from sd_webui_all_in_one_hotpatcher.runtime import browser
+from sd_webui_all_in_one_hotpatcher.runtime.desktop_broker import (
+    BROWSER_RESERVED_EVENT_CAPACITY,
+    MAX_EVENT_BATCH_COUNT,
+    MAX_EVENT_COUNT,
+    MAX_EVENT_PAYLOAD_BYTES,
+    MAX_REQUEST_BYTES,
+    DesktopBrokerHttpError,
+    DesktopTransportStatus,
+)
+from sd_webui_all_in_one_hotpatcher.state import HotpatcherState
+
+
+def test_reserved_browser_capacity_is_bounded_without_sequence_gaps():
+    requester = ScriptedRequester()
+    client = make_client(
+        requester,
+        event_capacity=5,
+        browser_reserved_capacity=2,
+        wall_time=lambda: 123.5,
+    )
+
+    assert client.emit_event("log.record", {"message": "first"}) is True
+    assert client.emit_event("error.record", {"message": "second"}) is True
+    assert client.emit_event("progress.update", {"value": 3}) is True
+    assert client.emit_event("log.record", {"message": "rejected"}) is False
+    assert requester.calls == []
+    status = client.status()
+    assert status["queuedEventCount"] == 3
+    assert status["unacknowledgedDiagnostics"][-1] == {
+        "sequence": 1,
+        "code": "ordinary_event_capacity_exhausted",
+        "message": "ordinary event queue reached its 3-event admission limit; 2 slots are reserved for browser.open",
+        "createdAt": 123.5,
+        "occurrences": 1,
+    }
+
+    assert client.emit_event("browser.open", {"url": "http://localhost:4"}) is True
+    assert client.emit_event("browser.open", {"url": "http://localhost:5"}) is True
+    assert client.emit_event("browser.open", {"url": "http://localhost:6"}) is False
+    status = client.status()
+    assert status["queuedEventCount"] == 5
+    assert status["unacknowledgedDiagnostics"][-1] == {
+        "sequence": 2,
+        "code": "critical_event_capacity_exhausted",
+        "message": "outbound event queue reached its 5-event hard limit; browser.open was rejected",
+        "createdAt": 123.5,
+        "occurrences": 1,
+    }
+
+    client._connect()
+    client._upload_events()
+    event_call = next(call for call in requester.calls if call["path"] == "/v1/runtime/events")
+    assert [item["sequence"] for item in event_call["body"]["events"]] == [1, 2, 3, 4, 5]
+    assert [item["eventType"] for item in event_call["body"]["events"]] == [
+        "runtime.log",
+        "runtime.error",
+        "runtime.progress",
+        "browser.open",
+        "browser.open",
+    ]
+    assert all(item["createdAt"] == 123.5 for item in event_call["body"]["events"])
+
+    assert client.emit_event("audit.event", {"accepted": True}) is True
+    client._upload_events()
+    assert requester.calls[-1]["body"]["events"][0]["sequence"] == 6
+
+
+def test_browser_only_queue_reaches_bounded_hard_limit():
+    client = make_client(event_capacity=3, browser_reserved_capacity=1, wall_time=lambda: 80.0)
+
+    for index in range(3):
+        assert client.emit_event("browser.open", {"url": f"http://localhost:{index}"}) is True
+    assert client.emit_event("browser.open", {"url": "http://localhost:full"}) is False
+
+    assert [event.sequence for event in client._events] == [1, 2, 3]
+    assert client.status()["unacknowledgedDiagnostics"][-1]["code"] == "critical_event_capacity_exhausted"
+
+
+def test_default_queue_reserves_named_browser_capacity():
+    client = make_client(wall_time=lambda: 90.0)
+
+    ordinary_capacity = MAX_EVENT_COUNT - BROWSER_RESERVED_EVENT_CAPACITY
+    for index in range(ordinary_capacity):
+        assert client.emit_event("audit.event", {"index": index}) is True
+    assert client.emit_event("audit.event", {"index": ordinary_capacity}) is False
+    assert client.status()["unacknowledgedDiagnostics"][-1]["message"] == ("ordinary event queue reached its 240-event admission limit; 16 slots are reserved for browser.open")
+    for index in range(BROWSER_RESERVED_EVENT_CAPACITY):
+        assert client.emit_event("browser.open", {"url": f"http://localhost:{index}"}) is True
+    assert client.emit_event("browser.open", {"url": "http://localhost:full"}) is False
+
+    assert client.status()["queuedEventCount"] == MAX_EVENT_COUNT
+    assert client.status()["unacknowledgedDiagnostics"][-1]["message"] == ("outbound event queue reached its 256-event hard limit; browser.open was rejected")
+
+
+def test_event_validation_is_bounded_and_diagnostic():
+    client = make_client()
+    assert client.emit_event("browser.open", {"text": "x" * (MAX_EVENT_PAYLOAD_BYTES + 1)}) is False
+    assert client.emit_event("browser.open", {"bad": object()}) is False
+    assert client.emit_event("browser.open", []) is False
+    assert [item["code"] for item in client.status()["unacknowledgedDiagnostics"]] == [
+        "event_rejected",
+        "event_rejected",
+        "event_rejected",
+    ]
+
+
+def test_desktop_maps_existing_producer_families_without_mutating_payloads():
+    requester = ScriptedRequester()
+    client = make_client(requester, wall_time=lambda: 100.0)
+    payloads = [
+        {"message": "hello"},
+        {"message": "failed"},
+        {"id": 1, "value": 2},
+        {"value": "future"},
+    ]
+    for event_type, payload in zip(
+        ("log.record", "error.exception", "progress.update", "audit.event"),
+        payloads,
+        strict=True,
+    ):
+        assert client.emit_event(event_type, payload)
+    assert all("sourceEventType" not in payload for payload in payloads)
+
+    client._connect()
+    client._upload_events()
+    events = requester.calls[-1]["body"]["events"]
+    assert [event["eventType"] for event in events] == [
+        "runtime.log",
+        "runtime.error",
+        "runtime.progress",
+        "audit.event",
+    ]
+    assert [event["payload"].get("sourceEventType") for event in events] == [
+        "log.record",
+        "error.exception",
+        "progress.update",
+        None,
+    ]
+
+
+def test_mixed_unacknowledged_events_retry_and_acknowledge_after_reconnect():
+    requester = ScriptedRequester(
+        {
+            "/v1/runtime/connect": [
+                {"status": "connected", "acknowledgedSequence": 0, "acknowledgedDiagnosticSequence": 0},
+                {"status": "reconnecting", "acknowledgedSequence": 0, "acknowledgedDiagnosticSequence": 0},
+            ],
+            "/v1/runtime/events": [
+                DesktopBrokerHttpError("connection_failed", "temporary outage"),
+                {"acknowledgedSequence": 1},
+                {"acknowledgedSequence": 3},
+            ],
+        }
+    )
+    client = make_client(requester, event_capacity=4, browser_reserved_capacity=1)
+    client.emit_event("log.record", {"message": "before browser"})
+    client.emit_event("browser.open", {"url": "http://localhost:1"})
+    client.emit_event("progress.update", {"value": 3})
+    client._connect()
+
+    with pytest.raises(DesktopBrokerHttpError):
+        client._upload_events()
+    client._handle_transport_failure("connection_failed", "temporary outage", retryable=True)
+    assert client.status()["status"] == DesktopTransportStatus.RECONNECTING.value
+    assert client.status()["queuedEventCount"] == 3
+
+    client._connect()
+    client._upload_events()
+    assert client.status()["acknowledgedSequence"] == 1
+    assert client.status()["queuedEventCount"] == 2
+    client._upload_events()
+    assert client.status()["acknowledgedSequence"] == 3
+    event_calls = [call for call in requester.calls if call["path"] == "/v1/runtime/events"]
+    assert [item["sequence"] for item in event_calls[0]["body"]["events"]] == [1, 2, 3]
+    assert [item["sequence"] for item in event_calls[1]["body"]["events"]] == [1, 2, 3]
+    assert [item["sequence"] for item in event_calls[2]["body"]["events"]] == [2, 3]
+    assert [item["eventType"] for item in event_calls[1]["body"]["events"]] == [
+        "runtime.log",
+        "browser.open",
+        "runtime.progress",
+    ]
+
+
+def test_mixed_event_upload_stays_within_count_and_encoded_body_bounds():
+    requester = ScriptedRequester()
+    client = make_client(requester, event_capacity=40, browser_reserved_capacity=4)
+    payload = {"text": "x" * (MAX_EVENT_PAYLOAD_BYTES - 100)}
+
+    assert client.emit_event("audit.event", payload)
+    assert client.emit_event("browser.open", {"url": "http://localhost:8188"})
+    for _ in range(18):
+        assert client.emit_event("audit.event", payload)
+    client._connect()
+    client._upload_events()
+
+    event_call = next(call for call in requester.calls if call["path"] == "/v1/runtime/events")
+    body = event_call["body"]
+    encoded = json.dumps(body, ensure_ascii=False, allow_nan=False, separators=(",", ":")).encode("utf-8")
+    assert 2 <= len(body["events"]) <= MAX_EVENT_BATCH_COUNT
+    assert any(event["eventType"] == "browser.open" for event in body["events"])
+    assert len(encoded) <= MAX_REQUEST_BYTES
+
+
+def test_browser_host_mode_suppresses_locally_when_critical_queue_is_full(monkeypatch):
+    registered = {}
+    state = HotpatcherState()
+    sink = make_client(event_capacity=1, wall_time=lambda: 70.0)
+    assert sink.emit_event("browser.open", {"url": "http://localhost:queued"}) is True
+    monkeypatch.setattr(browser, "install_import_hook", lambda **_kwargs: None)
+    monkeypatch.setattr(
+        browser,
+        "register_hook",
+        lambda module, function, hook, **_kwargs: registered.update(hook=hook),
+    )
+    monkeypatch.delitem(__import__("sys").modules, "webbrowser", raising=False)
+    browser.patch_webbrowser(sink, mode="host", state=state)
+    original_calls = []
+
+    def original(*_args, **_kwargs):
+        original_calls.append(True)
+        return False
+
+    wrapped = registered["hook"](original, types.SimpleNamespace())
+
+    started = time.monotonic()
+    assert wrapped("http://localhost:8188") is True
+    assert time.monotonic() - started < 0.05
+    assert original_calls == []
+    assert sink.status()["queuedEventCount"] == 1
+    assert sink.status()["unacknowledgedDiagnostics"][-1] == {
+        "sequence": 1,
+        "code": "critical_event_capacity_exhausted",
+        "message": "outbound event queue reached its 1-event hard limit; browser.open was rejected",
+        "createdAt": 70.0,
+        "occurrences": 1,
+    }

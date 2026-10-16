@@ -74,7 +74,7 @@ sd_webui_all_in_one_hotpatcher_ext/foo/
 - 子模块之间直接互相导入（`from .mirror import ...`），不要反过来从包的 `__init__.py` 导入，避免循环导入。
 - 测试需要替换私有函数或模块级状态时，要对实现所在的子模块打补丁（例如 `extension_index.mirror`），对包对象打补丁不会影响子模块内部的调用。
 
-`tests/test_extension_package_layout.py` 会检查每个扩展的 `__init__.py` 是否只包含重新导出，并固定各扩展的 `__all__`。
+`tests/extensions/test_extension_package_layout.py` 会检查每个扩展的 `__init__.py` 是否只包含重新导出，并固定各扩展的 `__all__`。
 
 不要求每个扩展都有独立文档，但复杂扩展应至少在 README 或 `src/docs/extensions.md` 中留下使用说明。
 
@@ -499,7 +499,7 @@ HF Endpoint Mirror 测试创建 fake `torch.hub`、fake `torchvision.datasets.ut
 - 是否说明必须在目标模块 import 前调用。
 - 是否有 `apply_from_config()`。
 - `__init__.py` 是否只做重新导出，实现是否都在子模块里。
-- 是否在 `tests/test_extension_package_layout.py` 的 `EXPECTED_EXPORTS` 中登记公开 API。
+- 是否在 `tests/extensions/test_extension_package_layout.py` 的 `EXPECTED_EXPORTS` 中登记公开 API。
 - 是否在 services catalog schema 中声明字段名、说明、类型和必要的 choices。
 - 是否能用 fake dependency 测试。
 - 是否没有把业务补丁塞进 `sd_webui_all_in_one_hotpatcher` core。
