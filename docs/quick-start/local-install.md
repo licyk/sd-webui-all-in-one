@@ -19,6 +19,7 @@
 - [InvokeAI Installer 环境准备与安装](../installer/invokeai/install.md)：InvokeAI。
 - [Qwen TTS WebUI Installer 环境准备与安装](../installer/qwen-tts-webui/install.md)：Qwen TTS WebUI。
 - [RVC Next WebUI Installer 环境准备与安装](../installer/rvc-next-webui/install.md)：RVC Next WebUI。
+- [Mizuoto TTS WebUI Installer 环境准备与安装](../installer/mizuoto-tts-webui/install.md)：Mizuoto TTS WebUI。
 - [SD Trainer Installer 环境准备与安装](../installer/sd-trainer/install.md)：训练 WebUI。
 - [SD Trainer Script Installer 环境准备与安装](../installer/sd-trainer-script/install.md)：sd-scripts / kohya-ss 训练脚本。
 

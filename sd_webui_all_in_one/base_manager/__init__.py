@@ -276,6 +276,21 @@ from sd_webui_all_in_one.base_manager.rvc_next_webui_base import (
     get_rvc_next_webui_snapshot,
 )
 
+from sd_webui_all_in_one.base_manager.mizuoto_tts_webui_base import (
+    MIZUOTO_TTS_WEBUI_REPO,
+    install_mizuoto_tts_webui,
+    update_mizuoto_tts_webui,
+    check_mizuoto_tts_webui_env,
+    get_mizuoto_tts_webui_launch_argument_catalog,
+    prepare_mizuoto_tts_webui_launch,
+    launch_mizuoto_tts_webui,
+    launch_mizuoto_tts_webui_version_gui,
+    launch_mizuoto_tts_webui_snapshot_gui,
+    check_mizuoto_tts_webui_updates,
+    get_mizuoto_tts_webui_environment_info,
+    get_mizuoto_tts_webui_snapshot,
+)
+
 from sd_webui_all_in_one.base_manager.sd_scripts_base import (
     SDScriptsBranchType,
     SDScriptsBranchInfo,
@@ -633,6 +648,21 @@ __all__ = [
     "get_rvc_next_webui_snapshot",
     "get_rvc_next_webui_environment_info",
     "check_rvc_next_webui_updates",
+    # mizuoto_tts_webui_base - Mizuoto TTS WebUI 管理模块
+    # 常量
+    "MIZUOTO_TTS_WEBUI_REPO",
+    # 函数
+    "install_mizuoto_tts_webui",
+    "update_mizuoto_tts_webui",
+    "check_mizuoto_tts_webui_env",
+    "get_mizuoto_tts_webui_launch_argument_catalog",
+    "prepare_mizuoto_tts_webui_launch",
+    "launch_mizuoto_tts_webui",
+    "launch_mizuoto_tts_webui_version_gui",
+    "launch_mizuoto_tts_webui_snapshot_gui",
+    "get_mizuoto_tts_webui_snapshot",
+    "get_mizuoto_tts_webui_environment_info",
+    "check_mizuoto_tts_webui_updates",
     # sd_scripts_base.py - SD Scripts 管理模块
     # 类型定义
     "SDScriptsBranchType",

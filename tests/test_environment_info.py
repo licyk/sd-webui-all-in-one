@@ -17,6 +17,7 @@ from sd_webui_all_in_one.base_manager import (
     invokeai_base,
     qwen_tts_webui_base,
     rvc_next_webui_base,
+    mizuoto_tts_webui_base,
     sd_scripts_base,
     sd_trainer_base,
     sd_webui_base,
@@ -164,6 +165,7 @@ def test_environment_info_build_and_save_contract(monkeypatch, tmp_path):
         (sd_scripts_base, "get_sd_scripts_environment_info", "get_sd_scripts_snapshot"),
         (qwen_tts_webui_base, "get_qwen_tts_webui_environment_info", "get_qwen_tts_webui_snapshot"),
         (rvc_next_webui_base, "get_rvc_next_webui_environment_info", "get_rvc_next_webui_snapshot"),
+        (mizuoto_tts_webui_base, "get_mizuoto_tts_webui_environment_info", "get_mizuoto_tts_webui_snapshot"),
     ],
 )
 def test_product_environment_info_combines_own_snapshot(monkeypatch, tmp_path, module, function_name, snapshot_name):

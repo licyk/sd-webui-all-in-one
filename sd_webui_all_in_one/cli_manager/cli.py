@@ -11,6 +11,7 @@ from sd_webui_all_in_one.cli_manager.fooocus_cli import register_fooocus
 from sd_webui_all_in_one.cli_manager.comfyui_cli import register_comfyui
 from sd_webui_all_in_one.cli_manager.qwen_tts_webui_cli import register_qwen_tts_webui
 from sd_webui_all_in_one.cli_manager.rvc_next_webui_cli import register_rvc_next_webui
+from sd_webui_all_in_one.cli_manager.mizuoto_tts_webui_cli import register_mizuoto_tts_webui
 from sd_webui_all_in_one.cli_manager.utils import register_manager
 
 
@@ -32,6 +33,7 @@ def main() -> None:
     register_comfyui(subparsers)
     register_qwen_tts_webui(subparsers)
     register_rvc_next_webui(subparsers)
+    register_mizuoto_tts_webui(subparsers)
     register_manager(subparsers)
 
     # 执行解析

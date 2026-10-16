@@ -14,6 +14,7 @@ from sd_webui_all_in_one.base_manager import (
     invokeai_base,
     qwen_tts_webui_base,
     rvc_next_webui_base,
+    mizuoto_tts_webui_base,
     sd_scripts_base,
     sd_trainer_base,
     sd_webui_base,
@@ -32,6 +33,7 @@ from sd_webui_all_in_one.cli_manager import (
     invokeai_cli,
     qwen_tts_webui_cli,
     rvc_next_webui_cli,
+    mizuoto_tts_webui_cli,
     sd_scripts_cli,
     sd_trainer_cli,
     sd_webui_cli,
@@ -334,6 +336,7 @@ def test_product_snapshots_include_webui_identity_and_extension_state(monkeypatc
     assert fooocus_base.get_fooocus_snapshot(tmp_path / "Fooocus", include_packages=False).webui.type == "fooocus"
     assert qwen_tts_webui_base.get_qwen_tts_webui_snapshot(tmp_path / "qwen", include_packages=False).webui.type == "qwen_tts_webui"
     assert rvc_next_webui_base.get_rvc_next_webui_snapshot(tmp_path / "rvc", include_packages=False).webui.type == "rvc_next_webui"
+    assert mizuoto_tts_webui_base.get_mizuoto_tts_webui_snapshot(tmp_path / "mizuoto", include_packages=False).webui.type == "mizuoto_tts_webui"
     assert sd_trainer_base.get_sd_trainer_snapshot(tmp_path / "trainer", include_packages=False).webui.type == "sd_trainer"
     assert sd_scripts_base.get_sd_scripts_snapshot(tmp_path / "scripts", include_packages=False).webui.type == "sd_scripts"
 
@@ -1396,6 +1399,7 @@ def test_product_snapshot_cli_parse_smoke(monkeypatch, tmp_path):
         (invokeai_cli, invokeai_cli.register_invokeai, "invokeai", "--invokeai-path", "invokeai_path"),
         (qwen_tts_webui_cli, qwen_tts_webui_cli.register_qwen_tts_webui, "qwen-tts-webui", "--qwen-tts-webui-path", "qwen_tts_webui_path"),
         (rvc_next_webui_cli, rvc_next_webui_cli.register_rvc_next_webui, "rvc-next-webui", "--rvc-next-webui-path", "rvc_next_webui_path"),
+        (mizuoto_tts_webui_cli, mizuoto_tts_webui_cli.register_mizuoto_tts_webui, "mizuoto-tts-webui", "--mizuoto-tts-webui-path", "mizuoto_tts_webui_path"),
         (sd_trainer_cli, sd_trainer_cli.register_sd_trainer, "sd-trainer", "--sd-trainer-path", "sd_trainer_path"),
         (sd_scripts_cli, sd_scripts_cli.register_sd_scripts, "sd-scripts", "--sd-scripts-path", "sd_scripts_path"),
     ]

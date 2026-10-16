@@ -84,3 +84,6 @@ SD WebUI All In One 支持通过环境变量来调整其行为。
 - `RVC_NEXT_WEBUI_ROOT`
   
   RVC Next WebUI 根目录。
+- `MIZUOTO_TTS_WEBUI_ROOT`
+  
+  Mizuoto TTS WebUI 根目录。

@@ -10,6 +10,7 @@ from sd_webui_all_in_one.cli_manager import fooocus_cli
 from sd_webui_all_in_one.cli_manager import invokeai_cli
 from sd_webui_all_in_one.cli_manager import qwen_tts_webui_cli
 from sd_webui_all_in_one.cli_manager import rvc_next_webui_cli
+from sd_webui_all_in_one.cli_manager import mizuoto_tts_webui_cli
 from sd_webui_all_in_one.cli_manager import sd_scripts_cli
 from sd_webui_all_in_one.cli_manager import sd_trainer_cli
 from sd_webui_all_in_one.cli_manager import sd_webui_cli
@@ -34,6 +35,7 @@ def _parser(*register_funcs):
         (sd_scripts_cli, "sd_scripts"),
         (qwen_tts_webui_cli, "qwen_tts_webui"),
         (rvc_next_webui_cli, "rvc_next_webui"),
+        (mizuoto_tts_webui_cli, "mizuoto_tts_webui"),
     ],
 )
 def test_env_check_choices_match_runtime_tasks(monkeypatch, tmp_path, capsys, module, product):
@@ -368,6 +370,13 @@ def test_qwen_tts_webui_cli_install_uses_standard_model_options(monkeypatch, tmp
             "--rvc-next-webui-path",
             "check_rvc_next_webui_updates",
         ),
+        (
+            mizuoto_tts_webui_cli,
+            mizuoto_tts_webui_cli.register_mizuoto_tts_webui,
+            "mizuoto-tts-webui",
+            "--mizuoto-tts-webui-path",
+            "check_mizuoto_tts_webui_updates",
+        ),
         (sd_trainer_cli, sd_trainer_cli.register_sd_trainer, "sd-trainer", "--sd-trainer-path", "check_sd_trainer_updates"),
         (sd_scripts_cli, sd_scripts_cli.register_sd_scripts, "sd-scripts", "--sd-scripts-path", "check_sd_scripts_updates"),
     ],
@@ -424,6 +433,13 @@ def test_webui_cli_registers_product_update_checker(monkeypatch, tmp_path, modul
             "rvc-next-webui",
             "--rvc-next-webui-path",
             "rvc_next_webui_path",
+        ),
+        (
+            mizuoto_tts_webui_cli,
+            mizuoto_tts_webui_cli.register_mizuoto_tts_webui,
+            "mizuoto-tts-webui",
+            "--mizuoto-tts-webui-path",
+            "mizuoto_tts_webui_path",
         ),
     ],
 )
@@ -595,6 +611,16 @@ def test_product_switch_creates_pre_operation_snapshot(monkeypatch, tmp_path, mo
             {"pytorch_name": "torch-demo", "force_reinstall": True},
         ),
         (
+            mizuoto_tts_webui_cli,
+            mizuoto_tts_webui_cli.register_mizuoto_tts_webui,
+            "mizuoto-tts-webui",
+            "--mizuoto-tts-webui-path",
+            "mizuoto_tts_webui_path",
+            "reinstall_pytorch",
+            ["--name", "torch-demo", "--force-reinstall"],
+            {"pytorch_name": "torch-demo", "force_reinstall": True},
+        ),
+        (
             invokeai_cli,
             invokeai_cli.register_invokeai,
             "invokeai",
@@ -672,6 +698,7 @@ def test_product_cli_update_and_reinstall_snapshot_smoke(
         (fooocus_cli, fooocus_cli.register_fooocus, "fooocus", "--fooocus-path", "fooocus_path"),
         (qwen_tts_webui_cli, qwen_tts_webui_cli.register_qwen_tts_webui, "qwen-tts-webui", "--qwen-tts-webui-path", "qwen_tts_webui_path"),
         (rvc_next_webui_cli, rvc_next_webui_cli.register_rvc_next_webui, "rvc-next-webui", "--rvc-next-webui-path", "rvc_next_webui_path"),
+        (mizuoto_tts_webui_cli, mizuoto_tts_webui_cli.register_mizuoto_tts_webui, "mizuoto-tts-webui", "--mizuoto-tts-webui-path", "mizuoto_tts_webui_path"),
         (sd_trainer_cli, sd_trainer_cli.register_sd_trainer, "sd-trainer", "--sd-trainer-path", "sd_trainer_path"),
         (invokeai_cli, invokeai_cli.register_invokeai, "invokeai", "--invokeai-path", "invokeai_path"),
     ],
@@ -897,6 +924,7 @@ def test_all_product_roots_register_together():
         invokeai_cli.register_invokeai,
         qwen_tts_webui_cli.register_qwen_tts_webui,
         rvc_next_webui_cli.register_rvc_next_webui,
+        mizuoto_tts_webui_cli.register_mizuoto_tts_webui,
         sd_scripts_cli.register_sd_scripts,
         sd_trainer_cli.register_sd_trainer,
     )
@@ -906,5 +934,6 @@ def test_all_product_roots_register_together():
     assert parser.parse_args(["invokeai", "check-env"]).command == "invokeai"
     assert parser.parse_args(["qwen-tts-webui", "check-env"]).command == "qwen-tts-webui"
     assert parser.parse_args(["rvc-next-webui", "check-env"]).command == "rvc-next-webui"
+    assert parser.parse_args(["mizuoto-tts-webui", "check-env"]).command == "mizuoto-tts-webui"
     assert parser.parse_args(["sd-scripts", "check-env"]).command == "sd-scripts"
     assert parser.parse_args(["sd-trainer", "check-env"]).command == "sd-trainer"

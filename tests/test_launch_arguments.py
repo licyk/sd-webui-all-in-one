@@ -13,7 +13,7 @@ import pytest
 import sd_webui_all_in_one.launch_arguments as launch_arguments_module
 import sd_webui_all_in_one.base_manager.invokeai_base.catalog as invokeai_catalog
 from sd_webui_all_in_one.api_server import registry
-from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, qwen_tts_webui_base, rvc_next_webui_base, sd_trainer_base, sd_webui_base
+from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, mizuoto_tts_webui_base, qwen_tts_webui_base, rvc_next_webui_base, sd_trainer_base, sd_webui_base
 from sd_webui_all_in_one.launch_arguments import (
     CATALOG_SCHEMA_VERSION,
     LaunchArgumentValueKind,
@@ -645,6 +645,19 @@ def get_args_parser():
         encoding="utf-8",
     )
 
+    mizuoto_path = tmp_path / "mizuoto"
+    (mizuoto_path / "mizuoto_tts_webui").mkdir(parents=True)
+    (mizuoto_path / "mizuoto_tts_webui" / "__init__.py").write_text("", encoding="utf-8")
+    (mizuoto_path / "mizuoto_tts_webui" / "cmd_args.py").write_text(
+        """import argparse
+def get_args_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-browser", action="store_true")
+    return parser
+""",
+        encoding="utf-8",
+    )
+
     invoke_parser = argparse.ArgumentParser()
     invoke_parser.add_argument("--invoke-model")
     original_import_module = invokeai_catalog.importlib.import_module
@@ -661,6 +674,7 @@ def get_args_parser():
         "kohya": sd_trainer_base.get_sd_trainer_launch_argument_catalog(kohya_path),
         "qwen": qwen_tts_webui_base.get_qwen_tts_webui_launch_argument_catalog(qwen_path),
         "rvc": rvc_next_webui_base.get_rvc_next_webui_launch_argument_catalog(rvc_path),
+        "mizuoto": mizuoto_tts_webui_base.get_mizuoto_tts_webui_launch_argument_catalog(mizuoto_path),
         "invokeai": invokeai_base.get_invokeai_launch_argument_catalog(tmp_path / "invokeai"),
     }
 
@@ -681,6 +695,7 @@ def get_args_parser():
         "sd_trainer.launch.arguments_catalog",
         "qwen_tts_webui.launch.arguments_catalog",
         "rvc_next_webui.launch.arguments_catalog",
+        "mizuoto_tts_webui.launch.arguments_catalog",
     }.issubset(methods)
 
 
