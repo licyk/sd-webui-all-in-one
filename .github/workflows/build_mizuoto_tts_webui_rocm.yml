@@ -32,6 +32,14 @@ jobs:
             -InstallHanafubuki `
             -DisableHuggingFaceMirror
 
+      - name: Install extra Python packages
+        shell: pwsh
+        env:
+          UV_PYTHON: "${{ github.workspace }}/mizuoto_tts_webui_rocm/core/python/python.exe"
+          UV_LINK_MODE: copy
+        run: |
+          uv pip install triton-windows
+
       - name: Install FFmpeg
         shell: pwsh
         run: |
