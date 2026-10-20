@@ -6,7 +6,8 @@ import types
 
 import pytest
 
-from sd_webui_all_in_one import repo_manager as repo_module
+from sd_webui_all_in_one.repo_manager import client as client_module
+from sd_webui_all_in_one.repo_manager import dependencies as dependencies_module
 from sd_webui_all_in_one.repo_manager import RepoManager
 
 
@@ -17,7 +18,7 @@ def test_repo_manager_init_defers_optional_api_imports(monkeypatch):
         import_calls.append(name)
         raise AssertionError(f"{name} should not be imported during RepoManager init")
 
-    monkeypatch.setattr(repo_module.importlib, "import_module", fake_import_module)
+    monkeypatch.setattr(dependencies_module.importlib, "import_module", fake_import_module)
 
     manager = RepoManager(hf_token="hf-token", ms_token="ms-token")
 
@@ -43,7 +44,7 @@ def test_repo_manager_huggingface_api_lazy_init_and_cache(monkeypatch):
         assert name == "huggingface_hub"
         return hf_module
 
-    monkeypatch.setattr(repo_module.importlib, "import_module", fake_import_module)
+    monkeypatch.setattr(dependencies_module.importlib, "import_module", fake_import_module)
 
     manager = RepoManager(hf_token="hf-token")
     assert import_calls == []
@@ -78,7 +79,7 @@ def test_repo_manager_modelscope_api_lazy_init_login_and_cache(monkeypatch):
         assert name == "modelscope"
         return modelscope_module
 
-    monkeypatch.setattr(repo_module.importlib, "import_module", fake_import_module)
+    monkeypatch.setattr(dependencies_module.importlib, "import_module", fake_import_module)
 
     manager = RepoManager(ms_token="ms-token")
     assert import_calls == []
@@ -114,7 +115,7 @@ def test_repo_manager_modelscope_api_prefers_constructor_token(monkeypatch):
         assert name == "modelscope"
         return modelscope_module
 
-    monkeypatch.setattr(repo_module.importlib, "import_module", fake_import_module)
+    monkeypatch.setattr(dependencies_module.importlib, "import_module", fake_import_module)
 
     manager = RepoManager(ms_token="ms-token")
 
@@ -147,7 +148,7 @@ def test_repo_manager_get_ms_git_token_delegates_without_initializing_api(monkey
     monkeypatch.setitem(sys.modules, "modelscope", modelscope_module)
     monkeypatch.setitem(sys.modules, "modelscope.hub", hub_module)
     monkeypatch.setitem(sys.modules, "modelscope.hub.api", api_module)
-    monkeypatch.setattr(repo_module, "_ensure_modelscope", lambda module_name="modelscope": ensure_calls.append(module_name))
+    monkeypatch.setattr(client_module, "_ensure_modelscope", lambda module_name="modelscope": ensure_calls.append(module_name))
 
     manager = RepoManager()
     monkeypatch.setattr(manager, "_init_ms_api", lambda: pytest.fail("get_ms_git_token should not initialize HubApi"))
@@ -180,7 +181,7 @@ def test_repo_manager_get_ms_git_token_logs_in_when_persisted_token_is_missing(m
     monkeypatch.setitem(sys.modules, "modelscope", modelscope_module)
     monkeypatch.setitem(sys.modules, "modelscope.hub", hub_module)
     monkeypatch.setitem(sys.modules, "modelscope.hub.api", api_module)
-    monkeypatch.setattr(repo_module, "_ensure_modelscope", lambda module_name="modelscope": ensure_calls.append(module_name))
+    monkeypatch.setattr(client_module, "_ensure_modelscope", lambda module_name="modelscope": ensure_calls.append(module_name))
 
     manager = RepoManager(ms_token="ms-token")
     manager.ms_api = FakeMsApi()
@@ -213,7 +214,7 @@ def test_repo_manager_get_ms_git_token_reads_persisted_token_after_login(monkeyp
     monkeypatch.setitem(sys.modules, "modelscope", modelscope_module)
     monkeypatch.setitem(sys.modules, "modelscope.hub", hub_module)
     monkeypatch.setitem(sys.modules, "modelscope.hub.api", api_module)
-    monkeypatch.setattr(repo_module, "_ensure_modelscope", lambda module_name="modelscope": None)
+    monkeypatch.setattr(client_module, "_ensure_modelscope", lambda module_name="modelscope": None)
 
     manager = RepoManager(ms_token="ms-token")
     manager.ms_api = FakeMsApi()
@@ -237,7 +238,7 @@ def test_repo_manager_get_ms_git_token_does_not_initialize_api_without_any_token
     monkeypatch.setitem(sys.modules, "modelscope", modelscope_module)
     monkeypatch.setitem(sys.modules, "modelscope.hub", hub_module)
     monkeypatch.setitem(sys.modules, "modelscope.hub.api", api_module)
-    monkeypatch.setattr(repo_module, "_ensure_modelscope", lambda module_name="modelscope": None)
+    monkeypatch.setattr(client_module, "_ensure_modelscope", lambda module_name="modelscope": None)
 
     manager = RepoManager()
     monkeypatch.setattr(manager, "_init_ms_api", lambda: pytest.fail("get_ms_git_token should not initialize HubApi"))
@@ -270,8 +271,8 @@ def test_repo_manager_configure_tokens_updates_environment_and_invalidates_cache
 
     assert manager.hf_token == "hf-token"
     assert manager.ms_token == "ms-token"
-    assert manager._hf_api is repo_module._API_NOT_INITIALIZED
-    assert manager._ms_api is repo_module._API_NOT_INITIALIZED
+    assert manager._hf_api is client_module._API_NOT_INITIALIZED
+    assert manager._ms_api is client_module._API_NOT_INITIALIZED
     assert os.environ["HF_TOKEN"] == "hf-token"
     assert os.environ["MODELSCOPE_API_TOKEN"] == "ms-token"
 
@@ -320,8 +321,8 @@ def test_repo_manager_huggingface_api_installs_missing_dependency_before_reimpor
         installed = True
         install_calls.append((package_name, display_name))
 
-    monkeypatch.setattr(repo_module.importlib, "import_module", fake_import_module)
-    monkeypatch.setattr(repo_module, "install_optional_dependency", fake_install_optional_dependency)
+    monkeypatch.setattr(dependencies_module.importlib, "import_module", fake_import_module)
+    monkeypatch.setattr(dependencies_module, "install_optional_dependency", fake_install_optional_dependency)
 
     manager = RepoManager(hf_token="hf-token")
 
@@ -356,8 +357,8 @@ def test_repo_manager_modelscope_api_installs_missing_dependency_before_reimport
         installed = True
         install_calls.append((package_name, display_name))
 
-    monkeypatch.setattr(repo_module.importlib, "import_module", fake_import_module)
-    monkeypatch.setattr(repo_module, "install_optional_dependency", fake_install_optional_dependency)
+    monkeypatch.setattr(dependencies_module.importlib, "import_module", fake_import_module)
+    monkeypatch.setattr(dependencies_module, "install_optional_dependency", fake_install_optional_dependency)
 
     manager = RepoManager(ms_token="ms-token")
 
@@ -379,8 +380,8 @@ def test_repo_manager_lazy_import_failure_raises_runtime_error(monkeypatch, inst
         if install_fails:
             raise RuntimeError("install failed")
 
-    monkeypatch.setattr(repo_module.importlib, "import_module", fake_import_module)
-    monkeypatch.setattr(repo_module, "install_optional_dependency", fake_install_optional_dependency)
+    monkeypatch.setattr(dependencies_module.importlib, "import_module", fake_import_module)
+    monkeypatch.setattr(dependencies_module, "install_optional_dependency", fake_install_optional_dependency)
 
     manager = RepoManager()
 

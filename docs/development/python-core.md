@@ -36,6 +36,7 @@ Python 包入口定义在 `pyproject.toml`：
 | `downloader/` | 统一下载入口，支持 requests、urllib、Aria2、多线程和压缩包下载解压。 |
 | `pytorch_manager/` | GPU 检测、PyTorch 类型推断、版本列表、镜像选择和版本查询。 |
 | `model_downloader/` | 模型列表、模型搜索、模型下载和保存路径分类。 |
+| `repo_manager/` | HuggingFace / ModelScope 仓库文件列表、元数据、上传、下载和镜像同步。`RepoManager` 由按职责拆分的 Mixin 组合而成（API 客户端、文件列表、下载地址、仓库检查、上传、镜像、下载），公开接口由 `__init__.py` 重新导出。 |
 | `tunnel/` | Cloudflare、Gradio、Ngrok、remote.moe、localhost.run、pinggy.io、Zrok 等内网穿透实现。 |
 | `env_check/` | WebUI 运行环境检查和常见依赖问题修复。每个检查项是一个子包，实现按职责拆分到子包内的文件，公开接口由子包的 `__init__.py` 重新导出。 |
 | `package_analyzer/` | Python 包版本、wheel 文件、requirements 和依赖约束解析。 |

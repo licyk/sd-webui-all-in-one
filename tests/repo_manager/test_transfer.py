@@ -7,7 +7,11 @@ from pathlib import Path
 
 import pytest
 
-from sd_webui_all_in_one import repo_manager as repo_module
+from sd_webui_all_in_one.repo_manager import download as download_module
+from sd_webui_all_in_one.repo_manager import grouping as grouping_module
+from sd_webui_all_in_one.repo_manager import mirror as mirror_module
+from sd_webui_all_in_one.repo_manager import shared as shared_module
+from sd_webui_all_in_one.repo_manager import upload as upload_module
 from sd_webui_all_in_one.custom_exceptions import AggregateError
 from tests.repo_manager.helpers import repo_manager_with_apis
 
@@ -17,7 +21,7 @@ def _sha256(value: str) -> str:
 
 
 def test_repo_manager_upload_skips_matching_hash_and_aggregates_failures(monkeypatch, tmp_path):
-    monkeypatch.setattr(repo_module, "RETRY_TIMES", 1)
+    monkeypatch.setattr(upload_module, "RETRY_TIMES", 1)
     upload_root = tmp_path / "upload"
     upload_root.mkdir()
     (upload_root / "existing.txt").write_text("old", encoding="utf-8")
@@ -36,7 +40,7 @@ def test_repo_manager_upload_skips_matching_hash_and_aggregates_failures(monkeyp
         if message == "[%s/%s] 上传 %s 到 %s (类型: %s) 仓库中":
             upload_log_indexes.append(args[:2])
 
-    monkeypatch.setattr(repo_module.logger, "info", fake_log_info)
+    monkeypatch.setattr(shared_module.logger, "info", fake_log_info)
 
     class FakeHfApi:
         def upload_file(self, **kwargs):
@@ -119,7 +123,7 @@ def test_repo_manager_download_filters_huggingface_and_modelscope(monkeypatch, t
         def start(self, num_threads):
             captured.append(("start", num_threads))
 
-    monkeypatch.setattr(repo_module, "MultiThreadDownloader", FakeDownloader)
+    monkeypatch.setattr(download_module, "MultiThreadDownloader", FakeDownloader)
     monkeypatch.setitem(sys.modules, "huggingface_hub", types.SimpleNamespace(hf_hub_download="hf-download"))
     monkeypatch.setitem(sys.modules, "modelscope", types.SimpleNamespace(snapshot_download="ms-download"))
 
@@ -191,7 +195,7 @@ def test_repo_manager_mirror_repo_files_uses_metadata_and_revision(monkeypatch):
         if message == "[%s/%s] 镜像 %s":
             mirror_log_indexes.append(args[:2])
 
-    monkeypatch.setattr(repo_module.logger, "info", fake_log_info)
+    monkeypatch.setattr(shared_module.logger, "info", fake_log_info)
 
     def fake_check_repo(**kwargs):
         check_calls.append(kwargs)
@@ -300,7 +304,7 @@ def test_repo_manager_mirror_repo_files_can_use_fast_download(monkeypatch):
         return file_path
 
     manager.get_repo_file_download_url = fake_get_repo_file_download_url
-    monkeypatch.setattr(repo_module, "download_file", fake_download_file)
+    monkeypatch.setattr(mirror_module, "download_file", fake_download_file)
 
     manager.mirror_repo_files(
         src_api_type="modelscope",
@@ -339,18 +343,18 @@ def test_repo_manager_mirror_repo_files_can_use_fast_download(monkeypatch):
 def test_plan_mirror_group_respects_group_size_budget_and_unknown_sizes():
     pending = [("a.bin", 40), ("b.bin", 70), ("c.bin", 20), ("d.bin", 10), ("e.bin", 5)]
 
-    group, too_large = repo_module._plan_mirror_group(pending, group_size=3, budget=100)
+    group, too_large = grouping_module._plan_mirror_group(pending, group_size=3, budget=100)
     assert group == [("a.bin", 40), ("c.bin", 20), ("d.bin", 10)]
     assert too_large == []
 
-    group, too_large = repo_module._plan_mirror_group([("huge.bin", 101), ("a.bin", 40)], group_size=3, budget=100)
+    group, too_large = grouping_module._plan_mirror_group([("huge.bin", 101), ("a.bin", 40)], group_size=3, budget=100)
     assert group == [("a.bin", 40)]
     assert too_large == [("huge.bin", 101)]
 
-    group, too_large = repo_module._plan_mirror_group([("unknown.bin", None), ("a.bin", 40)], group_size=3, budget=100)
+    group, too_large = grouping_module._plan_mirror_group([("unknown.bin", None), ("a.bin", 40)], group_size=3, budget=100)
     assert group == [("unknown.bin", None)]
 
-    group, too_large = repo_module._plan_mirror_group([("a.bin", 40), ("unknown.bin", None), ("b.bin", 10)], group_size=3, budget=100)
+    group, too_large = grouping_module._plan_mirror_group([("a.bin", 40), ("unknown.bin", None), ("b.bin", 10)], group_size=3, budget=100)
     assert group == [("a.bin", 40), ("b.bin", 10)]
 
 
@@ -383,7 +387,7 @@ def _grouped_mirror_manager(monkeypatch, tmp_path, src_files, free_space, fail_f
     manager.get_repo_files_metadata = lambda **kwargs: src_files if kwargs["api_type"] == "huggingface" else []
     manager.hf_api = types.SimpleNamespace(hf_hub_download=fake_hf_hub_download)
     manager.ms_api = FakeMsApi()
-    monkeypatch.setattr(repo_module, "_get_free_disk_space", lambda _path: free_space)
+    monkeypatch.setattr(mirror_module, "_get_free_disk_space", lambda _path: free_space)
     return manager, commits, download_calls, group_dirs
 
 
