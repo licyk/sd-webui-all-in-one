@@ -334,3 +334,167 @@ def test_repo_manager_mirror_repo_files_can_use_fast_download(monkeypatch):
     assert download_calls[0]["progress"] is False
     assert uploaded[0]["path_in_repo"] == "nested/file.bin"
     assert uploaded[0]["revision"] == "fast-rev"
+
+
+def test_plan_mirror_group_respects_group_size_budget_and_unknown_sizes():
+    pending = [("a.bin", 40), ("b.bin", 70), ("c.bin", 20), ("d.bin", 10), ("e.bin", 5)]
+
+    group, too_large = repo_module._plan_mirror_group(pending, group_size=3, budget=100)
+    assert group == [("a.bin", 40), ("c.bin", 20), ("d.bin", 10)]
+    assert too_large == []
+
+    group, too_large = repo_module._plan_mirror_group([("huge.bin", 101), ("a.bin", 40)], group_size=3, budget=100)
+    assert group == [("a.bin", 40)]
+    assert too_large == [("huge.bin", 101)]
+
+    group, too_large = repo_module._plan_mirror_group([("unknown.bin", None), ("a.bin", 40)], group_size=3, budget=100)
+    assert group == [("unknown.bin", None)]
+
+    group, too_large = repo_module._plan_mirror_group([("a.bin", 40), ("unknown.bin", None), ("b.bin", 10)], group_size=3, budget=100)
+    assert group == [("a.bin", 40), ("b.bin", 10)]
+
+
+def _grouped_mirror_manager(monkeypatch, tmp_path, src_files, free_space, fail_files=()):
+    manager = repo_manager_with_apis()
+    commits = []
+    download_calls = []
+    group_dirs = []
+
+    def fake_hf_hub_download(**kwargs):
+        download_calls.append(kwargs["filename"])
+        if kwargs["filename"] in fail_files:
+            raise OSError("No space left on device")
+        local_dir = Path(kwargs["local_dir"])
+        group_dirs.append(local_dir.parents[1])
+        file_path = local_dir / kwargs["filename"]
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(kwargs["filename"], encoding="utf-8")
+        # 模拟 huggingface_hub 在 local_dir 中留下的缓存目录, 不应进入提交
+        (local_dir / ".cache" / "huggingface").mkdir(parents=True, exist_ok=True)
+        return file_path
+
+    class FakeMsApi:
+        def upload_folder(self, **kwargs):
+            folder = Path(kwargs["folder_path"])
+            files = sorted(path.relative_to(folder).as_posix() for path in folder.rglob("*") if path.is_file())
+            commits.append({**kwargs, "files": files})
+
+    manager.check_repo = lambda **_kwargs: True
+    manager.get_repo_files_metadata = lambda **kwargs: src_files if kwargs["api_type"] == "huggingface" else []
+    manager.hf_api = types.SimpleNamespace(hf_hub_download=fake_hf_hub_download)
+    manager.ms_api = FakeMsApi()
+    monkeypatch.setattr(repo_module, "_get_free_disk_space", lambda _path: free_space)
+    return manager, commits, download_calls, group_dirs
+
+
+def test_repo_manager_mirror_repo_files_grouped_commits_each_group(monkeypatch, tmp_path):
+    gb = 1024**3
+    src_files = [
+        {"path": "a.bin", "type": "file", "size": 3 * gb, "sha256": _sha256("a")},
+        {"path": "nested/b.bin", "type": "file", "size": 3 * gb, "sha256": _sha256("b")},
+        {"path": "c.bin", "type": "file", "size": 1 * gb, "sha256": _sha256("c")},
+        {"path": "d.bin", "type": "file", "size": 1, "sha256": _sha256("d")},
+    ]
+    manager, commits, download_calls, group_dirs = _grouped_mirror_manager(monkeypatch, tmp_path, src_files, free_space=10 * gb)
+    work_dir = tmp_path / "work"
+
+    manager.mirror_repo_files(
+        src_api_type="huggingface",
+        dst_api_type="modelscope",
+        src_repo_id="owner/src",
+        dst_repo_id="owner/dst",
+        dst_repo_type="dataset",
+        revision="group-rev",
+        num_threads=2,
+        retry_times=1,
+        use_group_mirror=True,
+        group_size=3,
+        reserved_disk_space_gb=4,
+        work_dir=work_dir,
+    )
+
+    # 可用空间为 10 - 4 = 6 GB, 每组最多 3 个文件
+    assert [commit["files"] for commit in commits] == [["a.bin", "nested/b.bin"], ["c.bin", "d.bin"]]
+    assert {commit["repo_id"] for commit in commits} == {"owner/dst"}
+    assert {commit["repo_type"] for commit in commits} == {"dataset"}
+    assert {commit["revision"] for commit in commits} == {"group-rev"}
+    assert {commit["token"] for commit in commits} == {"ms-token"}
+    assert [commit["commit_message"] for commit in commits] == ["Mirror 2 files (group 1)", "Mirror 2 files (group 2)"]
+    assert sorted(download_calls) == ["a.bin", "c.bin", "d.bin", "nested/b.bin"]
+    assert {path.parent for path in group_dirs} == {work_dir}
+    assert not any(path.exists() for path in group_dirs)
+    assert list(work_dir.iterdir()) == []
+
+
+def test_repo_manager_mirror_repo_files_grouped_commits_partial_group_and_reports_errors(monkeypatch, tmp_path):
+    gb = 1024**3
+    src_files = [
+        {"path": "ok.bin", "type": "file", "size": 1, "sha256": _sha256("ok")},
+        {"path": "broken.bin", "type": "file", "size": 1, "sha256": _sha256("broken")},
+        {"path": "huge.bin", "type": "file", "size": 20 * gb, "sha256": _sha256("huge")},
+    ]
+    manager, commits, download_calls, _group_dirs = _grouped_mirror_manager(
+        monkeypatch,
+        tmp_path,
+        src_files,
+        free_space=10 * gb,
+        fail_files={"broken.bin"},
+    )
+
+    with pytest.raises(AggregateError) as exc_info:
+        manager.mirror_repo_files(
+            src_api_type="huggingface",
+            dst_api_type="modelscope",
+            src_repo_id="owner/src",
+            dst_repo_id="owner/dst",
+            retry_times=1,
+            use_group_mirror=True,
+            group_size=10,
+            reserved_disk_space_gb=1,
+            work_dir=tmp_path / "work",
+        )
+
+    assert [commit["files"] for commit in commits] == [["ok.bin"]]
+    assert "huge.bin" not in download_calls
+    messages = [str(error) for error in exc_info.value.exceptions]
+    assert len(messages) == 2
+    assert any("huge.bin" in message for message in messages)
+
+
+def test_repo_manager_mirror_repo_files_grouped_stops_when_reserve_exceeds_free_space(monkeypatch, tmp_path):
+    src_files = [{"path": "a.bin", "type": "file", "size": 1, "sha256": _sha256("a")}]
+    manager, commits, download_calls, _group_dirs = _grouped_mirror_manager(monkeypatch, tmp_path, src_files, free_space=1024**3)
+
+    with pytest.raises(AggregateError):
+        manager.mirror_repo_files(
+            src_api_type="huggingface",
+            dst_api_type="modelscope",
+            src_repo_id="owner/src",
+            dst_repo_id="owner/dst",
+            retry_times=1,
+            use_group_mirror=True,
+            reserved_disk_space_gb=2,
+            work_dir=tmp_path / "work",
+        )
+
+    assert commits == []
+    assert download_calls == []
+
+
+@pytest.mark.parametrize(
+    ("group_size", "reserved_disk_space_gb"),
+    [(0, 1.0), (1, -1.0)],
+)
+def test_repo_manager_mirror_repo_files_grouped_rejects_invalid_arguments(group_size, reserved_disk_space_gb):
+    manager = repo_manager_with_apis()
+
+    with pytest.raises(ValueError):
+        manager.mirror_repo_files(
+            src_api_type="huggingface",
+            dst_api_type="modelscope",
+            src_repo_id="owner/src",
+            dst_repo_id="owner/dst",
+            use_group_mirror=True,
+            group_size=group_size,
+            reserved_disk_space_gb=reserved_disk_space_gb,
+        )

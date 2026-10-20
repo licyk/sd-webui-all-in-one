@@ -1,5 +1,7 @@
 """Notebook 基础管理器测试"""
 
+from pathlib import Path
+
 import pytest
 
 from sd_webui_all_in_one.notebook_manager import base_manager as notebook_base
@@ -163,6 +165,10 @@ def test_notebook_gpu_check_and_delegates(monkeypatch, notebook_manager, tmp_pat
         download_tool="aria2",
         download_split=16,
         download_progress=False,
+        use_group_mirror=True,
+        group_size=3,
+        reserved_disk_space_gb=0.5,
+        work_dir=Path("/tmp/mirror-work"),
     )
     assert notebook_manager.repo_manager.calls[4] == (
         "mirror",
@@ -181,6 +187,10 @@ def test_notebook_gpu_check_and_delegates(monkeypatch, notebook_manager, tmp_pat
             "download_progress": False,
             "revision": "mirror-rev",
             "retry_times": 2,
+            "use_group_mirror": True,
+            "group_size": 3,
+            "reserved_disk_space_gb": 0.5,
+            "work_dir": Path("/tmp/mirror-work"),
         },
     )
 

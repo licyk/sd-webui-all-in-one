@@ -709,6 +709,10 @@ class BaseManager:
         download_tool: DownloadToolType | None = "requests",
         download_split: int = 5,
         download_progress: bool = True,
+        use_group_mirror: bool = False,
+        group_size: int = 10,
+        reserved_disk_space_gb: float = 5.0,
+        work_dir: Path | None = None,
     ) -> None:
         """镜像 HuggingFace / ModelScope 仓库文件
 
@@ -741,6 +745,14 @@ class BaseManager:
                 `use_fast_download`启用时传给`download_file()`的下载 split
             download_progress (bool):
                 `use_fast_download`启用时是否显示下载进度
+            use_group_mirror (bool):
+                是否启用分组镜像模式, 每组文件下载完成后作为一次提交上传
+            group_size (int):
+                分组镜像模式下每组的最大文件数量
+            reserved_disk_space_gb (float):
+                分组镜像模式下保留不使用的磁盘空间 (GB)
+            work_dir (Path | None):
+                分组镜像模式下的临时下载目录, 同时用于计算剩余磁盘空间, 为`None`时使用系统临时目录
         """
         self.repo_manager.mirror_repo_files(
             src_api_type=src_api_type,
@@ -757,6 +769,10 @@ class BaseManager:
             download_tool=download_tool,
             download_split=download_split,
             download_progress=download_progress,
+            use_group_mirror=use_group_mirror,
+            group_size=group_size,
+            reserved_disk_space_gb=reserved_disk_space_gb,
+            work_dir=work_dir,
         )
 
     def clear_output(

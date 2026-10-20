@@ -591,6 +591,10 @@ sd-webui-all-in-one self-manager repo mirror <src_api> <dst_api> <src_repo_id> <
 - `--download-tool <工具>`：启用 `--fast-download` 时使用的下载工具，可选 `aria2`、`requests`、`urllib`，默认 `requests`。
 - `--download-split <数量>`：启用 `--fast-download` 时传给下载器的分片数，默认 `5`。
 - `--no-download-progress`：禁用 `--fast-download` 的下载进度条。
+- `--group-mirror`：启用分组镜像。每组根据当前剩余磁盘空间（扣除保留空间）和每组文件数量动态规划，组内文件全部下载结束后作为一次提交上传到目标仓库，清理本地文件后再处理下一组。组内下载失败的文件不影响其余文件提交，失败会在最后统一报告。
+- `--group-size <数量>`：分组镜像时每组的最大文件数量，默认 `10`。
+- `--reserved-disk-space <GB>`：分组镜像时保留不使用的磁盘空间，单位 GB，默认 `5`。单个文件大于可用空间时会跳过并报告错误。
+- `--work-dir <路径>`：分组镜像时的临时下载目录，同时用于计算剩余磁盘空间，默认使用系统临时目录。
 
 ### 下载文件
 调用 Python 内核中的 `downloader.download_file()` 下载任意文件。

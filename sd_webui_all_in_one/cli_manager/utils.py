@@ -914,6 +914,10 @@ def repo_mirror_cli(
     download_tool: DownloadToolType | None = "requests",
     download_split: int = 5,
     download_progress: bool = True,
+    use_group_mirror: bool = False,
+    group_size: int = 10,
+    reserved_disk_space_gb: float = 5.0,
+    work_dir: Path | None = None,
     hf_token: str | None = None,
     ms_token: str | None = None,
 ) -> None:
@@ -948,6 +952,14 @@ def repo_mirror_cli(
             启用快速下载时的下载分片数
         download_progress (bool):
             启用快速下载时是否显示下载进度
+        use_group_mirror (bool):
+            是否启用分组镜像模式
+        group_size (int):
+            分组镜像模式下每组的最大文件数量
+        reserved_disk_space_gb (float):
+            分组镜像模式下保留不使用的磁盘空间 (GB)
+        work_dir (Path | None):
+            分组镜像模式下的临时下载目录
         hf_token (str | None):
             HuggingFace Token
         ms_token (str | None):
@@ -969,6 +981,10 @@ def repo_mirror_cli(
         download_tool=download_tool,
         download_split=download_split,
         download_progress=download_progress,
+        use_group_mirror=use_group_mirror,
+        group_size=group_size,
+        reserved_disk_space_gb=reserved_disk_space_gb,
+        work_dir=work_dir,
     )
 
 
@@ -1388,6 +1404,10 @@ def register_manager(
     repo_mirror_p.add_argument("--download-tool", choices=DOWNLOAD_TOOL_TYPE_LIST, default="requests", help="启用 fast-download 时使用的下载工具")
     repo_mirror_p.add_argument("--download-split", type=int, default=5, help="启用 fast-download 时的分片数")
     repo_mirror_p.add_argument("--no-download-progress", action="store_false", dest="download_progress", default=True, help="禁用 fast-download 进度条")
+    repo_mirror_p.add_argument("--group-mirror", action="store_true", dest="use_group_mirror", help="启用分组镜像, 每组文件下载完成后作为一次提交上传")
+    repo_mirror_p.add_argument("--group-size", type=int, default=10, help="分组镜像时每组的最大文件数量")
+    repo_mirror_p.add_argument("--reserved-disk-space", type=float, default=5.0, dest="reserved_disk_space_gb", help="分组镜像时保留不使用的磁盘空间 (GB)")
+    repo_mirror_p.add_argument("--work-dir", type=normalized_filepath, default=None, help="分组镜像时的临时下载目录, 默认使用系统临时目录")
     _add_repo_auth_arguments(repo_mirror_p)
     repo_mirror_p.set_defaults(
         func=lambda args: repo_mirror_cli(
@@ -1405,6 +1425,10 @@ def register_manager(
             download_tool=args.download_tool,
             download_split=args.download_split,
             download_progress=args.download_progress,
+            use_group_mirror=args.use_group_mirror,
+            group_size=args.group_size,
+            reserved_disk_space_gb=args.reserved_disk_space_gb,
+            work_dir=args.work_dir,
             hf_token=args.hf_token,
             ms_token=args.ms_token,
         )
