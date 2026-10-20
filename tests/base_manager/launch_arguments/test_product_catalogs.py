@@ -12,10 +12,10 @@ import pytest
 import sd_webui_all_in_one.base_manager.invokeai_base.catalog as invokeai_catalog
 from sd_webui_all_in_one.api_server import registry
 from sd_webui_all_in_one.base_manager import comfyui_base, fooocus_base, invokeai_base, mizuoto_tts_webui_base, qwen_tts_webui_base, rvc_next_webui_base, sd_trainer_base, sd_webui_base
-from sd_webui_all_in_one.launch_arguments import (
+from sd_webui_all_in_one.base_manager.launch_arguments import (
     LaunchArgumentValueKind,
 )
-from tests.launch_arguments.helpers import HELP_LF
+from tests.base_manager.launch_arguments.helpers import HELP_LF
 
 
 def _write_comfyui_argument_parser(path: Path) -> None:

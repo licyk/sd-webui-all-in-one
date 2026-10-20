@@ -64,12 +64,12 @@ pytest tests/base_manager/version_manager/test_repository_updates.py
 | `tests/files/` | `file_manager`、`archive_manager`、`optional_dependency` |
 | `tests/downloader/` | 下载入口与各下载器；`requests_downloader/`、`aria2/` 子目录分别对应同名实现 |
 | `tests/api_server/` | API 方法注册、任务与 HTTP 协议 |
-| `tests/base_manager/` | 基础管理器；`base/`、`products/`（各 WebUI 管理器）、`snapshot/`、`version_manager/`、`hotpatcher_manager/`、`gui/` 对应同名模块 |
+| `tests/base_manager/` | 基础管理器；`base/`、`products/`（各 WebUI 管理器）、`snapshot/`、`version_manager/`、`hotpatcher_manager/`、`gui/`、`launch_arguments/` 对应同名模块 |
 | `tests/cli_manager/` | 命令行注册、解析与子命令分发 |
 | `tests/notebook_manager/` | Notebook 管理器 |
 | `tests/env_check/` | 环境检查与修复；`comfyui_env_analyze/` 对应 ComfyUI 环境分析 |
 | `tests/package_analyzer/` | 软件包规范解析；`reqfile/` 对应依赖文件解析 |
-| `tests/pytorch_manager/`、`tests/python_standalone/`、`tests/tunnel/`、`tests/optimize/`、`tests/launch_arguments/`、`tests/repo_manager/`、`tests/model_downloader/` | 对应同名模块 |
+| `tests/pytorch_manager/`、`tests/python_standalone/`、`tests/tunnel/`、`tests/optimize/`、`tests/repo_manager/`、`tests/model_downloader/` | 对应同名模块 |
 | `tests/patcher/` | 从主测试集验证 patcher 运行时的冒烟测试 |
 | `tests/github_scripts/` | `.github/` 下的 CI 脚本 |
 | `tests/support/` | 跨目录共享的测试辅助工具 |

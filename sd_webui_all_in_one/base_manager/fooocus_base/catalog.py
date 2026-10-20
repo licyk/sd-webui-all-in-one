@@ -17,7 +17,7 @@ from sd_webui_all_in_one.base_manager.base import (
     apply_git_config_global_to_process,
     print_divider,
 )
-from sd_webui_all_in_one.launch_arguments import (
+from sd_webui_all_in_one.base_manager.launch_arguments import (
     DEFAULT_DISCOVERY_TIMEOUT_SECONDS,
     LaunchArgumentCatalog,
     build_script_help_command,

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-import sd_webui_all_in_one.launch_arguments as launch_arguments_module
-from sd_webui_all_in_one.launch_arguments import (
+import sd_webui_all_in_one.base_manager.launch_arguments.help_parser as help_parser_module
+from sd_webui_all_in_one.base_manager.launch_arguments import (
     LaunchArgumentValueKind,
     parse_argparse_help,
 )
-from tests.launch_arguments.helpers import HELP_LF
+from tests.base_manager.launch_arguments.helpers import HELP_LF
 
 COMFYUI_HELP = """usage: main.py [-h] [--listen [IP]] [--port PORT]
                [--extra-model-paths-config PATH [PATH ...]]
@@ -172,14 +172,14 @@ options:
 
 
 def test_help_document_selection_is_stream_aware_and_conflict_safe() -> None:
-    arguments, diagnostics = launch_arguments_module._select_help_document(
+    arguments, diagnostics = help_parser_module._select_help_document(
         LIVE_COMFYUI_HELP,
         "warning: optional import failed",
     )
     assert arguments
     assert any(diagnostic.code == "discovery_other_stream" for diagnostic in diagnostics)
 
-    equivalent, diagnostics = launch_arguments_module._select_help_document(
+    equivalent, diagnostics = help_parser_module._select_help_document(
         LIVE_COMFYUI_HELP,
         LIVE_COMFYUI_HELP,
     )
@@ -187,13 +187,13 @@ def test_help_document_selection_is_stream_aware_and_conflict_safe() -> None:
     assert not any(diagnostic.code == "discovery_conflict" for diagnostic in diagnostics)
 
     conflicting = LIVE_COMFYUI_HELP.replace("--listen [IP]", "--listen IP")
-    _, diagnostics = launch_arguments_module._select_help_document(
+    _, diagnostics = help_parser_module._select_help_document(
         LIVE_COMFYUI_HELP,
         conflicting,
     )
     assert any(diagnostic.severity == "error" and diagnostic.code == "discovery_conflict" for diagnostic in diagnostics)
 
-    stderr_only, _ = launch_arguments_module._select_help_document(
+    stderr_only, _ = help_parser_module._select_help_document(
         "ordinary stdout noise",
         LIVE_COMFYUI_HELP,
     )

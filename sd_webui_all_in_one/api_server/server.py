@@ -526,7 +526,7 @@ class ApiServer(ThreadingHTTPServer):
 
     def server_close(self) -> None:
         """Close the listener, stop the task pool, and bind any in-flight discovery."""
-        from sd_webui_all_in_one.launch_arguments import cancel_launch_argument_discovery
+        from sd_webui_all_in_one.base_manager.launch_arguments import cancel_launch_argument_discovery
 
         cancel_launch_argument_discovery()
         self.task_manager.shutdown()

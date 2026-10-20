@@ -11,15 +11,15 @@ from pathlib import Path
 
 import pytest
 
-import sd_webui_all_in_one.launch_arguments as launch_arguments_module
+import sd_webui_all_in_one.base_manager.launch_arguments.discovery as discovery_module
 from sd_webui_all_in_one.base_manager import sd_webui_base
-from sd_webui_all_in_one.launch_arguments import (
+from sd_webui_all_in_one.base_manager.launch_arguments import (
     CATALOG_SCHEMA_VERSION,
     build_script_help_command,
     cancel_launch_argument_discovery,
     discover_launch_argument_catalog,
 )
-from tests.launch_arguments.helpers import HELP_LF
+from tests.base_manager.launch_arguments.helpers import HELP_LF
 
 
 def _get_script_catalog(
@@ -209,7 +209,7 @@ def test_catalog_revision_is_stable_for_contract_and_ignores_transient_noise(
         ]
     )
     monkeypatch.setattr(
-        launch_arguments_module,
+        discovery_module,
         "_run_help",
         lambda _command, _context: (next(outputs), "", None),
     )

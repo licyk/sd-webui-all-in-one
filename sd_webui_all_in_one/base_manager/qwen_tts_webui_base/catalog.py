@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib
 from pathlib import Path
-from sd_webui_all_in_one.launch_arguments import (
+from sd_webui_all_in_one.base_manager.launch_arguments import (
     DEFAULT_DISCOVERY_TIMEOUT_SECONDS,
     LaunchArgumentCatalog,
     build_script_help_command,

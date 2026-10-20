@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import argparse
 
-import sd_webui_all_in_one.launch_arguments as launch_arguments_module
-from sd_webui_all_in_one.launch_arguments import (
+from sd_webui_all_in_one.base_manager.launch_arguments import (
+    LaunchArgumentDiagnostic,
     LaunchArgumentValueKind,
     parse_argument_parser,
 )
@@ -61,7 +61,7 @@ def test_argument_parser_object_reports_empty_parser() -> None:
 
     assert arguments == []
     assert diagnostics == [
-        launch_arguments_module.LaunchArgumentDiagnostic(
+        LaunchArgumentDiagnostic(
             "error",
             "parse_empty",
             "ArgumentParser contained no recognizable options",

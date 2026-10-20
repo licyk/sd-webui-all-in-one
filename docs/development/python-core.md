@@ -30,7 +30,7 @@ Python 包入口定义在 `pyproject.toml`：
 
 | 模块 | 职责 |
 | --- | --- |
-| `base_manager/` | 各产品的安装、更新、启动、分支切换、模型和扩展管理基础能力。 |
+| `base_manager/` | 各产品的安装、更新、启动、分支切换、模型和扩展管理基础能力。各产品共用的启动参数目录解析与发现位于 `base_manager/launch_arguments/`。 |
 | `cli_manager/` | CLI 参数解析、子命令注册和对 `base_manager/` 的命令行封装。 |
 | `notebook_manager/` | 面向 Colab / Kaggle 的 Manager 类，封装 Notebook 中常用安装、运行、挂载和下载流程。 |
 | `downloader/` | 统一下载入口，支持 requests、urllib、Aria2、多线程和压缩包下载解压。 |

@@ -49,7 +49,7 @@ from sd_webui_all_in_one.pytorch_manager import (
     PyTorchDeviceType,
     PyTorchDeviceTypeCategory,
 )
-from sd_webui_all_in_one.launch_arguments import (
+from sd_webui_all_in_one.base_manager.launch_arguments import (
     HelpCommand,
     LaunchArgumentDiscoveryContext,
 )
