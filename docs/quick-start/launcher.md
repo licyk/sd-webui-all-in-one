@@ -25,6 +25,8 @@ SD Scripts、Musubi Tuner 等训练脚本目前继续使用整合包内的 Insta
 
 ## Hanafubuki 能管理什么
 
+支持 Stable Diffusion WebUI、ComfyUI、InvokeAI、Fooocus、SD Trainer、Qwen TTS WebUI、RVC Next WebUI、Mizuoto TTS WebUI 八类产品及其受支持变体。
+
 - 安装或导入 WebUI / 训练工具。
 - 启动已安装项目或已解压整合包。
 - 管理版本、扩展、模型、PyTorch、快照和路径。

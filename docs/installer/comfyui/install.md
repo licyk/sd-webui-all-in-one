@@ -74,6 +74,7 @@
     |[kijai/ComfyUI-Marigold](https://github.com/kijai/ComfyUI-Marigold)|
     |[pythongosssss/ComfyUI-WD14-Tagger](https://github.com/pythongosssss/ComfyUI-WD14-Tagger)|
     |[pythongosssss/ComfyUI-Custom-Scripts](https://github.com/pythongosssss/ComfyUI-Custom-Scripts)|
+    |[Aaalice233/ComfyUI-Autocomplete-Aaalice](https://github.com/Aaalice233/ComfyUI-Autocomplete-Aaalice)|
     |[ssitu/ComfyUI_UltimateSDUpscale](https://github.com/ssitu/ComfyUI_UltimateSDUpscale)|
     |[AlekPet/ComfyUI_Custom_Nodes_AlekPet](https://github.com/AlekPet/ComfyUI_Custom_Nodes_AlekPet)|
     |[licyk/comfyui-image-browser](https://github.com/licyk/comfyui-image-browser)|

@@ -11,7 +11,7 @@ Hanafubuki 是本项目现在优先推荐的全平台桌面管理器，可以在
 
 Hanafubuki 支持 Windows、macOS 和 Linux。Windows 提供 x86_64 版本，macOS 和 Linux 同时提供 x86_64 与 ARM64 版本。
 
-目前可以管理以下六类 WebUI：
+目前可以管理以下八类 WebUI：
 
 - Stable Diffusion WebUI，包括 Forge、reForge、Forge Neo、SD.Next 等变体。
 - ComfyUI。
@@ -19,6 +19,8 @@ Hanafubuki 支持 Windows、macOS 和 Linux。Windows 提供 x86_64 版本，mac
 - Fooocus。
 - SD Trainer，包括 SD Trainer Next、Kohya GUI 等变体。
 - Qwen TTS WebUI。
+- RVC Next WebUI。
+- Mizuoto TTS WebUI。
 
 SD Scripts、Musubi Tuner 等训练脚本目前继续使用 Installer 管理脚本或 [Bash TUI / CLI Launcher](./launcher-tui.md)。
 

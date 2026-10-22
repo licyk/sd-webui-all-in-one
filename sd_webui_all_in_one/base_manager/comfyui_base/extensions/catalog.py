@@ -52,6 +52,11 @@ COMFYUI_CUSTOM_NODES_INFO_DICT: ComfyUiCustomNodeInfoList = [
         "save_dir": "custom_nodes/ComfyUI-Custom-Scripts",
     },
     {
+        "name": "ComfyUI-Autocomplete-Aaalice",
+        "url": "https://github.com/Aaalice233/ComfyUI-Autocomplete-Aaalice",
+        "save_dir": "custom_nodes/ComfyUI-Autocomplete-Aaalice",
+    },
+    {
         "name": "ComfyUI_UltimateSDUpscale",
         "url": "https://github.com/ssitu/ComfyUI_UltimateSDUpscale",
         "save_dir": "custom_nodes/ComfyUI_UltimateSDUpscale",

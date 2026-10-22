@@ -26,7 +26,7 @@ AI 整合包下载器是 Windows 上的图形化下载工具，用于下载由 I
 
 整合包解压完成后，可以选择以下入口：
 
-- 使用 Hanafubuki：Stable Diffusion WebUI、ComfyUI、InvokeAI、Fooocus、SD Trainer、Qwen TTS WebUI 六类产品及其受支持变体，优先运行整合包根目录中的 `hanafubuki-launcher.exe`。首次运行会下载、校验并启动 Hanafubuki 本体，然后发现旁边的 WebUI。
+- 使用 Hanafubuki：Stable Diffusion WebUI、ComfyUI、InvokeAI、Fooocus、SD Trainer、Qwen TTS WebUI、RVC Next WebUI、Mizuoto TTS WebUI 八类产品及其受支持变体，优先运行整合包根目录中的 `hanafubuki-launcher.exe`。首次运行会下载、校验并启动 Hanafubuki 本体，然后发现旁边的 WebUI。
 - 使用 Installer 管理脚本：首次使用先运行 `configure_env.bat`，之后右键所需 `.ps1` 脚本并选择 `使用 PowerShell 运行`，不要左键双击 `.ps1` 脚本；左键双击通常会用记事本或默认编辑器打开脚本。如果右键运行后窗口闪退，先重新运行 `configure_env.bat`。
 - 使用绘世启动器：部分整合包包含 `hanamizuki.bat`，双击后可通过绘世启动器启动和管理对应 WebUI。
 
@@ -37,7 +37,7 @@ AI 整合包下载器是 Windows 上的图形化下载工具，用于下载由 I
 3. 如果没有自动发现，在首页点击“添加实例”，选择“导入现有实例”或“扫描系统”。
 4. 打开实例并启动 WebUI；版本、扩展、模型、PyTorch、快照和路径等操作位于实例管理页。
 
-SD Scripts、Musubi Tuner 当前不属于 Hanafubuki 支持的六类产品，应继续使用 Installer 管理脚本或 [Bash TUI / CLI Launcher](./launcher-tui.md)。完整版本区别和独立下载方式见 [Hanafubuki](./hanafubuki.md)。
+SD Scripts、Musubi Tuner 当前不属于 Hanafubuki 支持的八类产品，应继续使用 Installer 管理脚本或 [Bash TUI / CLI Launcher](./launcher-tui.md)。完整版本区别和独立下载方式见 [Hanafubuki](./hanafubuki.md)。
 
 WebUI 启动后，具体的界面使用、绘图流程、模型使用和常见使用问题可以继续阅读 [SD Note](https://licyk.github.io/SDNote/)。
 
