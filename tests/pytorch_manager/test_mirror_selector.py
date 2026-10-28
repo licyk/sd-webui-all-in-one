@@ -62,6 +62,7 @@ def test_get_pytorch_mirror_and_query_library(monkeypatch):
     ("suffix", "platform_tag", "expected"),
     [
         (" CU128 ", "linux", "cu128"),
+        ("cu134", "win32", "cu134"),
         ("rocm6.4", "win32", "rocm7"),
         ("rocm_win", "linux", "rocm10"),
         ("rocm_linux", "win32", "rocm10"),
@@ -72,6 +73,8 @@ def test_get_pytorch_mirror_and_query_library(monkeypatch):
         ("rocm10.0.0", "win32", "rocm10"),
         ("rocm7.2", "linux", "rocm7.2"),
         ("rocm7.14", "linux", "rocm7.14"),
+        ("rocm10.0", "linux", "rocm10.0"),
+        ("rocm10.0", "win32", "rocm10"),
         ("rocm7.14.1", "linux", "rocm7"),
         ("rocm7.13.0", "linux", "rocm7"),
         ("rocm10.0.0", "linux", "rocm10"),
@@ -91,6 +94,8 @@ def test_infer_pytorch_device_type_from_versions():
     assert mirror_selector.infer_pytorch_device_type(["2.12.0+rocm7.14.1"], "win32") == "rocm7"
     assert mirror_selector.infer_pytorch_device_type(["2.13.0+rocm10.0.0"], "linux") == "rocm10"
     assert mirror_selector.infer_pytorch_device_type(["2.13.0+rocm10.0.0"], "win32") == "rocm10"
+    assert mirror_selector.infer_pytorch_device_type(["2.15.0+rocm10.0"], "linux") == "rocm10.0"
+    assert mirror_selector.infer_pytorch_device_type(["2.15.0+cu134"], "linux") == "cu134"
 
 
 @pytest.mark.parametrize(
@@ -112,6 +117,14 @@ def test_infer_pytorch_device_type_from_versions():
         ("2.9.0", 13.0, 8.9, "cu130"),
         ("2.10.0", 12.8, 8.9, "cu128"),
         ("2.10.0", 13.0, 8.9, "cu130"),
+        ("2.12.0", 12.8, 8.9, "cu126"),
+        ("2.12.0", 13.0, 8.9, "cu130"),
+        ("2.14.1", 13.2, 8.9, "cu132"),
+        ("2.14.1", 13.4, 8.9, "cu132"),
+        ("2.15.0", 12.8, 8.9, "cu132"),
+        ("2.15.0", 13.0, 8.9, "cu132"),
+        ("2.15.0", 13.2, 8.9, "cu132"),
+        ("2.15.0", 13.4, 8.9, "cu134"),
     ],
 )
 def test_cuda_mirror_type_version_capability_matrix(monkeypatch, torch_ver, cuda_version, cuda_cap, expected):
@@ -132,10 +145,13 @@ def test_cuda_mirror_type_version_capability_matrix(monkeypatch, torch_ver, cuda
         ("2.8.0", "linux", "rocm6.4"),
         ("2.10.0", "linux", "rocm7.1"),
         ("2.12.0", "linux", "rocm7.2"),
+        ("2.14.1", "linux", "rocm7.2"),
+        ("2.15.0", "linux", "rocm7.14"),
         ("2.3.9", "win32", "all"),
         ("2.7.1", "win32", "all"),
         ("2.8.0", "win32", "rocm7"),
         ("2.12.0", "win32", "rocm7"),
+        ("2.15.0", "win32", "rocm7"),
     ],
 )
 def test_rocm_mirror_type_platform_and_version_boundaries(monkeypatch, torch_ver, platform, expected):

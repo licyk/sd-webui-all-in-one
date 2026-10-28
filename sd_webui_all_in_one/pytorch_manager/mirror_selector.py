@@ -135,6 +135,7 @@ def get_pytorch_mirror_type_cuda(
     # cu129: 2.8.0
     # cu130: 2.9.0 ~ 2.11.0
     # cu132: 2.12.0 ~
+    # cu134: 2.15.0 ~
     cuda_comp_cap = get_cuda_comp_cap()
     cuda_support_ver = get_cuda_version()
 
@@ -192,13 +193,18 @@ def get_pytorch_mirror_type_cuda(
             if cuda_support_version >= CommonVersionComparison("126"):
                 return "cu126"
         return "cu130"
-    if CommonVersionComparison("2.12.0") <= torch_version:
-        # 2.12.0 <= torch: default cu132
+    if CommonVersionComparison("2.12.0") <= torch_version < CommonVersionComparison("2.15.0"):
+        # 2.12.0 <= torch < 2.15.0: default cu132
         if cuda_support_version < CommonVersionComparison("132"):
             if cuda_support_version >= CommonVersionComparison("130"):
                 return "cu130"
             if cuda_support_version >= CommonVersionComparison("126"):
                 return "cu126"
+        return "cu132"
+    if CommonVersionComparison("2.15.0") <= torch_version:
+        # 2.15.0 <= torch: default cu132
+        if cuda_support_version >= CommonVersionComparison("134"):
+            return "cu134"
         return "cu132"
 
     return "cu132"
@@ -241,11 +247,14 @@ def get_pytorch_mirror_type_rocm(
     if CommonVersionComparison("2.10.0") <= torch_version < CommonVersionComparison("2.12.0"):
         # 2.10.0 <= torch < 2.12.0
         return "rocm7.1"
-    if CommonVersionComparison("2.12.0") <= torch_version:
-        # 2.12.0 <= torch
+    if CommonVersionComparison("2.12.0") <= torch_version < CommonVersionComparison("2.15.0"):
+        # 2.12.0 <= torch < 2.15.0
         return "rocm7.2"
+    if CommonVersionComparison("2.15.0") <= torch_version:
+        # 2.15.0 <= torch
+        return "rocm7.14"
 
-    return "rocm7.2"
+    return "rocm7.14"
 
 
 def get_pytorch_mirror_type_ipex(

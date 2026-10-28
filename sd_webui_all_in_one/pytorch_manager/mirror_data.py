@@ -39,6 +39,7 @@ PYTORCH_MIRROR_DICT: PyTorchMirrorMap = {
     "rocm7.1": ("https://download.pytorch.org/whl/rocm7.1", "index_url"),
     "rocm7.14": ("https://download.pytorch.org/whl/rocm7.14", "index_url"),
     "rocm7.2": ("https://download.pytorch.org/whl/rocm7.2", "index_url"),
+    "rocm10.0": ("https://download.pytorch.org/whl/rocm10.0", "index_url"),
     "cu75": ("https://download.pytorch.org/whl/cu75", "index_url"),
     "cu80": ("https://download.pytorch.org/whl/cu80", "index_url"),
     "cu90": ("https://download.pytorch.org/whl/cu90", "index_url"),
@@ -61,6 +62,7 @@ PYTORCH_MIRROR_DICT: PyTorchMirrorMap = {
     "cu129": ("https://download.pytorch.org/whl/cu129", "index_url"),
     "cu130": ("https://download.pytorch.org/whl/cu130", "index_url"),
     "cu132": ("https://download.pytorch.org/whl/cu132", "index_url"),
+    "cu134": ("https://download.pytorch.org/whl/cu134", "index_url"),
 }
 """PyTorch 镜像源字典"""
 
@@ -94,6 +96,7 @@ PYTORCH_MIRROR_NJU_DICT: PyTorchMirrorMap = {
     "rocm7.1": ("https://mirror.nju.edu.cn/pytorch/whl/rocm7.1", "index_url"),
     "rocm7.14": ("https://mirror.nju.edu.cn/pytorch/whl/rocm7.14", "index_url"),
     "rocm7.2": ("https://mirror.nju.edu.cn/pytorch/whl/rocm7.2", "index_url"),
+    "rocm10.0": ("https://mirror.nju.edu.cn/pytorch/whl/rocm10.0", "index_url"),
     "cu75": ("https://mirror.nju.edu.cn/pytorch/whl/cu75", "index_url"),
     "cu80": ("https://mirror.nju.edu.cn/pytorch/whl/cu80", "index_url"),
     "cu90": ("https://mirror.nju.edu.cn/pytorch/whl/cu90", "index_url"),
@@ -116,6 +119,7 @@ PYTORCH_MIRROR_NJU_DICT: PyTorchMirrorMap = {
     "cu129": ("https://mirror.nju.edu.cn/pytorch/whl/cu129", "index_url"),
     "cu130": ("https://mirror.nju.edu.cn/pytorch/whl/cu130", "index_url"),
     "cu132": ("https://mirror.nju.edu.cn/pytorch/whl/cu132", "index_url"),
+    "cu134": ("https://mirror.nju.edu.cn/pytorch/whl/cu134", "index_url"),
 }
 """PyTorch 国内镜像源 (NJU) 字典"""
 

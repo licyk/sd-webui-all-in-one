@@ -172,6 +172,33 @@ def test_find_latest_amd_multi_arch_pytorch_info(monkeypatch, platform, dtype, e
     assert info["find_links"]["official"] == []
 
 
+@pytest.mark.parametrize(
+    ("dtype", "expected_name", "expected_torch_ver"),
+    [
+        ("cpu", "Torch 2.15.0 (CPU)", "torch==2.15.0+cpu torchvision==0.29.2+cpu torchaudio==2.11.1+cpu"),
+        ("rocm7.14", "Torch 2.15.0 (ROCm 7.14)", "torch==2.15.0+rocm7.14 torchvision==0.29.2+rocm7.14 torchaudio==2.11.1+rocm7.14"),
+        ("rocm10.0", "Torch 2.15.0 (ROCm 10.0)", "torch==2.15.0+rocm10.0 torchvision==0.29.2+rocm10.0 torchaudio==2.11.1+rocm10.0"),
+        ("xpu", "Torch 2.15.0 (XPU)", "torch==2.15.0+xpu torchvision==0.29.2+xpu torchaudio==2.11.1+xpu"),
+        ("cu132", "Torch 2.15.0 (CUDA 13.2)", "torch==2.15.0+cu132 torchvision==0.29.2+cu132 torchaudio==2.11.1+cu132"),
+        ("cu134", "Torch 2.15.0 (CUDA 13.4)", "torch==2.15.0+cu134 torchvision==0.29.2+cu134 torchaudio==2.11.1+cu134"),
+    ],
+)
+def test_find_latest_pytorch_2_15_info(monkeypatch, dtype, expected_name, expected_torch_ver):
+    from sd_webui_all_in_one.pytorch_manager.mirror_data import PYTORCH_MIRROR_DICT, PYTORCH_MIRROR_NJU_DICT
+
+    monkeypatch.setattr(version_manager.sys, "platform", "linux")
+    monkeypatch.setattr(version_manager, "get_available_pytorch_device_type", lambda: ["all", dtype])
+
+    info = version_manager.find_latest_pytorch_info(dtype)
+
+    assert info["name"] == expected_name
+    assert info["torch_ver"] == expected_torch_ver
+    assert info["xformers_ver"] is None
+    assert info["index_mirror"]["official"] == [f"https://download.pytorch.org/whl/{dtype}"]
+    assert info["index_mirror"]["official"] == [PYTORCH_MIRROR_DICT[dtype][0]]
+    assert info["index_mirror"]["mirror"] == [PYTORCH_MIRROR_NJU_DICT[dtype][0]]
+
+
 AMD_MULTI_ARCH_VERSION_TABLE = {
     # (dtype, torch 版本): (torchvision 版本, torchaudio 版本, ROCm 版本, 支持的平台)
     ("rocm7", "2.8.0"): ("0.23.0a0", "2.8.0a0", "7.13.0", ["linux"]),
