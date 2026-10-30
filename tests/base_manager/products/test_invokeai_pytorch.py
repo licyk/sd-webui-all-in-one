@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from sd_webui_all_in_one.base_manager.invokeai_base import components, lifecycle
 
 INVOKEAI_6_14_REQUIRES = [
@@ -153,6 +155,25 @@ def test_invokeai_sync_skips_xformers_without_removing_on_fresh_install(monkeypa
         ("pytorch_fallback", "torch[device-all]<3.0,>=2.7.0 torchvision[device-all]"),
         ("pip", ("invokeai==6.14.2",)),
     ]
+
+
+@pytest.mark.parametrize("mirror_type", ["cu132", "cu134"])
+@pytest.mark.parametrize("xformers_installed", [False, True])
+def test_invokeai_sync_skips_xformers_for_cuda_types_without_xformers(monkeypatch, mirror_type, xformers_installed):
+    calls = []
+    _patch_sync(monkeypatch, calls, xformers_installed=xformers_installed)
+    monkeypatch.setattr(components, "get_pytorch_mirror_type_for_ivnokeai", lambda _device_type: mirror_type)
+    monkeypatch.setattr(components, "install_pytorch", lambda **_kwargs: (_ for _ in ()).throw(AssertionError("xformers should not be attempted")))
+    monkeypatch.setattr(components, "install_pytorch_with_fallback", lambda **kwargs: calls.append(("pytorch_fallback", kwargs["torch_package"], kwargs["custom_env"])))
+
+    components.sync_invokeai_component(device_type="cuda", upgrade=True, use_pypi_mirror=False, use_uv=True)
+
+    assert calls[0] == ("pytorch_fallback", "torch<3.0,>=2.7.0 torchvision --upgrade", {"TORCH": mirror_type})
+    if xformers_installed:
+        # 旧版 xFormers 与升级后的 PyTorch 不兼容, 需要卸载
+        assert calls[1][0] == "run"
+        assert calls[1][1][1:] == ["-m", "pip", "uninstall", "xformers", "-y"]
+    assert calls[-1] == ("pip", ("invokeai==6.14.2",))
 
 
 def test_invokeai_sync_force_reinstall_passes_force_reinstall_and_removes_stale_packages(monkeypatch):
