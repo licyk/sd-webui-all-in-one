@@ -177,6 +177,11 @@ def test_available_pytorch_types_skip_amd_rocm_types_on_darwin(monkeypatch):
         (12.8, "cu128"),
         (12.9, "cu129"),
         (13.0, "cu130"),
+        (13.1, "cu130"),
+        (13.2, "cu132"),
+        (13.3, "cu132"),
+        (13.4, "cu134"),
+        (13.6, "cu134"),
     ],
 )
 def test_auto_detect_cuda_thresholds(monkeypatch, cuda_version, expected):

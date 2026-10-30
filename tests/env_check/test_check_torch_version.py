@@ -163,6 +163,8 @@ def test_check_torch_version_status_matches_auto_detection_rules(monkeypatch, pl
         ("linux", NVIDIA_GPU, 11.8, 8.6),
         ("linux", NVIDIA_GPU, 12.8, 8.9),
         ("win32", NVIDIA_GPU, 13.0, 12.0),
+        ("linux", NVIDIA_GPU, 13.2, 8.9),
+        ("win32", NVIDIA_GPU, 13.4, 12.0),
         ("linux", AMD_GPU, 0.0, 0.0),
         ("win32", AMD_GPU, 0.0, 0.0),
         ("linux", UNSUPPORTED_INTEL_GPU + AMD_GPU, 0.0, 0.0),

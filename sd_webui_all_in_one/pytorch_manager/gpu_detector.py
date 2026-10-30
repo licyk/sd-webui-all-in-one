@@ -581,9 +581,10 @@ def auto_detect_available_pytorch_type(
         return "cpu"
 
     if nvidia_gpu_available:
-        # TODO: cu132 对于 torchaudio, xformers 存在不兼容风险, 有待考量
-        # if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("13.2"):
-        #     return "cu132"
+        if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("13.4"):
+            return "cu134"
+        if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("13.2"):
+            return "cu132"
         if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("13.0"):
             return "cu130"
         if CommonVersionComparison(cuda_support_ver) >= CommonVersionComparison("12.9"):
