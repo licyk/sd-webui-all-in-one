@@ -648,6 +648,9 @@ def probe_repository(path: Path) -> RepositoryProbe:
     """
     使用单次 Git 调用探测仓库的当前提交、分支和工作区变更状态
 
+    只检查已跟踪文件的变更, 不扫描未跟踪文件: 恢复使用的 ``git reset --hard`` 不会删除未跟踪文件,
+    与更新流程判断工作区是否有改动的方式一致, 同时避免在大型工作区中遍历未跟踪目录。
+
     Args:
         path (Path):
             仓库路径
@@ -657,7 +660,7 @@ def probe_repository(path: Path) -> RepositoryProbe:
     """
     path = Path(path)
     try:
-        output = run_git_output(path, "status", "--porcelain=v2", "--branch")
+        output = run_git_output(path, "status", "--porcelain=v2", "--branch", "--untracked-files=no")
     except (RuntimeError, OSError) as exc:
         logger.debug("git status 探测仓库失败, 回退到逐项检查: '%s': %s", path, exc)
         try:
@@ -809,3 +812,20 @@ def read_ref_commit(path: Path, *refs: str) -> str | None:
         if commit is not None:
             return commit
     return None
+
+
+def read_head_commit(path: Path) -> str | None:
+    """
+    直接解析 Git 目录读取 HEAD 指向的提交, 不启动 Git 进程
+
+    Args:
+        path (Path):
+            仓库路径
+
+    Returns:
+        str | None: 当前提交哈希, 路径不是 Git 仓库或无法解析 HEAD 时返回 None
+    """
+    git_dir = _resolve_git_dir(Path(path))
+    if git_dir is None:
+        return None
+    return _read_head_commit(git_dir)

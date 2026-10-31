@@ -41,7 +41,7 @@ def test_preview_restore_plan_reports_package_actions_and_pytorch_source(monkeyp
     monkeypatch.setattr(
         restore_packages,
         "collect_installed_packages",
-        lambda: [
+        lambda **_kwargs: [
             make_package_snapshot("demo_pkg", "1.0.0"),
             make_package_snapshot("already", "1.0.0"),
             make_package_snapshot("old-pkg", "0.1.0"),
@@ -96,7 +96,7 @@ def test_preview_restore_plan_reports_pytorch_upgrade_as_modified(monkeypatch, t
     output = tmp_path / "snapshot.json"
     snapshot_utils.save_snapshot(snapshot, output)
 
-    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [make_package_snapshot("torch", "2.5.0+cu124")])
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda **_kwargs: [make_package_snapshot("torch", "2.5.0+cu124")])
     monkeypatch.setattr(restore_packages, "get_pytorch_mirror", lambda dtype, use_cn_mirror: ("https://torch.example/cu128", "index_url"))
 
     plan = restore_utils.preview_webui_snapshot_restore(
@@ -146,7 +146,7 @@ def test_preview_restore_plan_normalizes_rocm_pytorch_suffix(monkeypatch, tmp_pa
         return mirror_by_dtype[dtype]
 
     monkeypatch.setattr(mirror_selector.sys, "platform", platform_tag)
-    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda **_kwargs: [])
     monkeypatch.setattr(restore_packages, "get_pytorch_mirror", fake_get_pytorch_mirror)
 
     plan = restore_utils.preview_webui_snapshot_restore(
@@ -175,7 +175,7 @@ def test_preview_restore_plan_blocks_dirty_kernel_without_force(monkeypatch, tmp
     snapshot_utils.save_snapshot(snapshot, output)
     (tmp_path / "demo").mkdir()
 
-    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda **_kwargs: [])
     monkeypatch.setattr(restore_extensions, "probe_repository", lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="123456", dirty=True))
 
     blocked = restore_utils.preview_webui_snapshot_restore(
@@ -228,7 +228,7 @@ def test_preview_restore_plan_blocks_kernel_when_dirty_state_unknown(monkeypatch
     snapshot_utils.save_snapshot(snapshot, output)
     (tmp_path / "demo").mkdir()
 
-    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda **_kwargs: [])
     monkeypatch.setattr(restore_extensions, "probe_repository", lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="123456", dirty=None))
 
     blocked = restore_utils.preview_webui_snapshot_restore(
@@ -320,7 +320,7 @@ def test_preview_restore_plan_allows_missing_path_for_package_kernel_webui(monke
     ]
     output = tmp_path / "snapshot.json"
     snapshot_utils.save_snapshot(snapshot, output)
-    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda **_kwargs: [])
 
     plan = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,
@@ -357,7 +357,7 @@ def test_preview_restore_plan_prunes_comfyui_extensions_with_disabled_name(monke
     output = tmp_path / "snapshot.json"
     snapshot_utils.save_snapshot(snapshot, output)
 
-    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda **_kwargs: [])
     monkeypatch.setattr(restore_extensions, "probe_repository", lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="123456", dirty=False))
 
     plan = restore_utils.preview_webui_snapshot_restore(
@@ -400,7 +400,7 @@ def test_preview_restore_plan_marks_enabled_only_extension_change_as_modified(mo
     output = tmp_path / "snapshot.json"
     snapshot_utils.save_snapshot(snapshot, output)
 
-    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda **_kwargs: [])
     monkeypatch.setattr(restore_extensions, "probe_repository", lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="abcdef", dirty=False))
 
     plan = restore_utils.preview_webui_snapshot_restore(
@@ -439,7 +439,7 @@ def test_preview_restore_plan_reports_dirty_extension_blocker(monkeypatch, tmp_p
     output = tmp_path / "snapshot.json"
     snapshot_utils.save_snapshot(snapshot, output)
 
-    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda **_kwargs: [])
     monkeypatch.setattr(restore_extensions, "probe_repository", lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="123456", dirty=True))
 
     blocked = restore_utils.preview_webui_snapshot_restore(
@@ -505,7 +505,7 @@ def test_preview_restore_plan_keeps_comfyui_registry_extensions_when_pruning(mon
     output = tmp_path / "snapshot.json"
     snapshot_utils.save_snapshot(snapshot, output)
 
-    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda: [])
+    monkeypatch.setattr(restore_packages, "collect_installed_packages", lambda **_kwargs: [])
 
     plan = restore_utils.preview_webui_snapshot_restore(
         snapshot_path=output,

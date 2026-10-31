@@ -276,3 +276,23 @@ def test_collect_repository_snapshots_preserves_input_order(monkeypatch, tmp_pat
     )
 
     assert [item.path for item in snapshot_utils.collect_repository_snapshots(paths)] == paths
+
+
+def test_collect_installed_packages_can_skip_install_details(monkeypatch):
+    reads: list[str] = []
+
+    class TrackingDistribution(FakeDistribution):
+        def read_text(self, filename: str) -> str | None:
+            reads.append(filename)
+            return super().read_text(filename)
+
+    distributions = [TrackingDistribution("demo", "1.0.0", {"INSTALLER": "pip\n", "REQUESTED": "", "WHEEL": "Tag: py3-none-any\n"})]
+    monkeypatch.setattr(snapshot_collection.metadata, "distributions", lambda: distributions)
+
+    packages = snapshot_utils.collect_installed_packages(include_install_details=False)
+
+    # 恢复预检查只需版本和安装来源, 不应读取安装器等元数据文件
+    assert reads == ["direct_url.json"]
+    assert (packages[0].name, packages[0].version) == ("demo", "1.0.0")
+    assert packages[0].installer is None
+    assert packages[0].wheel is None

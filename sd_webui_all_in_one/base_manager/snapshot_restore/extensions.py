@@ -14,7 +14,7 @@ import sd_webui_all_in_one.base_manager.comfyui_base as comfyui_base
 import sd_webui_all_in_one.base_manager.invokeai_base as invokeai_base
 import sd_webui_all_in_one.base_manager.sd_webui_base as sd_webui_base
 from sd_webui_all_in_one.base_manager.base import DEFAULT_GIT_UPDATE_WORKERS, MIRROR_GIT_UPDATE_WORKERS, clone_repo
-from sd_webui_all_in_one.base_manager.repository_inspector import probe_repository, repository_has_commit
+from sd_webui_all_in_one.base_manager.repository_inspector import probe_repository, read_head_commit, repository_has_commit
 from sd_webui_all_in_one.base_manager.snapshot import ExtensionSnapshot, RepositorySnapshot, WebUiSnapshot
 from sd_webui_all_in_one.base_manager.version_manager import fetch_repository
 from sd_webui_all_in_one.custom_exceptions import AggregateError
@@ -111,6 +111,30 @@ def _same_commit(current_commit: str | None, target_commit: str | None) -> bool:
     return current_commit.startswith(target_commit) or target_commit.startswith(current_commit)
 
 
+def _skips_same_commit_without_probe(repo: RepositorySnapshot | ExtensionSnapshot, target_path: Path, options: SnapshotRestoreOptions) -> str | None:
+    """检查仓库是否已位于快照 commit 且无需启动 Git 进程即可跳过
+
+    非强制恢复不会修改已位于快照 commit 的仓库, 无论工作区是否存在未提交变更,
+    因此直接解析 Git 目录读取 HEAD 即可, 避免为每个未变化的仓库执行 ``git status``。
+    强制恢复需要知道工作区是否干净以决定是否重置, 不使用该快速路径。
+
+    Args:
+        repo (RepositorySnapshot | ExtensionSnapshot):
+            快照中的 Git 仓库或扩展记录。
+        target_path (Path):
+            恢复目标路径。
+        options (SnapshotRestoreOptions):
+            快照恢复选项。
+
+    Returns:
+        str | None: 已位于快照 commit 时返回当前 commit, 否则返回 None。
+    """
+    if options.force_git_reset or repo.commit is None or not target_path.exists():
+        return None
+    head_commit = read_head_commit(target_path)
+    return head_commit if _same_commit(head_commit, repo.commit) else None
+
+
 def _build_git_restore_plan(
     repo: RepositorySnapshot | ExtensionSnapshot,
     target_path: Path,
@@ -134,6 +158,18 @@ def _build_git_restore_plan(
             path=target_path,
             action="skip_missing_commit",
             reason="快照目标缺少 commit",
+            url=repo.url,
+        )
+
+    head_commit = _skips_same_commit_without_probe(repo, target_path, options)
+    if head_commit is not None:
+        return GitRestorePlanItem(
+            name=name,
+            path=target_path,
+            action="skip_same_commit",
+            reason="当前 commit 与快照一致",
+            target_commit=repo.commit,
+            current_commit=head_commit,
             url=repo.url,
         )
 
@@ -178,6 +214,20 @@ def _build_git_restore_plan(
 
     dirty = probe.dirty
     current_commit = probe.commit
+    same_commit = _same_commit(current_commit, repo.commit)
+    # 非强制恢复不会修改已位于快照 commit 的仓库, 未提交变更不影响恢复
+    if same_commit and (dirty is False or not options.force_git_reset):
+        return GitRestorePlanItem(
+            name=name,
+            path=target_path,
+            action="skip_same_commit",
+            reason="当前 commit 与快照一致",
+            target_commit=repo.commit,
+            current_commit=current_commit,
+            dirty=dirty,
+            url=repo.url,
+        )
+
     # dirty 为 None 表示无法确认工作区状态, 按存在未提交变更处理, 避免强制重置时丢失改动
     if dirty is not False and not options.force_git_reset:
         return GitRestorePlanItem(
@@ -191,20 +241,11 @@ def _build_git_restore_plan(
             url=repo.url,
         )
 
-    if _same_commit(current_commit, repo.commit):
-        return GitRestorePlanItem(
-            name=name,
-            path=target_path,
-            action="skip_same_commit",
-            reason="当前 commit 与快照一致",
-            target_commit=repo.commit,
-            current_commit=current_commit,
-            dirty=dirty,
-            url=repo.url,
-        )
-
     reason = "将切换到快照 commit"
-    if dirty and options.force_git_reset:
+    if same_commit:
+        # 仅强制恢复且工作区不干净时到达此处, 恢复会重置工作区以丢弃未提交变更
+        reason = "启用了强制恢复, 将覆盖未提交变更并重置到快照 commit"
+    elif dirty and options.force_git_reset:
         reason = "启用了强制恢复, 将覆盖未提交变更并切换到快照 commit"
     return GitRestorePlanItem(
         name=name,
@@ -454,6 +495,10 @@ def restore_git_repository(
         logger.info("快照目标不是 Git 仓库, 跳过: %s", target_path)
         return False
 
+    if _skips_same_commit_without_probe(repo, target_path, options) is not None:
+        logger.info("仓库 '%s' 已位于快照 commit %s, 无需切换", target_path, repo.commit)
+        return True
+
     probe = probe_repository(target_path) if target_path.exists() else None
     if probe is None or not probe.is_git_repo:
         if not _ensure_git_target(repo, target_path):
@@ -462,6 +507,10 @@ def restore_git_repository(
     logger.debug("恢复 Git 仓库: %s (目标: %s, commit: %s)", _repo_target_name(repo), target_path, repo.commit)
 
     dirty = probe.dirty
+    # 非强制恢复不会修改已位于快照 commit 的仓库; 强制恢复仅在工作区干净时跳过, 否则重置以丢弃未提交变更
+    if _same_commit(probe.commit, repo.commit) and (dirty is False or not options.force_git_reset):
+        logger.info("仓库 '%s' 已位于快照 commit %s, 无需切换", target_path, repo.commit)
+        return True
     if dirty is None and not options.force_git_reset:
         # 无法确认工作区状态时不能假设没有改动, 否则后续重置可能丢失用户的未提交变更
         logger.error("无法检查目标仓库是否存在未提交变更, 中止恢复: %s", target_path)
@@ -469,10 +518,6 @@ def restore_git_repository(
     if dirty and not options.force_git_reset:
         logger.error("目标仓库存在未提交变更, 中止恢复: %s", target_path)
         raise RuntimeError(f"'{target_path}' 存在未提交变更, 请先处理或使用强制恢复")
-
-    if dirty is False and _same_commit(probe.commit, repo.commit):
-        logger.info("仓库 '%s' 已位于快照 commit %s, 无需切换", target_path, repo.commit)
-        return True
 
     # 快照 commit 已在本地对象库时无需访问远程, 避免每个仓库都产生一次网络往返
     if not repository_has_commit(target_path, repo.commit):
@@ -512,6 +557,12 @@ def restore_comfy_registry_extension(
     logger.debug("恢复 Comfy Registry 节点: %s (版本 %s)", registry_id, extension.registry_version)
     resolved = comfyui_base.resolve_comfyui_custom_node_path(webui_path, extension.name) or comfyui_base.resolve_comfyui_custom_node_path(webui_path, registry_id)
     target_path = resolved[0] if resolved is not None else webui_path / "custom_nodes" / registry_id
+    if resolved is not None and extension.registry_version:
+        current_info = comfy_registry.read_comfy_registry_info(target_path)
+        if current_info is not None and current_info.version == extension.registry_version:
+            # 与预检查的 skip_same_registry_version 保持一致, 避免重复下载节点并重新安装依赖
+            logger.info("Comfy Registry 节点 '%s' 已是快照版本 %s, 跳过恢复", registry_id, extension.registry_version)
+            return True
     custom_env = _pypi_env(use_pypi_mirror=options.use_pypi_mirror)
     try:
         comfy_registry.switch_comfy_registry_node_version(
@@ -532,7 +583,7 @@ def restore_comfy_registry_extension(
 def ensure_git_restore_targets_clean(snapshot: WebUiSnapshot, webui_path: Path, options: SnapshotRestoreOptions) -> None:
     """在修改环境前检查所有待恢复 Git 仓库的工作区状态
 
-    任意仓库存在未提交变更时提前终止, 避免恢复进行到一半才因某个仓库被阻断。
+    任意需要切换 commit 的仓库存在未提交变更时提前终止, 避免恢复进行到一半才因某个仓库被阻断。
 
     Args:
         snapshot (WebUiSnapshot):
@@ -549,20 +600,21 @@ def ensure_git_restore_targets_clean(snapshot: WebUiSnapshot, webui_path: Path, 
     if options.force_git_reset:
         return
 
-    targets: list[Path] = []
+    targets: list[tuple[RepositorySnapshot | ExtensionSnapshot, Path]] = []
     kernel = snapshot.kernel
     if kernel is not None and not _uses_package_kernel(snapshot) and kernel.is_git_repo and kernel.commit is not None:
-        targets.append(webui_path)
+        targets.append((kernel, webui_path))
     tools = _extension_tools(snapshot.webui.type)
     if tools is not None:
         for extension in snapshot.extensions:
             if _extension_source_type(extension) == "comfy-registry" or not extension.is_git_repo or extension.commit is None:
                 continue
-            targets.append(_extension_target_path(webui_path, extension, tools))
+            targets.append((extension, _extension_target_path(webui_path, extension, tools)))
 
-    existing_targets = [path for path in targets if path.exists()]
-    probes = _map_in_threads(probe_repository, existing_targets)
-    blocked = [probe.path for probe in probes if probe.is_git_repo and probe.dirty is not False]
+    # 已位于快照 commit 的仓库不会被修改, 无需检查工作区状态
+    pending = [(repo, path) for repo, path in targets if path.exists() and _skips_same_commit_without_probe(repo, path, options) is None]
+    probes = _map_in_threads(probe_repository, [path for _, path in pending])
+    blocked = [probe.path for (repo, _), probe in zip(pending, probes) if probe.is_git_repo and probe.dirty is not False and not _same_commit(probe.commit, repo.commit)]
     if blocked:
         names = ", ".join(f"'{path}'" for path in blocked)
         logger.error("目标仓库存在未提交变更或无法确认工作区状态, 中止恢复: %s", names)

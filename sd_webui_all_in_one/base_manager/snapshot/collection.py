@@ -172,8 +172,13 @@ def _distribution_name_version(dist: metadata.Distribution) -> tuple[str, str] |
     return name, dist.version
 
 
-def collect_installed_packages() -> list[PackageSnapshot]:
+def collect_installed_packages(include_install_details: bool = True) -> list[PackageSnapshot]:
     """采集当前 Python 环境已安装软件包信息
+
+    Args:
+        include_install_details (bool):
+            是否读取 INSTALLER、REQUESTED 和 WHEEL 元数据; 关闭后每个发行版只读取 METADATA
+            和 direct_url.json, 适用于只需对比版本和安装来源的恢复预检查。
 
     Returns:
         list[PackageSnapshot]: 已安装 Python 包快照列表。
@@ -188,9 +193,12 @@ def collect_installed_packages() -> list[PackageSnapshot]:
         name, version = name_version
 
         direct_url = _parse_direct_url(_read_distribution_text(dist, "direct_url.json"))
-        installer_raw = _read_distribution_text(dist, "INSTALLER")
-        requested_raw = _read_distribution_text(dist, "REQUESTED")
-        wheel = _parse_wheel_metadata(_read_distribution_text(dist, "WHEEL"))
+        installer_raw = requested_raw = None
+        wheel = None
+        if include_install_details:
+            installer_raw = _read_distribution_text(dist, "INSTALLER")
+            requested_raw = _read_distribution_text(dist, "REQUESTED")
+            wheel = _parse_wheel_metadata(_read_distribution_text(dist, "WHEEL"))
 
         packages.append(
             PackageSnapshot(

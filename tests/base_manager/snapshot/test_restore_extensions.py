@@ -180,3 +180,31 @@ def test_restore_extensions_continues_after_failure_and_reports_all_errors(monke
     failing.discard("Node07")
     with pytest.raises(RuntimeError, match="failed Node03"):
         restore_extensions.restore_extensions(snapshot, webui_path, restore_utils.SnapshotRestoreOptions())
+
+
+def test_restore_comfy_registry_extension_skips_node_already_at_snapshot_version(monkeypatch, tmp_path):
+    webui_path = tmp_path / "ComfyUI"
+    node_path = webui_path / "custom_nodes" / "registry-node"
+    node_path.mkdir(parents=True)
+    extension = snapshot_utils.ExtensionSnapshot(
+        name="registry-node",
+        path=node_path,
+        enabled=True,
+        is_git_repo=False,
+        source_type="comfy-registry",
+        registry_id="registry-node",
+        registry_version="1.2.3",
+    )
+
+    def fail_switch(**_kwargs):
+        raise AssertionError("same-version registry node must not be downloaded or reinstalled")
+
+    monkeypatch.setattr(comfy_registry, "switch_comfy_registry_node_version", fail_switch)
+    monkeypatch.setattr(comfyui_base, "resolve_comfyui_custom_node_path", lambda *_args: (node_path, True))
+    monkeypatch.setattr(
+        comfy_registry,
+        "read_comfy_registry_info",
+        lambda _path: comfy_registry.ComfyRegistryLocalInfo(registry_id="registry-node", original_name="registry-node", version="1.2.3"),
+    )
+
+    assert restore_utils.restore_comfy_registry_extension(extension, webui_path, restore_utils.SnapshotRestoreOptions()) is True

@@ -170,7 +170,8 @@ def _install_pytorch_packages(packages: list[PackageSnapshot], options: Snapshot
 
 
 def _current_package_map() -> dict[str, PackageSnapshot]:
-    return {_normalized_package_name(package.name): package for package in collect_installed_packages()}
+    # 恢复只需对比版本和安装来源, 跳过安装器等元数据以减少每个发行版的文件读取
+    return {_normalized_package_name(package.name): package for package in collect_installed_packages(include_install_details=False)}
 
 
 def _target_package_map(snapshot: WebUiSnapshot) -> dict[str, PackageSnapshot]:

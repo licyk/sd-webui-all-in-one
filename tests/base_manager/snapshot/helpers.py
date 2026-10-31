@@ -58,3 +58,11 @@ def make_package_snapshot(
 
 def make_git_repo_snapshot(path: Path, commit: str = "abcdef") -> snapshot_utils.RepositorySnapshot:
     return snapshot_utils.RepositorySnapshot(path=path, name=path.name, is_git_repo=True, url="https://example.test/repo.git", commit=commit)
+
+
+def write_fake_git_dir(repo_path: Path, commit: str) -> None:
+    """写入最小 Git 目录, 使 HEAD 可在不启动 Git 进程时解析到指定提交"""
+    git_path = repo_path / ".git"
+    (git_path / "refs" / "heads").mkdir(parents=True)
+    (git_path / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
+    (git_path / "refs" / "heads" / "main").write_text(f"{commit}\n", encoding="utf-8")

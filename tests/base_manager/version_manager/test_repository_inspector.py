@@ -265,7 +265,7 @@ def test_probe_repository_parses_status_with_single_git_command(tmp_path, monkey
 
     probe = repository_inspector.probe_repository(tmp_path)
 
-    assert calls == [("status", "--porcelain=v2", "--branch")]
+    assert calls == [("status", "--porcelain=v2", "--branch", "--untracked-files=no")]
     assert probe.is_git_repo is True
     assert (probe.commit, probe.branch, probe.dirty) == expected
 
@@ -307,3 +307,17 @@ def test_repository_has_commit_uses_cat_file(tmp_path, monkeypatch):
     assert repository_inspector.repository_has_commit(tmp_path, "abcdef") is True
     assert repository_inspector.repository_has_commit(tmp_path, "missing") is False
     assert calls[0] == ("cat-file", "-e", "abcdef^{commit}")
+
+
+def test_read_head_commit_parses_git_dir_without_git_command(tmp_path, monkeypatch):
+    repo_path = tmp_path / "repo"
+    commit = "d" * 40
+    _write_fake_git_dir(repo_path, commit)
+
+    def fail_git_output(*_args):
+        raise AssertionError("read_head_commit should not spawn git")
+
+    monkeypatch.setattr(repository_inspector, "run_git_output", fail_git_output)
+
+    assert repository_inspector.read_head_commit(repo_path) == commit
+    assert repository_inspector.read_head_commit(tmp_path / "missing") is None

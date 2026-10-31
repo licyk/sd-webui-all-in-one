@@ -136,7 +136,7 @@ def test_restore_python_packages_prioritizes_pytorch_skips_missing_local_and_pru
     monkeypatch.setattr(
         restore_packages,
         "collect_installed_packages",
-        lambda: [
+        lambda **_kwargs: [
             make_package_snapshot("demo_pkg", "1.0.0"),
             make_package_snapshot("already", "1.0.0"),
             make_package_snapshot("old_pkg", "0.1.0"),
@@ -233,7 +233,8 @@ def test_restore_webui_snapshot_blocks_dirty_repositories_before_modifying_envir
     monkeypatch.setattr(
         restore_extensions,
         "probe_repository",
-        lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="abcdef", dirty=dirty_by_name[path.name]),
+        # 仓库均需切换 commit, 已位于快照 commit 的仓库不会被修改, 不参与阻断
+        lambda path: RepositoryProbe(path=path, is_git_repo=True, commit="123456", dirty=dirty_by_name[path.name]),
     )
 
     def fail_restore(*_args, **_kwargs):
