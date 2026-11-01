@@ -264,7 +264,8 @@ def fetch_repository_upstream(
     for key, value in CHECK_FETCH_GIT_ENV.items():
         custom_env.setdefault(key, value)
     logger.debug("拉取上游分支: %s (git fetch %s)", path, " ".join(args))
-    git_warpper.fetch_remote(path, *args, live=False, custom_env=custom_env, timeout=CHECK_FETCH_TIMEOUT)
+    # 检查更新只更新一个远程引用, 跳过自动维护以免每个仓库额外启动一个 Git 子进程; 实际更新时仍会运行
+    git_warpper.fetch_remote(path, *args, live=False, custom_env=custom_env, timeout=CHECK_FETCH_TIMEOUT, auto_maintenance=False)
 
 
 def check_repository_update(

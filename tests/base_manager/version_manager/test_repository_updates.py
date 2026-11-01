@@ -20,7 +20,11 @@ def _record_git_commands(monkeypatch):
     real_run_cmd = version_repository.git_warpper.run_cmd
 
     def recording_run_cmd(command, *args, **kwargs):
-        commands.append(command[command.index("-C") + 2 :] if "-C" in command else command)
+        recorded = command[command.index("-C") + 2 :] if "-C" in command else command
+        # 去掉子命令前的 -c 运行时配置, 只记录子命令及其参数
+        while recorded[:1] == ["-c"]:
+            recorded = recorded[2:]
+        commands.append(recorded)
         return real_run_cmd(command, *args, **kwargs)
 
     monkeypatch.setattr(version_repository.git_warpper, "run_cmd", recording_run_cmd)
@@ -36,9 +40,16 @@ def test_check_repository_update_fetches_upstream_only_and_reads_state_with_one_
     (local / "file.txt").write_text("modified\n", encoding="utf-8")
     commands = _record_git_commands(monkeypatch)
 
+    full_commands = []
+    real_recording = version_repository.git_warpper.run_cmd
+    monkeypatch.setattr(version_repository.git_warpper, "run_cmd", lambda command, *args, **kwargs: full_commands.append(command) or real_recording(command, *args, **kwargs))
+
     status = version_manager.check_repository_update(local)
 
     assert [command[0] for command in commands] == ["fetch", "status"]
+    # 检查更新只更新一个远程引用, 不运行自动维护以免额外启动 git maintenance 子进程
+    fetch_command = full_commands[0]
+    assert fetch_command[fetch_command.index("fetch") - 2 : fetch_command.index("fetch")] == ["-c", "maintenance.auto=false"]
     assert commands[0] == ["fetch", "--no-tags", "origin", "+refs/heads/main:refs/remotes/origin/main"]
     assert status.error is None
     assert status.remote_branch == "origin/main"

@@ -521,6 +521,7 @@ def fetch_remote(
     custom_env: dict[str, str] | None = None,
     retries: int = 1,
     timeout: float | None = None,
+    auto_maintenance: bool = True,
 ) -> None:
     """以非交互方式执行 git fetch, 失败时重试
 
@@ -539,15 +540,19 @@ def fetch_remote(
             失败后的重试次数
         timeout (float | None):
             单次拉取的超时时间 (秒), 为 None 时不限制
+        auto_maintenance (bool):
+            拉取后是否运行 Git 自动维护; 关闭后 git fetch 不再启动 ``git maintenance run --auto`` 子进程,
+            适合仅更新少量远程引用的检查更新, 实际更新仓库时应保持开启以便 Git 按需整理对象库
 
     Raises:
         RuntimeError:
             重试后仍拉取失败或拉取超时时
     """
     env = non_interactive_env(custom_env)
+    config_args = [] if auto_maintenance else ["-c", "maintenance.auto=false"]
     for attempt in range(retries + 1):
         try:
-            run_git("fetch", *args, path=path, custom_env=env, live=live, timeout=timeout)
+            run_git(*config_args, "fetch", *args, path=path, custom_env=env, live=live, timeout=timeout)
             return
         except subprocess.TimeoutExpired as e:
             raise RuntimeError(f"拉取 '{path}' 超时 ({timeout} 秒)") from e
@@ -556,6 +561,42 @@ def fetch_remote(
                 raise
             logger.warning("拉取 '%s' 失败, %s 秒后重试 (%s/%s): %s", path, FETCH_RETRY_DELAY, attempt + 1, retries, e)
             time.sleep(FETCH_RETRY_DELAY)
+
+
+def _read_local_ref_commit(
+    path: Path,
+    ref: str,
+    is_upstream: bool,
+) -> str | None:
+    """读取分支或上游分支当前指向的提交
+
+    优先直接解析 loose refs 和 packed-refs, 避免为每个仓库启动 ``git rev-parse``;
+    无法从文件解析 (如 reftable 存储) 时回退到 Git 命令。
+
+    Args:
+        path (Path):
+            Git 仓库路径
+        ref (str):
+            分支名称 (如 ``main``) 或上游分支名称 (如 ``origin/main``)
+        is_upstream (bool):
+            是否为上游分支; 上游分支依次按远程跟踪分支和本地分支解析
+
+    Returns:
+        (str | None):
+            提交哈希, 引用不存在时返回 None
+    """
+    # repository_inspector 在模块级导入本模块, 此处延迟导入以避免循环导入
+    from sd_webui_all_in_one.base_manager.repository_inspector import read_ref_commit  # pylint: disable=import-outside-toplevel
+
+    candidates = [f"refs/remotes/{ref}", f"refs/heads/{ref}"] if is_upstream else [f"refs/heads/{ref}"]
+    commit = read_ref_commit(path, *candidates)
+    if commit is not None:
+        return commit
+    try:
+        return run_git("rev-parse", "--verify", ref, path=path, live=False).strip()
+    except RuntimeError:
+        logger.debug("'%s' 仓库中不存在引用 '%s'", path, ref)
+        return None
 
 
 def update(
@@ -615,12 +656,10 @@ def update(
         target = branch
         target_commit = None
         for ref in [upstream, branch] if upstream else [branch]:
-            try:
-                target_commit = run_git("rev-parse", "--verify", ref, path=path, live=False).strip()
+            target_commit = _read_local_ref_commit(path, ref, is_upstream=ref == upstream)
+            if target_commit is not None:
                 target = ref
                 break
-            except RuntimeError:
-                logger.debug("'%s' 仓库中不存在引用 '%s'", path, ref)
 
         if target_commit is not None and target_commit == commit and not dirty:
             logger.info("'%s' 已是最新版本", path)

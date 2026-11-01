@@ -35,7 +35,7 @@ def test_update_removes_stale_index_lock_and_retries(monkeypatch, git_remote_pai
     assert git_warpper.update(local, live=False) is True
     assert not lock.exists()
     assert real_git(local, "rev-parse", "HEAD") == new_commit
-    assert subcommands == ["status", "fetch", "rev-parse", "reset", "reset"]
+    assert subcommands == ["status", "fetch", "reset", "reset"]
 
 
 def test_switch_commit_removes_stale_index_lock_in_live_mode(git_remote_pair):

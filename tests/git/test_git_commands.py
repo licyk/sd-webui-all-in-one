@@ -348,3 +348,18 @@ def test_git_max_processes_defaults_lower_on_windows(monkeypatch):
     assert read("linux") == 8
     assert read("win32", "2") == 2
     assert read("linux", "0") == 1
+
+
+def test_fetch_remote_can_skip_auto_maintenance(monkeypatch, tmp_path):
+    repo = tmp_path / "repo"
+    calls = []
+    monkeypatch.setattr(git_warpper, "get_git_exec", lambda: Path("/bin/git"))
+    monkeypatch.setattr(git_warpper, "run_cmd", lambda command, **kwargs: calls.append(command) or "")
+
+    git_warpper.fetch_remote(repo, "origin", live=False)
+    git_warpper.fetch_remote(repo, "origin", live=False, auto_maintenance=False)
+
+    assert calls == [
+        git_command(repo, "fetch", "origin"),
+        git_command(repo, "-c", "maintenance.auto=false", "fetch", "origin"),
+    ]

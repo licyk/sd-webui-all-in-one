@@ -24,11 +24,38 @@ def test_update_pulls_new_commits_and_skips_reset_when_up_to_date(monkeypatch, g
 
     assert git_warpper.update(local, live=False) is True
     assert real_git(local, "rev-parse", "HEAD") == new_commit
-    assert subcommands == ["status", "fetch", "rev-parse", "reset"]
+    # 目标提交直接从引用文件读取, 不再为每个仓库启动 git rev-parse
+    assert subcommands == ["status", "fetch", "reset"]
 
     subcommands.clear()
     assert git_warpper.update(local, live=False) is False
-    assert subcommands == ["status", "fetch", "rev-parse"]
+    assert subcommands == ["status", "fetch"]
+
+
+def test_update_reads_packed_refs_without_rev_parse(monkeypatch, git_remote_pair):
+    upstream, local = git_remote_pair
+    new_commit = push_commit(upstream, "v2\n")
+    real_git(local, "fetch", "-q")
+    real_git(local, "pack-refs", "--all")
+    assert not (local / ".git" / "refs" / "remotes" / "origin" / "main").exists()
+    subcommands = record_git_subcommands(monkeypatch)
+
+    assert git_warpper.update(local, live=False, fetch=False) is True
+    assert real_git(local, "rev-parse", "HEAD") == new_commit
+    assert subcommands == ["status", "reset"]
+
+
+def test_update_falls_back_to_rev_parse_when_refs_unreadable(monkeypatch, git_remote_pair):
+    from sd_webui_all_in_one.base_manager import repository_inspector
+
+    upstream, local = git_remote_pair
+    new_commit = push_commit(upstream, "v2\n")
+    monkeypatch.setattr(repository_inspector, "read_ref_commit", lambda *_args: None)
+    subcommands = record_git_subcommands(monkeypatch)
+
+    assert git_warpper.update(local, live=False) is True
+    assert real_git(local, "rev-parse", "HEAD") == new_commit
+    assert subcommands == ["status", "fetch", "rev-parse", "reset"]
 
 
 def test_update_resets_tracked_changes_even_when_up_to_date(git_remote_pair):
@@ -123,4 +150,4 @@ def test_update_without_fetch_reuses_already_fetched_refs(monkeypatch, git_remot
 
     assert git_warpper.update(local, live=False, fetch=False) is True
     assert real_git(local, "rev-parse", "HEAD") == new_commit
-    assert subcommands == ["status", "rev-parse", "reset"]
+    assert subcommands == ["status", "reset"]
