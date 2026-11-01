@@ -1,6 +1,7 @@
 """本地 Git 仓库信息读取工具"""
 
 import configparser
+import subprocess
 import zlib
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -130,21 +131,35 @@ class BranchUpstream:
     tracking_ref: str | None = None
 
 
-def run_git_output(path: Path, *args: str) -> str:
+GIT_READ_TIMEOUT = 60.0
+"""只读 Git 命令的超时时间 (秒), 避免单个卡住的 Git 进程无限期阻塞并行检查"""
+
+
+def run_git_output(path: Path, *args: str, timeout: float | None = GIT_READ_TIMEOUT) -> str:
     """
-    执行 Git 命令并返回输出
+    执行只读 Git 命令并返回输出
 
     Args:
         path (Path):
             Git 仓库路径
         *args (str):
             Git 命令参数
+        timeout (float | None):
+            命令超时时间 (秒), 为 None 时不限制
 
     Returns:
         str: 命令输出
+
+    Raises:
+        RuntimeError:
+            Git 命令执行失败或超时时
     """
     logger.debug("执行 Git 命令: '%s' %s", path, " ".join(args))
-    output = git_warpper.run_git(*args, path=path, live=False)
+    try:
+        output = git_warpper.run_git(*args, path=path, live=False, timeout=timeout)
+    except subprocess.TimeoutExpired as e:
+        logger.warning("Git 命令执行超时 (%s 秒): '%s' %s", timeout, path, " ".join(args))
+        raise RuntimeError(f"在 '{path}' 中执行 git {' '.join(args)} 超时 ({timeout} 秒)") from e
     if output is None:
         return ""
     return output.strip()
@@ -440,6 +455,63 @@ def _format_git_commit_time(timestamp: str, offset: str) -> str | None:
     return datetime.fromtimestamp(seconds, tz=tzinfo).strftime("%Y-%m-%d %H:%M:%S %z")
 
 
+def _format_commit_subject(raw_message: str) -> str | None:
+    """
+    按 git show %s 的规则提取提交标题
+
+    提交信息第一个空行之前的所有行 (跳过开头的空行) 去除行尾空白后以空格连接。
+
+    Args:
+        raw_message (str):
+            提交信息原文
+
+    Returns:
+        str | None: 提交标题, 为空时返回 None
+    """
+    lines: list[str] = []
+    for line in raw_message.splitlines():
+        stripped = line.rstrip()
+        if not stripped:
+            if lines:
+                break
+            continue
+        lines.append(stripped)
+    return " ".join(lines) or None
+
+
+def _parse_commit_body(body: bytes) -> tuple[str | None, str | None]:
+    """
+    解析 commit object 内容 (不含对象头) 中的提交时间和提交信息
+
+    提交信息使用非 UTF-8 编码 (存在 ``encoding`` 头) 时不解析提交信息, 交由 Git 转码。
+
+    Args:
+        body (bytes):
+            commit object 内容
+
+    Returns:
+        tuple[str | None, str | None]: 提交时间和提交信息
+    """
+    text = body.decode("utf-8", errors="replace")
+    metadata, _sep, raw_message = text.partition("\n\n")
+    commit_date: str | None = None
+    encoding: str | None = None
+    for line in metadata.splitlines():
+        if line.startswith("committer ") and commit_date is None:
+            parts = line.rsplit(" ", 2)
+            if len(parts) == 3:
+                commit_date = _format_git_commit_time(parts[1], parts[2])
+        elif line.startswith("encoding "):
+            encoding = line.removeprefix("encoding ").strip()
+
+    if encoding is not None and encoding.replace("-", "").replace("_", "").lower() != "utf8":
+        logger.debug("提交信息使用 '%s' 编码, 跳过解析提交信息", encoding)
+        return commit_date, None
+    message = _format_commit_subject(raw_message)
+    logger.debug("解析 commit object 完成: 提交时间 '%s', 提交信息 '%s'", commit_date, message)
+    return commit_date, message
+
+
 def _parse_loose_commit_object(content: bytes) -> tuple[str | None, str | None]:
     """
     解析 loose commit object 中的提交时间和提交信息
@@ -455,21 +527,7 @@ def _parse_loose_commit_object(content: bytes) -> tuple[str | None, str | None]:
     if sep == b"" or not header.startswith(b"commit "):
         logger.debug("非 commit 类型的 loose object")
         return None, None
-
-    text = body.decode("utf-8", errors="replace")
-    metadata, _sep, raw_message = text.partition("\n\n")
-    commit_date: str | None = None
-    for line in metadata.splitlines():
-        if not line.startswith("committer "):
-            continue
-        parts = line.rsplit(" ", 2)
-        if len(parts) == 3:
-            commit_date = _format_git_commit_time(parts[1], parts[2])
-        break
-
-    message = raw_message.splitlines()[0] if raw_message else None
-    logger.debug("解析 commit object 完成: 提交时间 '%s', 提交信息 '%s'", commit_date, message)
-    return commit_date, message
+    return _parse_commit_body(body)
 
 
 def _read_loose_commit_details(git_dir: Path, commit: str) -> tuple[str | None, str | None]:
@@ -493,6 +551,161 @@ def _read_loose_commit_details(git_dir: Path, commit: str) -> tuple[str | None, 
         logger.debug("读取或解压 loose object 失败: '%s'", object_path)
         return None, None
     return _parse_loose_commit_object(content)
+
+
+_PACK_INDEX_V2_HEADER = b"\xfftOc\x00\x00\x00\x02"
+"""pack index v2 文件头"""
+
+_PACK_OBJECT_COMMIT = 1
+"""pack 中 commit 对象的类型编号"""
+
+_MAX_PACKED_COMMIT_SIZE = 1024 * 1024
+"""从 pack 读取的 commit 对象大小上限 (字节), 超出时交由 Git 读取"""
+
+
+def _find_pack_offset(index_path: Path, object_id: bytes) -> int | None:
+    """
+    在 pack index v2 文件中查找对象在 pack 文件中的偏移量
+
+    Args:
+        index_path (Path):
+            ``.idx`` 文件路径
+        object_id (bytes):
+            20 字节的 SHA-1 对象 ID
+
+    Returns:
+        int | None: 对象偏移量, 未找到或格式不受支持时返回 None
+    """
+    with index_path.open("rb") as file:
+        if file.read(8) != _PACK_INDEX_V2_HEADER:
+            return None
+        fanout = file.read(256 * 4)
+        if len(fanout) != 256 * 4:
+            return None
+        first_byte = object_id[0]
+        start = int.from_bytes(fanout[(first_byte - 1) * 4 : first_byte * 4], "big") if first_byte else 0
+        end = int.from_bytes(fanout[first_byte * 4 : (first_byte + 1) * 4], "big")
+        total = int.from_bytes(fanout[-4:], "big")
+        if end <= start or end > total:
+            return None
+
+        names_offset = 8 + 256 * 4
+        file.seek(names_offset + start * 20)
+        names = file.read((end - start) * 20)
+        low, high = 0, end - start
+        while low < high:
+            middle = (low + high) // 2
+            name = names[middle * 20 : (middle + 1) * 20]
+            if name < object_id:
+                low = middle + 1
+            elif name > object_id:
+                high = middle
+            else:
+                break
+        else:
+            return None
+        position = start + middle
+
+        # 对象 ID 表之后依次为 CRC32 表 (4 字节/项)、32 位偏移表和 64 位偏移表
+        offsets_offset = names_offset + total * 20 + total * 4
+        file.seek(offsets_offset + position * 4)
+        offset = int.from_bytes(file.read(4), "big")
+        if offset & 0x80000000:
+            file.seek(offsets_offset + total * 4 + (offset & 0x7FFFFFFF) * 8)
+            offset = int.from_bytes(file.read(8), "big")
+        return offset
+
+
+def _read_pack_commit_body(pack_path: Path, offset: int) -> bytes | None:
+    """
+    读取 pack 文件中指定偏移量处的非 delta commit 对象内容
+
+    Args:
+        pack_path (Path):
+            ``.pack`` 文件路径
+        offset (int):
+            对象偏移量
+
+    Returns:
+        bytes | None: commit 对象内容, 对象为 delta 或其他类型时返回 None
+    """
+    with pack_path.open("rb") as file:
+        file.seek(offset)
+        header = file.read(1)
+        if not header:
+            return None
+        byte = header[0]
+        object_type = (byte >> 4) & 0x7
+        size = byte & 0x0F
+        shift = 4
+        while byte & 0x80:
+            header = file.read(1)
+            if not header:
+                return None
+            byte = header[0]
+            size |= (byte & 0x7F) << shift
+            shift += 7
+        # delta 对象需要还原基础对象, 交由 Git 读取
+        if object_type != _PACK_OBJECT_COMMIT or size > _MAX_PACKED_COMMIT_SIZE:
+            return None
+
+        decompressor = zlib.decompressobj()
+        chunks: list[bytes] = []
+        received = 0
+        while received < size and not decompressor.eof:
+            data = file.read(8192)
+            if not data:
+                break
+            # zlib 流在对象末尾结束, 其后的数据会进入 unused_data, 不会混入输出
+            chunk = decompressor.decompress(data)
+            chunks.append(chunk)
+            received += len(chunk)
+    body = b"".join(chunks)
+    return body if len(body) == size else None
+
+
+def _read_packed_commit_details(git_dir: Path, commit: str) -> tuple[str | None, str | None]:
+    """
+    从 pack 文件读取提交时间和提交信息
+
+    仅支持 SHA-1 仓库与 pack index v2 中以非 delta 形式存储的 commit 对象, 其他情况返回空结果交由 Git 读取。
+
+    Args:
+        git_dir (Path):
+            Git 目录路径
+        commit (str):
+            提交哈希
+
+    Returns:
+        tuple[str | None, str | None]: 提交时间和提交信息
+    """
+    if len(commit) != 40:
+        return None, None
+    try:
+        object_id = bytes.fromhex(commit)
+    except ValueError:
+        return None, None
+
+    pack_dir = _resolve_common_git_dir(git_dir) / "objects" / "pack"
+    try:
+        index_paths = sorted(pack_dir.glob("pack-*.idx"))
+    except OSError:
+        return None, None
+    for index_path in index_paths:
+        try:
+            offset = _find_pack_offset(index_path, object_id)
+            if offset is None:
+                continue
+            body = _read_pack_commit_body(index_path.with_suffix(".pack"), offset)
+        except (OSError, zlib.error) as exc:
+            logger.debug("读取 pack 中的 commit 对象失败: '%s': %s", index_path, exc)
+            return None, None
+        if body is None:
+            logger.debug("pack 中的 commit 对象为 delta 或格式不受支持: '%s'", index_path)
+            return None, None
+        return _parse_commit_body(body)
+    logger.debug("pack 中未找到 commit 对象: '%s'", commit)
+    return None, None
 
 
 def _read_repository_head_from_git(path: Path) -> tuple[str | None, str | None, str | None] | None:
@@ -537,6 +750,8 @@ def _read_repository_head_from_git_dir(git_dir: Path) -> tuple[str | None, str |
         logger.debug("从 Git 目录未解析到当前提交")
         return None, None, None
     commit_date, message = _read_loose_commit_details(git_dir, commit)
+    if commit_date is None and message is None:
+        commit_date, message = _read_packed_commit_details(git_dir, commit)
     logger.debug("从 Git 目录解析 HEAD 完成: 提交 '%s', 时间 '%s'", commit, commit_date)
     return commit, commit_date, message
 
@@ -551,7 +766,8 @@ def inspect_repository(path: Path, details: bool = True) -> RepositoryState:
         path (Path):
             仓库路径
         details (bool):
-            是否读取提交时间和提交信息; 关闭后优先直接解析 Git 目录, 不启动 Git 进程,
+            是否读取提交时间和提交信息; 开启时优先从 loose object 或 pack 文件解析提交对象,
+            无法解析 (如 delta 压缩的提交) 时才执行 git show; 关闭后优先直接解析 Git 目录, 不启动 Git 进程,
             此时提交时间和提交信息可能为 None
 
     Returns:
@@ -579,6 +795,11 @@ def inspect_repository(path: Path, details: bool = True) -> RepositoryState:
         commit = _read_head_commit(git_dir)
         if commit is not None:
             head_info = (commit, None, None)
+    else:
+        # 提交对象可直接从 loose object 或 pack 文件解析时无需启动 Git 进程
+        parsed = _read_repository_head_from_git_dir(git_dir)
+        if all(value is not None for value in parsed):
+            head_info = parsed
     if head_info is None:
         head_info = _read_repository_head_from_git(path)
     if head_info is None:

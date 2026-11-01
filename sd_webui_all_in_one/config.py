@@ -1,6 +1,7 @@
 """配置管理"""
 
 import os
+import sys
 import logging
 from pathlib import Path
 
@@ -15,6 +16,9 @@ LOGGER_COLOR = os.getenv("SD_WEBUI_ALL_IN_ONE_LOGGER_COLOR") not in ["0", "False
 
 RETRY_TIMES = int(os.getenv("SD_WEBUI_ALL_IN_ONE_RETRY_TIMES", str(3)))
 """重试次数"""
+
+GIT_MAX_PROCESSES = max(1, int(os.getenv("SD_WEBUI_ALL_IN_ONE_GIT_MAX_PROCESSES", str(4 if sys.platform == "win32" else 8))))
+"""同时运行的 Git 进程数上限; Windows 创建进程开销大且易被杀毒软件实时扫描拖慢, 默认使用更低的上限"""
 
 DEFAULT_ENV_VARS: dict[str, str] = {
     "TF_CPP_MIN_LOG_LEVEL": "3",

@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import subprocess
+import threading
 import time
 from pathlib import Path
 from functools import cache
@@ -11,6 +12,7 @@ from typing import Literal, overload
 
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
+    GIT_MAX_PROCESSES,
     LOGGER_LEVEL,
     LOGGER_COLOR,
     LOGGER_NAME,
@@ -24,10 +26,36 @@ logger = get_logger(
     color=LOGGER_COLOR,
 )
 
-GIT_CONFIG_ARGS = ["-c", "safe.directory=*", "-c", "core.longpaths=true"]
+GIT_CONFIG_ARGS = [
+    "-c",
+    "safe.directory=*",
+    "-c",
+    "core.longpaths=true",
+    "-c",
+    "core.fsmonitor=false",
+    "-c",
+    "gc.autoDetach=false",
+    "-c",
+    "maintenance.autoDetach=false",
+]
+"""所有 Git 命令附加的运行时配置
+
+- ``core.fsmonitor=false``: 避免用户全局配置启用 fsmonitor 时为每个仓库启动常驻守护进程
+- ``gc.autoDetach=false`` / ``maintenance.autoDetach=false``: 自动维护在当前命令内完成, 不脱离进程数上限在后台另起 Git 进程
+"""
 
 NON_INTERACTIVE_GIT_ENV = {"GIT_TERMINAL_PROMPT": "0", "GCM_INTERACTIVE": "never"}
 """禁止 Git 与 Git Credential Manager 弹出交互式凭据输入的环境变量, 避免无人值守的拉取操作挂起"""
+
+CAPTURED_GIT_ENV = {**NON_INTERACTIVE_GIT_ENV, "GIT_OPTIONAL_LOCKS": "0"}
+"""捕获输出 (不实时显示) 的 Git 命令附加的环境变量
+
+此类命令无法向用户显示凭据提示, 因此禁止交互; 同时禁止 ``git status`` 等只读命令顺带回写索引,
+减少磁盘写入与杀毒软件扫描, 也避免与用户的 Git 客户端争用 ``index.lock``。
+"""
+
+_GIT_PROCESS_SLOTS = threading.BoundedSemaphore(GIT_MAX_PROCESSES)
+"""限制同时运行的 Git 进程数, 由所有调用方共享, 多个线程池同时执行 Git 命令时也不会超出上限"""
 
 FETCH_RETRY_DELAY = 2.0
 """拉取失败后重试前的等待时间 (秒)"""
@@ -352,6 +380,8 @@ def run_git(
     执行 Git 命令
 
     指定了仓库路径且命令失败时, 若仓库中存在残留的 Git 锁文件 (如 `index.lock`), 清理后重试一次。
+    同时运行的 Git 进程数受 `GIT_MAX_PROCESSES` 限制, 超出时等待其他 Git 命令结束;
+    捕获输出 (`live=False`) 的命令附加 `CAPTURED_GIT_ENV` 环境变量。
 
     Args:
         *args (str):
@@ -379,13 +409,17 @@ def run_git(
             Git 命令执行失败, 且无可清理的残留锁文件或清理后重试仍失败时
     """
     command = build_git_command(*args, path=path)
+    if not live:
+        custom_env = (os.environ if custom_env is None else custom_env).copy()
+        custom_env.update(CAPTURED_GIT_ENV)
 
     def _run() -> str | None:
-        if custom_env is None and live is True and shell == DEFAULT_SUBPROCESS_SHELL and cwd is None and check is True and timeout is None:
-            return run_cmd(command)
-        if custom_env is None and shell == DEFAULT_SUBPROCESS_SHELL and cwd is None and check is True and timeout is None:
-            return run_cmd(command, live=live)
-        return run_cmd(command, custom_env=custom_env, live=live, shell=shell, cwd=cwd, check=check, timeout=timeout)
+        with _GIT_PROCESS_SLOTS:
+            if custom_env is None and live is True and shell == DEFAULT_SUBPROCESS_SHELL and cwd is None and check is True and timeout is None:
+                return run_cmd(command)
+            if shell == DEFAULT_SUBPROCESS_SHELL and cwd is None and check is True and timeout is None:
+                return run_cmd(command, custom_env=custom_env, live=live)
+            return run_cmd(command, custom_env=custom_env, live=live, shell=shell, cwd=cwd, check=check, timeout=timeout)
 
     try:
         return _run()

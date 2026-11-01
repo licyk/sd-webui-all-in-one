@@ -105,13 +105,16 @@ def test_collect_repository_snapshot_includes_dirty_flag(monkeypatch, tmp_path):
         message="snapshot",
     )
     monkeypatch.setattr(snapshot_collection, "inspect_repository", lambda _path: state)
-    monkeypatch.setattr(snapshot_collection, "run_git_output", lambda _path, *args: " M file.py\n")
+    calls = []
+    monkeypatch.setattr(snapshot_collection, "run_git_output", lambda _path, *args: calls.append(args) or " M file.py\n")
 
     data = snapshot_utils.collect_repository_snapshot(tmp_path)
 
     assert data.is_git_repo is True
     assert data.url == "https://github.com/example/repo"
     assert data.dirty is True
+    # 未跟踪文件不影响恢复, 不扫描以避免遍历大型未跟踪目录
+    assert calls == [("status", "--porcelain", "--untracked-files=no")]
 
 
 def test_collect_git_extensions_filters_non_git_directories(monkeypatch, tmp_path):

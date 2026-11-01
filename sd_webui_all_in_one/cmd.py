@@ -62,6 +62,39 @@ logger = get_logger(
 
 DEFAULT_SUBPROCESS_SHELL = sys.platform != "win32"
 
+CREATE_NO_WINDOW = 0x08000000
+"""Windows 进程创建标志: 为控制台程序创建不显示窗口的控制台"""
+
+
+def _windows_console_attached() -> bool:
+    """检查当前 Windows 进程是否附加了控制台
+
+    Returns:
+        bool: 已附加控制台或无法判断时返回 True
+    """
+    try:
+        import ctypes
+
+        return bool(getattr(ctypes, "windll").kernel32.GetConsoleWindow())
+    except (AttributeError, OSError):
+        return True
+
+
+def captured_process_kwargs() -> dict[str, Any]:
+    """生成捕获输出 (不实时显示) 的子进程额外参数
+
+    捕获输出的命令无法向用户显示提示, 因此不继承标准输入, 避免子进程等待输入而挂起。
+    Windows 上当前进程未附加控制台 (如 GUI 程序) 时, 每个控制台子进程都会新建可见的控制台窗口,
+    此时使用 ``CREATE_NO_WINDOW`` 隐藏窗口; 已附加控制台时子进程直接共享该控制台, 不额外设置。
+
+    Returns:
+        dict[str, Any]: ``subprocess`` 参数
+    """
+    kwargs: dict[str, Any] = {"stdin": subprocess.DEVNULL}
+    if sys.platform == "win32" and not _windows_console_attached():
+        kwargs["creationflags"] = CREATE_NO_WINDOW
+    return kwargs
+
 
 def preprocess_command(
     command: list[str] | str,
@@ -276,6 +309,7 @@ def run_cmd(
 
     if not live:
         kwargs["stdout"] = kwargs["stderr"] = subprocess.PIPE
+        kwargs.update(captured_process_kwargs())
     if timeout is not None:
         kwargs["timeout"] = timeout
 

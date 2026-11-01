@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from sd_webui_all_in_one import git_warpper
-from tests.git.helpers import git_command
+from tests.git.helpers import GIT_RUNTIME_CONFIG, git_command
 
 
 def test_run_git_passes_timeout_to_run_cmd(monkeypatch):
@@ -16,19 +16,13 @@ def test_run_git_passes_timeout_to_run_cmd(monkeypatch):
     monkeypatch.setattr(git_warpper, "run_cmd", lambda command, **kwargs: calls.append((command, kwargs)) or "")
 
     assert git_warpper.run_git("ls-remote", "https://example.test/repo", live=False, shell=False, timeout=2.5) == ""
-    assert calls == [
-        (
-            ["git", "ls-remote", "https://example.test/repo"],
-            {
-                "custom_env": None,
-                "live": False,
-                "shell": False,
-                "cwd": None,
-                "check": True,
-                "timeout": 2.5,
-            },
-        )
-    ]
+    [(command, kwargs)] = calls
+    env = kwargs.pop("custom_env")
+    assert command == ["git", "ls-remote", "https://example.test/repo"]
+    assert kwargs == {"live": False, "shell": False, "cwd": None, "check": True, "timeout": 2.5}
+    assert env["GIT_TERMINAL_PROMPT"] == "0"
+    assert env["GCM_INTERACTIVE"] == "never"
+    assert env["GIT_OPTIONAL_LOCKS"] == "0"
 
 
 @pytest.fixture(autouse=True)
@@ -39,7 +33,7 @@ def clear_git_exec_cache():
 
 
 def _git_no_path(*args: str) -> list[str]:
-    return ["/bin/git", "-c", "safe.directory=*", "-c", "core.longpaths=true", *args]
+    return ["/bin/git", *GIT_RUNTIME_CONFIG, *args]
 
 
 def test_get_git_exec_uses_which_and_caches(monkeypatch):
@@ -286,3 +280,71 @@ def test_fetch_remote_converts_timeout_without_retry(monkeypatch, tmp_path):
     with pytest.raises(RuntimeError, match="超时"):
         git_warpper.fetch_remote(tmp_path, live=False, timeout=5)
     assert calls == [5]
+
+
+def test_run_git_limits_concurrent_git_processes(monkeypatch):
+    import threading
+    import time
+
+    monkeypatch.setattr(git_warpper, "build_git_command", lambda *args, path=None: ["git", *args])
+    monkeypatch.setattr(git_warpper, "_GIT_PROCESS_SLOTS", threading.BoundedSemaphore(2))
+    lock = threading.Lock()
+    running = 0
+    peak = 0
+
+    def slow_run_cmd(command, **kwargs):
+        nonlocal running, peak
+        with lock:
+            running += 1
+            peak = max(peak, running)
+        time.sleep(0.05)
+        with lock:
+            running -= 1
+        return ""
+
+    monkeypatch.setattr(git_warpper, "run_cmd", slow_run_cmd)
+    threads = [threading.Thread(target=git_warpper.run_git, args=("status",), kwargs={"live": False}) for _ in range(6)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert peak == 2
+
+
+def test_run_git_only_adds_captured_env_to_captured_commands(monkeypatch):
+    calls = []
+    monkeypatch.setattr(git_warpper, "build_git_command", lambda *args, path=None: ["git", *args])
+    monkeypatch.setattr(git_warpper, "run_cmd", lambda command, **kwargs: calls.append(kwargs) or "")
+    base_env = {"PATH": "/bin"}
+
+    git_warpper.run_git("status", live=False, custom_env=base_env)
+    git_warpper.run_git("pull")
+
+    assert calls[0]["custom_env"] == {"PATH": "/bin", **git_warpper.CAPTURED_GIT_ENV}
+    assert base_env == {"PATH": "/bin"}
+    # 实时输出的命令保留原有调用方式, 用户仍可响应凭据提示
+    assert calls[1] == {}
+
+
+def test_git_max_processes_defaults_lower_on_windows(monkeypatch):
+    import importlib.util
+    import sys
+
+    from sd_webui_all_in_one import config
+
+    def read(platform, value=None):
+        monkeypatch.setattr(sys, "platform", platform)
+        if value is None:
+            monkeypatch.delenv("SD_WEBUI_ALL_IN_ONE_GIT_MAX_PROCESSES", raising=False)
+        else:
+            monkeypatch.setenv("SD_WEBUI_ALL_IN_ONE_GIT_MAX_PROCESSES", value)
+        spec = importlib.util.spec_from_file_location("_isolated_config", config.__file__)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.GIT_MAX_PROCESSES
+
+    assert read("win32") == 4
+    assert read("linux") == 8
+    assert read("win32", "2") == 2
+    assert read("linux", "0") == 1

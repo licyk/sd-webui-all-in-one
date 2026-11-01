@@ -321,3 +321,131 @@ def test_read_head_commit_parses_git_dir_without_git_command(tmp_path, monkeypat
 
     assert repository_inspector.read_head_commit(repo_path) == commit
     assert repository_inspector.read_head_commit(tmp_path / "missing") is None
+
+
+def _real_git_show_head(repo_path):
+    from tests.support.git import real_git
+
+    commit, commit_date, message = real_git(repo_path, "show", "-s", "--format=%H%x1f%ci%x1f%s", "HEAD").split("\x1f")
+    return commit, commit_date, message
+
+
+@pytest.mark.parametrize("repack", [False, True], ids=["loose", "packed"])
+def test_inspect_repository_reads_commit_details_from_git_dir_matching_git_show(git_remote_pair, monkeypatch, repack):
+    from tests.support.git import real_git
+
+    _upstream, local = git_remote_pair
+    (local / "file.txt").write_text("v2\n", encoding="utf-8")
+    monkeypatch.setenv("GIT_COMMITTER_DATE", "1767225600 +0800")
+    # 多行标题段落应按 git show %s 规则以空格连接
+    real_git(local, "commit", "-q", "-am", "Subject line\nwraps here  \n\nBody text")
+    if repack:
+        real_git(local, "repack", "-a", "-d", "-q")
+        real_git(local, "prune-packed")
+        assert not any((local / ".git" / "objects").glob("[0-9a-f][0-9a-f]/*"))
+    expected = _real_git_show_head(local)
+
+    def fail_git_output(*_args, **_kwargs):
+        raise AssertionError("commit details should be parsed without spawning git")
+
+    monkeypatch.setattr(repository_inspector, "run_git_output", fail_git_output)
+
+    state = inspect_repository(local)
+
+    assert (state.commit, state.commit_date, state.message) == expected
+    assert state.message == "Subject line wraps here"
+    assert state.commit_date == "2026-01-01 08:00:00 +0800"
+
+
+def test_inspect_repository_falls_back_to_git_show_when_packed_commit_unreadable(git_remote_pair, monkeypatch):
+    from tests.support.git import real_git
+
+    _upstream, local = git_remote_pair
+    real_git(local, "repack", "-a", "-d", "-q")
+    real_git(local, "prune-packed")
+    expected = _real_git_show_head(local)
+    for pack_path in (local / ".git" / "objects" / "pack").glob("pack-*.pack"):
+        pack_path.chmod(0o644)
+        pack_path.write_bytes(b"PACK" + b"\x00" * 64)
+    calls = []
+
+    def fake_git_output(path, *args):
+        calls.append(args)
+        return "\x1f".join(expected)
+
+    monkeypatch.setattr(repository_inspector, "run_git_output", fake_git_output)
+
+    state = inspect_repository(local)
+
+    assert calls == [("show", "-s", "--format=%H%x1f%ci%x1f%s", "HEAD")]
+    assert (state.commit, state.commit_date, state.message) == expected
+
+
+def test_parse_commit_body_skips_message_with_non_utf8_encoding():
+    body = b"tree " + b"b" * 40 + b"\ncommitter Demo <d@e> 0 +0000\nencoding GBK\n\n\xd6\xd0\xce\xc4\n"
+
+    assert repository_inspector._parse_commit_body(body) == ("1970-01-01 00:00:00 +0000", None)
+    assert repository_inspector._parse_commit_body(body.replace(b"GBK", b"UTF-8").replace(b"\xd6\xd0\xce\xc4", "中文".encode()))[1] == "中文"
+
+
+def test_run_git_output_converts_timeout_to_runtime_error(tmp_path, monkeypatch):
+    import subprocess
+
+    calls = []
+
+    def hanging_run_git(*args, **kwargs):
+        calls.append(kwargs["timeout"])
+        raise subprocess.TimeoutExpired(["git", *args], kwargs["timeout"])
+
+    monkeypatch.setattr(repository_inspector.git_warpper, "run_git", hanging_run_git)
+
+    with pytest.raises(RuntimeError, match="超时"):
+        repository_inspector.run_git_output(tmp_path, "status")
+    assert calls == [repository_inspector.GIT_READ_TIMEOUT]
+
+
+def test_probe_repository_reports_unknown_dirty_state_on_timeout(tmp_path, monkeypatch):
+    import subprocess
+
+    repo_path = tmp_path / "repo"
+    commit = "e" * 40
+    _write_fake_git_dir(repo_path, commit)
+
+    def hanging_run_git(*args, **kwargs):
+        raise subprocess.TimeoutExpired(["git", *args], kwargs["timeout"])
+
+    monkeypatch.setattr(repository_inspector.git_warpper, "run_git", hanging_run_git)
+    monkeypatch.setattr(repository_inspector.git_warpper, "is_git_repo", lambda _path: True)
+
+    probe = repository_inspector.probe_repository(repo_path)
+
+    assert probe.is_git_repo is True
+    assert probe.dirty is None
+    assert probe.commit == commit
+
+
+def test_find_pack_offset_reads_64_bit_offset_table(tmp_path):
+    small_id = bytes.fromhex("10" + "0" * 38)
+    large_id = bytes.fromhex("10" + "f" * 38)
+    other_id = bytes.fromhex("a0" + "1" * 38)
+    names = [small_id, large_id, other_id]
+    fanout = b"".join(sum(name[0] <= byte for name in names).to_bytes(4, "big") for byte in range(256))
+    large_offset = 5 * 1024**3
+    index = (
+        repository_inspector._PACK_INDEX_V2_HEADER
+        + fanout
+        + b"".join(names)
+        + b"\x00" * 4 * len(names)
+        + (12).to_bytes(4, "big")
+        + (0x80000000 | 0).to_bytes(4, "big")
+        + (99).to_bytes(4, "big")
+        + large_offset.to_bytes(8, "big")
+    )
+    index_path = tmp_path / "pack-test.idx"
+    index_path.write_bytes(index)
+
+    assert repository_inspector._find_pack_offset(index_path, small_id) == 12
+    assert repository_inspector._find_pack_offset(index_path, large_id) == large_offset
+    assert repository_inspector._find_pack_offset(index_path, other_id) == 99
+    assert repository_inspector._find_pack_offset(index_path, bytes.fromhex("10" + "5" * 38)) is None
+    assert repository_inspector._find_pack_offset(index_path, bytes.fromhex("20" + "0" * 38)) is None

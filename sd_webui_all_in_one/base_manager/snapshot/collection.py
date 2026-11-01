@@ -243,7 +243,10 @@ def repository_state_to_snapshot(state: RepositoryState) -> RepositorySnapshot:
 
 
 def repository_dirty(path: Path, is_git_repo: bool) -> bool | None:
-    """检查 Git 仓库是否存在未提交变更
+    """检查 Git 仓库的已跟踪文件是否存在未提交变更
+
+    不扫描未跟踪文件: 恢复使用的 ``git reset --hard`` 不会删除未跟踪文件, 与恢复和更新流程的判断方式一致,
+    同时避免在大型工作区中遍历未跟踪目录。
 
     Args:
         path (Path):
@@ -257,7 +260,7 @@ def repository_dirty(path: Path, is_git_repo: bool) -> bool | None:
     if not is_git_repo:
         return None
     try:
-        return run_git_output(path, "status", "--porcelain") != ""
+        return run_git_output(path, "status", "--porcelain", "--untracked-files=no") != ""
     except (RuntimeError, OSError) as e:
         logger.warning("检查 Git 仓库变更状态失败: %s: %s", path, e)
         return None

@@ -6,8 +6,22 @@ from sd_webui_all_in_one import git_warpper
 from tests.support.git import real_git
 
 
+GIT_RUNTIME_CONFIG = [
+    "-c",
+    "safe.directory=*",
+    "-c",
+    "core.longpaths=true",
+    "-c",
+    "core.fsmonitor=false",
+    "-c",
+    "gc.autoDetach=false",
+    "-c",
+    "maintenance.autoDetach=false",
+]
+
+
 def git_command(repo: Path, *args: str) -> list[str]:
-    return ["/bin/git", "-c", "safe.directory=*", "-c", "core.longpaths=true", "-C", repo.as_posix(), *args]
+    return ["/bin/git", *GIT_RUNTIME_CONFIG, "-C", repo.as_posix(), *args]
 
 
 def push_commit(upstream: Path, content: str) -> str:
@@ -22,7 +36,7 @@ def record_git_subcommands(monkeypatch) -> list[str]:
     real_run_cmd = git_warpper.run_cmd
 
     def recording_run_cmd(command, *args, **kwargs):
-        subcommands.append(command[command.index("-C") + 2] if "-C" in command else command[5])
+        subcommands.append(command[command.index("-C") + 2] if "-C" in command else command[len(GIT_RUNTIME_CONFIG) + 1])
         return real_run_cmd(command, *args, **kwargs)
 
     monkeypatch.setattr(git_warpper, "run_cmd", recording_run_cmd)
