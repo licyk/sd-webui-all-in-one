@@ -78,6 +78,14 @@ class PyTorchUpdateStatus:
     latest_name: str | None
     has_update: bool
     error: str | None = None
+    latest_device_type: PyTorchDeviceType | None = None
+    """最新版本组合的设备类型, 与 `device_type` 不同时表示更新需要切换设备类型 (如 `cu130` -> `cu132`)。"""
+
+    recommended_device_type: PyTorchDeviceType | None = None
+    """根据当前设备自动检测到的推荐设备类型。"""
+
+    device_type_changed: bool = False
+    """最新版本组合的设备类型是否与已安装的设备类型不同。"""
 
 
 @dataclass(frozen=True, slots=True)

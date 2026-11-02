@@ -10,7 +10,11 @@ from sd_webui_all_in_one.package_analyzer import (
     Specifier,
     Version,
 )
-from sd_webui_all_in_one.pytorch_manager.gpu_detector import get_available_pytorch_device_type
+from sd_webui_all_in_one.pytorch_manager.gpu_detector import (
+    ROCM_MULTI_ARCH_PYTORCH_TYPE_LIST,
+    GPUDeviceInfo,
+    get_available_pytorch_device_type,
+)
 from sd_webui_all_in_one.pytorch_manager.types import (
     PYTORCH_DEVICE_LIST,
     PyTorchVersionInfo,
@@ -91,14 +95,51 @@ def _get_pytorch_device_category(
     return None
 
 
-def export_pytorch_list() -> PyTorchVersionInfoList:
+def _get_pytorch_variant_lineage(
+    dtype: PyTorchDeviceType,
+) -> str | None:
+    """获取 PyTorch 设备类型所属的构建系列
+
+    同一构建系列内的设备类型可以互相迁移 (例如 `cu130` -> `cu132`), 用于在检查 PyTorch 更新时跨设备类型查找更新的版本。
+
+    - `cuda`: 全部 CUDA 类型 (`cuXXX`)
+    - `rocm_multi_arch`: AMD 多架构 wheel (`rocm7` / `rocm10`)
+    - `rocm`: PyTorch 官方 ROCm wheel (如 `rocm7.2`)
+    - `xpu`: Intel XPU (`xpu`)
+    - `cpu`: CPU (`cpu`)
+
+    旧版 IPEX (`ipex_legacy_*`), DirectML (`directml`) 和无类型标识 (`all`) 的 PyTorch 不属于任何构建系列, 不进行跨设备类型迁移。
+
+    Args:
+        dtype (PyTorchDeviceType):
+            PyTorch 设备类型
+
+    Returns:
+        str | None:
+            构建系列名称, 不属于任何构建系列时返回 None
+    """
+    dtype = resolve_pytorch_device_type(dtype)
+    if dtype in ROCM_MULTI_ARCH_PYTORCH_TYPE_LIST:
+        return "rocm_multi_arch"
+    if dtype.startswith("ipex") or dtype == "all":
+        return None
+    return _get_pytorch_device_category(dtype)
+
+
+def export_pytorch_list(
+    gpu_list: list[GPUDeviceInfo] | None = None,
+) -> PyTorchVersionInfoList:
     """导出 PyTorch 版本列表
+
+    Args:
+        gpu_list (list[GPUDeviceInfo] | None):
+            GPU 列表, 用于判断版本组合是否受当前设备支持, 为 None 时自动获取当前平台上的 GPU 列表
 
     Returns:
         PyTorchVersionInfoList:
             PyTorch 版本列表
     """
-    device_list = set(get_available_pytorch_device_type())
+    device_list = set(get_available_pytorch_device_type() if gpu_list is None else get_available_pytorch_device_type(gpu_list))
     new_pytorch_list: PyTorchVersionInfoList = []
     current_platform = sys.platform
 
@@ -119,12 +160,15 @@ def export_pytorch_list() -> PyTorchVersionInfoList:
 
 def find_latest_pytorch_info(
     dtype: PyTorchDeviceType,
+    pytorch_list: PyTorchVersionInfoList | None = None,
 ) -> PyTorchVersionInfo:
     """根据 PyTorch 类型在 PyTorch 版本下载信息列表中查找适合该类型的最新版本的 PyTorch 下载信息
 
     Args:
         dtype (PyTorchDeviceType):
             PyTorch 支持的设备类型
+        pytorch_list (PyTorchVersionInfoList | None):
+            已标注设备支持情况的 PyTorch 版本列表 (`export_pytorch_list` 的结果), 为 None 时重新导出
 
     Returns:
         PyTorchVersionInfo:
@@ -136,7 +180,8 @@ def find_latest_pytorch_info(
     """
 
     dtype = resolve_pytorch_device_type(dtype)
-    pytorch_list = export_pytorch_list()
+    if pytorch_list is None:
+        pytorch_list = export_pytorch_list()
     pytorch_info_list = [x for x in pytorch_list if x["dtype"] == dtype]
     if not pytorch_info_list:
         raise ValueError(f"PyTorch 类型不存在: '{dtype}'")
@@ -154,6 +199,74 @@ def find_latest_pytorch_info(
             latest_info = info
 
     return latest_info
+
+
+def find_pytorch_update_target(
+    installed_dtype: PyTorchDeviceType,
+    recommended_dtype: PyTorchDeviceType | None = None,
+    pytorch_list: PyTorchVersionInfoList | None = None,
+) -> PyTorchVersionInfo:
+    """查找当前 PyTorch 可更新到的最新版本组合
+
+    候选的设备类型包括:
+    - 已安装的设备类型 (受当前设备支持时)
+    - 推荐的设备类型 (通常为自动检测到的设备类型), 仅在与已安装的设备类型属于同一构建系列时加入
+
+    在候选的设备类型中选择 torch 版本 (忽略本地版本号) 最新的版本组合, 版本相同时保留已安装的设备类型, 避免无意义的设备类型切换。
+    例如已安装 `cu130` 且 `cu130` 已停止更新时, 若当前设备推荐 `cu132`, 则返回 `cu132` 中更新的版本组合。
+
+    推荐的设备类型应当来自 `auto_detect_available_pytorch_type`, 因为其会检查显卡驱动支持的 CUDA 版本,
+    而版本列表中的 `supported` 标记对于计算能力 >= 10.0 的显卡不检查驱动版本, 不能单独用于决定跨设备类型的更新目标。
+
+    Args:
+        installed_dtype (PyTorchDeviceType):
+            当前已安装的 PyTorch 设备类型
+        recommended_dtype (PyTorchDeviceType | None):
+            推荐的 PyTorch 设备类型, 为 None 时只在已安装的设备类型中查找
+        pytorch_list (PyTorchVersionInfoList | None):
+            已标注设备支持情况的 PyTorch 版本列表 (`export_pytorch_list` 的结果), 为 None 时重新导出
+
+    Returns:
+        PyTorchVersionInfo:
+            可更新到的最新 PyTorch 版本下载信息
+
+    Raises:
+        ValueError:
+            已安装的设备类型和推荐的设备类型中都没有受支持的版本组合时
+    """
+    installed_dtype = resolve_pytorch_device_type(installed_dtype)
+    if pytorch_list is None:
+        pytorch_list = export_pytorch_list()
+
+    candidates: list[PyTorchVersionInfo] = []
+    installed_error: ValueError | None = None
+    try:
+        candidates.append(find_latest_pytorch_info(installed_dtype, pytorch_list=pytorch_list))
+    except ValueError as exc:
+        installed_error = exc
+
+    if recommended_dtype is not None:
+        recommended_dtype = resolve_pytorch_device_type(recommended_dtype)
+        lineage = _get_pytorch_variant_lineage(installed_dtype)
+        if recommended_dtype != installed_dtype and lineage is not None and lineage == _get_pytorch_variant_lineage(recommended_dtype):
+            try:
+                candidates.append(find_latest_pytorch_info(recommended_dtype, pytorch_list=pytorch_list))
+            except ValueError:
+                pass
+
+    if not candidates:
+        raise installed_error or ValueError(f"当前平台不支持 PyTorch 类型: '{installed_dtype}'")
+
+    def _public_version(info: PyTorchVersionInfo) -> Version:
+        # 忽略本地版本号 (如 +cu130), 避免同一 torch 版本因设备类型不同而被视为更新
+        return Version.parse(_extract_torch_version(info.get("torch_ver") or "")).without_local()
+
+    target = candidates[0]
+    for candidate in candidates[1:]:
+        if _public_version(candidate) > _public_version(target):
+            target = candidate
+
+    return target
 
 
 def display_pytorch_config(

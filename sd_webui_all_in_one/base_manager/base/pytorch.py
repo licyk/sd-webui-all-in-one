@@ -17,7 +17,9 @@ from sd_webui_all_in_one.pytorch_manager import (
     display_pytorch_config,
     export_pytorch_list,
     find_latest_pytorch_info,
+    find_pytorch_update_target,
     find_torch_requirement,
+    get_gpu_list,
     normalize_pytorch_version_suffix,
     PyTorchDeviceType,
     PyTorchDeviceTypeCategory,
@@ -53,7 +55,9 @@ def get_pytorch_update_status() -> PyTorchUpdateStatus:
     """获取当前环境中 PyTorch 的详细更新状态。
 
     从已安装的 ``torch`` 版本后缀推断并规范化 PyTorch 类型。无法识别
-    类型时使用 ``all``，然后与版本表中该类型的最新受支持版本比较。
+    类型时使用 ``all``。然后在该类型和自动检测到的推荐类型 (属于同一构建
+    系列时, 如 ``cu130`` 与 ``cu132``) 中查找最新的受支持版本进行比较,
+    使已安装类型停止更新时仍能发现推荐类型中更新的版本。
 
     Returns:
         PyTorchUpdateStatus:
@@ -67,8 +71,15 @@ def get_pytorch_update_status() -> PyTorchUpdateStatus:
     _, separator, suffix = (current_version or "").partition("+")
     dtype = normalize_pytorch_version_suffix(suffix) if separator else None
     resolved_dtype: PyTorchDeviceType = dtype or "all"
+    # GPU 列表只获取一次, 设备支持情况与推荐类型共用同一份检测结果
+    gpu_list = get_gpu_list()
+    recommended_dtype = auto_detect_available_pytorch_type(gpu_list)
     try:
-        latest_info = find_latest_pytorch_info(resolved_dtype)
+        latest_info = find_pytorch_update_target(
+            resolved_dtype,
+            recommended_dtype,
+            pytorch_list=export_pytorch_list(gpu_list),
+        )
     except ValueError as exc:
         return PyTorchUpdateStatus(
             installed=current_version is not None,
@@ -78,7 +89,10 @@ def get_pytorch_update_status() -> PyTorchUpdateStatus:
             latest_name=None,
             has_update=current_version is None,
             error=str(exc),
+            recommended_device_type=recommended_dtype,
         )
+    latest_dtype = latest_info["dtype"]
+    device_type_changed = latest_dtype != resolved_dtype
     latest_torch = find_torch_requirement(latest_info.get("torch_ver") or "")
     if latest_torch is None or not latest_torch.specifier:
         return PyTorchUpdateStatus(
@@ -88,17 +102,39 @@ def get_pytorch_update_status() -> PyTorchUpdateStatus:
             latest_version=None,
             latest_name=latest_info.get("name"),
             has_update=current_version is None,
-            error=f"PyTorch 版本表中的 '{resolved_dtype}' 类型缺少可比较的 torch 版本",
+            error=f"PyTorch 版本表中的 '{latest_dtype}' 类型缺少可比较的 torch 版本",
+            latest_device_type=latest_dtype,
+            recommended_device_type=recommended_dtype,
+            device_type_changed=device_type_changed,
         )
 
     latest_version = latest_torch.specifier.specifiers[0].version
+    if current_version is None:
+        has_update = True
+    elif device_type_changed:
+        # 不同设备类型的本地版本号 (如 +cu130 / +cu132) 不可比较, 只比较公共版本号
+        has_update = Version.parse(current_version).without_local() < Version.parse(latest_version).without_local()
+    else:
+        has_update = Version.parse(current_version) < Version.parse(latest_version)
+
+    if has_update and device_type_changed and current_version is not None:
+        logger.info(
+            "当前设备推荐的 '%s' 类型存在比已安装的 '%s' 类型更新的 PyTorch 版本: %s -> %s",
+            latest_dtype,
+            resolved_dtype,
+            current_version,
+            latest_version,
+        )
     return PyTorchUpdateStatus(
         installed=current_version is not None,
         current_version=current_version,
         device_type=resolved_dtype,
         latest_version=latest_version,
         latest_name=latest_info.get("name"),
-        has_update=current_version is None or Version.parse(current_version) < Version.parse(latest_version),
+        has_update=has_update,
+        latest_device_type=latest_dtype,
+        recommended_device_type=recommended_dtype,
+        device_type_changed=device_type_changed,
     )
 
 

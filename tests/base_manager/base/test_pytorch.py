@@ -7,6 +7,14 @@ import pytest
 
 from sd_webui_all_in_one.base_manager import base as base_module
 from sd_webui_all_in_one.base_manager.base import pytorch as base_pytorch
+from sd_webui_all_in_one.pytorch_manager import version_manager
+
+
+def _patch_update_detection(monkeypatch, recommended="cpu"):
+    """隔离更新检查中的硬件检测, 返回记录 find_pytorch_update_target 调用的列表"""
+    monkeypatch.setattr(base_pytorch, "get_gpu_list", lambda: [])
+    monkeypatch.setattr(base_pytorch, "auto_detect_available_pytorch_type", lambda _gpu_list=None: recommended)
+    monkeypatch.setattr(base_pytorch, "export_pytorch_list", lambda _gpu_list=None: [])
 
 
 def test_install_pytorch_for_webui_only_installs_missing_packages(monkeypatch):
@@ -48,11 +56,12 @@ def test_install_pytorch_for_webui_only_installs_missing_packages(monkeypatch):
 )
 def test_check_pytorch_version(monkeypatch, current_version, latest_spec, expected_dtype, expected):
     calls = []
+    _patch_update_detection(monkeypatch)
     monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda name: current_version if name == "torch" else "")
     monkeypatch.setattr(
         base_pytorch,
-        "find_latest_pytorch_info",
-        lambda dtype: calls.append(dtype) or {"torch_ver": latest_spec},
+        "find_pytorch_update_target",
+        lambda dtype, _recommended, pytorch_list=None: calls.append(dtype) or {"dtype": dtype, "torch_ver": latest_spec},
     )
 
     assert base_module.check_pytorch_version() is expected
@@ -63,14 +72,17 @@ def test_check_pytorch_version_treats_missing_torch_as_needing_update(monkeypatc
     def missing_torch(_name):
         raise base_pytorch.importlib.metadata.PackageNotFoundError
 
+    _patch_update_detection(monkeypatch)
     monkeypatch.setattr(base_pytorch.importlib.metadata, "version", missing_torch)
+    monkeypatch.setattr(base_pytorch, "find_pytorch_update_target", lambda dtype, _recommended, pytorch_list=None: {"dtype": dtype, "torch_ver": "torch==2.8.0"})
 
     assert base_module.check_pytorch_version() is True
 
 
 def test_check_pytorch_version_rejects_unversioned_latest_entry(monkeypatch):
+    _patch_update_detection(monkeypatch)
     monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda _name: "2.8.0+cpu")
-    monkeypatch.setattr(base_pytorch, "find_latest_pytorch_info", lambda _dtype: {"torch_ver": "torch torchvision"})
+    monkeypatch.setattr(base_pytorch, "find_pytorch_update_target", lambda dtype, _recommended, pytorch_list=None: {"dtype": dtype, "torch_ver": "torch torchvision"})
 
     with pytest.raises(ValueError, match="缺少可比较的 torch 版本"):
         base_module.check_pytorch_version()
@@ -167,16 +179,98 @@ def test_prepare_pytorch_install_info_auto_and_custom_packages(monkeypatch):
 )
 def test_check_pytorch_version_normalizes_amd_multi_arch_suffix(monkeypatch, platform, torch_version, expected_dtype):
     calls = []
+    _patch_update_detection(monkeypatch, recommended="rocm10")
     monkeypatch.setattr(sys, "platform", platform)
     monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda name: torch_version if name == "torch" else "")
     monkeypatch.setattr(
         base_pytorch,
-        "find_latest_pytorch_info",
-        lambda dtype: calls.append(dtype) or {"torch_ver": f"torch[device-all]=={torch_version} torchaudio==2.11.0"},
+        "find_pytorch_update_target",
+        lambda dtype, _recommended, pytorch_list=None: calls.append(dtype) or {"dtype": dtype, "torch_ver": f"torch[device-all]=={torch_version} torchaudio==2.11.0"},
     )
 
     assert base_module.check_pytorch_version() is False
     assert calls == [expected_dtype]
+
+
+def _torch_entry(name, dtype, torch_ver, xformers_ver=None, platform=("linux", "win32")):
+    return {"name": name, "dtype": dtype, "platform": list(platform), "torch_ver": torch_ver, "xformers_ver": xformers_ver}
+
+
+CROSS_VARIANT_PYTORCH_LIST = [
+    _torch_entry("Torch 2.14.1 (CUDA 13.0) + xFormers", "cu130", "torch==2.14.1+cu130", "xformers==0.0.35"),
+    _torch_entry("Torch 2.14.1 (CUDA 13.2)", "cu132", "torch==2.14.1+cu132"),
+    _torch_entry("Torch 2.15.0 (CUDA 13.2)", "cu132", "torch==2.15.0+cu132"),
+    _torch_entry("Torch 2.15.0 (CUDA 13.4)", "cu134", "torch==2.15.0+cu134"),
+    _torch_entry("Torch 2.15.0 (CPU)", "cpu", "torch==2.15.0+cpu"),
+    _torch_entry("Torch 2.14.1 (ROCm 7.2)", "rocm7.2", "torch==2.14.1+rocm7.2", platform=("linux",)),
+    _torch_entry("Torch 2.13.0 (ROCm 7)", "rocm7", "torch[device-all]==2.13.0+rocm7.14.0"),
+    _torch_entry("Torch 2.14.0 (ROCm 10)", "rocm10", "torch[device-all]==2.14.0+rocm10.1.0"),
+]
+
+CUDA_132 = ["all", "cpu", "cu126", "cu128", "cu130", "cu132"]
+AMD_LINUX = ["all", "cpu", "rocm10", "rocm7", "rocm7.2"]
+
+
+@pytest.mark.parametrize(
+    ("installed", "available", "recommended", "has_update", "latest_version", "latest_dtype"),
+    [
+        # cu130 停止更新, 推荐的 cu132 存在更新的版本
+        ("2.14.1+cu130", CUDA_132, "cu132", True, "2.15.0+cu132", "cu132"),
+        # 已安装类型和推荐类型都有更新时选择更新的版本
+        ("2.14.0+cu130", CUDA_132, "cu132", True, "2.15.0+cu132", "cu132"),
+        # 推荐类型与已安装类型相同时保持原有行为
+        ("2.14.1+cu130", ["all", "cpu", "cu130"], "cu130", False, "2.14.1+cu130", "cu130"),
+        # 公共版本相同时不切换设备类型, 也不因本地版本号 (+cu132 < +cu134) 误报更新
+        ("2.15.0+cu132", [*CUDA_132, "cu134"], "cu134", False, "2.15.0+cu132", "cu132"),
+        # 推荐类型属于其他设备分类时 (如显卡检测失败) 不跨类型迁移
+        ("2.14.1+cu130", CUDA_132, "cpu", False, "2.14.1+cu130", "cu130"),
+        # PyTorch 官方 ROCm wheel 不迁移到 AMD 多架构 wheel
+        ("2.14.1+rocm7.2", AMD_LINUX, "rocm10", False, "2.14.1+rocm7.2", "rocm7.2"),
+        # AMD 多架构 wheel 内部可以迁移
+        ("2.13.0+rocm7.14.0", AMD_LINUX, "rocm10", True, "2.14.0+rocm10.1.0", "rocm10"),
+        # 已安装类型不受当前设备支持时回退到推荐类型, 不再报错
+        ("2.15.0+cu134", CUDA_132, "cu132", False, "2.15.0+cu132", "cu132"),
+    ],
+)
+def test_get_pytorch_update_status_considers_recommended_device_type(monkeypatch, installed, available, recommended, has_update, latest_version, latest_dtype):
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setattr(version_manager, "PYTORCH_DOWNLOAD_DICT", CROSS_VARIANT_PYTORCH_LIST)
+    monkeypatch.setattr(version_manager, "SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY", False)
+    monkeypatch.setattr(version_manager, "get_available_pytorch_device_type", lambda _gpu_list=None: available)
+    monkeypatch.setattr(base_pytorch, "get_gpu_list", lambda: [])
+    monkeypatch.setattr(base_pytorch, "auto_detect_available_pytorch_type", lambda _gpu_list=None: recommended)
+    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda name: installed if name == "torch" else "")
+
+    status = base_module.get_pytorch_update_status()
+
+    installed_dtype = base_pytorch.normalize_pytorch_version_suffix(installed.partition("+")[2])
+    assert status.error is None
+    assert status.device_type == installed_dtype
+    assert status.has_update is has_update
+    assert status.latest_version == latest_version
+    assert status.latest_device_type == latest_dtype
+    assert status.recommended_device_type == recommended
+    assert status.device_type_changed is (latest_dtype != installed_dtype)
+    assert base_module.check_pytorch_version() is has_update
+
+
+def test_get_pytorch_update_status_detects_gpus_once(monkeypatch):
+    calls = []
+    monkeypatch.setattr(base_pytorch, "get_gpu_list", lambda: calls.append("gpu_list") or ["gpu"])
+    monkeypatch.setattr(base_pytorch, "auto_detect_available_pytorch_type", lambda gpu_list=None: calls.append(("auto", gpu_list)) or "cu132")
+    monkeypatch.setattr(base_pytorch, "export_pytorch_list", lambda gpu_list=None: calls.append(("export", gpu_list)) or ["list"])
+    monkeypatch.setattr(
+        base_pytorch,
+        "find_pytorch_update_target",
+        lambda dtype, recommended, pytorch_list=None: calls.append(("target", dtype, recommended, pytorch_list)) or {"dtype": "cu132", "torch_ver": "torch==2.15.0+cu132"},
+    )
+    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda _name: "2.14.1+cu130")
+
+    status = base_module.get_pytorch_update_status()
+
+    assert calls == ["gpu_list", ("auto", ["gpu"]), ("export", ["gpu"]), ("target", "cu130", "cu132", ["list"])]
+    assert status.has_update is True
+    assert status.device_type_changed is True
 
 
 def test_reinstall_pytorch_list_install_and_interactive_auto(monkeypatch):

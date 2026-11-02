@@ -324,6 +324,77 @@ def test_find_pytorch_info_for_torch_requirement_skips_unsupported_entries(monke
     assert info["name"] == "Torch 2.11.0 (CUDA 12.8)"
 
 
+@pytest.mark.parametrize(
+    ("dtype", "expected"),
+    [
+        ("cu130", "cuda"),
+        ("cu134", "cuda"),
+        ("rocm7", "rocm_multi_arch"),
+        ("rocm10", "rocm_multi_arch"),
+        ("rocm_win", "rocm_multi_arch"),
+        ("rocm7.2", "rocm"),
+        ("xpu", "xpu"),
+        ("cpu", "cpu"),
+        ("ipex_legacy_arc", None),
+        ("directml", None),
+        ("all", None),
+    ],
+)
+def test_get_pytorch_variant_lineage(dtype, expected):
+    assert version_manager._get_pytorch_variant_lineage(dtype) == expected
+
+
+def test_find_pytorch_update_target_prefers_newer_recommended_variant(monkeypatch):
+    data = [
+        _torch_entry("Torch 2.14.1 (CUDA 13.0)", "cu130", "torch==2.14.1+cu130"),
+        _torch_entry("Torch 2.15.0 (CUDA 13.2)", "cu132", "torch==2.15.0+cu132"),
+        _torch_entry("Torch 2.15.0 (CUDA 13.4)", "cu134", "torch==2.15.0+cu134"),
+        _torch_entry("Torch 2.16.0 (CPU)", "cpu", "torch==2.16.0+cpu"),
+    ]
+    monkeypatch.setattr(version_manager.sys, "platform", "linux")
+    monkeypatch.setattr(version_manager, "PYTORCH_DOWNLOAD_DICT", data)
+    monkeypatch.setattr(version_manager, "SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY", False)
+    monkeypatch.setattr(version_manager, "get_available_pytorch_device_type", lambda: ["all", "cpu", "cu130", "cu132"])
+
+    def target(installed, recommended=None):
+        return version_manager.find_pytorch_update_target(installed, recommended)["name"]
+
+    assert target("cu130") == "Torch 2.14.1 (CUDA 13.0)"
+    assert target("cu130", "cu132") == "Torch 2.15.0 (CUDA 13.2)"
+    # 推荐类型不受支持或属于其他构建系列时忽略
+    assert target("cu130", "cu134") == "Torch 2.14.1 (CUDA 13.0)"
+    assert target("cu130", "cpu") == "Torch 2.14.1 (CUDA 13.0)"
+    # 已安装类型不受支持时回退到推荐类型
+    assert target("cu134", "cu132") == "Torch 2.15.0 (CUDA 13.2)"
+    with pytest.raises(ValueError, match="当前平台不支持 PyTorch 类型: 'cu134'"):
+        target("cu134", "cpu")
+
+
+def test_find_pytorch_update_target_reuses_given_pytorch_list(monkeypatch):
+    pytorch_list = [
+        {**_torch_entry("Torch 2.14.1 (CUDA 13.0)", "cu130", "torch==2.14.1+cu130"), "supported": True},
+        {**_torch_entry("Torch 2.15.0 (CUDA 13.2)", "cu132", "torch==2.15.0+cu132"), "supported": True},
+    ]
+
+    def fail_export(*_args):
+        raise AssertionError("export_pytorch_list should not be called")
+
+    monkeypatch.setattr(version_manager, "export_pytorch_list", fail_export)
+
+    assert version_manager.find_pytorch_update_target("cu130", "cu132", pytorch_list=pytorch_list)["name"] == "Torch 2.15.0 (CUDA 13.2)"
+
+
+def test_export_pytorch_list_passes_gpu_list_to_device_detection(monkeypatch):
+    calls = []
+    monkeypatch.setattr(version_manager, "PYTORCH_DOWNLOAD_DICT", [_torch_entry("Torch 2.15.0 (CPU)", "cpu", "torch==2.15.0+cpu")])
+    monkeypatch.setattr(version_manager.sys, "platform", "linux")
+    monkeypatch.setattr(version_manager, "SD_WEBUI_ALL_IN_ONE_SKIP_TORCH_DEVICE_COMPATIBILITY", False)
+    monkeypatch.setattr(version_manager, "get_available_pytorch_device_type", lambda gpu_list=None: calls.append(gpu_list) or ["cpu"])
+
+    assert [item["supported"] for item in version_manager.export_pytorch_list(["gpu"])] == [True]
+    assert calls == [["gpu"]]
+
+
 def test_pytorch_package_extras_come_from_version_table(monkeypatch):
     data = [
         _torch_entry("Torch (ROCm 7)", "rocm7", "torch[device-all] torchvision[device-all] torchaudio"),
