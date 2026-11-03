@@ -82,10 +82,7 @@ def _invokeai_help_command(
     context: LaunchArgumentDiscoveryContext,
 ) -> HelpCommand:
     """构建 InvokeAI 参数解析器的 ``--help`` 等价命令。"""
-    try:
-        version = importlib.metadata.version("invokeai")
-    except importlib.metadata.PackageNotFoundError:
-        version = "unavailable"
+    version = get_package_version_from_library("invokeai") or "unavailable"
     code = "from invokeai.frontend.cli.arg_parser import _parser; _parser.print_help()"
     env = os.environ.copy()
     env["INVOKEAI_ROOT"] = str(context.webui_path)
@@ -243,7 +240,9 @@ def sync_invokeai_component(
     logger.info("获取 InvokeAI 安装配置")
 
     # 获取 InvokeAI 和 InvokeAI 所需的 PyTorch 的版本
-    invokeai_ver = importlib.metadata.version("invokeai")
+    invokeai_ver = get_package_version_from_library("invokeai")
+    if invokeai_ver is None:
+        raise RuntimeError("未找到已安装的 InvokeAI 或其版本信息已损坏, 无法同步 InvokeAI 组件")
     from sd_webui_all_in_one.base_manager.invokeai_base.lifecycle import get_invokeai_require_torch_version
 
     torch_ver = get_invokeai_require_torch_version()
@@ -490,15 +489,7 @@ def reinstall_invokeai_pytorch(
         )
 
     def _get_torch_and_xformers_ver() -> tuple[str | None, str | None]:
-        try:
-            _torch_ver = importlib.metadata.version("torch")
-        except importlib.metadata.PackageNotFoundError:
-            _torch_ver = None
-        try:
-            _xformers_ver = importlib.metadata.version("xformers")
-        except importlib.metadata.PackageNotFoundError:
-            _xformers_ver = None
-        return (_torch_ver, _xformers_ver)
+        return (get_package_version_from_library("torch"), get_package_version_from_library("xformers"))
 
     if list_only:
         print("".join([f"- {i}. {d}" for i, d in enumerate(PYTORCH_DEVICE_CATEGORY_LIST + ["auto"], start=1)]))

@@ -1,13 +1,15 @@
 """更新工具"""
 
-import importlib.metadata
 import re
 import sys
 from pathlib import Path
 
 from sd_webui_all_in_one.mirror_manager import get_auto_pypi_mirror_config
 from sd_webui_all_in_one.cmd import run_cmd
-from sd_webui_all_in_one.package_analyzer import Version
+from sd_webui_all_in_one.package_analyzer import (
+    Version,
+    get_package_version_from_library,
+)
 from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
@@ -39,15 +41,17 @@ def check_and_update_uv(
         RuntimeError:
             更新 uv 发生错误时
     """
-    try:
-        ver = importlib.metadata.version("uv")
-        if Version.parse(ver) >= Version.parse(UV_MINIMUM_VER):
-            return
-        logger.info("更新 uv 中")
-    except importlib.metadata.PackageNotFoundError:
+    ver = get_package_version_from_library("uv")
+    if ver is None:
         logger.info("安装 uv 中")
-    except ValueError as e:
-        logger.warning("无法解析已安装的 uv 版本, 尝试重新安装 uv: %s", e)
+    else:
+        current = Version.try_parse(ver)
+        if current is None:
+            logger.warning("无法解析已安装的 uv 版本, 尝试重新安装 uv: %s", ver)
+        elif current >= Version.parse(UV_MINIMUM_VER):
+            return
+        else:
+            logger.info("更新 uv 中")
 
     try:
         custom_env = get_auto_pypi_mirror_config(custom_env)
@@ -73,12 +77,13 @@ def check_and_update_pip(
         RuntimeError:
             更新 Pip 发生错误时
     """
-    try:
-        ver = importlib.metadata.version("pip")
-        if Version.parse(ver) >= Version.parse(PIP_MINIMUM_VER):
+    ver = get_package_version_from_library("pip")
+    current = Version.try_parse(ver) if ver is not None else None
+    if current is not None:
+        if current >= Version.parse(PIP_MINIMUM_VER):
             return
         logger.info("更新 Pip 中")
-    except Exception:
+    else:
         logger.info("安装 Pip 中")
         try:
             run_cmd([Path(sys.executable).as_posix(), "-m", "ensurepip"])

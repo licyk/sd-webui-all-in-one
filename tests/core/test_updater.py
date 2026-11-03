@@ -1,6 +1,5 @@
 """自更新测试"""
 
-import importlib.metadata
 import sys
 from pathlib import Path
 
@@ -24,9 +23,9 @@ def test_updater_version_checks_and_install_commands(monkeypatch):
             return "999.0.0"
         if name == "pip":
             return "0.0.1"
-        raise importlib.metadata.PackageNotFoundError
+        return None
 
-    monkeypatch.setattr(updater.importlib.metadata, "version", fake_version)
+    monkeypatch.setattr(updater, "get_package_version_from_library", fake_version)
     monkeypatch.setattr(updater, "get_auto_pypi_mirror_config", lambda env=None: {"MIRROR": "1", **(env or {})})
     monkeypatch.setattr(updater, "run_cmd", lambda command, custom_env=None, **kwargs: calls.append((command, custom_env, kwargs)) or "aria2 version 1.37.0\n")
 

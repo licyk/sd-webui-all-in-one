@@ -3,7 +3,6 @@
 import os
 import sys
 import traceback
-import importlib.metadata
 from pathlib import Path
 from typing import Literal
 
@@ -22,7 +21,10 @@ from sd_webui_all_in_one.env_manager import (
     configure_env_var,
     configure_pip,
 )
-from sd_webui_all_in_one.package_analyzer import Version
+from sd_webui_all_in_one.package_analyzer import (
+    Version,
+    get_package_version_from_library,
+)
 from sd_webui_all_in_one.pkg_manager import (
     install_manager_depend,
     pip_install,
@@ -144,15 +146,18 @@ class SDTrainerManager(BaseManager):
             use_uv (bool): 使用 uv 安装依赖
         """
         logger.info("检查 protobuf 版本问题中")
+        ver = get_package_version_from_library("protobuf")
+        if ver is None:
+            logger.error("检查 protobuf 时发送错误: 未找到 protobuf 或其版本信息已损坏")
+            return
         try:
-            ver = importlib.metadata.version("protobuf")
             if Version.parse(ver) != Version.parse("3.20.0"):
                 logger.info("重新安装 protobuf 中")
                 pip_install("protobuf==3.20.0", use_uv=use_uv)
                 logger.info("重新安装 protobuf 成功")
                 return
             logger.info("protobuf 检查完成")
-        except (importlib.metadata.PackageNotFoundError, ValueError, RuntimeError) as e:
+        except (ValueError, RuntimeError) as e:
             traceback.print_exc()
             logger.error("检查 protobuf 时发送错误: %s", e)
 

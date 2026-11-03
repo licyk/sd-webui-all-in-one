@@ -61,14 +61,14 @@ def test_invokeai_mirror_type_falls_back_when_table_has_no_match(monkeypatch):
 
 
 def _patch_sync(monkeypatch, calls, xformers_installed):
-    monkeypatch.setattr(components.importlib.metadata, "version", lambda name: "6.14.2" if name == "invokeai" else "0")
     monkeypatch.setattr(lifecycle, "get_invokeai_require_torch_version", lambda: "2.7.0")
     monkeypatch.setattr(components, "get_pytorch_mirror_type_for_ivnokeai", lambda _device_type: "cu130")
     monkeypatch.setattr(components, "prepare_pytorch_install_info", lambda **kwargs: (None, None, {"TORCH": kwargs["pytorch_mirror_type"]}))
     monkeypatch.setattr(components, "get_pypi_mirror_config", lambda use_cn_mirror: {"PIP": str(use_cn_mirror)})
     monkeypatch.setattr(components, "get_pytorch_for_invokeai", lambda: "torch<3.0,>=2.7.0 torchvision")
     monkeypatch.setattr(components, "get_xformers_for_invokeai", lambda: "xformers>=0.0.28.post1")
-    monkeypatch.setattr(components, "get_package_version_from_library", lambda name: "0.0.31.post1" if name == "xformers" and xformers_installed else None)
+    versions = {"invokeai": "6.14.2", "xformers": "0.0.31.post1" if xformers_installed else None}
+    monkeypatch.setattr(components, "get_package_version_from_library", lambda name: versions.get(name))
     monkeypatch.setattr(components, "pip_install", lambda *args, **kwargs: calls.append(("pip", args)))
     monkeypatch.setattr(components, "run_cmd", lambda command: calls.append(("run", command)))
 

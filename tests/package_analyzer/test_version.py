@@ -50,6 +50,12 @@ class TestVersion:
             Version.parse(text)
         assert Version.try_parse(text) is None
 
+    def test_non_string_is_invalid(self):
+        # 元数据损坏时 importlib.metadata 返回的版本号为 None
+        with pytest.raises(InvalidVersion):
+            Version.parse(None)
+        assert Version.try_parse(None) is None
+
     def test_ordering_from_specification(self):
         # 版本标识符规范 "Summary of permitted suffixes and relative ordering" 中的排序示例
         ordered = [

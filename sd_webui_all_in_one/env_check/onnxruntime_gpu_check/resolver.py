@@ -1,9 +1,11 @@
 """ONNXRuntime GPU 所需版本判断"""
 
 import sys
-import importlib.metadata
 
-from sd_webui_all_in_one.package_analyzer import CommonVersionComparison
+from sd_webui_all_in_one.package_analyzer import (
+    CommonVersionComparison,
+    get_package_version_from_library,
+)
 from sd_webui_all_in_one.env_check.shared import logger
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check.models import (
     OrtType,
@@ -33,10 +35,8 @@ def need_install_ort_ver(
 
     def _fallback_if_missing_torch_detail() -> OrtType | None:
         if not skip_if_missing:
-            try:
-                logger.debug("检查 ONNXRuntime GPU 是否已安装")
-                _ = importlib.metadata.version("onnxruntime-gpu")
-            except importlib.metadata.PackageNotFoundError:
+            logger.debug("检查 ONNXRuntime GPU 是否已安装")
+            if get_package_version_from_library("onnxruntime-gpu") is None:
                 logger.debug("ONNXRuntime GPU 未安装, 使用默认版本进行安装")
                 # ONNXRuntime GPU 没有安装时
                 return OrtType.CU130
@@ -127,12 +127,10 @@ def need_install_ort_ver(
             # 非 Windows 平台未在 ONNXRuntime GPU 中声明支持的 CUDA 版本 (无 onnxruntime/capi/version_info.py)
             # 所以需要跳过检查, 直接给出版本
             logger.debug("非 Windows 版本, 当 ONNXRuntime GPU 未安装时给出默认版本")
-            try:
-                _ = importlib.metadata.version("onnxruntime-gpu")
+            if get_package_version_from_library("onnxruntime-gpu") is not None:
                 return None
-            except importlib.metadata.PackageNotFoundError:
-                # ONNXRuntime GPU 没有安装时
-                return OrtType.CU130
+            # ONNXRuntime GPU 没有安装时
+            return OrtType.CU130
 
         if CommonVersionComparison(cuda_ver) >= CommonVersionComparison("13.0"):
             # CUDA >= 13.x

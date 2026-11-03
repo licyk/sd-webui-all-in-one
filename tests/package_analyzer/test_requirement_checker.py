@@ -14,8 +14,10 @@ from sd_webui_all_in_one.package_analyzer.checker import (
     check_requirement,
     check_requirements_file,
 )
+from sd_webui_all_in_one.package_analyzer import installed as installed_module
 from sd_webui_all_in_one.package_analyzer.installed import (
     InstalledDistribution,
+    find_broken_distributions,
     get_installed_distribution,
     get_package_version_from_library,
 )
@@ -44,6 +46,23 @@ def site(tmp_path, monkeypatch):
         return dist_info
 
     return install
+
+
+# 元数据损坏的几种形态: 缺少 METADATA, METADATA 为空, METADATA 中没有 Version
+BROKEN_METADATA = {
+    "missing": None,
+    "empty": "",
+    "no-version": "Metadata-Version: 2.1\nName: sdaio-broken\n",
+}
+
+
+def _make_broken(site_dir, kind, name="sdaio_broken", version="2.2.6"):
+    dist_info = site_dir / f"{name}-{version}.dist-info"
+    dist_info.mkdir()
+    content = BROKEN_METADATA[kind]
+    if content is not None:
+        (dist_info / "METADATA").write_text(content, encoding="utf-8")
+    return dist_info
 
 
 def _check(text, **kwargs):
@@ -83,6 +102,63 @@ class TestInstalled:
         dist_info = site("sdaio-corrupt", "1.0")
         (dist_info / "direct_url.json").write_text("{not json", encoding="utf-8")
         assert get_installed_distribution("sdaio-corrupt").direct_url is None
+
+
+class TestBrokenMetadata:
+    @pytest.mark.parametrize("kind", list(BROKEN_METADATA))
+    def test_broken_distribution_is_not_installed(self, site, tmp_path, kind):
+        _make_broken(tmp_path / "site-packages", kind)
+        assert get_installed_distribution("sdaio-broken") is None
+        assert get_package_version_from_library("sdaio-broken") is None
+        result = _check("sdaio-broken>=1")
+        assert result.status == CheckStatus.UNSATISFIED
+        assert result.reason == "未安装"
+
+    @pytest.mark.parametrize("kind", list(BROKEN_METADATA))
+    def test_requirements_file_with_broken_distribution_does_not_raise(self, site, tmp_path, kind):
+        _make_broken(tmp_path / "site-packages", kind)
+        site("sdaio-fine", "1.0")
+        req = tmp_path / "requirements.txt"
+        req.write_text("sdaio-fine\nsdaio-broken>=1\nsdaio-broken==2.2.6\n", encoding="utf-8")
+        statuses = [result.status for result in check_requirements_file(parse_requirements_file(req))]
+        assert statuses == [CheckStatus.SATISFIED, CheckStatus.UNSATISFIED, CheckStatus.UNSATISFIED]
+        assert checker.validate_requirements(req) is False
+
+    def test_broken_distribution_does_not_shadow_valid_one(self, site, tmp_path, monkeypatch):
+        shadow_dir = tmp_path / "shadow"
+        shadow_dir.mkdir()
+        _make_broken(shadow_dir, "missing", version="2.2.6")
+        site("sdaio-broken", "2.4.6")
+        monkeypatch.syspath_prepend(str(shadow_dir))
+        assert get_package_version_from_library("sdaio-broken") == "2.4.6"
+        assert get_installed_distribution("sdaio-broken").version == "2.4.6"
+
+    def test_find_broken_distributions(self, tmp_path):
+        site_dir = tmp_path / "scan"
+        site_dir.mkdir()
+        missing = _make_broken(site_dir, "missing", name="sdaio_missing", version="2.2.6")
+        empty = _make_broken(site_dir, "empty", name="sdaio_empty", version="1.0+cu118")
+        no_version = _make_broken(site_dir, "no-version", name="sdaio_bad_version", version="not.a.version!")
+        fine = site_dir / "sdaio_fine-1.0.dist-info"
+        fine.mkdir()
+        (fine / "METADATA").write_text("Metadata-Version: 2.1\nName: sdaio-fine\nVersion: 1.0\n", encoding="utf-8")
+
+        broken = {item.path: item for item in find_broken_distributions([site_dir])}
+
+        assert set(broken) == {missing, empty, no_version}
+        assert (broken[missing].name, broken[missing].version, broken[missing].reason) == ("sdaio_missing", "2.2.6", "缺少 METADATA 文件")
+        assert broken[missing].requirement == "sdaio_missing==2.2.6"
+        assert broken[empty].requirement == "sdaio_empty==1.0+cu118"
+        assert broken[empty].reason == "METADATA 文件为空或缺少 Version 字段"
+        assert broken[no_version].version is None
+        assert broken[no_version].requirement == "sdaio_bad_version"
+
+    def test_find_broken_distributions_defaults_to_site_packages(self, tmp_path, monkeypatch):
+        site_dir = tmp_path / "scan"
+        site_dir.mkdir()
+        dist_info = _make_broken(site_dir, "empty")
+        monkeypatch.setattr(installed_module, "_site_packages_paths", lambda: [str(site_dir)])
+        assert [item.path for item in find_broken_distributions()] == [dist_info]
 
 
 # ============================================================================

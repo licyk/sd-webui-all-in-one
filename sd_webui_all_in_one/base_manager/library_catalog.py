@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import hashlib
-import importlib.metadata
 from typing import Any
 
 from sd_webui_all_in_one.downloader import DOWNLOAD_TOOL_TYPE_LIST
 from sd_webui_all_in_one.env_check import check_torch_version_status
 from sd_webui_all_in_one.model_downloader import SUPPORTED_WEBUI_LIST, export_model_list
+from sd_webui_all_in_one.package_analyzer import get_package_version_from_library
 from sd_webui_all_in_one.pytorch_manager import (
     PYTORCH_DEVICE_CATEGORY_LIST,
     PyTorchVersionInfo,
@@ -36,10 +36,7 @@ def _stable_id(namespace: str, *parts: object) -> str:
 def _package_versions() -> dict[str, str | None]:
     result: dict[str, str | None] = {}
     for name in ("torch", "torchvision", "torchaudio", "xformers"):
-        try:
-            result[name] = importlib.metadata.version(name)
-        except importlib.metadata.PackageNotFoundError:
-            result[name] = None
+        result[name] = get_package_version_from_library(name)
         logger.debug("检测到包 %s 的版本：%s", name, result[name])
     return result
 

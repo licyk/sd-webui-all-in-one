@@ -1,10 +1,12 @@
 """Numpy 版本检查与修复"""
 
-import importlib.metadata
 import sys
 
 from sd_webui_all_in_one.pkg_manager import pip_install
-from sd_webui_all_in_one.package_analyzer import Version
+from sd_webui_all_in_one.package_analyzer import (
+    Version,
+    get_package_version_from_library,
+)
 from sd_webui_all_in_one.env_check.shared import logger
 
 
@@ -29,8 +31,12 @@ def check_numpy(
         logger.info("Python 版本大于等于 3.12, 跳过 Numpy 版本检查")
         return
 
+    numpy_ver = get_package_version_from_library("numpy")
+    if numpy_ver is None:
+        logger.warning("未找到 Numpy 或其版本信息已损坏, 跳过 Numpy 版本检查")
+        return
+
     try:
-        numpy_ver = importlib.metadata.version("numpy")
         if Version.parse(numpy_ver) >= Version.parse("2"):
             logger.info("降级 Numpy 中")
             pip_install("numpy<2", use_uv=use_uv, custom_env=custom_env)

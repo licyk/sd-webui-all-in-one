@@ -185,8 +185,11 @@ class Version:
 
         Raises:
             InvalidVersion:
-                版本号不符合规范时
+                版本号不符合规范或不是字符串时
         """
+        if not isinstance(text, str):
+            # 元数据损坏时 importlib.metadata 返回的版本号为 None
+            raise InvalidVersion(f"不合法的版本号: {text!r}")
         match = _VERSION_REGEX.match(text)
         if match is None:
             raise InvalidVersion(f"不合法的版本号: {text!r}")

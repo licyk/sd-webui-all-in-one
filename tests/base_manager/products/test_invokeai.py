@@ -19,7 +19,7 @@ def test_invokeai_dependency_selection_and_sync_fallback(monkeypatch):
     calls = []
 
     monkeypatch.setattr(implementation.importlib.metadata, "requires", lambda name: requirements if name == "invokeai" else [])
-    monkeypatch.setattr(implementation.importlib.metadata, "version", lambda name: "4.2.0" if name == "invokeai" else (_ for _ in ()).throw(Exception("missing")))
+    monkeypatch.setattr(implementation, "get_package_version_from_library", lambda name: "4.2.0" if name == "invokeai" else None)
     monkeypatch.setattr(implementation, "auto_detect_pytorch_device_category", lambda: "cuda")
     monkeypatch.setattr(implementation, "get_pytorch_mirror_type_for_ivnokeai", lambda device_type: "cu124")
     monkeypatch.setattr(implementation, "prepare_pytorch_install_info", lambda **kwargs: (None, None, {"TORCH": kwargs["pytorch_mirror_type"]}))

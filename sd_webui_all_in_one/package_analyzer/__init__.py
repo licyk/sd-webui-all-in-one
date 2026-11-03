@@ -74,7 +74,9 @@ from sd_webui_all_in_one.package_analyzer.reqfile import (
 
 # 环境检查
 from sd_webui_all_in_one.package_analyzer.installed import (
+    BrokenDistribution,
     InstalledDistribution,
+    find_broken_distributions,
     get_installed_distribution,
     get_package_version_from_library,
 )
@@ -140,7 +142,9 @@ __all__ = [
     "parse_requirements_file",
     "parse_requirements_text",
     # installed / dependency_categorizer / checker
+    "BrokenDistribution",
     "InstalledDistribution",
+    "find_broken_distributions",
     "get_installed_distribution",
     "get_package_version_from_library",
     "PackageDependencies",

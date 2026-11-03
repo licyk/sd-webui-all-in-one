@@ -1,7 +1,6 @@
 """onnxruntime-gpu 版本检查与修复测试"""
 
 import importlib
-import importlib.metadata
 import sys
 from pathlib import Path
 
@@ -21,7 +20,7 @@ def test_need_install_ort_ver_matrix(monkeypatch):
         monkeypatch.setattr(onnxruntime_gpu_check_resolver, "get_torch_cuda_ver_fast", lambda: (torch_ver, cuda_ver))
         monkeypatch.setattr(onnxruntime_gpu_check_resolver, "get_torch_cuda_ver", lambda: (torch_ver, cuda_ver, cudnn_ver))
 
-    monkeypatch.setattr(onnxruntime_gpu_check_resolver.importlib.metadata, "version", lambda _name: (_ for _ in ()).throw(importlib.metadata.PackageNotFoundError("onnxruntime-gpu")))
+    monkeypatch.setattr(onnxruntime_gpu_check_resolver, "get_package_version_from_library", lambda _name: None)
     set_torch_info(None, None, None)
     assert onnxruntime_gpu_check.need_install_ort_ver(skip_if_missing=False) == onnxruntime_gpu_check.OrtType.CU130
 
@@ -116,9 +115,9 @@ def test_need_install_ort_ver_cuda_cudnn_matrix(monkeypatch, torch_info, ort_inf
     def fake_version(name):
         if name == "onnxruntime-gpu" and installed_ort:
             return "1.20.0"
-        raise onnx_check_resolver.importlib.metadata.PackageNotFoundError(name)
+        return None
 
-    monkeypatch.setattr(onnx_check_resolver.importlib.metadata, "version", fake_version)
+    monkeypatch.setattr(onnx_check_resolver, "get_package_version_from_library", fake_version)
 
     assert onnx_check.need_install_ort_ver(skip_if_missing=skip_if_missing) == expected
 

@@ -270,6 +270,16 @@ def test_distribution_name_version_reads_only_metadata_header(tmp_path):
     assert snapshot_collection._distribution_name_version(metadata.PathDistribution(dist_info)) == ("Demo.Pkg", "1.0+local")
 
 
+def test_distribution_name_version_skips_distribution_without_version(tmp_path):
+    from importlib import metadata
+
+    dist_info = tmp_path / "demo-1.0.dist-info"
+    dist_info.mkdir()
+    (dist_info / "METADATA").write_text("Metadata-Version: 2.1\nName: Demo\n", encoding="utf-8")
+
+    assert snapshot_collection._distribution_name_version(metadata.PathDistribution(dist_info)) is None
+
+
 def test_collect_repository_snapshots_preserves_input_order(monkeypatch, tmp_path):
     paths = [tmp_path / f"repo-{index}" for index in range(20)]
     monkeypatch.setattr(

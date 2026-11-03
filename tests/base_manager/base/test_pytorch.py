@@ -23,9 +23,9 @@ def test_install_pytorch_for_webui_only_installs_missing_packages(monkeypatch):
     def fake_version(name):
         if name == "torch":
             return "2.0.0"
-        raise base_pytorch.importlib.metadata.PackageNotFoundError
+        return None
 
-    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", fake_version)
+    monkeypatch.setattr(base_pytorch, "get_package_version_from_library", fake_version)
     monkeypatch.setattr(base_pytorch, "install_pytorch", lambda **kwargs: calls.append(kwargs))
 
     base_pytorch.install_pytorch_for_webui("torch==2.0.0", "xformers==0.0.1", {"PIP_INDEX_URL": "x"}, use_uv=False)
@@ -40,7 +40,7 @@ def test_install_pytorch_for_webui_only_installs_missing_packages(monkeypatch):
     ]
 
     calls.clear()
-    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda _name: "installed")
+    monkeypatch.setattr(base_pytorch, "get_package_version_from_library", lambda _name: "installed")
     base_pytorch.install_pytorch_for_webui("torch", "xformers")
     assert calls == []
 
@@ -57,7 +57,7 @@ def test_install_pytorch_for_webui_only_installs_missing_packages(monkeypatch):
 def test_check_pytorch_version(monkeypatch, current_version, latest_spec, expected_dtype, expected):
     calls = []
     _patch_update_detection(monkeypatch)
-    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda name: current_version if name == "torch" else "")
+    monkeypatch.setattr(base_pytorch, "get_package_version_from_library", lambda name: current_version if name == "torch" else "")
     monkeypatch.setattr(
         base_pytorch,
         "find_pytorch_update_target",
@@ -70,10 +70,10 @@ def test_check_pytorch_version(monkeypatch, current_version, latest_spec, expect
 
 def test_check_pytorch_version_treats_missing_torch_as_needing_update(monkeypatch):
     def missing_torch(_name):
-        raise base_pytorch.importlib.metadata.PackageNotFoundError
+        return None
 
     _patch_update_detection(monkeypatch)
-    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", missing_torch)
+    monkeypatch.setattr(base_pytorch, "get_package_version_from_library", missing_torch)
     monkeypatch.setattr(base_pytorch, "find_pytorch_update_target", lambda dtype, _recommended, pytorch_list=None: {"dtype": dtype, "torch_ver": "torch==2.8.0"})
 
     assert base_module.check_pytorch_version() is True
@@ -81,7 +81,7 @@ def test_check_pytorch_version_treats_missing_torch_as_needing_update(monkeypatc
 
 def test_check_pytorch_version_rejects_unversioned_latest_entry(monkeypatch):
     _patch_update_detection(monkeypatch)
-    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda _name: "2.8.0+cpu")
+    monkeypatch.setattr(base_pytorch, "get_package_version_from_library", lambda _name: "2.8.0+cpu")
     monkeypatch.setattr(base_pytorch, "find_pytorch_update_target", lambda dtype, _recommended, pytorch_list=None: {"dtype": dtype, "torch_ver": "torch torchvision"})
 
     with pytest.raises(ValueError, match="缺少可比较的 torch 版本"):
@@ -181,7 +181,7 @@ def test_check_pytorch_version_normalizes_amd_multi_arch_suffix(monkeypatch, pla
     calls = []
     _patch_update_detection(monkeypatch, recommended="rocm10")
     monkeypatch.setattr(sys, "platform", platform)
-    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda name: torch_version if name == "torch" else "")
+    monkeypatch.setattr(base_pytorch, "get_package_version_from_library", lambda name: torch_version if name == "torch" else "")
     monkeypatch.setattr(
         base_pytorch,
         "find_pytorch_update_target",
@@ -239,7 +239,7 @@ def test_get_pytorch_update_status_considers_recommended_device_type(monkeypatch
     monkeypatch.setattr(version_manager, "get_available_pytorch_device_type", lambda _gpu_list=None: available)
     monkeypatch.setattr(base_pytorch, "get_gpu_list", lambda: [])
     monkeypatch.setattr(base_pytorch, "auto_detect_available_pytorch_type", lambda _gpu_list=None: recommended)
-    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda name: installed if name == "torch" else "")
+    monkeypatch.setattr(base_pytorch, "get_package_version_from_library", lambda name: installed if name == "torch" else "")
 
     status = base_module.get_pytorch_update_status()
 
@@ -264,7 +264,7 @@ def test_get_pytorch_update_status_detects_gpus_once(monkeypatch):
         "find_pytorch_update_target",
         lambda dtype, recommended, pytorch_list=None: calls.append(("target", dtype, recommended, pytorch_list)) or {"dtype": "cu132", "torch_ver": "torch==2.15.0+cu132"},
     )
-    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda _name: "2.14.1+cu130")
+    monkeypatch.setattr(base_pytorch, "get_package_version_from_library", lambda _name: "2.14.1+cu130")
 
     status = base_module.get_pytorch_update_status()
 
@@ -304,7 +304,7 @@ def test_reinstall_pytorch_list_install_and_interactive_auto(monkeypatch):
     calls.clear()
     inputs = iter(["auto", "y"])
     monkeypatch.setattr("builtins.input", lambda _prompt="": next(inputs))
-    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", lambda _name: "installed")
+    monkeypatch.setattr(base_pytorch, "get_package_version_from_library", lambda _name: "installed")
     monkeypatch.setattr(base_pytorch, "prepare_pytorch_install_info", lambda use_cn_mirror=True: ("torch-auto", "xformers-auto", {"AUTO": str(use_cn_mirror)}))
     base_module.reinstall_pytorch(interactive_mode=True, use_pypi_mirror=True, use_uv=True)
 
@@ -332,10 +332,10 @@ def test_uninstall_stale_pytorch_packages_only_removes_installed_unrequested_pac
 
     def fake_version(name):
         if name not in installed:
-            raise base_pytorch.importlib.metadata.PackageNotFoundError(name)
+            return None
         return "1.0"
 
-    monkeypatch.setattr(base_pytorch.importlib.metadata, "version", fake_version)
+    monkeypatch.setattr(base_pytorch, "get_package_version_from_library", fake_version)
     monkeypatch.setattr(base_pytorch, "run_cmd", lambda command: calls.append(command))
 
     base_pytorch.uninstall_stale_pytorch_packages("torch[device-all]==2.8.0+cu128 torchvision==0.23.0+cu128 --no-deps", None)

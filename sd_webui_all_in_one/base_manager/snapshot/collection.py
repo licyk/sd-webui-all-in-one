@@ -10,6 +10,7 @@ from importlib import metadata
 from pathlib import Path
 
 from sd_webui_all_in_one.base_manager.repository_inspector import RepositoryState, inspect_repository, run_git_output
+from sd_webui_all_in_one.package_analyzer.installed import read_metadata_name_version
 
 from sd_webui_all_in_one.base_manager.snapshot.codec import _parse_direct_url
 from sd_webui_all_in_one.base_manager.snapshot.models import (
@@ -117,29 +118,6 @@ def _parse_wheel_metadata(raw_wheel: str | None) -> WheelSnapshot | None:
     )
 
 
-def _read_metadata_name_version(metadata_path: Path) -> tuple[str | None, str | None]:
-    name: str | None = None
-    version: str | None = None
-    with metadata_path.open(encoding="utf-8", errors="replace") as file:
-        for line in file:
-            if not line.strip():
-                # 空行之后是正文, Name 和 Version 只会出现在头部
-                break
-            if line[0] in " \t":
-                continue
-            key, sep, value = line.partition(":")
-            if sep == "":
-                continue
-            normalized_key = key.strip().lower()
-            if normalized_key == "name":
-                name = name or value.strip()
-            elif normalized_key == "version":
-                version = version or value.strip()
-            if name and version:
-                break
-    return name or None, version or None
-
-
 def _distribution_name_version(dist: metadata.Distribution) -> tuple[str, str] | None:
     """读取发行版名称和版本
 
@@ -150,14 +128,14 @@ def _distribution_name_version(dist: metadata.Distribution) -> tuple[str, str] |
             已安装的发行版。
 
     Returns:
-        tuple[str, str] | None: 发行版名称和版本, 无法读取名称时返回 None。
+        tuple[str, str] | None: 发行版名称和版本, 无法读取名称或版本 (元数据损坏) 时返回 None。
     """
     dist_path = getattr(dist, "_path", None)
     if isinstance(dist_path, Path):
         candidates = [dist_path] if dist_path.is_file() else [dist_path / "METADATA", dist_path / "PKG-INFO"]
         for candidate in candidates:
             try:
-                name, version = _read_metadata_name_version(candidate)
+                name, version = read_metadata_name_version(candidate)
             except OSError:
                 continue
             if name and version:
@@ -165,11 +143,12 @@ def _distribution_name_version(dist: metadata.Distribution) -> tuple[str, str] |
 
     try:
         name = dist.metadata["Name"]
+        version = dist.version
     except KeyError:
         return None
-    if not name:
+    if not name or not version:
         return None
-    return name, dist.version
+    return name, version
 
 
 def collect_installed_packages(include_install_details: bool = True) -> list[PackageSnapshot]:
@@ -188,7 +167,7 @@ def collect_installed_packages(include_install_details: bool = True) -> list[Pac
     for dist in metadata.distributions():
         name_version = _distribution_name_version(dist)
         if name_version is None:
-            logger.debug("跳过无名称的发行版")
+            logger.debug("跳过无名称或无版本的发行版")
             continue
         name, version = name_version
 

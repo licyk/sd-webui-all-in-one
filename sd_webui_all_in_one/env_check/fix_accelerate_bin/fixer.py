@@ -1,11 +1,11 @@
 """accelerate 命令检查与修复"""
 
-import importlib.metadata
 import sys
 from pathlib import Path
 
 from sd_webui_all_in_one import git_warpper
 from sd_webui_all_in_one.pkg_manager import pip_install
+from sd_webui_all_in_one.package_analyzer import get_package_version_from_library
 from sd_webui_all_in_one.cmd import run_cmd
 from sd_webui_all_in_one.env_check.shared import logger
 
@@ -46,10 +46,8 @@ def check_accelerate_bin(
     except RuntimeError:
         logger.info("accelerate 不可用, 尝试重新安装中")
 
-    try:
-        pkg = f"accelerate=={importlib.metadata.version('accelerate')}"
-    except importlib.metadata.PackageNotFoundError:
-        pkg = "accelerate"
+    accelerate_ver = get_package_version_from_library("accelerate")
+    pkg = f"accelerate=={accelerate_ver}" if accelerate_ver is not None else "accelerate"
 
     try:
         run_cmd([Path(sys.executable).as_posix(), "-m", "pip", "uninstall", "accelerate", "-y"])

@@ -6,6 +6,7 @@ from sd_webui_all_in_one.pkg_manager import install_requirements
 from sd_webui_all_in_one.package_analyzer import (
     validate_requirements,
 )
+from sd_webui_all_in_one.env_check.fix_dependencies.broken import repair_broken_distributions
 from sd_webui_all_in_one.env_check.shared import logger
 
 
@@ -16,6 +17,8 @@ def py_dependency_checker(
     custom_env: dict[str, str] | None = None,
 ) -> None:
     """检测依赖完整性并安装缺失依赖
+
+    检查前先修复元数据已损坏的软件包, 否则这些软件包既读不到版本号, 也无法通过安装命令重新安装.
 
     Args:
         requirement_path (Path):
@@ -31,7 +34,7 @@ def py_dependency_checker(
         FileNotFoundError:
             未找到依赖记录文件时
         RuntimeError:
-            安装依赖发生错误时
+            修复损坏的软件包或安装依赖发生错误时
     """
     if not requirement_path.exists():
         logger.error("未找到 %s 文件, 无法检查依赖完整性", requirement_path)
@@ -41,6 +44,7 @@ def py_dependency_checker(
         name = requirement_path.parent.name
 
     logger.info("检查 %s 依赖完整性中", name)
+    repair_broken_distributions(use_uv=use_uv, custom_env=custom_env)
     if not validate_requirements(requirement_path):
         logger.info("安装 %s 依赖中", name)
         try:

@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import importlib
 import os
-import importlib.metadata
 from pathlib import Path
+from sd_webui_all_in_one.package_analyzer import get_package_version_from_library
 from sd_webui_all_in_one.env_check import (
     check_torch_version,
     py_dependency_checker,
@@ -184,12 +183,10 @@ def install_clip_package(
         pkg_url = "https://huggingface.co/licyk/wheel/resolve/main/clip/clip-1.0-py3-none-any.whl"
 
     logger.info("检测是否需要安装 CLIP 软件包")
-    try:
-        importlib.metadata.version("clip")
+    if get_package_version_from_library("clip") is not None:
         logger.info("CLIP 软件包已安装")
         return
-    except importlib.metadata.PackageNotFoundError:
-        logger.info("安装 CLIP 软件包中")
+    logger.info("安装 CLIP 软件包中")
 
     try:
         pip_install(

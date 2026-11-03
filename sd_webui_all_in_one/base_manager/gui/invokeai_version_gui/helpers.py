@@ -2,16 +2,13 @@
 
 from __future__ import annotations
 
-import importlib.metadata
 from pathlib import Path
 from sd_webui_all_in_one.file_manager import move_files
+from sd_webui_all_in_one.package_analyzer import get_package_version_from_library
 
 
 def _get_invokeai_version() -> str | None:
-    try:
-        return importlib.metadata.version("invokeai")
-    except importlib.metadata.PackageNotFoundError:
-        return None
+    return get_package_version_from_library("invokeai")
 
 
 def _invokeai_node_enabled(_name: str, path: Path) -> bool:

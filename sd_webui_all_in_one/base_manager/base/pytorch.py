@@ -1,7 +1,6 @@
 """PyTorch 状态、安装和回退策略。"""
 
 import sys
-import importlib.metadata
 from pathlib import Path
 from typing import cast
 
@@ -28,6 +27,7 @@ from sd_webui_all_in_one.env_manager import generate_uv_and_pip_env_mirror_confi
 from sd_webui_all_in_one.package_analyzer import (
     Requirement,
     Version,
+    get_package_version_from_library,
 )
 from sd_webui_all_in_one.config import (
     LOGGER_LEVEL,
@@ -63,10 +63,7 @@ def get_pytorch_update_status() -> PyTorchUpdateStatus:
         PyTorchUpdateStatus:
             PyTorch 安装状态、设备类型、当前版本、最新版本及错误信息。
     """
-    try:
-        current_version = importlib.metadata.version("torch")
-    except importlib.metadata.PackageNotFoundError:
-        current_version = None
+    current_version = get_package_version_from_library("torch")
 
     _, separator, suffix = (current_version or "").partition("+")
     dtype = normalize_pytorch_version_suffix(suffix) if separator else None
@@ -295,17 +292,11 @@ def install_pytorch_for_webui(
     logger.info("检查 PyTorch / xFormers 是否需要安装")
     need_install_pytorch = False
     need_install_xformers = False
-    if pytorch_package is not None:
-        try:
-            importlib.metadata.version("torch")
-        except importlib.metadata.PackageNotFoundError:
-            need_install_pytorch = True
+    if pytorch_package is not None and get_package_version_from_library("torch") is None:
+        need_install_pytorch = True
 
-    if xformers_package is not None:
-        try:
-            importlib.metadata.version("xformers")
-        except importlib.metadata.PackageNotFoundError:
-            need_install_xformers = True
+    if xformers_package is not None and get_package_version_from_library("xformers") is None:
+        need_install_xformers = True
 
     if not need_install_pytorch and not need_install_xformers:
         logger.info("PyTorch / xFormers 已安装")
@@ -346,9 +337,7 @@ def uninstall_stale_pytorch_packages(
     for name in ("torchvision", "torchaudio", "xformers"):
         if name in requested_names:
             continue
-        try:
-            importlib.metadata.version(name)
-        except importlib.metadata.PackageNotFoundError:
+        if get_package_version_from_library(name) is None:
             continue
         stale_names.append(name)
 
@@ -414,15 +403,7 @@ def reinstall_pytorch(
             uninstall_stale_pytorch_packages(info["torch_ver"], info["xformers_ver"])
 
     def _get_torch_and_xformers_ver() -> tuple[str | None, str | None]:
-        try:
-            _torch_ver = importlib.metadata.version("torch")
-        except importlib.metadata.PackageNotFoundError:
-            _torch_ver = None
-        try:
-            _xformers_ver = importlib.metadata.version("xformers")
-        except importlib.metadata.PackageNotFoundError:
-            _xformers_ver = None
-        return (_torch_ver, _xformers_ver)
+        return (get_package_version_from_library("torch"), get_package_version_from_library("xformers"))
 
     pytorch_list = export_pytorch_list()
 
