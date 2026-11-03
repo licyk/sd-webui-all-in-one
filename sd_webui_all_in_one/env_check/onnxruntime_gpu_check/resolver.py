@@ -12,7 +12,7 @@ from sd_webui_all_in_one.env_check.onnxruntime_gpu_check.models import (
 )
 from sd_webui_all_in_one.env_check.onnxruntime_gpu_check.versions import (
     get_onnxruntime_support_cuda_version,
-    get_torch_cuda_ver,
+    get_torch_cuda_ver_subprocess,
     get_torch_cuda_ver_fast,
 )
 
@@ -44,7 +44,7 @@ def need_install_ort_ver(
         return None
 
     def _get_required_cudnn_ver() -> str | None:
-        _, _, cudnn_ver = get_torch_cuda_ver()
+        _, _, cudnn_ver = get_torch_cuda_ver_subprocess()
         logger.debug("按需获取 cudnn_ver: %s", cudnn_ver)
         if cudnn_ver is None:
             logger.debug("缺少 Torch cuDNN 版本")

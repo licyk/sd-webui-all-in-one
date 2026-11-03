@@ -32,16 +32,22 @@ def get_torch_version_worker(
         import torch
         import torch.version
 
-        torch_ver = str(torch.__version__) if hasattr(torch, "__version__") else None
-        cuda_ver = str(torch.version.cuda) if hasattr(torch.version, "cuda") else None
+        torch_ver = getattr(torch, "__version__", None)
+        cuda_ver = getattr(torch.version, "cuda", None)
 
         # 获取 cuDNN 版本
         try:
-            cudnn_ver = str(torch.backends.cudnn.version())
+            cudnn_ver = torch.backends.cudnn.version()
         except Exception:
             cudnn_ver = None
 
-        result_queue.put((torch_ver, cuda_ver, cudnn_ver))
+        result_queue.put(
+            (
+                str(torch_ver) if torch_ver is not None else None,
+                str(cuda_ver) if cuda_ver is not None else None,
+                str(cudnn_ver) if cudnn_ver is not None else None,
+            )
+        )
     except ImportError as e:
         logger.debug("Torch 未安装: %s", e)
         result_queue.put((None, None, None))
@@ -54,7 +60,7 @@ def get_torch_version_worker(
 def get_torch_cuda_ver_subprocess() -> tuple[str | None, str | None, str | None]:
     """获取 Torch 的本体, CUDA, cuDNN 版本 (通过子进程隔离)
 
-    为了防止 torch 模块加载后无法从内存中彻底卸载, 以及避免其占用显存
+    为了防止 torch 模块加载后无法从内存中彻底卸载, 以及避免其占用动态库文件和显存
 
     此处通过开辟一个独立的子进程来完成版本检查工作
 
@@ -89,33 +95,6 @@ def get_torch_cuda_ver_subprocess() -> tuple[str | None, str | None, str | None]
 
     logger.debug("子进程返回结果 - Torch: %s, CUDA: %s, cuDNN: %s", torch_ver, cuda_ver, cudnn_ver)
     return torch_ver, cuda_ver, cudnn_ver
-
-
-def get_torch_cuda_ver() -> tuple[str | None, str | None, str | None]:
-    """获取 Torch 的本体, CUDA, cuDNN 版本
-
-    Returns:
-        (tuple[str | None, str | None, str | None]): Torch, CUDA, cuDNN 版本
-    """
-    try:
-        import torch
-        import torch.version
-
-        torch_ver = torch.__version__
-        cuda_ver = torch.version.cuda
-        cudnn_ver = torch.backends.cudnn.version()
-        return (
-            str(torch_ver) if torch_ver is not None else None,
-            str(cuda_ver) if cuda_ver is not None else None,
-            str(cudnn_ver) if cudnn_ver is not None else None,
-        )
-    except ImportError as e:
-        logger.debug("Torch 未安装: %s", e)
-        return None, None, None
-    except Exception as e:
-        # 导入 torch 可能因环境损坏抛出任意异常, 此时返回空值, 但需要提示用户
-        logger.warning("导入 Torch 时发生错误, 无法获取 Torch 版本信息: %s", e)
-        return None, None, None
 
 
 def get_torch_cuda_ver_fast() -> tuple[str | None, str | None]:

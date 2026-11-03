@@ -1,6 +1,7 @@
 """onnxruntime-gpu 版本检查与修复测试"""
 
 import importlib
+import os
 import sys
 from pathlib import Path
 
@@ -15,10 +16,39 @@ onnxruntime_gpu_check_resolver = importlib.import_module("sd_webui_all_in_one.en
 onnxruntime_gpu_check_fixer = importlib.import_module("sd_webui_all_in_one.env_check.onnxruntime_gpu_check.fixer")
 
 
+@pytest.mark.parametrize("cudnn_version", [9000, None])
+def test_torch_version_query_isolates_import_and_waits_for_exit(monkeypatch, tmp_path, cudnn_version):
+    torch_dir = tmp_path / "torch"
+    torch_dir.mkdir()
+    imported = tmp_path / "imported"
+    exited = tmp_path / "exited"
+    (torch_dir / "__init__.py").write_text(
+        "import atexit\n"
+        "import os\n"
+        "from pathlib import Path\n"
+        "from types import SimpleNamespace\n"
+        "__version__ = '2.5.0'\n"
+        f"backends = SimpleNamespace(cudnn=SimpleNamespace(version=lambda: {cudnn_version!r}))\n"
+        f"Path({str(imported)!r}).write_text(str(os.getpid()))\n"
+        f"atexit.register(lambda: Path({str(exited)!r}).write_text('exited'))\n",
+        encoding="utf-8",
+    )
+    (torch_dir / "version.py").write_text("cuda = '12.1'\n", encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    original_torch = sys.modules.get("torch")
+
+    result = onnxruntime_gpu_check.get_torch_cuda_ver_subprocess()
+
+    assert result == ("2.5.0", "12.1", str(cudnn_version) if cudnn_version is not None else None)
+    assert int(imported.read_text()) != os.getpid()
+    assert exited.read_text() == "exited"
+    assert sys.modules.get("torch") is original_torch
+
+
 def test_need_install_ort_ver_matrix(monkeypatch):
     def set_torch_info(torch_ver, cuda_ver, cudnn_ver):
         monkeypatch.setattr(onnxruntime_gpu_check_resolver, "get_torch_cuda_ver_fast", lambda: (torch_ver, cuda_ver))
-        monkeypatch.setattr(onnxruntime_gpu_check_resolver, "get_torch_cuda_ver", lambda: (torch_ver, cuda_ver, cudnn_ver))
+        monkeypatch.setattr(onnxruntime_gpu_check_resolver, "get_torch_cuda_ver_subprocess", lambda: (torch_ver, cuda_ver, cudnn_ver))
 
     monkeypatch.setattr(onnxruntime_gpu_check_resolver, "get_package_version_from_library", lambda _name: None)
     set_torch_info(None, None, None)
@@ -108,7 +138,7 @@ onnx_check_fixer = importlib.import_module("sd_webui_all_in_one.env_check.onnxru
 )
 def test_need_install_ort_ver_cuda_cudnn_matrix(monkeypatch, torch_info, ort_info, skip_if_missing, platform, installed_ort, expected):
     monkeypatch.setattr(onnx_check_resolver, "get_torch_cuda_ver_fast", lambda: (torch_info[0], torch_info[1]))
-    monkeypatch.setattr(onnx_check_resolver, "get_torch_cuda_ver", lambda: torch_info)
+    monkeypatch.setattr(onnx_check_resolver, "get_torch_cuda_ver_subprocess", lambda: torch_info)
     monkeypatch.setattr(onnx_check_resolver, "get_onnxruntime_support_cuda_version", lambda: ort_info)
     monkeypatch.setattr(onnx_check_resolver.sys, "platform", platform)
 
@@ -124,14 +154,14 @@ def test_need_install_ort_ver_cuda_cudnn_matrix(monkeypatch, torch_info, ort_inf
 
 def test_need_install_ort_ver_reads_cudnn_lazily(monkeypatch):
     monkeypatch.setattr(onnx_check_resolver, "get_torch_cuda_ver_fast", lambda: ("2.9.0", "13.0"))
-    monkeypatch.setattr(onnx_check_resolver, "get_torch_cuda_ver", lambda: (_ for _ in ()).throw(AssertionError("cuDNN should not be read")))
+    monkeypatch.setattr(onnx_check_resolver, "get_torch_cuda_ver_subprocess", lambda: (_ for _ in ()).throw(AssertionError("cuDNN should not be read")))
     monkeypatch.setattr(onnx_check_resolver, "get_onnxruntime_support_cuda_version", lambda: ("13.0", "9"))
 
     assert onnx_check.need_install_ort_ver() is None
 
     calls = []
     monkeypatch.setattr(onnx_check_resolver, "get_torch_cuda_ver_fast", lambda: ("2.5.0", "12.1"))
-    monkeypatch.setattr(onnx_check_resolver, "get_torch_cuda_ver", lambda: calls.append("cudnn") or ("2.5.0", "12.1", "9000"))
+    monkeypatch.setattr(onnx_check_resolver, "get_torch_cuda_ver_subprocess", lambda: calls.append("cudnn") or ("2.5.0", "12.1", "9000"))
     monkeypatch.setattr(onnx_check_resolver, "get_onnxruntime_support_cuda_version", lambda: ("12.1", "8"))
 
     assert onnx_check.need_install_ort_ver() == onnx_check.OrtType.CU121CUDNN9
