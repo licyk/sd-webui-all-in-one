@@ -168,7 +168,6 @@ def test_product_env_checks_aggregate_failures(monkeypatch, tmp_path, module, ch
     monkeypatch.setattr(implementation, "fix_torch_libomp", ok_task)
     monkeypatch.setattr(implementation, "check_torch_version", ok_task)
     monkeypatch.setattr(implementation, "check_onnxruntime_gpu", ok_task)
-    monkeypatch.setattr(implementation, "check_numpy", ok_task)
     if hasattr(implementation, "check_accelerate_bin"):
         monkeypatch.setattr(implementation, "check_accelerate_bin", ok_task)
 

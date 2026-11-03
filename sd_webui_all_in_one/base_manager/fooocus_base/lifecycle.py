@@ -19,7 +19,6 @@ from sd_webui_all_in_one.base_manager.base import (
 from sd_webui_all_in_one.env_check import (
     check_torch_version,
     py_dependency_checker,
-    check_numpy,
     fix_torch_libomp,
     check_onnxruntime_gpu,
 )
@@ -48,7 +47,6 @@ class FooocusEnvCheckName(EnvCheckName):
     TORCH_LIBOMP = "torch-libomp"
     TORCH_VERSION = "torch-version"
     ONNXRUNTIME_GPU = "onnxruntime-gpu"
-    NUMPY = "numpy"
 
 
 FOOOCUS_TRANSLATE_ZH_PATH = ROOT_PATH / "base_manager" / "config" / "fooocus_zh_cn.json"
@@ -321,7 +319,6 @@ def check_fooocus_env(
         EnvCheckTask(FooocusEnvCheckName.TORCH_LIBOMP, fix_torch_libomp, {}),
         EnvCheckTask(FooocusEnvCheckName.TORCH_VERSION, check_torch_version, {}),
         EnvCheckTask(FooocusEnvCheckName.ONNXRUNTIME_GPU, check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": True, "custom_env": custom_env}),
-        EnvCheckTask(FooocusEnvCheckName.NUMPY, check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
     ]
     run_env_check_tasks(
         tasks,

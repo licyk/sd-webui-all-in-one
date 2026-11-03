@@ -11,7 +11,6 @@ from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.git_warpper import set_git_config
 from sd_webui_all_in_one.env_check import (
     fix_torch_libomp,
-    check_numpy,
     py_dependency_checker,
     check_onnxruntime_gpu,
 )
@@ -222,7 +221,6 @@ class SDScriptsManager(BaseManager):
             EnvCheckTask(SDScriptsEnvCheckName.PYTHON_DEPENDENCIES, py_dependency_checker, {"requirement_path": requirement_path, "name": "sd-scripts", "use_uv": use_uv}),
             EnvCheckTask(SDScriptsEnvCheckName.TORCH_LIBOMP, fix_torch_libomp, {}),
             EnvCheckTask(SDScriptsEnvCheckName.ONNXRUNTIME_GPU, check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": False}),
-            EnvCheckTask(SDScriptsEnvCheckName.NUMPY, check_numpy, {"use_uv": use_uv}),
         ]
         for task in select_env_check_tasks(tasks, include_checks=include_checks, exclude_checks=exclude_checks):
             task.func(**task.kwargs)
@@ -376,7 +374,6 @@ class SDScriptsManager(BaseManager):
             pip_install("urllib3", "--upgrade", use_uv=use_uv)
         except RuntimeError as e:
             logger.error("更新 urllib3 时发生错误: %s", e)
-        check_numpy(use_uv=use_uv)
         self.get_model_from_list(path=model_path, model_list=model_list)
         self.repo_manager.configure_tokens(
             hf_token=huggingface_token,

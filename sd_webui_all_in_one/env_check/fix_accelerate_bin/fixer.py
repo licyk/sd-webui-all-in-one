@@ -15,7 +15,7 @@ def check_accelerate_bin(
     use_uv: bool = True,
     custom_env: dict[str, str] | None = None,
 ) -> None:
-    """检查 Numpy 是否需要降级
+    """检查并修复 accelerate 可执行文件
 
     Args:
         base_path (Path):
@@ -27,7 +27,7 @@ def check_accelerate_bin(
 
     Raises:
         RuntimeError:
-            检查 Numpy 版本时出现错误
+            重新安装 accelerate 时出现错误
     """
     try:
         repo = git_warpper.get_current_branch_remote_url(base_path)

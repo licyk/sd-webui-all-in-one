@@ -21,7 +21,6 @@ from sd_webui_all_in_one.env_check import (
     check_onnxruntime_gpu,
     check_torch_version,
     py_dependency_checker,
-    check_numpy,
     fix_torch_libomp,
 )
 from sd_webui_all_in_one.mirror_manager import (
@@ -44,7 +43,6 @@ class SDTrainerEnvCheckName(EnvCheckName):
     TORCH_VERSION = "torch-version"
     ACCELERATE_BIN = "accelerate-bin"
     ONNXRUNTIME_GPU = "onnxruntime-gpu"
-    NUMPY = "numpy"
 
 
 def install_sd_trainer(
@@ -269,7 +267,6 @@ def check_sd_trainer_env(
         EnvCheckTask(SDTrainerEnvCheckName.TORCH_VERSION, check_torch_version, {}),
         EnvCheckTask(SDTrainerEnvCheckName.ACCELERATE_BIN, check_accelerate_bin, {"base_path": sd_trainer_path, "use_uv": use_uv, "custom_env": custom_env}),
         EnvCheckTask(SDTrainerEnvCheckName.ONNXRUNTIME_GPU, check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": False, "custom_env": custom_env}),
-        EnvCheckTask(SDTrainerEnvCheckName.NUMPY, check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
     ]
     run_env_check_tasks(
         tasks,

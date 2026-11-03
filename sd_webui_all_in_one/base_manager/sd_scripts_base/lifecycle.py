@@ -21,7 +21,6 @@ from sd_webui_all_in_one.base_manager.base import (
 from sd_webui_all_in_one.env_check import (
     check_torch_version,
     py_dependency_checker,
-    check_numpy,
     fix_torch_libomp,
     check_onnxruntime_gpu,
 )
@@ -44,7 +43,6 @@ class SDScriptsEnvCheckName(EnvCheckName):
     TORCH_LIBOMP = "torch-libomp"
     TORCH_VERSION = "torch-version"
     ONNXRUNTIME_GPU = "onnxruntime-gpu"
-    NUMPY = "numpy"
 
 
 if sys.version_info >= (3, 11):
@@ -321,7 +319,6 @@ def check_sd_scripts_env(
             EnvCheckTask(SDScriptsEnvCheckName.TORCH_LIBOMP, fix_torch_libomp, {}),
             EnvCheckTask(SDScriptsEnvCheckName.TORCH_VERSION, check_torch_version, {}),
             EnvCheckTask(SDScriptsEnvCheckName.ONNXRUNTIME_GPU, check_onnxruntime_gpu, {"use_uv": use_uv, "skip_if_missing": False, "custom_env": custom_env}),
-            EnvCheckTask(SDScriptsEnvCheckName.NUMPY, check_numpy, {"use_uv": use_uv, "custom_env": custom_env}),
         ]
         run_env_check_tasks(
             tasks,

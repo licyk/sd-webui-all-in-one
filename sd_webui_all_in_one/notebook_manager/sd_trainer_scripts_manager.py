@@ -7,7 +7,6 @@ from sd_webui_all_in_one.logger import get_logger
 from sd_webui_all_in_one.notebook_manager.base_manager import BaseManager, ModelDownloadList
 from sd_webui_all_in_one.mirror_manager import set_mirror
 from sd_webui_all_in_one.git_warpper import set_git_config
-from sd_webui_all_in_one.env_check import check_numpy
 from sd_webui_all_in_one.pytorch_manager import PyTorchDeviceType
 from sd_webui_all_in_one.utils import warning_unexpected_params
 from sd_webui_all_in_one.config import (
@@ -229,7 +228,6 @@ class SDTrainerScriptsManager(BaseManager):
             )
         pip_install("lycoris-lora", "dadaptation", "open-clip-torch", "wandb", use_uv=use_uv)
         pip_install("urllib3", "--upgrade", use_uv=use_uv)
-        check_numpy(use_uv=use_uv)
         self.get_model_from_list(path=model_path, model_list=model_list)
         self.repo_manager.configure_tokens(
             hf_token=huggingface_token,
