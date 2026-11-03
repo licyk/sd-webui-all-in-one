@@ -345,7 +345,7 @@ def find_broken_distributions(
             要扫描的目录, 为 ``None`` 时扫描当前解释器的 site-packages 目录
 
     Returns:
-        list[BrokenDistribution]: 元数据已损坏的分发
+        list[BrokenDistribution]: 元数据已损坏的分发, 按路径排序 (目录遍历顺序取决于文件系统)
     """
     search_paths = [str(path) for path in paths] if paths is not None else _site_packages_paths()
     broken: list[BrokenDistribution] = []
@@ -358,4 +358,5 @@ def find_broken_distributions(
             continue
         name, version = _parse_dist_info_dirname(dist_path.name)
         broken.append(BrokenDistribution(path=dist_path, name=name, version=version, reason=reason))
+    broken.sort(key=lambda item: str(item.path))
     return broken

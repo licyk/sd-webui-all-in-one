@@ -153,6 +153,15 @@ class TestBrokenMetadata:
         assert broken[no_version].version is None
         assert broken[no_version].requirement == "sdaio_bad_version"
 
+    def test_find_broken_distributions_is_sorted_regardless_of_discovery_order(self, tmp_path, monkeypatch):
+        site_dir = tmp_path / "scan"
+        site_dir.mkdir()
+        expected = [_make_broken(site_dir, "missing", name=name) for name in ("sdaio_a", "sdaio_b", "sdaio_c")]
+        discover = installed_module.importlib.metadata.distributions
+        # 目录遍历顺序取决于文件系统 (例如 ext4 不按名称排序), 这里强制使用倒序
+        monkeypatch.setattr(installed_module.importlib.metadata, "distributions", lambda **kwargs: list(discover(**kwargs))[::-1])
+        assert [item.path for item in find_broken_distributions([site_dir])] == expected
+
     def test_find_broken_distributions_defaults_to_site_packages(self, tmp_path, monkeypatch):
         site_dir = tmp_path / "scan"
         site_dir.mkdir()
