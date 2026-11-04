@@ -23,7 +23,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/installer/comfyui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/comfyui" `
-            -PyTorchMirrorType cu132 `
+            -PyTorchMirrorType cu134 `
             -BuildMode `
             -BuildWithLaunch `
             -DisableAutoMirror `

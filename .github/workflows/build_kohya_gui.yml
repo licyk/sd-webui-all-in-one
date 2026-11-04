@@ -23,7 +23,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/installer/sd_trainer_installer.ps1" `
             -InstallPath "${{ github.workspace }}/kohya_gui" `
-            -PyTorchMirrorType cu132 `
+            -PyTorchMirrorType cu134 `
             -BuildMode `
             -BuildWithLaunch `
             -InstallBranch "kohya_gui_main" `

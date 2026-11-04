@@ -23,7 +23,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/installer/sd_trainer_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_trainer_next" `
-            -PyTorchMirrorType cu132 `
+            -PyTorchMirrorType cu134 `
             -BuildMode `
             -BuildWithLaunch `
             -InstallBranch "sd_trainer_next_main" `
