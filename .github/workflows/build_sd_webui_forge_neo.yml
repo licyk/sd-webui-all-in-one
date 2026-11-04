@@ -23,7 +23,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/installer/stable_diffusion_webui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/sd_webui_forge_neo" `
-            -PyTorchMirrorType cu130 `
+            -PyTorchMirrorType cu132 `
             -InstallPythonVersion 3.13 `
             -BuildMode `
             -BuildWithLaunch `

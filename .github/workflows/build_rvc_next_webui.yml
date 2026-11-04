@@ -23,7 +23,7 @@ jobs:
         run: |
           & "${{ github.workspace }}/installer/rvc_next_webui_installer.ps1" `
             -InstallPath "${{ github.workspace }}/rvc_next_webui" `
-            -PyTorchMirrorType cu130 `
+            -PyTorchMirrorType cu132 `
             -BuildMode `
             -BuildWithLaunch `
             -DisableAutoMirror `
