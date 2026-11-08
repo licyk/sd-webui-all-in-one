@@ -67,15 +67,15 @@ def _import_model_to_invokeai(
     """
     try:
         logger.info("导入 InvokeAI 模块中")
-        from invokeai.app.services.model_manager.model_manager_default import ModelManagerService  # ty: ignore[unresolved-import]
-        from invokeai.app.services.model_install.model_install_common import InstallStatus  # ty: ignore[unresolved-import]
-        from invokeai.app.services.model_records.model_records_sql import ModelRecordServiceSQL  # ty: ignore[unresolved-import]
-        from invokeai.app.services.download.download_default import DownloadQueueService  # ty: ignore[unresolved-import]
-        from invokeai.app.services.events.events_base import EventServiceBase  # ty: ignore[unresolved-import]
-        from invokeai.app.services.config.config_default import get_config  # ty: ignore[unresolved-import]
-        from invokeai.app.services.shared.sqlite.sqlite_util import init_db  # ty: ignore[unresolved-import]
-        from invokeai.app.services.image_files.image_files_disk import DiskImageFileStorage  # ty: ignore[unresolved-import]
-        from invokeai.app.services.invoker import Invoker  # ty: ignore[unresolved-import]
+        from invokeai.app.services.model_manager.model_manager_default import ModelManagerService  # ty: ignore[import-not-found]
+        from invokeai.app.services.model_install.model_install_common import InstallStatus  # ty: ignore[import-not-found]
+        from invokeai.app.services.model_records.model_records_sql import ModelRecordServiceSQL  # ty: ignore[import-not-found]
+        from invokeai.app.services.download.download_default import DownloadQueueService  # ty: ignore[import-not-found]
+        from invokeai.app.services.events.events_base import EventServiceBase  # ty: ignore[import-not-found]
+        from invokeai.app.services.config.config_default import get_config  # ty: ignore[import-not-found]
+        from invokeai.app.services.shared.sqlite.sqlite_util import init_db  # ty: ignore[import-not-found]
+        from invokeai.app.services.image_files.image_files_disk import DiskImageFileStorage  # ty: ignore[import-not-found]
+        from invokeai.app.services.invoker import Invoker  # ty: ignore[import-not-found]
     except ImportError as e:
         logger.error("导入 InvokeAI 模块失败, 无法自动导入模型: %s", e)
         raise ImportError(f"导入 InvokeAI 模块发生错误: {e}") from e
@@ -303,15 +303,15 @@ def install_invokeai_model_from_source(
     """
     try:
         logger.info("导入 InvokeAI 模块中")
-        from invokeai.app.services.model_manager.model_manager_default import ModelManagerService  # ty: ignore[unresolved-import]
-        from invokeai.app.services.model_install.model_install_common import InstallStatus  # ty: ignore[unresolved-import]
-        from invokeai.app.services.model_records.model_records_sql import ModelRecordServiceSQL  # ty: ignore[unresolved-import]
-        from invokeai.app.services.download.download_default import DownloadQueueService  # ty: ignore[unresolved-import]
-        from invokeai.app.services.events.events_base import EventServiceBase  # ty: ignore[unresolved-import]
-        from invokeai.app.services.config.config_default import get_config  # ty: ignore[unresolved-import]
-        from invokeai.app.services.shared.sqlite.sqlite_util import init_db  # ty: ignore[unresolved-import]
-        from invokeai.app.services.image_files.image_files_disk import DiskImageFileStorage  # ty: ignore[unresolved-import]
-        from invokeai.app.services.invoker import Invoker  # ty: ignore[unresolved-import]
+        from invokeai.app.services.model_manager.model_manager_default import ModelManagerService  # ty: ignore[import-not-found]
+        from invokeai.app.services.model_install.model_install_common import InstallStatus  # ty: ignore[import-not-found]
+        from invokeai.app.services.model_records.model_records_sql import ModelRecordServiceSQL  # ty: ignore[import-not-found]
+        from invokeai.app.services.download.download_default import DownloadQueueService  # ty: ignore[import-not-found]
+        from invokeai.app.services.events.events_base import EventServiceBase  # ty: ignore[import-not-found]
+        from invokeai.app.services.config.config_default import get_config  # ty: ignore[import-not-found]
+        from invokeai.app.services.shared.sqlite.sqlite_util import init_db  # ty: ignore[import-not-found]
+        from invokeai.app.services.image_files.image_files_disk import DiskImageFileStorage  # ty: ignore[import-not-found]
+        from invokeai.app.services.invoker import Invoker  # ty: ignore[import-not-found]
     except ImportError as e:
         logger.error("导入 InvokeAI 模块失败, 无法安装模型: %s", e)
         raise ImportError(f"导入 InvokeAI 模块发生错误: {e}") from e

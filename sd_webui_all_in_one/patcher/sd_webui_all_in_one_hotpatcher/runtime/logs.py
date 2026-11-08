@@ -787,7 +787,7 @@ class SubprocessCapture:
                 self.capture.submit_subprocess_stream("stderr", stderr_data, process, args_value)
             return stdout_data, stderr_data
 
-        process.communicate = communicate  # ty: ignore[invalid-assignment]
+        process.communicate = communicate
 
     def _start_reader(
         self,

@@ -257,7 +257,7 @@ def run_git(
     *args: str,
     path: Path | None = None,
     custom_env: dict[str, str] | None = None,
-    live: Literal[False] = False,
+    live: Literal[False],
     shell: bool = DEFAULT_SUBPROCESS_SHELL,
     cwd: Path | None = None,
     check: bool = True,
@@ -285,7 +285,7 @@ def run_git(
             子进程执行超时时间（秒）
 
     Returns:
-        str: 命令输出
+        str: 捕获的标准输出, 不实时输出子进程日志
     """
     ...
 
@@ -300,7 +300,7 @@ def run_git(
     cwd: Path | None = None,
     check: bool = True,
     timeout: float | None = None,
-) -> str | None:
+) -> None:
     """
     执行 Git 命令并实时输出日志。
 
@@ -323,45 +323,7 @@ def run_git(
             子进程执行超时时间（秒）
 
     Returns:
-        str | None: 命令输出
-    """
-    ...
-
-
-@overload
-def run_git(
-    *args: str,
-    path: Path | None = None,
-    custom_env: dict[str, str] | None = None,
-    live: bool = True,
-    shell: bool = DEFAULT_SUBPROCESS_SHELL,
-    cwd: Path | None = None,
-    check: bool = True,
-    timeout: float | None = None,
-) -> str | None:
-    """
-    执行 Git 命令。
-
-    Args:
-        *args (str):
-            Git 参数
-        path (Path | None):
-            Git 仓库路径
-        custom_env (dict[str, str] | None):
-            自定义环境变量
-        live (bool):
-            是否实时输出命令执行日志
-        shell (bool):
-            是否使用内置 Shell 执行命令
-        cwd (Path | None):
-            执行进程时的起始路径
-        check (bool):
-            是否检查进程退出状态
-        timeout (float | None):
-            子进程执行超时时间（秒）
-
-    Returns:
-        str | None: 命令输出
+        None: 日志已实时输出, 不返回日志内容
     """
     ...
 
@@ -402,7 +364,7 @@ def run_git(
             子进程执行超时时间（秒）
 
     Returns:
-        str | None: 命令输出
+        str | None: live=True 时实时输出日志并返回 None; live=False 时返回捕获的标准输出, 不实时输出子进程日志
 
     Raises:
         RuntimeError:
