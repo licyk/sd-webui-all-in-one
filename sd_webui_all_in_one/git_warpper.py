@@ -384,12 +384,16 @@ def run_git(
             return run_cmd(command, custom_env=custom_env, live=live, shell=shell, cwd=cwd, check=check, timeout=timeout)
 
     try:
-        return _run()
+        result = _run()
     except RuntimeError as e:
         if path is None or not _clear_stale_locks(path, str(e)):
             raise
         logger.warning("已清理 '%s' 仓库中的 Git 锁文件, 重新执行 Git 命令", path)
-        return _run()
+        result = _run()
+
+    if live:
+        return None
+    return result if result is not None else ""
 
 
 def clone(

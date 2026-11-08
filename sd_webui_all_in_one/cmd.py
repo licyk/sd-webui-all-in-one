@@ -306,4 +306,6 @@ def run_cmd(
 
         raise RuntimeError("\n".join(errors))
 
-    return result.stdout if isinstance(result.stdout, str) else None
+    if live:
+        return None
+    return result.stdout if isinstance(result.stdout, str) else ""
