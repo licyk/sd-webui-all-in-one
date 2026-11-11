@@ -123,8 +123,8 @@ def _accepted(address, token):
             _send(file, {"type": "hello", "version": 1, "features": [], "token": token})
             _send(file, {"id": "probe", "type": "config.get", "payload": {}})
             return bool(file.readline())
-        except (ConnectionResetError, BrokenPipeError):
-            # 宿主拒绝 token 后直接关闭连接; macOS 上未读数据会让关闭表现为 RST 而不是 EOF
+        except ConnectionError:
+            # 宿主拒绝 token 后直接关闭连接; 不同平台表现为 EOF、RST (macOS) 或 WinError 10053 (Windows)
             return False
 
 
