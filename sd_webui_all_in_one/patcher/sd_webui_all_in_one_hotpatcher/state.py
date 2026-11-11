@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
     from .control.features import FeatureRegistry
     from .control.handles import PatchHandle
+    from .control.loader import LoadedPatch, PatchFileWatcher
     from .control.patchset import PatchSet
     from .hook import HookedMetaPathFinder, MonkeyZoo
     from .runtime.client import RuntimeClient
@@ -48,7 +49,8 @@ class HotpatcherState:
     hotpatcher 默认进程状态。
 
     锁约定: ``control_lock`` 只保护控制平面的内存注册表 (``patch_id_counter``、``patch_sets``、
-    ``patch_handles``、``feature_registry`` 的创建) 的读写。持有该锁时绝不执行 ``importlib`` 调用、用户补丁函数或
+    ``patch_handles``、``feature_registry`` 的创建、``loaded_patches``、``loading_patches``、
+    ``rebind_skip_modules``、``patch_file_watcher``) 的读写。持有该锁时绝不执行 ``importlib`` 调用、用户补丁函数或
     ``setup`` 回调、socket/HTTP I/O; 调用方应在锁内计算、在锁外执行。这样控制线程不会在
     持有 ``control_lock`` 时等待模块导入锁, 避免与正在导入并读取补丁计划的主线程死锁。
 
@@ -114,6 +116,15 @@ class HotpatcherState:
             而不是被 ``capture_exception`` 吞掉。创建状态对象时从
             ``SD_WEBUI_ALL_IN_ONE_HOTPATCHER_STRICT`` 读取初始值; 默认状态在导入本模块
             (即 bootstrap) 时创建, 之后修改环境变量不会生效, 运行时请使用 ``hook.set_strict_mode``。
+        loaded_patches (dict[str, LoadedPatch]):
+            ``control.loader`` 在运行时加载的补丁模块, 键为补丁名称 (跨重新加载保持不变)。
+        loading_patches (set[str]):
+            正在加载、卸载、重新加载或更新的补丁名称, 同名补丁的并发操作会被拒绝。
+        rebind_skip_modules (dict[str, set[str]]):
+            ``rebind_references`` 扫描时跳过的模块名, 值为登记该模块的补丁集 ID 集合;
+            按模块名加载的补丁模块在补丁集生命周期内登记于此, 避免包装函数通过自身全局变量递归调用自己。
+        patch_file_watcher (PatchFileWatcher | None):
+            当前补丁文件监视器。
     """
 
     monkey_zoo: "MonkeyZoo | None" = None
@@ -145,6 +156,10 @@ class HotpatcherState:
     patch_handles: "dict[str, PatchHandle]" = field(default_factory=dict)
     feature_registry: "FeatureRegistry | None" = None
     strict_mode: bool = field(default_factory=strict_mode_from_env)
+    loaded_patches: "dict[str, LoadedPatch]" = field(default_factory=dict)
+    loading_patches: set[str] = field(default_factory=set)
+    rebind_skip_modules: dict[str, set[str]] = field(default_factory=dict)
+    patch_file_watcher: "PatchFileWatcher | None" = None
 
 
 _default_state = HotpatcherState()

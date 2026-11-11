@@ -53,6 +53,7 @@ APPLY_ORDER = [
     "extensions.hf_endpoint_mirror",
     "extensions.uv_pip",
     "extensions.xformers_cutlass",
+    "control",
 ]
 CATALOG_ORDER = [
     "services",
@@ -67,6 +68,7 @@ CATALOG_ORDER = [
     "extensions.hf_endpoint_mirror",
     "extensions.xformers_cutlass",
     "extensions.uv_pip",
+    "control",
 ]
 V1_DISABLED_WARNINGS = [
     {"feature": "core.import_hook", "message": "import hook is already installed and v1 services does not uninstall it"},
@@ -172,7 +174,7 @@ def test_builtin_registry_preserves_apply_catalog_and_config_orders():
 
     assert registry.keys() == APPLY_ORDER
     assert [spec.key for spec in registry.catalog_specs()] == CATALOG_ORDER
-    assert list(build_default_config(registry)) == ["services", "core", "runtime", "extensions"]
+    assert list(build_default_config(registry)) == ["services", "core", "runtime", "extensions", "control"]
     defaults = build_default_config(registry)
     assert list(defaults["runtime"]) == ["browser", "errors", "logs"]
     assert list(defaults["extensions"]) == ["comfyui_auto_port", "zluda", "extension_index", "hf_endpoint_mirror", "xformers_cutlass", "uv_pip"]

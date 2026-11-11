@@ -70,6 +70,8 @@ def _field_kind(value: Any) -> str:
         return "bool"
     if isinstance(value, int) and not isinstance(value, bool):
         return "int"
+    if isinstance(value, float):
+        return "float"
     if isinstance(value, (list, tuple)):
         return "list"
     if isinstance(value, dict):
@@ -85,6 +87,11 @@ def _metadata_field_kind(metadata: dict[str, Any], default_value: Any = None) ->
         return "bool"
     if raw_type == "int":
         return "int"
+    if raw_type == "float":
+        return "float"
+    if raw_type == "json":
+        # 任意 JSON 值 (例如对象列表), 以 JSON 文本编辑, 不能按逗号拆分。
+        return "json"
     if raw_type in {"list", "list[str]"} or raw_type.startswith("list["):
         return "list"
     if raw_type == "object" or "object" in raw_type:
@@ -111,6 +118,9 @@ def _variable_to_value(variable: tk.Variable, kind: str, default_value: Any = No
     if kind == "int":
         default_int = default_value if isinstance(default_value, int) and not isinstance(default_value, bool) else 0
         return _to_int(str(value), default_int)
+    if kind == "float":
+        default_float = float(default_value) if isinstance(default_value, (int, float)) and not isinstance(default_value, bool) else 0.0
+        return _to_float(str(value), default_float)
     if kind == "list":
         return _split_list(str(value))
     if kind == "choice":
@@ -130,5 +140,12 @@ def _humanize_name(name: str) -> str:
 def _to_int(value: str, default: int) -> int:
     try:
         return int(value)
+    except ValueError:
+        return default
+
+
+def _to_float(value: str, default: float) -> float:
+    try:
+        return float(value)
     except ValueError:
         return default

@@ -96,6 +96,7 @@ FEATURE_SET_PREFIX = "feature:"
 
 _CORE_PACKAGE = __name__.rsplit(".", 2)[0]
 _SERVICES_MODULE = f"{_CORE_PACKAGE}.services"
+_LOADER_MODULE = f"{_CORE_PACKAGE}.control.loader"
 _EXT_PACKAGE = "sd_webui_all_in_one_hotpatcher_ext"
 _KEY_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$")
 _STATUS_PRIORITY = {
@@ -218,6 +219,11 @@ def _enabled_flag(section: Mapping[str, Any]) -> bool:
 
 def _any_subsection_enabled(section: Mapping[str, Any]) -> bool:
     return any(isinstance(item, dict) and bool(item.get("enabled")) for item in section.values())
+
+
+def _always_enabled(section: Mapping[str, Any]) -> bool:
+    del section
+    return True
 
 
 @dataclass(frozen=True)
@@ -355,6 +361,8 @@ class FeatureContext:
             结果对象, 含 ``applied``、``warnings``、``errors`` 列表。
         config (dict[str, Any] | None):
             完整配置, 来自 ``apply_config`` 时可用。
+        reconcile (bool):
+            本次 ``apply_config`` 是否启用 reconcile (撤销不再需要的效果), 由功能自行决定如何使用。
     """
 
     spec: FeatureSpec
@@ -363,6 +371,7 @@ class FeatureContext:
     patch_set: PatchSet | None = None
     result: dict[str, Any] = field(default_factory=lambda: _new_result())
     config: dict[str, Any] | None = None
+    reconcile: bool = False
 
     @property
     def key(self) -> str:
@@ -769,7 +778,7 @@ def apply_feature_configs(
                 _run_on_disabled(spec, section, result, runtime_client=runtime_client, state=state, config=config)
                 result["warnings"].append({"feature": spec.key, "message": f"runtime_client is required to enable {spec.name}"})
                 continue
-            _apply_in_feature_set(spec, section, result, runtime_client=runtime_client, state=state, config=config)
+            _apply_in_feature_set(spec, section, result, runtime_client=runtime_client, state=state, config=config, reconcile=reconcile)
             continue
         _run_on_disabled(spec, section, result, runtime_client=runtime_client, state=state, config=config)
         if reconcile:
@@ -1129,13 +1138,14 @@ def _apply_in_feature_set(
     runtime_client: Any,
     state: HotpatcherState,
     config: dict[str, Any] | None,
+    reconcile: bool = False,
 ) -> tuple[str, PatchSet | None]:
     try:
         patch_set = _ensure_feature_set(spec, section, state)
     except Exception as exc:
         result["errors"].append({"feature": spec.key, "code": type(exc).__name__, "message": str(exc)})
         return "failed", None
-    ctx = FeatureContext(spec=spec, state=state, runtime_client=runtime_client, patch_set=patch_set, result=result, config=config)
+    ctx = FeatureContext(spec=spec, state=state, runtime_client=runtime_client, patch_set=patch_set, result=result, config=config, reconcile=reconcile)
     before = {handle.id for handle in patch_set.handles}
     try:
         with patch_set.context.activate():
@@ -1298,6 +1308,10 @@ def _svc(name: str) -> str:
 
 def _ext(name: str) -> str:
     return f"{_EXT_PACKAGE}.{name}"
+
+
+def _loader(name: str) -> str:
+    return f"{_LOADER_MODULE}:{name}"
 
 
 BUILTIN_FEATURES: tuple[FeatureSpec, ...] = (
@@ -1741,6 +1755,48 @@ BUILTIN_FEATURES: tuple[FeatureSpec, ...] = (
         disabled_warning="uv pip patch is already installed and v1 services does not uninstall it",
         order=60,
         config_order=65,
+    ),
+    FeatureSpec(
+        key="control",
+        title="运行时控制",
+        description="运行时补丁加载与控制平面设置。patch_sets 中声明的补丁模块在全部扩展之后加载。",
+        defaults={
+            "allow_remote_load": False,
+            "patch_sets": [],
+            "watch": {
+                "enabled": False,
+                "interval": 1.0,
+            },
+        },
+        settings={
+            "allow_remote_load": {
+                "type": "bool",
+                "title": "允许远程加载补丁",
+                "description": "允许通过运行时控制通道加载补丁代码 (等同于远程代码执行)。旧版传输还要求非空 token。进程内 Python API 不受此限制。",
+            },
+            "patch_sets": {
+                "type": "json",
+                "title": "补丁集",
+                "description": '随配置加载的补丁模块列表 (JSON 数组)，每项形如 {"source": "pkg.mod 或 /path/patch.py", "name": "可选名称", "config": {}, "enabled": true}。',
+            },
+            "watch.enabled": {
+                "type": "bool",
+                "title": "监视补丁文件",
+                "description": "轮询已加载补丁模块的源文件，内容变化时自动重新加载。也可通过 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_WATCH=1 启用。",
+            },
+            "watch.interval": {
+                "type": "float",
+                "title": "监视间隔",
+                "description": "轮询补丁文件的间隔秒数。",
+            },
+        },
+        apply=_loader("_feature_apply_control"),
+        is_active=_loader("_feature_control_active"),
+        revert=_loader("_feature_revert_control"),
+        update=_loader("_feature_update_control"),
+        enabled=_always_enabled,
+        optional=True,
+        order=90,
     ),
 )
 """内置功能, 顺序即目录顺序"""

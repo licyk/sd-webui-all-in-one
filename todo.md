@@ -71,12 +71,12 @@ $PY -m python_docstring_checker .
 - [x] Verify: regression + static green (447 passed on 3.11; patcher suite 391 passed on 3.10)
 
 ## P5 Runtime loading
-- [ ] `control/loader.py`: load (module/file, private name), unload report, reload w/ rollback, update
-- [ ] `control.patch_sets` config section + catalog schema
-- [ ] `PatchFileWatcher` (stdlib polling, off by default)
-- [ ] Remote-load gate (D6)
-- [ ] Tests: `test_control_loader.py`
-- [ ] Verify
+- [x] `control/loader.py`: load (module/file, private name), unload report, reload w/ rollback, update
+- [x] `control.patch_sets` config section + catalog schema (one `control` FeatureSpec; GUI gains `json`/`float` kinds)
+- [x] `PatchFileWatcher` (stdlib polling, off by default)
+- [x] Remote-load gate (D6): `check_remote_load_allowed` defined and tested; P7 wires it into commands
+- [x] Tests: `test_control_loader.py` (+ `tests/base_manager/gui/test_hotpatcher_gui_json_field.py`)
+- [x] Verify: regression + static green (485 passed on 3.11; patcher suite 429 passed on 3.10; full suite 2058 passed / 13 skipped)
 
 ## P6 Debugging
 - [ ] `control/trace.py` + `…_TRACE` / `…_TRACE_FILE` env

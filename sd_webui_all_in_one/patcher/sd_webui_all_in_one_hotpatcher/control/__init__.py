@@ -1,4 +1,4 @@
-"""Hotpatcher 控制平面: 可撤销补丁日志、目标解析、补丁句柄、补丁集与实时补丁操作。"""
+"""Hotpatcher 控制平面: 可撤销补丁日志、目标解析、补丁句柄、补丁集、实时补丁操作与运行时补丁加载。"""
 
 from .handles import (
     MAX_ERROR_MESSAGE_CHARS,
@@ -16,6 +16,22 @@ from .handles import (
     unregister_patch_handle,
 )
 from .journal import NOTSET, JournalEntry, JournalUndoReport, JournalUndoResult, NotSetType, PatchJournal
+from .loader import (
+    DYNAMIC_PACKAGE,
+    LoadedPatch,
+    PatchFileWatcher,
+    PatchLoaderError,
+    RemoteLoadError,
+    check_remote_load_allowed,
+    get_loaded_patch,
+    list_loaded_patches,
+    load_patch,
+    reload_patch,
+    start_patch_watcher,
+    stop_patch_watcher,
+    unload_patch,
+    update_patch,
+)
 from .operations import (
     MAX_REBIND_REFERENCES,
     TRAMPOLINE_ATTRIBUTE,
@@ -51,6 +67,7 @@ from .targets import (
 )
 
 __all__ = [
+    "DYNAMIC_PACKAGE",
     "MAX_ERROR_MESSAGE_CHARS",
     "MAX_HANDLE_OUTCOMES",
     "MAX_REBIND_REFERENCES",
@@ -60,10 +77,13 @@ __all__ = [
     "JournalEntry",
     "JournalUndoReport",
     "JournalUndoResult",
+    "LoadedPatch",
     "NotSetType",
     "PatchContext",
+    "PatchFileWatcher",
     "PatchHandle",
     "PatchJournal",
+    "PatchLoaderError",
     "PatchOutcome",
     "PatchOutcomeKind",
     "PatchSet",
@@ -71,30 +91,40 @@ __all__ = [
     "PatchSetReport",
     "PatchSetStatus",
     "PatchStatus",
+    "RemoteLoadError",
     "TargetAttributeError",
     "TargetError",
     "TargetImportError",
     "TargetSyntaxError",
     "Trampoline",
     "allocate_patch_id",
+    "check_remote_load_allowed",
     "collect_operations",
     "create_patch_handle",
     "current_patch_context",
     "describe_target",
     "get_patch_handle",
+    "get_loaded_patch",
     "get_patch_set",
     "get_trampoline",
     "list_patch_handles",
+    "list_loaded_patches",
     "list_patch_sets",
+    "load_patch",
     "parse_target",
     "patch_method",
     "register_patch_handle",
     "register_patch_set",
     "reload_module",
+    "reload_patch",
     "remove_patch_set",
     "resolve_target",
     "set_class_attr",
     "split_target",
+    "start_patch_watcher",
+    "stop_patch_watcher",
+    "unload_patch",
     "unregister_patch_handle",
+    "update_patch",
     "wrap_callable",
 ]

@@ -90,5 +90,13 @@
       "enabled": false,
       "symlink": false
     }
+  },
+  "control": {
+    "allow_remote_load": false,
+    "patch_sets": [],
+    "watch": {
+      "enabled": false,
+      "interval": 1.0
+    }
   }
 }

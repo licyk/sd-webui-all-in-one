@@ -969,8 +969,11 @@ def _rebind_references(
 ) -> dict[str, Any]:
     rebound: list[str] = []
     truncated = False
+    with patch_set.state.control_lock:
+        # 按模块名加载的补丁模块 (control.loader) 不参与扫描: 其全局变量常持有原函数, 改写后包装函数会递归调用自己。
+        skipped_modules = frozenset(name for name, owners in patch_set.state.rebind_skip_modules.items() if owners)
     for module_name, module in list(sys.modules.items()):
-        if module is None or not isinstance(module, ModuleType) or _is_hotpatcher_module(module_name):
+        if module is None or not isinstance(module, ModuleType) or _is_hotpatcher_module(module_name) or module_name in skipped_modules:
             continue
         namespace = getattr(module, "__dict__", None)
         if not isinstance(namespace, dict):

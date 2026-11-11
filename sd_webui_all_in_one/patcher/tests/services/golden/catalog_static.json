@@ -462,6 +462,44 @@
         "enabled": false,
         "symlink": false
       }
+    },
+    "control": {
+      "title": "运行时控制",
+      "description": "运行时补丁加载与控制平面设置。patch_sets 中声明的补丁模块在全部扩展之后加载。",
+      "settings": {
+        "allow_remote_load": {
+          "type": "bool",
+          "title": "允许远程加载补丁",
+          "description": "允许通过运行时控制通道加载补丁代码 (等同于远程代码执行)。旧版传输还要求非空 token。进程内 Python API 不受此限制。",
+          "default": false
+        },
+        "patch_sets": {
+          "type": "json",
+          "title": "补丁集",
+          "description": "随配置加载的补丁模块列表 (JSON 数组)，每项形如 {\"source\": \"pkg.mod 或 /path/patch.py\", \"name\": \"可选名称\", \"config\": {}, \"enabled\": true}。",
+          "default": []
+        },
+        "watch.enabled": {
+          "type": "bool",
+          "title": "监视补丁文件",
+          "description": "轮询已加载补丁模块的源文件，内容变化时自动重新加载。也可通过 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_WATCH=1 启用。",
+          "default": false
+        },
+        "watch.interval": {
+          "type": "float",
+          "title": "监视间隔",
+          "description": "轮询补丁文件的间隔秒数。",
+          "default": 1.0
+        }
+      },
+      "default": {
+        "allow_remote_load": false,
+        "patch_sets": [],
+        "watch": {
+          "enabled": false,
+          "interval": 1.0
+        }
+      }
     }
   }
 }
