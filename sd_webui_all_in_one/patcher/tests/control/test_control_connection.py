@@ -80,6 +80,11 @@ class _Log:
         with self.cond:
             return self.cond.wait_for(lambda: any(predicate(*entry) for entry in self.entries), timeout)
 
+    def wait_count(self, predicate, count, timeout=WAIT):
+        # 宿主在自己的处理线程中记录消息, 客户端线程结束时记录可能尚未写入。
+        with self.cond:
+            return self.cond.wait_for(lambda: sum(1 for entry in self.entries if predicate(*entry)) >= count, timeout)
+
     def find(self, predicate):
         with self.cond:
             return [entry for entry in self.entries if predicate(*entry)]
@@ -898,6 +903,7 @@ def test_reconnect_clears_a_stale_pending_switch_instead_of_spinning(state, log)
         snapshot = manager.get()
         assert snapshot["state"] == "connected" and snapshot["reconnects"] == 1 and snapshot["pending_switch"] is False
         assert delays == [0.1]
+        assert log.wait_count(_is("A", "services", "channel.open"), 2)
         assert len(log.find(_is("A", "services", "channel.open"))) == 2
         assert log.wait(_is("B", "main", "<eof>"))
         assert client.port == host_a.port and not client.transport.closed
