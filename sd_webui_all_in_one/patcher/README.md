@@ -1,6 +1,6 @@
 # sd_webui_all_in_one_hotpatcher 使用文档
 
-`sd_webui_all_in_one_hotpatcher` 是一个通用的 Python import-time 热补丁框架。它从当前项目的补丁系统中抽出核心能力，并额外提供可选的栈隐藏、宿主通信和运行时控制能力。它不绑定 Automatic1111、ComfyUI 或旧 Windows named pipe 协议，可以复制到其他项目里使用。
+`sd_webui_all_in_one_hotpatcher` 是一个通用的 Python import-time 热补丁框架。它从当前项目的补丁系统中抽出核心能力，并额外提供可选的栈隐藏、宿主通信和运行时控制能力，以及一个统一的控制平面：可撤销的补丁句柄与补丁集、运行时加载 / 卸载补丁模块、可扩展的功能注册表、调试工具和在线修改连接参数。它不绑定 Automatic1111、ComfyUI 或旧 Windows named pipe 协议，可以复制到其他项目里使用。
 
 ## 开发文档导航
 
@@ -15,6 +15,7 @@ README 面向快速理解和接入；更细的架构、实现原理、扩展开�
 - [Services 控制层](docs/services.md)：业务系统查询补丁能力、读取字段元数据、补齐配置、应用配置和 runtime 控制通道。
 - [扩展模块开发](docs/extensions.md)：如何编写 `sd_webui_all_in_one_hotpatcher_ext` 扩展，含 ZLUDA 示例。
 - [测试指南](docs/testing.md)：现有测试覆盖、fixture 约定、常见测试模式。
+- [Hotpatcher 控制平面](https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/development/hotpatcher-control.md)：补丁句柄与卸载语义、实时操作、运行时加载、功能注册表、调试、统一命令表、连接管理和信任边界（项目开发文档）。
 
 ## 快速开始
 
@@ -45,7 +46,7 @@ with monkey_zoo("some_package.some_module") as monkey:
 import some_package.some_module
 ```
 
-补丁必须在目标模块第一次 import 之前注册。目标模块已经在 `sys.modules` 里时，普通 import hook 不会重新执行模块代码。
+补丁必须在目标模块第一次 import 之前注册。目标模块已经在 `sys.modules` 里时，普通 import hook 不会重新执行模块代码；这时可以用 `monkey_zoo(name, apply_if_loaded=True)` 追溯应用函数、模块级补丁，或使用下面“控制平面”中的实时操作。
 
 ## 工作原理
 
@@ -70,7 +71,9 @@ Python 的 `import` 流程会查询 `sys.meta_path` 中的 finder。`sd_webui_al
 8. `patch_module()`：模块执行后对 module 对象做任意修改。
 9. `prohibit_output()`：屏蔽整个模块或指定函数的标准输出。
 
-框架还会包装 `importlib.util.spec_from_file_location()`，因此通过文件路径动态加载的模块也可以应用已注册补丁。
+框架还会包装 `importlib.util.spec_from_file_location()`，因此通过文件路径动态加载的模块也可以应用已注册补丁。非 `SourceFileLoader` 的模块（扩展模块、无源码 `.pyc`、zipimport）由 `PostExecLoader` 包装，第 4 到 9 步照常执行，源码、AST 和字节码补丁记录为跳过。
+
+所有注册方法都返回 `PatchHandle`，可以用来查询结果或单独撤销；注册时可以传入 `condition=` 做条件补丁。
 
 ## API
 
@@ -218,6 +221,12 @@ PYTHONPATH=src python -m examples.bytecode_patch
 
 ```bash
 PYTHONPATH=src python -m examples.stack_shadow_demo
+```
+
+运行时加载、修改与卸载补丁模块（使用 `hotpatch` 门面）：
+
+```bash
+PYTHONPATH=src python -m examples.runtime_patch_load
 ```
 
 宿主通信演示需要两个终端：
@@ -441,7 +450,7 @@ SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TIMEOUT=5
 首包握手：
 
 ```json
-{"type":"hello","version":1,"token":"optional-secret","features":["config","progress","browser","fileops","faults","audit","logs","services"]}
+{"type":"hello","version":1,"token":"optional-secret","features":["config","progress","browser","fileops","faults","audit","logs","services","control"]}
 ```
 
 请求消息：
@@ -468,7 +477,7 @@ SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TIMEOUT=5
 {"type":"progress.update","payload":{"id":123,"value":50}}
 ```
 
-需要响应的操作包括配置拉取和文件操作。进度、浏览器和 audit 默认是 best-effort 事件；发送失败会捕获异常并继续运行。
+需要响应的操作包括配置拉取和文件操作。进度、浏览器和 audit 默认是 best-effort 事件；发送失败会捕获异常并继续运行。默认不自动重连，设置 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RECONNECT=1` 后断线会按退避自动重连；连接参数还可以通过 `hotpatch.connection.update` 在运行中切换，见 [Runtime 通信协议](docs/runtime-protocol.md)。
 
 ## 配置来源
 
@@ -563,9 +572,42 @@ channel = install_service_control_channel(client)
 SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES=1
 ```
 
-配置中设置 `"services": {"apply_on_bootstrap": true}` 后，`bootstrap.configure_from_env()` 会在加载配置后自动调用 `apply_config()`。v1 只负责启用补丁，不承诺撤销已经注册或已经生效的 import-time 补丁。
+配置中设置 `"services": {"apply_on_bootstrap": true}` 后，`bootstrap.configure_from_env()` 会在加载配置后自动调用 `apply_config()`。`apply_config()` 默认保持 v1 语义：禁用功能只表示不再注册，已生效的补丁保留并产生告警；传入 `reconcile=True` 或设置 `"services": {"reconcile_disabled": true}` 后，之前已应用、现在被禁用的功能会在各自的补丁集中撤销，无法在线撤销的部分报告 `requires_restart`。
+
+功能目录由 `control.features` 的 `FeatureSpec` 注册表派生，第三方功能可以在运行时注册；新增的 `control` 配置区段可以随配置加载补丁模块（`patch_sets`）、开启补丁文件监视和事件转发，详见 [Services 控制层](docs/services.md)。
 
 Services 环境变量和 bootstrap 条件见 [环境变量总览](docs/environment-variables.md)。
+
+## 控制平面
+
+`hotpatch` 是默认状态的控制门面，首次访问时才导入 `control` 子包：
+
+```python
+from sd_webui_all_in_one_hotpatcher import hotpatch
+
+# 进程内编写补丁集, with 块抛出异常时自动撤销
+with hotpatch.patch_set("fix-greet") as ctx:
+    ctx.set_attr("examples.target_module:LABEL", "patched")
+    ctx.wrap("examples.target_module:greet", lambda original: lambda name: original(name).upper(), trampoline=True)
+
+hotpatch.unload_patch("fix-greet")  # 按 LIFO 撤销, 返回逐句柄报告
+
+# 从模块名或文件加载补丁模块 (定义 setup(ctx), 可选 teardown / update)
+report = hotpatch.load_patch("path/to/my_patch.py", name="my-patch", config={"level": 1})
+hotpatch.update_patch("my-patch", {"level": 2})
+hotpatch.reload_patch("my-patch")  # 新代码失败时回滚到旧版本
+hotpatch.unload_patch("my-patch")
+
+hotpatch.patches.list()  # 补丁句柄、状态与最近结果
+hotpatch.debug.trace(["patch", "import"])  # 分层跟踪输出
+hotpatch.debug.events(0, 100)  # 事件日志
+hotpatch.inspect.explain("pkg.mod")  # 模块为什么 (没有) 被打补丁
+hotpatch.call("hotpatch.capabilities")  # 与远程调用相同的 envelope
+```
+
+同一套命令（`hotpatch.capabilities`、`hotpatch.patches.*`、`hotpatch.sets.*`、`hotpatch.features.*`、`hotpatch.inspect.*`、`hotpatch.debug.*`、`hotpatch.connection.*` 等）也可以经 services 通道和桌面代理调用，由同一个命令注册表校验载荷、执行传输策略并生成 envelope。经运行时通道加载补丁代码默认关闭，需要配置 `control.allow_remote_load: true`，旧版传输还要求非空 token。
+
+相关环境变量：`SD_WEBUI_ALL_IN_ONE_HOTPATCHER_STRICT`（严格模式）、`..._TRACE` / `..._TRACE_FILE`（跟踪）、`..._WATCH`（补丁文件监视）、`..._RECONNECT`（自动重连）、`..._ALLOW_NON_LOOPBACK`（允许切换到非回环地址），见 [环境变量总览](docs/environment-variables.md)。完整设计、命令表和卸载语义见 [Hotpatcher 控制平面](https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/development/hotpatcher-control.md)。
 
 ## 运行时控制能力
 
@@ -712,14 +754,14 @@ hook 冲突策略默认是 `cooperative`，会包装当前已有的 stdout/stder
 python -m pytest src/tests
 ```
 
-测试覆盖函数补丁、模块补丁、源码补丁、字节码补丁、import 注入、别名 fallback、动态文件加载、栈隐藏、TCP JSONL 协议、配置来源、运行时控制能力、日志采集和 services 控制层。
+测试覆盖函数补丁、模块补丁、源码补丁、字节码补丁、import 注入、别名 fallback、动态文件加载、栈隐藏、TCP JSONL 协议、配置来源、运行时控制能力、日志采集、services 控制层，以及 `tests/control/` 下的控制平面（补丁日志与补丁集、句柄与卸载语义、实时操作、功能注册表、运行时加载、调试、命令注册表、并发和连接切换）。目录结构见 [测试指南](docs/testing.md)。
 
 ## 限制和注意事项
 
-- 这个系统主要针对“尚未 import 的模块”。目标模块已经加载后，注册补丁不会自动重新应用。
+- import-time 补丁主要针对“尚未 import 的模块”。目标模块已经加载后，普通注册不会自动重新应用，需要 `apply_if_loaded=True` 或实时操作；已编译的源码、AST、字节码补丁无法在线撤销，卸载时报告 `requires_restart`。
 - import hook 是进程级全局行为。测试中应在用例结束后调用 `uninstall_import_hook()` 并清理 `sys.modules`。
 - 源码字符串替换容易受目标库版本变更影响。对长期维护的补丁，优先考虑函数包装或 AST 补丁。
-- 补丁内部异常默认会打印 traceback，但不会中断目标模块 import。这能提升容错性，但也可能隐藏补丁失效，需要关注日志。
-- 只支持普通源码模块。内建模块、扩展模块和没有 `SourceFileLoader` 的模块不会被这个 loader 改写。
+- 补丁内部异常默认会打印 traceback，但不会中断目标模块 import。这能提升容错性，但也可能隐藏补丁失效；每次执行的结果会记录在补丁句柄上，开发时可开启严格模式（`SD_WEBUI_ALL_IN_ONE_HOTPATCHER_STRICT=1`）让异常直接抛出。
+- 源码、AST 和字节码补丁只支持普通源码模块。扩展模块、无源码 `.pyc` 和 zipimport 模块只能使用执行前后阶段的补丁（`PostExecLoader`），内建模块不会被改写。
 - 栈隐藏会降低 traceback 可调试性。开发环境建议使用 `<hidden {name}>` 这类可读模板，发布环境再考虑更强隐藏模板。
 - runtime 通信协议不兼容原项目的 Windows named pipe + GUID 二进制协议。宿主端需要实现新的 TCP JSONL 协议。

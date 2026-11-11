@@ -27,6 +27,25 @@ tests/services/
   test_services_config.py          默认配置、配置合并、配置文件、catalog、请求处理
   test_services_apply.py           apply_config 启用核心补丁与扩展补丁
   test_services_bootstrap.py       服务控制通道与 bootstrap
+  test_services_golden_snapshot.py get_default_config() / 静态 get_catalog() 的 golden 快照 (golden/*.json)
+  test_services_golden_v1_subset.py 当前输出必须是 P0 快照 golden/*_v1.json 的深度超集 (只允许新增)
+  test_services_wire_compat.py     services.* 响应结构与错误码的线上兼容
+  test_services_import_invariant.py 导入 services 不加载任何扩展模块
+
+tests/control/
+  control_hook_test_helpers.py     import hook 句柄测试的临时模块与清理工具
+  test_control_journal.py          PatchJournal: NOTSET、描述符、LIFO、失败隔离、幂等撤销
+  test_control_targets.py          目标路径解析
+  test_control_patchset.py         PatchSet 事务、disposer、嵌套与报告
+  test_control_hook_handles.py     import 阶段句柄、归属、撤销状态、finder 缓存失效、严格模式、outcome
+  test_control_hook_loaders.py     PostExecLoader、条件补丁、apply_if_loaded、spec_from_file_location 状态
+  test_control_operations.py       实时操作、蹦床、rebind_references、reload_module
+  test_control_features.py         功能注册表、扩展归属与撤销、reconcile、第三方功能
+  test_control_loader.py           运行时加载/卸载/重新加载/更新、control 配置区段、文件监视、远程加载门禁
+  test_control_debug.py            跟踪、事件日志与转发、explain/source/verify/status
+  test_control_commands.py         命令注册表、传输策略、envelope、capabilities、门面、D6 配置门禁
+  test_control_concurrency.py      控制线程与导入线程并发、线程本地 LoadingSkipper、桌面阻塞命令
+  test_control_connection.py       连接切换、回滚、重连、非回环限制、脱敏
 
 tests/runtime/
   runtime_test_helpers.py          JsonlHost 等 runtime 测试宿主
@@ -40,10 +59,31 @@ tests/runtime/
                                    旧版 JSONL 传输超时与服务通道
   desktop_broker_test_helpers.py / test_desktop_broker_*.py
                                    桌面端代理 HTTP、事件队列、诊断、命令与 bootstrap
+  test_desktop_command_compat.py   桌面 config.apply 的 applyResult 映射与错误码兼容
 
 tests/extensions/
   test_extension_package_layout.py 扩展包结构与公开 API
   test_<扩展名>_extension.py       各扩展测试，例如 ZLUDA、Extension Index、HF Endpoint Mirror、uv Pip
+```
+
+宿主侧的控制测试在仓库根目录的 `tests/` 中：`tests/base_manager/hotpatcher_manager/`（`test_host_control.py`、`test_host_control_hello.py`、`test_launch_env_overrides.py` 等）和 `tests/base_manager/gui/`（`test_hotpatcher_gui_runtime_control.py`、`test_hotpatcher_gui_json_field.py`）。
+
+## Golden 快照
+
+`tests/services/golden/default_config.json` 和 `catalog_static.json` 冻结默认配置与目录静态部分（含键顺序，去掉 `active` / `registered` 这类依赖进程状态的字段）。有意修改默认配置或 schema（例如新增 `FeatureSpec` 或设置字段）时重新生成并检查差异：
+
+```bash
+SD_WEBUI_ALL_IN_ONE_HOTPATCHER_REGEN_GOLDEN=1 python -m pytest sd_webui_all_in_one/patcher/tests/services/test_services_golden_snapshot.py
+```
+
+`*_v1.json` 是控制平面改造前的快照，不要重新生成；`test_services_golden_v1_subset.py` 用它保证改动只新增内容。
+
+## Python 3.10
+
+patcher 核心需要兼容 Python 3.10（CI 覆盖 3.10 到 3.15），修改 `control/`、`runtime/` 或 `hook.py` 后再用 3.10 跑一次 patcher 测试，例如：
+
+```bash
+uv run --no-project --python 3.10 --with pytest python -m pytest -q -p no:cacheprovider sd_webui_all_in_one/patcher/tests
 ```
 
 ## 测试 import hook 的固定套路
@@ -300,3 +340,5 @@ uv Pip 这种运行时 wrapper 不需要 fake import 目标。测试直接替换
 - 是否避免真实网络端口冲突，使用系统分配端口。
 - 是否避免不可卸载的全局 hook 污染后续测试。
 - 是否用 `PYTHONDONTWRITEBYTECODE=1` 避免 pyc。
+- 是否使用隔离的 `HotpatcherState()`，或在结束时卸载测试创建的补丁集、关闭补丁文件监视器、停止跟踪。
+- 控制平面测试文件是否使用 `test_control_*` 前缀，保持文件名全局唯一。

@@ -67,7 +67,7 @@ HF_ENDPOINT=https://hf-mirror.example
 | 变量 | 用途 | 启用条件 | 默认值 | 取值格式 | 读取位置 / 入口 |
 | --- | --- | --- | --- | --- | --- |
 | `PYTHONPATH` | 让 Python 能导入 `sitecustomize.py` 和 hotpatcher 包。 | 包含 `sitecustomize.py` 所在目录时自动启动逻辑才会生效。 | 无 | 路径列表 | Python 启动流程；不是 hotpatcher 自定义变量。 |
-| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_DEBUG` | bootstrap 或 runtime 连接失败时打印 traceback，便于调试。 | 值为 `"1"` 时生效。 | 未设置 | `"1"` 或未设置 | `sitecustomize.py`、`runtime.client.RuntimeClient.connect_from_env()`；可配合 `sitecustomize` 或显式调用使用。 |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_DEBUG` | bootstrap 或 runtime 连接失败时打印 traceback，便于调试；同时让 AST 补丁执行 `ast.dump` 比较以识别 `noop` 结果。 | 值为 `"1"` 时生效。 | 未设置 | `"1"` 或未设置 | `sitecustomize.py`、`runtime.client.RuntimeClient.connect_from_env()`、`hook.Monkey.eval_ast()`；可配合 `sitecustomize` 或显式调用使用。 |
 | `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_BOOTSTRAPPED` | 标记当前进程已执行过自动 bootstrap，避免重复执行。 | `sitecustomize.py` 或 `configure_from_env()` 会写入 `"1"`。 | 未设置 | 内部使用 | `sitecustomize.py`、`bootstrap.py`；通常不要手动设置。 |
 
 ## 核心启动
@@ -94,7 +94,7 @@ HF_ENDPOINT=https://hf-mirror.example
 
 ## Runtime 连接
 
-这些变量由 `sd_webui_all_in_one_hotpatcher.runtime.client.RuntimeClient.connect_from_env()` 读取。bootstrap 只有在 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME=1` 时才会尝试连接。
+这些变量由 `sd_webui_all_in_one_hotpatcher.runtime.client.RuntimeClient.connect_from_env()`（基于 `runtime.connection.RuntimeConnectionSettings.from_env()`）读取。bootstrap 只有在 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME=1` 时才会尝试连接。运行中可以通过 `hotpatch.connection.update` 修改这些参数，但不会改写 `os.environ`，之后启动的子进程仍继承启动时的值。
 
 | 变量 | 用途 | 启用条件 | 默认值 | 取值格式 | 读取位置 / 入口 |
 | --- | --- | --- | --- | --- | --- |
@@ -105,6 +105,8 @@ HF_ENDPOINT=https://hf-mirror.example
 | `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONNECT_TIMEOUT` | 只覆盖 `socket.create_connection()` 的 deadline。 | runtime 连接时可选。 | `HOTPATCHER_TIMEOUT` 的值 | 大于零的有限秒数 | `RuntimeClient.connect_from_env()` |
 | `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_REQUEST_TIMEOUT` | 覆盖省略 `request(timeout=...)` 时的默认完整请求 deadline，包括 write 和所有 response reads。 | runtime 连接时可选。 | `HOTPATCHER_TIMEOUT` 的值 | 大于零的有限秒数 | `RuntimeClient.connect_from_env()` |
 | `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_EVENT_WRITE_TIMEOUT` | 覆盖 hello、`send_raw()` 和 best-effort event 的 write deadline。 | runtime 连接时可选。 | `HOTPATCHER_TIMEOUT` 的值 | 大于零的有限秒数 | `RuntimeClient.connect_from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RECONNECT` | 主连接写入失败或 services 通道断开后自动重连同一目标（指数退避 0.1 到 5 秒），重连后重新打开 services 与 fault 通道。 | legacy runtime 连接成功时读取，bootstrap 随即创建连接管理器。 | 未设置，默认不重连。 | `"1"` 或未设置 | `bootstrap.configure_from_env()`、`runtime.connection.RuntimeConnectionSettings` |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ALLOW_NON_LOOPBACK` | 允许 `hotpatch.connection.update` 把连接切换到非回环地址。启动时的首次连接不受影响。远程命令不能自行开启。 | 连接切换时读取。 | 未设置，只允许回环地址。 | `"1"` 或未设置 | `runtime.connection.RuntimeConnectionSettings` |
 
 ## Desktop Broker
 
@@ -137,6 +139,17 @@ HF_ENDPOINT=https://hf-mirror.example
 | `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES` | legacy 模式打开 runtime services TCP 控制通道。 | 值为 `"1"` 且 bootstrap 已连接 legacy runtime client。desktop mode 不打开 fallback channel。 | 未设置，默认不打开。 | `"1"` 或未设置 | `bootstrap.configure_from_env()` |
 
 配置中的 `"services": {"apply_on_bootstrap": true}` 会让 bootstrap 在加载配置后自动调用 `services.apply_config()`。这个行为不是环境变量控制的。
+
+## 控制平面与调试
+
+这些变量控制补丁严格模式、跟踪输出和补丁文件监视，说明见 [Hotpatcher 控制平面](https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/development/hotpatcher-control.md)。宿主的 `apply_hotpatcher_launch_env()` 会保留用户设置的 `STRICT`、`TRACE`、`TRACE_FILE`，与是否启用 runtime 无关。
+
+| 变量 | 用途 | 启用条件 | 默认值 | 取值格式 | 读取位置 / 入口 |
+| --- | --- | --- | --- | --- | --- |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_STRICT` | 补丁严格模式：import 阶段补丁抛出的异常在记录 `failed` 结果后继续向外抛出，而不是被 `capture_exception` 吞掉。 | 创建 `HotpatcherState` 时读取一次（默认状态在导入 `state` 模块时创建）；运行时请用 `set_strict_mode()` 或 `hotpatch.debug.strict.set`。 | 未设置，默认关闭。 | `"1"` 或未设置 | `state.strict_mode_from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TRACE` | 启用分层跟踪输出。 | bootstrap 或 `install_import_hook()` 时读取。 | 未设置，默认关闭。 | 逗号分隔的标签 `import`、`patch`、`control`、`conn`、`set`、`feature`，或 `all` | `control.trace.configure_tracer_from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TRACE_FILE` | 跟踪输出文件（追加写入）。 | 与 `TRACE` 一起读取。 | 未设置，写入 stderr。 | 文件路径 | `control.trace.configure_tracer_from_env()` |
+| `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_WATCH` | 启动补丁文件监视器，源文件变化时自动重新加载运行时加载的补丁。 | 应用 `control` 配置区段时读取，等同于 `control.watch.enabled=true`。 | 未设置，默认关闭。 | `"1"` 或未设置 | `control.loader.watch_enabled_from_env()` |
 
 ## 日志采集
 

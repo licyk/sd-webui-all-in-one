@@ -168,6 +168,7 @@ nav = [
         {"概览" = "development/index.md"},
         {"整体架构" = "development/architecture.md"},
         {"Python 内核" = "development/python-core.md"},
+        {"Hotpatcher 控制平面" = "development/hotpatcher-control.md"},
         {"Installer" = "development/installer.md"},
         {"Notebook" = "development/notebook.md"},
         {"编码风格" = "development/coding-style.md"},

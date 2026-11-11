@@ -7,9 +7,15 @@
 services 管理两类能力：
 
 - 核心框架能力：`core.import_hook`、`core.stack_shadow`、`runtime.browser`、`runtime.errors`、`runtime.logs`
-- 现有扩展补丁：`extensions.zluda`、`extensions.extension_index`、`extensions.hf_endpoint_mirror`、`extensions.uv_pip`
+- 现有扩展补丁：`extensions.comfyui_auto_port`、`extensions.zluda`、`extensions.extension_index`、`extensions.hf_endpoint_mirror`、`extensions.uv_pip`、`extensions.xformers_cutlass`
+- 控制平面：`control`（配置声明的补丁集、补丁文件监视、事件转发）
 
-v1 只负责启用和注册补丁，不负责撤销已经注册或已经生效的 import-time 补丁。`enabled=false` 的含义是“不主动注册这个功能”。
+这些功能不再硬编码在 `services.py` 中，而是由 `control/features.py` 的功能注册表（`FeatureSpec` / `FeatureRegistry`）描述。默认配置、`SETTING_SCHEMA`、目录、规范化、应用和禁用告警都从注册表派生；第三方功能注册后立即出现在这些接口中。内置功能的行为通过 `"module:callable"` 字符串惰性引用扩展代码，因此导入 `services` 不会加载任何 `sd_webui_all_in_one_hotpatcher_ext` 模块。
+
+`apply_config` 默认保持 v1 语义：只负责启用和注册补丁，`enabled=false` 的含义是“不主动注册这个功能”，已经生效的补丁保留并产生告警。每个功能在自己的补丁集 `feature:<key>` 中应用，因此可以撤销：
+
+- `apply_config(config, reconcile=True)` 或配置 `services.reconcile_disabled: true` 会撤销之前已应用、现在被禁用的功能，结果多出 `reconciled` 列表；显式传入的 `reconcile` 优先于配置。
+- `control.features.disable_feature(key)` 单独撤销一个功能；仍然生效、无法在线撤销的部分报告 `requires_restart`。
 
 `runtime.browser` 默认是 `{"enabled": false, "mode": "host"}`。`host`
 抑制系统浏览器并发送 `browser.open`，`suppress` 只抑制，`passthrough`
@@ -41,8 +47,8 @@ result = apply_config(config)
 - `normalize_config(config)`：深度补齐默认配置, 已存在用户值不覆盖。
 - `load_config_file(path, write_back=True)`：读取 JSON 文件, 补齐缺失默认值, 默认写回。
 - `save_config_file(path, config)`：规范化后保存 JSON 文件。
-- `apply_config(config, runtime_client=None)`：按配置启用功能, 返回 `applied/warnings/errors`。
-- `handle_request_json(raw, runtime_client=None)`：处理 JSON 请求并返回固定响应对象。
+- `apply_config(config, runtime_client=None, reconcile=None)`：按配置启用功能, 返回 `applied/warnings/errors`（开启 reconcile 时另有 `reconciled`）。扩展入口导入失败或抛出异常时记录到 `errors`，不会中断其他功能。
+- `handle_request_json(raw, runtime_client=None)`：处理 JSON 请求并返回固定响应对象。它是统一命令注册表上的薄封装，也接受 `hotpatch.*` 控制命令。
 
 ## Catalog 字段元数据
 
@@ -97,6 +103,8 @@ result = apply_config(config)
 
 `runtime.errors.include_locals=true` 会在 `error.exception` 的 traceback frame 中附带脱敏后的局部变量 `repr()` 摘要。该项默认关闭, 并会自动脱敏敏感变量名和截断过大的值。
 
+设置类型包括 `bool`、`int`、`float`、`str`、`choice`、`list[str]` 和 `json`（`float` 与 `json` 由 `control` 区段引入，Hotpatcher 管理器 GUI 已支持）。
+
 `runtime.errors.caught_exceptions.enabled=true` 是实验性功能, 会通过 `sys.settrace` 发送
 `error.caught_exception` 事件来观察被业务代码 `except` 捕获的异常。该功能默认关闭,
 可能明显影响性能, 且不会与已有 debugger、coverage 或 profiler trace function 强行共存。
@@ -119,6 +127,29 @@ result = apply_config(config)
 
 配置文件只支持 UTF-8 JSON object，不支持 YAML/TOML。
 
+## `control` 配置区段
+
+`control` 区段由内置功能 `control` 在全部扩展之后应用：
+
+```json
+{
+  "services": {"apply_on_bootstrap": true, "reconcile_disabled": false},
+  "control": {
+    "allow_remote_load": false,
+    "patch_sets": [{"source": "my_patches.fix_foo", "name": "fix-foo", "config": {}, "enabled": true}],
+    "watch": {"enabled": false, "interval": 1.0},
+    "forward_events": false
+  }
+}
+```
+
+- `patch_sets`：随配置加载的补丁模块（点分模块名或 `.py` 文件路径），逐条处理且相互隔离，重复应用幂等；不再列出的条目在开启 reconcile 时卸载，否则保留并告警。
+- `allow_remote_load`：是否允许经运行时通道加载补丁代码，默认关闭。远程请求（services 通道、桌面 `config.apply`）不能在同一个请求中开启它并加载新的补丁集。
+- `watch`：轮询补丁源文件并自动重新加载，也可用 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_WATCH=1` 开启。
+- `forward_events`：把补丁失败、补丁集、功能和连接事件以 `hotpatch.event` 转发给宿主，每秒最多 10 条。
+
+补丁模块的写法与加载语义见 [Hotpatcher 控制平面](https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/development/hotpatcher-control.md)。
+
 ## JSON 请求
 
 请求对象固定使用 `type` 和 `payload`：
@@ -127,7 +158,7 @@ result = apply_config(config)
 {"type":"services.defaults.get","payload":{}}
 ```
 
-支持的请求类型：
+v1 支持的请求类型：
 
 - `services.catalog.get`
 - `services.defaults.get`
@@ -138,6 +169,8 @@ result = apply_config(config)
 - `services.config.apply`
 
 `services.config.current` 返回当前进程最后加载或应用的完整配置。若当前进程尚未记录配置, 返回默认完整配置。
+
+这些类型现在注册在统一命令注册表中（`config.apply` 是 `services.config.apply` 的别名），响应与 v1 字节级一致。同一入口还接受 `hotpatch.*` 控制命令，例如 `hotpatch.capabilities`、`hotpatch.patches.list`、`hotpatch.sets.load`；完整命令表、错误码和传输策略见 [Hotpatcher 控制平面](https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/development/hotpatcher-control.md)。`services.config.load` / `services.config.save` 读写任意文件路径，不对桌面传输开放。
 
 响应格式：
 
@@ -180,7 +213,7 @@ channel = install_service_control_channel(client)
 {"type":"channel.open","channel":"services","token":"..."}
 ```
 
-随后宿主可以向该通道发送 `services.*` 请求；客户端会返回同样包含 `id` 的响应，便于宿主关联请求。
+随后宿主可以向该通道发送 `services.*` 请求和 `hotpatch.*` 控制命令；客户端会返回同样包含 `id` 的响应，便于宿主关联请求。命令以 `legacy` 传输分发，`requires_token` 命令使用该通道的 token 判断；`hotpatch.connection.update` 这类需要在响应之后执行的动作在响应写出后才运行。连接切换会重新打开这条通道（见 [Runtime 通信协议](runtime-protocol.md)）。
 
 bootstrap 自动启用：
 
@@ -201,7 +234,8 @@ services 远程控制通道。即使通用 `services.apply_on_bootstrap=false`�
 需要进程重启才能彻底移除。
 
 显式 `desktop_broker` 不创建这条 legacy TCP channel。Rust 通过 broker v2 commands
-发送稳定 command ID；当前 Python desktop surface 只接受 `config.apply`，并把
-`payload.config` 交给同一个 `apply_config()`。重复 command ID 只重发缓存结果，不重复
-执行 side effect；过期和未知 command 返回 typed error。详见
+发送稳定 command ID；Python 端经同一个命令注册表以 `desktop` 传输分发：`config.apply`
+保持 v1 契约（`payload.config` 交给同一个 `apply_config()`，结果映射为 `applyResult`），
+其他已注册的非阻塞远程命令（例如 `hotpatch.status`、`hotpatch.patches.list`）也可用。
+重复 command ID 只重发缓存结果，不重复执行 side effect；过期和未知 command 返回 typed error。详见
 [Desktop Broker v2](desktop-broker-protocol.md)。

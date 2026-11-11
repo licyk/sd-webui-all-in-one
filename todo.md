@@ -1,6 +1,6 @@
 # todo: Hotpatcher control plane (temporary)
 
-> Temporary tracking file for [`HOTPATCH_CONTROL_PLAN.md`](HOTPATCH_CONTROL_PLAN.md). Delete it in the final step.
+> Temporary tracking file for the hotpatcher control plane. The as-built design is [`docs/development/hotpatcher-control.md`](docs/development/hotpatcher-control.md); the original plan (`HOTPATCH_CONTROL_PLAN.md`) is in git history at commit `bbaab617`. Delete this file in the final step of P11.
 >
 > Baseline (2026-11-11, `8e0aa484`): 256 passed with the regression command below.
 
@@ -117,11 +117,12 @@ $PY -m python_docstring_checker .
 - [x] Verify: regression + static green (702 passed on 3.11; patcher suite 599 passed on 3.10; full suite 2264 passed / 13 skipped; ty 13)
 
 ## P10 Docs and cleanup
-- [ ] Rewrite `HOTPATCH_CONTROL_PLAN.md` as the as-built doc (Chinese) and move it to the D1 location (+ zensical nav)
-- [ ] Update patcher `README.md` and `docs/{architecture,services,runtime-protocol,environment-variables,extensions,testing}.md`
-- [ ] Add `examples/runtime_patch_load.py`
-- [ ] Remove `HOTPATCH_CONTROL_PLAN.md` from the root
-- [ ] Final full regression + static checks
+- [x] Rewrite `HOTPATCH_CONTROL_PLAN.md` as the as-built doc (Chinese) and move it to the D1 location (+ zensical nav, `docs/development/index.md` link)
+- [x] Update patcher `README.md` and `docs/{architecture,services,runtime-protocol,environment-variables,extensions,testing,import-hook,desktop-broker-protocol}.md`
+- [x] Add `examples/runtime_patch_load.py` (+ `examples/greeting_patch.py`)
+- [x] Remove `HOTPATCH_CONTROL_PLAN.md` from the root
+- [x] Final full regression + static checks
+- [x] Verify: regression + static green (702 passed / 13 skipped on 3.11; patcher suite 599 passed on 3.10; full suite 2264 passed / 13 skipped; ruff check + format clean; `zensical build --clean` no issues; ty not run, docs/examples only)
 - [ ] (`todo.md` deletion moves to the end of P11)
 
 ## P11 Hanafubuki integration (repo: /root/code_workspace/Hanafubuki-dev, branch `hotpatch-control`)

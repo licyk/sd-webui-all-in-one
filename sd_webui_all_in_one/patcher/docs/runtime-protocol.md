@@ -65,7 +65,7 @@ client = RuntimeClient.connect_from_env()
 客户端 TCP 连接建立后立即发送 hello：
 
 ```json
-{"type":"hello","version":1,"token":"optional-secret","features":["config","progress","browser","fileops","faults","audit","logs","services"]}
+{"type":"hello","version":1,"token":"optional-secret","features":["config","progress","browser","fileops","faults","audit","logs","services","control"]}
 ```
 
 字段：
@@ -73,7 +73,7 @@ client = RuntimeClient.connect_from_env()
 - `type`：固定为 `hello`
 - `version`：当前为 `1`
 - `token`：宿主用于鉴权或关联会话
-- `features`：客户端支持能力
+- `features`：客户端支持能力。新版客户端带 `control`，只作为日志提示；宿主应通过 services 通道上的 `hotpatch.capabilities` 探测控制能力。
 
 当前客户端不会等待 hello ack。宿主可以记录 hello，也可以在 token 不合法时直接断开连接。
 
@@ -126,8 +126,15 @@ client = RuntimeClient.connect_from_env()
 - error.exception
 - error.caught_exception
 - log.record / log.stream / log.dropped
+- hotpatch.event（仅在配置 `control.forward_events: true` 时发送）
 
 文件操作和配置拉取不应该用事件，因为它们需要知道宿主是否接受。
+
+`hotpatch.event` 转发控制平面事件日志中的 `patch.failed`、`set.*`、`feature.*` 和 `connection.changed`，每秒最多 10 条：
+
+```json
+{"type":"hotpatch.event","payload":{"cursor":12,"timestamp":1780000000.0,"type":"set.loaded","payload":{"name":"fix-foo","set_id":"set_3"}}}
+```
 
 ## 断线和超时
 
@@ -168,6 +175,31 @@ buffered `makefile()` reader 一旦发生读 timeout 就不能安全复用；写
 协议/业务响应异常仍按原有异常类型传播，reader 可继续使用。
 
 `RuntimeClient.connect_from_env(required=False)` 连接失败会捕获异常并返回 `None`。`required=True` 时抛出原异常。
+
+默认不自动重连：主连接断开后，事件尽力发送失败。设置 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RECONNECT=1` 后，
+`runtime.connection.ConnectionManager` 在主连接写入失败或 services 通道读到 EOF 时，由守护线程按指数退避
+（0.1 秒到 5 秒）重新连接同一目标；断开期间的事件被丢弃并计数，重连后重新打开 services 与 fault 通道，
+并发送 `log.dropped`（`reason` 为 `disconnected`）。
+
+## 连接切换
+
+旧版传输的连接参数可以在运行中修改。宿主（或进程内代码）发送 `hotpatch.connection.update`：
+
+```json
+{"id":"7","type":"hotpatch.connection.update","payload":{"host":"127.0.0.1","port":9000,"token":"new-secret"}}
+```
+
+客户端按先建后拆的顺序执行：
+
+1. 校验参数。host 改变时新地址必须是回环地址，除非启动环境设置了 `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ALLOW_NON_LOOPBACK=1`；远程命令不能开启 `allow_non_loopback`。
+2. 连接新地址并发送 hello。失败时返回 `connection_failed`，不做任何修改。
+3. 在承载该命令的旧通道上返回 `{"status":"scheduled"}`。
+4. 响应写出之后：在新地址上打开新的 services 通道，再打开新的 fault 通道并重新启用 faulthandler，最后原子替换 `RuntimeClient` 的传输。
+5. 任一步失败时回滚到旧连接并关闭新套接字；成功后关闭旧 services 通道和旧主连接。
+
+宿主可以把“旧 services 通道被关闭”当作切换完成的信号。`hotpatch.connection.test` 只建连并发送 hello，不切换。
+两条命令在旧版传输上都要求非空 token。宿主侧的监听切换 `HotpatcherRuntimeHost.rebind()` 基于这条命令实现，见
+[Hotpatcher 控制平面](https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/development/hotpatcher-control.md)。
 
 ## 配置协议
 
@@ -294,6 +326,20 @@ buffered `makefile()` reader 一旦发生读 timeout 就不能安全复用；写
 ```
 
 这条连接后续仍然保持 JSONL。宿主可以发送 `services.catalog.get`、`services.defaults.get`、`services.config.current`、`services.config.normalize`、`services.config.load`、`services.config.save`、`services.config.apply` 请求。客户端返回固定 ok/error 响应, 如果请求带 `id`, 响应也会带同一个 `id`。
+
+同一通道也接受 `hotpatch.*` 控制命令，例如：
+
+```json
+{"id":"1","type":"hotpatch.capabilities","payload":{}}
+{"id":"2","type":"hotpatch.patches.list","payload":{"limit":50}}
+{"id":"3","type":"hotpatch.debug.events.read","payload":{"since_cursor":0,"limit":100}}
+```
+
+先发送 `hotpatch.capabilities` 判断对端是否支持控制命令：旧版客户端返回 `unknown_request`。控制命令在该通道上以
+`legacy` 传输分发，标记为需要 token 的命令（`hotpatch.sets.load` / `.reload` / `.update`、`hotpatch.modules.reload`、
+`hotpatch.connection.test` / `.update`）在通道 token 为空时返回 `forbidden`。新增错误码包括 `invalid_payload`、`forbidden`、
+`not_found`、`unsupported_transport`、`connection_failed`、`remote_load_disabled`、`busy`、`conflict`；`hotpatch.*` 的错误对象可以带
+`details`。完整命令表见 [Hotpatcher 控制平面](https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/development/hotpatcher-control.md)。
 
 ## Audit 事件
 

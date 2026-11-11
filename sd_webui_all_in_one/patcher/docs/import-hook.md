@@ -20,7 +20,7 @@ import target
 `sd_webui_all_in_one_hotpatcher` 的切入点是第 2 和第 3 步：
 
 - `install_import_hook()` 把 `HookedMetaPathFinder` 插入 `sys.meta_path`。
-- finder 命中目标模块后，把原始 `SourceFileLoader` 换成 `MonkeySourceFileLoader`。
+- finder 命中目标模块后，把原始 `SourceFileLoader` 换成 `MonkeySourceFileLoader`；其他 loader 用 `PostExecLoader` 包装，只运行执行前后阶段。
 
 ## 安装与卸载
 
@@ -44,7 +44,7 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 ```
 
-如果只插 `sys.meta_path`，这种路径会绕过普通 finder。包装 `spec_from_file_location` 可以让这类动态加载也套上 `MonkeySourceFileLoader`。
+如果只插 `sys.meta_path`，这种路径会绕过普通 finder。包装 `spec_from_file_location` 可以让这类动态加载也套上 `MonkeySourceFileLoader`。包装器会解析拥有当前 finder 的 `HotpatcherState`，而不是总使用默认状态。
 
 卸载会：
 
@@ -253,6 +253,14 @@ with monkey_zoo("target") as monkey:
 
 模块名会用 `casefold()` 归一化。这样做是从原系统继承来的，对 Windows/部分路径大小写环境更宽容。
 
+管理计划的方法：
+
+- `monkey_zoo(name, apply_if_loaded=True)`：退出时若目标模块已在 `sys.modules` 中，把本次新增条目的执行后阶段追溯应用到该模块。
+- `monkey_zoo.handles()`：列出全部补丁句柄。
+- `monkey_zoo.remove(handle)`：移除单个条目并撤销框架记录的写入，返回最终状态。
+- `monkey_zoo.discard(name)` / `monkey_zoo.clear()`：只从计划中移除，不撤销已写入模块的修改。
+- `monkey_zoo.invalidate(name)`：使 finder 中该模块的 spec 缓存失效；每次计划变化都会自动调用。
+
 ### alias fallback
 
 ```python
@@ -270,10 +278,21 @@ finder 的核心逻辑：
 1. 如果模块正在加载，跳过，避免递归。
 2. 如果模块属于 `sd_webui_all_in_one_hotpatcher` 自己，跳过，避免自己 patch 自己。
 3. 如果模块在 `monkey_zoo`，用标准 `importlib.util.find_spec` 找原 spec。
-4. 如果原 loader 是 `SourceFileLoader`，换成 `MonkeySourceFileLoader`。
+4. 如果原 loader 是 `SourceFileLoader`，换成 `MonkeySourceFileLoader`；其他 loader（扩展模块、无源码 `.pyc`、zipimport 等）用 `PostExecLoader` 包装。
 5. 如果模块有 alias fallback，处理缺失模块 fallback。
 
-它有一个 `cache`，缓存已经包装过的 spec。`uninstall_import_hook()` 会清空 cache。
+它有一个 `cache`，缓存已经包装过的 spec。`uninstall_import_hook()` 会清空 cache；补丁计划变化时 `invalidate(fullname)` 只清除对应模块的缓存。
+
+递归保护 `LoadingSkipper` 按线程记录正在导入的模块，其他线程（例如控制线程）并发调用 `find_spec` 时不会拿到未包装的 spec。
+
+## `PostExecLoader`
+
+`PostExecLoader` 把 `create_module` / `exec_module` 委托给原 loader，其他属性透传，在执行前后运行补丁计划的执行前与执行后阶段。源码、AST 和字节码补丁无法应用，记录为 `skipped:unsupported_loader`。
+
+注意：
+
+- spec 上的 loader 对象被替换，`isinstance(spec.loader, zipimporter)` 这类检查会失败。
+- 扩展模块的 `patch_premodule` 在 `create_module` 之后执行；单阶段初始化的扩展模块此时已经初始化完成。
 
 ## `MonkeySourceFileLoader`
 
@@ -336,7 +355,8 @@ import target  # 不会重新执行 loader
 处理方式：
 
 - 尽量在目标模块首次 import 前注册补丁。
-- 对已加载模块，手动调用修改逻辑。
+- 对已加载模块使用 `monkey_zoo(name, apply_if_loaded=True)` 追溯应用函数、模块、import 注入和输出抑制补丁，或在补丁集中使用 `set_attr`、`wrap` 等实时操作。
+- `importlib.reload()` 会在当前补丁计划下重新执行模块（`PatchContext.reload_module` / `hotpatch.modules.reload`），但其他模块中已复制的旧引用不会更新，状态为 `requires_restart`。
 - 必要时测试环境可以清理 `sys.modules` 后重新 import，但生产环境要谨慎。
 
 ## 与 stack shadow 的关系
@@ -348,9 +368,21 @@ import target  # 不会重新执行 loader
 
 如果二者都启用，安装顺序会影响谁先看到目标模块。bootstrap 里刻意先安装 stack shadower，再按需安装 import hook，是为了尽早隐藏 `sd_webui_all_in_one_hotpatcher` 相关模块。一般业务目标模块不要同时给两个 finder 处理，除非你明确知道顺序效果。
 
+## 句柄、结果与撤销
+
+每个 `patch_*`、`inject_import`、`prohibit_output`、`alias_if_not_exists` 以及 `register_hook` / `register_customize_hook` 都返回 `PatchHandle`。`Monkey` 的公开列表保持原有元组结构，句柄 ID 保存在逐阶段对齐的平行列表中，直接追加到公开列表的条目会在首次列出时惰性获得句柄。
+
+- 所有注册都接受 `condition=`：应用时求值，假值时跳过并记录 `skipped:condition_false`。
+- `patch_module` / `patch_premodule` 接受 `revert=`，作为卸载时的逆操作。
+- 每次执行补丁函数记录一个结果：`applied`、`noop`（源码未变化、函数补丁返回 None、AST 未变化）、`failed` 或 `skipped`。
+- 严格模式（`SD_WEBUI_ALL_IN_ONE_HOTPATCHER_STRICT=1` 或 `set_strict_mode(True)`）下，补丁异常在记录 `failed` 后从 import 继续抛出；默认关闭时仍交给 `capture_exception` 并继续导入。
+- 在补丁集激活期间注册的补丁归属该补丁集，卸载补丁集时按阶段注销或撤销，卸载状态规则见 [Hotpatcher 控制平面](https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/development/hotpatcher-control.md)。
+
 ## 调试建议
 
 - 用 `PYTHONDONTWRITEBYTECODE=1` 跑测试，减少 pyc 噪音。
+- `hotpatch.inspect.explain("pkg.mod")` 说明模块为什么（没有）被打补丁；`hotpatch.inspect.verify()` 预演源码与 AST 补丁，找出没有匹配的替换。
+- `SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TRACE=import,patch` 输出 finder 命中与每次补丁执行的结果。
 - 在测试里总是清理 `sys.modules`、`monkey_zoo` 和 import hook。
 - source patch 失败时先打印最终 source 或缩小替换片段。
 - bytecode patch 先用简单常量替换测试，再做嵌套 code object 操作。

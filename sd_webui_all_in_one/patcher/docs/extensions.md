@@ -152,7 +152,49 @@ with monkey_zoo("target") as monkey:
     monkey.patch_premodule(before_exec)
 ```
 
-如果目标模块已经 import，普通 import hook 不会生效。扩展文档必须写清楚“调用入口要在 import 目标库之前”。
+如果目标模块已经 import，普通 import hook 不会生效。扩展文档必须写清楚“调用入口要在 import 目标库之前”。也可以用 `monkey_zoo("target", apply_if_loaded=True)`：退出上下文时，若目标模块已在 `sys.modules` 中，新增条目的执行后阶段（函数、模块、import 注入、输出抑制）会追溯应用到该模块；源码、AST 和字节码阶段仍然只对之后的导入生效。
+
+所有 `patch_*` 都返回 `PatchHandle`，并接受 `condition=`（应用时求值，假值时跳过并记录 `skipped:condition_false`），适合版本判断这类条件补丁。`patch_module` / `patch_premodule` 还接受 `revert=`，提供后卸载时可以完全撤销。
+
+## 声明 services 功能（`FeatureSpec`）
+
+扩展本身只需要提供 `apply_from_config(config)` 这类入口；它在 services 中的配置、schema 和应用方式由 `control/features.py` 中的 `FeatureSpec` 描述。内置扩展的声明作为数据放在 `BUILTIN_FEATURES` 中，行为字段使用字符串引用，只在调用时才导入扩展模块：
+
+```python
+FeatureSpec(
+    key="extensions.uv_pip",
+    title="...",
+    description="...",
+    defaults={"enabled": False, "symlink": False},
+    settings={"symlink": {"type": "bool", "title": "...", "description": "..."}},
+    apply=ConfigCall("sd_webui_all_in_one_hotpatcher_ext.uv_pip:apply_from_config"),
+    is_active=NoArgCall("sd_webui_all_in_one_hotpatcher_ext.uv_pip:is_uv_patch_installed"),
+    revert=NoArgCall("sd_webui_all_in_one_hotpatcher_ext.uv_pip:unpatch_uv_to_subprocess"),
+    disabled_warning="...",
+    order=60,
+    config_order=65,
+)
+```
+
+- `ConfigCall` 把只接收区段配置的入口适配为 `apply(ctx, section)`，`NoArgCall` 适配无参函数。
+- 不要在 `BUILTIN_FEATURES` 中直接导入扩展模块：导入 `services` 不能加载任何扩展（`tests/services/test_services_import_invariant.py`），扩展要在 `apply_config` 安装栈隐藏器之后才首次导入。
+- 第三方或仓库外的功能可以在运行时调用 `get_feature_registry().register(FeatureSpec(...))`，`apply` 等字段可以直接传可调用对象；注册后立即出现在默认配置、目录和 `apply_config()` 中。
+- 新增或修改内置功能后需要重新生成 golden 快照（见 [测试指南](testing.md)）。
+
+### 补丁归属与撤销
+
+每个功能在自己的补丁集 `feature:<key>` 中应用。`apply` 运行期间该补丁集处于激活状态，扩展里普通的 `monkey_zoo(...)` / `register_hook(...)` 注册会经由 `current_patch_context()` 自动归属到它，因此 `hotpatch.features.disable` 或 `apply_config(..., reconcile=True)` 可以撤销未经修改的扩展代码：
+
+- 尚未执行的 import 阶段补丁被注销（`deregistered`）。
+- 已执行的函数补丁、import 注入和输出抑制被还原（`reverted`）。
+- 已执行的源码、AST、字节码补丁和没有 `revert=` 的模块级补丁报告 `requires_restart`。
+- 扩展在 `patch_module` 等补丁函数中通过 `current_patch_context()` 返回的上下文执行 `set_attr`、`wrap` 等实时操作时，这些操作会被记录，卸载时撤销并报告 `reverted`。
+- 补丁集之外的副作用（例如 `uv_pip` 替换的 `subprocess.run`）由 `FeatureSpec.revert` 撤销；撤销后功能仍然生效时报告 `requires_restart` 并附带 `disabled_warning`。
+
+!!! warning "使用模块级 `monkey_zoo`"
+    `comfyui_auto_port` 和 `xformers_cutlass` 直接使用模块级 `monkey_zoo`，把配置应用到隔离的 `HotpatcherState` 时，它们的补丁会注册到默认状态的计划中。新扩展如需支持非默认状态，应直接实现 `apply(ctx, section)`，并通过 `ctx.patch_set.context.module(name)` 注册补丁，它使用功能所属状态的注册表。
+
+完整的功能注册表说明见 [Hotpatcher 控制平面](https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/development/hotpatcher-control.md)。
 
 ## ZLUDA 扩展示例
 
@@ -500,14 +542,15 @@ HF Endpoint Mirror 测试创建 fake `torch.hub`、fake `torchvision.datasets.ut
 - 是否有 `apply_from_config()`。
 - `__init__.py` 是否只做重新导出，实现是否都在子模块里。
 - 是否在 `tests/extensions/test_extension_package_layout.py` 的 `EXPECTED_EXPORTS` 中登记公开 API。
-- 是否在 services catalog schema 中声明字段名、说明、类型和必要的 choices。
+- 是否在 `control/features.py` 的 `BUILTIN_FEATURES` 中添加 `FeatureSpec`（默认值、schema 字段名、说明、类型和必要的 choices，行为字段使用字符串引用），并重新生成 golden 快照。
+- 已生效后能否撤销：补丁集之外的副作用是否提供了 `revert`，无法撤销时是否给出 `disabled_warning`。
 - 是否能用 fake dependency 测试。
 - 是否没有把业务补丁塞进 `sd_webui_all_in_one_hotpatcher` core。
 - 是否更新 README 或 docs。
 
 ## 常见坑
 
-- 目标模块已加载：补丁不会自动生效。
+- 目标模块已加载：普通注册不会自动生效，需要 `apply_if_loaded=True` 或实时操作。
 - source patch 片段太宽：容易误伤。
 - 扩展里直接 import 目标库：会导致补丁注册前目标库已经加载。
 - 扩展测试没有清理 `sys.modules`：下一个测试会拿到旧模块。

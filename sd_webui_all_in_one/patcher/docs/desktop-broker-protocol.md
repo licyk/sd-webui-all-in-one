@@ -119,6 +119,10 @@ POST /v1/runtime/events
 类型会占用其连续序列号，并生成有界的 `unknown_event_type` 诊断，而不是带类型的事件
 状态。
 
+配置 `control.forward_events: true` 后，Python 端会把补丁失败、补丁集、功能和连接事件以
+`hotpatch.event` 类型发送（每秒最多 10 条，载荷不超过 12 KiB）。Rust 端接受该类型之前，
+这些事件按未知事件类型处理。
+
 `browser.open` 要求载荷为包含字符串 `url` 的对象。运行时身份由经过身份验证的请求
 绑定携带，不会信任事件载荷中的身份信息。
 
@@ -211,9 +215,25 @@ GET /v1/runtime/commands?afterSequence=0&waitMs=100
 Python 客户端只接受序列号严格递增的命令；允许存在缺口，因为 Rust 可能在交付前让更早
 的命令过期。每个命令 ID 最多执行一次，客户端会缓存其结果；当 Rust 重新交付 ID 和
 内容相同的命令时，客户端会重新将缓存结果加入队列。过期命令会返回
-`command_expired`，且不会调用处理器。目前桌面命令接口仅包含 `config.apply`；它会使用
-选中的桌面事件接收器调用 `services.apply_config()`。未知命令返回 `unknown_command`。
-旧版模式下，旧版 `services.*` 请求仍可通过 `ServiceControlChannel` 使用。
+`command_expired`，且不会调用处理器。命令经统一命令注册表以 `desktop` 传输分发：
+`config.apply` 保持原有契约，`payload.config` 必须是对象（否则 `invalid_command_payload`），
+它会使用选中的桌面事件接收器调用 `services.apply_config()`，结果映射为 `applyResult`。
+其他已注册的远程命令（`hotpatch.capabilities`、`hotpatch.status`、`hotpatch.patches.list` 等）
+成功时直接返回其载荷，失败时返回命令的错误码。未知命令返回 `unknown_command`。
+
+命令在唯一的代理工作线程上同步执行，该线程同时负责心跳和事件上传，因此：
+
+- 可能导入模块或执行补丁代码的阻塞命令（`hotpatch.sets.load` / `.reload` / `.update`、
+  `hotpatch.modules.reload`）返回 `unsupported_transport`，不会执行；`hotpatch.features.enable` /
+  `.update` 在需要首次导入扩展或会加载 `control.patch_sets` 时同样被拒绝。
+- 读写任意文件路径的 `services.config.load` / `.save` 返回 `forbidden`。
+- 连接参数归 Rust 所有，`hotpatch.connection.test` / `.update` 返回 `unsupported_transport`。
+- 成功结果 JSON 编码后超过 63 KiB 时返回 `request_failed`，信息以 `result_too_large:` 开头。
+
+先发送 `hotpatch.capabilities` 可以得到当前传输可用的命令列表；旧版 Python 端对它返回
+`unknown_command`。完整命令表见
+[Hotpatcher 控制平面](https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/development/hotpatcher-control.md)。
+旧版模式下，`services.*` 请求和 `hotpatch.*` 命令可通过 `ServiceControlChannel` 使用。
 
 ### 结果
 

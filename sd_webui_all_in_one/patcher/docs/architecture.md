@@ -9,6 +9,7 @@
 1. 在 Python import 阶段给目标模块打补丁。
 2. 在需要时隐藏补丁系统或补丁模块的真实加载路径。
 3. 通过通用宿主通信协议，把运行时控制和事件交给外部进程。
+4. 通过控制平面在运行中列出、加载、修改和撤销补丁，并提供调试与连接管理命令。
 
 它刻意不包含具体业务补丁。业务补丁放在 `sd_webui_all_in_one_hotpatcher_ext`，例如当前的 ZLUDA、Extension Index、HF Endpoint Mirror 和 uv Pip 扩展。这个边界很重要：核心框架负责“补丁能力”，扩展负责“补谁、怎么补”。
 
@@ -26,10 +27,26 @@ src/
     bootstrap.py
     services.py
     exceptions.py
+    state.py
+    control/
+      journal.py
+      targets.py
+      handles.py
+      patchset.py
+      operations.py
+      loader.py
+      features.py
+      trace.py
+      events.py
+      inspect.py
+      commands.py
+      builtin_commands.py
+      controller.py
     runtime/
       protocol.py
       transport.py
       client.py
+      connection.py
       transport_mode.py
       interfaces.py
       desktop_broker.py
@@ -100,6 +117,21 @@ Python import system   Python loader/compile          TCP JSONL host
 - `HookedMetaPathFinder`：拦截 import 查询。
 - `MonkeySourceFileLoader`：真正执行源码/AST/字节码/模块对象补丁。
 
+所有 `patch_*` 注册都返回 `PatchHandle`，补丁计划变化时 finder 缓存随之失效；非源码 loader 由 `PostExecLoader` 包装，执行后阶段照常运行。
+
+### `sd_webui_all_in_one_hotpatcher.control`
+
+控制平面，按需导入（`import sd_webui_all_in_one_hotpatcher` 和 `install_import_hook()` 都不会加载它）。主要组成：
+
+- `PatchJournal` / `PatchSet` / `PatchContext`：可撤销修改的日志和加载卸载单位，`current_patch_context()` 让激活期间的 `patch_*` 注册自动归属到补丁集。
+- `operations`：属性、条目、环境变量、`sys.path`、包装（含蹦床）、类成员、`rebind_references`、`reload_module` 等实时操作。
+- `loader`：运行时加载、重新加载（失败回滚）、更新和卸载补丁模块，`control` 配置区段与补丁文件监视。
+- `features`：`FeatureSpec` / `FeatureRegistry`，services 的默认配置、schema、目录和应用都从这里派生。
+- `trace` / `events` / `inspect`：跟踪输出、事件环形缓冲区与诊断。
+- `commands` / `controller`：统一命令注册表和 `hotpatch` 门面，进程内 API、services 通道和桌面代理命令共用同一个分发点。
+
+完整设计见 [Hotpatcher 控制平面](https://github.com/licyk/sd-webui-all-in-one/blob/main/docs/development/hotpatcher-control.md)。
+
 ### `sd_webui_all_in_one_hotpatcher.mutable`
 
 提供 `CodeWrapper` 和 `TupleWrapper`，用于修改不可变的 code object。典型用途是替换 `co_consts` 中的字符串常量或嵌套 code object。
@@ -120,6 +152,7 @@ Rust-owned HTTP broker client。它包含：
 - 独立 desktop client：`DesktopBrokerClient`
 - 配置：`load_config`
 - 控制能力：progress、browser、fileops、faults、audit、errors、logs
+- 连接管理：`connection.RuntimeConnectionSettings` / `ConnectionManager`，负责 legacy 连接参数的在线切换（先建后拆）和可选自动重连；`RuntimeClient.rebind()` 原子替换底层传输
 
 没有 selector、空 selector 和显式 `legacy` 都保持原实现。只有显式
 `desktop_broker` 会构建新 client，而且初始化、认证或网络失败不会 fallback 到
@@ -139,7 +172,7 @@ state = configure_from_env()
 
 ### `sd_webui_all_in_one_hotpatcher.services`
 
-业务系统接入层。它提供补丁能力目录、默认配置、配置文件补齐、JSON 请求处理和可选 runtime services 控制通道。services 会调用 core 和扩展入口启用功能，但 v1 不负责撤销已经注册的 import-time 补丁。
+业务系统接入层。它提供补丁能力目录、默认配置、配置文件补齐、JSON 请求处理和可选 runtime services 控制通道。功能目录由 `control.features` 注册表派生，每个功能在自己的补丁集中应用；`apply_config` 默认保持 v1 语义（禁用只表示不再注册），通过 `reconcile=True` 或 `services.reconcile_disabled` 才撤销已禁用的功能。JSON 请求和 services 通道都经由统一命令注册表分发，也接受 `hotpatch.*` 控制命令。
 
 ### `src/sitecustomize.py`
 
@@ -227,6 +260,17 @@ browser/log/error 等 event producer 通过 `RuntimeEventSink` 发送。尤其
 `webbrowser.open()` 只做本地 bounded enqueue；HTTP 和 reconnect 永不进入 patched
 call site。`host` / `suppress` 的本地抑制决定也不依赖 broker health。
 
+### 控制命令数据流
+
+```text
+进程内 hotpatch.call() / services 通道请求 / 桌面代理命令
+  -> CommandRegistry.dispatch(name, payload, ctx)
+  -> 名称与别名解析 -> 传输策略 (remote / transports / blocking / requires_token)
+  -> 载荷校验 -> 处理函数 (补丁集、加载器、功能、诊断、连接)
+  -> {"ok": true, "payload": ...} 或 {"ok": false, "error": {...}}
+  -> 响应写出后执行 after_send 回调 (例如连接切换)
+```
+
 ### Fault channel 数据流
 
 ```text
@@ -247,6 +291,8 @@ install_faulthandler(client)
 - runtime exception reporter：`exceptions.set_exception_reporter()` 设置全局 reporter。
 - `Progress.manager`：进度上报的全局 manager。
 
+除 `sys.meta_path` 等解释器级对象外，hotpatcher 自身的进程状态都放在 `state.HotpatcherState` 上（核心代码禁止 `global` 语句），包括控制平面的补丁集与句柄注册表、功能注册表、跟踪器、事件日志、控制器和连接管理器。`control_lock` 只保护内存注册表，持有时不执行导入、用户补丁代码或网络 I/O。
+
 测试和嵌入式环境中必须清理这些状态，否则用例之间会串味。
 
 ## 与原系统的差异
@@ -260,7 +306,7 @@ install_faulthandler(client)
 - runtime host protocol
 - extension API
 
-具体业务补丁移到 `sd_webui_all_in_one_hotpatcher_ext`。当前已有 ZLUDA、Extension Index、HF Endpoint Mirror 和 uv Pip 作为样例。
+具体业务补丁移到 `sd_webui_all_in_one_hotpatcher_ext`。当前已有 ComfyUI Auto Port、ZLUDA、Extension Index、HF Endpoint Mirror、uv Pip 和 xFormers CUTLASS 作为样例。
 
 ## 后续扩展建议
 

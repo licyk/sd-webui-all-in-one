@@ -8,13 +8,14 @@
 | --- | --- | --- |
 | Python 内核 | 提供 CLI、WebUI 管理能力、下载、镜像、PyTorch 版本、模型、隧道和环境检查。 | [Python 内核](./python-core.md) |
 | Patcher 热补丁框架 | 提供 import-time 补丁、环境变量 bootstrap、runtime 通信和扩展补丁配方。 | [Patcher 使用文档](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one/patcher/README.md) |
+| Hotpatcher 控制平面 | 提供可撤销的补丁句柄与补丁集、运行时加载补丁、功能注册表、调试工具、统一控制命令和在线修改连接参数。 | [Hotpatcher 控制平面](./hotpatcher-control.md) |
 | PowerShell Installer | 在 Windows / Linux / macOS 上安装 WebUI / 训练工具，并生成启动、更新、模型下载、版本管理等管理脚本。 | [Installer](./installer.md) |
 | Notebook | 在 Colab / Kaggle 中用图形化参数单元调用 Python 管理器完成云端安装、模型下载、启动和训练。 | [Notebook](./notebook.md) |
 
 ## 推荐阅读顺序
 
 1. 先读 [整体架构](./architecture.md)，了解 CLI、Installer、Notebook 和 Python 内核之间的关系。
-2. 按要维护的区域阅读 [Python 内核](./python-core.md)、[Patcher 使用文档](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one/patcher/README.md)、[Installer](./installer.md) 或 [Notebook](./notebook.md)。
+2. 按要维护的区域阅读 [Python 内核](./python-core.md)、[Patcher 使用文档](https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one/patcher/README.md)（涉及补丁控制命令、运行时加载或连接切换时再读 [Hotpatcher 控制平面](./hotpatcher-control.md)）、[Installer](./installer.md) 或 [Notebook](./notebook.md)。
 3. 修改前阅读 [编码风格](./coding-style.md)，确认命名、路径、日志、参数和文档同步规则。
 4. 修改后按 [测试与检查](./testing.md) 跑对应检查。
 5. 如果是新增 WebUI 或训练工具支持，按 [新增产品支持](./adding-product.md) 的清单逐项同步。
