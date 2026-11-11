@@ -3,11 +3,14 @@
 from .hook import (
     Monkey,
     MonkeyZoo,
+    PostExecLoader,
     install_import_hook,
     is_import_hook_installed,
+    is_strict_mode,
     monkey_zoo,
     register_customize_hook,
     register_hook,
+    set_strict_mode,
     uninstall_import_hook,
 )
 from .logger import get_hotpatcher_logger
@@ -25,6 +28,7 @@ __all__ = [
     "HotpatcherState",
     "Monkey",
     "MonkeyZoo",
+    "PostExecLoader",
     "TupleWrapper",
     "configure_stack_shadower_from_env",
     "get_default_state",
@@ -33,9 +37,11 @@ __all__ = [
     "install_stack_shadower",
     "is_import_hook_installed",
     "is_stack_shadower_installed",
+    "is_strict_mode",
     "monkey_zoo",
     "register_customize_hook",
     "register_hook",
+    "set_strict_mode",
     "uninstall_import_hook",
     "uninstall_stack_shadower",
 ]

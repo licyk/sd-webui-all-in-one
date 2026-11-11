@@ -5,6 +5,7 @@ from __future__ import annotations
 import importlib.util
 import os
 import sys
+import threading
 from collections.abc import Generator, Iterable, Sequence
 from contextlib import contextmanager
 from importlib.abc import Loader, MetaPathFinder
@@ -20,10 +21,31 @@ DEFAULT_FILENAME_TEMPLATE = "<hidden {name}>"
 
 
 class LoadingSkipper:
-    """记录当前正在加载的模块以避免重复查找。"""
+    """
+    记录当前线程正在加载的模块以避免重复查找。
+
+    每个线程使用独立的栈, 其他线程 (例如控制线程) 并发调用 ``find_spec`` 时,
+    不会因为本线程正在加载同名模块而拿到未包装的 spec。
+    """
 
     def __init__(self) -> None:
-        self.currently_loading: list[str] = []
+        self._local = threading.local()
+
+    @property
+    def currently_loading(self) -> list[str]:
+        """
+        当前线程正在加载的模块名栈
+
+        Returns:
+            list[str]:
+                当前线程的模块名栈, 首次访问时创建
+        """
+
+        stack = getattr(self._local, "stack", None)
+        if stack is None:
+            stack = []
+            self._local.stack = stack
+        return stack
 
     def __contains__(self, module: str | ModuleType) -> bool:
         fullname = module.__name__ if isinstance(module, ModuleType) else module

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import threading
 from dataclasses import dataclass, field
 from types import TracebackType
@@ -23,6 +24,21 @@ if TYPE_CHECKING:
     from .stack_shadow import StackShadowFinder
 
 ExceptionReporterCallback = Callable[[type[BaseException], BaseException, TracebackType | None], None]
+
+STRICT_MODE_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_STRICT"
+"""启用补丁严格模式的环境变量名, 值为 ``1`` 时启用"""
+
+
+def strict_mode_from_env() -> bool:
+    """
+    读取严格模式环境变量。
+
+    Returns:
+        bool:
+            ``SD_WEBUI_ALL_IN_ONE_HOTPATCHER_STRICT=1`` 时返回 True。
+    """
+
+    return os.getenv(STRICT_MODE_ENV) == "1"
 
 
 @dataclass
@@ -90,6 +106,11 @@ class HotpatcherState:
             已注册补丁集, 键为补丁集 ID。
         patch_handles (dict[str, PatchHandle]):
             已注册补丁句柄, 键为句柄 ID。
+        strict_mode (bool):
+            补丁严格模式。启用后 import 阶段补丁抛出的异常会在记录结果后继续向外抛出,
+            而不是被 ``capture_exception`` 吞掉。创建状态对象时从
+            ``SD_WEBUI_ALL_IN_ONE_HOTPATCHER_STRICT`` 读取初始值; 默认状态在导入本模块
+            (即 bootstrap) 时创建, 之后修改环境变量不会生效, 运行时请使用 ``hook.set_strict_mode``。
     """
 
     monkey_zoo: "MonkeyZoo | None" = None
@@ -119,6 +140,7 @@ class HotpatcherState:
     patch_id_counter: int = 0
     patch_sets: "dict[str, PatchSet]" = field(default_factory=dict)
     patch_handles: "dict[str, PatchHandle]" = field(default_factory=dict)
+    strict_mode: bool = field(default_factory=strict_mode_from_env)
 
 
 _default_state = HotpatcherState()

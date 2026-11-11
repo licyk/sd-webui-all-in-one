@@ -22,7 +22,7 @@ import time
 from collections.abc import Callable, Generator, MutableMapping
 from dataclasses import dataclass, field
 from types import TracebackType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ..state import HotpatcherState, get_default_state
 from .handles import (
@@ -36,6 +36,9 @@ from .handles import (
 )
 from .journal import NOTSET, JournalEntry, JournalUndoReport, PatchJournal
 from .targets import describe_target, split_target
+
+if TYPE_CHECKING:
+    from ..hook import Monkey
 
 __all__ = [
     "PatchContext",
@@ -749,6 +752,31 @@ class PatchContext:
             yield self
         finally:
             _CURRENT_PATCH_CONTEXT.reset(token)
+
+    @contextlib.contextmanager
+    def module(self, name: str, *, apply_if_loaded: bool = False) -> Generator[Monkey, None, None]:
+        """
+        在激活本上下文的情况下获取模块的 import 阶段补丁计划。
+
+        ``with`` 块内的 ``patch_*`` 注册归属到本补丁集, 卸载补丁集时撤销框架写入或从计划中注销,
+        规则见 ``Monkey.remove``。注册表使用本补丁集状态的 ``monkey_zoo``。
+
+        Args:
+            name (str):
+                目标模块名。
+            apply_if_loaded (bool):
+                为 True 且目标模块已导入时, 退出时把新增条目的执行后阶段追溯应用到该模块。
+
+        Yields:
+            Monkey:
+                目标模块的补丁计划。
+        """
+
+        from ..hook import _state_monkey_zoo
+
+        zoo = _state_monkey_zoo(self.state)
+        with self.activate(), zoo(name, apply_if_loaded=apply_if_loaded) as monkey:
+            yield monkey
 
     def set_attr(self, target: Any, name: Any, value: Any = NOTSET, *, raising: bool = True) -> PatchHandle:
         """

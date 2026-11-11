@@ -45,17 +45,17 @@ $PY -m python_docstring_checker .
 - [x] Verify: regression + static green (343 passed)
 
 ## P2 Hook upgrades
-- [ ] grep: no caller relies on `patch_*` returning None
-- [ ] Thread-local `LoadingSkipper` in hook.py and stack_shadow.py
-- [ ] Handles: per-stage parallel id lists + identity search; `remove`, `MonkeyZoo.discard`
-- [ ] Ownership: `patch_*` attach handles to the active PatchSet via `current_patch_context()`
-- [ ] Finder `invalidate(fullname)` on every plan mutation (L10)
-- [ ] State-aware `_spec_from_file_location_wrapper` (L11)
-- [ ] Outcome recording in every `eval_*`; strict mode
-- [ ] Framework-journaled function/injection/prohibition writes; `revert=` on module/premodule
-- [ ] `PostExecLoader` for non-SourceFileLoader specs (L4); `condition=`; `apply_if_loaded`
-- [ ] Tests: `test_control_hook_handles.py`
-- [ ] Verify: regression + static green
+- [x] grep: no caller relies on `patch_*` returning None
+- [x] Thread-local `LoadingSkipper` in hook.py and stack_shadow.py
+- [x] Handles: per-stage parallel id lists + identity search; `remove`, `MonkeyZoo.discard`
+- [x] Ownership: `patch_*` attach handles to the active PatchSet via `current_patch_context()`
+- [x] Finder `invalidate(fullname)` on every plan mutation (L10)
+- [x] State-aware `_spec_from_file_location_wrapper` (L11)
+- [x] Outcome recording in every `eval_*`; strict mode
+- [x] Framework-journaled function/injection/prohibition writes; `revert=` on module/premodule
+- [x] `PostExecLoader` for non-SourceFileLoader specs (L4); `condition=`; `apply_if_loaded`
+- [x] Tests: `test_control_hook_handles.py`, `test_control_hook_loaders.py` (+ `control_hook_test_helpers.py`)
+- [x] Verify: regression + static green (389 passed on 3.11; patcher suite 333 passed on 3.10)
 
 ## P3 Live operations
 - [ ] attr/item/env/sys.path ops, `wrap` (+trampoline), class members, `rebind_references`, `reload_module`
