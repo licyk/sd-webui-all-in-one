@@ -58,9 +58,10 @@ $PY -m python_docstring_checker .
 - [x] Verify: regression + static green (389 passed on 3.11; patcher suite 333 passed on 3.10)
 
 ## P3 Live operations
-- [ ] attr/item/env/sys.path ops, `wrap` (+trampoline), class members, `rebind_references`, `reload_module`
-- [ ] Tests: `test_control_operations.py`
-- [ ] Verify
+- [x] attr/item/env/sys.path ops, `wrap` (+trampoline), class members, `rebind_references`, `reload_module`
+- [x] `_undo_entry` heuristic: module/premodule hookers whose every invocation registered owned `ctx.*` ops (and did not raise) report `reverted`; explicit `revert=` wins
+- [x] Tests: `test_control_operations.py`
+- [x] Verify: regression + static green (419 passed on 3.11; patcher suite 363 passed on 3.10)
 
 ## P4 Feature registry
 - [ ] `control/features.py` (FeatureSpec, FeatureRegistry); built-in specs as core data with lazy `"module:callable"` refs (no eager ext imports)

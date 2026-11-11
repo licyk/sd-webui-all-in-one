@@ -96,6 +96,8 @@ class PatchOutcome:
             失败时的 traceback 末尾, 最长 ``MAX_TRACEBACK_CHARS`` 字符。
         timestamp (float):
             记录时间, ``time.time()`` 秒。
+        detail (dict[str, Any] | None):
+            可序列化的结构化附加信息, 例如 ``rebind_references`` 重新绑定的位置列表。
     """
 
     kind: PatchOutcomeKind
@@ -104,22 +106,25 @@ class PatchOutcome:
     error_message: str | None = None
     traceback: str | None = None
     timestamp: float = field(default_factory=time.time)
+    detail: dict[str, Any] | None = None
 
     @classmethod
-    def applied(cls, reason: str | None = None) -> PatchOutcome:
+    def applied(cls, reason: str | None = None, *, detail: dict[str, Any] | None = None) -> PatchOutcome:
         """
         创建 ``applied`` 结果。
 
         Args:
             reason (str | None):
                 附加原因。
+            detail (dict[str, Any] | None):
+                结构化附加信息。
 
         Returns:
             PatchOutcome:
                 结果对象。
         """
 
-        return cls(kind=PatchOutcomeKind.APPLIED, reason=reason)
+        return cls(kind=PatchOutcomeKind.APPLIED, reason=reason, detail=detail)
 
     @classmethod
     def noop(cls, reason: str | None = None) -> PatchOutcome:
@@ -193,6 +198,7 @@ class PatchOutcome:
             "error_message": self.error_message,
             "traceback": self.traceback,
             "timestamp": self.timestamp,
+            "detail": dict(self.detail) if self.detail is not None else None,
         }
 
 

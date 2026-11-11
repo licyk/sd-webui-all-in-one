@@ -1,4 +1,4 @@
-"""Hotpatcher 控制平面: 可撤销补丁日志、目标解析、补丁句柄与补丁集。"""
+"""Hotpatcher 控制平面: 可撤销补丁日志、目标解析、补丁句柄、补丁集与实时补丁操作。"""
 
 from .handles import (
     MAX_ERROR_MESSAGE_CHARS,
@@ -16,12 +16,23 @@ from .handles import (
     unregister_patch_handle,
 )
 from .journal import NOTSET, JournalEntry, JournalUndoReport, JournalUndoResult, NotSetType, PatchJournal
+from .operations import (
+    MAX_REBIND_REFERENCES,
+    TRAMPOLINE_ATTRIBUTE,
+    Trampoline,
+    get_trampoline,
+    patch_method,
+    reload_module,
+    set_class_attr,
+    wrap_callable,
+)
 from .patchset import (
     PatchContext,
     PatchSet,
     PatchSetClosedError,
     PatchSetReport,
     PatchSetStatus,
+    collect_operations,
     current_patch_context,
     get_patch_set,
     list_patch_sets,
@@ -42,8 +53,10 @@ from .targets import (
 __all__ = [
     "MAX_ERROR_MESSAGE_CHARS",
     "MAX_HANDLE_OUTCOMES",
+    "MAX_REBIND_REFERENCES",
     "MAX_TRACEBACK_CHARS",
     "NOTSET",
+    "TRAMPOLINE_ATTRIBUTE",
     "JournalEntry",
     "JournalUndoReport",
     "JournalUndoResult",
@@ -62,19 +75,26 @@ __all__ = [
     "TargetError",
     "TargetImportError",
     "TargetSyntaxError",
+    "Trampoline",
     "allocate_patch_id",
+    "collect_operations",
     "create_patch_handle",
     "current_patch_context",
     "describe_target",
     "get_patch_handle",
     "get_patch_set",
+    "get_trampoline",
     "list_patch_handles",
     "list_patch_sets",
     "parse_target",
+    "patch_method",
     "register_patch_handle",
     "register_patch_set",
+    "reload_module",
     "remove_patch_set",
     "resolve_target",
+    "set_class_attr",
     "split_target",
     "unregister_patch_handle",
+    "wrap_callable",
 ]

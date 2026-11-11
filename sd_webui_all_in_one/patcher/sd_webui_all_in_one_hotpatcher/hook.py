@@ -68,7 +68,21 @@ _STATUS_PRIORITY = {"deregistered": 1, "reverted": 2, "requires_restart": 3, "fa
 class _PatchEntry:
     """``Monkey`` 中单个补丁条目的内部记录。"""
 
-    __slots__ = ("handle", "stage", "entry", "owner", "condition", "revert", "invoked", "detached", "final_status", "modules", "write_tokens")
+    __slots__ = (
+        "handle",
+        "stage",
+        "entry",
+        "owner",
+        "condition",
+        "revert",
+        "invoked",
+        "detached",
+        "final_status",
+        "modules",
+        "write_tokens",
+        "live_handles",
+        "unjournaled",
+    )
 
     def __init__(
         self,
@@ -90,6 +104,9 @@ class _PatchEntry:
         self.final_status: PatchStatus | None = None
         self.modules: weakref.WeakSet[ModuleType] = weakref.WeakSet()
         self.write_tokens: dict[tuple[int, str], object] = {}
+        # 模块级补丁函数执行期间通过所属补丁集登记的实时操作句柄, 以及是否存在未被日志覆盖的执行。
+        self.live_handles: list[PatchHandle] = []
+        self.unjournaled = False
 
 
 class Monkey:
@@ -235,8 +252,8 @@ class Monkey:
             priority (int):
                 执行优先级, 数字越小越早执行
             revert (Callable[[ModuleType], Any] | None):
-                卸载时对已执行过补丁的模块调用的逆操作。提供时卸载状态为 ``reverted``,
-                否则补丁执行后卸载状态为 ``requires_restart``
+                卸载时对已执行过补丁的模块调用的逆操作。提供时卸载状态为 ``reverted``;
+                未提供时适用 ``patch_module`` 中说明的启发式规则, 否则补丁执行后卸载状态为 ``requires_restart``
             condition (Callable[[], Any] | None):
                 应用时求值的条件, 返回假值时跳过并记录 ``skipped:condition_false``
 
@@ -258,14 +275,20 @@ class Monkey:
         """
         注册模块代码执行后补丁
 
+        卸载启发式规则 (同样适用于 ``patch_premodule``): 补丁属于补丁集时, 补丁函数运行期间
+        ``current_patch_context()`` 返回所属补丁集的上下文。若每次执行都至少通过它登记了一个实时操作
+        (``ctx.set_attr`` / ``ctx.wrap`` / ``ctx.add_disposer`` 等) 且没有抛出异常, 卸载时这些操作会被撤销,
+        状态报告为 ``reverted`` 而不是 ``requires_restart``。框架无法检测补丁函数直接执行的
+        ``setattr`` 等未记录修改; 同时存在这类修改时应提供 ``revert``, 它优先于启发式规则。
+
         Args:
             hooker (Callable[[ModuleType], Any]):
                 接收模块对象的补丁函数
             priority (int):
                 执行优先级, 数字越小越早执行
             revert (Callable[[ModuleType], Any] | None):
-                卸载时对已执行过补丁的模块调用的逆操作。提供时卸载状态为 ``reverted``,
-                否则补丁执行后卸载状态为 ``requires_restart``
+                卸载时对已执行过补丁的模块调用的逆操作。提供时卸载状态为 ``reverted``;
+                未提供时适用 ``patch_module`` 中说明的启发式规则, 否则补丁执行后卸载状态为 ``requires_restart``
             condition (Callable[[], Any] | None):
                 应用时求值的条件, 返回假值时跳过并记录 ``skipped:condition_false``
 
@@ -439,7 +462,9 @@ class Monkey:
         按身份 (``is``) 在阶段列表中查找条目, 同时删除公开列表和句柄 ID 列表中的同一位置。
         属于补丁集的条目通过补丁集日志撤销。状态规则: 目标模块从未以该条目执行过时为
         ``deregistered``; 函数、import 注入和输出抑制补丁为 ``reverted`` (写入已被之后的其他对象覆盖时为
-        ``requires_restart``); 提供了 ``revert`` 的模块级补丁为 ``reverted``; 其余为 ``requires_restart``。
+        ``requires_restart``); 提供了 ``revert`` 的模块级补丁为 ``reverted``; 模块级补丁每次执行都通过
+        ``current_patch_context()`` 登记了实时操作且没有抛出异常时, 这些操作会一并撤销并报告 ``reverted``
+        (启发式规则, 见 ``patch_module``); 其余为 ``requires_restart``。
 
         Args:
             handle (PatchHandle | str):
@@ -884,10 +909,19 @@ class Monkey:
         if record.invoked:
             if record.stage in _POST_EXEC_REVERTIBLE_STAGES:
                 status = _merge_status(status, PatchStatus.REVERTED)
-            elif record.revert is not None and record.stage in _REVERT_HOOK_STAGES:
-                for module in list(record.modules):
-                    record.revert(module)
-                status = _merge_status(status, PatchStatus.REVERTED)
+            elif record.stage in _REVERT_HOOK_STAGES:
+                live_status = self._undo_live_operations(record)
+                if live_status is not None:
+                    status = _merge_status(status, live_status)
+                if record.revert is not None:
+                    for module in list(record.modules):
+                        record.revert(module)
+                    status = _merge_status(status, PatchStatus.REVERTED)
+                elif live_status is not None and not record.unjournaled:
+                    # 启发式: 每次执行的效果都由补丁集日志中的实时操作覆盖, 撤销这些操作即完全还原。
+                    status = _merge_status(status, PatchStatus.REVERTED)
+                else:
+                    status = _merge_status(status, PatchStatus.REQUIRES_RESTART)
             else:
                 status = _merge_status(status, PatchStatus.REQUIRES_RESTART)
         record.final_status = status
@@ -896,6 +930,51 @@ class Monkey:
         if record.owner is None:
             unregister_patch_handle(record.handle.id, state=self._get_state())
         return status
+
+    def _undo_live_operations(self, record: _PatchEntry) -> PatchStatus | None:
+        # 撤销模块级补丁函数登记的实时操作 (LIFO)。补丁集关闭时这些条目已被整体撤销, 此处为空操作。
+        from .control.handles import PatchStatus
+
+        owner = record.owner
+        handles = [handle for handle in record.live_handles if handle.status is not PatchStatus.FAILED]
+        if owner is None or not handles:
+            return None
+        status = PatchStatus.REVERTED
+        for handle in reversed(handles):
+            result = _undo_owned_handle(owner, handle)
+            if result is None:
+                if handle.status is PatchStatus.REQUIRES_RESTART:
+                    status = _merge_status(status, PatchStatus.REQUIRES_RESTART)
+                continue
+            if result is PatchStatus.DEREGISTERED:
+                result = PatchStatus.REVERTED
+            handle.status = result
+            status = _merge_status(status, result)
+        return status
+
+    def _note_live_operations(self, record: _PatchEntry, collected: list[PatchHandle], *, failed: bool) -> None:
+        from .control.handles import PatchStatus
+
+        owner = record.owner
+        if owner is None:
+            return
+        operations = [handle for handle in collected if handle.owner == owner.id and handle.kind != PATCH_HANDLE_KIND]
+        record.live_handles.extend(operations)
+        if failed or not any(handle.status is not PatchStatus.FAILED for handle in operations):
+            record.unjournaled = True
+
+    @contextmanager
+    def _hooker_scope(self, record: _PatchEntry) -> Generator[list[PatchHandle], None, None]:
+        # 激活所属补丁集并收集补丁函数登记的实时操作; 无主条目不收集。
+        owner = record.owner
+        if owner is None:
+            yield []
+            return
+
+        from .control.patchset import collect_operations
+
+        with owner.context.activate(), collect_operations() as collected:
+            yield collected
 
     def _forget(self, record: _PatchEntry) -> None:
         # 只从计划中忘记条目, 不撤销实时写入 (discard / clear 语义)。有主条目留给补丁集关闭时处理。
@@ -1009,12 +1088,15 @@ class Monkey:
         for (hooker, _), record in sorted(entries, key=lambda pair: pair[0][1]):
             if (select is not None and not select(record)) or not self._can_run(record) or not self._condition_allows(record, module, True):
                 continue
+            collected: list[PatchHandle] = []
             try:
-                with self._activation(record):
+                with self._hooker_scope(record) as collected:
                     hooker(module)
             except Exception as exc:
+                self._note_live_operations(record, collected, failed=True)
                 self._handle_failure(record, exc, module, True)
                 continue
+            self._note_live_operations(record, collected, failed=False)
             self._record_outcome(record, PatchOutcome.applied(), module)
 
     def _run_function(self, module: ModuleType, select: Callable[[_PatchEntry], bool] | None) -> None:

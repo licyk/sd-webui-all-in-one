@@ -21,7 +21,7 @@ import threading
 import time
 from collections.abc import Callable, Generator, MutableMapping
 from dataclasses import dataclass, field
-from types import TracebackType
+from types import ModuleType, TracebackType
 from typing import TYPE_CHECKING, Any
 
 from ..state import HotpatcherState, get_default_state
@@ -34,8 +34,9 @@ from .handles import (
     register_patch_handle,
     unregister_patch_handle,
 )
-from .journal import NOTSET, JournalEntry, JournalUndoReport, PatchJournal
-from .targets import describe_target, split_target
+from . import operations
+from .journal import NOTSET, JournalUndoReport, PatchJournal
+from .targets import describe_target
 
 if TYPE_CHECKING:
     from ..hook import Monkey
@@ -46,6 +47,7 @@ __all__ = [
     "PatchSetClosedError",
     "PatchSetReport",
     "PatchSetStatus",
+    "collect_operations",
     "current_patch_context",
     "get_patch_set",
     "list_patch_sets",
@@ -55,6 +57,11 @@ __all__ = [
 
 _CURRENT_PATCH_CONTEXT: contextvars.ContextVar[PatchContext | None] = contextvars.ContextVar(
     "sd_webui_all_in_one_hotpatcher_current_patch_context",
+    default=None,
+)
+
+_OPERATION_COLLECTOR: contextvars.ContextVar[list[PatchHandle] | None] = contextvars.ContextVar(
+    "sd_webui_all_in_one_hotpatcher_operation_collector",
     default=None,
 )
 
@@ -166,6 +173,28 @@ def current_patch_context() -> PatchContext | None:
     """
 
     return _CURRENT_PATCH_CONTEXT.get()
+
+
+@contextlib.contextmanager
+def collect_operations() -> Generator[list[PatchHandle], None, None]:
+    """
+    收集 ``with`` 块内当前线程/上下文创建的实时操作句柄。
+
+    ``record_operation`` 和 ``add_disposer`` 创建的句柄 (不论属于哪个补丁集) 会追加到产出的列表中;
+    import 阶段补丁通过 ``adopt_handle`` 归属的句柄不会被收集。嵌套使用时只有最内层收集器生效。
+    ``hook.Monkey`` 用它判断模块级补丁函数是否只通过可撤销操作修改了模块。
+
+    Yields:
+        list[PatchHandle]:
+            按创建顺序排列的句柄列表, 块结束后仍可读取。
+    """
+
+    collected: list[PatchHandle] = []
+    token = _OPERATION_COLLECTOR.set(collected)
+    try:
+        yield collected
+    finally:
+        _OPERATION_COLLECTOR.reset(token)
 
 
 class PatchSet:
@@ -305,12 +334,14 @@ class PatchSet:
         action: Callable[[str], Any],
         *,
         stage: str | None = None,
+        failure_reason: Callable[[BaseException], str | None] | None = None,
     ) -> PatchHandle:
         """
         创建句柄并执行一次可撤销操作。
 
         ``action`` 接收句柄 ID, 应通过 ``self.journal`` 写入带该 ID 的条目。返回 None 时
-        记录 ``noop`` 结果, 否则记录 ``applied``。``action`` 在锁外执行。
+        记录 ``noop`` 结果, 返回 ``PatchOutcome`` 时原样记录该结果, 否则记录 ``applied``。
+        ``action`` 在锁外执行。
 
         Args:
             kind (str):
@@ -321,6 +352,8 @@ class PatchSet:
                 执行修改并写日志的函数。
             stage (str | None):
                 import 补丁阶段。
+            failure_reason (Callable[[BaseException], str | None] | None):
+                ``action`` 抛出异常时计算失败结果 ``reason`` 的函数。
 
         Returns:
             PatchHandle:
@@ -338,10 +371,13 @@ class PatchSet:
             result = action(handle.id)
         except BaseException as exc:
             handle.status = PatchStatus.FAILED
-            handle.record_outcome(PatchOutcome.failed(exc))
+            handle.record_outcome(PatchOutcome.failed(exc, reason=failure_reason(exc) if failure_reason is not None else None))
             raise
         handle.status = PatchStatus.APPLIED
-        handle.record_outcome(PatchOutcome.noop() if result is None else PatchOutcome.applied())
+        if isinstance(result, PatchOutcome):
+            handle.record_outcome(result)
+        else:
+            handle.record_outcome(PatchOutcome.noop() if result is None else PatchOutcome.applied())
         with self._lock:
             closed_meanwhile = self._closed
         if closed_meanwhile:
@@ -416,6 +452,7 @@ class PatchSet:
                 # 在锁内写日志: close() 只能在此之前或之后翻转关闭标记, 清理函数不会丢失也不会执行两次。
                 self.journal.record_callback(disposer, target, kind="disposer", handle_id=handle.id)
                 handle.record_outcome(PatchOutcome.applied())
+        _collect_operation(handle)
         if not closed:
             return handle
         try:
@@ -622,6 +659,7 @@ class PatchSet:
             self._ensure_open(f"apply {kind} {target!r}")
             handle = create_patch_handle(kind, target, owner=self.id, stage=stage, state=self.state)
             self._handles[handle.id] = handle
+        _collect_operation(handle)
         return handle
 
     def _build_report(self, undo_report: JournalUndoReport) -> PatchSetReport:
@@ -778,7 +816,16 @@ class PatchContext:
         with self.activate(), zoo(name, apply_if_loaded=apply_if_loaded) as monkey:
             yield monkey
 
-    def set_attr(self, target: Any, name: Any, value: Any = NOTSET, *, raising: bool = True) -> PatchHandle:
+    def set_attr(
+        self,
+        target: Any,
+        name: Any,
+        value: Any = NOTSET,
+        *,
+        raising: bool = True,
+        rebind_references: bool = False,
+        rebind_limit: int = operations.MAX_REBIND_REFERENCES,
+    ) -> PatchHandle:
         """
         设置属性。
 
@@ -793,19 +840,18 @@ class PatchContext:
                 新值; 使用目标路径写法时省略。
             raising (bool):
                 属性不存在时是否抛出 ``AttributeError``。
+            rebind_references (bool):
+                旧值是可调用对象时, 是否把其他模块命名空间中对旧值的同一对象引用也改为新值,
+                每个重新绑定位置单独写日志, 位置列表记录在结果的 ``detail`` 中。
+            rebind_limit (int):
+                最多重新绑定的引用数量, 超出时结果 ``detail["truncated"]`` 为 True。
 
         Returns:
             PatchHandle:
                 操作句柄。
         """
 
-        owner, attr, new_value, label = _normalize_attr_call("set_attr", target, name, value)
-
-        def action(handle_id: str) -> JournalEntry:
-            resolved, attr_name = _resolve_owner(owner, attr, label)
-            return self.journal.set_attr(resolved, attr_name, new_value, raising=raising, label=label, handle_id=handle_id)
-
-        return self.patch_set.record_operation("attr", label, action)
+        return operations.set_attr(self.patch_set, target, name, value, raising=raising, rebind_references=rebind_references, rebind_limit=rebind_limit)
 
     def del_attr(self, target: Any, name: Any = NOTSET, *, raising: bool = True) -> PatchHandle:
         """
@@ -824,28 +870,9 @@ class PatchContext:
         Returns:
             PatchHandle:
                 操作句柄。
-
-        Raises:
-            TypeError:
-                参数组合不合法时抛出。
         """
 
-        if name is NOTSET:
-            if not isinstance(target, str):
-                raise TypeError("use del_attr(target, name) or del_attr('pkg.mod:attr') with a target path string")
-            owner: Any = target
-            attr: str | None = None
-            label = target
-        else:
-            if not isinstance(name, str):
-                raise TypeError(f"attribute name must be str, got {type(name).__name__}")
-            owner, attr, label = target, name, describe_target(target, name)
-
-        def action(handle_id: str) -> JournalEntry | None:
-            resolved, attr_name = _resolve_owner(owner, attr, label)
-            return self.journal.del_attr(resolved, attr_name, raising=raising, label=label, handle_id=handle_id)
-
-        return self.patch_set.record_operation("attr", label, action)
+        return operations.del_attr(self.patch_set, target, name, raising=raising)
 
     def set_item(self, mapping: MutableMapping[Any, Any], key: Any, value: Any) -> PatchHandle:
         """
@@ -864,8 +891,7 @@ class PatchContext:
                 操作句柄。
         """
 
-        label = f"{describe_target(mapping)}[{key!r}]"
-        return self.patch_set.record_operation("item", label, lambda handle_id: self.journal.set_item(mapping, key, value, label=label, handle_id=handle_id))
+        return operations.set_item(self.patch_set, mapping, key, value)
 
     def del_item(self, mapping: MutableMapping[Any, Any], key: Any, *, raising: bool = True) -> PatchHandle:
         """
@@ -884,8 +910,7 @@ class PatchContext:
                 操作句柄。
         """
 
-        label = f"{describe_target(mapping)}[{key!r}]"
-        return self.patch_set.record_operation("item", label, lambda handle_id: self.journal.del_item(mapping, key, raising=raising, label=label, handle_id=handle_id))
+        return operations.del_item(self.patch_set, mapping, key, raising=raising)
 
     def set_env(self, name: str, value: str, *, prepend: str | None = None) -> PatchHandle:
         """
@@ -904,8 +929,7 @@ class PatchContext:
                 操作句柄。
         """
 
-        label = f"env:{name}"
-        return self.patch_set.record_operation("env", label, lambda handle_id: self.journal.set_env(name, value, prepend=prepend, label=label, handle_id=handle_id))
+        return operations.set_env(self.patch_set, name, value, prepend=prepend)
 
     def del_env(self, name: str, *, raising: bool = True) -> PatchHandle:
         """
@@ -922,8 +946,7 @@ class PatchContext:
                 操作句柄。
         """
 
-        label = f"env:{name}"
-        return self.patch_set.record_operation("env", label, lambda handle_id: self.journal.del_env(name, raising=raising, label=label, handle_id=handle_id))
+        return operations.del_env(self.patch_set, name, raising=raising)
 
     def syspath_prepend(self, path: str | os.PathLike[str]) -> PatchHandle:
         """
@@ -938,8 +961,103 @@ class PatchContext:
                 操作句柄。
         """
 
-        label = f"sys.path:{os.fspath(path)}"
-        return self.patch_set.record_operation("syspath", label, lambda handle_id: self.journal.syspath_prepend(path, label=label, handle_id=handle_id))
+        return operations.syspath_prepend(self.patch_set, path)
+
+    def wrap(
+        self,
+        target: Any,
+        factory: Callable[[Any], Any],
+        *,
+        trampoline: bool = False,
+        rebind_references: bool = False,
+        rebind_limit: int = operations.MAX_REBIND_REFERENCES,
+    ) -> PatchHandle:
+        """
+        用 ``factory(original) -> replacement`` 包装可调用对象。
+
+        ``trampoline=True`` 时在目标位置安装稳定的转发函数, 卸载只把转发目标换回原函数;
+        同一位置的多次蹦床包装会叠加并可按任意顺序卸载。目标所属对象是类时保留描述符类型,
+        规则同 ``patch_method``。目标解析失败时句柄为 ``failed`` 且不抛出 (严格模式下抛出)。
+
+        Args:
+            target (Any):
+                目标路径字符串 ``"pkg.mod:Obj.attr"``, 或 ``(所属对象, 属性名)``。
+            factory (Callable[[Any], Any]):
+                接收原可调用对象并返回替换对象的工厂, 返回 None 时记录 ``noop``。
+            trampoline (bool):
+                是否使用蹦床。
+            rebind_references (bool):
+                是否把其他模块命名空间中对原可调用对象的同一对象引用改为新对象
+                (蹦床模式下为转发函数), 位置列表记录在结果的 ``detail`` 中。
+            rebind_limit (int):
+                最多重新绑定的引用数量。
+
+        Returns:
+            PatchHandle:
+                操作句柄。
+        """
+
+        return operations.wrap_callable(self.patch_set, target, factory, trampoline=trampoline, rebind_references=rebind_references, rebind_limit=rebind_limit)
+
+    def patch_method(self, target: Any, factory: Callable[[Any], Any], *, trampoline: bool = False) -> PatchHandle:
+        """
+        包装类成员并保留描述符类型。
+
+        普通函数、``staticmethod``、``classmethod`` 把底层函数交给工厂, ``property`` 把 ``fget``
+        交给工厂 (工厂返回 ``property`` 时直接使用)。非蹦床模式撤销时恢复原描述符对象本身。
+
+        Args:
+            target (Any):
+                目标路径字符串 ``"pkg.mod:Cls.meth"``, 或 ``(类, 成员名)``。
+            factory (Callable[[Any], Any]):
+                接收原函数并返回替换函数的工厂。
+            trampoline (bool):
+                是否使用蹦床。
+
+        Returns:
+            PatchHandle:
+                操作句柄。
+        """
+
+        return operations.patch_method(self.patch_set, target, factory, trampoline=trampoline)
+
+    def set_class_attr(self, target: Any, name: Any, value: Any = NOTSET, *, raising: bool = True) -> PatchHandle:
+        """
+        设置类属性, 旧值从类的原始 ``__dict__`` 读取, 撤销时恢复原描述符对象。
+
+        支持 ``set_class_attr(Cls, "name", value)`` 和 ``set_class_attr("pkg.mod:Cls.name", value)``。
+
+        Args:
+            target (Any):
+                类, 或目标路径字符串。
+            name (Any):
+                属性名; 使用目标路径写法时为新值。
+            value (Any):
+                新值; 使用目标路径写法时省略。
+            raising (bool):
+                属性 (含继承属性) 不存在时是否视为目标解析失败。
+
+        Returns:
+            PatchHandle:
+                操作句柄。
+        """
+
+        return operations.set_class_attr(self.patch_set, target, name, value, raising=raising)
+
+    def reload_module(self, name: str | ModuleType) -> PatchHandle:
+        """
+        在当前补丁计划下重新执行已导入的模块 (显式启用, 不可撤销)。
+
+        Args:
+            name (str | ModuleType):
+                模块名或模块对象。
+
+        Returns:
+            PatchHandle:
+                状态为 ``requires_restart`` 的句柄, 结果说明其他位置可能仍持有旧引用。
+        """
+
+        return operations.reload_module(self.patch_set, name)
 
     def add_disposer(self, disposer: Callable[[], Any], label: str | None = None) -> PatchHandle:
         """
@@ -1069,20 +1187,10 @@ def remove_patch_set(key: str | PatchSet, *, state: HotpatcherState | None = Non
     return None
 
 
-def _normalize_attr_call(method: str, target: Any, name: Any, value: Any) -> tuple[Any, str | None, Any, str]:
-    if value is NOTSET:
-        if not isinstance(target, str):
-            raise TypeError(f"use {method}(target, name, value) or {method}('pkg.mod:attr', value) with a target path string")
-        return target, None, name, target
-    if not isinstance(name, str):
-        raise TypeError(f"attribute name must be str, got {type(name).__name__}")
-    return target, name, value, describe_target(target, name)
-
-
-def _resolve_owner(owner: Any, attr: str | None, label: str) -> tuple[Any, str]:
-    if attr is None:
-        return split_target(label)
-    return owner, attr
+def _collect_operation(handle: PatchHandle) -> None:
+    collected = _OPERATION_COLLECTOR.get()
+    if collected is not None:
+        collected.append(handle)
 
 
 def _coerce_undo_status(result: Any) -> PatchStatus:
