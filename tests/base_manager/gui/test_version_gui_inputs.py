@@ -273,7 +273,7 @@ def _drain_adaptive_index_list_draws(
     tk_root: tk.Tk,
     widget: AdaptiveIndexList,
 ) -> None:
-    for _ in range(50):
+    for _ in range(300):
         tk_root.update()
         if widget._redraw_job is None and widget._draw_batch_job is None:  # pylint: disable=protected-access
             return
@@ -287,7 +287,7 @@ def _drain_search_change_job(
     tk_root: tk.Tk,
     widget: AdaptiveIndexList,
 ) -> None:
-    for _ in range(50):
+    for _ in range(300):
         tk_root.update()
         if widget._search_change_job is None:  # pylint: disable=protected-access
             return
@@ -358,7 +358,8 @@ def test_adaptive_index_list_search_change_debounces_input(tk_root: tk.Tk) -> No
     widget.pack(fill=tk.BOTH, expand=True)
     tk_root.update_idletasks()
     calls: list[str] = []
-    widget.bind_search_change(lambda: calls.append(widget.search_keyword()), debounce_ms=30)
+    # 防抖窗口需要明显长于一次 update() 的耗时, 否则较慢的 CI runner 上回调会在断言前触发。
+    widget.bind_search_change(lambda: calls.append(widget.search_keyword()), debounce_ms=250)
 
     widget.search_var.set("a")
     widget.search_var.set("ab")
