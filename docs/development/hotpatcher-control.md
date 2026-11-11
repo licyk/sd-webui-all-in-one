@@ -431,7 +431,7 @@ get_feature_registry().register(
 
 传输规则：
 
-- `blocking=True` 的命令可能导入模块或执行用户代码，在桌面传输上返回 `unsupported_transport` 且不调用处理函数。`config.apply` 保持 v1 的同步语义，不受此限制（见“已知限制”）。
+- `blocking=True` 的命令可能导入模块或执行用户代码，在桌面传输上返回 `unsupported_transport` 且不调用处理函数。`config.apply` 保持 v1 的同步语义，但携带新的 `control.patch_sets` 条目时在桌面传输上同样返回 `unsupported_transport`（见“已知限制”）。
 - `conditional_blocking=True` 的命令（`features.enable` / `.update`）只在首次解析惰性入口（需要导入扩展模块）或会加载 `control.patch_sets` 时在桌面传输上返回 `unsupported_transport`。
 - `requires_token=True` 的命令在旧版传输的 token 为空时返回 `forbidden`。
 - 桌面传输的成功结果 JSON 编码后超过 63 KiB（`MAX_DESKTOP_RESULT_BYTES`）时返回 `request_failed`，信息以 `result_too_large:` 开头。
@@ -629,7 +629,7 @@ hotpatch.request("demo.echo", {"text": "hi"})  # {"echo": "hi"}
 - `audit` hook（`sys.addaudithook`）无法移除。
 - 连接切换后不会改写 `os.environ`，之后启动的子进程继承的仍是旧的连接环境变量。
 - 桌面代理传输上标记为 `blocking` 的命令返回 `unsupported_transport`，离线程执行和完成事件尚未实现。
-- 桌面 `config.apply` 没有标记为阻塞，而且桌面传输不检查 token：如果当前配置已经开启 `control.allow_remote_load`，桌面 `config.apply` 携带的新 `control.patch_sets` 条目会在代理工作线程上同步导入并执行 `setup`，期间心跳与事件上传暂停。
+- 桌面 `config.apply` 只能回传与当前配置完全相同的 `control.patch_sets` 条目：新条目会在代理工作线程上导入并执行 `setup`，阻塞心跳与事件上传，因此即使已开启 `control.allow_remote_load` 也会返回 `unsupported_transport`。需要加载新补丁集时请在进程内或通过旧版传输操作。
 - 当前 Hanafubuki 桌面代理把未知事件类型记为 `unknown_event_type` 诊断，在 P11 接受 `hotpatch.event` 之前，桌面模式下开启 `control.forward_events` 只会产生诊断。
 - 把完整默认配置应用到隔离的 `HotpatcherState` 时，`comfyui_auto_port` 和 `xformers_cutlass` 扩展使用模块级 `monkey_zoo`，补丁会注册到默认状态的计划中，而不是传入的状态。
 - 点分模块补丁在同一秒内被重写时可能命中过期的 `.pyc` 缓存（见上文“文件监视”一节）。

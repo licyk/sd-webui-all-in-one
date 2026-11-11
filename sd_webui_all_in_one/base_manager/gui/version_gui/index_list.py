@@ -542,7 +542,7 @@ class AdaptiveIndexList(ttk.Frame):
         if self.exists(item_id):
             self._select(str(item_id))
 
-    def focus(self, item_id: str | None = None) -> str:  # ty: ignore[invalid-method-override]
+    def focus(self, item_id: str | None = None) -> str:  # ty: ignore[incompatible-method-override]
         """
         读取或设置焦点行
 
@@ -825,7 +825,7 @@ class AdaptiveIndexList(ttk.Frame):
         self._cancel_empty_clear_scroll_reset()
         super().destroy()
 
-    def bind(  # ty: ignore[invalid-method-override]
+    def bind(  # ty: ignore[incompatible-method-override]
         self,
         sequence: str | None = None,
         func: Callable[[tk.Event | None], Any] | None = None,

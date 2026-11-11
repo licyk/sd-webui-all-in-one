@@ -1,5 +1,6 @@
 """统一控制命令测试: 注册表、载荷校验、传输策略、services 兼容、桌面映射、能力探测、远程加载门禁与 Python 门面。"""
 
+import copy
 import importlib
 import importlib.util
 import json
@@ -767,10 +768,16 @@ def test_config_borne_gate_open_requires_token_on_legacy_only(state, target, pat
     assert applied["result"]["errors"] == []
     assert target.VALUE == "remote"
 
-    config["control"]["patch_sets"][0]["config"] = {"value": "desktop"}
+    # 桌面: 与当前配置相同的条目可以回传; 新条目会在 broker 工作线程上加载, 因此被拒绝。
     result = bootstrap._handle_desktop_command("config.apply", {"config": config}, state=state)
     assert result["applyResult"]["errors"] == []
-    assert target.VALUE == "desktop"
+    changed = copy.deepcopy(config)
+    changed["control"]["patch_sets"][0]["config"] = {"value": "desktop"}
+    with pytest.raises(DesktopBrokerCommandError) as exc_info:
+        bootstrap._handle_desktop_command("config.apply", {"config": changed}, state=state)
+    assert exc_info.value.code == "unsupported_transport"
+    assert target.VALUE == "remote"
+    assert get_current_config(state=state)["control"]["patch_sets"][0]["config"] == {"value": "remote"}
 
 
 def test_config_borne_gate_covers_control_feature_and_config_save(state, target, patch_file, tmp_path):

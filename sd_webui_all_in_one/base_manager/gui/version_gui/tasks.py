@@ -190,7 +190,7 @@ class BackgroundTaskMixin:
             if self._busy_count == 0:
                 self.set_status("就绪")
                 self.set_busy_state(False)
-        self.after(100, self._poll_tasks)  # ty: ignore[unresolved-attribute]
+        self.after(100, self._poll_tasks)  # ty: ignore[missing-attribute]
 
     def set_status(
         self,

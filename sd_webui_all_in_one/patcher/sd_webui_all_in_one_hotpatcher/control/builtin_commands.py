@@ -136,19 +136,56 @@ def check_config_borne_load(ctx: CommandContext, control_section: Any) -> None:
     reasons: list[str] = []
     if control_section.get("allow_remote_load") is True and previous.get("allow_remote_load") is not True:
         reasons.append("enabling control.allow_remote_load")
-    entries = control_section.get("patch_sets")
-    if isinstance(entries, list):
-        known = previous.get("patch_sets")
-        known = known if isinstance(known, list) else []
-        new_entries = [entry for entry in entries if isinstance(entry, Mapping) and entry.get("enabled", True) is not False and entry not in known]
-        if new_entries:
-            reasons.append(f"{len(new_entries)} new control.patch_sets entr{'y' if len(new_entries) == 1 else 'ies'}")
+    new_entries = _new_patch_set_entries(control_section, previous)
+    if new_entries:
+        reasons.append(f"{len(new_entries)} new control.patch_sets entr{'y' if len(new_entries) == 1 else 'ies'}")
     if not reasons:
         return
     try:
         check_remote_load_allowed(state=ctx.state, transport=ctx.transport, token=ctx.token)
     except RemoteLoadError as exc:
         raise CommandError(exc.code, f"config-borne remote patch loading refused ({', '.join(reasons)}): {exc}") from exc
+
+
+def _new_patch_set_entries(control_section: Any, previous: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    # 会被加载 (enabled 不为 False) 且不在请求前配置中的 patch_sets 条目。
+    if not isinstance(control_section, Mapping):
+        return []
+    entries = control_section.get("patch_sets")
+    if not isinstance(entries, list):
+        return []
+    known = previous.get("patch_sets")
+    known = known if isinstance(known, list) else []
+    return [entry for entry in entries if isinstance(entry, Mapping) and entry.get("enabled", True) is not False and entry not in known]
+
+
+def reject_desktop_config_borne_load(ctx: CommandContext, control_section: Any) -> None:
+    """
+    桌面传输上拒绝会加载新补丁集的配置应用。
+
+    加载补丁集会导入模块并执行 ``setup``, 在桌面 broker 唯一的工作线程上运行会阻塞心跳和事件上传,
+    因此即使 ``allow_remote_load`` 已开启, 桌面 ``config.apply`` 也不能携带新的 ``control.patch_sets`` 条目。
+    与请求前配置完全相同的条目不会触发。
+
+    Args:
+        ctx (CommandContext):
+            命令上下文。
+        control_section (Any):
+            请求中的 ``control`` 区段, 不是 dict 时忽略。
+
+    Raises:
+        CommandError:
+            桌面传输且存在新的补丁集条目时错误码为 ``unsupported_transport``。
+    """
+
+    if ctx.transport != "desktop":
+        return
+    new_entries = _new_patch_set_entries(control_section, _current_control_section(ctx.state))
+    if new_entries:
+        raise CommandError(
+            "unsupported_transport",
+            f"loading {len(new_entries)} new control.patch_sets entr{'y' if len(new_entries) == 1 else 'ies'} blocks the desktop broker worker; load patch sets in-process or over the legacy transport",
+        )
 
 
 def _current_control_section(state: HotpatcherState) -> dict[str, Any]:
@@ -792,6 +829,7 @@ def _services_config_apply(services: Any, ctx: CommandContext, payload: dict[str
     config = services._payload_config(payload)
     # 必须在 apply_config 写入 current_config 之前按请求前的配置判定。
     check_config_borne_load(ctx, config.get(_CONTROL_KEY))
+    reject_desktop_config_borne_load(ctx, config.get(_CONTROL_KEY))
     result = services.apply_config(config, runtime_client=ctx.runtime_client, state=ctx.state)
     return {"result": result}
 

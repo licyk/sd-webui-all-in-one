@@ -50,7 +50,7 @@ class EnhancedEntry(ttk.Frame):
         self._install_bindings()
         self._sync_clear_button()
 
-    def bind(  # type: ignore[override]  # ty: ignore[invalid-method-override]
+    def bind(  # type: ignore[override]  # ty: ignore[incompatible-method-override]
         self,
         sequence: str | None = None,
         func: Callable[[tk.Event], object] | None = None,
@@ -146,7 +146,7 @@ class EnhancedEntry(ttk.Frame):
         """
         self.entry.selection_range(start, end)
 
-    def selection_clear(self) -> None:  # ty: ignore[invalid-method-override]
+    def selection_clear(self) -> None:  # ty: ignore[incompatible-method-override]
         """清除输入框文本选区。"""
         self.entry.selection_clear()
 

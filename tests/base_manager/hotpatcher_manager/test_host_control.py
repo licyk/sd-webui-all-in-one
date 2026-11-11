@@ -119,9 +119,13 @@ def _accepted(address, token):
     """以 token 打开主连接并发出 config.get; 收到响应表示宿主接受该 token。"""
 
     with socket.create_connection(address, timeout=WAIT) as sock, sock.makefile("rwb") as file:
-        _send(file, {"type": "hello", "version": 1, "features": [], "token": token})
-        _send(file, {"id": "probe", "type": "config.get", "payload": {}})
-        return bool(file.readline())
+        try:
+            _send(file, {"type": "hello", "version": 1, "features": [], "token": token})
+            _send(file, {"id": "probe", "type": "config.get", "payload": {}})
+            return bool(file.readline())
+        except (ConnectionResetError, BrokenPipeError):
+            # 宿主拒绝 token 后直接关闭连接; macOS 上未读数据会让关闭表现为 RST 而不是 EOF
+            return False
 
 
 def _refused(address):

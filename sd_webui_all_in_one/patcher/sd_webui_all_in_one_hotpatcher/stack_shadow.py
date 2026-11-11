@@ -152,7 +152,7 @@ class StackShadowFinder(MetaPathFinder):
             return None
 
         try:
-            source = spec.loader.get_source(fullname)  # ty: ignore[unresolved-attribute]
+            source = spec.loader.get_source(fullname)  # ty: ignore[missing-attribute]
         except Exception:
             capture_exception()
             return None

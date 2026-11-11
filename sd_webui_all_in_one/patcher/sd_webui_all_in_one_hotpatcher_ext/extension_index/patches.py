@@ -66,7 +66,7 @@ def patch_extension_index_comfyui_manager(
     install_import_hook()
 
     def patch_manager_core_module(module: ModuleType) -> None:
-        module.DEFAULT_CHANNEL = destination_prefix  # ty: ignore[unresolved-attribute]
+        module.DEFAULT_CHANNEL = destination_prefix  # ty: ignore[missing-attribute]
         _add_valid_channel(module, destination_prefix)
 
     def patch_get_channel_dict(func: Any, module: ModuleType):
