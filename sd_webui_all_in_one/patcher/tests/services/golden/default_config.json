@@ -97,6 +97,7 @@
     "watch": {
       "enabled": false,
       "interval": 1.0
-    }
+    },
+    "forward_events": false
   }
 }

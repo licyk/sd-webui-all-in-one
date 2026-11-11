@@ -490,6 +490,12 @@
           "title": "监视间隔",
           "description": "轮询补丁文件的间隔秒数。",
           "default": 1.0
+        },
+        "forward_events": {
+          "type": "bool",
+          "title": "转发补丁事件",
+          "description": "把补丁失败、补丁集和功能变化事件以 hotpatch.event 类型发送到运行时通道 (有每秒条数上限)。需要宿主支持该事件类型。",
+          "default": false
         }
       },
       "default": {
@@ -498,7 +504,8 @@
         "watch": {
           "enabled": false,
           "interval": 1.0
-        }
+        },
+        "forward_events": false
       }
     }
   }

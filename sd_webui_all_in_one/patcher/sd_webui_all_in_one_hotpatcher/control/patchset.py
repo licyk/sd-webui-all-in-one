@@ -371,13 +371,17 @@ class PatchSet:
             result = action(handle.id)
         except BaseException as exc:
             handle.status = PatchStatus.FAILED
-            handle.record_outcome(PatchOutcome.failed(exc, reason=failure_reason(exc) if failure_reason is not None else None))
+            failure = PatchOutcome.failed(exc, reason=failure_reason(exc) if failure_reason is not None else None)
+            handle.record_outcome(failure)
+            _emit_handle_event(self.state, handle, failure)
             raise
         handle.status = PatchStatus.APPLIED
         if isinstance(result, PatchOutcome):
-            handle.record_outcome(result)
+            outcome = result
         else:
-            handle.record_outcome(PatchOutcome.noop() if result is None else PatchOutcome.applied())
+            outcome = PatchOutcome.noop() if result is None else PatchOutcome.applied()
+        handle.record_outcome(outcome)
+        _emit_handle_event(self.state, handle, outcome)
         with self._lock:
             closed_meanwhile = self._closed
         if closed_meanwhile:
@@ -453,6 +457,7 @@ class PatchSet:
                 self.journal.record_callback(disposer, target, kind="disposer", handle_id=handle.id)
                 handle.record_outcome(PatchOutcome.applied())
         _collect_operation(handle)
+        _emit_handle_event(self.state, handle, None)
         if not closed:
             return handle
         try:
@@ -660,6 +665,7 @@ class PatchSet:
             handle = create_patch_handle(kind, target, owner=self.id, stage=stage, state=self.state)
             self._handles[handle.id] = handle
         _collect_operation(handle)
+        _emit_handle_event(self.state, handle, None)
         return handle
 
     def _build_report(self, undo_report: JournalUndoReport) -> PatchSetReport:
@@ -1185,6 +1191,29 @@ def remove_patch_set(key: str | PatchSet, *, state: HotpatcherState | None = Non
             if patch_set.name == key:
                 return active_state.patch_sets.pop(set_id)
     return None
+
+
+_OUTCOME_EVENT_TYPES = {"applied": "patch.applied", "noop": "patch.noop", "failed": "patch.failed", "skipped": "patch.skipped"}
+
+
+def _emit_handle_event(state: HotpatcherState, handle: PatchHandle, outcome: PatchOutcome | None) -> None:
+    # 实时操作的句柄事件: outcome 为 None 时记录 patch.registered, 否则按结果类型记录。在补丁集锁外调用。
+    from .events import record_event
+
+    payload: dict[str, Any] = {"handle_id": handle.id, "kind": handle.kind, "stage": handle.stage, "target": handle.target, "owner": handle.owner}
+    if outcome is None:
+        event_type = "patch.registered"
+    else:
+        event_type = _OUTCOME_EVENT_TYPES[outcome.kind.value]
+        if outcome.reason is not None:
+            payload["reason"] = outcome.reason
+        if outcome.error_type is not None:
+            payload["error_type"] = outcome.error_type
+            payload["error_message"] = outcome.error_message
+    try:
+        record_event(event_type, payload, state=state)
+    except Exception:
+        return
 
 
 def _collect_operation(handle: PatchHandle) -> None:

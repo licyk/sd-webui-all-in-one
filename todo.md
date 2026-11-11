@@ -79,11 +79,11 @@ $PY -m python_docstring_checker .
 - [x] Verify: regression + static green (485 passed on 3.11; patcher suite 429 passed on 3.10; full suite 2058 passed / 13 skipped)
 
 ## P6 Debugging
-- [ ] `control/trace.py` + `…_TRACE` / `…_TRACE_FILE` env
-- [ ] `control/events.py` ring buffer + optional forwarding
-- [ ] `control/inspect.py`: explain, source (≤48 KiB), verify, status snapshot
-- [ ] Tests: `test_control_debug.py`
-- [ ] Verify
+- [x] `control/trace.py` + `…_TRACE` / `…_TRACE_FILE` env
+- [x] `control/events.py` ring buffer + optional forwarding (`control.forward_events`, default off, rate-capped)
+- [x] `control/inspect.py`: explain, source (≤48 KiB), verify, status snapshot
+- [x] Tests: `test_control_debug.py`
+- [x] Verify: regression + static green (526 passed on 3.11; patcher suite 459 passed on 3.10; full suite 2088 passed / 13 skipped)
 
 ## P7 Unified commands
 - [ ] `control/commands.py` (CommandSpec, registry, validation, envelopes, error codes)

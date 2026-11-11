@@ -1,5 +1,15 @@
-"""Hotpatcher 控制平面: 可撤销补丁日志、目标解析、补丁句柄、补丁集、实时补丁操作与运行时补丁加载。"""
+"""Hotpatcher 控制平面: 可撤销补丁日志、目标解析、补丁句柄、补丁集、实时补丁操作、运行时补丁加载与调试工具 (跟踪、事件、诊断)。"""
 
+from .events import (
+    DEFAULT_EVENT_CAPACITY,
+    EVENT_TYPES,
+    FORWARD_EVENT_TYPE,
+    PatchEventLog,
+    get_event_log,
+    read_events,
+    record_event,
+    set_event_forwarding,
+)
 from .handles import (
     MAX_ERROR_MESSAGE_CHARS,
     MAX_HANDLE_OUTCOMES,
@@ -15,6 +25,7 @@ from .handles import (
     register_patch_handle,
     unregister_patch_handle,
 )
+from .inspect import explain, render_patched_source, status_snapshot, verify_source_patches
 from .journal import NOTSET, JournalEntry, JournalUndoReport, JournalUndoResult, NotSetType, PatchJournal
 from .loader import (
     DYNAMIC_PACKAGE,
@@ -65,21 +76,28 @@ from .targets import (
     resolve_target,
     split_target,
 )
+from .trace import TRACE_TAGS, HotpatchTracer, get_trace, get_tracer, redact_mapping, set_trace
 
 __all__ = [
+    "DEFAULT_EVENT_CAPACITY",
     "DYNAMIC_PACKAGE",
+    "EVENT_TYPES",
+    "FORWARD_EVENT_TYPE",
     "MAX_ERROR_MESSAGE_CHARS",
     "MAX_HANDLE_OUTCOMES",
     "MAX_REBIND_REFERENCES",
     "MAX_TRACEBACK_CHARS",
     "NOTSET",
+    "TRACE_TAGS",
     "TRAMPOLINE_ATTRIBUTE",
+    "HotpatchTracer",
     "JournalEntry",
     "JournalUndoReport",
     "JournalUndoResult",
     "LoadedPatch",
     "NotSetType",
     "PatchContext",
+    "PatchEventLog",
     "PatchFileWatcher",
     "PatchHandle",
     "PatchJournal",
@@ -103,28 +121,40 @@ __all__ = [
     "create_patch_handle",
     "current_patch_context",
     "describe_target",
-    "get_patch_handle",
+    "explain",
+    "get_event_log",
     "get_loaded_patch",
+    "get_patch_handle",
     "get_patch_set",
+    "get_trace",
+    "get_tracer",
     "get_trampoline",
-    "list_patch_handles",
     "list_loaded_patches",
+    "list_patch_handles",
     "list_patch_sets",
     "load_patch",
     "parse_target",
     "patch_method",
+    "read_events",
+    "record_event",
+    "redact_mapping",
     "register_patch_handle",
     "register_patch_set",
     "reload_module",
     "reload_patch",
     "remove_patch_set",
+    "render_patched_source",
     "resolve_target",
     "set_class_attr",
+    "set_event_forwarding",
+    "set_trace",
     "split_target",
     "start_patch_watcher",
+    "status_snapshot",
     "stop_patch_watcher",
     "unload_patch",
     "unregister_patch_handle",
     "update_patch",
+    "verify_source_patches",
     "wrap_callable",
 ]

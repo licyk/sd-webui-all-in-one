@@ -64,6 +64,7 @@ def test_control_catalog_settings_round_trip_through_form():
             "allow_remote_load": False,
             "patch_sets": [{"source": "/tmp/fix.py", "config": {"a": [1, 2]}, "enabled": False}],
             "watch": {"enabled": True, "interval": 0.5},
+            "forward_events": False,
         }
     }
     field_vars = {}

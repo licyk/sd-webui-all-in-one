@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from .exceptions import capture_exception
-from .state import HotpatcherState, get_default_state
+from .state import TRACE_ENV, HotpatcherState, get_default_state
 
 if TYPE_CHECKING:
     from .runtime.client import RuntimeClient
@@ -89,6 +89,15 @@ def configure_from_env(*, state: HotpatcherState | None = None) -> BootstrapStat
     from .stack_shadow import configure_stack_shadower_from_env, is_stack_shadower_installed
 
     configure_stack_shadower_from_env(state=active_state)
+
+    if os.getenv(TRACE_ENV):
+        # 只有启用跟踪时才导入控制平面, 保持默认 bootstrap 开销不变。
+        try:
+            from .control.trace import configure_tracer_from_env
+
+            configure_tracer_from_env(state=active_state)
+        except Exception:
+            capture_exception(state=active_state)
 
     if os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_IMPORT_HOOK") == "1":
         from .hook import install_import_hook

@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import ast
+import contextvars
 import copy
 import importlib
 import importlib.util
@@ -28,7 +29,7 @@ from typing import TYPE_CHECKING, Any
 
 from .exceptions import capture_exception
 from .mutable import CodeWrapper
-from .state import HotpatcherState, get_default_state
+from .state import TRACE_ENV, HotpatcherState, get_default_state
 
 if TYPE_CHECKING:
     from .control.handles import PatchHandle, PatchOutcome, PatchStatus
@@ -63,6 +64,34 @@ _CODE_STAGES = ("source", "ast", "bytecode")
 _POST_EXEC_REVERTIBLE_STAGES = frozenset({"function", "import_injection", "output_prohibition"})
 _REVERT_HOOK_STAGES = frozenset({"premodule", "module"})
 _STATUS_PRIORITY = {"deregistered": 1, "reverted": 2, "requires_restart": 3, "failed": 4}
+_OUTCOME_EVENT_TYPES = {"applied": "patch.applied", "noop": "patch.noop", "failed": "patch.failed", "skipped": "patch.skipped"}
+
+_DRY_RUN_OUTCOMES: contextvars.ContextVar[list[tuple[PatchHandle, PatchOutcome]] | None] = contextvars.ContextVar(
+    "sd_webui_all_in_one_hotpatcher_dry_run_outcomes",
+    default=None,
+)
+
+
+@contextmanager
+def collect_dry_run_outcomes() -> Generator[list[tuple[PatchHandle, PatchOutcome]], None, None]:
+    """
+    收集预演 (``record_outcomes=False``) 期间每个补丁函数的执行结果
+
+    块内以 ``record_outcomes=False`` 调用 ``eval_source`` / ``eval_ast`` / ``eval_bytecode`` 时, 结果追加到产出的列表,
+    而不写入句柄; 补丁函数抛出的异常只记录为 ``failed`` 结果, 不会因严格模式抛出, 也不会交给 ``capture_exception``;
+    AST 补丁总是用 ``ast.dump`` 比较以识别 ``noop``。
+
+    Yields:
+        list[tuple[PatchHandle, PatchOutcome]]:
+            ``(句柄, 结果)`` 列表, 按执行顺序排列
+    """
+
+    collected: list[tuple[PatchHandle, PatchOutcome]] = []
+    token = _DRY_RUN_OUTCOMES.set(collected)
+    try:
+        yield collected
+    finally:
+        _DRY_RUN_OUTCOMES.reset(token)
 
 
 class _PatchEntry:
@@ -497,6 +526,7 @@ class Monkey:
                 capture_exception(exc, state=self._get_state())
                 status = PatchStatus.FAILED
                 record.final_status = status
+                self._emit_reverted(record, status)
         record.handle.status = status
         return status
 
@@ -612,7 +642,11 @@ class Monkey:
 
         from .control.handles import PatchOutcome
 
-        compare = self._get_state().strict_mode or os.getenv(DEBUG_ENV) == "1"
+        state = self._get_state()
+        tracer = state.tracer
+        compare = (
+            state.strict_mode or os.getenv(DEBUG_ENV) == "1" or (not record_outcomes and _DRY_RUN_OUTCOMES.get() is not None) or (tracer is not None and tracer.active and tracer.enabled_for("patch"))
+        )
         for (hooker, _), record in sorted(entries, key=lambda pair: pair[0][1]):
             if not self._can_run(record) or not self._condition_allows(record, module, record_outcomes):
                 continue
@@ -814,6 +848,11 @@ class Monkey:
             self._undo_entry(record)
             raise PatchSetClosedError(f"patch set {owner.name!r} was closed while registering {stage} patch for {target!r}")
         self._invalidate()
+        _emit_event(
+            self._get_state(),
+            "patch.registered",
+            {"handle_id": handle.id, "module": self._name, "stage": stage, "target": target, "owner": handle.owner},
+        )
         return handle
 
     def _new_lazy_entry_locked(self, stage: str, item: Any) -> _PatchEntry:
@@ -929,6 +968,7 @@ class Monkey:
         record.handle.status = status
         if record.owner is None:
             unregister_patch_handle(record.handle.id, state=self._get_state())
+        self._emit_reverted(record, status)
         return status
 
     def _undo_live_operations(self, record: _PatchEntry) -> PatchStatus | None:
@@ -1042,20 +1082,35 @@ class Monkey:
             record.invoked = True
             record.modules.add(module)
         if not enabled:
+            collector = _DRY_RUN_OUTCOMES.get()
+            if collector is not None:
+                collector.append((record.handle, outcome))
             return
         handle = record.handle
         handle.record_outcome(outcome)
-        if record.final_status is not None:
-            return
-        if kind is PatchOutcomeKind.FAILED:
-            handle.status = PatchStatus.FAILED
-        elif kind is not PatchOutcomeKind.SKIPPED:
-            handle.status = PatchStatus.APPLIED
+        if record.final_status is None:
+            if kind is PatchOutcomeKind.FAILED:
+                handle.status = PatchStatus.FAILED
+            elif kind is not PatchOutcomeKind.SKIPPED:
+                handle.status = PatchStatus.APPLIED
+        # 惰性载荷: 只在读取、转发或跟踪时构造字典, 保持每次导入的记录开销最小。
+        _emit_event(self._get_state(), _OUTCOME_EVENT_TYPES[kind._value_], (_outcome_payload, handle, outcome, self._name, record.stage))
+
+    def _emit_reverted(self, record: _PatchEntry, status: PatchStatus) -> None:
+        handle = record.handle
+        _emit_event(
+            self._get_state(),
+            "patch.reverted",
+            {"handle_id": handle.id, "module": self._name, "stage": record.stage, "target": handle.target, "owner": handle.owner, "status": status.value},
+        )
 
     def _handle_failure(self, record: _PatchEntry, exc: Exception, module: ModuleType | None, enabled: bool) -> None:
         from .control.handles import PatchOutcome
 
         self._record_outcome(record, PatchOutcome.failed(exc), module, enabled=enabled)
+        if not enabled and _DRY_RUN_OUTCOMES.get() is not None:
+            # 预演: 失败作为数据返回给调用方, 不按严格模式抛出, 也不上报。
+            return
         state = self._get_state()
         if state.strict_mode:
             raise exc
@@ -1306,7 +1361,9 @@ class MonkeyZoo:
                 self.invalidate(module)
             if owner is None:
                 unregister_patch_handle(handle.id, state=state)
-            return PatchStatus.REQUIRES_RESTART if module in sys.modules else PatchStatus.DEREGISTERED
+            status = PatchStatus.REQUIRES_RESTART if module in sys.modules else PatchStatus.DEREGISTERED
+            _emit_event(state, "patch.reverted", {"handle_id": handle.id, "module": module, "stage": "alias", "target": handle.target, "owner": handle.owner, "status": status.value})
+            return status
 
         if owner is not None:
             owner.adopt_handle(handle, undo=undo)
@@ -1317,6 +1374,7 @@ class MonkeyZoo:
             previous[2].status = PatchStatus.DEREGISTERED
             unregister_patch_handle(previous[2].id, state=state)
         self.invalidate(module)
+        _emit_event(state, "patch.registered", {"handle_id": handle.id, "module": module, "stage": "alias", "target": handle.target, "owner": handle.owner})
         return handle
 
     def handles(self) -> list[PatchHandle]:
@@ -1425,7 +1483,13 @@ class MonkeyZoo:
         self.invalidate(module)
         if unregister:
             unregister_patch_handle(alias_handle.id, state=self.state)
-        return PatchStatus.REQUIRES_RESTART if module in sys.modules else PatchStatus.DEREGISTERED
+        status = PatchStatus.REQUIRES_RESTART if module in sys.modules else PatchStatus.DEREGISTERED
+        _emit_event(
+            self.state,
+            "patch.reverted",
+            {"handle_id": alias_handle.id, "module": module, "stage": "alias", "target": alias_handle.target, "owner": alias_handle.owner, "status": status.value},
+        )
+        return status
 
     def _iter_finders(self) -> list[HookedMetaPathFinder]:
         finders = list(self._finders)
@@ -1597,6 +1661,7 @@ class HookedMetaPathFinder(MetaPathFinder):
         if alias_spec.submodule_search_locations is not None:
             alias_module_spec.submodule_search_locations = list(alias_spec.submodule_search_locations)
         self.cache[fullname] = alias_module_spec
+        _emit_event(self._owner_state(), "import.intercepted", {"module": fullname, "loader": "AliasLoader", "alias": alias, "via": "meta_path"})
         return alias_module_spec
 
     def invalidate_caches(self) -> None:
@@ -1619,19 +1684,28 @@ class HookedMetaPathFinder(MetaPathFinder):
         for key in [key for key in list(self.cache) if key.casefold() == folded]:
             self.cache.pop(key, None)
 
+    def _owner_state(self) -> HotpatcherState:
+        return self.state if self.state is not None else self.zoo.state
+
     def _wrap_and_cache(
         self,
         fullname: str,
         spec: ModuleSpec | None,
         monkey: Monkey | None,
     ) -> ModuleSpec | None:
-        if monkey is None or spec is None:
+        if monkey is None:
+            return None
+        if spec is None:
+            _emit_event(self._owner_state(), "import.skipped", {"module": fullname, "reason": "spec_not_found", "via": "meta_path"})
             return None
         monkey._bind(self.zoo, fullname)
+        loader_type = type(_unwrap_loader(spec.loader)).__name__
         wrapped = _wrap_spec(fullname, spec, monkey, self)
         if wrapped is None:
+            _emit_event(self._owner_state(), "import.skipped", {"module": fullname, "reason": "unsupported_loader", "loader": loader_type, "via": "meta_path"})
             return None
         self.cache[fullname] = wrapped
+        _emit_event(self._owner_state(), "import.intercepted", {"module": fullname, "loader": loader_type, "wrapper": type(wrapped.loader).__name__, "via": "meta_path"})
         return wrapped
 
 
@@ -1841,7 +1915,10 @@ def set_strict_mode(enabled: bool, *, state: HotpatcherState | None = None) -> N
             可选状态对象。为 None 时使用默认状态。
     """
 
-    (state or get_default_state()).strict_mode = bool(enabled)
+    active_state = state or get_default_state()
+    previous = bool(active_state.strict_mode)
+    active_state.strict_mode = bool(enabled)
+    _emit_event(active_state, "debug.strict.changed", {"enabled": bool(enabled), "previous": previous}, tag="control")
 
 
 def is_strict_mode(*, state: HotpatcherState | None = None) -> bool:
@@ -1877,6 +1954,11 @@ def install_import_hook(*, state: HotpatcherState | None = None) -> HookedMetaPa
     """
 
     active_state = state or get_default_state()
+    if active_state.tracer is None and os.getenv(TRACE_ENV):
+        # 只有设置了跟踪环境变量时才加载控制平面, 保持安装 import hook 本身不导入 control 子包。
+        from .control.trace import get_tracer
+
+        get_tracer(state=active_state)
     zoo = _state_monkey_zoo(active_state)
     if active_state.import_hook_finder is None:
         active_state.import_hook_finder = HookedMetaPathFinder(zoo, state=active_state)
@@ -2017,13 +2099,18 @@ def _spec_from_file_location_wrapper(*args: Any, **kwargs: Any) -> ModuleSpec | 
     spec = wrapped_spec_from_file_location(*args, **kwargs)
     if spec is None:
         return spec
-    for zoo, _, _ in targets:
+    for zoo, state, _ in targets:
         monkey = zoo[spec.name]
         if monkey is None:
             continue
         monkey._bind(zoo, spec.name)
+        loader_type = type(_unwrap_loader(spec.loader)).__name__
         wrapped = _wrap_spec(spec.name, spec, monkey, None)
-        return wrapped if wrapped is not None else spec
+        if wrapped is None:
+            _emit_event(state, "import.skipped", {"module": spec.name, "reason": "unsupported_loader", "loader": loader_type, "via": "spec_from_file_location"})
+            return spec
+        _emit_event(state, "import.intercepted", {"module": spec.name, "loader": loader_type, "wrapper": type(wrapped.loader).__name__, "via": "spec_from_file_location"})
+        return wrapped
     return spec
 
 
@@ -2073,6 +2160,32 @@ def _is_post_exec_spec(spec: ModuleSpec | None) -> bool:
     if type(loader).__name__ in ("NamespaceLoader", "_NamespaceLoader"):
         return False
     return callable(getattr(loader, "exec_module", None))
+
+
+def _outcome_payload(handle: PatchHandle, outcome: PatchOutcome, module: str | None, stage: str) -> dict[str, Any]:
+    payload: dict[str, Any] = {"handle_id": handle.id, "module": module, "stage": stage, "target": handle.target, "owner": handle.owner}
+    if outcome.reason is not None:
+        payload["reason"] = outcome.reason
+    if outcome.error_type is not None:
+        payload["error_type"] = outcome.error_type
+        payload["error_message"] = outcome.error_message
+    return payload
+
+
+def _emit_event(state: HotpatcherState, event_type: str, payload: dict[str, Any] | tuple[Any, ...], *, tag: str | None = None) -> None:
+    # 记录到事件缓冲区并按需跟踪; 诊断记录失败不能影响导入或补丁流程。
+    # 热路径: 事件缓冲区已存在且未启用跟踪时只做属性读取和一次 record, 不执行函数内 import。
+    try:
+        log = state.event_log
+        tracer = state.tracer
+        if log is not None and (tracer is None or not tracer.active):
+            log.record(event_type, payload)
+            return
+        from .control.events import record_event
+
+        record_event(event_type, payload, state=state, tag=tag)
+    except Exception:
+        return
 
 
 def _describe_entry(module_name: str, stage: str, item: Any) -> str:

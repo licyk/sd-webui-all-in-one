@@ -13,10 +13,12 @@ if TYPE_CHECKING:
     from _thread import _local as ThreadLocal
     from importlib.machinery import ModuleSpec
 
+    from .control.events import PatchEventLog
     from .control.features import FeatureRegistry
     from .control.handles import PatchHandle
     from .control.loader import LoadedPatch, PatchFileWatcher
     from .control.patchset import PatchSet
+    from .control.trace import HotpatchTracer
     from .hook import HookedMetaPathFinder, MonkeyZoo
     from .runtime.client import RuntimeClient
     from .runtime.desktop_broker import DesktopBrokerClient
@@ -29,6 +31,12 @@ ExceptionReporterCallback = Callable[[type[BaseException], BaseException, Traceb
 
 STRICT_MODE_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_STRICT"
 """启用补丁严格模式的环境变量名, 值为 ``1`` 时启用"""
+
+TRACE_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TRACE"
+"""启用跟踪输出的环境变量名, 值为逗号分隔的标签 (``import,patch,...``) 或 ``all``"""
+
+TRACE_FILE_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TRACE_FILE"
+"""跟踪输出文件路径的环境变量名, 未设置时写入 stderr"""
 
 
 def strict_mode_from_env() -> bool:
@@ -50,7 +58,7 @@ class HotpatcherState:
 
     锁约定: ``control_lock`` 只保护控制平面的内存注册表 (``patch_id_counter``、``patch_sets``、
     ``patch_handles``、``feature_registry`` 的创建、``loaded_patches``、``loading_patches``、
-    ``rebind_skip_modules``、``patch_file_watcher``) 的读写。持有该锁时绝不执行 ``importlib`` 调用、用户补丁函数或
+    ``rebind_skip_modules``、``patch_file_watcher``、``tracer`` 与 ``event_log`` 的创建) 的读写。``event_log`` 记录事件时只使用其内部叶子锁, 从不获取 ``control_lock``。持有该锁时绝不执行 ``importlib`` 调用、用户补丁函数或
     ``setup`` 回调、socket/HTTP I/O; 调用方应在锁内计算、在锁外执行。这样控制线程不会在
     持有 ``control_lock`` 时等待模块导入锁, 避免与正在导入并读取补丁计划的主线程死锁。
 
@@ -125,6 +133,11 @@ class HotpatcherState:
             按模块名加载的补丁模块在补丁集生命周期内登记于此, 避免包装函数通过自身全局变量递归调用自己。
         patch_file_watcher (PatchFileWatcher | None):
             当前补丁文件监视器。
+        tracer (HotpatchTracer | None):
+            跟踪输出器, 由 ``control.trace.get_tracer``、bootstrap 或 ``install_import_hook`` (设置了
+            ``SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TRACE`` 时) 惰性创建。热路径只读取该字段, 为 None 时不跟踪。
+        event_log (PatchEventLog | None):
+            补丁事件环形缓冲区, 首次记录事件时由 ``control.events.get_event_log`` 惰性创建。
     """
 
     monkey_zoo: "MonkeyZoo | None" = None
@@ -160,6 +173,8 @@ class HotpatcherState:
     loading_patches: set[str] = field(default_factory=set)
     rebind_skip_modules: dict[str, set[str]] = field(default_factory=dict)
     patch_file_watcher: "PatchFileWatcher | None" = None
+    tracer: "HotpatchTracer | None" = None
+    event_log: "PatchEventLog | None" = None
 
 
 _default_state = HotpatcherState()

@@ -106,6 +106,7 @@ REMOTE_LOAD_FORBIDDEN = "forbidden"
 """远程加载缺少必需 token 时的错误码"""
 
 _CONTROL_FEATURE_KEY = "control"
+_EVENT_HANDLE_LIMIT = 32
 _FEATURE_SET_PREFIX = "feature:"
 _TOKEN_EXEMPT_TRANSPORTS = frozenset({"desktop"})
 _STATUS_PRIORITY = {
@@ -347,6 +348,7 @@ def load_patch(
         attempt = _attempt_new_code(resolved, patch_name, patch_config, active_state)
         if not attempt.ok:
             report.update(ok=False, status="failed", error=attempt.error, set_id=attempt.patch_set.id, set=_set_summary(attempt.patch_set))
+            _emit(active_state, "set.failed", {"action": "load", "name": patch_name, "source": resolved.key, "set_id": attempt.patch_set.id, "error": _error_brief(attempt.error)})
             return report
         record = LoadedPatch(
             name=patch_name,
@@ -365,8 +367,22 @@ def load_patch(
         if commit_error is not None:
             _discard_record_module(record, active_state)
             report.update(ok=False, status="failed", error=commit_error, set_id=attempt.patch_set.id, set=_set_summary(attempt.patch_set))
+            _emit(active_state, "set.failed", {"action": "load", "name": patch_name, "source": resolved.key, "set_id": attempt.patch_set.id, "error": _error_brief(commit_error)})
             return report
         report.update(status="loaded", **_record_fields(record))
+        _emit(
+            active_state,
+            "set.loaded",
+            {
+                "name": patch_name,
+                "set_id": record.set_id,
+                "source": record.source,
+                "kind": record.kind,
+                "origin": origin,
+                "generation": record.generation,
+                "handle_count": len(record.patch_set.handles),
+            },
+        )
         return report
     finally:
         _release(active_state, patch_name)
@@ -476,18 +492,22 @@ def update_patch(key: str, config: dict[str, Any], *, state: HotpatcherState | N
                     updated = updater(context, copy.deepcopy(new_config))
             except Exception as exc:
                 report.update(ok=False, status="failed", error=_error_info("update_failed", "update", exc), set=_set_summary(record.patch_set))
+                _emit(active_state, "set.failed", {"action": "update", "name": record.name, "set_id": record.set_id, "mode": "in_place", "error": _error_brief(report["error"])})
                 return report
             if updated:
                 with active_state.control_lock:
                     context.config = copy.deepcopy(new_config)
                     record.config = copy.deepcopy(new_config)
                 report.update(status="updated", set=_set_summary(record.patch_set))
+                _emit(active_state, "set.updated", {"name": record.name, "set_id": record.set_id, "mode": "in_place"})
                 return report
         report["mode"] = "reload"
         reload_report = _new_report("reload", record.name)
         _reload_reserved(record, new_config, reload_report, active_state)
         report["reload"] = reload_report
         report.update(ok=reload_report["ok"], status=reload_report["status"], error=reload_report["error"], set_id=reload_report["set_id"], set=reload_report.get("set"))
+        if reload_report["status"] == "reloaded":
+            _emit(active_state, "set.updated", {"name": record.name, "set_id": reload_report["set_id"], "previous_set_id": record.set_id, "mode": "reload"})
         return report
     finally:
         _release(active_state, record.name)
@@ -800,6 +820,7 @@ class PatchFileWatcher:
             elif now - pending[1] < self.debounce:
                 continue
             self._pending.pop(name, None)
+            _emit(self.state, "set.watch_reload", {"name": name, "path": path, "sha256": current})
             report = self._reload(name, state=self.state)
             self.reload_count += 1
             reports.append(report)
@@ -813,6 +834,7 @@ class PatchFileWatcher:
             else:
                 self._failed_hashes[name] = current
                 self.failures[name] = report
+                _emit(self.state, "set.watch_failed", {"name": name, "path": path, "status": report.get("status"), "error": _error_brief(error)})
                 _LOGGER.warning("Hotpatcher patch %r reload after file change %s: %s", name, report.get("status"), error.get("message"))
         return reports
 
@@ -1056,6 +1078,7 @@ def _reload_reserved(record: LoadedPatch, config: dict[str, Any], report: dict[s
         commit_error = _commit(new_record, state)
         if commit_error is None:
             report.update(status="reloaded", **_record_fields(new_record))
+            _emit(state, "set.reloaded", {"name": record.name, "set_id": new_record.set_id, "previous_set_id": previous_set_id, "generation": new_record.generation})
             return
         error = commit_error
         _discard_record_module(new_record, state)
@@ -1088,9 +1111,15 @@ def _reload_reserved(record: LoadedPatch, config: dict[str, Any], report: dict[s
         rollback_error = _commit(restored, state)
         if rollback_error is None:
             report.update(ok=False, status="rolled_back", **_record_fields(restored))
+            _emit(state, "set.rolled_back", {"name": record.name, "set_id": restored.set_id, "previous_set_id": previous_set_id, "error": _error_brief(error)})
             return
         _discard_record_module(restored, state)
     report.update(ok=False, status="failed", rollback_error=rollback_error, set_id=rollback.patch_set.id, set=_set_summary(rollback.patch_set))
+    _emit(
+        state,
+        "set.failed",
+        {"action": "reload", "name": record.name, "set_id": rollback.patch_set.id, "previous_set_id": previous_set_id, "error": _error_brief(error), "rollback_error": _error_brief(rollback_error)},
+    )
 
 
 def _unload_reserved(record: LoadedPatch, state: HotpatcherState) -> dict[str, Any]:
@@ -1127,6 +1156,20 @@ def _unload_reserved(record: LoadedPatch, state: HotpatcherState) -> dict[str, A
         report["error"] = report["errors"][0]
     report["status"] = status
     report["set"] = _set_summary(record.patch_set)
+    handles = report["handles"]
+    _emit(
+        state,
+        "set.unloaded",
+        {
+            "name": record.name,
+            "set_id": record.set_id,
+            "status": status,
+            "teardown": report["teardown"],
+            "handle_count": len(handles),
+            "handles": [{"id": item.get("id"), "status": item.get("status")} for item in handles[:_EVENT_HANDLE_LIMIT]],
+            "error": _error_brief(report["error"]),
+        },
+    )
     return report
 
 
@@ -1228,6 +1271,22 @@ def _coerce_interval(value: Any) -> float:
     return interval
 
 
+def _emit(state: HotpatcherState, event_type: str, payload: dict[str, Any]) -> None:
+    from .events import record_event
+
+    try:
+        record_event(event_type, payload, state=state)
+    except Exception:
+        return
+
+
+def _error_brief(error: Mapping[str, Any] | None) -> dict[str, Any] | None:
+    # 事件中的错误摘要: 不含 traceback。
+    if not error:
+        return None
+    return {"code": error.get("code"), "stage": error.get("stage"), "error_type": error.get("error_type"), "message": error.get("message")}
+
+
 def _new_report(action: str, name: str | None) -> dict[str, Any]:
     return {"action": action, "name": name, "ok": True, "status": None, "set_id": None, "error": None}
 
@@ -1284,13 +1343,15 @@ def _set_summary(patch_set: PatchSet) -> dict[str, Any]:
 def _feature_apply_control(ctx: FeatureContext, section: dict[str, Any]) -> bool:
     configured = _sync_config_patch_sets(ctx, section, reconcile=ctx.reconcile)
     watching = _sync_watcher(ctx, section, reconcile=ctx.reconcile)
-    return configured or watching
+    forwarding = _sync_forwarding(ctx, section)
+    return configured or watching or forwarding
 
 
 def _feature_update_control(ctx: FeatureContext, old_section: dict[str, Any], new_section: dict[str, Any]) -> bool:
     del old_section
     _sync_config_patch_sets(ctx, new_section, reconcile=True)
     _sync_watcher(ctx, new_section, reconcile=True)
+    _sync_forwarding(ctx, new_section)
     return True
 
 
@@ -1306,6 +1367,7 @@ def _feature_revert_control(ctx: FeatureContext) -> str:
             _control_error(ctx.result, name, report["error"] or {})
     if not watch_enabled_from_env():
         stop_patch_watcher(state=state)
+    _sync_forwarding(ctx, {})
     known = [status for status in statuses if status in _STATUS_PRIORITY]
     return max(known, key=lambda item: _STATUS_PRIORITY[item]) if known else PatchStatus.REVERTED.value
 
@@ -1316,7 +1378,9 @@ def _feature_control_active(ctx: FeatureContext) -> bool:
     with state.control_lock:
         watcher = state.patch_file_watcher
         configured = any(record.origin == ORIGIN_CONFIG for record in state.loaded_patches.values())
-    return configured or (watcher is not None and watcher.running)
+    event_log = state.event_log
+    forwarding = event_log is not None and event_log.forward_enabled
+    return configured or (watcher is not None and watcher.running) or forwarding
 
 
 def _sync_config_patch_sets(ctx: FeatureContext, section: Mapping[str, Any], *, reconcile: bool) -> bool:
@@ -1438,6 +1502,17 @@ def _sync_watcher(ctx: FeatureContext, section: Mapping[str, Any], *, reconcile:
     with state.control_lock:
         watcher = state.patch_file_watcher
     return watcher is not None and watcher.running
+
+
+def _sync_forwarding(ctx: FeatureContext, section: Mapping[str, Any]) -> bool:
+    # control.forward_events: 只有启用或事件缓冲区已存在时才触碰它, 默认配置不会创建事件缓冲区。
+    enabled = section.get("forward_events") is True
+    if not enabled and ctx.state.event_log is None:
+        return False
+    from .events import set_event_forwarding
+
+    set_event_forwarding(enabled, state=ctx.state)
+    return enabled
 
 
 def _control_error(result: dict[str, Any], name: str | None, error: Mapping[str, Any]) -> None:

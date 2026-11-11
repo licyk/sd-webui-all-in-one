@@ -872,6 +872,7 @@ def enable_feature(
     if not spec.enabled(section):
         return _fail(report, "feature_not_enabled", f"feature {key!r} config is not enabled")
     _enable(spec, section, report, runtime_client=runtime_client, state=active_state)
+    _emit_feature_event(active_state, "feature.enabled", report)
     return report
 
 
@@ -902,6 +903,7 @@ def disable_feature(key: str, *, state: HotpatcherState | None = None) -> dict[s
     if spec is None:
         return report
     _disable(spec, report, state=active_state)
+    _emit_feature_event(active_state, "feature.disabled", report)
     return report
 
 
@@ -940,6 +942,13 @@ def update_feature(
     spec = _lookup(key, report, active_state)
     if spec is None:
         return report
+    _update(spec, key, config, report, runtime_client=runtime_client, state=active_state)
+    _emit_feature_event(active_state, "feature.updated", report)
+    return report
+
+
+def _update(spec: FeatureSpec, key: str, config: dict[str, Any], report: dict[str, Any], *, runtime_client: Any, state: HotpatcherState) -> dict[str, Any]:
+    active_state = state
     if not isinstance(config, dict):
         return _fail(report, "invalid_config", "feature config must be an object")
     patch_set = get_feature_set(key, state=active_state)
@@ -1027,6 +1036,26 @@ def list_features(*, state: HotpatcherState | None = None) -> dict[str, Any]:
         item["set"] = _set_summary(patch_set) if patch_set is not None else None
         features.append(item)
     return {"features": features}
+
+
+def _emit_feature_event(state: HotpatcherState, event_type: str, report: dict[str, Any]) -> None:
+    from .events import record_event
+
+    patch_set = report.get("set")
+    errors = report.get("errors") or []
+    payload: dict[str, Any] = {
+        "key": report.get("key"),
+        "status": report.get("status"),
+        "ok": report.get("ok"),
+        "mode": report.get("mode"),
+        "set_id": patch_set.get("id") if isinstance(patch_set, dict) else None,
+        "error_count": len(errors),
+        "errors": [{"code": item.get("code"), "message": item.get("message")} for item in errors[:8] if isinstance(item, dict)],
+    }
+    try:
+        record_event(event_type, payload, state=state)
+    except Exception:
+        return
 
 
 def _new_result() -> dict[str, Any]:
@@ -1767,6 +1796,7 @@ BUILTIN_FEATURES: tuple[FeatureSpec, ...] = (
                 "enabled": False,
                 "interval": 1.0,
             },
+            "forward_events": False,
         },
         settings={
             "allow_remote_load": {
@@ -1788,6 +1818,11 @@ BUILTIN_FEATURES: tuple[FeatureSpec, ...] = (
                 "type": "float",
                 "title": "监视间隔",
                 "description": "轮询补丁文件的间隔秒数。",
+            },
+            "forward_events": {
+                "type": "bool",
+                "title": "转发补丁事件",
+                "description": "把补丁失败、补丁集和功能变化事件以 hotpatch.event 类型发送到运行时通道 (有每秒条数上限)。需要宿主支持该事件类型。",
             },
         },
         apply=_loader("_feature_apply_control"),
