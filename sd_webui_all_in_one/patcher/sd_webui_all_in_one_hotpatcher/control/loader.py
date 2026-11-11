@@ -45,7 +45,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import ModuleType
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from ..state import HotpatcherState, get_default_state
 from .handles import PatchOutcome, PatchStatus
@@ -1000,7 +1000,8 @@ def _run_attempt(
 def _exec_file_module(module_name: str, path: str, data: bytes) -> ModuleType:
     _ensure_dynamic_package()
     loader = _FreshSourceLoader(module_name, path, data)
-    spec = importlib.util.spec_from_file_location(module_name, path, loader=loader)
+    # Python 3.15 的 typeshed 中 LoaderProtocol 仍要求 load_module, 而 SourceFileLoader 已移除该方法。
+    spec = importlib.util.spec_from_file_location(module_name, path, loader=cast(Any, loader))
     if spec is None or spec.loader is None:
         raise PatchLoaderError("import_failed", f"cannot create a module spec for {path}")
     module = importlib.util.module_from_spec(spec)
