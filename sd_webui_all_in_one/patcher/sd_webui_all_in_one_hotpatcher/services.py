@@ -12,6 +12,16 @@ import threading
 from pathlib import Path
 from typing import Any, cast
 
+from .control.features import (
+    BUILTIN_FEATURES,
+    FeatureContext,
+    apply_feature_configs,
+    attach_feature_state,
+    build_default_config,
+    build_setting_schema,
+    get_feature_registry,
+    warn_disabled_but_active,
+)
 from .hook import install_import_hook, is_import_hook_installed, monkey_zoo
 from .runtime.client import RuntimeClient
 from .runtime.interfaces import RuntimeEventSink
@@ -30,6 +40,7 @@ from .runtime.logs import (
     DEFAULT_QUEUE_SIZE,
     DEFAULT_STREAMS,
     install_log_capture,
+    uninstall_log_capture,
 )
 from .runtime.protocol import RuntimeProtocolError, decode_message, encode_message
 from .state import HotpatcherState, get_default_state
@@ -52,391 +63,11 @@ def _service_control_timeout(name: str, value: float) -> float:
     return timeout
 
 
-DEFAULT_CONFIG: dict[str, Any] = {
-    "services": {
-        "apply_on_bootstrap": True,
-    },
-    "core": {
-        "import_hook": {
-            "enabled": True,
-        },
-        "stack_shadow": {
-            "enabled": True,
-            "prefixes": [
-                "sd_webui_all_in_one_hotpatcher",
-                "sd_webui_all_in_one_hotpatcher_ext",
-            ],
-            "filename_template": DEFAULT_FILENAME_TEMPLATE,
-            "include_source_loaders": True,
-        },
-    },
-    "runtime": {
-        "browser": {
-            "enabled": False,
-            "mode": "host",
-        },
-        "errors": {
-            "enabled": False,
-            "sys_excepthook": True,
-            "threading_excepthook": True,
-            "unraisablehook": True,
-            "asyncio": True,
-            "include_locals": False,
-            "caught_exceptions": {
-                "enabled": False,
-                "threading": True,
-                "module_prefixes": [],
-                "exclude_module_prefixes": list(DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES),
-                "max_events_per_second": 20,
-            },
-        },
-        "logs": {
-            "enabled": False,
-            "logging": True,
-            "streams": list(DEFAULT_STREAMS),
-            "subprocess": "safe",
-            "policy": "bounded",
-            "max_chars": DEFAULT_MAX_CHARS,
-            "queue_size": DEFAULT_QUEUE_SIZE,
-            "logger_include": [],
-            "logger_exclude": list(DEFAULT_LOGGER_EXCLUDE),
-            "hook_policy": DEFAULT_HOOK_POLICY,
-            "hook_check_interval": DEFAULT_HOOK_CHECK_INTERVAL,
-            "fd_capture": DEFAULT_FD_CAPTURE,
-        },
-    },
-    "extensions": {
-        "comfyui_auto_port": {
-            "enabled": True,
-        },
-        "zluda": {
-            "enabled": False,
-            "compat": False,
-            "path": "",
-            "torch_zluda_timer": False,
-        },
-        "extension_index": {
-            "webui": {
-                "enabled": False,
-                "url": "auto",
-            },
-            "comfyui_manager": {
-                "enabled": False,
-                "url": "auto",
-            },
-        },
-        "hf_endpoint_mirror": {
-            "enabled": False,
-        },
-        "xformers_cutlass": {
-            "enabled": True,
-        },
-        "uv_pip": {
-            "enabled": False,
-            "symlink": False,
-        },
-    },
-}
+DEFAULT_CONFIG: dict[str, Any] = build_default_config(BUILTIN_FEATURES)
+"""内置功能的完整默认配置, 由 ``control.features.BUILTIN_FEATURES`` 生成。运行时注册的功能见 ``get_default_config()``"""
 
-SETTING_SCHEMA: dict[str, Any] = {
-    "services": {
-        "title": "服务控制",
-        "description": "控制 hotpatcher services 在 bootstrap 和运行时控制通道中的行为。",
-        "settings": {
-            "apply_on_bootstrap": {
-                "type": "bool",
-                "title": "启动时应用配置",
-                "description": "bootstrap 读取配置后立即调用 services.apply_config()。",
-            },
-        },
-    },
-    "core.import_hook": {
-        "title": "Import Hook",
-        "description": "安装 import hook，让已注册的模块补丁在目标模块首次导入时生效。",
-        "settings": {
-            "enabled": {
-                "type": "bool",
-                "title": "启用",
-                "description": "启用 import hook。补丁必须在目标模块首次导入前注册。",
-            },
-        },
-    },
-    "core.stack_shadow": {
-        "title": "栈隐藏",
-        "description": "把补丁系统相关 traceback 文件名伪装成更友好的路径，降低用户日志噪音。",
-        "settings": {
-            "enabled": {
-                "type": "bool",
-                "title": "启用",
-                "description": "安装 traceback 栈隐藏器。",
-            },
-            "prefixes": {
-                "type": "list[str]",
-                "title": "隐藏模块前缀",
-                "description": "需要隐藏的模块名前缀。GUI 中可用逗号分隔多个值。",
-            },
-            "filename_template": {
-                "type": "str",
-                "title": "文件名模板",
-                "description": "伪装 traceback 文件名时使用的模板。",
-            },
-            "include_source_loaders": {
-                "type": "bool",
-                "title": "处理源码 loader",
-                "description": "同时处理从源码 loader 获取的文件名。",
-            },
-        },
-    },
-    "runtime.logs": {
-        "title": "运行时日志",
-        "description": "把 logging、标准输出和子进程输出采集到 runtime host。",
-        "settings": {
-            "enabled": {
-                "type": "bool",
-                "title": "启用日志采集",
-                "description": "启用 runtime 日志采集。需要 runtime client 可用。",
-            },
-            "logging": {
-                "type": "bool",
-                "title": "采集 logging",
-                "description": "采集 Python logging 记录并发送 log.record。",
-            },
-            "streams": {
-                "type": "list[str]",
-                "title": "标准流",
-                "description": "采集的标准流名称。GUI 中可用逗号分隔多个值。",
-            },
-            "subprocess": {
-                "type": "choice",
-                "title": "子进程采集",
-                "description": "控制是否包装子进程输出。safe 仅在安全场景启用，force 强制启用。",
-                "choices": ["0", "safe", "force"],
-            },
-            "policy": {
-                "type": "choice",
-                "title": "输出策略",
-                "description": "bounded 会限制单条消息长度，raw 保留原始输出。",
-                "choices": ["bounded", "raw"],
-            },
-            "max_chars": {
-                "type": "int",
-                "title": "最大字符数",
-                "description": "bounded 策略下单条日志最多保留的字符数。",
-            },
-            "queue_size": {
-                "type": "int",
-                "title": "队列大小",
-                "description": "日志发送队列的最大长度。",
-            },
-            "logger_include": {
-                "type": "list[str]",
-                "title": "包含 logger",
-                "description": "只采集这些 logger 前缀。为空表示不限制。",
-            },
-            "logger_exclude": {
-                "type": "list[str]",
-                "title": "排除 logger",
-                "description": "不采集这些 logger 前缀。GUI 中可用逗号分隔多个值。",
-            },
-            "hook_policy": {
-                "type": "choice",
-                "title": "Hook 冲突策略",
-                "description": "控制日志 hook 被其它软件替换后的处理方式。cooperative 只协作包装，warn 仅告警，reapply 自动重新接管。",
-                "choices": ["cooperative", "warn", "reapply"],
-            },
-            "hook_check_interval": {
-                "type": "int",
-                "title": "Hook 检查间隔",
-                "description": "warn/reapply 策略下检查日志 hook 状态的间隔秒数。",
-            },
-            "fd_capture": {
-                "type": "choice",
-                "title": "FD 级捕获",
-                "description": "实验性标准流捕获。0 关闭，fallback 在普通 stream hook 丢失时尝试启用，force 启动时直接启用。",
-                "choices": ["0", "fallback", "force"],
-            },
-        },
-    },
-    "runtime.browser": {
-        "title": "浏览器控制",
-        "description": "控制标准库 webbrowser 请求是否交给 runtime host。",
-        "settings": {
-            "enabled": {
-                "type": "bool",
-                "title": "启用浏览器控制",
-                "description": "在 WebUI 导入前应用标准库 webbrowser 补丁。",
-            },
-            "mode": {
-                "type": "choice",
-                "title": "处理模式",
-                "description": "host 发送事件并抑制系统浏览器，suppress 仅抑制，passthrough 保持标准行为。",
-                "choices": ["host", "suppress", "passthrough"],
-            },
-        },
-    },
-    "runtime.errors": {
-        "title": "运行时错误",
-        "description": "捕获未处理 Python 异常并发送结构化 error.exception 事件到 runtime host。",
-        "settings": {
-            "enabled": {
-                "type": "bool",
-                "title": "启用错误捕获",
-                "description": "启用未处理 Python 异常捕获。需要 runtime client 可用。",
-            },
-            "sys_excepthook": {
-                "type": "bool",
-                "title": "主线程异常",
-                "description": "捕获 sys.excepthook 处理的主线程未处理异常。",
-            },
-            "threading_excepthook": {
-                "type": "bool",
-                "title": "线程异常",
-                "description": "捕获 threading.excepthook 处理的线程未处理异常。",
-            },
-            "unraisablehook": {
-                "type": "bool",
-                "title": "Unraisable 异常",
-                "description": "捕获 sys.unraisablehook 处理的析构、回调等不可抛出异常。",
-            },
-            "asyncio": {
-                "type": "bool",
-                "title": "Asyncio 异常",
-                "description": "捕获 asyncio event loop exception handler 中的异常上下文。",
-            },
-            "include_locals": {
-                "type": "bool",
-                "title": "包含局部变量",
-                "description": "在 error.exception 的 traceback frame 中附带脱敏后的局部变量 repr 摘要。",
-            },
-            "caught_exceptions.enabled": {
-                "type": "bool",
-                "title": "捕获已处理异常",
-                "description": "实验性功能。使用 sys.settrace 捕获被业务代码 except 处理过的异常, 可能影响性能。",
-            },
-            "caught_exceptions.threading": {
-                "type": "bool",
-                "title": "跟踪新线程",
-                "description": "为后续新建线程安装 caught exception trace 捕获。",
-            },
-            "caught_exceptions.module_prefixes": {
-                "type": "list[str]",
-                "title": "包含模块前缀",
-                "description": "只捕获这些模块名前缀中的异常。为空表示不限制。",
-            },
-            "caught_exceptions.exclude_module_prefixes": {
-                "type": "list[str]",
-                "title": "排除模块前缀",
-                "description": "不捕获这些模块名前缀中的异常。GUI 中可用逗号分隔多个值。",
-            },
-            "caught_exceptions.max_events_per_second": {
-                "type": "int",
-                "title": "每秒事件上限",
-                "description": "caught exception 事件限流值。用于降低 sys.settrace 带来的事件噪音。",
-            },
-        },
-    },
-    "extensions.zluda": {
-        "title": "ZLUDA",
-        "description": "注册 ZLUDA 兼容性补丁和可选路径注入。",
-        "settings": {
-            "enabled": {
-                "type": "bool",
-                "title": "启用",
-                "description": "启用 ZLUDA 扩展补丁。",
-            },
-            "compat": {
-                "type": "bool",
-                "title": "兼容模式",
-                "description": "注册 torch / torch.backends.cuda 的 ZLUDA 兼容性补丁。",
-            },
-            "path": {
-                "type": "str",
-                "title": "ZLUDA 路径",
-                "description": "添加到动态库搜索路径的 ZLUDA 目录。为空则不注入路径。",
-            },
-            "torch_zluda_timer": {
-                "type": "bool",
-                "title": "Torch 编译热修复",
-                "description": "修复 torch.utils.cpp_extension 中不兼容 ZLUDA 的 HIP_HOME 判断。",
-            },
-        },
-    },
-    "extensions.comfyui_auto_port": {
-        "title": "ComfyUI 端口自动避让",
-        "description": "ComfyUI 使用默认端口时，自动避开已经被占用的端口。",
-        "settings": {
-            "enabled": {
-                "type": "bool",
-                "title": "启用",
-                "description": "检测 ComfyUI 默认端口 8188，并在被占用时自动选择后续可用端口。",
-            },
-        },
-    },
-    "extensions.extension_index": {
-        "title": "扩展索引镜像",
-        "description": "替换 WebUI / ComfyUI 扩展索引和 ComfyUI-Manager 相关 URL。",
-        "settings": {
-            "webui.enabled": {
-                "type": "bool",
-                "title": "启用 SD WebUI 镜像",
-                "description": "启用 A1111 / Forge / Vladmandic 扩展索引镜像补丁。",
-            },
-            "webui.url": {
-                "type": "str",
-                "title": "SD WebUI 镜像 URL",
-                "description": "用于替换 A1111 / Forge / Vladmandic 扩展索引的镜像 JSON URL；填 auto 时自动检测网络并按需使用 GitHub raw 镜像。",
-            },
-            "comfyui_manager.enabled": {
-                "type": "bool",
-                "title": "启用 ComfyUI-Manager 镜像",
-                "description": "启用 ComfyUI-Manager channel 镜像补丁。",
-            },
-            "comfyui_manager.url": {
-                "type": "str",
-                "title": "ComfyUI-Manager 镜像 URL",
-                "description": "用于替换 ComfyUI-Manager channel 前缀的镜像 URL；填 auto 时自动检测网络并按需使用 GitHub raw 镜像。",
-            },
-        },
-    },
-    "extensions.hf_endpoint_mirror": {
-        "title": "Hugging Face 镜像",
-        "description": "注册 Hugging Face endpoint 镜像相关补丁。",
-        "settings": {
-            "enabled": {
-                "type": "bool",
-                "title": "启用",
-                "description": "启用 Hugging Face endpoint 镜像补丁。",
-            },
-        },
-    },
-    "extensions.xformers_cutlass": {
-        "title": "xFormers CUTLASS",
-        "description": "在 torch>=2.9.0 且 xformers>=0.0.33 时提升 CUTLASS FwOp CUDA capability 上限。",
-        "settings": {
-            "enabled": {
-                "type": "bool",
-                "title": "启用",
-                "description": "启用 xFormers CUTLASS CUDA capability 补丁；版本不满足时会自动跳过。",
-            },
-        },
-    },
-    "extensions.uv_pip": {
-        "title": "uv Pip 替换",
-        "description": "把 subprocess.run() 调用中的 pip 命令改写为 uv pip，用于加速运行期依赖安装。",
-        "settings": {
-            "enabled": {
-                "type": "bool",
-                "title": "启用",
-                "description": "启用 uv pip 命令替换补丁。",
-            },
-            "symlink": {
-                "type": "bool",
-                "title": "符号链接模式",
-                "description": "为 uv pip 命令添加 --link-mode symlink。通常只在明确需要共享文件链接时启用。",
-            },
-        },
-    },
-}
+SETTING_SCHEMA: dict[str, Any] = build_setting_schema(BUILTIN_FEATURES)
+"""内置功能的设置 schema, 由 ``control.features.BUILTIN_FEATURES`` 生成。运行时注册的功能见 ``get_catalog()``"""
 
 
 class ServiceControlChannel:
@@ -738,7 +369,7 @@ class PatchService:
                 完整默认配置副本
         """
 
-        return get_default_config()
+        return get_default_config(state=self.state)
 
     def get_current_config(self) -> dict[str, Any]:
         """
@@ -764,7 +395,7 @@ class PatchService:
                 补齐默认值后的配置
         """
 
-        return normalize_config(config)
+        return normalize_config(config, state=self.state)
 
     def handle_request_json(
         self,
@@ -803,8 +434,8 @@ def get_catalog(*, state: HotpatcherState | None = None) -> dict[str, Any]:
     """
 
     active_state = state or get_default_state()
-    defaults = get_default_config()
-    features = copy.deepcopy(SETTING_SCHEMA)
+    defaults = get_default_config(state=active_state)
+    features = build_setting_schema(get_feature_registry(active_state))
     _attach_feature_state(features, defaults, active_state)
     return {
         "features": features,
@@ -812,16 +443,22 @@ def get_catalog(*, state: HotpatcherState | None = None) -> dict[str, Any]:
     }
 
 
-def get_default_config() -> dict[str, Any]:
+def get_default_config(*, state: HotpatcherState | None = None) -> dict[str, Any]:
     """
     获取完整默认配置
 
+    由状态对象的功能注册表生成, 包含运行时注册的第三方功能。
+
+    Args:
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
+
     Returns:
         dict[str, Any]:
-            默认配置深拷贝
+            新建的默认配置
     """
 
-    return copy.deepcopy(DEFAULT_CONFIG)
+    return build_default_config(get_feature_registry(state or get_default_state()))
 
 
 def get_current_config(*, state: HotpatcherState | None = None) -> dict[str, Any]:
@@ -840,7 +477,7 @@ def get_current_config(*, state: HotpatcherState | None = None) -> dict[str, Any
     active_state = state or get_default_state()
     with active_state.current_config_lock:
         if active_state.current_config is None:
-            return get_default_config()
+            return get_default_config(state=active_state)
         return copy.deepcopy(active_state.current_config)
 
 
@@ -860,7 +497,7 @@ def set_current_config(config: dict[str, Any], *, state: HotpatcherState | None 
     """
 
     active_state = state or get_default_state()
-    normalized = normalize_config(config)
+    normalized = normalize_config(config, state=active_state)
     with active_state.current_config_lock:
         active_state.current_config = copy.deepcopy(normalized)
     return copy.deepcopy(normalized)
@@ -879,7 +516,7 @@ def clear_current_config(*, state: HotpatcherState | None = None) -> None:
         active_state.current_config = None
 
 
-def normalize_config(config: dict[str, Any]) -> dict[str, Any]:
+def normalize_config(config: dict[str, Any], *, state: HotpatcherState | None = None) -> dict[str, Any]:
     """
     深度补齐默认配置
 
@@ -888,6 +525,8 @@ def normalize_config(config: dict[str, Any]) -> dict[str, Any]:
     Args:
         config (dict[str, Any]):
             用户配置
+        state (HotpatcherState | None):
+            提供功能注册表的状态对象。为 None 时使用默认状态。
 
     Returns:
         dict[str, Any]:
@@ -900,7 +539,7 @@ def normalize_config(config: dict[str, Any]) -> dict[str, Any]:
 
     if not isinstance(config, dict):
         raise ValueError("config must be an object")
-    normalized = _merge_defaults(copy.deepcopy(config), get_default_config())
+    normalized = _merge_defaults(copy.deepcopy(config), get_default_config(state=state))
     browser = _section(_section(normalized, "runtime"), "browser")
     if not isinstance(browser.get("enabled"), bool):
         raise ValueError("runtime.browser.enabled must be a boolean")
@@ -965,9 +604,14 @@ def apply_config(
     *,
     runtime_client: RuntimeEventSink | None = None,
     state: HotpatcherState | None = None,
+    reconcile: bool | None = None,
 ) -> dict[str, Any]:
     """
     按配置启用补丁系统功能
+
+    按功能注册表的顺序应用, 每个启用的功能在自己的补丁集 ``feature:<key>`` 中应用; 重复应用
+    复用同一个补丁集并再次调用功能入口 (扩展自身负责去重)。默认保持 v1 语义: ``enabled=false``
+    只表示不再注册, 已生效的补丁保留并产生告警。
 
     Args:
         config (dict[str, Any]):
@@ -976,6 +620,9 @@ def apply_config(
             可选运行时客户端, 用于启用日志采集
         state (HotpatcherState | None):
             可选状态对象。为 None 时使用默认状态。
+        reconcile (bool | None):
+            是否撤销之前已应用、现在被禁用的功能。为 None 时读取 ``services.reconcile_disabled``;
+            显式传入时优先于配置。启用时结果额外包含 ``reconciled`` 列表。
 
     Returns:
         dict[str, Any]:
@@ -983,13 +630,13 @@ def apply_config(
     """
 
     active_state = state or get_default_state()
-    normalized = normalize_config(config)
+    normalized = normalize_config(config, state=active_state)
     result: dict[str, Any] = {"applied": [], "warnings": [], "errors": []}
     set_current_config(normalized, state=active_state)
+    if reconcile is None:
+        reconcile = bool(_section(normalized, "services").get("reconcile_disabled", False))
 
-    _apply_core_config(normalized, result, active_state)
-    _apply_runtime_config(normalized, result, runtime_client, active_state)
-    _apply_extension_config(normalized, result)
+    _apply_features(normalized, result, runtime_client, active_state, reconcile=reconcile)
     _warn_disabled_but_active(normalized, result, active_state)
     return result
 
@@ -1027,11 +674,11 @@ def handle_request_json(
         if message_type == "services.catalog.get":
             return _success_response({"catalog": get_catalog(state=active_state)})
         if message_type == "services.defaults.get":
-            return _success_response({"config": get_default_config()})
+            return _success_response({"config": get_default_config(state=active_state)})
         if message_type == "services.config.current":
             return _success_response({"config": get_current_config(state=active_state)})
         if message_type == "services.config.normalize":
-            return _success_response({"config": normalize_config(_payload_config(payload))})
+            return _success_response({"config": normalize_config(_payload_config(payload), state=active_state)})
         if message_type == "services.config.load":
             config = load_config_file(
                 _payload_path(payload),
@@ -1040,7 +687,7 @@ def handle_request_json(
             return _success_response({"config": config})
         if message_type == "services.config.save":
             path = _payload_path(payload)
-            config = normalize_config(_payload_config(payload))
+            config = normalize_config(_payload_config(payload), state=active_state)
             save_config_file(path, config)
             return _success_response({"config": config})
         if message_type == "services.config.apply":
@@ -1079,321 +726,151 @@ def install_service_control_channel(
     return ServiceControlChannel(client, service or PatchService(state=state)).start()
 
 
-def _apply_core_config(config: dict[str, Any], result: dict[str, Any], state: HotpatcherState) -> None:
-    core = _section(config, "core")
-    import_hook = _section(core, "import_hook")
-    if import_hook.get("enabled"):
-        _apply_step("core.import_hook", lambda: install_import_hook(state=state), result)
-
-    stack_shadow = _section(core, "stack_shadow")
-    if stack_shadow.get("enabled"):
-        _apply_step(
-            "core.stack_shadow",
-            lambda: install_stack_shadower(
-                _normalize_string_list(stack_shadow.get("prefixes", [])),
-                filename_template=str(stack_shadow.get("filename_template", DEFAULT_FILENAME_TEMPLATE)),
-                include_source_loaders=bool(stack_shadow.get("include_source_loaders", True)),
-                state=state,
-            ),
-            result,
-        )
-
-
-def _apply_runtime_config(
+def _apply_features(
     config: dict[str, Any],
     result: dict[str, Any],
     runtime_client: RuntimeEventSink | None,
     state: HotpatcherState,
+    *,
+    reconcile: bool = False,
 ) -> None:
-    runtime = _section(config, "runtime")
-    browser = _section(runtime, "browser")
-    from .runtime.browser import BrowserMode, is_webbrowser_patch_registered, patch_webbrowser
-
-    if browser.get("enabled"):
-        mode = cast(BrowserMode, str(browser.get("mode", "host")))
-        _apply_step(
-            "runtime.browser",
-            lambda: patch_webbrowser(runtime_client, mode=mode, state=state),
-            result,
-        )
-        if mode == "host" and runtime_client is None:
-            result["warnings"].append(
-                {
-                    "feature": "runtime.browser",
-                    "message": "runtime client is unavailable; browser opening is suppressed without host events",
-                }
-            )
-    elif is_webbrowser_patch_registered(state=state):
-        patch_webbrowser(None, mode="passthrough", state=state)
-
-    errors = _section(runtime, "errors")
-    if errors.get("enabled"):
-        if runtime_client is None:
-            uninstall_error_capture(state=state)
-            result["warnings"].append(
-                {
-                    "feature": "runtime.errors",
-                    "message": "runtime_client is required to enable errors",
-                }
-            )
-        else:
-            caught_exceptions = _section(errors, "caught_exceptions")
-            _apply_step(
-                "runtime.errors",
-                lambda: install_error_capture(
-                    runtime_client,
-                    sys_excepthook=bool(errors.get("sys_excepthook", True)),
-                    threading_excepthook=bool(errors.get("threading_excepthook", True)),
-                    unraisablehook=bool(errors.get("unraisablehook", True)),
-                    asyncio=bool(errors.get("asyncio", True)),
-                    include_locals=bool(errors.get("include_locals", False)),
-                    caught_exceptions_enabled=bool(caught_exceptions.get("enabled", False)),
-                    caught_exceptions_threading=bool(caught_exceptions.get("threading", True)),
-                    caught_exception_module_prefixes=_normalize_string_list(caught_exceptions.get("module_prefixes", [])),
-                    caught_exception_exclude_module_prefixes=_normalize_string_list(caught_exceptions.get("exclude_module_prefixes", DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES)),
-                    caught_exception_max_events_per_second=int(caught_exceptions.get("max_events_per_second", 20)),
-                    state=state,
-                ),
-                result,
-            )
-    else:
-        uninstall_error_capture(state=state)
-
-    logs = _section(runtime, "logs")
-    if logs.get("enabled"):
-        if runtime_client is None:
-            result["warnings"].append(
-                {
-                    "feature": "runtime.logs",
-                    "message": "runtime_client is required to enable logs",
-                }
-            )
-            return
-
-        _apply_step(
-            "runtime.logs",
-            lambda: install_log_capture(
-                runtime_client,
-                capture_logging=bool(logs.get("logging", True)),
-                streams=_normalize_string_list(logs.get("streams", DEFAULT_STREAMS)),
-                subprocess_mode=str(logs.get("subprocess", "safe")),
-                policy=str(logs.get("policy", "bounded")),
-                max_chars=int(logs.get("max_chars", DEFAULT_MAX_CHARS)),
-                queue_size=int(logs.get("queue_size", DEFAULT_QUEUE_SIZE)),
-                logger_include=_normalize_string_list(logs.get("logger_include", [])),
-                logger_exclude=_normalize_string_list(logs.get("logger_exclude", DEFAULT_LOGGER_EXCLUDE)),
-                hook_policy=str(logs.get("hook_policy", DEFAULT_HOOK_POLICY)),
-                hook_check_interval=int(logs.get("hook_check_interval", DEFAULT_HOOK_CHECK_INTERVAL)),
-                fd_capture=str(logs.get("fd_capture", DEFAULT_FD_CAPTURE)),
-                state=state,
-            ),
-            result,
-        )
-
-
-def _apply_extension_config(config: dict[str, Any], result: dict[str, Any]) -> None:
-    extensions = _section(config, "extensions")
-    comfyui_auto_port = _section(extensions, "comfyui_auto_port")
-    if comfyui_auto_port.get("enabled"):
-        from sd_webui_all_in_one_hotpatcher_ext.comfyui_auto_port import (
-            apply_from_config as apply_comfyui_auto_port,
-        )
-
-        _apply_step(
-            "extensions.comfyui_auto_port",
-            lambda: apply_comfyui_auto_port(comfyui_auto_port),
-            result,
-        )
-
-    zluda = _section(extensions, "zluda")
-    if zluda.get("enabled"):
-        from sd_webui_all_in_one_hotpatcher_ext.zluda import apply_from_config as apply_zluda
-
-        _apply_step("extensions.zluda", lambda: apply_zluda(zluda), result)
-
-    extension_index = _section(extensions, "extension_index")
-    if _is_extension_index_enabled(extension_index):
-        from sd_webui_all_in_one_hotpatcher_ext.extension_index import (
-            apply_from_config as apply_extension_index,
-        )
-
-        _apply_step(
-            "extensions.extension_index",
-            lambda: apply_extension_index(extension_index),
-            result,
-        )
-
-    hf_endpoint_mirror = _section(extensions, "hf_endpoint_mirror")
-    if hf_endpoint_mirror.get("enabled"):
-        from sd_webui_all_in_one_hotpatcher_ext.hf_endpoint_mirror import (
-            apply_from_config as apply_hf_endpoint_mirror,
-        )
-
-        _apply_step(
-            "extensions.hf_endpoint_mirror",
-            lambda: apply_hf_endpoint_mirror(hf_endpoint_mirror),
-            result,
-        )
-
-    uv_pip = _section(extensions, "uv_pip")
-    if uv_pip.get("enabled"):
-        from sd_webui_all_in_one_hotpatcher_ext.uv_pip import (
-            apply_from_config as apply_uv_pip,
-        )
-
-        _apply_step(
-            "extensions.uv_pip",
-            lambda: apply_uv_pip(uv_pip),
-            result,
-        )
-
-    xformers_cutlass = _section(extensions, "xformers_cutlass")
-    if xformers_cutlass.get("enabled"):
-        from sd_webui_all_in_one_hotpatcher_ext.xformers_cutlass import (
-            apply_from_config as apply_xformers_cutlass,
-        )
-
-        _apply_optional_step(
-            "extensions.xformers_cutlass",
-            lambda: apply_xformers_cutlass(xformers_cutlass),
-            result,
-        )
-
-
-def _is_extension_index_enabled(config: dict[str, Any]) -> bool:
-    return any(isinstance(section, dict) and bool(section.get("enabled")) for section in (config.get("webui"), config.get("comfyui_manager")))
-
-
-def _apply_step(feature: str, callback: Any, result: dict[str, Any]) -> None:
-    try:
-        callback()
-        result["applied"].append(feature)
-    except Exception as exc:  # pragma: no cover - exercised through service-level tests
-        result["errors"].append(
-            {
-                "feature": feature,
-                "code": type(exc).__name__,
-                "message": str(exc),
-            }
-        )
-
-
-def _apply_optional_step(feature: str, callback: Any, result: dict[str, Any]) -> None:
-    try:
-        if callback():
-            result["applied"].append(feature)
-    except Exception as exc:  # pragma: no cover - exercised through service-level tests
-        result["errors"].append(
-            {
-                "feature": feature,
-                "code": type(exc).__name__,
-                "message": str(exc),
-            }
-        )
+    apply_feature_configs(config, result, runtime_client=runtime_client, state=state, reconcile=reconcile)
 
 
 def _warn_disabled_but_active(config: dict[str, Any], result: dict[str, Any], state: HotpatcherState) -> None:
-    core = _section(config, "core")
-    if not _section(core, "import_hook").get("enabled") and is_import_hook_installed(state=state):
-        result["warnings"].append(
-            {
-                "feature": "core.import_hook",
-                "message": "import hook is already installed and v1 services does not uninstall it",
-            }
-        )
-    if not _section(core, "stack_shadow").get("enabled") and is_stack_shadower_installed(state=state):
-        result["warnings"].append(
-            {
-                "feature": "core.stack_shadow",
-                "message": "stack shadower is already installed and v1 services does not uninstall it",
-            }
-        )
-
-    from .runtime.browser import is_webbrowser_patch_registered
-
-    if not _section(_section(config, "runtime"), "browser").get("enabled") and is_webbrowser_patch_registered(state=state):
-        result["warnings"].append(
-            {
-                "feature": "runtime.browser",
-                "message": "browser wrapper remains registered in passthrough mode; process restart is required to remove it",
-            }
-        )
-
-    extensions = _section(config, "extensions")
-    if not _section(extensions, "comfyui_auto_port").get("enabled") and _is_comfyui_auto_port_patch_registered():
-        result["warnings"].append(
-            {
-                "feature": "extensions.comfyui_auto_port",
-                "message": "ComfyUI auto-port patch remains registered; process restart is required to remove it",
-            }
-        )
-    if not _section(extensions, "uv_pip").get("enabled") and _is_uv_pip_patch_installed():
-        result["warnings"].append(
-            {
-                "feature": "extensions.uv_pip",
-                "message": "uv pip patch is already installed and v1 services does not uninstall it",
-            }
-        )
+    warn_disabled_but_active(config, result, state=state)
 
 
 def _attach_feature_state(features: dict[str, Any], defaults: dict[str, Any], state: HotpatcherState) -> None:
-    features["services"]["default"] = defaults["services"]
-    features["services"]["active"] = False
-    features["core.import_hook"]["default"] = defaults["core"]["import_hook"]
-    features["core.import_hook"]["active"] = is_import_hook_installed(state=state)
-    features["core.stack_shadow"]["default"] = defaults["core"]["stack_shadow"]
-    features["core.stack_shadow"]["active"] = is_stack_shadower_installed(state=state)
-    features["runtime.errors"]["default"] = defaults["runtime"]["errors"]
-    features["runtime.errors"]["active"] = is_error_capture_installed(state=state)
-    features["runtime.logs"]["default"] = defaults["runtime"]["logs"]
-    features["runtime.logs"]["active"] = False
-    from .runtime.browser import is_webbrowser_patch_active, is_webbrowser_patch_registered
-
-    features["runtime.browser"]["default"] = defaults["runtime"]["browser"]
-    features["runtime.browser"]["active"] = is_webbrowser_patch_active(state=state)
-    features["runtime.browser"]["registered"] = is_webbrowser_patch_registered(state=state)
-    features["extensions.comfyui_auto_port"]["default"] = defaults["extensions"]["comfyui_auto_port"]
-    features["extensions.comfyui_auto_port"]["active"] = _is_comfyui_auto_port_patch_registered()
-    features["extensions.zluda"]["default"] = defaults["extensions"]["zluda"]
-    features["extensions.zluda"]["active"] = False
-    features["extensions.extension_index"]["default"] = defaults["extensions"]["extension_index"]
-    features["extensions.extension_index"]["active"] = False
-    features["extensions.hf_endpoint_mirror"]["default"] = defaults["extensions"]["hf_endpoint_mirror"]
-    features["extensions.hf_endpoint_mirror"]["active"] = False
-    features["extensions.xformers_cutlass"]["default"] = defaults["extensions"]["xformers_cutlass"]
-    features["extensions.xformers_cutlass"]["active"] = _is_xformers_cutlass_patch_active()
-    features["extensions.uv_pip"]["default"] = defaults["extensions"]["uv_pip"]
-    features["extensions.uv_pip"]["active"] = _is_uv_pip_patch_installed()
+    attach_feature_state(features, defaults, state=state)
     _attach_setting_defaults(features)
 
 
-def _is_uv_pip_patch_installed() -> bool:
+# 内置 core / runtime 功能的行为, 由 ``control.features.BUILTIN_FEATURES`` 以
+# ``"sd_webui_all_in_one_hotpatcher.services:<name>"`` 引用并在调用时解析, 因此对本模块属性的替换立即生效。
+
+
+def _feature_apply_import_hook(ctx: FeatureContext, section: dict[str, Any]) -> None:
+    del section
+    install_import_hook(state=ctx.state)
+
+
+def _feature_import_hook_active(ctx: FeatureContext) -> bool:
+    return is_import_hook_installed(state=ctx.state)
+
+
+def _feature_apply_stack_shadow(ctx: FeatureContext, section: dict[str, Any]) -> None:
+    install_stack_shadower(
+        _normalize_string_list(section.get("prefixes", [])),
+        filename_template=str(section.get("filename_template", DEFAULT_FILENAME_TEMPLATE)),
+        include_source_loaders=bool(section.get("include_source_loaders", True)),
+        state=ctx.state,
+    )
+
+
+def _feature_stack_shadow_active(ctx: FeatureContext) -> bool:
+    return is_stack_shadower_installed(state=ctx.state)
+
+
+def _feature_apply_browser(ctx: FeatureContext, section: dict[str, Any]) -> None:
+    from .runtime.browser import BrowserMode, patch_webbrowser
+
+    mode = cast(BrowserMode, str(section.get("mode", "host")))
     try:
-        from sd_webui_all_in_one_hotpatcher_ext.uv_pip import is_uv_patch_installed
-
-        return is_uv_patch_installed()
-    except Exception:
-        return False
-
-
-def _is_comfyui_auto_port_patch_registered() -> bool:
-    try:
-        from sd_webui_all_in_one_hotpatcher_ext.comfyui_auto_port import (
-            is_comfyui_auto_port_patch_registered,
-        )
-
-        return is_comfyui_auto_port_patch_registered()
-    except Exception:
-        return False
+        patch_webbrowser(ctx.runtime_client, mode=mode, state=ctx.state)
+    finally:
+        if mode == "host" and ctx.runtime_client is None:
+            ctx.warn("runtime client is unavailable; browser opening is suppressed without host events")
 
 
-def _is_xformers_cutlass_patch_active() -> bool:
-    try:
-        from sd_webui_all_in_one_hotpatcher_ext.xformers_cutlass import is_xformers_cutlass_patch_active
+def _feature_update_browser(ctx: FeatureContext, old_section: dict[str, Any], new_section: dict[str, Any]) -> bool:
+    # 包装器按 state 上的模式分派, 切换模式即可原地生效。
+    del old_section
+    _feature_apply_browser(ctx, new_section)
+    return True
 
-        return is_xformers_cutlass_patch_active()
-    except Exception:
-        return False
+
+def _feature_browser_disabled(ctx: FeatureContext, section: dict[str, Any]) -> None:
+    from .runtime.browser import is_webbrowser_patch_registered, patch_webbrowser
+
+    del section
+    if is_webbrowser_patch_registered(state=ctx.state):
+        patch_webbrowser(None, mode="passthrough", state=ctx.state)
+
+
+def _feature_revert_browser(ctx: FeatureContext) -> None:
+    from .runtime.browser import patch_webbrowser
+
+    patch_set = ctx.patch_set
+    if patch_set is not None and any(handle.stage == "function" and handle.target == "webbrowser:open" for handle in patch_set.handles):
+        # 功能补丁集已撤销 webbrowser.open 的 import 阶段注册, 重新启用时需要再次注册。
+        ctx.state.browser_patch_registered = False
+    patch_webbrowser(None, mode="passthrough", state=ctx.state)
+
+
+def _feature_browser_active(ctx: FeatureContext) -> bool:
+    from .runtime.browser import is_webbrowser_patch_active
+
+    return is_webbrowser_patch_active(state=ctx.state)
+
+
+def _feature_browser_registered(ctx: FeatureContext) -> bool:
+    from .runtime.browser import is_webbrowser_patch_registered
+
+    return is_webbrowser_patch_registered(state=ctx.state)
+
+
+def _feature_apply_errors(ctx: FeatureContext, section: dict[str, Any]) -> None:
+    caught_exceptions = _section(section, "caught_exceptions")
+    install_error_capture(
+        ctx.runtime_client,
+        sys_excepthook=bool(section.get("sys_excepthook", True)),
+        threading_excepthook=bool(section.get("threading_excepthook", True)),
+        unraisablehook=bool(section.get("unraisablehook", True)),
+        asyncio=bool(section.get("asyncio", True)),
+        include_locals=bool(section.get("include_locals", False)),
+        caught_exceptions_enabled=bool(caught_exceptions.get("enabled", False)),
+        caught_exceptions_threading=bool(caught_exceptions.get("threading", True)),
+        caught_exception_module_prefixes=_normalize_string_list(caught_exceptions.get("module_prefixes", [])),
+        caught_exception_exclude_module_prefixes=_normalize_string_list(caught_exceptions.get("exclude_module_prefixes", DEFAULT_CAUGHT_EXCLUDE_MODULE_PREFIXES)),
+        caught_exception_max_events_per_second=int(caught_exceptions.get("max_events_per_second", 20)),
+        state=ctx.state,
+    )
+
+
+def _feature_errors_active(ctx: FeatureContext) -> bool:
+    return is_error_capture_installed(state=ctx.state)
+
+
+def _feature_errors_disabled(ctx: FeatureContext, section: dict[str, Any]) -> None:
+    del section
+    uninstall_error_capture(state=ctx.state)
+
+
+def _feature_revert_errors(ctx: FeatureContext) -> None:
+    uninstall_error_capture(state=ctx.state)
+
+
+def _feature_apply_logs(ctx: FeatureContext, section: dict[str, Any]) -> None:
+    install_log_capture(
+        ctx.runtime_client,
+        capture_logging=bool(section.get("logging", True)),
+        streams=_normalize_string_list(section.get("streams", DEFAULT_STREAMS)),
+        subprocess_mode=str(section.get("subprocess", "safe")),
+        policy=str(section.get("policy", "bounded")),
+        max_chars=int(section.get("max_chars", DEFAULT_MAX_CHARS)),
+        queue_size=int(section.get("queue_size", DEFAULT_QUEUE_SIZE)),
+        logger_include=_normalize_string_list(section.get("logger_include", [])),
+        logger_exclude=_normalize_string_list(section.get("logger_exclude", DEFAULT_LOGGER_EXCLUDE)),
+        hook_policy=str(section.get("hook_policy", DEFAULT_HOOK_POLICY)),
+        hook_check_interval=int(section.get("hook_check_interval", DEFAULT_HOOK_CHECK_INTERVAL)),
+        fd_capture=str(section.get("fd_capture", DEFAULT_FD_CAPTURE)),
+        state=ctx.state,
+    )
+
+
+def _feature_revert_logs(ctx: FeatureContext) -> None:
+    uninstall_log_capture(state=ctx.state)
 
 
 def _attach_setting_defaults(features: dict[str, Any]) -> None:

@@ -64,11 +64,11 @@ $PY -m python_docstring_checker .
 - [x] Verify: regression + static green (419 passed on 3.11; patcher suite 363 passed on 3.10)
 
 ## P4 Feature registry
-- [ ] `control/features.py` (FeatureSpec, FeatureRegistry); built-in specs as core data with lazy `"module:callable"` refs (no eager ext imports)
-- [ ] Derive DEFAULT_CONFIG / SETTING_SCHEMA / apply / warnings / feature state from registry
-- [ ] Per-feature PatchSet; enable/disable/update; opt-in reconcile (D5)
-- [ ] Tests: `test_control_features.py` (golden equality, ownership of unmodified extensions, import invariant)
-- [ ] Verify
+- [x] `control/features.py` (FeatureSpec, FeatureRegistry); built-in specs as core data with lazy `"module:callable"` refs (no eager ext imports)
+- [x] Derive DEFAULT_CONFIG / SETTING_SCHEMA / apply / warnings / feature state from registry
+- [x] Per-feature PatchSet; enable/disable/update; opt-in reconcile (D5)
+- [x] Tests: `test_control_features.py` (golden equality, ownership of unmodified extensions, import invariant); v1 golden subset guard (`golden/*_v1.json`)
+- [x] Verify: regression + static green (447 passed on 3.11; patcher suite 391 passed on 3.10)
 
 ## P5 Runtime loading
 - [ ] `control/loader.py`: load (module/file, private name), unload report, reload w/ rollback, update

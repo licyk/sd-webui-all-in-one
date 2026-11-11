@@ -1,0 +1,93 @@
+{
+  "services": {
+    "apply_on_bootstrap": true
+  },
+  "core": {
+    "import_hook": {
+      "enabled": true
+    },
+    "stack_shadow": {
+      "enabled": true,
+      "prefixes": [
+        "sd_webui_all_in_one_hotpatcher",
+        "sd_webui_all_in_one_hotpatcher_ext"
+      ],
+      "filename_template": "<hidden {name}>",
+      "include_source_loaders": true
+    }
+  },
+  "runtime": {
+    "browser": {
+      "enabled": false,
+      "mode": "host"
+    },
+    "errors": {
+      "enabled": false,
+      "sys_excepthook": true,
+      "threading_excepthook": true,
+      "unraisablehook": true,
+      "asyncio": true,
+      "include_locals": false,
+      "caught_exceptions": {
+        "enabled": false,
+        "threading": true,
+        "module_prefixes": [],
+        "exclude_module_prefixes": [
+          "sd_webui_all_in_one_hotpatcher",
+          "sd_webui_all_in_one_hotpatcher_ext"
+        ],
+        "max_events_per_second": 20
+      }
+    },
+    "logs": {
+      "enabled": false,
+      "logging": true,
+      "streams": [
+        "stdout",
+        "stderr"
+      ],
+      "subprocess": "safe",
+      "policy": "bounded",
+      "max_chars": 8192,
+      "queue_size": 1000,
+      "logger_include": [],
+      "logger_exclude": [
+        "sd_webui_all_in_one_hotpatcher"
+      ],
+      "hook_policy": "cooperative",
+      "hook_check_interval": 1,
+      "fd_capture": "0"
+    }
+  },
+  "extensions": {
+    "comfyui_auto_port": {
+      "enabled": true
+    },
+    "zluda": {
+      "enabled": false,
+      "compat": false,
+      "path": "",
+      "torch_zluda_timer": false
+    },
+    "extension_index": {
+      "webui": {
+        "enabled": false,
+        "url": "auto"
+      },
+      "comfyui_manager": {
+        "enabled": false,
+        "url": "auto"
+      }
+    },
+    "hf_endpoint_mirror": {
+      "enabled": false
+    },
+    "xformers_cutlass": {
+      "enabled": true
+    },
+    "uv_pip": {
+      "enabled": false,
+      "symlink": false
+    }
+  }
+}

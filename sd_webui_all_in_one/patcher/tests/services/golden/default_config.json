@@ -1,6 +1,7 @@
 {
   "services": {
-    "apply_on_bootstrap": true
+    "apply_on_bootstrap": true,
+    "reconcile_disabled": false
   },
   "core": {
     "import_hook": {

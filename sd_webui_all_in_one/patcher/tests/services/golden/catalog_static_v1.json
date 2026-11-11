@@ -1,0 +1,460 @@
+{
+  "features": {
+    "services": {
+      "title": "服务控制",
+      "description": "控制 hotpatcher services 在 bootstrap 和运行时控制通道中的行为。",
+      "settings": {
+        "apply_on_bootstrap": {
+          "type": "bool",
+          "title": "启动时应用配置",
+          "description": "bootstrap 读取配置后立即调用 services.apply_config()。",
+          "default": true
+        }
+      },
+      "default": {
+        "apply_on_bootstrap": true
+      }
+    },
+    "core.import_hook": {
+      "title": "Import Hook",
+      "description": "安装 import hook，让已注册的模块补丁在目标模块首次导入时生效。",
+      "settings": {
+        "enabled": {
+          "type": "bool",
+          "title": "启用",
+          "description": "启用 import hook。补丁必须在目标模块首次导入前注册。",
+          "default": true
+        }
+      },
+      "default": {
+        "enabled": true
+      }
+    },
+    "core.stack_shadow": {
+      "title": "栈隐藏",
+      "description": "把补丁系统相关 traceback 文件名伪装成更友好的路径，降低用户日志噪音。",
+      "settings": {
+        "enabled": {
+          "type": "bool",
+          "title": "启用",
+          "description": "安装 traceback 栈隐藏器。",
+          "default": true
+        },
+        "prefixes": {
+          "type": "list[str]",
+          "title": "隐藏模块前缀",
+          "description": "需要隐藏的模块名前缀。GUI 中可用逗号分隔多个值。",
+          "default": [
+            "sd_webui_all_in_one_hotpatcher",
+            "sd_webui_all_in_one_hotpatcher_ext"
+          ]
+        },
+        "filename_template": {
+          "type": "str",
+          "title": "文件名模板",
+          "description": "伪装 traceback 文件名时使用的模板。",
+          "default": "<hidden {name}>"
+        },
+        "include_source_loaders": {
+          "type": "bool",
+          "title": "处理源码 loader",
+          "description": "同时处理从源码 loader 获取的文件名。",
+          "default": true
+        }
+      },
+      "default": {
+        "enabled": true,
+        "prefixes": [
+          "sd_webui_all_in_one_hotpatcher",
+          "sd_webui_all_in_one_hotpatcher_ext"
+        ],
+        "filename_template": "<hidden {name}>",
+        "include_source_loaders": true
+      }
+    },
+    "runtime.logs": {
+      "title": "运行时日志",
+      "description": "把 logging、标准输出和子进程输出采集到 runtime host。",
+      "settings": {
+        "enabled": {
+          "type": "bool",
+          "title": "启用日志采集",
+          "description": "启用 runtime 日志采集。需要 runtime client 可用。",
+          "default": false
+        },
+        "logging": {
+          "type": "bool",
+          "title": "采集 logging",
+          "description": "采集 Python logging 记录并发送 log.record。",
+          "default": true
+        },
+        "streams": {
+          "type": "list[str]",
+          "title": "标准流",
+          "description": "采集的标准流名称。GUI 中可用逗号分隔多个值。",
+          "default": [
+            "stdout",
+            "stderr"
+          ]
+        },
+        "subprocess": {
+          "type": "choice",
+          "title": "子进程采集",
+          "description": "控制是否包装子进程输出。safe 仅在安全场景启用，force 强制启用。",
+          "choices": [
+            "0",
+            "safe",
+            "force"
+          ],
+          "default": "safe"
+        },
+        "policy": {
+          "type": "choice",
+          "title": "输出策略",
+          "description": "bounded 会限制单条消息长度，raw 保留原始输出。",
+          "choices": [
+            "bounded",
+            "raw"
+          ],
+          "default": "bounded"
+        },
+        "max_chars": {
+          "type": "int",
+          "title": "最大字符数",
+          "description": "bounded 策略下单条日志最多保留的字符数。",
+          "default": 8192
+        },
+        "queue_size": {
+          "type": "int",
+          "title": "队列大小",
+          "description": "日志发送队列的最大长度。",
+          "default": 1000
+        },
+        "logger_include": {
+          "type": "list[str]",
+          "title": "包含 logger",
+          "description": "只采集这些 logger 前缀。为空表示不限制。",
+          "default": []
+        },
+        "logger_exclude": {
+          "type": "list[str]",
+          "title": "排除 logger",
+          "description": "不采集这些 logger 前缀。GUI 中可用逗号分隔多个值。",
+          "default": [
+            "sd_webui_all_in_one_hotpatcher"
+          ]
+        },
+        "hook_policy": {
+          "type": "choice",
+          "title": "Hook 冲突策略",
+          "description": "控制日志 hook 被其它软件替换后的处理方式。cooperative 只协作包装，warn 仅告警，reapply 自动重新接管。",
+          "choices": [
+            "cooperative",
+            "warn",
+            "reapply"
+          ],
+          "default": "cooperative"
+        },
+        "hook_check_interval": {
+          "type": "int",
+          "title": "Hook 检查间隔",
+          "description": "warn/reapply 策略下检查日志 hook 状态的间隔秒数。",
+          "default": 1
+        },
+        "fd_capture": {
+          "type": "choice",
+          "title": "FD 级捕获",
+          "description": "实验性标准流捕获。0 关闭，fallback 在普通 stream hook 丢失时尝试启用，force 启动时直接启用。",
+          "choices": [
+            "0",
+            "fallback",
+            "force"
+          ],
+          "default": "0"
+        }
+      },
+      "default": {
+        "enabled": false,
+        "logging": true,
+        "streams": [
+          "stdout",
+          "stderr"
+        ],
+        "subprocess": "safe",
+        "policy": "bounded",
+        "max_chars": 8192,
+        "queue_size": 1000,
+        "logger_include": [],
+        "logger_exclude": [
+          "sd_webui_all_in_one_hotpatcher"
+        ],
+        "hook_policy": "cooperative",
+        "hook_check_interval": 1,
+        "fd_capture": "0"
+      }
+    },
+    "runtime.browser": {
+      "title": "浏览器控制",
+      "description": "控制标准库 webbrowser 请求是否交给 runtime host。",
+      "settings": {
+        "enabled": {
+          "type": "bool",
+          "title": "启用浏览器控制",
+          "description": "在 WebUI 导入前应用标准库 webbrowser 补丁。",
+          "default": false
+        },
+        "mode": {
+          "type": "choice",
+          "title": "处理模式",
+          "description": "host 发送事件并抑制系统浏览器，suppress 仅抑制，passthrough 保持标准行为。",
+          "choices": [
+            "host",
+            "suppress",
+            "passthrough"
+          ],
+          "default": "host"
+        }
+      },
+      "default": {
+        "enabled": false,
+        "mode": "host"
+      }
+    },
+    "runtime.errors": {
+      "title": "运行时错误",
+      "description": "捕获未处理 Python 异常并发送结构化 error.exception 事件到 runtime host。",
+      "settings": {
+        "enabled": {
+          "type": "bool",
+          "title": "启用错误捕获",
+          "description": "启用未处理 Python 异常捕获。需要 runtime client 可用。",
+          "default": false
+        },
+        "sys_excepthook": {
+          "type": "bool",
+          "title": "主线程异常",
+          "description": "捕获 sys.excepthook 处理的主线程未处理异常。",
+          "default": true
+        },
+        "threading_excepthook": {
+          "type": "bool",
+          "title": "线程异常",
+          "description": "捕获 threading.excepthook 处理的线程未处理异常。",
+          "default": true
+        },
+        "unraisablehook": {
+          "type": "bool",
+          "title": "Unraisable 异常",
+          "description": "捕获 sys.unraisablehook 处理的析构、回调等不可抛出异常。",
+          "default": true
+        },
+        "asyncio": {
+          "type": "bool",
+          "title": "Asyncio 异常",
+          "description": "捕获 asyncio event loop exception handler 中的异常上下文。",
+          "default": true
+        },
+        "include_locals": {
+          "type": "bool",
+          "title": "包含局部变量",
+          "description": "在 error.exception 的 traceback frame 中附带脱敏后的局部变量 repr 摘要。",
+          "default": false
+        },
+        "caught_exceptions.enabled": {
+          "type": "bool",
+          "title": "捕获已处理异常",
+          "description": "实验性功能。使用 sys.settrace 捕获被业务代码 except 处理过的异常, 可能影响性能。",
+          "default": false
+        },
+        "caught_exceptions.threading": {
+          "type": "bool",
+          "title": "跟踪新线程",
+          "description": "为后续新建线程安装 caught exception trace 捕获。",
+          "default": true
+        },
+        "caught_exceptions.module_prefixes": {
+          "type": "list[str]",
+          "title": "包含模块前缀",
+          "description": "只捕获这些模块名前缀中的异常。为空表示不限制。",
+          "default": []
+        },
+        "caught_exceptions.exclude_module_prefixes": {
+          "type": "list[str]",
+          "title": "排除模块前缀",
+          "description": "不捕获这些模块名前缀中的异常。GUI 中可用逗号分隔多个值。",
+          "default": [
+            "sd_webui_all_in_one_hotpatcher",
+            "sd_webui_all_in_one_hotpatcher_ext"
+          ]
+        },
+        "caught_exceptions.max_events_per_second": {
+          "type": "int",
+          "title": "每秒事件上限",
+          "description": "caught exception 事件限流值。用于降低 sys.settrace 带来的事件噪音。",
+          "default": 20
+        }
+      },
+      "default": {
+        "enabled": false,
+        "sys_excepthook": true,
+        "threading_excepthook": true,
+        "unraisablehook": true,
+        "asyncio": true,
+        "include_locals": false,
+        "caught_exceptions": {
+          "enabled": false,
+          "threading": true,
+          "module_prefixes": [],
+          "exclude_module_prefixes": [
+            "sd_webui_all_in_one_hotpatcher",
+            "sd_webui_all_in_one_hotpatcher_ext"
+          ],
+          "max_events_per_second": 20
+        }
+      }
+    },
+    "extensions.zluda": {
+      "title": "ZLUDA",
+      "description": "注册 ZLUDA 兼容性补丁和可选路径注入。",
+      "settings": {
+        "enabled": {
+          "type": "bool",
+          "title": "启用",
+          "description": "启用 ZLUDA 扩展补丁。",
+          "default": false
+        },
+        "compat": {
+          "type": "bool",
+          "title": "兼容模式",
+          "description": "注册 torch / torch.backends.cuda 的 ZLUDA 兼容性补丁。",
+          "default": false
+        },
+        "path": {
+          "type": "str",
+          "title": "ZLUDA 路径",
+          "description": "添加到动态库搜索路径的 ZLUDA 目录。为空则不注入路径。",
+          "default": ""
+        },
+        "torch_zluda_timer": {
+          "type": "bool",
+          "title": "Torch 编译热修复",
+          "description": "修复 torch.utils.cpp_extension 中不兼容 ZLUDA 的 HIP_HOME 判断。",
+          "default": false
+        }
+      },
+      "default": {
+        "enabled": false,
+        "compat": false,
+        "path": "",
+        "torch_zluda_timer": false
+      }
+    },
+    "extensions.comfyui_auto_port": {
+      "title": "ComfyUI 端口自动避让",
+      "description": "ComfyUI 使用默认端口时，自动避开已经被占用的端口。",
+      "settings": {
+        "enabled": {
+          "type": "bool",
+          "title": "启用",
+          "description": "检测 ComfyUI 默认端口 8188，并在被占用时自动选择后续可用端口。",
+          "default": true
+        }
+      },
+      "default": {
+        "enabled": true
+      }
+    },
+    "extensions.extension_index": {
+      "title": "扩展索引镜像",
+      "description": "替换 WebUI / ComfyUI 扩展索引和 ComfyUI-Manager 相关 URL。",
+      "settings": {
+        "webui.enabled": {
+          "type": "bool",
+          "title": "启用 SD WebUI 镜像",
+          "description": "启用 A1111 / Forge / Vladmandic 扩展索引镜像补丁。",
+          "default": false
+        },
+        "webui.url": {
+          "type": "str",
+          "title": "SD WebUI 镜像 URL",
+          "description": "用于替换 A1111 / Forge / Vladmandic 扩展索引的镜像 JSON URL；填 auto 时自动检测网络并按需使用 GitHub raw 镜像。",
+          "default": "auto"
+        },
+        "comfyui_manager.enabled": {
+          "type": "bool",
+          "title": "启用 ComfyUI-Manager 镜像",
+          "description": "启用 ComfyUI-Manager channel 镜像补丁。",
+          "default": false
+        },
+        "comfyui_manager.url": {
+          "type": "str",
+          "title": "ComfyUI-Manager 镜像 URL",
+          "description": "用于替换 ComfyUI-Manager channel 前缀的镜像 URL；填 auto 时自动检测网络并按需使用 GitHub raw 镜像。",
+          "default": "auto"
+        }
+      },
+      "default": {
+        "webui": {
+          "enabled": false,
+          "url": "auto"
+        },
+        "comfyui_manager": {
+          "enabled": false,
+          "url": "auto"
+        }
+      }
+    },
+    "extensions.hf_endpoint_mirror": {
+      "title": "Hugging Face 镜像",
+      "description": "注册 Hugging Face endpoint 镜像相关补丁。",
+      "settings": {
+        "enabled": {
+          "type": "bool",
+          "title": "启用",
+          "description": "启用 Hugging Face endpoint 镜像补丁。",
+          "default": false
+        }
+      },
+      "default": {
+        "enabled": false
+      }
+    },
+    "extensions.xformers_cutlass": {
+      "title": "xFormers CUTLASS",
+      "description": "在 torch>=2.9.0 且 xformers>=0.0.33 时提升 CUTLASS FwOp CUDA capability 上限。",
+      "settings": {
+        "enabled": {
+          "type": "bool",
+          "title": "启用",
+          "description": "启用 xFormers CUTLASS CUDA capability 补丁；版本不满足时会自动跳过。",
+          "default": true
+        }
+      },
+      "default": {
+        "enabled": true
+      }
+    },
+    "extensions.uv_pip": {
+      "title": "uv Pip 替换",
+      "description": "把 subprocess.run() 调用中的 pip 命令改写为 uv pip，用于加速运行期依赖安装。",
+      "settings": {
+        "enabled": {
+          "type": "bool",
+          "title": "启用",
+          "description": "启用 uv pip 命令替换补丁。",
+          "default": false
+        },
+        "symlink": {
+          "type": "bool",
+          "title": "符号链接模式",
+          "description": "为 uv pip 命令添加 --link-mode symlink。通常只在明确需要共享文件链接时启用。",
+          "default": false
+        }
+      },
+      "default": {
+        "enabled": false,
+        "symlink": false
+      }
+    }
+  }
+}

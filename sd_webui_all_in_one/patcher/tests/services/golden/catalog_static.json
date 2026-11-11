@@ -9,10 +9,17 @@
           "title": "启动时应用配置",
           "description": "bootstrap 读取配置后立即调用 services.apply_config()。",
           "default": true
+        },
+        "reconcile_disabled": {
+          "type": "bool",
+          "title": "撤销已禁用功能",
+          "description": "应用配置时撤销之前已应用、现在被禁用的功能。关闭时保持原有行为：禁用只表示不再注册，已生效的补丁保留到进程重启。",
+          "default": false
         }
       },
       "default": {
-        "apply_on_bootstrap": true
+        "apply_on_bootstrap": true,
+        "reconcile_disabled": false
       }
     },
     "core.import_hook": {

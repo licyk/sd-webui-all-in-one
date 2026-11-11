@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from _thread import _local as ThreadLocal
     from importlib.machinery import ModuleSpec
 
+    from .control.features import FeatureRegistry
     from .control.handles import PatchHandle
     from .control.patchset import PatchSet
     from .hook import HookedMetaPathFinder, MonkeyZoo
@@ -47,7 +48,7 @@ class HotpatcherState:
     hotpatcher 默认进程状态。
 
     锁约定: ``control_lock`` 只保护控制平面的内存注册表 (``patch_id_counter``、``patch_sets``、
-    ``patch_handles``) 的读写。持有该锁时绝不执行 ``importlib`` 调用、用户补丁函数或
+    ``patch_handles``、``feature_registry`` 的创建) 的读写。持有该锁时绝不执行 ``importlib`` 调用、用户补丁函数或
     ``setup`` 回调、socket/HTTP I/O; 调用方应在锁内计算、在锁外执行。这样控制线程不会在
     持有 ``control_lock`` 时等待模块导入锁, 避免与正在导入并读取补丁计划的主线程死锁。
 
@@ -106,6 +107,8 @@ class HotpatcherState:
             已注册补丁集, 键为补丁集 ID。
         patch_handles (dict[str, PatchHandle]):
             已注册补丁句柄, 键为句柄 ID。
+        feature_registry (FeatureRegistry | None):
+            services 功能注册表, 首次通过 ``control.features.get_feature_registry`` 访问时创建并注册内置功能。
         strict_mode (bool):
             补丁严格模式。启用后 import 阶段补丁抛出的异常会在记录结果后继续向外抛出,
             而不是被 ``capture_exception`` 吞掉。创建状态对象时从
@@ -140,6 +143,7 @@ class HotpatcherState:
     patch_id_counter: int = 0
     patch_sets: "dict[str, PatchSet]" = field(default_factory=dict)
     patch_handles: "dict[str, PatchHandle]" = field(default_factory=dict)
+    feature_registry: "FeatureRegistry | None" = None
     strict_mode: bool = field(default_factory=strict_mode_from_env)
 
 

@@ -118,7 +118,7 @@ def test_config_save_response_shape(state, tmp_path):
     payload = _success_payload(_request(state, "services.config.save", {"path": str(config_file), "config": {"services": {"apply_on_bootstrap": False}}}))
 
     assert list(payload) == ["config"]
-    assert payload["config"]["services"] == {"apply_on_bootstrap": False}
+    assert payload["config"]["services"] == {**get_default_config()["services"], "apply_on_bootstrap": False}
     assert json.loads(config_file.read_text(encoding="utf-8")) == payload["config"]
 
 
