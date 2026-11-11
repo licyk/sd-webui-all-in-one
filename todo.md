@@ -98,12 +98,14 @@ $PY -m python_docstring_checker .
 - [x] Verify: regression + static green (572 passed on 3.11; patcher suite 504 passed on 3.10; full suite 2134 passed / 13 skipped)
 
 ## P8 Connection
-- [ ] `runtime/connection.py` (RuntimeConnectionSettings, ConnectionManager)
-- [ ] `RuntimeClient.rebind`; `connect_from_env` on settings
-- [ ] Make-before-break update with rollback; services + fault reopen
-- [ ] Opt-in reconnect with backoff; desktop read-only
-- [ ] Tests: `test_control_connection.py`
-- [ ] Verify
+- [x] P7 review fix: `CommandSpec.transports` allowlist; `services.config.load/save` → `forbidden` on desktop (dispatch + capabilities)
+- [x] `runtime/connection.py` (RuntimeConnectionSettings, ConnectionManager, `get_connection_manager`)
+- [x] `RuntimeClient.rebind`; `connect_from_env` on settings (parity table test)
+- [x] Make-before-break update with rollback; services + fault reopen (`state.fault_channel`, `ServiceControlChannel(endpoint=...)`)
+- [x] Opt-in reconnect with backoff (`…_RECONNECT=1`; write failure or services-channel EOF); desktop read-only
+- [x] `hotpatch.connection.test/update` commands + facade; `connection.get`/status fed by the manager
+- [x] Tests: `test_control_connection.py`
+- [x] Verify: regression + static green (667 passed on 3.11; patcher suite 599 passed on 3.10; full suite 2229 passed / 13 skipped)
 
 ## P9 Host side
 - [ ] Launch env `host`/`token` params; preserve timeout/trace/strict/reconnect overrides; unify builders

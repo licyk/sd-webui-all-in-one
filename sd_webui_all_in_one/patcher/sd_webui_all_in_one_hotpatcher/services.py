@@ -88,6 +88,8 @@ class ServiceControlChannel:
             独立控制通道套接字；尚未连接或连接失败时为 ``None``。
         closed (bool):
             控制通道是否已关闭
+        endpoint (tuple[str, int, str] | None):
+            显式指定的 ``(host, port, token)``; 为 None 时使用 ``client`` 的连接参数。
     """
 
     def __init__(
@@ -98,6 +100,7 @@ class ServiceControlChannel:
         timeout: float = DEFAULT_SERVICE_CONTROL_TIMEOUT,
         connect_timeout: float | None = None,
         response_write_timeout: float | None = None,
+        endpoint: tuple[str, int, str] | None = None,
     ) -> None:
         """
         初始化 services 控制通道
@@ -114,6 +117,9 @@ class ServiceControlChannel:
             response_write_timeout (float | None):
                 ``channel.open`` 和单次响应的写入超时。为 None 时使用
                 ``timeout``。空闲读取始终保持阻塞。
+            endpoint (tuple[str, int, str] | None):
+                ``(host, port, token)``: 连接该地址并以该 token 打开通道, 而不是使用 ``client`` 当前的连接参数。
+                连接管理器切换连接时用它在 ``client.rebind`` 之前打开新通道。
 
         Raises:
             Exception:
@@ -135,8 +141,10 @@ class ServiceControlChannel:
         self.closed = False
         self.sock: socket.socket | None = None
         self.reader: Any | None = None
+        self.endpoint = endpoint
+        host, port = (endpoint[0], endpoint[1]) if endpoint is not None else (client.host, client.port)
         try:
-            sock = socket.create_connection((client.host, client.port), timeout=self.connect_timeout)
+            sock = socket.create_connection((host, port), timeout=self.connect_timeout)
             self.sock = sock
             # 此超时是建连截止时间，不是长连接命令通道的空闲策略。
             sock.settimeout(None)
@@ -182,7 +190,7 @@ class ServiceControlChannel:
                 {
                     "type": "channel.open",
                     "channel": "services",
-                    "token": self.client.token,
+                    "token": self._channel_token(),
                 }
             )
             self.thread.start()
@@ -249,10 +257,12 @@ class ServiceControlChannel:
                 except Exception as exc:
                     if not self.closed:
                         self._terminate("read", exc)
+                        self._report_connection_lost(f"services channel read failed: {type(exc).__name__}")
                     return
                 if not line:
                     if not self.closed:
                         self._terminate("read", "host closed the services channel")
+                        self._report_connection_lost("host closed the services channel")
                     return
 
                 try:
@@ -290,7 +300,7 @@ class ServiceControlChannel:
         handler = getattr(self.service, "handle_control_request", None)
         if not callable(handler):
             return self.service.handle_request_json(request, runtime_client=self.client)
-        token = getattr(self.client, "token", None)
+        token = self._channel_token()
         return handler(
             request,
             runtime_client=self.client,
@@ -298,6 +308,24 @@ class ServiceControlChannel:
             token=token if isinstance(token, str) else None,
             after_send=after_send,
         )
+
+    def _channel_token(self) -> Any:
+        """返回打开本通道时使用的 token: 指定 ``endpoint`` 时为其 token, 否则为客户端当前 token。"""
+
+        if self.endpoint is not None:
+            return self.endpoint[2]
+        return getattr(self.client, "token", None)
+
+    def _report_connection_lost(self, reason: str) -> None:
+        """通知客户端宿主连接已丢失; 客户端未登记连接管理器时无任何作用。"""
+
+        report = getattr(self.client, "report_connection_lost", None)
+        if not callable(report):
+            return
+        try:
+            report(reason, origin=self)
+        except Exception as exc:
+            self._record_diagnostic("report", exc)
 
     def _send_error_response(self, response: dict[str, Any]) -> bool:
         """在套接字健康时发送可恢复的解码或处理器错误。"""

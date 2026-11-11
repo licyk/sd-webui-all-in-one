@@ -487,7 +487,7 @@ def status_snapshot(*, state: HotpatcherState | None = None) -> dict[str, Any]:
             "trace": get_trace(state=active_state),
             "events": get_event_log(state=active_state).stats(),
         },
-        "connection": _connection_settings(client),
+        "connection": _connection_summary(active_state, client),
         "watcher": _watcher_summary(watcher),
     }
     return _fit(redact_mapping(result), ("sets", "loaded_patches"))
@@ -516,8 +516,29 @@ def _client_status(client: Any) -> Any:
     return redact_mapping(json_safe(snapshot, max_string=_MAX_MESSAGE_CHARS, max_items=10, max_depth=3))
 
 
+def _legacy_connection_manager(state: HotpatcherState) -> Any:
+    # 桌面模式的连接参数归 Rust 所有, 只读; 只有支持 rebind 的旧版客户端才有连接管理器。
+    if state.bootstrap_transport_mode == "desktop_broker":
+        return None
+    from ..runtime.connection import get_connection_manager
+
+    try:
+        return get_connection_manager(state)
+    except Exception:
+        return None
+
+
+def _connection_summary(state: HotpatcherState, client: Any) -> dict[str, Any]:
+    # 旧版客户端由连接管理器报告可编辑的参数与连接状态; 其他客户端报告只读参数。敏感值全部脱敏。
+    manager = _legacy_connection_manager(state)
+    if manager is None:
+        return _connection_settings(client)
+    snapshot = manager.get()
+    return {**snapshot["settings"], "state": snapshot["state"], "connected": snapshot["connected"], "dropped_events": snapshot["dropped_events"]}
+
+
 def _connection_settings(client: Any) -> dict[str, Any]:
-    # 连接参数由 P8 的 ConnectionManager 接管; 目前只报告 bootstrap 运行时客户端的只读参数, 敏感值全部脱敏。
+    # 没有连接管理器的客户端 (桌面代理、未连接或替身对象) 只报告只读参数, 敏感值全部脱敏。
     if client is None:
         return {"transport": None, "editable": False}
     settings = getattr(client, "settings", None)

@@ -305,14 +305,46 @@ class ConnectionCommands(_Namespace):
 
     def get(self) -> dict[str, Any]:
         """
-        查询当前运行时连接 (只读, token 已脱敏)。
+        查询当前运行时连接 (token 已脱敏)。
 
         Returns:
             dict[str, Any]:
-                ``mode``、``connected``、``settings``、``status``。
+                ``mode``、``connected``、``settings`` (旧版连接 ``editable`` 为 True, 桌面为 False)、``status``;
+                旧版连接另有 ``manager`` (连接状态、丢弃事件数、重连与切换计数、诊断)。
         """
 
         return self._controller.request("hotpatch.connection.get")
+
+    def test(self, **changes: Any) -> dict[str, Any]:
+        """
+        按修改后的参数测试连接 (建连并发送 hello 后关闭, 不切换)。
+
+        Args:
+            **changes (Any):
+                连接字段: ``host``、``port``、``token``、``connect_timeout``、``request_timeout``、
+                ``event_write_timeout``、``reconnect``、``reconnect_initial``、``reconnect_max``、``allow_non_loopback``。
+
+        Returns:
+            dict[str, Any]:
+                ``ok``、脱敏后的 ``settings`` 与 ``elapsed_ms``。
+        """
+
+        return self._controller.request("hotpatch.connection.test", changes)
+
+    def update(self, **changes: Any) -> dict[str, Any]:
+        """
+        先建后拆地切换旧版运行时连接; 进程内调用立即切换。
+
+        Args:
+            **changes (Any):
+                连接字段, 同 ``test``。
+
+        Returns:
+            dict[str, Any]:
+                ``status`` 为 ``switched`` 的切换报告; 建连失败或回滚时抛出 ``CommandError`` (``connection_failed``)。
+        """
+
+        return self._controller.request("hotpatch.connection.update", changes)
 
 
 class HotpatchController:

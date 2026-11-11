@@ -3,19 +3,40 @@
 from __future__ import annotations
 
 import os
+import threading
+from collections.abc import Callable
 from typing import Any
 
 from ..exceptions import capture_exception
+from .connection import (
+    COMPATIBILITY_TIMEOUT_ENV,
+    CONNECT_TIMEOUT_ENV,
+    EVENT_WRITE_TIMEOUT_ENV,
+    REQUEST_TIMEOUT_ENV,
+    RuntimeConnectionSettings,
+    read_connection_env,
+)
+from .protocol import RuntimeTransportError
 from .transport import (
     DEFAULT_CONNECT_TIMEOUT,
     JsonlTcpTransport,
 )
 
 DEFAULT_FEATURES = ["config", "progress", "browser", "fileops", "faults", "audit", "logs", "services", "control"]
-CONNECT_TIMEOUT_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONNECT_TIMEOUT"
-REQUEST_TIMEOUT_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_REQUEST_TIMEOUT"
-EVENT_WRITE_TIMEOUT_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_EVENT_WRITE_TIMEOUT"
-COMPATIBILITY_TIMEOUT_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TIMEOUT"
+
+ConnectionListener = Callable[[Any, BaseException, str, Any], bool]
+"""传输故障通知: ``listener(transport, error, source, origin) -> handled``。``source`` 为 ``event`` / ``request`` / ``channel``,
+返回 True 表示故障已被接管 (事件计为丢弃, 不再调用 ``capture_exception``)"""
+
+__all__ = [
+    "COMPATIBILITY_TIMEOUT_ENV",
+    "CONNECT_TIMEOUT_ENV",
+    "DEFAULT_FEATURES",
+    "EVENT_WRITE_TIMEOUT_ENV",
+    "REQUEST_TIMEOUT_ENV",
+    "ConnectionListener",
+    "RuntimeClient",
+]
 
 
 class RuntimeClient:
@@ -23,6 +44,7 @@ class RuntimeClient:
     运行时宿主通信客户端
 
     封装 TCP JSONL transport, 对外提供请求、事件、配置拉取和上下文管理能力。
+    所有组件都持有客户端对象而不是传输对象, 因此 ``rebind`` 替换内部传输后它们无需更新。
 
     Attributes:
         transport (JsonlTcpTransport):
@@ -31,6 +53,86 @@ class RuntimeClient:
 
     def __init__(self, transport: JsonlTcpTransport):
         self.transport = transport
+        self._transport_lock = threading.Lock()
+        self._connection_listener: ConnectionListener | None = None
+
+    def rebind(self, transport: JsonlTcpTransport) -> JsonlTcpTransport:
+        """
+        原子地替换底层传输, 不关闭旧传输
+
+        已在进行中的发送继续使用其开始时读取的传输; ``host``、``port`` 和 ``token`` 随新传输变化。
+
+        Args:
+            transport (JsonlTcpTransport):
+                新的已连接传输对象
+
+        Returns:
+            JsonlTcpTransport:
+                被替换的旧传输对象, 由调用方负责关闭
+        """
+
+        with self._transport_lock:
+            previous = self.transport
+            self.transport = transport
+        return previous
+
+    @property
+    def connection_listener(self) -> ConnectionListener | None:
+        """
+        当前传输故障通知函数
+
+        Returns:
+            ConnectionListener | None:
+                由连接管理器登记的通知函数, 未登记时为 None
+        """
+
+        return getattr(self, "_connection_listener", None)
+
+    def set_connection_listener(self, listener: ConnectionListener | None) -> ConnectionListener | None:
+        """
+        登记传输故障通知函数
+
+        未登记时 (默认) 客户端行为与原来完全一致。
+
+        Args:
+            listener (ConnectionListener | None):
+                通知函数, None 表示注销
+
+        Returns:
+            ConnectionListener | None:
+                之前登记的通知函数
+        """
+
+        previous = getattr(self, "_connection_listener", None)
+        self._connection_listener = listener
+        return previous
+
+    def report_connection_lost(self, reason: str = "connection lost", *, origin: Any = None) -> bool:
+        """
+        报告与宿主的连接已丢失 (例如 services 通道读到 EOF)
+
+        Args:
+            reason (str):
+                原因描述
+            origin (Any):
+                报告来源对象, 例如 services 通道
+
+        Returns:
+            bool:
+                通知函数接管时返回 True; 未登记通知函数时返回 False
+        """
+
+        return self._notify_failure(self.transport, RuntimeTransportError(reason), "channel", origin)
+
+    def _notify_failure(self, transport: Any, error: BaseException, source: str, origin: Any = None) -> bool:
+        # 未调用 __init__ 的子类或替身对象没有该属性, 视为未登记。
+        listener = getattr(self, "_connection_listener", None)
+        if listener is None:
+            return False
+        try:
+            return bool(listener(transport, error, source, origin))
+        except Exception:
+            return False
 
     @property
     def host(self) -> str:
@@ -139,28 +241,23 @@ class RuntimeClient:
                 required 为 True 且连接宿主失败时抛出原始异常。
         """
 
-        host = os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST")
-        port = os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT")
-        token = os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN", "")
-        compatibility_timeout = float(os.getenv(COMPATIBILITY_TIMEOUT_ENV, str(DEFAULT_CONNECT_TIMEOUT)))
-        connect_timeout = float(os.getenv(CONNECT_TIMEOUT_ENV, str(compatibility_timeout)))
-        default_request_timeout = float(os.getenv(REQUEST_TIMEOUT_ENV, str(compatibility_timeout)))
-        event_write_timeout = float(os.getenv(EVENT_WRITE_TIMEOUT_ENV, str(compatibility_timeout)))
-
-        if not host or not port:
+        # 超时解析失败与原实现一样直接抛出 (即使未配置 host/port); 端口转换与建连失败才受 ``required`` 控制。
+        values = read_connection_env()
+        if values is None:
             if required:
                 raise RuntimeError("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST and SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT are required")
             return None
 
         try:
+            settings = RuntimeConnectionSettings.from_env_values(values)
             return cls.connect(
-                host,
-                int(port),
-                token=token,
-                timeout=compatibility_timeout,
-                connect_timeout=connect_timeout,
-                default_request_timeout=default_request_timeout,
-                event_write_timeout=event_write_timeout,
+                settings.host,
+                settings.port,
+                token=settings.token,
+                timeout=settings.compatibility_timeout,
+                connect_timeout=settings.connect_timeout,
+                default_request_timeout=settings.request_timeout,
+                event_write_timeout=settings.event_write_timeout,
             )
         except Exception:
             if required:
@@ -190,9 +287,18 @@ class RuntimeClient:
         Returns:
             dict[str, Any]:
                 宿主返回的响应载荷
+
+        Raises:
+            Exception:
+                传输层抛出的异常原样重新抛出; 抛出前通知已登记的连接管理器。
         """
 
-        return self.transport.request(message_type, payload, timeout=timeout)
+        transport = self.transport
+        try:
+            return transport.request(message_type, payload, timeout=timeout)
+        except Exception as exc:
+            self._notify_failure(transport, exc, "request")
+            raise
 
     def event(self, message_type: str, payload: dict[str, Any] | None = None) -> None:
         """
@@ -218,10 +324,13 @@ class RuntimeClient:
             bool: 事件发送成功时返回 ``True``。
         """
 
+        transport = self.transport
         try:
-            self.transport.event(message_type, payload)
+            transport.event(message_type, payload)
             return True
-        except Exception:
+        except Exception as exc:
+            if self._notify_failure(transport, exc, "event"):
+                return False
             capture_exception()
             return False
 

@@ -522,6 +522,9 @@ def test_capabilities_content_per_transport(state):
         "hotpatch.debug.strict.set",
         "hotpatch.debug.events.read",
         "hotpatch.connection.get",
+        # P8: 连接测试与切换命令
+        "hotpatch.connection.test",
+        "hotpatch.connection.update",
         "services.catalog.get",
         "services.defaults.get",
         "services.config.current",
@@ -533,11 +536,13 @@ def test_capabilities_content_per_transport(state):
     blocking = ["hotpatch.modules.reload", "hotpatch.sets.load", "hotpatch.sets.reload", "hotpatch.sets.update"]
     assert set(inprocess["commands"]) == expected_builtin | {"demo.local"}
     assert set(legacy["commands"]) == expected_builtin
-    assert set(desktop["commands"]) == expected_builtin - set(blocking)
+    # P8: services.config.load/save 读写任意路径, 不对桌面传输开放 (transports 白名单)。
+    assert set(desktop["commands"]) == expected_builtin - set(blocking) - {"services.config.load", "services.config.save"}
     assert inprocess["blocking_commands"] == blocking
     assert desktop["blocking_commands"] == blocking
     assert inprocess["conditional_blocking_commands"] == ["hotpatch.features.enable", "hotpatch.features.update"]
-    assert inprocess["token_required_commands"] == blocking
+    # P8: 连接测试与切换命令在旧版通道上要求非空 token。
+    assert inprocess["token_required_commands"] == sorted(blocking + ["hotpatch.connection.test", "hotpatch.connection.update"])
     assert "hotpatch.debug.trace.set" in inprocess["mutating_commands"]
     assert "hotpatch.patches.list" not in inprocess["mutating_commands"]
     assert desktop["aliases"] == {"config.apply": "services.config.apply"}

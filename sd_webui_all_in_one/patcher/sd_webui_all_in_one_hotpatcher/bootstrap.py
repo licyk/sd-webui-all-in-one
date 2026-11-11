@@ -220,6 +220,8 @@ def configure_from_env(*, state: HotpatcherState | None = None) -> BootstrapStat
 def initialize_legacy_runtime(*, state: HotpatcherState | None = None) -> RuntimeClient | None:
     """设置旧版标志时初始化现有 TCP JSONL 客户端。
 
+    设置 ``SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RECONNECT=1`` 且连接成功时同时创建连接管理器以启用自动重连。
+
     Args:
         state (HotpatcherState | None): 可选热补丁状态。
 
@@ -234,6 +236,14 @@ def initialize_legacy_runtime(*, state: HotpatcherState | None = None) -> Runtim
     from .runtime.client import RuntimeClient
 
     active_state.bootstrap_runtime_client = RuntimeClient.connect_from_env(required=False)
+    if active_state.bootstrap_runtime_client is not None and os.getenv("SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RECONNECT") == "1":
+        # 自动重连需要连接管理器在第一次断线前登记通知; 未启用时管理器在首次查询连接时惰性创建。
+        try:
+            from .runtime.connection import get_connection_manager
+
+            get_connection_manager(active_state)
+        except Exception:
+            capture_exception(state=active_state)
     return active_state.bootstrap_runtime_client
 
 

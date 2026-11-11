@@ -24,7 +24,7 @@ from .commands import CONTROL_VERSION, CommandContext, CommandError, CommandSpec
 from .events import read_events
 from .features import ConfigCall, NoArgCall, disable_feature, enable_feature, get_feature_registry, list_features, update_feature
 from .handles import MAX_ERROR_MESSAGE_CHARS, PatchHandle, get_patch_handle, list_patch_handles
-from .inspect import _client_status, _connection_settings, explain, render_patched_source, status_snapshot, verify_source_patches
+from .inspect import _client_status, _connection_settings, _legacy_connection_manager, explain, render_patched_source, status_snapshot, verify_source_patches
 from .loader import RemoteLoadError, check_remote_load_allowed, get_loaded_patch, load_patch, reload_patch, unload_patch, update_patch
 from .patchset import PatchSet, get_patch_set, list_patch_sets, register_patch_set, remove_patch_set
 from .trace import get_trace, redact_mapping, set_trace
@@ -319,7 +319,7 @@ def _optional_dict(payload: Mapping[str, Any], key: str) -> dict[str, Any] | Non
 def _capabilities(controller: HotpatchController, ctx: CommandContext, payload: dict[str, Any]) -> dict[str, Any]:
     del payload
     specs = controller.registry.specs()
-    usable = [spec for spec in specs if spec.remote or not ctx.remote]
+    usable = [spec for spec in specs if spec.allows_transport(ctx.transport)]
     dispatchable = [spec for spec in usable if not (ctx.transport == "desktop" and spec.blocking)]
     dispatchable_names = {spec.name for spec in dispatchable}
     groups: set[str] = set()
@@ -646,13 +646,80 @@ def _events_read(controller: HotpatchController, ctx: CommandContext, payload: d
 def _connection_get(controller: HotpatchController, ctx: CommandContext, payload: dict[str, Any]) -> dict[str, Any]:
     del controller, payload
     client = ctx.state.bootstrap_runtime_client
+    manager = None if ctx.transport == "desktop" else _legacy_connection_manager(ctx.state)
+    if manager is None:
+        result: dict[str, Any] = {
+            "mode": ctx.state.bootstrap_transport_mode,
+            "connected": client is not None,
+            "settings": _connection_settings(client),
+            "status": _client_status(client),
+        }
+        return redact_mapping(result)
+    snapshot = manager.get()
     result = {
         "mode": ctx.state.bootstrap_transport_mode,
-        "connected": client is not None,
-        "settings": _connection_settings(client),
+        "connected": snapshot.pop("connected"),
+        "settings": snapshot.pop("settings"),
         "status": _client_status(client),
+        "manager": snapshot,
     }
     return redact_mapping(result)
+
+
+def _connection_changes(ctx: CommandContext, payload: dict[str, Any]) -> dict[str, Any]:
+    # 桌面传输或桌面模式进程的连接参数归 Rust 所有, 只读。
+    if ctx.transport == "desktop" or ctx.state.bootstrap_transport_mode == "desktop_broker":
+        raise CommandError("unsupported_transport", "connection parameters of the desktop broker transport are owned by the desktop host and are read-only")
+    unknown = sorted(key for key in payload if key not in _CONNECTION_PAYLOAD)
+    if unknown:
+        raise CommandError("invalid_payload", f"unknown connection fields: {', '.join(unknown)}")
+    if ctx.remote and payload.get("allow_non_loopback") is True:
+        raise CommandError("forbidden", "allow_non_loopback can only be enabled in-process")
+    return {key: payload[key] for key in _CONNECTION_PAYLOAD if key in payload}
+
+
+def _connection_manager_for(ctx: CommandContext) -> Any:
+    manager = _legacy_connection_manager(ctx.state)
+    if manager is None:
+        raise CommandError("conflict", "no legacy runtime connection is available")
+    return manager
+
+
+def _connection_test(controller: HotpatchController, ctx: CommandContext, payload: dict[str, Any]) -> dict[str, Any]:
+    del controller
+    from ..runtime.connection import ConnectionFailedError
+
+    changes = _connection_changes(ctx, payload)
+    manager = _connection_manager_for(ctx)
+    try:
+        return manager.test(changes)
+    except ValueError as exc:
+        raise CommandError("invalid_payload", str(exc)) from exc
+    except ConnectionFailedError as exc:
+        raise CommandError("connection_failed", str(exc)) from exc
+
+
+def _connection_update(controller: HotpatchController, ctx: CommandContext, payload: dict[str, Any]) -> dict[str, Any]:
+    del controller
+    from ..runtime.connection import ConnectionBusyError, ConnectionFailedError
+
+    changes = _connection_changes(ctx, payload)
+    if not changes:
+        raise CommandError("invalid_payload", "no connection parameters to change")
+    manager = _connection_manager_for(ctx)
+    # 远程命令在响应写出之后切换 (旧版通道的 after_send); 进程内调用立即切换并报告最终结果。
+    defer = None if ctx.transport == "inprocess" else ctx.after_send.append
+    try:
+        report = manager.update(changes, defer=defer)
+    except ValueError as exc:
+        raise CommandError("invalid_payload", str(exc)) from exc
+    except ConnectionBusyError as exc:
+        raise CommandError("busy", str(exc)) from exc
+    except ConnectionFailedError as exc:
+        raise CommandError("connection_failed", str(exc)) from exc
+    if report.get("status") == "rolled_back":
+        raise CommandError("connection_failed", f"connection switch rolled back at stage {report.get('stage')}: {report.get('error')}", details=report)
+    return report
 
 
 # ---------------------------------------------------------------------------
@@ -736,6 +803,21 @@ def _services_config_apply(services: Any, ctx: CommandContext, payload: dict[str
 _STR_KEY = PayloadField("str", required=True, max_len=512)
 _MODULE = PayloadField("str", required=True, max_len=512)
 _LIMIT = PayloadField("int", default=DEFAULT_LIST_LIMIT)
+_NO_DESKTOP = frozenset({"inprocess", "legacy"})
+_TIMEOUT = PayloadField("float", nullable=True)
+_CONNECTION_PAYLOAD: dict[str, PayloadField] = {
+    "host": PayloadField("str", max_len=253, nullable=True),
+    "port": PayloadField("int", nullable=True),
+    "token": PayloadField("str", max_len=4096, nullable=True),
+    "connect_timeout": _TIMEOUT,
+    "request_timeout": _TIMEOUT,
+    "event_write_timeout": _TIMEOUT,
+    "reconnect": PayloadField("bool", nullable=True),
+    "reconnect_initial": _TIMEOUT,
+    "reconnect_max": _TIMEOUT,
+    # 只能在进程内开启, 远程开启返回 forbidden。
+    "allow_non_loopback": PayloadField("bool", nullable=True),
+}
 
 
 def _builtin_specs() -> list[tuple[str, Handler, dict[str, Any]]]:
@@ -776,12 +858,15 @@ def _builtin_specs() -> list[tuple[str, Handler, dict[str, Any]]]:
         ("hotpatch.debug.strict.set", _strict_set, {"payload": {"enabled": PayloadField("bool", required=True)}, "mutating": True}),
         ("hotpatch.debug.events.read", _events_read, {"payload": {"since_cursor": PayloadField("int", default=0), "limit": _LIMIT}}),
         ("hotpatch.connection.get", _connection_get, {}),
+        ("hotpatch.connection.test", _connection_test, {"payload": _CONNECTION_PAYLOAD, "requires_token": True}),
+        ("hotpatch.connection.update", _connection_update, {"payload": _CONNECTION_PAYLOAD, "mutating": True, "requires_token": True}),
         ("services.catalog.get", _services_catalog_get, {}),
         ("services.defaults.get", _services_defaults_get, {}),
         ("services.config.current", _services_config_current, {}),
         ("services.config.normalize", _services_config_normalize, {}),
-        ("services.config.load", _services_config_load, {"mutating": True}),
-        ("services.config.save", _services_config_save, {"mutating": True}),
+        # 读写任意文件路径; 桌面传输此前从未开放, 只保留进程内与旧版通道。
+        ("services.config.load", _services_config_load, {"mutating": True, "transports": _NO_DESKTOP}),
+        ("services.config.save", _services_config_save, {"mutating": True, "transports": _NO_DESKTOP}),
         ("services.config.apply", _services_config_apply, {"mutating": True, "aliases": ("config.apply",)}),
     ]
 

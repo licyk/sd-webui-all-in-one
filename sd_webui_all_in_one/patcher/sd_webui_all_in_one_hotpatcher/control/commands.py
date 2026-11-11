@@ -17,7 +17,9 @@ Envelope 结构与 services v1 一致::
 - ``remote=False``: 只允许 ``inprocess`` 传输, 其他传输返回 ``forbidden``;
 - ``blocking=True``: 桌面传输返回 ``unsupported_transport`` 且不调用处理函数 (桌面命令运行在唯一的代理
   工作线程上, 该线程同时负责心跳与事件上传);
-- ``requires_token=True``: 旧版传输的 token 为空时返回 ``forbidden``。
+- ``requires_token=True``: 旧版传输的 token 为空时返回 ``forbidden``;
+- ``transports``: 允许的来源传输白名单, 不在其中的传输返回 ``forbidden`` (例如读写任意文件路径的
+  ``services.config.load`` / ``services.config.save`` 不对桌面传输开放)。
 """
 
 from __future__ import annotations
@@ -300,6 +302,8 @@ class CommandSpec:
             命令说明。
         conditional_blocking (bool):
             是否只在特定载荷下阻塞 (由处理函数在桌面传输上自行拒绝), 仅用于能力报告。
+        transports (frozenset[str] | None):
+            允许的来源传输白名单, 取值见 ``TRANSPORTS``; 为 None 时不限制。不在白名单中的传输返回 ``forbidden``。
     """
 
     name: str
@@ -313,6 +317,7 @@ class CommandSpec:
     aliases: tuple[str, ...] = ()
     description: str = ""
     conditional_blocking: bool = False
+    transports: frozenset[str] | None = None
 
     def __post_init__(self) -> None:
         """
@@ -325,6 +330,12 @@ class CommandSpec:
                 ``handler`` 不可调用时抛出。
         """
 
+        if self.transports is not None:
+            if not isinstance(self.transports, frozenset):
+                raise ValueError(f"command {self.name!r} transports must be a frozenset or None")
+            unknown = sorted(str(item) for item in self.transports if item not in TRANSPORTS)
+            if unknown:
+                raise ValueError(f"command {self.name!r} has unknown transports: {', '.join(unknown)}")
         for value in (self.name, *self.aliases):
             _validate_command_name(value)
         if not callable(self.handler):
@@ -341,7 +352,8 @@ class CommandSpec:
 
         Returns:
             dict[str, Any]:
-                ``mutating``、``blocking``、``conditional_blocking``、``remote``、``requires_token``、``since``、``aliases``。
+                ``mutating``、``blocking``、``conditional_blocking``、``remote``、``requires_token``、``since``、``aliases``、
+                ``transports`` (排序后的白名单, 不限制时为 None)。
         """
 
         return {
@@ -352,7 +364,25 @@ class CommandSpec:
             "requires_token": self.requires_token,
             "since": self.since,
             "aliases": list(self.aliases),
+            "transports": sorted(self.transports) if self.transports is not None else None,
         }
+
+    def allows_transport(self, transport: str) -> bool:
+        """
+        判断命令的传输策略 (``remote`` 与 ``transports`` 白名单) 是否允许来自指定传输的调用。
+
+        Args:
+            transport (str):
+                来源传输。
+
+        Returns:
+            bool:
+                允许时返回 True; 不检查 ``blocking`` 与 ``requires_token``。
+        """
+
+        if transport != "inprocess" and not self.remote:
+            return False
+        return self.transports is None or transport in self.transports
 
 
 def success_envelope(payload: dict[str, Any]) -> dict[str, Any]:
@@ -653,7 +683,7 @@ class CommandRegistry:
         """
         分发命令, 从不抛出 ``Exception``。
 
-        顺序: 解析名称与别名 → 传输策略 (``remote`` / ``blocking`` / ``requires_token``) → 载荷校验 →
+        顺序: 解析名称与别名 → 传输策略 (``remote`` / ``transports`` / ``blocking`` / ``requires_token``) → 载荷校验 →
         调用处理函数 → 桌面结果大小检查 → envelope。``control`` 标签启用时输出包含耗时的跟踪。
 
         Args:
@@ -693,6 +723,8 @@ class CommandRegistry:
             raise CommandError("unsupported_transport", f"unknown transport {ctx.transport!r}")
         if ctx.transport != "inprocess" and not spec.remote:
             raise CommandError("forbidden", f"command {spec.name} is only available in-process")
+        if spec.transports is not None and ctx.transport not in spec.transports:
+            raise CommandError("forbidden", f"command {spec.name} is not available on the {ctx.transport} transport")
         if ctx.transport == "desktop" and spec.blocking:
             raise CommandError("unsupported_transport", f"command {spec.name} may import modules or run patch code and is not available on the desktop transport")
         if ctx.transport == "legacy" and spec.requires_token and not (isinstance(ctx.token, str) and ctx.token.strip()):
