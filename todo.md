@@ -30,10 +30,10 @@ $PY -m python_docstring_checker .
 - [x] D7 scope of "server connection params" (recommended: child target + host listener rebind)
 
 ## P0 Baseline
-- [ ] Golden snapshot test: `get_default_config()` and static `get_catalog()`
-- [ ] Snapshot tests: `services.*` response shapes and desktop `config.apply` result
-- [ ] Invariant test: importing `services` loads no `sd_webui_all_in_one_hotpatcher_ext` modules
-- [ ] Verify: regression green
+- [x] Golden snapshot test: `get_default_config()` and static `get_catalog()`
+- [x] Snapshot tests: `services.*` response shapes and desktop `config.apply` result
+- [x] Invariant test: importing `services` loads no `sd_webui_all_in_one_hotpatcher_ext` modules
+- [x] Verify: regression green
 
 ## P1 Journal and PatchSet
 - [ ] `control/journal.py` (NOTSET, LIFO, isolated, idempotent undo, raw `__dict__` for classes)
