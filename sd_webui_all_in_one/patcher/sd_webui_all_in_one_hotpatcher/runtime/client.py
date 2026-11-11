@@ -11,7 +11,7 @@ from .transport import (
     JsonlTcpTransport,
 )
 
-DEFAULT_FEATURES = ["config", "progress", "browser", "fileops", "faults", "audit", "logs", "services"]
+DEFAULT_FEATURES = ["config", "progress", "browser", "fileops", "faults", "audit", "logs", "services", "control"]
 CONNECT_TIMEOUT_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONNECT_TIMEOUT"
 REQUEST_TIMEOUT_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_REQUEST_TIMEOUT"
 EVENT_WRITE_TIMEOUT_ENV = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_EVENT_WRITE_TIMEOUT"

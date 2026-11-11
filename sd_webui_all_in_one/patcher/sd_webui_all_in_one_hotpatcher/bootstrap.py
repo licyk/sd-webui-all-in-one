@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import os
 from dataclasses import dataclass
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from .exceptions import capture_exception
@@ -269,30 +270,48 @@ def _handle_desktop_command(
     *,
     state: HotpatcherState,
 ) -> dict[str, Any]:
-    """将带版本的桌面命令接口映射到现有纯服务。"""
+    """经统一命令注册表处理桌面代理命令。
+
+    ``config.apply`` 保持 v1 契约: ``payload.config`` 必须是 object (否则 ``invalid_command_payload``),
+    结果映射为 ``{"applyResult": ...}``。其他已注册的远程命令成功时返回其载荷; 错误 envelope 转换为
+    ``DesktopBrokerCommandError(code, message)``, 未知命令为 ``unknown_command``。响应后回调在分发返回后立即执行。
+    """
 
     from .runtime.desktop_broker import DesktopBrokerCommandError
 
-    if command_type != "config.apply":
-        raise DesktopBrokerCommandError(
-            "unknown_command",
-            f"unsupported desktop broker command: {command_type}",
-        )
-    config = payload.get("config")
-    if not isinstance(config, dict):
-        raise DesktopBrokerCommandError(
-            "invalid_command_payload",
-            "config.apply payload.config must be an object",
-        )
-    from .services import apply_config
+    if command_type == "config.apply":
+        config = payload.get("config")
+        if not isinstance(config, dict):
+            raise DesktopBrokerCommandError(
+                "invalid_command_payload",
+                "config.apply payload.config must be an object",
+            )
 
-    return {
-        "applyResult": apply_config(
-            config,
-            runtime_client=state.bootstrap_runtime_client,
-            state=state,
-        )
-    }
+    from .control.commands import run_after_send
+    from .control.controller import get_controller
+
+    after_send: list[Callable[[], Any]] = []
+    envelope = get_controller(state).dispatch(
+        command_type,
+        payload,
+        transport="desktop",
+        runtime_client=state.bootstrap_runtime_client,
+        after_send=after_send,
+    )
+    if not envelope.get("ok"):
+        error = envelope.get("error") or {}
+        code = str(error.get("code") or "request_failed")
+        if code == "unknown_request":
+            raise DesktopBrokerCommandError(
+                "unknown_command",
+                f"unsupported desktop broker command: {command_type}",
+            )
+        raise DesktopBrokerCommandError(code, str(error.get("message") or ""))
+    run_after_send(after_send)
+    result = envelope["payload"]
+    if command_type == "config.apply":
+        return {"applyResult": result["result"]}
+    return result
 
 
 def get_runtime_client(*, state: HotpatcherState | None = None) -> RuntimeClient | DesktopBrokerClient | None:

@@ -86,16 +86,16 @@ $PY -m python_docstring_checker .
 - [x] Verify: regression + static green (526 passed on 3.11; patcher suite 459 passed on 3.10; full suite 2088 passed / 13 skipped)
 
 ## P7 Unified commands
-- [ ] `control/commands.py` (CommandSpec, registry, validation, envelopes, error codes)
-- [ ] `control/controller.py` + `hotpatch` facade export in `__init__.py`
-- [ ] `services.handle_request_json` → shim over dispatch (aliases)
-- [ ] `_handle_desktop_command` → dispatch (keep `applyResult`, `unknown_command`)
-- [ ] `hotpatch.capabilities` probe + `CONTROL_VERSION`; `hello.features += "control"` (hint only)
-- [ ] `CommandSpec.blocking`; blocking commands → `unsupported_transport` on desktop
-- [ ] Post-response actions in `ServiceControlChannel`
-- [ ] Gate config-borne `control.patch_sets` / `allow_remote_load` on remote `services.config.apply` and desktop `config.apply` against the pre-request config (D6 bypass found in P5)
-- [ ] Tests: `test_control_commands.py`, `test_control_concurrency.py`
-- [ ] Verify
+- [x] `control/commands.py` (CommandSpec, registry, validation, envelopes, error codes)
+- [x] `control/controller.py` + `hotpatch` facade export in `__init__.py` (lazy module `__getattr__`; handlers in `control/builtin_commands.py`)
+- [x] `services.handle_request_json` → shim over dispatch (aliases)
+- [x] `_handle_desktop_command` → dispatch (keep `applyResult`, `unknown_command`)
+- [x] `hotpatch.capabilities` probe + `CONTROL_VERSION`; `hello.features += "control"` (hint only; `connect()` already sent `DEFAULT_FEATURES`, not `[]`)
+- [x] `CommandSpec.blocking`; blocking commands → `unsupported_transport` on desktop
+- [x] Post-response actions in `ServiceControlChannel`
+- [x] Gate config-borne `control.patch_sets` / `allow_remote_load` on remote `services.config.apply` and desktop `config.apply` against the pre-request config (D6 bypass found in P5); also remote `services.config.save` and `features.enable/update` for `control`
+- [x] Tests: `test_control_commands.py`, `test_control_concurrency.py` (+ `tests/base_manager/hotpatcher_manager/test_host_control_hello.py`)
+- [x] Verify: regression + static green (572 passed on 3.11; patcher suite 504 passed on 3.10; full suite 2134 passed / 13 skipped)
 
 ## P8 Connection
 - [ ] `runtime/connection.py` (RuntimeConnectionSettings, ConnectionManager)

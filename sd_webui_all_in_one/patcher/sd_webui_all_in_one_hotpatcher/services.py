@@ -10,8 +10,10 @@ import math
 import socket
 import threading
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any, cast
 
+from .control.commands import run_after_send
 from .control.features import (
     BUILTIN_FEATURES,
     FeatureContext,
@@ -261,11 +263,13 @@ class ServiceControlChannel:
                         return
                     continue
 
+                after_send: list[Callable[[], Any]] = []
                 try:
-                    response = self.service.handle_request_json(request, runtime_client=self.client)
+                    response = self._handle_request(request, after_send)
                 except Exception as exc:
                     self._record_diagnostic("handler", exc)
                     response = _error_response("request_failed", str(exc))
+                    after_send.clear()
                 if "id" in request:
                     response["id"] = request["id"]
 
@@ -275,8 +279,25 @@ class ServiceControlChannel:
                     if not self.closed:
                         self._terminate("response", exc)
                     return
+                # 响应已写出后再执行处理函数登记的后续动作 (例如切换连接), 失败只记录诊断。
+                run_after_send(after_send, on_error=lambda exc: self._record_diagnostic("after_send", f"{type(exc).__name__}: {exc}"))
         finally:
             self.close()
+
+    def _handle_request(self, request: dict[str, Any], after_send: list[Callable[[], Any]]) -> dict[str, Any]:
+        """经统一命令分发处理请求; 只实现 ``handle_request_json`` 的自定义服务沿用旧调用方式。"""
+
+        handler = getattr(self.service, "handle_control_request", None)
+        if not callable(handler):
+            return self.service.handle_request_json(request, runtime_client=self.client)
+        token = getattr(self.client, "token", None)
+        return handler(
+            request,
+            runtime_client=self.client,
+            transport="legacy",
+            token=token if isinstance(token, str) else None,
+            after_send=after_send,
+        )
 
     def _send_error_response(self, response: dict[str, Any]) -> bool:
         """在套接字健康时发送可恢复的解码或处理器错误。"""
@@ -418,6 +439,44 @@ class PatchService:
         """
 
         return handle_request_json(raw, runtime_client=runtime_client, state=self.state)
+
+    def handle_control_request(
+        self,
+        raw: str | dict[str, Any],
+        *,
+        runtime_client: RuntimeEventSink | None = None,
+        transport: str = "legacy",
+        token: str | None = None,
+        after_send: list[Callable[[], Any]] | None = None,
+    ) -> dict[str, Any]:
+        """
+        处理来自运行时通道的请求, 按来源传输执行信任边界检查
+
+        Args:
+            raw (str | dict[str, Any]):
+                JSON 字符串或请求对象
+            runtime_client (RuntimeEventSink | None):
+                可选运行时客户端
+            transport (str):
+                来源传输, ``legacy`` 或 ``desktop``
+            token (str | None):
+                该连接使用的 token
+            after_send (list[Callable[[], Any]] | None):
+                接收响应后回调的列表, 由调用方在写出响应后执行。为 None 时在分发后立即执行。
+
+        Returns:
+            dict[str, Any]:
+                固定 ok/error 格式响应
+        """
+
+        return handle_control_request(
+            raw,
+            runtime_client=runtime_client,
+            state=self.state,
+            transport=transport,
+            token=token,
+            after_send=after_send,
+        )
 
 
 def get_catalog(*, state: HotpatcherState | None = None) -> dict[str, Any]:
@@ -663,42 +722,68 @@ def handle_request_json(
             固定 ok/error 格式响应
     """
 
+    return handle_control_request(raw, runtime_client=runtime_client, state=state, transport="inprocess")
+
+
+def handle_control_request(
+    raw: str | dict[str, Any],
+    *,
+    runtime_client: RuntimeEventSink | None = None,
+    state: HotpatcherState | None = None,
+    transport: str = "inprocess",
+    token: str | None = None,
+    after_send: list[Callable[[], Any]] | None = None,
+) -> dict[str, Any]:
+    """
+    解码请求并交给统一命令注册表分发
+
+    ``services.*`` 请求的响应与 v1 完全一致; 同一入口也接受 ``hotpatch.*`` 控制命令。请求本身无法解码时返回
+    ``invalid_json`` / ``request_failed``, 载荷不是 object 时返回 ``invalid_request``, 未知类型返回 ``unknown_request``。
+
+    Args:
+        raw (str | dict[str, Any]):
+            JSON 字符串或请求对象
+        runtime_client (RuntimeEventSink | None):
+            可选运行时客户端, 原样传给命令处理函数
+        state (HotpatcherState | None):
+            可选状态对象。为 None 时使用默认状态。
+        transport (str):
+            来源传输: ``inprocess`` / ``legacy`` / ``desktop``
+        token (str | None):
+            该连接使用的 token
+        after_send (list[Callable[[], Any]] | None):
+            接收响应后回调的列表, 由调用方在写出响应后执行。为 None 时在分发后立即执行。
+
+    Returns:
+        dict[str, Any]:
+            固定 ok/error 格式响应
+    """
+
     active_state = state or get_default_state()
     try:
         request = _decode_request(raw)
-        message_type = request["type"]
-        payload = request.get("payload", {})
-        if not isinstance(payload, dict):
-            return _error_response("invalid_request", "payload must be an object")
-
-        if message_type == "services.catalog.get":
-            return _success_response({"catalog": get_catalog(state=active_state)})
-        if message_type == "services.defaults.get":
-            return _success_response({"config": get_default_config(state=active_state)})
-        if message_type == "services.config.current":
-            return _success_response({"config": get_current_config(state=active_state)})
-        if message_type == "services.config.normalize":
-            return _success_response({"config": normalize_config(_payload_config(payload), state=active_state)})
-        if message_type == "services.config.load":
-            config = load_config_file(
-                _payload_path(payload),
-                write_back=bool(payload.get("write_back", True)),
-            )
-            return _success_response({"config": config})
-        if message_type == "services.config.save":
-            path = _payload_path(payload)
-            config = normalize_config(_payload_config(payload), state=active_state)
-            save_config_file(path, config)
-            return _success_response({"config": config})
-        if message_type == "services.config.apply":
-            result = apply_config(_payload_config(payload), runtime_client=runtime_client, state=active_state)
-            return _success_response({"result": result})
-
-        return _error_response("unknown_request", f"unknown services request: {message_type}")
     except json.JSONDecodeError as exc:
         return _error_response("invalid_json", str(exc))
-    except (OSError, RuntimeProtocolError, ValueError, TypeError) as exc:
+    except (ValueError, TypeError) as exc:
         return _error_response("request_failed", str(exc))
+    payload = request.get("payload", {})
+    if not isinstance(payload, dict):
+        return _error_response("invalid_request", "payload must be an object")
+
+    from .control.controller import get_controller
+
+    callbacks: list[Callable[[], Any]] = [] if after_send is None else after_send
+    response = get_controller(active_state).dispatch(
+        request["type"],
+        payload,
+        transport=transport,
+        token=token,
+        runtime_client=runtime_client,
+        after_send=callbacks,
+    )
+    if after_send is None:
+        run_after_send(callbacks)
+    return response
 
 
 def install_service_control_channel(

@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from _thread import _local as ThreadLocal
     from importlib.machinery import ModuleSpec
 
+    from .control.controller import HotpatchController
     from .control.events import PatchEventLog
     from .control.features import FeatureRegistry
     from .control.handles import PatchHandle
@@ -58,7 +59,7 @@ class HotpatcherState:
 
     锁约定: ``control_lock`` 只保护控制平面的内存注册表 (``patch_id_counter``、``patch_sets``、
     ``patch_handles``、``feature_registry`` 的创建、``loaded_patches``、``loading_patches``、
-    ``rebind_skip_modules``、``patch_file_watcher``、``tracer`` 与 ``event_log`` 的创建) 的读写。``event_log`` 记录事件时只使用其内部叶子锁, 从不获取 ``control_lock``。持有该锁时绝不执行 ``importlib`` 调用、用户补丁函数或
+    ``rebind_skip_modules``、``patch_file_watcher``、``tracer``、``event_log`` 与 ``controller`` 的创建) 的读写。``event_log`` 记录事件时只使用其内部叶子锁, 从不获取 ``control_lock``。持有该锁时绝不执行 ``importlib`` 调用、用户补丁函数或
     ``setup`` 回调、socket/HTTP I/O; 调用方应在锁内计算、在锁外执行。这样控制线程不会在
     持有 ``control_lock`` 时等待模块导入锁, 避免与正在导入并读取补丁计划的主线程死锁。
 
@@ -138,6 +139,8 @@ class HotpatcherState:
             ``SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TRACE`` 时) 惰性创建。热路径只读取该字段, 为 None 时不跟踪。
         event_log (PatchEventLog | None):
             补丁事件环形缓冲区, 首次记录事件时由 ``control.events.get_event_log`` 惰性创建。
+        controller (HotpatchController | None):
+            统一控制门面与命令注册表, 首次通过 ``control.controller.get_controller`` 访问时创建。
     """
 
     monkey_zoo: "MonkeyZoo | None" = None
@@ -175,6 +178,7 @@ class HotpatcherState:
     patch_file_watcher: "PatchFileWatcher | None" = None
     tracer: "HotpatchTracer | None" = None
     event_log: "PatchEventLog | None" = None
+    controller: "HotpatchController | None" = None
 
 
 _default_state = HotpatcherState()
