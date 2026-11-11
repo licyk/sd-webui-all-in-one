@@ -122,6 +122,13 @@ class RuntimeServiceChannel:
             通道关闭时的回调函数。
         closed (bool):
             通道是否已关闭。
+        capability_status (str):
+            该通道对端的控制能力探测状态: ``unknown`` (尚未探测或探测失败, 可重试)、``control`` (支持控制命令)
+            或 ``legacy`` (对端以 ``unknown_request`` 拒绝 ``hotpatch.capabilities``)。
+        capabilities (dict[str, Any] | None):
+            ``capability_status`` 为 ``control`` 时缓存的 ``hotpatch.capabilities`` 结果。
+        probe_lock (threading.Lock):
+            串行化同一通道上的能力探测。
     """
 
     def __init__(
@@ -136,6 +143,9 @@ class RuntimeServiceChannel:
         self._pending: dict[str, _PendingRequest] = {}
         self._pending_lock = threading.Lock()
         self.closed = False
+        self.capability_status = "unknown"
+        self.capabilities: dict[str, Any] | None = None
+        self.probe_lock = threading.Lock()
 
     def request(
         self,

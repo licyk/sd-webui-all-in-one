@@ -108,12 +108,13 @@ $PY -m python_docstring_checker .
 - [x] Verify: regression + static green (667 passed on 3.11; patcher suite 599 passed on 3.10; full suite 2229 passed / 13 skipped)
 
 ## P9 Host side
-- [ ] Launch env `host`/`token` params; preserve timeout/trace/strict/reconnect overrides; unify builders
-- [ ] Host: capability probe per services channel; `request_control` + wrappers; empty-token non-loopback warning
-- [ ] `HotpatcherRuntimeHost.rebind()` (new listener, dual-token window, child update, rollback) (D7)
-- [ ] CLI/GUI per D2/D3; API server stays without runtime control
-- [ ] Tests: `test_host_control.py`, `test_launch_env.py` additions
-- [ ] Verify
+- [x] Flaky fix: `test_legacy_services_channel_end_to_end` asserts `hello` order-independently (300/300 runs)
+- [x] Launch env `host`/`token` params; preserve timeout/trace/strict/reconnect overrides (debug vars also without runtime); unify builders (partial env kept, documented merge)
+- [x] Host: capability probe per services channel (lazy by default, `auto_probe=True` in the GUI; cached on the channel); `request_control` + wrappers (`host_control.py` mixin); empty-token non-loopback warning
+- [x] `HotpatcherRuntimeHost.rebind()` (new listener or token-only on the same listener, dual-token window, child update, commit = old services channel closes, rollback closes the new listener and its connections; no-child move) (D7)
+- [x] CLI/GUI per D2/D3: no CLI change; GUI "运行时控制" tab (`hotpatcher_manager_gui/runtime_control.py`); API server stays without runtime control
+- [x] Tests: `test_host_control.py` (20/20 runs), `test_launch_env_overrides.py`, `tests/base_manager/gui/test_hotpatcher_gui_runtime_control.py`
+- [x] Verify: regression + static green (702 passed on 3.11; patcher suite 599 passed on 3.10; full suite 2264 passed / 13 skipped; ty 13)
 
 ## P10 Docs and cleanup
 - [ ] Rewrite `HOTPATCH_CONTROL_PLAN.md` as the as-built doc (Chinese) and move it to the D1 location (+ zensical nav)

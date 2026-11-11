@@ -833,9 +833,10 @@ def test_legacy_services_channel_end_to_end(state):
             assert host.done.wait(5)
             channel.close()
 
-    hello = host.messages[0]
-    assert hello["type"] == "hello"
-    assert "control" in hello["features"]
+    # hello 与 channel.open 由宿主两个线程分别记录, 顺序不确定。
+    hellos = [message for message in host.messages if message.get("type") == "hello"]
+    assert len(hellos) == 1
+    assert "control" in hellos[0]["features"]
     assert any(message.get("type") == "channel.open" and message.get("token") == "svc-token" for message in host.messages)
     capabilities, listing, load = host.responses
     assert capabilities["id"] == "cap"

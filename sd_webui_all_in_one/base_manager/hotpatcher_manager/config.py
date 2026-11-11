@@ -20,6 +20,25 @@ DEFAULT_HOTPATCHER_CONFIG_PATH = SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_PATH
 DEFAULT_RUNTIME_HOST = "127.0.0.1"
 DEFAULT_RUNTIME_PORT = 8765
 HOTPATCHER_ENV_PREFIX = "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_"
+_TOKEN_ENV = f"{HOTPATCHER_ENV_PREFIX}TOKEN"
+_DEBUG_PRESERVED_ENV = (
+    f"{HOTPATCHER_ENV_PREFIX}DEBUG",
+    f"{HOTPATCHER_ENV_PREFIX}TRACE",
+    f"{HOTPATCHER_ENV_PREFIX}TRACE_FILE",
+    f"{HOTPATCHER_ENV_PREFIX}STRICT",
+)
+"""无论是否启用 runtime 都保留的用户调试变量 (调试输出、补丁跟踪、严格模式与 runtime 无关)"""
+
+_RUNTIME_PRESERVED_ENV = (
+    _TOKEN_ENV,
+    f"{HOTPATCHER_ENV_PREFIX}TIMEOUT",
+    f"{HOTPATCHER_ENV_PREFIX}CONNECT_TIMEOUT",
+    f"{HOTPATCHER_ENV_PREFIX}REQUEST_TIMEOUT",
+    f"{HOTPATCHER_ENV_PREFIX}EVENT_WRITE_TIMEOUT",
+    f"{HOTPATCHER_ENV_PREFIX}RECONNECT",
+    f"{HOTPATCHER_ENV_PREFIX}ALLOW_NON_LOOPBACK",
+)
+"""仅在启用 runtime 时保留的用户连接变量"""
 
 
 def ensure_hotpatcher_import_path() -> Path:
@@ -202,9 +221,15 @@ def apply_hotpatcher_launch_env(
     config_path: str | Path | None = None,
     port: int = DEFAULT_RUNTIME_PORT,
     enable_runtime: bool = False,
+    host: str = DEFAULT_RUNTIME_HOST,
+    token: str | None = None,
 ) -> dict[str, str]:
     """
     为 WebUI 启动环境注入 hotpatcher bootstrap 变量。
+
+    会先移除全部 ``SD_WEBUI_ALL_IN_ONE_HOTPATCHER_*`` 变量, 再保留用户设置的调试变量 (``DEBUG``、``TRACE``、
+    ``TRACE_FILE``、``STRICT``, 与是否启用 runtime 无关); 启用 runtime 时还保留连接相关变量 (``TOKEN``、``TIMEOUT``、
+    ``CONNECT_TIMEOUT``、``REQUEST_TIMEOUT``、``EVENT_WRITE_TIMEOUT``、``RECONNECT``、``ALLOW_NON_LOOPBACK``)。
 
     Args:
         origin_env (dict[str, str] | None):
@@ -217,6 +242,13 @@ def apply_hotpatcher_launch_env(
             runtime host 端口。
         enable_runtime (bool):
             是否注入 runtime host 连接变量。默认只做本地补丁配置注入。
+        host (str):
+            runtime host 地址, 仅在启用 runtime 时注入。启动时的首次连接不做回环校验; 之后若要通过连接切换
+            (``HotpatcherRuntimeHost.rebind``) 改到非回环地址, 需要用户在原始环境中设置
+            ``SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ALLOW_NON_LOOPBACK=1``, 这里不会隐式添加。
+        token (str | None):
+            连接 token, 仅在启用 runtime 时注入。为 None 时沿用原始环境中的 token; 为空字符串时移除 token;
+            否则覆盖原始环境中的 token。
 
     Returns:
         dict[str, str]:
@@ -224,14 +256,9 @@ def apply_hotpatcher_launch_env(
     """
 
     env = origin_env.copy() if origin_env is not None else os.environ.copy()
-    preserved_keys = {"SD_WEBUI_ALL_IN_ONE_HOTPATCHER_DEBUG"}
+    preserved_keys = set(_DEBUG_PRESERVED_ENV)
     if enable_runtime:
-        preserved_keys.update(
-            {
-                "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN",
-                "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TIMEOUT",
-            }
-        )
+        preserved_keys.update(_RUNTIME_PRESERVED_ENV)
     preserved = {key: value for key, value in env.items() if key in preserved_keys}
     env = remove_hotpatcher_launch_env(env)
 
@@ -242,14 +269,9 @@ def apply_hotpatcher_launch_env(
     env.update(preserved)
     env = ensure_hotpatcher_pythonpath_first(env)
     if enable_runtime:
-        env.update(
-            {
-                "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME": "1",
-                "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST": DEFAULT_RUNTIME_HOST,
-                "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT": str(port),
-                "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES": "1",
-            }
-        )
+        if token is not None:
+            env.pop(_TOKEN_ENV, None)
+        env.update(_build_runtime_connection_env(host, port, token))
 
     if config_path is not None:
         env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE"] = "file"
@@ -342,6 +364,34 @@ def ensure_hotpatcher_pythonpath_first(origin_env: dict[str, str]) -> dict[str, 
     return env
 
 
+def _build_runtime_connection_env(host: str, port: int, token: str | None) -> dict[str, str]:
+    """
+    构建补丁进程连接 runtime host 所需的连接变量, 由两个启动环境构建函数共用。
+
+    Args:
+        host (str):
+            runtime host 地址。
+        port (int):
+            runtime host 端口。
+        token (str | None):
+            连接 token。为 None 或空字符串时不注入 token 变量。
+
+    Returns:
+        dict[str, str]:
+            ``RUNTIME``、``HOST``、``PORT``、``SERVICES`` 与可选的 ``TOKEN`` 变量。
+    """
+
+    env = {
+        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME": "1",
+        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST": str(host),
+        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT": str(port),
+        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES": "1",
+    }
+    if token:
+        env[_TOKEN_ENV] = token
+    return env
+
+
 def build_hotpatcher_runtime_env(
     host: str,
     port: int,
@@ -350,6 +400,11 @@ def build_hotpatcher_runtime_env(
 ) -> dict[str, str]:
     """
     构建让 hotpatcher 进程连接管理器 runtime host 的环境变量。
+
+    返回值是部分环境变量: 连接变量与 ``apply_hotpatcher_launch_env`` 共用同一个构建函数, ``PYTHONPATH`` 只包含
+    hotpatcher 目录 (等价于对空环境调用 ``ensure_hotpatcher_pythonpath_first``)。使用方需要把它合并到完整的
+    启动环境中, 并对合并结果再调用一次 ``ensure_hotpatcher_pythonpath_first`` 以保留原有 ``PYTHONPATH``
+    (先合并除 ``PYTHONPATH`` 以外的变量, 再前置 hotpatcher 目录), 不能直接覆盖原有 ``PYTHONPATH``。
 
     Args:
         host (str):
@@ -366,17 +421,10 @@ def build_hotpatcher_runtime_env(
             需要传给目标进程的环境变量。
     """
 
-    env = {
-        "PYTHONPATH": HOTPATCHER_PATH.as_posix(),
-        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RUNTIME": "1",
-        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_HOST": str(host),
-        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_PORT": str(port),
-        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE": str(config_source),
-        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_IMPORT_HOOK": "1",
-        "SD_WEBUI_ALL_IN_ONE_HOTPATCHER_SERVICES": "1",
-    }
-    if token:
-        env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TOKEN"] = token
+    env = ensure_hotpatcher_pythonpath_first({})
+    env.update(_build_runtime_connection_env(host, port, token))
+    env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_CONFIG_SOURCE"] = str(config_source)
+    env["SD_WEBUI_ALL_IN_ONE_HOTPATCHER_IMPORT_HOOK"] = "1"
     logger.debug("构建 hotpatcher runtime 连接环境, host: %s, port: %s, config_source: %s", host, port, config_source)
     return env
 

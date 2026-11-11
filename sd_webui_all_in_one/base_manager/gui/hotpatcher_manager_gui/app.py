@@ -37,6 +37,10 @@ from sd_webui_all_in_one.base_manager.gui.version_gui import (
     install_text_context_menu,
 )
 
+from sd_webui_all_in_one.base_manager.gui.hotpatcher_manager_gui.runtime_control import (
+    RuntimeControlController,
+    RuntimeControlTab,
+)
 from sd_webui_all_in_one.base_manager.gui.hotpatcher_manager_gui.config_values import (
     _ensure_section_by_path,
     _humanize_name,
@@ -117,13 +121,17 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
 
         self.config_tab = ttk.Frame(self.notebook)
         self.runtime_tab = ttk.Frame(self.notebook)
+        self.control_tab = ttk.Frame(self.notebook)
         self.logs_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.config_tab, text="配置")
         self.notebook.add(self.runtime_tab, text="运行时")
+        self.notebook.add(self.control_tab, text="运行时控制")
         self.notebook.add(self.logs_tab, text="日志")
 
         self._create_config_tab()
         self._create_runtime_tab()
+        self.runtime_control = RuntimeControlTab(self, self.control_tab, RuntimeControlController(lambda: self.runtime_host))
+        self.runtime_control.on_rebind = self._after_runtime_rebind
         self._create_logs_tab()
 
         status_frame = ttk.Frame(self)
@@ -576,6 +584,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
             on_log=self._runtime_log_queue.put,
             on_status=self._set_connection_status,
             confirm_file_operation=self._confirm_file_operation,
+            auto_probe=True,
         )
         try:
             self.runtime_host.start()
@@ -587,6 +596,7 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         self.host_var.set(actual_host)
         self.port_var.set(str(actual_port))
         self.update_env_preview()
+        self.runtime_control.update_connection_view()
 
     def stop_runtime_host(self) -> None:
         """停止 runtime host。"""
@@ -595,6 +605,17 @@ class HotpatcherManagerApp(tk.Tk, BackgroundTaskMixin):
         if host is not None:
             host.stop()
         self.connection_status_var.set("未监听")
+        self.runtime_control.update_connection_view()
+
+    def _after_runtime_rebind(self, changes: dict[str, Any], report: dict[str, Any]) -> None:
+        if report.get("status") != "switched" or self.runtime_host is None:
+            return
+        actual_host, actual_port = self.runtime_host.server_address
+        self.host_var.set(actual_host)
+        self.port_var.set(str(actual_port))
+        if "token" in changes:
+            self.token_var.set(changes["token"])
+        self.update_env_preview()
 
     def update_env_preview(self) -> None:
         """更新 runtime 环境变量预览。"""
