@@ -1,0 +1,7568 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+        <link rel="prev" href="../python-core/">
+      
+      
+        <link rel="next" href="../installer/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/site_resources/logo.png">
+      <meta name="generator" content="zensical-0.1.1">
+    
+    
+      
+        <title>Hotpatcher 控制平面 - SD WebUI All In One</title>
+      
+    
+    
+      
+        
+      
+      <link rel="stylesheet" href="../../assets/stylesheets/modern/main.ebb7f775.min.css">
+      
+        
+          
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/modern/palette.b60ce83d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,500,500i,700,700i%7CJetBrains+Mono:400,400i,700,700i&amp;display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_scope.pathname.endsWith("/")||(__md_scope=new URL(__md_scope.pathname+"/",location)),__md_hash=e=>[...e].reduce(((e,t)=>(e<<5)-e+t.charCodeAt(0)),0),__md_get=(e,t=localStorage,_=__md_scope)=>JSON.parse(t.getItem(_.pathname+"."+e)),__md_set=(e,t,_=localStorage,a=__md_scope)=>{try{_.setItem(a.pathname+"."+e,JSON.stringify(t))}catch(e){}},document.documentElement.setAttribute("data-platform",navigator.platform)</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer" aria-hidden="true"></label>
+    <div data-md-component="skip">
+      <a href="#__skip" class="md-skip">
+        跳转至
+      </a>
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="https://licyk.github.io/sd-webui-all-in-one" title="SD WebUI All In One" class="md-header__button md-logo" aria-label="SD WebUI All In One" data-md-component="logo">
+      
+  <img src="../../assets/site_resources/logo.png" alt="SD WebUI All In One">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-menu" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>
+      <span class="md-visually-hidden">导航栏</span>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SD WebUI All In One
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Hotpatcher 控制平面
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="跟随系统配色"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="跟随系统配色" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sun-moon" viewBox="0 0 24 24"><path d="M12 2v2M14.837 16.385a6 6 0 1 1-7.223-7.222c.624-.147.97.66.715 1.248a4 4 0 0 0 5.26 5.259c.589-.255 1.396.09 1.248.715M16 12a4 4 0 0 0-4-4M19 5l-1.256 1.256M20 12h2"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="浅色主题"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="浅色主题" for="__palette_2" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="深色主题"  type="radio" name="__palette" id="__palette_2">
+    
+      <label class="md-header__button md-icon" title="深色主题" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-search" viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
+          <span class="md-visually-hidden">查找</span>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog" aria-label="查找">
+  <button type="button" class="md-search__button">
+    查找
+  </button>
+</div>
+      
+    
+    <div class="md-header__source">
+      
+        <a href="https://github.com/licyk/sd-webui-all-in-one" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    licyk/sd-webui-all-in-one
+  </div>
+</a>
+      
+    </div>
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="标签" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  主页
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../quick-start/" class="md-tabs__link">
+          
+  
+  快速开始
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../installer/" class="md-tabs__link">
+          
+  
+  安装器使用
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tools/" class="md-tabs__link">
+          
+  
+  下载器与启动器
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../notebook/" class="md-tabs__link">
+          
+  
+  Jupyter Notebook
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../portable/" class="md-tabs__link">
+          
+  
+  整合包与实用指南
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../cli/" class="md-tabs__link">
+          
+  
+  命令行工具
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+      
+    
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  开发维护
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://licyk.github.io/sd-webui-all-in-one" title="SD WebUI All In One" class="md-nav__button md-logo" aria-label="SD WebUI All In One" data-md-component="logo">
+      
+  <img src="../../assets/site_resources/logo.png" alt="SD WebUI All In One">
+
+    </a>
+    SD WebUI All In One
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/licyk/sd-webui-all-in-one" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+  </div>
+  <div class="md-source__repository">
+    licyk/sd-webui-all-in-one
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  主页
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  快速开始
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  快速开始
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick-start/cloud/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  云端运行
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick-start/portable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  整合包快速开始
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick-start/local-install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  本地安装
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick-start/launcher/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Hanafubuki 快速开始
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quick-start/after-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  启动后的下一步
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  安装器使用
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  安装器使用
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_2" id="__nav_3_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  SD WebUI Installer
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_2_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_2">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  SD WebUI Installer
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-webui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-webui/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  环境准备与安装
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-webui/usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  启动与使用
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-webui/resources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  模型与资源
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-webui/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  配置与镜像
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-webui/maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  维护与迁移
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-webui/advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  高级功能
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-webui/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  更新
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-webui/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  故障排查
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-webui/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  常用命令
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_3" id="__nav_3_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ComfyUI Installer
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_3_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_3">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  ComfyUI Installer
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/comfyui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/comfyui/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  环境准备与安装
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/comfyui/usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  启动与使用
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/comfyui/resources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  模型与资源
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/comfyui/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  配置与镜像
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/comfyui/maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  维护与迁移
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/comfyui/advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  高级功能
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/comfyui/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  更新
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/comfyui/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  故障排查
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/comfyui/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  常用命令
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Fooocus Installer
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Fooocus Installer
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/fooocus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/fooocus/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  环境准备与安装
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/fooocus/usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  启动与使用
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/fooocus/resources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  模型与资源
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/fooocus/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  配置与镜像
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/fooocus/maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  维护与迁移
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/fooocus/advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  高级功能
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/fooocus/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  更新
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/fooocus/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  故障排查
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/fooocus/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  常用命令
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  InvokeAI Installer
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  InvokeAI Installer
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/invokeai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/invokeai/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  环境准备与安装
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/invokeai/usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  启动与使用
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/invokeai/resources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  模型与资源
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/invokeai/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  配置与镜像
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/invokeai/maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  维护与迁移
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/invokeai/advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  高级功能
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/invokeai/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  更新
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/invokeai/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  故障排查
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/invokeai/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  常用命令
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_6" id="__nav_3_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Qwen TTS WebUI Installer
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Qwen TTS WebUI Installer
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/qwen-tts-webui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/qwen-tts-webui/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  环境准备与安装
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/qwen-tts-webui/usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  启动与使用
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/qwen-tts-webui/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  配置与镜像
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/qwen-tts-webui/maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  维护与迁移
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/qwen-tts-webui/advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  高级功能
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/qwen-tts-webui/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  更新
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/qwen-tts-webui/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  故障排查
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/qwen-tts-webui/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  常用命令
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_7" id="__nav_3_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  RVC Next WebUI Installer
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  RVC Next WebUI Installer
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/rvc-next-webui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/rvc-next-webui/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  环境准备与安装
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/rvc-next-webui/usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  启动与使用
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/rvc-next-webui/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  配置与镜像
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/rvc-next-webui/maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  维护与迁移
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/rvc-next-webui/advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  高级功能
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/rvc-next-webui/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  更新
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/rvc-next-webui/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  故障排查
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/rvc-next-webui/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  常用命令
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_8" id="__nav_3_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Mizuoto TTS WebUI Installer
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_8_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_8">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Mizuoto TTS WebUI Installer
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/mizuoto-tts-webui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/mizuoto-tts-webui/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  环境准备与安装
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/mizuoto-tts-webui/usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  启动与使用
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/mizuoto-tts-webui/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  配置与镜像
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/mizuoto-tts-webui/maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  维护与迁移
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/mizuoto-tts-webui/advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  高级功能
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/mizuoto-tts-webui/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  更新
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/mizuoto-tts-webui/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  故障排查
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/mizuoto-tts-webui/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  常用命令
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_9" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_9" id="__nav_3_9_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  SD Trainer Installer
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_9_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_9">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  SD Trainer Installer
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  环境准备与安装
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer/usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  启动与使用
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer/resources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  模型与资源
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  配置与镜像
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer/maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  维护与迁移
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer/advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  高级功能
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  更新
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  故障排查
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  常用命令
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_10" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_10" id="__nav_3_10_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  SD Trainer Script Installer
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_10_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_3_10">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  SD Trainer Script Installer
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer-script/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer-script/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  环境准备与安装
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer-script/usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  启动与使用
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer-script/resources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  模型与资源
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer-script/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  配置与镜像
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer-script/maintenance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  维护与迁移
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer-script/advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  高级功能
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer-script/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  更新
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer-script/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  故障排查
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../installer/sd-trainer-script/commands/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  常用命令
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  下载器与启动器
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  下载器与启动器
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/hanafubuki/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Hanafubuki
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/portable-downloader/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  AI 整合包下载器
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/launcher-tui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Bash TUI / CLI Launcher
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/launcher-gui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  旧版 Windows GUI Launcher
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tools/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  故障排查
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Jupyter Notebook
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_5">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Jupyter Notebook
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebook/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  快速开始
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebook/selection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  选择 Notebook
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebook/colab/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Colab 使用
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebook/kaggle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Kaggle 使用
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebook/parameters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  参数配置
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebook/manager-api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  管理器 API
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebook/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  故障排查
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  整合包与实用指南
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  整合包与实用指南
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../portable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../portable/portable/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  整合包下载与使用
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../portable/zluda/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  AMD ZLUDA 使用
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../portable/qa/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  常见问题
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  命令行工具
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_7">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  命令行工具
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/sd-webui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Stable Diffusion WebUI
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/comfyui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  ComfyUI
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/fooocus/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Fooocus
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/invokeai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  InvokeAI
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/qwen-tts-webui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Qwen TTS WebUI
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/rvc-next-webui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  RVC Next WebUI
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/mizuoto-tts-webui/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Mizuoto TTS WebUI
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/sd-trainer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  SD Trainer
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/sd-scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  SD Scripts
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/manager/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  管理器命令
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/env/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  环境变量配置
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  开发维护
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
+            <label class="md-nav__title" for="__nav_8">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  开发维护
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  概览
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  整体架构
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../python-core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Python 内核
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Hotpatcher 控制平面
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="././" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Hotpatcher 控制平面
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        目标与约束
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        解决的问题
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        架构
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="架构">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        分层
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#control" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>control/</code> 模块
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        状态字段
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        锁约定
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        补丁句柄与卸载语义
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="补丁句柄与卸载语义">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        句柄、状态与结果
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        补丁集
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#import" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        import 阶段补丁的句柄
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        卸载语义
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        实时补丁操作
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        运行时加载补丁
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="运行时加载补丁">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        补丁模块
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        加载、卸载、重新加载与更新
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        配置声明的补丁集
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        文件监视
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        功能注册表
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="功能注册表">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#featurespec" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>FeatureSpec</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        应用语义
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        新增功能或扩展
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        调试
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        统一命令 API
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="统一命令 API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#envelope" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Envelope 与错误码
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        分发顺序与传输策略
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        命令表
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        能力探测
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Python 门面
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        连接管理
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="连接管理">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        补丁进程侧
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        宿主侧
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        启动环境
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gui" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        GUI 运行时控制标签页
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hanafubuki" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Hanafubuki 桌面宿主
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        安全与信任边界
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        兼容性
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        已知限制
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        测试
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        决策记录
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installer/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Installer
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Notebook
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coding-style/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  编码风格
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  测试与检查
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adding-product/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  新增产品支持
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  
+                    
+                    
+                    
+                      
+                    
+                    
+                      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+                      <div class="md-sidebar-button__wrapper">
+                        <label class="md-sidebar-button" for="__toc"></label>
+                      </div>
+                    
+                  
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        目标与约束
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        解决的问题
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        架构
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="架构">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        分层
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#control" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>control/</code> 模块
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        状态字段
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        锁约定
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        补丁句柄与卸载语义
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="补丁句柄与卸载语义">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        句柄、状态与结果
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        补丁集
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#import" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        import 阶段补丁的句柄
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        卸载语义
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        实时补丁操作
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        运行时加载补丁
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="运行时加载补丁">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        补丁模块
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        加载、卸载、重新加载与更新
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        配置声明的补丁集
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        文件监视
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        功能注册表
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="功能注册表">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#featurespec" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code>FeatureSpec</code>
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        应用语义
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        新增功能或扩展
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        调试
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        统一命令 API
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="统一命令 API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#envelope" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Envelope 与错误码
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        分发顺序与传输策略
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        命令表
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        能力探测
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Python 门面
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        连接管理
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="连接管理">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        补丁进程侧
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        宿主侧
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        启动环境
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gui" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        GUI 运行时控制标签页
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hanafubuki" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Hanafubuki 桌面宿主
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        安全与信任边界
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        兼容性
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        已知限制
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        测试
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        决策记录
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+  
+
+
+  <nav class="md-path" aria-label="导航栏" >
+    <ol class="md-path__list">
+      
+        
+  
+  
+    <li class="md-path__item">
+      <a href="../.." class="md-path__link">
+        
+  
+  <span class="md-ellipsis">
+    主页
+  </span>
+
+      </a>
+    </li>
+  
+
+      
+      
+        
+  
+  
+    
+    
+    
+    
+    
+      <li class="md-path__item">
+        <a href="../" class="md-path__link">
+          
+  
+  <span class="md-ellipsis">
+    开发维护
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ol>
+  </nav>
+
+              
+              <article class="md-content__inner md-typeset">
+                <a id="__skip" tabindex="-1"></a>
+                
+                  
+
+  
+    <a href="https://github.com/licyk/sd-webui-all-in-one/edit/main/docs/development/hotpatcher-control.md" title="编辑此页" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/licyk/sd-webui-all-in-one/raw/main/docs/development/hotpatcher-control.md" title="查看本页的源代码" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0 8a5 5 0 0 1-5-5 5 5 0 0 1 5-5 5 5 0 0 1 5 5 5 5 0 0 1-5 5m0-12.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5"/></svg>
+    </a>
+  
+
+
+<h1 id="hotpatcher">Hotpatcher 控制平面<a class="headerlink" href="#hotpatcher" title="锚链接到此处">☍</a></h1>
+<p>Hotpatcher 控制平面是 patcher 热补丁框架（<code>sd_webui_all_in_one/patcher/</code>）之上的一层统一控制能力：可撤销的补丁句柄与补丁集、更多实时补丁操作、运行时加载 / 卸载补丁模块、可扩展的功能注册表、调试工具，以及补丁进程与宿主两端可在线修改的连接参数。所有能力通过同一个命令注册表暴露给进程内 Python API、旧版 TCP JSONL services 通道和桌面 HTTP 代理三种传输。</p>
+<p>本文描述已经实现的设计，面向维护 patcher 核心、<code>base_manager/hotpatcher_manager/</code> 宿主和 Hotpatcher 管理器 GUI 的开发者。patcher 自身的使用说明见 <a href="https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one/patcher/README.md">Patcher 使用文档</a>。</p>
+<div class="admonition note">
+<p class="admonition-title">来源</p>
+<p>本文由实现前的规划文档改写而来，只保留与最终实现一致的内容。原始规划（包括参考项目对照和各阶段计划）保存在 git 历史的提交 <code>bbaab617</code> 中，文件名为 <code>HOTPATCH_CONTROL_PLAN.md</code>。</p>
+</div>
+<h2 id="_1">目标与约束<a class="headerlink" href="#_1" title="锚链接到此处">☍</a></h2>
+<p>控制平面要解决四件事：</p>
+<ol>
+<li>提供更丰富的补丁操作，并且每个操作都可以撤销。</li>
+<li>提供调试能力：补丁结果记录、严格模式、跟踪输出、事件日志和诊断命令。</li>
+<li>支持在运行时加载、重新加载、修改和卸载补丁模块。</li>
+<li>支持在线修改运行时连接参数，覆盖补丁进程连接的目标（地址、端口、token、超时、重连）和宿主 <code>HotpatcherRuntimeHost</code> 自身的监听地址、端口与 token（决策 D7）。</li>
+</ol>
+<p>实现时遵守的约束：</p>
+<ul>
+<li>不引入新依赖，只使用标准库和现有基础设施。</li>
+<li>patcher 核心保持独立：<code>sd_webui_all_in_one_hotpatcher</code> 不导入 <code>sd_webui_all_in_one</code>，通过 <code>PYTHONPATH</code> 注入产品虚拟环境。</li>
+<li>语法兼容 Python 3.10，CI 覆盖 3.10 到 3.15。</li>
+<li>核心代码中不使用 <code>global</code> 语句（由 <code>patcher/tests/core/test_hotpatcher_state.py</code> 检查），进程级状态全部放在 <code>HotpatcherState</code> 上。</li>
+<li>向后兼容：现有公开 API、环境变量、线上消息（<code>services.*</code>、桌面 <code>config.apply</code>、旧版 JSONL）以及 <code>get_default_config()</code> / <code>get_catalog()</code> 的已有内容保持不变。</li>
+</ul>
+<h2 id="_2">解决的问题<a class="headerlink" href="#_2" title="锚链接到此处">☍</a></h2>
+<table>
+<thead>
+<tr>
+<th>编号</th>
+<th>实现前的限制</th>
+<th>现在的处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L1</td>
+<td>补丁是匿名元组，无法逐个列出、卸载或替换。</td>
+<td>每个注册返回 <code>PatchHandle</code>，ID 形如 <code>patch_N</code>，保存在 <code>state.patch_handles</code>。</td>
+</tr>
+<tr>
+<td>L2</td>
+<td>没有任何撤销手段，services v1 明确“不卸载”。</td>
+<td><code>PatchJournal</code> 记录逆操作，<code>PatchSet</code> 整体按 LIFO 撤销；<code>apply_config</code> 默认仍保持 v1 语义，撤销需要显式开启 reconcile。</td>
+</tr>
+<tr>
+<td>L3</td>
+<td>补丁必须在目标模块首次导入前注册。</td>
+<td><code>apply_if_loaded=True</code> 把执行后阶段追溯应用到已导入模块；实时操作直接修改已加载对象。</td>
+</tr>
+<tr>
+<td>L4</td>
+<td>非 <code>SourceFileLoader</code> 模块完全不会被打补丁。</td>
+<td><code>PostExecLoader</code> 包装其他 loader，执行后阶段照常运行，源码 / AST / 字节码阶段记录为 <code>skipped:unsupported_loader</code>。</td>
+</tr>
+<tr>
+<td>L5</td>
+<td>补丁失败或源码补丁没有匹配时完全静默。</td>
+<td>每次执行记录 <code>PatchOutcome</code>；提供严格模式、跟踪、事件日志和 <code>explain</code> / <code>verify</code>。</td>
+</tr>
+<tr>
+<td>L6</td>
+<td>无法在运行时从文件或模块加载、重新加载、卸载补丁。</td>
+<td><code>control/loader.py</code> 提供事务式加载、带回滚的重新加载、原地更新和卸载报告。</td>
+</tr>
+<tr>
+<td>L7</td>
+<td>功能目录在 <code>services.py</code> 中硬编码五处，扩展不可插拔。</td>
+<td><code>FeatureSpec</code> / <code>FeatureRegistry</code>，默认配置、schema、目录、应用和告警都从注册表派生。</td>
+</tr>
+<tr>
+<td>L8</td>
+<td>三套临时分发器，没有共享命令模型、能力发现和版本。</td>
+<td><code>CommandRegistry.dispatch</code> 是唯一分发点，<code>hotpatch.capabilities</code> 报告 <code>CONTROL_VERSION</code>。</td>
+</tr>
+<tr>
+<td>L9</td>
+<td>旧版连接参数在启动时冻结，没有重连，启动路径无法设置 host / token 并会丢弃超时设置。</td>
+<td><code>ConnectionManager</code> 先建后拆地切换连接，可选自动重连；启动环境支持 <code>host</code> / <code>token</code> 并保留用户超时变量。</td>
+</tr>
+<tr>
+<td>L10</td>
+<td>补丁计划变化后，finder 缓存仍可能返回旧的包装 spec。</td>
+<td>每次计划变化都调用 <code>HookedMetaPathFinder.invalidate(fullname)</code>。</td>
+</tr>
+<tr>
+<td>L11</td>
+<td><code>spec_from_file_location</code> 包装器总是使用默认状态。</td>
+<td>包装器解析拥有当前 finder 的状态对象。</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_3">架构<a class="headerlink" href="#_3" title="锚链接到此处">☍</a></h2>
+<h3 id="_4">分层<a class="headerlink" href="#_4" title="锚链接到此处">☍</a></h3>
+<pre class="mermaid"><code>flowchart TD
+    API[进程内 Python API&lt;br/&gt;hotpatch 门面] --&gt; Registry
+    Legacy[旧版 services 通道&lt;br/&gt;ServiceControlChannel] --&gt; Registry
+    Desktop[桌面代理命令&lt;br/&gt;_handle_desktop_command] --&gt; Registry
+    Host[宿主 request_control] --&gt; Legacy
+
+    Registry[CommandRegistry.dispatch&lt;br/&gt;control/commands.py] --&gt; Builtins[内置命令&lt;br/&gt;control/builtin_commands.py]
+
+    Builtins --&gt; Patches[补丁集与句柄&lt;br/&gt;patchset / handles / journal / operations]
+    Builtins --&gt; Loader[运行时加载&lt;br/&gt;control/loader.py]
+    Builtins --&gt; Features[功能注册表&lt;br/&gt;control/features.py]
+    Builtins --&gt; Debug[调试&lt;br/&gt;trace / events / inspect]
+    Builtins --&gt; Conn[连接管理&lt;br/&gt;runtime/connection.py]
+
+    Patches --&gt; Hook[import hook&lt;br/&gt;hook.py]
+    Loader --&gt; Patches
+    Features --&gt; Patches
+    Features --&gt; Ext[扩展&lt;br/&gt;sd_webui_all_in_one_hotpatcher_ext]
+    Conn --&gt; Client[RuntimeClient.rebind&lt;br/&gt;services / fault 通道重开]</code></pre>
+<p><code>control/</code> 子包按需导入：<code>import sd_webui_all_in_one_hotpatcher</code> 和 <code>install_import_hook()</code> 都不会加载它，只有注册补丁、列出句柄、访问 <code>hotpatch</code> 门面或首次使用功能注册表时才会导入。<code>services</code> 在导入时依赖 <code>control.features</code>（只是数据和轻量函数），但不会加载任何 <code>sd_webui_all_in_one_hotpatcher_ext</code> 模块，这个不变量由 <code>tests/services/test_services_import_invariant.py</code> 保证。</p>
+<h3 id="control"><code>control/</code> 模块<a class="headerlink" href="#control" title="锚链接到此处">☍</a></h3>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>journal.py</code></td>
+<td><code>NOTSET</code>、<code>JournalEntry</code>、<code>PatchJournal</code>：单一 LIFO 撤销列表，逐条隔离失败，<code>undo()</code> 幂等；类属性从原始 <code>__dict__</code> 读取以保留描述符。</td>
+</tr>
+<tr>
+<td><code>targets.py</code></td>
+<td><code>resolve_target</code>、<code>split_target</code>、<code>parse_target</code>：解析 <code>"pkg.mod:Obj.attr"</code> 和点分写法，区分模块缺失与属性缺失。</td>
+</tr>
+<tr>
+<td><code>handles.py</code></td>
+<td><code>PatchHandle</code>、<code>PatchStatus</code>、<code>PatchOutcome</code>、<code>PatchOutcomeKind</code> 与基于 <code>state.patch_id_counter</code> 的 ID 分配。</td>
+</tr>
+<tr>
+<td><code>patchset.py</code></td>
+<td><code>PatchSet</code>（加载与卸载的单位）、<code>PatchContext</code>（补丁作者使用的对象）、<code>current_patch_context()</code> 上下文变量。</td>
+</tr>
+<tr>
+<td><code>operations.py</code></td>
+<td>全部实时操作的唯一实现，包括蹦床（<code>Trampoline</code>）和 <code>rebind_references</code>。</td>
+</tr>
+<tr>
+<td><code>loader.py</code></td>
+<td><code>load_patch</code> / <code>unload_patch</code> / <code>reload_patch</code> / <code>update_patch</code>、<code>control</code> 配置区段、<code>PatchFileWatcher</code>、<code>check_remote_load_allowed</code>。</td>
+</tr>
+<tr>
+<td><code>features.py</code></td>
+<td><code>FeatureSpec</code>、<code>FeatureRegistry</code>、<code>BUILTIN_FEATURES</code>、<code>enable_feature</code> / <code>disable_feature</code> / <code>update_feature</code>。</td>
+</tr>
+<tr>
+<td><code>trace.py</code></td>
+<td><code>HotpatchTracer</code>：TagTracer 风格的分层跟踪，自动脱敏。</td>
+</tr>
+<tr>
+<td><code>events.py</code></td>
+<td><code>PatchEventLog</code>：带游标的事件环形缓冲区与可选事件转发。</td>
+</tr>
+<tr>
+<td><code>inspect.py</code></td>
+<td><code>explain</code>、<code>render_patched_source</code>、<code>verify_source_patches</code>、<code>status_snapshot</code>。</td>
+</tr>
+<tr>
+<td><code>commands.py</code></td>
+<td><code>CommandSpec</code>、<code>PayloadField</code>、<code>CommandContext</code>、<code>CommandRegistry</code>、envelope 与错误码。</td>
+</tr>
+<tr>
+<td><code>builtin_commands.py</code></td>
+<td>内置命令的处理函数和信任边界检查。</td>
+</tr>
+<tr>
+<td><code>controller.py</code></td>
+<td><code>HotpatchController</code> 门面、<code>get_controller()</code> 和操作锁。</td>
+</tr>
+</tbody>
+</table>
+<p>运行时一侧新增 <code>runtime/connection.py</code>（<code>RuntimeConnectionSettings</code>、<code>ConnectionManager</code>、<code>get_connection_manager</code>），宿主一侧新增 <code>base_manager/hotpatcher_manager/host_control.py</code>（<code>RuntimeControlMixin</code>）和 GUI 的 <code>hotpatcher_manager_gui/runtime_control.py</code>。</p>
+<h3 id="_5">状态字段<a class="headerlink" href="#_5" title="锚链接到此处">☍</a></h3>
+<p>所有控制平面状态都是 <code>HotpatcherState</code> 的字段，惰性创建：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>control_lock</code></td>
+<td>控制平面注册表锁（<code>RLock</code>）。</td>
+</tr>
+<tr>
+<td><code>patch_id_counter</code></td>
+<td>句柄与补丁集共用的 ID 计数器。</td>
+</tr>
+<tr>
+<td><code>patch_sets</code> / <code>patch_handles</code></td>
+<td>已注册补丁集和句柄，键为 ID。</td>
+</tr>
+<tr>
+<td><code>feature_registry</code></td>
+<td>功能注册表，首次通过 <code>get_feature_registry()</code> 访问时创建。</td>
+</tr>
+<tr>
+<td><code>strict_mode</code></td>
+<td>严格模式，创建状态对象时读取 <code>SD_WEBUI_ALL_IN_ONE_HOTPATCHER_STRICT</code>。</td>
+</tr>
+<tr>
+<td><code>loaded_patches</code> / <code>loading_patches</code></td>
+<td>运行时加载的补丁（键为补丁名称）和正在操作的名称。</td>
+</tr>
+<tr>
+<td><code>rebind_skip_modules</code></td>
+<td><code>rebind_references</code> 扫描时跳过的模块。</td>
+</tr>
+<tr>
+<td><code>patch_file_watcher</code></td>
+<td>补丁文件监视器。</td>
+</tr>
+<tr>
+<td><code>tracer</code> / <code>event_log</code></td>
+<td>跟踪输出器和事件环形缓冲区。</td>
+</tr>
+<tr>
+<td><code>controller</code></td>
+<td><code>HotpatchController</code>。</td>
+</tr>
+<tr>
+<td><code>connection_manager</code> / <code>fault_channel</code></td>
+<td>旧版连接管理器和最近安装的 fault 通道。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_6">锁约定<a class="headerlink" href="#_6" title="锚链接到此处">☍</a></h3>
+<p><code>control_lock</code> 只保护内存注册表的读写。持有它时绝不执行 <code>importlib</code> 调用、用户补丁函数、<code>setup</code> 回调或 socket / HTTP I/O，调用方在锁内计算、在锁外执行。原因是主线程可能持有模块导入锁并读取补丁计划，而控制线程如果持有 <code>control_lock</code> 再去导入模块就会死锁。</p>
+<p>固定的锁顺序：</p>
+<ul>
+<li><code>PatchSet._lock</code> → <code>control_lock</code>；</li>
+<li><code>Monkey._lock</code> → <code>control_lock</code>（分配和登记句柄 ID），反方向不允许；</li>
+<li><code>PatchEventLog</code> 和 <code>CommandRegistry</code> 使用内部叶子锁，记录事件时从不获取 <code>control_lock</code>；</li>
+<li><code>Trampoline</code> 和 <code>ConnectionManager</code> 的内部锁也是叶子锁，持有时不调用用户代码或做 I/O。</li>
+</ul>
+<p>功能与补丁集的修改操作另有操作锁（<code>HotpatchController.operation_lock</code>），键为 <code>feature:&lt;key&gt;</code>、<code>set:&lt;name&gt;</code> 或 <code>module:&lt;name&gt;</code>。操作锁会包住用户代码，所以总是以 <code>OPERATION_LOCK_TIMEOUT</code>（0.2 秒）尝试获取，超时返回 <code>busy</code>；即使导入中的代码反向调用控制命令，也只会得到 <code>busy</code> 而不会死锁。</p>
+<p>import hook 的递归保护 <code>LoadingSkipper</code>（<code>hook.py</code> 与 <code>stack_shadow.py</code> 各一份）改为线程本地存储，控制线程并发调用 <code>find_spec</code> 时不会因为另一个线程正在导入同名模块而拿到未包装的 spec。</p>
+<h2 id="_7">补丁句柄与卸载语义<a class="headerlink" href="#_7" title="锚链接到此处">☍</a></h2>
+<h3 id="_8">句柄、状态与结果<a class="headerlink" href="#_8" title="锚链接到此处">☍</a></h3>
+<p>每个补丁注册或实时修改对应一个 <code>PatchHandle</code>，主要字段为 <code>id</code>、<code>kind</code>、<code>target</code>、<code>owner</code>（所属补丁集 ID）、<code>stage</code>、<code>status</code>、最近 20 条 <code>outcomes</code>（<code>MAX_HANDLE_OUTCOMES</code>）和不受上限影响的 <code>outcome_counts</code>。补丁集 ID 形如 <code>set_N</code>，与句柄共用计数器。</p>
+<p><code>PatchStatus</code> 取值：</p>
+<table>
+<thead>
+<tr>
+<th>状态</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>registered</code></td>
+<td>已登记但尚未生效，例如目标模块尚未导入的 import 阶段补丁。</td>
+</tr>
+<tr>
+<td><code>applied</code></td>
+<td>已生效。</td>
+</tr>
+<tr>
+<td><code>reverted</code></td>
+<td>已完全撤销。</td>
+</tr>
+<tr>
+<td><code>deregistered</code></td>
+<td>生效前已从补丁计划中移除。</td>
+</tr>
+<tr>
+<td><code>failed</code></td>
+<td>应用或撤销失败。</td>
+</tr>
+<tr>
+<td><code>requires_restart</code></td>
+<td>已从计划中移除，但已执行的效果只能通过重启进程消除。</td>
+</tr>
+</tbody>
+</table>
+<p>每次执行补丁函数记录一个 <code>PatchOutcome</code>，<code>kind</code> 为 <code>applied</code>、<code>noop</code>、<code>failed</code> 或 <code>skipped</code>：</p>
+<ul>
+<li><code>noop</code>：源码补丁返回相同文本、函数补丁返回 None、AST 补丁返回同一棵未修改的树。AST 的 <code>ast.dump</code> 比较开销较大，只在 <code>SD_WEBUI_ALL_IN_ONE_HOTPATCHER_DEBUG=1</code>、严格模式、启用 <code>patch</code> 跟踪标签或 <code>inspect.source</code> / <code>verify</code> 预演时执行。</li>
+<li><code>failed</code>：带异常类型、信息（最多 1000 字符）和有界 traceback（最多 8000 字符）。</li>
+<li><code>skipped</code>：带原因，例如 <code>function_missing</code>、<code>unsupported_loader</code>、<code>condition_false</code>、<code>already_imported</code>。</li>
+</ul>
+<h3 id="_9">补丁集<a class="headerlink" href="#_9" title="锚链接到此处">☍</a></h3>
+<p><code>PatchSet</code> 拥有一个 <code>PatchJournal</code> 和一组句柄，是加载与卸载的基本单位：</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">sd_webui_all_in_one_hotpatcher.control</span><span class="w"> </span><span class="kn">import</span> <span class="n">PatchSet</span><span class="p">,</span> <span class="n">register_patch_set</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">patch_set</span> <span class="o">=</span> <span class="n">register_patch_set</span><span class="p">(</span><span class="n">PatchSet</span><span class="p">(</span><span class="s2">"my-fix"</span><span class="p">))</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">with</span> <span class="n">patch_set</span> <span class="k">as</span> <span class="n">ctx</span><span class="p">:</span>  <span class="c1"># ctx 是 PatchContext</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">ctx</span><span class="o">.</span><span class="n">set_attr</span><span class="p">(</span><span class="s2">"pkg.mod:FLAG"</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">report</span> <span class="o">=</span> <span class="n">patch_set</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># 按 LIFO 撤销, 返回 PatchSetReport</span>
+</span></code></pre></div>
+<ul>
+<li>事务模式（默认）下，<code>with</code> 块或 <code>run()</code> 回调抛出异常会撤销全部修改，状态固定为 <code>failed</code>，原异常继续抛出。</li>
+<li><code>close()</code> / <code>unload()</code> 幂等，关闭后句柄从 <code>state.patch_handles</code> 移除，但仍可通过 <code>patch_set.handles</code> 和报告查看。</li>
+<li>关闭后再添加修改会抛出 <code>PatchSetClosedError</code>；关闭后调用 <code>add_disposer</code> 会立即执行该清理函数。</li>
+<li>补丁集处于激活状态（<code>with patch_set:</code>、<code>patch_set.run(...)</code>、<code>context.activate()</code>）时，<code>current_patch_context()</code> 返回它的上下文。</li>
+</ul>
+<h3 id="import">import 阶段补丁的句柄<a class="headerlink" href="#import" title="锚链接到此处">☍</a></h3>
+<p><code>Monkey</code> 的八个公开列表保持原有元组结构（扩展代码会直接解包），句柄 ID 保存在逐阶段对齐的平行列表中。移除时按身份（<code>is</code>）查找条目并同时删除两边的同一位置；绕过 <code>patch_*</code> 直接追加到公开列表的条目会在首次列出计划时惰性生成句柄。</p>
+<ul>
+<li>所有 <code>Monkey.patch_*</code>、<code>inject_import</code>、<code>prohibit_output</code>，以及 <code>register_hook</code>、<code>register_customize_hook</code>、<code>MonkeyZoo.alias_if_not_exists</code> 都返回 <code>PatchHandle</code>。</li>
+<li>所有注册都接受 <code>condition=</code>，在应用时求值，返回假值时记录 <code>skipped:condition_false</code>。</li>
+<li><code>patch_module</code> 和 <code>patch_premodule</code> 接受 <code>revert=</code>，提供后卸载状态为 <code>reverted</code>。</li>
+<li>归属：补丁集激活期间的 <code>patch_*</code> 注册（包括经由普通 <code>monkey_zoo(...)</code> / <code>register_hook(...)</code> 的注册）自动归属该补丁集；补丁函数在导入时执行时也会重新激活所属补丁集。因此未修改的扩展 <code>apply_from_config</code> 代码也能被 <code>features.disable</code> 撤销。</li>
+<li>函数、import 注入和输出抑制对模块命名空间的写入由框架记录到日志（有主条目写入补丁集日志，无主条目写入 <code>Monkey</code> 自己的日志），撤销时检查身份，写入已被其他对象覆盖时报告 <code>requires_restart</code>。</li>
+<li><code>Monkey.remove(handle)</code> 移除条目并撤销框架写入；<code>MonkeyZoo.remove(handle)</code> 在全部计划和别名中查找。</li>
+<li><code>MonkeyZoo.discard(name)</code> 和 <code>MonkeyZoo.clear()</code> 只从计划中移除，不撤销已经写入模块的修改。</li>
+<li>每次计划变化都会使 finder 中该模块的 spec 缓存失效（L10）。</li>
+<li>追溯应用：<code>monkey_zoo(name, apply_if_loaded=True)</code> 或 <code>ctx.module(name, apply_if_loaded=True)</code> 在退出时把新增条目的执行后阶段（函数、模块、import 注入、输出抑制）应用到 <code>sys.modules</code> 中已有的模块。</li>
+<li><code>PostExecLoader</code> 包装扩展模块、无源码 <code>.pyc</code>、zipimport 等 loader（L4），<code>create_module</code> / <code>exec_module</code> 委托给原 loader，其他属性透传。</li>
+<li>对打过补丁的模块执行 <code>importlib.reload</code> 会重新应用当前补丁计划。</li>
+</ul>
+<h3 id="_10">卸载语义<a class="headerlink" href="#_10" title="锚链接到此处">☍</a></h3>
+<p>卸载补丁集或移除单个句柄时，每个句柄的最终状态按下表确定：</p>
+<table>
+<thead>
+<tr>
+<th>阶段或类型</th>
+<th>目标尚未导入</th>
+<th>目标已经导入</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>patch_sources</code> / <code>patch_ast</code> / <code>patch_bytecode</code></td>
+<td><code>deregistered</code></td>
+<td><code>requires_restart</code>：已编译的代码无法还原，只影响之后的导入和 reload。</td>
+</tr>
+<tr>
+<td><code>patch_premodule</code> / <code>patch_module</code></td>
+<td><code>deregistered</code></td>
+<td>提供 <code>revert=</code> 时为 <code>reverted</code>；否则若补丁函数每次执行都通过 <code>ctx.*</code> 登记了实时操作且没有抛出异常，这些操作被撤销并报告 <code>reverted</code>；其余为 <code>requires_restart</code>。</td>
+</tr>
+<tr>
+<td><code>inject_import</code></td>
+<td><code>deregistered</code></td>
+<td><code>reverted</code>（框架记录的写入）。</td>
+</tr>
+<tr>
+<td><code>patch_function</code></td>
+<td><code>deregistered</code></td>
+<td><code>reverted</code>；复制到其他模块的引用只有在使用蹦床或 <code>rebind_references</code> 时才会跟随。</td>
+</tr>
+<tr>
+<td><code>prohibit_output</code></td>
+<td><code>deregistered</code></td>
+<td><code>reverted</code>。</td>
+</tr>
+<tr>
+<td><code>alias_if_not_exists</code></td>
+<td><code>deregistered</code></td>
+<td>被别名的模块已在 <code>sys.modules</code> 中时为 <code>requires_restart</code>。</td>
+</tr>
+<tr>
+<td>实时操作</td>
+<td>不适用</td>
+<td><code>reverted</code>；<code>reload_module</code> 总是 <code>requires_restart</code>。</td>
+</tr>
+<tr>
+<td>运行时功能（浏览器、错误、日志）</td>
+<td>不适用</td>
+<td>使用已有卸载路径：浏览器切换到 <code>passthrough</code>、<code>uninstall_error_capture</code>、<code>uninstall_log_capture</code>。仍然生效的功能报告 <code>requires_restart</code>。</td>
+</tr>
+</tbody>
+</table>
+<p>同一句柄有多个撤销结果时取最严重的状态，优先级为 <code>failed</code> &gt; <code>requires_restart</code> &gt; <code>reverted</code> &gt; <code>deregistered</code>。</p>
+<div class="admonition warning">
+<p class="admonition-title">启发式规则的边界</p>
+<p>模块级补丁的 <code>reverted</code> 判定只覆盖通过 <code>ctx.*</code> 登记的修改。补丁函数直接执行的 <code>setattr</code> 等修改框架无法察觉，同时存在这类修改时应提供 <code>revert=</code>，它优先于启发式规则。</p>
+</div>
+<h2 id="_11">实时补丁操作<a class="headerlink" href="#_11" title="锚链接到此处">☍</a></h2>
+<p><code>PatchContext</code> 的每个方法都返回 <code>PatchHandle</code> 并把逆操作写入补丁集日志：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>作用与撤销</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>set_attr(target, name, value, *, raising=True, rebind_references=False, rebind_limit=...)</code></td>
+<td>设置属性，也接受 <code>set_attr("pkg.mod:Obj.name", value)</code>；类属性按原始 <code>__dict__</code> 恢复。</td>
+</tr>
+<tr>
+<td><code>del_attr(target, name=..., *, raising=True)</code></td>
+<td>删除属性，撤销时恢复。</td>
+</tr>
+<tr>
+<td><code>set_item(mapping, key, value)</code> / <code>del_item(mapping, key, *, raising=True)</code></td>
+<td>修改映射条目。</td>
+</tr>
+<tr>
+<td><code>set_env(name, value, *, prepend=None)</code> / <code>del_env(name, *, raising=True)</code></td>
+<td>修改环境变量，语义同 pytest <code>setenv</code>。</td>
+</tr>
+<tr>
+<td><code>syspath_prepend(path)</code></td>
+<td>插入 <code>sys.path</code> 首位，撤销时按值移除。</td>
+</tr>
+<tr>
+<td><code>wrap(target, factory, *, trampoline=False, rebind_references=False, rebind_limit=...)</code></td>
+<td><code>factory(original)</code> 返回替换对象；返回 None 记录 <code>noop</code>。</td>
+</tr>
+<tr>
+<td><code>patch_method(target, factory, *, trampoline=False)</code></td>
+<td>包装类成员并保留 <code>staticmethod</code> / <code>classmethod</code> / <code>property</code> 描述符，撤销时恢复原描述符。</td>
+</tr>
+<tr>
+<td><code>set_class_attr(target, name, value, *, raising=True)</code></td>
+<td>设置类属性并保留描述符语义。</td>
+</tr>
+<tr>
+<td><code>reload_module(name)</code></td>
+<td>在当前补丁计划下执行 <code>importlib.reload</code>，不可撤销，句柄状态为 <code>requires_restart</code>。</td>
+</tr>
+<tr>
+<td><code>add_disposer(disposer, label=None)</code></td>
+<td>登记任意清理函数，随日志按 LIFO 执行。</td>
+</tr>
+<tr>
+<td><code>module(name, *, apply_if_loaded=False)</code></td>
+<td>上下文管理器，返回目标模块的 <code>Monkey</code>，块内注册归属本补丁集。</td>
+</tr>
+</tbody>
+</table>
+<p>失败语义：</p>
+<ul>
+<li>基础操作（属性、条目、环境变量、<code>sys.path</code>）的任何失败都会把句柄标记为 <code>failed</code> 并抛出异常。</li>
+<li><code>wrap</code>、<code>patch_method</code>、<code>set_class_attr</code>、<code>reload_module</code> 的目标解析失败（模块不存在、属性不存在）只把句柄标记为 <code>failed</code>（原因 <code>target_unresolved</code>）并记录警告，严格模式下照常抛出。工厂函数自身的异常总是抛出。</li>
+<li>操作中途失败时，本句柄已写入的日志条目立即撤销，不会留下部分生效的修改。</li>
+</ul>
+<p>蹦床与引用复制：</p>
+<ul>
+<li><code>trampoline=True</code> 在目标位置安装一个稳定的转发函数（带 <code>__sd_webui_aio_trampoline__</code> 属性），卸载只把转发目标换回原函数，转发函数本身永久保留。同一位置的多层蹦床包装可以按任意顺序卸载，也支持异步函数。</li>
+<li>安装蹦床之后通过 <code>from x import f</code> 复制出去的引用会跟随包装与卸载；安装之前复制的引用指向原函数对象，只能通过 <code>rebind_references=True</code> 改为指向新对象。</li>
+<li><code>rebind_references</code> 扫描 <code>sys.modules</code> 中各模块的命名空间，按身份替换对原对象的引用，每个位置单独写日志，最多 <code>MAX_REBIND_REFERENCES</code>（1000）处，超出时结果 <code>detail["truncated"]</code> 为 True。hotpatcher 自身模块、文件加载的私有补丁模块和 <code>state.rebind_skip_modules</code> 中的模块不参与扫描，避免包装函数通过模块全局变量调用到自己。</li>
+</ul>
+<h2 id="_12">运行时加载补丁<a class="headerlink" href="#_12" title="锚链接到此处">☍</a></h2>
+<h3 id="_13">补丁模块<a class="headerlink" href="#_13" title="锚链接到此处">☍</a></h3>
+<p>补丁模块是定义了以下函数的 Python 模块或文件：</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">PatchContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>                 <span class="c1"># 必需</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">teardown</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">PatchContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>              <span class="c1"># 可选, 卸载时在撤销日志之前调用</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">PatchContext</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>  <span class="c1"># 可选, 原地修改参数</span>
+</span></code></pre></div>
+<p>可运行的完整示例见 <a href="https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one/patcher/examples/runtime_patch_load.py"><code>examples/runtime_patch_load.py</code></a> 和它加载的 <a href="https://github.com/licyk/sd-webui-all-in-one/blob/main/sd_webui_all_in_one/patcher/examples/greeting_patch.py"><code>examples/greeting_patch.py</code></a>。</p>
+<h3 id="_14">加载、卸载、重新加载与更新<a class="headerlink" href="#_14" title="锚链接到此处">☍</a></h3>
+<p><code>control.loader</code> 的公开函数都返回 JSON 安全的报告字典，不抛出异常：</p>
+<ul>
+<li><code>load_patch(source, *, name=None, config=None, state=None, origin="api")</code>：<code>source</code> 为点分模块名时按常规方式导入；以 <code>.py</code> 结尾或指向已存在路径时按文件加载，模块名为私有的 <code>sd_webui_all_in_one_hotpatcher_dynamic.&lt;set_id&gt;</code>，不出现在用户可见的模块名中，卸载后也会从 <code>sys.modules</code> 移除。文件加载不使用字节码缓存。模块导入与 <code>setup</code> 都在新建的事务补丁集激活时执行，任一步失败都会撤销全部修改，报告状态为 <code>failed</code>。</li>
+<li><code>unload_patch(key)</code>：调用 <code>teardown</code>，关闭补丁集，移除私有模块和 rebind 跳过登记。报告的 <code>handles</code> 为逐句柄状态，<code>status</code> 取其中最严重者（没有句柄时为 <code>reverted</code>，有错误时为 <code>failed</code>）。</li>
+<li><code>reload_patch(key, *, config=None)</code>：先卸载旧补丁集再执行新代码。新代码导入或 <code>setup</code> 失败时，用旧模块对象在新补丁集中重新执行旧 <code>setup</code>（点分模块先恢复其 <code>__dict__</code> 快照），状态为 <code>rolled_back</code> 并附带错误；回滚也失败时状态为 <code>failed</code> 并同时包含两个错误。</li>
+<li><code>update_patch(key, config)</code>：模块定义了 <code>update</code> 且返回真值时原地修改（<code>mode</code> 为 <code>in_place</code>，状态 <code>updated</code>），否则以新配置重新加载（<code>mode</code> 为 <code>reload</code>）。<code>update</code> 抛出异常时补丁集保持不变，状态为 <code>failed</code>。</li>
+</ul>
+<p>补丁名称是跨重新加载保持不变的键，补丁集 ID 每次（重新）加载都会变化，因为已关闭的补丁集不能重新打开。<code>key</code> 参数同时接受补丁集 ID 和名称，ID 优先。同名补丁的并发操作通过 <code>state.loading_patches</code> 标记拒绝（<code>busy</code>），不会在执行用户代码时持有互斥锁。</p>
+<h3 id="_15">配置声明的补丁集<a class="headerlink" href="#_15" title="锚链接到此处">☍</a></h3>
+<p>新的 <code>control</code> 配置区段由内置功能 <code>control</code> 应用，在全部扩展之后执行：</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">"control"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">"allow_remote_load"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">"patch_sets"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">      </span><span class="p">{</span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"my_patches.fix_foo"</span><span class="p">,</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"fix-foo"</span><span class="p">,</span><span class="w"> </span><span class="nt">"config"</span><span class="p">:</span><span class="w"> </span><span class="p">{},</span><span class="w"> </span><span class="nt">"enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="p">],</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="nt">"watch"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"enabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nt">"interval"</span><span class="p">:</span><span class="w"> </span><span class="mf">1.0</span><span class="p">},</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span><span class="nt">"forward_events"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="p">}</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="p">}</span>
+</span></code></pre></div>
+<ul>
+<li>条目逐个处理，单个条目出错只记录到 <code>errors</code>，不影响其他条目；重复名称的条目被忽略。</li>
+<li>重复应用是幂等的：来源改变时重新加载，文件哈希改变时 <code>reload_patch</code>，只有配置改变时 <code>update_patch</code>。</li>
+<li>不再列出或 <code>enabled: false</code> 的配置来源补丁默认保留并产生告警；开启 reconcile 时被卸载。通过 API 加载的补丁（<code>origin="api"</code>）不受配置影响。</li>
+<li>目录 schema 为此新增了 <code>json</code> 和 <code>float</code> 两种设置类型，Hotpatcher 管理器 GUI 已支持。</li>
+</ul>
+<h3 id="_16">文件监视<a class="headerlink" href="#_16" title="锚链接到此处">☍</a></h3>
+<p><code>PatchFileWatcher</code> 只使用标准库轮询，默认关闭。<code>SD_WEBUI_ALL_IN_ONE_HOTPATCHER_WATCH=1</code> 或 <code>control.watch.enabled</code> 开启后，守护线程每 <code>interval</code> 秒（默认 1.0）比较已加载补丁源文件的 mtime 和大小，变化时重新计算 SHA-256；哈希不同且在 0.5 秒防抖时间内保持不变时调用 <code>reload_patch</code>。重新加载失败（含回滚）的内容会被记住，直到文件再次变化才重试。</p>
+<div class="admonition warning">
+<p class="admonition-title">点分模块的字节码缓存</p>
+<p>按点分模块名加载的补丁通过 <code>importlib.reload</code> 重新执行，使用正常的 <code>.pyc</code> 缓存。同一秒内多次改写同样大小的源码可能命中过期的字节码缓存；文件路径加载不受影响。</p>
+</div>
+<h2 id="_17">功能注册表<a class="headerlink" href="#_17" title="锚链接到此处">☍</a></h2>
+<h3 id="featurespec"><code>FeatureSpec</code><a class="headerlink" href="#featurespec" title="锚链接到此处">☍</a></h3>
+<p>每个 services 功能由一个不可变的 <code>FeatureSpec</code> 描述：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>key</code></td>
+<td>目录键，例如 <code>extensions.uv_pip</code>，按 <code>.</code> 拆分得到配置路径；不能与已有键互为前缀。</td>
+</tr>
+<tr>
+<td><code>title</code> / <code>description</code></td>
+<td>目录标题与描述。</td>
+</tr>
+<tr>
+<td><code>defaults</code> / <code>settings</code></td>
+<td>默认配置和设置 schema。</td>
+</tr>
+<tr>
+<td><code>apply</code></td>
+<td><code>apply(ctx, section) -&gt; bool</code>，可为 None 表示只有配置区段（例如 <code>services</code>）。</td>
+</tr>
+<tr>
+<td><code>is_active</code> / <code>is_registered</code></td>
+<td>状态探测，填充目录的 <code>active</code> / <code>registered</code> 字段并用于禁用告警。</td>
+</tr>
+<tr>
+<td><code>revert</code></td>
+<td>禁用时在关闭补丁集之后调用，返回 None 视为 <code>reverted</code>。</td>
+</tr>
+<tr>
+<td><code>update</code></td>
+<td><code>update(ctx, old_section, new_section) -&gt; bool</code>，返回 False 时退回为先禁用再启用。</td>
+</tr>
+<tr>
+<td><code>on_disabled</code></td>
+<td>v1 <code>apply_config</code> 在功能禁用或缺少 runtime client 时执行的处理。</td>
+</tr>
+<tr>
+<td><code>enabled</code></td>
+<td>区段是否启用的判断，默认读取 <code>enabled</code> 字段。</td>
+</tr>
+<tr>
+<td><code>requires_runtime_client</code> / <code>optional</code></td>
+<td>需要 runtime client；<code>optional=True</code> 时 <code>apply</code> 返回假值表示跳过。</td>
+</tr>
+<tr>
+<td><code>disabled_warning</code></td>
+<td>功能被禁用但仍生效时的告警文本，保持与 v1 完全一致。</td>
+</tr>
+<tr>
+<td><code>order</code> / <code>config_order</code></td>
+<td>应用顺序与默认配置中的排列顺序。</td>
+</tr>
+</tbody>
+</table>
+<p>行为字段可以是可调用对象，也可以是 <code>"module:callable"</code> 字符串。字符串在每次调用时重新解析、不做缓存，因此内置功能的数据位于核心包内，导入 <code>services</code> 不会加载任何扩展模块，扩展仍然在 <code>apply_config</code> 安装栈隐藏器之后才首次导入。只接收区段配置或不接收参数的扩展入口通过 <code>ConfigCall</code> / <code>NoArgCall</code> 适配。</p>
+<p>内置功能（<code>BUILTIN_FEATURES</code>，按应用顺序）：</p>
+<table>
+<thead>
+<tr>
+<th>键</th>
+<th>顺序</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>services</code></td>
+<td>0</td>
+<td>只有配置区段：<code>apply_on_bootstrap</code>、<code>reconcile_disabled</code>。</td>
+</tr>
+<tr>
+<td><code>core.import_hook</code></td>
+<td>10</td>
+<td>安装 import hook。</td>
+</tr>
+<tr>
+<td><code>core.stack_shadow</code></td>
+<td>15</td>
+<td>安装栈隐藏器。</td>
+</tr>
+<tr>
+<td><code>runtime.browser</code></td>
+<td>20</td>
+<td>浏览器打开补丁，支持原地 <code>update</code>。</td>
+</tr>
+<tr>
+<td><code>runtime.errors</code></td>
+<td>25</td>
+<td>错误捕获，需要 runtime client。</td>
+</tr>
+<tr>
+<td><code>runtime.logs</code></td>
+<td>30</td>
+<td>日志采集，需要 runtime client。</td>
+</tr>
+<tr>
+<td><code>extensions.comfyui_auto_port</code></td>
+<td>40</td>
+<td>ComfyUI 端口自动避让。</td>
+</tr>
+<tr>
+<td><code>extensions.zluda</code></td>
+<td>45</td>
+<td>ZLUDA 兼容。</td>
+</tr>
+<tr>
+<td><code>extensions.extension_index</code></td>
+<td>50</td>
+<td>扩展索引镜像，任一子项启用即启用。</td>
+</tr>
+<tr>
+<td><code>extensions.hf_endpoint_mirror</code></td>
+<td>55</td>
+<td>HuggingFace 镜像。</td>
+</tr>
+<tr>
+<td><code>extensions.uv_pip</code></td>
+<td>60</td>
+<td>uv 替换 pip，<code>revert</code> 为 <code>unpatch_uv_to_subprocess</code>。</td>
+</tr>
+<tr>
+<td><code>extensions.xformers_cutlass</code></td>
+<td>65</td>
+<td>xFormers CUTLASS 兼容，可选功能。</td>
+</tr>
+<tr>
+<td><code>control</code></td>
+<td>90</td>
+<td>配置声明的补丁集、文件监视和事件转发。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_18">应用语义<a class="headerlink" href="#_18" title="锚链接到此处">☍</a></h3>
+<ul>
+<li><code>DEFAULT_CONFIG</code>、<code>SETTING_SCHEMA</code>、目录、<code>normalize_config</code>、<code>apply_config</code> 和禁用告警都从注册表派生；<code>services</code> 模块级常量 <code>DEFAULT_CONFIG</code> / <code>SETTING_SCHEMA</code> 仍作为计算后的字典保留。</li>
+<li>每个功能在自己的补丁集 <code>feature:&lt;key&gt;</code> 中应用，重复应用复用同一个补丁集（扩展自己负责去重）。</li>
+<li>扩展入口导入失败或抛出异常时记录到结果的 <code>errors</code>（<code>code</code> 为异常类型名），不会中断其他功能。</li>
+<li><code>apply_config(config, *, runtime_client=None, state=None, reconcile=None)</code> 默认保持 v1 语义：<code>enabled=false</code> 只表示不再注册，已生效的补丁保留并产生告警（决策 D5）。<code>reconcile=True</code> 或配置 <code>services.reconcile_disabled: true</code> 时撤销之前已应用、现在被禁用的功能，结果多出 <code>reconciled</code> 列表；显式传入的 <code>reconcile</code> 优先于配置。</li>
+<li><code>enable_feature(key, config=None)</code>、<code>disable_feature(key)</code>、<code>update_feature(key, config)</code> 返回 JSON 安全报告。<code>disable_feature</code> 之后功能仍然生效（<code>is_registered</code> / <code>is_active</code>）时状态为 <code>requires_restart</code> 并附带 <code>disabled_warning</code>。</li>
+<li><code>list_features()</code> 返回每个功能的应用状态、补丁集与句柄摘要。</li>
+</ul>
+<h3 id="_19">新增功能或扩展<a class="headerlink" href="#_19" title="锚链接到此处">☍</a></h3>
+<p>扩展代码不需要感知补丁集：<code>apply</code> 期间功能补丁集处于激活状态，普通 <code>monkey_zoo(...)</code> 注册会经由 <code>current_patch_context()</code> 自动归属到它。需要实时修改时使用 <code>ctx.patch_set.context</code> 上的操作，它们会被记录并在禁用时撤销：</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">sd_webui_all_in_one_hotpatcher</span><span class="w"> </span><span class="kn">import</span> <span class="n">monkey_zoo</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">sd_webui_all_in_one_hotpatcher.control.features</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeatureSpec</span><span class="p">,</span> <span class="n">get_feature_registry</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">apply_demo</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">section</span><span class="p">):</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="k">with</span> <span class="n">monkey_zoo</span><span class="p">(</span><span class="s2">"demo_target"</span><span class="p">)</span> <span class="k">as</span> <span class="n">monkey</span><span class="p">:</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>        <span class="n">monkey</span><span class="o">.</span><span class="n">patch_module</span><span class="p">(</span><span class="k">lambda</span> <span class="n">module</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">ctx</span><span class="o">.</span><span class="n">patch_set</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">set_env</span><span class="p">(</span><span class="s2">"DEMO_LEVEL"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">section</span><span class="p">[</span><span class="s2">"level"</span><span class="p">]))</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">get_feature_registry</span><span class="p">()</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    <span class="n">FeatureSpec</span><span class="p">(</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>        <span class="n">key</span><span class="o">=</span><span class="s2">"thirdparty.demo"</span><span class="p">,</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        <span class="n">title</span><span class="o">=</span><span class="s2">"Demo"</span><span class="p">,</span>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        <span class="n">description</span><span class="o">=</span><span class="s2">"示例功能"</span><span class="p">,</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>        <span class="n">defaults</span><span class="o">=</span><span class="p">{</span><span class="s2">"enabled"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">"level"</span><span class="p">:</span> <span class="mi">1</span><span class="p">},</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>        <span class="n">settings</span><span class="o">=</span><span class="p">{</span><span class="s2">"level"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"int"</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Level"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"示例参数"</span><span class="p">}},</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>        <span class="n">apply</span><span class="o">=</span><span class="n">apply_demo</span><span class="p">,</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    <span class="p">)</span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>注册后该功能立即出现在 <code>get_default_config()</code>、<code>get_catalog()</code> 和 <code>apply_config()</code> 中。内置扩展的新功能应作为数据加入 <code>features.py</code> 的 <code>BUILTIN_FEATURES</code>，行为字段使用指向扩展模块的字符串引用，并同步更新 golden 快照（见下文“测试”一节）。</p>
+<h2 id="_20">调试<a class="headerlink" href="#_20" title="锚链接到此处">☍</a></h2>
+<table>
+<thead>
+<tr>
+<th>能力</th>
+<th>入口</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>补丁结果</td>
+<td><code>hotpatch.patches.list</code> / <code>.get</code></td>
+<td>状态、最近结果、计数、所属补丁集、目标和阶段。</td>
+</tr>
+<tr>
+<td>严格模式</td>
+<td><code>SD_WEBUI_ALL_IN_ONE_HOTPATCHER_STRICT=1</code>、<code>set_strict_mode()</code>、<code>hotpatch.debug.strict.set</code></td>
+<td>import 阶段补丁抛出的异常在记录 <code>failed</code> 结果后继续向外抛出，只影响之后执行的补丁。</td>
+</tr>
+<tr>
+<td>跟踪</td>
+<td><code>SD_WEBUI_ALL_IN_ONE_HOTPATCHER_TRACE</code>、<code>..._TRACE_FILE</code>、<code>hotpatch.debug.trace.get</code> / <code>.set</code></td>
+<td>标签 <code>import</code>、<code>patch</code>、<code>control</code>、<code>conn</code>、<code>set</code>、<code>feature</code> 或 <code>all</code>，分层匹配（<code>patch</code> 包含 <code>patch.failed</code>）。默认写入 stderr，文件为追加写入。关闭时调用点只做一次属性检查。</td>
+</tr>
+<tr>
+<td>事件日志</td>
+<td><code>hotpatch.debug.events.read {since_cursor, limit}</code></td>
+<td>容量 1000 的环形缓冲区。</td>
+</tr>
+<tr>
+<td>事件转发</td>
+<td>配置 <code>control.forward_events</code></td>
+<td>默认关闭。</td>
+</tr>
+<tr>
+<td>解释</td>
+<td><code>hotpatch.inspect.explain {module}</code></td>
+<td>回答“这个模块为什么（没有）被打补丁”。</td>
+</tr>
+<tr>
+<td>补丁后源码</td>
+<td><code>hotpatch.inspect.source {module, max_bytes}</code></td>
+<td>只预演源码与 AST 补丁并 <code>ast.unparse</code>，不执行模块。</td>
+</tr>
+<tr>
+<td>预演校验</td>
+<td><code>hotpatch.inspect.verify {module?}</code></td>
+<td>预演源码、AST 与字节码补丁，报告哪些补丁函数是 noop。</td>
+</tr>
+<tr>
+<td>状态快照</td>
+<td><code>hotpatch.status</code></td>
+<td>版本、传输、hook、补丁集、功能、调试与连接状态，token 已脱敏。</td>
+</tr>
+</tbody>
+</table>
+<p>严格模式的初始值在创建 <code>HotpatcherState</code> 时读取一次环境变量，默认状态在导入 <code>state</code> 模块时创建，之后修改环境变量不会生效，运行时请使用 <code>set_strict_mode()</code>。跟踪字段和事件载荷会经过 <code>redact_mapping</code>，键名包含 <code>token</code>、<code>secret</code>、<code>password</code> 等的值替换为 <code>***</code>。</p>
+<p>事件日志：</p>
+<ul>
+<li>每条事件有从 0 开始单调递增的游标、时间戳、类型和载荷。<code>read</code> 返回 <code>events</code>、<code>start_cursor</code>、<code>next_cursor</code>、<code>truncated</code>（<code>since_cursor</code> 早于最旧保留事件时为 True）和 <code>has_more</code>（受 <code>limit</code> 或 48 KiB 字节预算限制还有未返回的事件），结构与宿主 <code>read_logs</code> 一致。</li>
+<li>事件类型（<code>EVENT_TYPES</code>）：<code>patch.registered</code>、<code>patch.applied</code>、<code>patch.noop</code>、<code>patch.failed</code>、<code>patch.skipped</code>、<code>patch.reverted</code>、<code>import.intercepted</code>、<code>import.skipped</code>、<code>set.loaded</code>、<code>set.unloaded</code>、<code>set.reloaded</code>、<code>set.rolled_back</code>、<code>set.updated</code>、<code>set.failed</code>、<code>set.watch_reload</code>、<code>set.watch_failed</code>、<code>feature.enabled</code>、<code>feature.disabled</code>、<code>feature.updated</code>、<code>connection.changed</code>、<code>debug.strict.changed</code>、<code>debug.trace.changed</code>、<code>debug.forwarding.changed</code>。</li>
+<li>记录事件只在内部叶子锁内追加元组，JSON 安全化、脱敏和长度限制在读取或转发时惰性完成；单条事件上限 8 KiB。</li>
+<li>开启 <code>control.forward_events</code> 后，<code>patch.failed</code>、<code>set.*</code>、<code>feature.*</code> 和 <code>connection.changed</code> 以 <code>hotpatch.event</code> 类型经运行时客户端发送，每秒最多 10 条，载荷上限 12 KiB，以保护桌面代理普通事件 240 条的准入额度。</li>
+</ul>
+<p><code>explain</code> 不导入模块也不写入 finder 缓存，<code>reasons</code> 中的 <code>code</code> 包括 <code>not_registered</code>、<code>alias_fallback</code>、<code>already_imported</code>、<code>imported_with_hook</code>、<code>finder_not_installed</code>、<code>finder_after_stack_shadow</code>、<code>stack_shadow_conflict</code>、<code>module_not_found</code>、<code>unsupported_loader</code>、<code>code_stages_unsupported</code>、<code>cached_spec</code>、<code>no_cached_spec</code>、<code>handle_failed</code>、<code>handle_noop</code>、<code>handle_skipped</code>。</p>
+<p>诊断结果都有界：JSON 编码后低于 60 KiB（<code>MAX_RESULT_BYTES</code>）；<code>inspect.source</code> 默认最多 48 KiB 源码，最大 56 KiB，超出时设置 <code>truncated</code>。</p>
+<h2 id="api">统一命令 API<a class="headerlink" href="#api" title="锚链接到此处">☍</a></h2>
+<h3 id="envelope">Envelope 与错误码<a class="headerlink" href="#envelope" title="锚链接到此处">☍</a></h3>
+<p>所有入口都经过 <code>CommandRegistry.dispatch</code>，它从不抛出异常。envelope 与 services v1 一致：</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p">{</span><span class="nt">"ok"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nt">"payload"</span><span class="p">:</span><span class="w"> </span><span class="p">{}}</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="p">{</span><span class="nt">"ok"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nt">"error"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"not_found"</span><span class="p">,</span><span class="w"> </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">}}</span>
+</span></code></pre></div>
+<p><code>hotpatch.*</code> 命令的错误对象可以额外带 <code>details</code>（例如加载失败时的完整报告）；<code>services.*</code> 命令的错误对象只有 <code>code</code> 和 <code>message</code>，与 v1 字节级一致。</p>
+<p>错误码（<code>ERROR_CODES</code>）：</p>
+<table>
+<thead>
+<tr>
+<th>错误码</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>invalid_request</code></td>
+<td>请求载荷不是对象（services v1）。</td>
+</tr>
+<tr>
+<td><code>invalid_json</code></td>
+<td>请求无法解码（services v1）。</td>
+</tr>
+<tr>
+<td><code>unknown_request</code></td>
+<td>未知命令（services v1；桌面传输映射为 <code>unknown_command</code>）。</td>
+</tr>
+<tr>
+<td><code>request_failed</code></td>
+<td>处理函数失败，包括导入、<code>setup</code>、回滚等失败。</td>
+</tr>
+<tr>
+<td><code>invalid_payload</code></td>
+<td>载荷校验失败或参数非法。</td>
+</tr>
+<tr>
+<td><code>forbidden</code></td>
+<td>传输策略或 token 要求不满足。</td>
+</tr>
+<tr>
+<td><code>not_found</code></td>
+<td>句柄、补丁集、补丁、功能或模块不存在。</td>
+</tr>
+<tr>
+<td><code>unsupported_transport</code></td>
+<td>当前传输不支持该命令或该载荷。</td>
+</tr>
+<tr>
+<td><code>connection_failed</code></td>
+<td>建立新连接失败或切换已回滚。</td>
+</tr>
+<tr>
+<td><code>remote_load_disabled</code></td>
+<td>远程加载开关未开启（D6）。</td>
+</tr>
+<tr>
+<td><code>busy</code></td>
+<td>同一功能、补丁集或连接上已有操作进行中。</td>
+</tr>
+<tr>
+<td><code>conflict</code></td>
+<td>前置条件冲突，例如对功能补丁集使用 <code>sets.unload</code>、重名加载或没有旧版连接。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_21">分发顺序与传输策略<a class="headerlink" href="#_21" title="锚链接到此处">☍</a></h3>
+<p><code>dispatch</code> 依次执行：解析名称与别名 → 传输检查（<code>remote</code>、<code>transports</code> 白名单、<code>blocking</code>、<code>requires_token</code>）→ 载荷校验（<code>PayloadField</code>）→ 调用处理函数 → 桌面结果大小检查 → 生成 envelope。启用 <code>control</code> 跟踪标签时输出包含耗时的跟踪行。</p>
+<p>三种传输：</p>
+<ul>
+<li><code>inprocess</code>：Python API。响应后回调（<code>after_send</code>）在分发返回后立即执行。</li>
+<li><code>legacy</code>：旧版 TCP JSONL services 通道（<code>ServiceControlChannel</code>），命令在通道读取线程上执行，只阻塞该通道；<code>after_send</code> 在响应写出之后执行。</li>
+<li><code>desktop</code>：桌面 HTTP 代理（<code>_handle_desktop_command</code>），命令在唯一的代理工作线程上同步执行，该线程同时负责心跳和事件上传。</li>
+</ul>
+<p>传输规则：</p>
+<ul>
+<li><code>blocking=True</code> 的命令可能导入模块或执行用户代码，在桌面传输上返回 <code>unsupported_transport</code> 且不调用处理函数。<code>config.apply</code> 保持 v1 的同步语义，但携带新的 <code>control.patch_sets</code> 条目时在桌面传输上同样返回 <code>unsupported_transport</code>（见“已知限制”）。</li>
+<li><code>conditional_blocking=True</code> 的命令（<code>features.enable</code> / <code>.update</code>）只在首次解析惰性入口（需要导入扩展模块）或会加载 <code>control.patch_sets</code> 时在桌面传输上返回 <code>unsupported_transport</code>。</li>
+<li><code>requires_token=True</code> 的命令在旧版传输的 token 为空时返回 <code>forbidden</code>。</li>
+<li>桌面传输的成功结果 JSON 编码后超过 63 KiB（<code>MAX_DESKTOP_RESULT_BYTES</code>）时返回 <code>request_failed</code>，信息以 <code>result_too_large:</code> 开头。</li>
+<li>桌面 <code>config.apply</code> 保持 v1 契约：<code>payload.config</code> 不是对象时为 <code>invalid_command_payload</code>，结果映射为 <code>{"applyResult": ...}</code>，未知命令为 <code>unknown_command</code>。</li>
+</ul>
+<h3 id="_22">命令表<a class="headerlink" href="#_22" title="锚链接到此处">☍</a></h3>
+<p><code>CONTROL_VERSION</code> 为 1，与运行时协议版本 <code>PROTOCOL_VERSION</code>（1）相互独立。下表中“标记”列：M 为 <code>mutating</code>，B 为 <code>blocking</code>，CB 为 <code>conditional_blocking</code>，T 为 <code>requires_token</code>。</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>载荷</th>
+<th>标记</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hotpatch.capabilities</code></td>
+<td>无</td>
+<td></td>
+<td>能力探测。</td>
+</tr>
+<tr>
+<td><code>hotpatch.status</code></td>
+<td>无</td>
+<td></td>
+<td>状态快照。</td>
+</tr>
+<tr>
+<td><code>hotpatch.patches.list</code></td>
+<td><code>owner?</code>、<code>limit?</code>（默认 200，最大 1000）</td>
+<td></td>
+<td>列出句柄，<code>{patches, count, truncated}</code>。</td>
+</tr>
+<tr>
+<td><code>hotpatch.patches.get</code></td>
+<td><code>id</code></td>
+<td></td>
+<td>单个句柄详情，最多 48 KiB。</td>
+</tr>
+<tr>
+<td><code>hotpatch.patches.unload</code></td>
+<td><code>id</code></td>
+<td>M</td>
+<td>移除 import 阶段句柄；实时操作句柄返回 <code>conflict</code>，应卸载所属补丁集。</td>
+</tr>
+<tr>
+<td><code>hotpatch.sets.list</code></td>
+<td><code>limit?</code></td>
+<td></td>
+<td>列出补丁集，<code>kind</code> 为 <code>manual</code>、<code>loaded</code> 或 <code>feature</code>。</td>
+</tr>
+<tr>
+<td><code>hotpatch.sets.load</code></td>
+<td><code>source</code>、<code>name?</code>、<code>config?</code></td>
+<td>M B T</td>
+<td>加载补丁模块，远程调用还要通过 D6 检查。</td>
+</tr>
+<tr>
+<td><code>hotpatch.sets.unload</code></td>
+<td><code>key</code></td>
+<td>M</td>
+<td>卸载已加载补丁或手动补丁集；功能补丁集返回 <code>conflict</code>。</td>
+</tr>
+<tr>
+<td><code>hotpatch.sets.reload</code></td>
+<td><code>key</code>、<code>config?</code></td>
+<td>M B T</td>
+<td>重新加载，回滚时返回错误并在 <code>details</code> 中附报告。</td>
+</tr>
+<tr>
+<td><code>hotpatch.sets.update</code></td>
+<td><code>key</code>、<code>config</code></td>
+<td>M B T</td>
+<td>原地更新或以新配置重新加载。</td>
+</tr>
+<tr>
+<td><code>hotpatch.features.list</code></td>
+<td>无</td>
+<td></td>
+<td>列出功能。</td>
+</tr>
+<tr>
+<td><code>hotpatch.features.enable</code></td>
+<td><code>key</code>、<code>config?</code></td>
+<td>M CB</td>
+<td>启用功能。</td>
+</tr>
+<tr>
+<td><code>hotpatch.features.disable</code></td>
+<td><code>key</code></td>
+<td>M</td>
+<td>禁用功能。</td>
+</tr>
+<tr>
+<td><code>hotpatch.features.update</code></td>
+<td><code>key</code>、<code>config</code></td>
+<td>M CB</td>
+<td>修改功能参数。</td>
+</tr>
+<tr>
+<td><code>hotpatch.modules.reload</code></td>
+<td><code>module</code></td>
+<td>M B T</td>
+<td>重新执行已导入模块，不可撤销。</td>
+</tr>
+<tr>
+<td><code>hotpatch.inspect.explain</code></td>
+<td><code>module</code></td>
+<td></td>
+<td>解释补丁状态。</td>
+</tr>
+<tr>
+<td><code>hotpatch.inspect.source</code></td>
+<td><code>module</code>、<code>max_bytes?</code></td>
+<td></td>
+<td>补丁后源码。</td>
+</tr>
+<tr>
+<td><code>hotpatch.inspect.verify</code></td>
+<td><code>module?</code></td>
+<td></td>
+<td>预演校验。</td>
+</tr>
+<tr>
+<td><code>hotpatch.debug.trace.get</code></td>
+<td>无</td>
+<td></td>
+<td>读取跟踪设置。</td>
+</tr>
+<tr>
+<td><code>hotpatch.debug.trace.set</code></td>
+<td><code>tags</code>、<code>file?</code></td>
+<td>M</td>
+<td><code>file</code> 只允许进程内调用。</td>
+</tr>
+<tr>
+<td><code>hotpatch.debug.strict.set</code></td>
+<td><code>enabled</code></td>
+<td>M</td>
+<td>返回 <code>{strict, previous}</code>。</td>
+</tr>
+<tr>
+<td><code>hotpatch.debug.events.read</code></td>
+<td><code>since_cursor?</code>（默认 0）、<code>limit?</code></td>
+<td></td>
+<td>读取事件。</td>
+</tr>
+<tr>
+<td><code>hotpatch.connection.get</code></td>
+<td>无</td>
+<td></td>
+<td>连接状态与脱敏后的参数。</td>
+</tr>
+<tr>
+<td><code>hotpatch.connection.test</code></td>
+<td>连接字段</td>
+<td>T</td>
+<td>只建连并发送 hello，不切换。</td>
+</tr>
+<tr>
+<td><code>hotpatch.connection.update</code></td>
+<td>连接字段</td>
+<td>M T</td>
+<td>先建后拆地切换连接。</td>
+</tr>
+<tr>
+<td><code>services.catalog.get</code></td>
+<td>无</td>
+<td></td>
+<td>v1，<code>{catalog}</code>。</td>
+</tr>
+<tr>
+<td><code>services.defaults.get</code></td>
+<td>无</td>
+<td></td>
+<td>v1，<code>{config}</code>。</td>
+</tr>
+<tr>
+<td><code>services.config.current</code></td>
+<td>无</td>
+<td></td>
+<td>v1，<code>{config}</code>。</td>
+</tr>
+<tr>
+<td><code>services.config.normalize</code></td>
+<td><code>config</code></td>
+<td></td>
+<td>v1，<code>{config}</code>。</td>
+</tr>
+<tr>
+<td><code>services.config.load</code></td>
+<td><code>path</code>、<code>write_back?</code></td>
+<td>M</td>
+<td>v1，只允许 <code>inprocess</code> / <code>legacy</code>。</td>
+</tr>
+<tr>
+<td><code>services.config.save</code></td>
+<td><code>path</code>、<code>config</code></td>
+<td>M</td>
+<td>v1，只允许 <code>inprocess</code> / <code>legacy</code>。</td>
+</tr>
+<tr>
+<td><code>services.config.apply</code></td>
+<td><code>config</code></td>
+<td>M</td>
+<td>v1，<code>{result}</code>；别名 <code>config.apply</code>，三种传输都接受。</td>
+</tr>
+</tbody>
+</table>
+<p>连接字段为 <code>host</code>、<code>port</code>、<code>token</code>、<code>connect_timeout</code>、<code>request_timeout</code>、<code>event_write_timeout</code>、<code>reconnect</code>、<code>reconnect_initial</code>、<code>reconnect_max</code>、<code>allow_non_loopback</code>（远程调用不能开启）。</p>
+<h3 id="_23">能力探测<a class="headerlink" href="#_23" title="锚链接到此处">☍</a></h3>
+<p><code>hotpatch.capabilities</code> 只报告当前传输可分发的命令：</p>
+<div class="language-json highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p">{</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">"control_version"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">"protocol_version"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">"transport"</span><span class="p">:</span><span class="w"> </span><span class="s2">"legacy"</span><span class="p">,</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="nt">"commands"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"hotpatch.capabilities"</span><span class="p">,</span><span class="w"> </span><span class="s2">"..."</span><span class="p">],</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span><span class="nt">"aliases"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"config.apply"</span><span class="p">:</span><span class="w"> </span><span class="s2">"services.config.apply"</span><span class="p">},</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span><span class="nt">"features"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"connection"</span><span class="p">,</span><span class="w"> </span><span class="s2">"debug"</span><span class="p">,</span><span class="w"> </span><span class="s2">"features"</span><span class="p">,</span><span class="w"> </span><span class="s2">"inspect"</span><span class="p">,</span><span class="w"> </span><span class="s2">"meta"</span><span class="p">,</span><span class="w"> </span><span class="s2">"modules"</span><span class="p">,</span><span class="w"> </span><span class="s2">"patches"</span><span class="p">,</span><span class="w"> </span><span class="s2">"services"</span><span class="p">,</span><span class="w"> </span><span class="s2">"sets"</span><span class="p">],</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">  </span><span class="nt">"blocking_commands"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"hotpatch.modules.reload"</span><span class="p">,</span><span class="w"> </span><span class="s2">"hotpatch.sets.load"</span><span class="p">,</span><span class="w"> </span><span class="s2">"hotpatch.sets.reload"</span><span class="p">,</span><span class="w"> </span><span class="s2">"hotpatch.sets.update"</span><span class="p">],</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">  </span><span class="nt">"conditional_blocking_commands"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"hotpatch.features.enable"</span><span class="p">,</span><span class="w"> </span><span class="s2">"hotpatch.features.update"</span><span class="p">],</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">  </span><span class="nt">"mutating_commands"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"..."</span><span class="p">],</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">  </span><span class="nt">"token_required_commands"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"..."</span><span class="p">]</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="p">}</span>
+</span></code></pre></div>
+<ul>
+<li>桌面传输的 <code>commands</code> 不包含四个阻塞命令和 <code>services.config.load</code> / <code>.save</code>，<code>features</code> 中没有 <code>modules</code>。<code>hotpatch.connection.test</code> / <code>.update</code> 仍然列出（它们不是阻塞命令），但调用时返回 <code>unsupported_transport</code>。</li>
+<li>远程传输上 D6 检查能够通过时，<code>features</code> 额外包含 <code>remote_load</code>。</li>
+<li>旧版补丁进程不认识该命令：services 通道返回 <code>unknown_request</code>，桌面代理返回 <code>unknown_command</code>，调用方据此判断为旧版对端。</li>
+<li><code>hello.features</code> 新增 <code>"control"</code>，只作为日志提示，宿主不据此做任何判断。</li>
+</ul>
+<h3 id="python">Python 门面<a class="headerlink" href="#python" title="锚链接到此处">☍</a></h3>
+<p><code>from sd_webui_all_in_one_hotpatcher import hotpatch</code> 通过模块级 <code>__getattr__</code> 惰性返回默认状态的 <code>HotpatchController</code>（<code>get_controller(state)</code> 获取其他状态的控制器）。<code>hotpatch.call()</code> 与远程分发走同一条路径并返回 envelope，其余友好方法返回成功载荷，失败时抛出 <code>CommandError</code>（保留 <code>code</code>、<code>message</code> 和 <code>details</code>）。</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">sd_webui_all_in_one_hotpatcher</span><span class="w"> </span><span class="kn">import</span> <span class="n">hotpatch</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">envelope</span> <span class="o">=</span> <span class="n">hotpatch</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="s2">"hotpatch.patches.list"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"limit"</span><span class="p">:</span> <span class="mi">10</span><span class="p">})</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">with</span> <span class="n">hotpatch</span><span class="o">.</span><span class="n">patch_set</span><span class="p">(</span><span class="s2">"fix-greet"</span><span class="p">)</span> <span class="k">as</span> <span class="n">ctx</span><span class="p">:</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">ctx</span><span class="o">.</span><span class="n">set_attr</span><span class="p">(</span><span class="s2">"examples.target_module:LABEL"</span><span class="p">,</span> <span class="s2">"patched"</span><span class="p">)</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">ctx</span><span class="o">.</span><span class="n">wrap</span><span class="p">(</span><span class="s2">"examples.target_module:greet"</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">original</span><span class="p">:</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">name</span><span class="p">:</span> <span class="n">original</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()),</span> <span class="n">trampoline</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="k">with</span> <span class="n">ctx</span><span class="o">.</span><span class="n">module</span><span class="p">(</span><span class="s2">"examples.target_module"</span><span class="p">,</span> <span class="n">apply_if_loaded</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">monkey</span><span class="p">:</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>        <span class="n">monkey</span><span class="o">.</span><span class="n">patch_function</span><span class="p">(</span><span class="s2">"greet"</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">func</span><span class="p">,</span> <span class="n">module</span><span class="p">:</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">name</span><span class="p">:</span> <span class="n">func</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"!"</span><span class="p">))</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">hotpatch</span><span class="o">.</span><span class="n">unload_patch</span><span class="p">(</span><span class="s2">"fix-greet"</span><span class="p">)</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="n">hotpatch</span><span class="o">.</span><span class="n">load_patch</span><span class="p">(</span><span class="s2">"my_patches.fix_bar"</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="p">{</span><span class="s2">"level"</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="n">hotpatch</span><span class="o">.</span><span class="n">debug</span><span class="o">.</span><span class="n">trace</span><span class="p">([</span><span class="s2">"patch"</span><span class="p">,</span> <span class="s2">"import"</span><span class="p">])</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">hotpatch</span><span class="o">.</span><span class="n">inspect</span><span class="o">.</span><span class="n">explain</span><span class="p">(</span><span class="s2">"examples.target_module"</span><span class="p">)</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="n">hotpatch</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">list</span><span class="p">()</span>
+</span></code></pre></div>
+<p>门面分组：<code>hotpatch.patches</code>（<code>list</code> / <code>get</code> / <code>unload</code>）、<code>hotpatch.features</code>（<code>list</code> / <code>enable</code> / <code>disable</code> / <code>update</code>）、<code>hotpatch.debug</code>（<code>trace</code> / <code>get_trace</code> / <code>strict</code> / <code>events</code>）、<code>hotpatch.inspect</code>（<code>explain</code> / <code>source</code> / <code>verify</code> / <code>status</code>）、<code>hotpatch.connection</code>（<code>get</code> / <code>test</code> / <code>update</code>）；补丁集方法直接位于控制器上：<code>patch_set</code>、<code>list_sets</code>、<code>load_patch</code>、<code>unload_patch</code>、<code>reload_patch</code>、<code>update_patch</code>、<code>reload_module</code>，以及 <code>capabilities()</code>、<code>status()</code>、<code>request()</code>、<code>commands()</code>。</p>
+<p>自定义命令通过 <code>register_command</code> 注册，自动获得载荷校验、传输策略、envelope 和跟踪：</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">sd_webui_all_in_one_hotpatcher</span><span class="w"> </span><span class="kn">import</span> <span class="n">hotpatch</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">sd_webui_all_in_one_hotpatcher.control.commands</span><span class="w"> </span><span class="kn">import</span> <span class="n">CommandSpec</span><span class="p">,</span> <span class="n">PayloadField</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">hotpatch</span><span class="o">.</span><span class="n">register_command</span><span class="p">(</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">CommandSpec</span><span class="p">(</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="n">name</span><span class="o">=</span><span class="s2">"demo.echo"</span><span class="p">,</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>        <span class="n">handler</span><span class="o">=</span><span class="k">lambda</span> <span class="n">ctx</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="p">{</span><span class="s2">"echo"</span><span class="p">:</span> <span class="n">payload</span><span class="p">[</span><span class="s2">"text"</span><span class="p">]},</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>        <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="n">PayloadField</span><span class="p">(</span><span class="s2">"str"</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">64</span><span class="p">)},</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="p">)</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="p">)</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="n">hotpatch</span><span class="o">.</span><span class="n">request</span><span class="p">(</span><span class="s2">"demo.echo"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"hi"</span><span class="p">})</span>  <span class="c1"># {"echo": "hi"}</span>
+</span></code></pre></div>
+<p><code>services.handle_request_json()</code> 现在是分发器上的薄封装，<code>services.*</code> 请求的响应与 v1 完全一致，同一入口也接受 <code>hotpatch.*</code> 命令。</p>
+<h2 id="_24">连接管理<a class="headerlink" href="#_24" title="锚链接到此处">☍</a></h2>
+<h3 id="_25">补丁进程侧<a class="headerlink" href="#_25" title="锚链接到此处">☍</a></h3>
+<p><code>RuntimeConnectionSettings</code> 是旧版连接参数的不可变记录，<code>from_env()</code> 读取与 <code>RuntimeClient.connect_from_env</code> 完全相同的环境变量（<code>RuntimeClient.connect_from_env</code> 已改为基于它实现，行为不变）。<code>merged(changes)</code> 校验修改：端口为 1 到 65535 的整数，超时与退避为有限正数，<code>reconnect_max</code> 不小于 <code>reconnect_initial</code>；host 改变时新地址必须是回环地址（<code>localhost</code>、<code>127.0.0.0/8</code>、<code>::1</code>，不做 DNS 解析），除非合并后的 <code>allow_non_loopback</code> 为 True。<code>redacted()</code> 生成 token 脱敏后的视图。</p>
+<p><code>ConnectionManager</code>（每个状态对象一个，<code>get_connection_manager()</code> 获取）负责：</p>
+<ul>
+<li><code>update(changes)</code>：先建后拆。校验后建立新主连接并发送 <code>hello</code>，失败时返回 <code>connection_failed</code> 且不做任何修改；成功后先在旧通道上返回 <code>{"status": "scheduled"}</code>，切换作为响应后回调执行：依次打开新 services 通道、在新 fault 通道上重新启用 faulthandler、<code>RuntimeClient.rebind()</code> 原子替换传输。任一步失败回滚到旧连接、关闭新套接字并记录 <code>connection.changed {status: "rolled_back"}</code>；成功后关闭旧 services 通道和旧主连接。进程内调用立即切换并返回最终报告。</li>
+<li><code>test(changes)</code>：只建连并发送 <code>hello</code>，随即关闭。</li>
+<li>自动重连：<code>SD_WEBUI_ALL_IN_ONE_HOTPATCHER_RECONNECT=1</code> 开启（bootstrap 会创建管理器）。主连接写入失败或 services 通道读到 EOF 时，守护线程按指数退避（0.1 秒到 5 秒）重新连接同一目标，断开期间的事件尽力丢弃并计数，重连后重新打开 services 与 fault 通道并发送 <code>log.dropped</code> 诊断。</li>
+<li>已建立但尚未切换的新连接最多保留 30 秒（<code>PENDING_SWITCH_TIMEOUT</code>），响应写出失败导致切换回调被丢弃时由下一次操作清理。</li>
+</ul>
+<p>所有持有方（错误捕获、日志采集、浏览器状态、<code>Progress.manager</code>、<code>ServiceControlChannel</code>、fault）都引用 <code>RuntimeClient</code> 对象而不是传输，所以替换内部传输后它们无需改动。桌面代理传输的连接参数归 Rust 所有：<code>connection.get</code> 返回脱敏后的状态，<code>test</code> / <code>update</code> 返回 <code>unsupported_transport</code>。</p>
+<h3 id="_26">宿主侧<a class="headerlink" href="#_26" title="锚链接到此处">☍</a></h3>
+<p><code>HotpatcherRuntimeHost</code> 新增：</p>
+<ul>
+<li>能力探测：在每条 services 通道上发送 <code>hotpatch.capabilities</code> 并把结果缓存在通道上，返回 <code>unknown_request</code> 时标记为旧版对端。默认在第一次需要时（<code>get_capabilities</code>、<code>request_control</code>、<code>rebind</code>）探测；<code>auto_probe=True</code>（GUI 使用）时在新通道建立后于后台线程探测。<code>capability_status</code> 为 <code>disconnected</code>、<code>unknown</code>、<code>control</code> 或 <code>legacy</code>，<code>control_available</code> 和 <code>client_capabilities</code> 只读缓存，不会阻塞。</li>
+<li><code>request_control(message_type, payload=None, timeout=10.0)</code>：先确认对端能力，命令不在能力结果中时抛出 <code>RemoteServiceError("unsupported")</code>。其他错误码：<code>channel_unavailable</code>（没有 services 通道）、<code>probe_failed</code>、<code>timeout</code>、<code>channel_closed</code>，以及补丁进程返回的错误码。</li>
+<li>便捷方法（<code>RuntimeControlMixin</code>）：<code>get_status</code>、<code>list_patches</code>、<code>unload_patch</code>、<code>list_sets</code>、<code>load_patch</code>、<code>unload_patch_set</code>、<code>reload_patch_set</code>、<code>list_features</code>、<code>enable_feature</code>、<code>disable_feature</code>、<code>read_patch_events</code>、<code>get_trace</code>、<code>set_trace</code>、<code>set_strict</code>、<code>explain_module</code>、<code>get_connection</code>、<code>test_connection</code>、<code>update_connection</code>。</li>
+<li><code>main_connections</code>：记录每条主连接 <code>hello</code> 中的 version 与 features，只用于诊断。</li>
+<li>监听在非回环地址且 token 为空时记录警告。</li>
+</ul>
+<p><code>HotpatcherRuntimeHost.rebind(host=None, port=None, token=None, *, timeout=30.0)</code> 修改宿主自身的监听参数（决策 D7）：</p>
+<ol>
+<li>在新地址上启动第二个监听（只改 token 时复用当前监听），切换窗口内同时接受新旧 token。</li>
+<li>通过当前 services 通道向补丁进程发送 <code>hotpatch.connection.update</code>。监听在通配地址时补丁进程被要求连接 <code>127.0.0.1</code>。</li>
+<li>在窗口内等待补丁进程在新监听上以新 token 打开 services 通道。提交信号是旧 services 通道关闭；新通道先关闭或新主连接在通道打开前关闭表示补丁进程已回滚。</li>
+<li>成功后停止旧监听并丢弃旧 token；超时或失败时关闭新监听及其上已建立的连接，旧监听与旧 token 保持不变。</li>
+</ol>
+<p>返回值的 <code>status</code>：</p>
+<table>
+<thead>
+<tr>
+<th>状态</th>
+<th>情况</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>switched</code></td>
+<td>切换完成；没有补丁进程连接时只移动监听，<code>child</code> 为 None；宿主未启动时只更新属性。</td>
+</tr>
+<tr>
+<td><code>rolled_back</code></td>
+<td>附 <code>stage</code>（<code>probe</code>、<code>listen</code>、<code>update</code>、<code>wait</code>）和 <code>error</code>；<code>wait</code> 阶段的错误码为 <code>child_rollback</code>、<code>timeout</code> 或 <code>stopped</code>。</td>
+</tr>
+<tr>
+<td><code>unsupported</code></td>
+<td>附 <code>reason</code>：<code>legacy_runtime</code>、<code>command_unavailable</code>、<code>token_required</code>，或补丁进程拒绝更新的错误码（<code>forbidden</code>、<code>unsupported_transport</code>、<code>unknown_request</code>）。</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">token 要求</p>
+<p><code>hotpatch.connection.update</code> 在旧版传输上要求非空 token，所以宿主 token 为空时，有补丁进程连接的 <code>rebind</code> 总是返回 <code>unsupported</code>（<code>token_required</code>）。改到非回环地址还需要补丁进程启动环境设置 <code>SD_WEBUI_ALL_IN_ONE_HOTPATCHER_ALLOW_NON_LOOPBACK=1</code>。</p>
+</div>
+<h3 id="_27">启动环境<a class="headerlink" href="#_27" title="锚链接到此处">☍</a></h3>
+<p><code>apply_hotpatcher_launch_env(origin_env=None, enabled=False, config_path=None, port=8765, enable_runtime=False, host="127.0.0.1", token=None)</code>：</p>
+<ul>
+<li>先移除全部 <code>SD_WEBUI_ALL_IN_ONE_HOTPATCHER_*</code> 变量，再保留用户设置的调试变量 <code>DEBUG</code>、<code>TRACE</code>、<code>TRACE_FILE</code>、<code>STRICT</code>（与是否启用 runtime 无关）。</li>
+<li>启用 runtime 时还保留 <code>TOKEN</code>、<code>TIMEOUT</code>、<code>CONNECT_TIMEOUT</code>、<code>REQUEST_TIMEOUT</code>、<code>EVENT_WRITE_TIMEOUT</code>、<code>RECONNECT</code>、<code>ALLOW_NON_LOOPBACK</code>，并注入 <code>RUNTIME</code>、<code>HOST</code>、<code>PORT</code>、<code>SERVICES</code>。</li>
+<li><code>token=None</code> 沿用原始环境中的 token，空字符串移除 token，其他值覆盖。默认参数下输出与之前完全相同。</li>
+<li>按决策 D2，host / token 只通过环境变量和 API 设置，产品 CLI 没有新增启动参数。</li>
+</ul>
+<p><code>build_hotpatcher_runtime_env(host, port, token="", config_source="remote")</code> 与上面共用同一个连接变量构建函数，但返回的是部分环境变量：<code>PYTHONPATH</code> 只包含 hotpatcher 目录。使用方应先合并除 <code>PYTHONPATH</code> 以外的变量，再对合并结果调用 <code>ensure_hotpatcher_pythonpath_first</code>，不能直接覆盖原有 <code>PYTHONPATH</code>。</p>
+<h3 id="gui">GUI 运行时控制标签页<a class="headerlink" href="#gui" title="锚链接到此处">☍</a></h3>
+<p>按决策 D3，Hotpatcher 管理器 GUI 新增最小范围的“运行时控制”标签页（<code>hotpatcher_manager_gui/runtime_control.py</code>）：能力与状态、补丁列表、补丁集、功能、事件分页、跟踪与严格模式开关、连接测试与宿主 <code>rebind</code>。所有网络调用都在后台线程执行。API 服务器仍然不提供运行时控制，<code>tests/api_server/test_registry.py</code> 保留对应断言。</p>
+<h3 id="hanafubuki">Hanafubuki 桌面宿主<a class="headerlink" href="#hanafubuki" title="锚链接到此处">☍</a></h3>
+<p>P11 在 Hanafubuki 仓库（<code>Hanafubuki-dev</code>，分支 <code>hotpatch-control</code>，待合并到 <code>main</code>）中接入了运行时控制：</p>
+<ul>
+<li><strong>运行时代理</strong>：接受 <code>hotpatch.event</code> 事件，并保存在独立的有界窗口中（每会话 256 条 / 1 MiB），不会挤占运行时日志。新增按 ID 读取单个命令结果的接口，读取时会先触发惰性过期，不再需要克隆整个会话快照。</li>
+<li><strong>管理服务</strong>：</li>
+<li>只读查询（<code>hotpatch.capabilities</code>、<code>status</code>、<code>patches.list/get</code>、<code>sets.list</code>、<code>features.list</code>、<code>inspect.*</code>、<code>debug.trace.get</code>、<code>debug.events.read</code>、<code>connection.get</code>）是 5 秒期限的直接请求/响应，不创建管理任务。</li>
+<li>修改命令（<code>patches.unload</code>、<code>sets.unload</code>、<code>features.enable/disable/update</code>、<code>debug.trace.set</code>、<code>debug.strict.set</code>）和 <code>config.apply</code> 一样作为管理任务执行：资源占用、维护闸门、30 秒期限，任务类型为 <code>hotpatchRuntimeControl</code>。</li>
+<li>所有命令都经过 Rust 端白名单；阻塞命令与 <code>connection.test</code> / <code>.update</code> 不在白名单中。</li>
+<li><strong>能力探测</strong>：每个运行时会话探测一次 <code>hotpatch.capabilities</code>，状态为 <code>supported</code>、<code>legacy</code>（旧版 hotpatcher 返回 <code>unknown_command</code>）、<code>probeFailed</code> 或 <code>unavailable</code>；可用命令列表为运行时声明的命令与白名单的交集。</li>
+<li><strong>IPC</strong>：新增 <code>get_instance_hotpatch_runtime_control_status</code>、<code>query_instance_hotpatch_runtime</code>、<code>start_instance_hotpatch_runtime_control</code>、<code>get_instance_hotpatch_runtime_events</code> 四个命令，请求结构严格解码。</li>
+<li><strong>前端</strong>：Hotpatch 面板新增“运行时控制”标签页，包括状态、补丁、补丁集、功能、检查、调试（跟踪标签、严格模式、事件日志与转发事件）和只读连接信息；按探测到的命令列表禁用不可用的操作。配置表单支持新的 <code>json</code> 与 <code>float</code> 设置类型。</li>
+</ul>
+<h2 id="_28">安全与信任边界<a class="headerlink" href="#_28" title="锚链接到此处">☍</a></h2>
+<ul>
+<li>加载补丁就是执行代码（决策 D6）。进程内 Python API 总是允许；通过运行时通道的 <code>hotpatch.sets.load</code> 需要 <code>control.allow_remote_load</code> 严格为 True（默认 False），旧版传输还要求非空 token，桌面传输不检查 token（会话由 Rust 鉴权）。由于分发顺序，旧版传输 token 为空时 <code>sets.load</code> 先返回 <code>forbidden</code>，再轮到 <code>remote_load_disabled</code>。</li>
+<li>配置携带的远程加载也受同一道检查：远程 <code>services.config.apply</code>、<code>services.config.save</code>、桌面 <code>config.apply</code>，以及针对 <code>control</code> 的 <code>features.enable</code> / <code>.update</code>，在会开启 <code>allow_remote_load</code> 或加载新的 <code>control.patch_sets</code> 条目时，按请求之前生效的配置执行检查，因此远程请求不能在同一个请求中开启并使用远程加载。与当前配置完全相同的条目（例如 GUI 回传完整配置）不会触发检查。</li>
+<li>需要 token 的命令只有 <code>sets.load</code>、<code>sets.reload</code>、<code>sets.update</code>、<code>modules.reload</code>、<code>connection.test</code>、<code>connection.update</code>。<code>patches.unload</code>、<code>sets.unload</code>、<code>features.*</code>、<code>debug.*</code> 不要求 token，旧版通道的信任仍依赖握手 token 与回环监听。</li>
+<li>远程调用不能为 <code>debug.trace.set</code> 指定 <code>file</code>，也不能开启 <code>allow_non_loopback</code>；连接切换默认只允许回环地址。</li>
+<li>读写任意文件路径的 <code>services.config.load</code> / <code>.save</code> 不对桌面传输开放。</li>
+<li>token 在 <code>status</code>、<code>connection.get</code>、跟踪输出和事件中一律脱敏；<code>RuntimeConnectionSettings</code> 的 <code>repr</code> 不包含 token。</li>
+<li>宿主在非回环地址监听且 token 为空时记录警告。</li>
+</ul>
+<h2 id="_29">兼容性<a class="headerlink" href="#_29" title="锚链接到此处">☍</a></h2>
+<ul>
+<li><code>Monkey</code> 列表的元组结构不变；<code>patch_*</code> 原本返回 None，改为返回句柄是增量变化。</li>
+<li><code>get_default_config()</code> / <code>get_catalog()</code> 由 golden 快照冻结；P0 时的快照保留为 <code>golden/*_v1.json</code>，并通过深度子集检查保证只新增、不修改或删除。新增的配置键为 <code>services.reconcile_disabled</code> 和整个 <code>control</code> 区段。</li>
+<li><code>services.*</code> 线上格式、错误码和桌面 <code>config.apply</code> → <code>applyResult</code> 映射不变，由 <code>test_services_wire_compat.py</code> 和 <code>test_desktop_command_compat.py</code> 覆盖。</li>
+<li>新补丁进程 + 旧宿主：旧宿主从不发送 <code>hotpatch.*</code>，<code>services.*</code> 行为不变。旧补丁进程 + 新宿主：能力探测返回 <code>unknown_request</code>，宿主标记为旧版对端，<code>request_control</code> 抛出 <code>unsupported</code>，GUI 显示不支持。</li>
+<li>新增环境变量（<code>STRICT</code>、<code>TRACE</code>、<code>TRACE_FILE</code>、<code>WATCH</code>、<code>RECONNECT</code>、<code>ALLOW_NON_LOOPBACK</code>）都是可选的，默认关闭。</li>
+</ul>
+<h2 id="_30">已知限制<a class="headerlink" href="#_30" title="锚链接到此处">☍</a></h2>
+<ul>
+<li>已编译的源码、AST、字节码补丁无法在线撤销，只能报告 <code>requires_restart</code>；已捕获的绑定方法和闭包也不会被撤销。</li>
+<li>蹦床转发函数在卸载后永久保留；包装之前复制的引用只有通过 <code>rebind_references</code> 才会跟随。</li>
+<li><code>PostExecLoader</code> 替换了非源码模块 spec 上的 loader 对象，<code>isinstance(module.__spec__.loader, zipimporter)</code> 之类的检查会失败；对扩展模块，执行前补丁看到的是 <code>create_module</code> 之后的模块，单阶段初始化的扩展模块此时已经初始化。</li>
+<li><code>MonkeyZoo.discard()</code> 和 <code>MonkeyZoo.clear()</code> 只注销计划，不撤销已写入模块的修改（已执行的无主条目报告 <code>requires_restart</code>）；需要撤销时使用 <code>remove(handle)</code> 或卸载所属补丁集。</li>
+<li><code>audit</code> hook（<code>sys.addaudithook</code>）无法移除。</li>
+<li>连接切换后不会改写 <code>os.environ</code>，之后启动的子进程继承的仍是旧的连接环境变量。</li>
+<li>桌面代理传输上标记为 <code>blocking</code> 的命令返回 <code>unsupported_transport</code>，离线程执行和完成事件尚未实现。</li>
+<li>桌面 <code>config.apply</code> 只能回传与当前配置完全相同的 <code>control.patch_sets</code> 条目：新条目会在代理工作线程上导入并执行 <code>setup</code>，阻塞心跳与事件上传，因此即使已开启 <code>control.allow_remote_load</code> 也会返回 <code>unsupported_transport</code>。需要加载新补丁集时请在进程内或通过旧版传输操作。</li>
+<li>只有包含 P11 改动的 Hanafubuki 版本才接受 <code>hotpatch.event</code>；旧版桌面代理把它记为 <code>unknown_event_type</code> 诊断，此时开启 <code>control.forward_events</code> 只会产生诊断。</li>
+<li>把完整默认配置应用到隔离的 <code>HotpatcherState</code> 时，<code>comfyui_auto_port</code> 和 <code>xformers_cutlass</code> 扩展使用模块级 <code>monkey_zoo</code>，补丁会注册到默认状态的计划中，而不是传入的状态。</li>
+<li>点分模块补丁在同一秒内被重写时可能命中过期的 <code>.pyc</code> 缓存（见上文“文件监视”一节）。</li>
+</ul>
+<h2 id="_31">测试<a class="headerlink" href="#_31" title="锚链接到此处">☍</a></h2>
+<p>控制平面的测试位于：</p>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sd_webui_all_in_one/patcher/tests/control/</code></td>
+<td><code>test_control_journal.py</code>、<code>test_control_targets.py</code>、<code>test_control_patchset.py</code>、<code>test_control_hook_handles.py</code>、<code>test_control_hook_loaders.py</code>（辅助模块 <code>control_hook_test_helpers.py</code>）、<code>test_control_operations.py</code>、<code>test_control_features.py</code>、<code>test_control_loader.py</code>、<code>test_control_debug.py</code>、<code>test_control_commands.py</code>、<code>test_control_concurrency.py</code>、<code>test_control_connection.py</code>。</td>
+</tr>
+<tr>
+<td><code>sd_webui_all_in_one/patcher/tests/services/</code></td>
+<td><code>test_services_golden_snapshot.py</code>、<code>test_services_golden_v1_subset.py</code>、<code>test_services_wire_compat.py</code>、<code>test_services_import_invariant.py</code>。</td>
+</tr>
+<tr>
+<td><code>sd_webui_all_in_one/patcher/tests/runtime/</code></td>
+<td><code>test_desktop_command_compat.py</code>。</td>
+</tr>
+<tr>
+<td><code>tests/base_manager/hotpatcher_manager/</code></td>
+<td><code>test_host_control.py</code>、<code>test_host_control_hello.py</code>、<code>test_launch_env_overrides.py</code>。</td>
+</tr>
+<tr>
+<td><code>tests/base_manager/gui/</code></td>
+<td><code>test_hotpatcher_gui_runtime_control.py</code>、<code>test_hotpatcher_gui_json_field.py</code>。</td>
+</tr>
+</tbody>
+</table>
+<p>patcher 的 <code>tests/</code> 没有 <code>__init__.py</code>，新测试文件名必须全局唯一，控制平面测试统一使用 <code>test_control_*</code> 前缀。</p>
+<p>回归命令（在仓库根目录执行）：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>env<span class="w"> </span><span class="nv">PYTHONDONTWRITEBYTECODE</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-q<span class="w"> </span>-p<span class="w"> </span>no:cacheprovider<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span>sd_webui_all_in_one/patcher/tests<span class="w"> </span>tests/base_manager/hotpatcher_manager<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>tests/base_manager/gui<span class="w"> </span>tests/api_server/test_registry.py<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span>tests/cli_manager/test_self_manager_patcher.py
+</span></code></pre></div>
+<p>修改默认配置或 schema 时需要重新生成 golden 快照，再人工检查差异：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nv">SD_WEBUI_ALL_IN_ONE_HOTPATCHER_REGEN_GOLDEN</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>sd_webui_all_in_one/patcher/tests/services/test_services_golden_snapshot.py
+</span></code></pre></div>
+<p><code>golden/*_v1.json</code> 不重新生成，<code>test_services_golden_v1_subset.py</code> 用它确认改动只新增内容。patcher 核心需要兼容 Python 3.10，修改 <code>control/</code> 或 <code>runtime/</code> 后应再用 Python 3.10 运行一次 patcher 测试，例如：</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>uv<span class="w"> </span>run<span class="w"> </span>--no-project<span class="w"> </span>--python<span class="w"> </span><span class="m">3</span>.10<span class="w"> </span>--with<span class="w"> </span>pytest<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-q<span class="w"> </span>-p<span class="w"> </span>no:cacheprovider<span class="w"> </span>sd_webui_all_in_one/patcher/tests
+</span></code></pre></div>
+<p>静态检查与项目其他部分相同，见 <a href=".././testing/">测试与检查</a>。</p>
+<h2 id="_32">决策记录<a class="headerlink" href="#_32" title="锚链接到此处">☍</a></h2>
+<table>
+<thead>
+<tr>
+<th>编号</th>
+<th>问题</th>
+<th>结论</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D1</td>
+<td>最终设计文档放在哪里</td>
+<td>本文 <code>docs/development/hotpatcher-control.md</code>（中文，加入站点导航），并同步更新 patcher 自身的 <code>docs/</code>。</td>
+</tr>
+<tr>
+<td>D2</td>
+<td>是否给每个产品 CLI 增加 host / token 启动参数</td>
+<td>不增加，只通过环境变量和 API；统一的 CLI 参数留作后续工作。</td>
+</tr>
+<tr>
+<td>D3</td>
+<td>GUI 范围</td>
+<td>最小范围：一个基于 <code>request_control</code> 的“运行时控制”标签页。</td>
+</tr>
+<tr>
+<td>D4</td>
+<td>Hanafubuki 集成</td>
+<td>原计划作为后续工作，后改为本次工作的 P11 阶段并已完成（见“Hanafubuki 桌面宿主”一节）：代理接受 <code>hotpatch.event</code>、管理端运行时控制服务、IPC 与前端。</td>
+</tr>
+<tr>
+<td>D5</td>
+<td><code>apply_config</code> 是否撤销已禁用的功能</td>
+<td>默认不撤销，通过 <code>reconcile=True</code> 或 <code>services.reconcile_disabled</code> 开启。</td>
+</tr>
+<tr>
+<td>D6</td>
+<td>远程加载补丁</td>
+<td>默认关闭（<code>control.allow_remote_load: false</code>），旧版传输还要求非空 token；配置携带的补丁集同样受检查。</td>
+</tr>
+<tr>
+<td>D7</td>
+<td>“修改热补丁服务器连接参数”的范围</td>
+<td>同时覆盖补丁进程连接的目标和宿主监听的在线切换。</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-circle-arrow-up" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4M12 16V8"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="页脚" >
+        
+          
+          <a href="../python-core/" class="md-footer__link md-footer__link--prev" aria-label="上一页: Python 内核">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                上一页
+              </span>
+              <div class="md-ellipsis">
+                Python 内核
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../installer/" class="md-footer__link md-footer__link--next" aria-label="下一页: Installer">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                下一页
+              </span>
+              <div class="md-ellipsis">
+                Installer
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" class="lucide lucide-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 licyk
+    </div>
+  
+  
+    Made with
+    <a href="https://zensical.org/" target="_blank" rel="noopener">
+      Zensical
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/licyk" target="_blank" rel="noopener" title="Github" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M216.5 362.5c-66-8-112.5-55.5-112.5-117 0-25 9-52 24-70-6.5-16.5-5.5-51.5 2-66 20-2.5 47 8 63 22.5 19-6 39-9 63.5-9s44.5 3 62.5 8.5c15.5-14 43-24.5 63-22 7 13.5 8 48.5 1.5 65.5 16 19 24.5 44.5 24.5 70.5 0 61.5-46.5 108-113.5 116.5 17 11 28.5 35 28.5 62.5v52c0 15 12.5 23.5 27.5 17.5C441 459.5 512 369 512 257 512 115.5 397 0 255.5 0S0 115.5 0 257c0 111 70.5 203 165.5 237.5 13.5 5 26.5-4 26.5-17.5v-40c-7 3-16 5-24 5-33 0-52.5-18-66.5-51.5-5.5-13.5-11.5-21.5-23-23-6-.5-8-3-8-6 0-6 10-10.5 20-10.5 14.5 0 27 9 40 27.5 10 14.5 20.5 21 33 21s20.5-4.5 32-16c8.5-8.5 15-16 21-21"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://space.bilibili.com/46497516" target="_blank" rel="noopener" title="哔哩哔哩" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M488.6 104.1c16.7 18.1 24.4 39.7 23.3 65.7v202.4c-.4 26.4-9.2 48.1-26.5 65.1-17.2 17-39.1 25.9-65.5 26.7H92c-26.4-.8-48.2-9.8-65.3-27.2S.7 396.5 0 368.2V169.8c.8-26 9.7-47.6 26.7-65.7C43.8 87.8 65.5 78.8 92 78h29.4L96 52.2c-5.7-5.7-8.6-13-8.6-21.8S90.3 14.3 96 8.6 109 0 117.9 0s16.1 2.9 21.9 8.6L213.1 78h88l74.5-69.4C381.7 2.9 389.2 0 398 0s16.1 2.9 21.9 8.6c5.7 5.7 8.6 13 8.6 21.8s-2.9 16.1-8.6 21.8L394.6 78h29.3c26.4.8 48 9.8 64.7 26.1m-38.8 69.7c-.4-9.6-3.7-17.4-10.7-23.5-5.2-6.1-14-9.4-22.7-9.8H96c-9.6.4-17.4 3.7-23.6 9.8-6.1 6.1-9.4 13.9-9.8 23.5v194.4c0 9.2 3.3 17 9.8 23.5s14.4 9.8 23.6 9.8h320.4c9.2 0 17-3.3 23.3-9.8s9.7-14.3 10.1-23.5zm-264.3 42.7c6.3 6.3 9.7 14.1 10.1 23.2V273c-.4 9.2-3.7 16.9-9.8 23.2-6.2 6.3-14 9.5-23.6 9.5s-17.5-3.2-23.6-9.5-9.4-14-9.8-23.2v-33.3c.4-9.1 3.8-16.9 10.1-23.2s13.2-9.6 23.3-10c9.2.4 17 3.7 23.3 10m191.5 0c6.3 6.3 9.7 14.1 10.1 23.2V273c-.4 9.2-3.7 16.9-9.8 23.2s-14 9.5-23.6 9.5-17.4-3.2-23.6-9.5c-7-6.3-9.4-14-9.7-23.2v-33.3c.3-9.1 3.7-16.9 10-23.2s14.1-9.6 23.3-10c9.2.4 17 3.7 23.3 10"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://licyk.netlify.app" target="_blank" rel="noopener" title="licyk 的小窝" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M224 24c0-13.3 10.7-24 24-24 145.8 0 264 118.2 264 264 0 13.3-10.7 24-24 24s-24-10.7-24-24c0-119.3-96.7-216-216-216-13.3 0-24-10.7-24-24M80 96c26.5 0 48 21.5 48 48v224c0 26.5 21.5 48 48 48s48-21.5 48-48-21.5-48-48-48c-8.8 0-16-7.2-16-16v-64c0-8.8 7.2-16 16-16 79.5 0 144 64.5 144 144s-64.5 144-144 144S32 447.5 32 368V144c0-26.5 21.5-48 48-48m168 0c92.8 0 168 75.2 168 168 0 13.3-10.7 24-24 24s-24-10.7-24-24c0-66.3-53.7-120-120-120-13.3 0-24-10.7-24-24s10.7-24 24-24"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://afdian.com/a/licyk" target="_blank" rel="noopener" title="爱发电" class="md-social__link">
+        <svg
+    viewBox="0 0 160 160"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      fill-rule="evenodd"
+      d="M134.614 98.3714C133.294 97.5334 131.909 97.1697 130.563 97.02C133.724 89.3002 135.736 79.1949 128.887 69.1574C118.406 53.7998 103.38 45.8198 84.2346 45.4382C78.7809 45.3312 72.3517 45.5844 65.5487 45.8554C57.6493 46.1692 47.1369 46.5793 39.9921 45.9873C41.4161 45.2136 42.9326 44.4719 44.2462 43.8336C49.2728 41.384 53.2314 39.4763 51.9214 36.0925C51.2343 34.117 49.1874 33.0794 45.8233 33.0045C38.7426 32.8441 23.4421 36.9447 20.6903 43.8586C19.1418 47.7524 18.8854 55.2689 34.5668 61.9119C41.0174 64.6503 59.237 67.9879 66.2678 68.6867C68.2542 68.8793 69.7743 69.2822 70.9277 69.7101C69.3151 70.7727 67.6597 71.8888 65.9972 73.0298C63.1102 71.3824 58.3897 69.4391 54.8654 71.846C53.502 72.7695 52.7259 74.1316 52.6903 75.6827C52.6405 77.6117 53.8081 79.498 55.1217 81.017C49.9314 85.1639 45.7343 89.1825 44.2462 92.2811C42.5873 96.0893 41.9109 102.322 45.008 108.402C48.9382 116.118 57.6279 121.499 70.8423 124.394C88.1114 128.17 103.027 124.768 112.895 119.566C118.388 116.671 122.286 113.215 124.18 110.131C124.768 110.317 125.355 110.506 125.96 110.695C126.804 110.951 127.648 111.208 128.438 111.49C131.051 112.395 133.942 112.274 136.167 111.151C136.206 111.133 136.248 111.108 136.291 111.087C137.968 110.202 139.175 108.783 139.705 107.072C141.129 102.458 137.064 99.9082 134.614 98.3714ZM64.9999 90.6681C63.4307 90.6681 62.1621 91.9382 62.1621 93.5091C62.1621 95.0836 63.4307 96.3537 64.9999 96.3537C66.5691 96.3537 67.8378 95.0836 67.8378 93.5091C67.8378 91.9382 66.5691 90.6681 64.9999 90.6681ZM91.7568 99.1965C90.1876 99.1965 88.9189 100.467 88.9189 102.038C88.9189 103.612 90.1876 104.882 91.7568 104.882C93.326 104.882 94.5946 103.612 94.5946 102.038C94.5946 100.467 93.326 99.1965 91.7568 99.1965Z"
+      fill="currentColor"
+    />
+  </svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="mailto:licyk233@163.com" target="_blank" rel="noopener" title="联系邮箱" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.3.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2026 Fonticons, Inc.--><path fill="currentColor" d="M48 64C21.5 64 0 85.5 0 112c0 15.1 7.1 29.3 19.2 38.4l208 156a48 48 0 0 0 57.6 0l208-156c12.1-9.1 19.2-23.3 19.2-38.4 0-26.5-21.5-48-48-48zM0 196v188c0 35.3 28.7 64 64 64h384c35.3 0 64-28.7 64-64V196L313.6 344.8c-34.1 25.6-81.1 25.6-115.2 0z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog" role="status" aria-atomic="true">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      
+<div class="md-progress" data-md-component="progress" role="progressbar" aria-label="Loading"></div>
+    
+    
+    
+      
+      
+      
+      
+        
+        
+      <script id="__config" type="application/json">{"annotate":null,"base":"../..","features":["navigation.instant","navigation.instant.prefetch","navigation.instant.progress","navigation.tracking","navigation.tabs","navigation.tabs.sticky","navigation.path","navigation.expand","navigation.footer","navigation.top","search.highlight","content.action.edit","content.action.view","content.code.copy","content.code.annotate","content.tabs.link","content.tooltips"],"redirect":null,"search":"../../assets/javascripts/workers/search.719e0d91.min.js","tags":null,"translations":{"clipboard.copied":"已复制","clipboard.copy":"复制","clipboard.error":"Could not copy to clipboard","search.result.more.one":"在该页上还有 1 个符合条件的结果","search.result.more.other":"在该页上还有 # 个符合条件的结果","search.result.none":"没有找到符合条件的结果","search.result.one":"找到 1 个符合条件的结果","search.result.other":"# 个符合条件的结果","search.result.placeholder":"键入以开始搜索","search.result.term.missing":"缺少","select.version":"选择当前版本"},"version":null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.3cb411a8.min.js"></script>
+      
+        <script src="../../javascripts/giscus.js"></script>
+      
+        <script src="../../javascripts/site.js"></script>
+      
+    
+  </body>
+</html>
