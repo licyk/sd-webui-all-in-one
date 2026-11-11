@@ -120,8 +120,8 @@ POST /v1/runtime/events
 状态。
 
 配置 `control.forward_events: true` 后，Python 端会把补丁失败、补丁集、功能和连接事件以
-`hotpatch.event` 类型发送（每秒最多 10 条，载荷不超过 12 KiB）。Rust 端接受该类型之前，
-这些事件按未知事件类型处理。
+`hotpatch.event` 类型发送（每秒最多 10 条，载荷不超过 12 KiB）。包含 P11 改动的 Hanafubuki
+会把它们保存在独立的有界窗口中；旧版 Rust 端仍按未知事件类型处理。
 
 `browser.open` 要求载荷为包含字符串 `url` 的对象。运行时身份由经过身份验证的请求
 绑定携带，不会信任事件载荷中的身份信息。

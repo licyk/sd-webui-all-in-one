@@ -602,6 +602,19 @@ hotpatch.request("demo.echo", {"text": "hi"})  # {"echo": "hi"}
 
 按决策 D3，Hotpatcher 管理器 GUI 新增最小范围的“运行时控制”标签页（`hotpatcher_manager_gui/runtime_control.py`）：能力与状态、补丁列表、补丁集、功能、事件分页、跟踪与严格模式开关、连接测试与宿主 `rebind`。所有网络调用都在后台线程执行。API 服务器仍然不提供运行时控制，`tests/api_server/test_registry.py` 保留对应断言。
 
+### Hanafubuki 桌面宿主
+
+P11 在 Hanafubuki 仓库（`Hanafubuki-dev`，分支 `hotpatch-control`，待合并到 `main`）中接入了运行时控制：
+
+- **运行时代理**：接受 `hotpatch.event` 事件，并保存在独立的有界窗口中（每会话 256 条 / 1 MiB），不会挤占运行时日志。新增按 ID 读取单个命令结果的接口，读取时会先触发惰性过期，不再需要克隆整个会话快照。
+- **管理服务**：
+  - 只读查询（`hotpatch.capabilities`、`status`、`patches.list/get`、`sets.list`、`features.list`、`inspect.*`、`debug.trace.get`、`debug.events.read`、`connection.get`）是 5 秒期限的直接请求/响应，不创建管理任务。
+  - 修改命令（`patches.unload`、`sets.unload`、`features.enable/disable/update`、`debug.trace.set`、`debug.strict.set`）和 `config.apply` 一样作为管理任务执行：资源占用、维护闸门、30 秒期限，任务类型为 `hotpatchRuntimeControl`。
+  - 所有命令都经过 Rust 端白名单；阻塞命令与 `connection.test` / `.update` 不在白名单中。
+- **能力探测**：每个运行时会话探测一次 `hotpatch.capabilities`，状态为 `supported`、`legacy`（旧版 hotpatcher 返回 `unknown_command`）、`probeFailed` 或 `unavailable`；可用命令列表为运行时声明的命令与白名单的交集。
+- **IPC**：新增 `get_instance_hotpatch_runtime_control_status`、`query_instance_hotpatch_runtime`、`start_instance_hotpatch_runtime_control`、`get_instance_hotpatch_runtime_events` 四个命令，请求结构严格解码。
+- **前端**：Hotpatch 面板新增“运行时控制”标签页，包括状态、补丁、补丁集、功能、检查、调试（跟踪标签、严格模式、事件日志与转发事件）和只读连接信息；按探测到的命令列表禁用不可用的操作。配置表单支持新的 `json` 与 `float` 设置类型。
+
 ## 安全与信任边界
 
 - 加载补丁就是执行代码（决策 D6）。进程内 Python API 总是允许；通过运行时通道的 `hotpatch.sets.load` 需要 `control.allow_remote_load` 严格为 True（默认 False），旧版传输还要求非空 token，桌面传输不检查 token（会话由 Rust 鉴权）。由于分发顺序，旧版传输 token 为空时 `sets.load` 先返回 `forbidden`，再轮到 `remote_load_disabled`。
@@ -630,7 +643,7 @@ hotpatch.request("demo.echo", {"text": "hi"})  # {"echo": "hi"}
 - 连接切换后不会改写 `os.environ`，之后启动的子进程继承的仍是旧的连接环境变量。
 - 桌面代理传输上标记为 `blocking` 的命令返回 `unsupported_transport`，离线程执行和完成事件尚未实现。
 - 桌面 `config.apply` 只能回传与当前配置完全相同的 `control.patch_sets` 条目：新条目会在代理工作线程上导入并执行 `setup`，阻塞心跳与事件上传，因此即使已开启 `control.allow_remote_load` 也会返回 `unsupported_transport`。需要加载新补丁集时请在进程内或通过旧版传输操作。
-- 当前 Hanafubuki 桌面代理把未知事件类型记为 `unknown_event_type` 诊断，在 P11 接受 `hotpatch.event` 之前，桌面模式下开启 `control.forward_events` 只会产生诊断。
+- 只有包含 P11 改动的 Hanafubuki 版本才接受 `hotpatch.event`；旧版桌面代理把它记为 `unknown_event_type` 诊断，此时开启 `control.forward_events` 只会产生诊断。
 - 把完整默认配置应用到隔离的 `HotpatcherState` 时，`comfyui_auto_port` 和 `xformers_cutlass` 扩展使用模块级 `monkey_zoo`，补丁会注册到默认状态的计划中，而不是传入的状态。
 - 点分模块补丁在同一秒内被重写时可能命中过期的 `.pyc` 缓存（见上文“文件监视”一节）。
 
@@ -678,7 +691,7 @@ uv run --no-project --python 3.10 --with pytest python -m pytest -q -p no:cachep
 | D1 | 最终设计文档放在哪里 | 本文 `docs/development/hotpatcher-control.md`（中文，加入站点导航），并同步更新 patcher 自身的 `docs/`。 |
 | D2 | 是否给每个产品 CLI 增加 host / token 启动参数 | 不增加，只通过环境变量和 API；统一的 CLI 参数留作后续工作。 |
 | D3 | GUI 范围 | 最小范围：一个基于 `request_control` 的“运行时控制”标签页。 |
-| D4 | Hanafubuki 集成 | 原计划作为后续工作，后改为本次工作的 P11 阶段（在本文之后进行）：代理接受 `hotpatch.event`、管理端运行时控制服务、IPC 与前端。完成后在本文补充 Hanafubuki 一侧的说明。 |
+| D4 | Hanafubuki 集成 | 原计划作为后续工作，后改为本次工作的 P11 阶段并已完成（见“Hanafubuki 桌面宿主”一节）：代理接受 `hotpatch.event`、管理端运行时控制服务、IPC 与前端。 |
 | D5 | `apply_config` 是否撤销已禁用的功能 | 默认不撤销，通过 `reconcile=True` 或 `services.reconcile_disabled` 开启。 |
 | D6 | 远程加载补丁 | 默认关闭（`control.allow_remote_load: false`），旧版传输还要求非空 token；配置携带的补丁集同样受检查。 |
 | D7 | “修改热补丁服务器连接参数”的范围 | 同时覆盖补丁进程连接的目标和宿主监听的在线切换。 |
