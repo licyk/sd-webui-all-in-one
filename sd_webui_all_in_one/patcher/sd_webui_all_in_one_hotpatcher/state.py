@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from _thread import _local as ThreadLocal
     from importlib.machinery import ModuleSpec
 
+    from .control.handles import PatchHandle
+    from .control.patchset import PatchSet
     from .hook import HookedMetaPathFinder, MonkeyZoo
     from .runtime.client import RuntimeClient
     from .runtime.desktop_broker import DesktopBrokerClient
@@ -27,6 +29,11 @@ ExceptionReporterCallback = Callable[[type[BaseException], BaseException, Traceb
 class HotpatcherState:
     """
     hotpatcher 默认进程状态。
+
+    锁约定: ``control_lock`` 只保护控制平面的内存注册表 (``patch_id_counter``、``patch_sets``、
+    ``patch_handles``) 的读写。持有该锁时绝不执行 ``importlib`` 调用、用户补丁函数或
+    ``setup`` 回调、socket/HTTP I/O; 调用方应在锁内计算、在锁外执行。这样控制线程不会在
+    持有 ``control_lock`` 时等待模块导入锁, 避免与正在导入并读取补丁计划的主线程死锁。
 
     Attributes:
         monkey_zoo (MonkeyZoo | None):
@@ -67,6 +74,22 @@ class HotpatcherState:
             当前日志采集器。
         log_guard (ThreadLocal):
             日志事件发送递归保护。
+        browser_patch_registered (bool):
+            浏览器打开补丁是否已经安装。
+        browser_patch_mode (str):
+            浏览器打开补丁的当前模式。
+        browser_runtime_client (Any):
+            浏览器打开补丁使用的运行时客户端。
+        browser_diagnostics (list[str]):
+            浏览器打开补丁的诊断信息。
+        control_lock (RLockType):
+            控制平面注册表锁, 使用约定见类说明。
+        patch_id_counter (int):
+            补丁句柄和补丁集共用的 ID 计数器。
+        patch_sets (dict[str, PatchSet]):
+            已注册补丁集, 键为补丁集 ID。
+        patch_handles (dict[str, PatchHandle]):
+            已注册补丁句柄, 键为句柄 ID。
     """
 
     monkey_zoo: "MonkeyZoo | None" = None
@@ -92,6 +115,10 @@ class HotpatcherState:
     browser_patch_mode: str = "passthrough"
     browser_runtime_client: Any = None
     browser_diagnostics: list[str] = field(default_factory=list)
+    control_lock: "RLockType" = field(default_factory=threading.RLock)
+    patch_id_counter: int = 0
+    patch_sets: "dict[str, PatchSet]" = field(default_factory=dict)
+    patch_handles: "dict[str, PatchHandle]" = field(default_factory=dict)
 
 
 _default_state = HotpatcherState()

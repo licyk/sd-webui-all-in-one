@@ -36,13 +36,13 @@ $PY -m python_docstring_checker .
 - [x] Verify: regression green
 
 ## P1 Journal and PatchSet
-- [ ] `control/journal.py` (NOTSET, LIFO, isolated, idempotent undo, raw `__dict__` for classes)
-- [ ] `control/targets.py` (resolve `pkg.mod:Obj.attr`)
-- [ ] `control/handles.py` (PatchHandle, PatchStatus, PatchOutcome, id counter on state)
-- [ ] `control/patchset.py` (PatchSet, PatchContext, contextvar, transactional setup)
-- [ ] `state.py` fields + lock discipline doc comment
-- [ ] Tests: `test_control_journal.py`, `test_control_patchset.py`
-- [ ] Verify: regression + static green
+- [x] `control/journal.py` (NOTSET, LIFO, isolated, idempotent undo, raw `__dict__` for classes)
+- [x] `control/targets.py` (resolve `pkg.mod:Obj.attr`)
+- [x] `control/handles.py` (PatchHandle, PatchStatus, PatchOutcome, id counter on state)
+- [x] `control/patchset.py` (PatchSet, PatchContext, contextvar, transactional setup)
+- [x] `state.py` fields + lock discipline doc comment
+- [x] Tests: `test_control_journal.py`, `test_control_targets.py`, `test_control_patchset.py`
+- [x] Verify: regression + static green (343 passed)
 
 ## P2 Hook upgrades
 - [ ] grep: no caller relies on `patch_*` returning None
