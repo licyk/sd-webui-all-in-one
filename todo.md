@@ -24,7 +24,7 @@ $PY -m python_docstring_checker .
 - [x] D1 final doc location (recommended: `docs/development/hotpatcher-control.md` + nav, plus patcher docs)
 - [x] D2 launch flags for host/token (recommended: env/API only)
 - [x] D3 GUI scope (recommended: minimal Runtime control tab)
-- [x] D4 Hanafubuki follow-up (recommended: out of scope)
+- [x] D4 Hanafubuki integration → revised 2026-11-11: in scope as P11 (after P10)
 - [x] D5 apply_config reconcile (recommended: opt-in)
 - [x] D6 remote patch load gate (recommended: off + token)
 - [x] D7 scope of "server connection params" (recommended: child target + host listener rebind)
@@ -93,6 +93,7 @@ $PY -m python_docstring_checker .
 - [ ] `hotpatch.capabilities` probe + `CONTROL_VERSION`; `hello.features += "control"` (hint only)
 - [ ] `CommandSpec.blocking`; blocking commands → `unsupported_transport` on desktop
 - [ ] Post-response actions in `ServiceControlChannel`
+- [ ] Gate config-borne `control.patch_sets` / `allow_remote_load` on remote `services.config.apply` and desktop `config.apply` against the pre-request config (D6 bypass found in P5)
 - [ ] Tests: `test_control_commands.py`, `test_control_concurrency.py`
 - [ ] Verify
 
@@ -118,4 +119,15 @@ $PY -m python_docstring_checker .
 - [ ] Add `examples/runtime_patch_load.py`
 - [ ] Remove `HOTPATCH_CONTROL_PLAN.md` from the root
 - [ ] Final full regression + static checks
+- [ ] (`todo.md` deletion moves to the end of P11)
+
+## P11 Hanafubuki integration (repo: /root/code_workspace/Hanafubuki-dev, branch `hotpatch-control`)
+- [ ] Broker: accept `hotpatch.event`; `command_result(session, command_id)` lookup
+- [ ] Management: runtime control service (bounded queries, task-shaped mutations), capabilities probe + cache, gating
+- [ ] IPC: typed Tauri commands + strict-decoding policy entries + registration
+- [ ] Frontend: Runtime control area, `json`/`float` field kinds, en+zh strings
+- [ ] Tests: broker, management (real broker + scripted runtime), vitest
+- [ ] Docs: backend-spec §8.6, rules docs
+- [ ] Verify: `bun run format:check && bun run check && bun run test`
+- [ ] Push branch; update the sd-webui-all-in-one as-built doc for the Hanafubuki side
 - [ ] Delete `todo.md`

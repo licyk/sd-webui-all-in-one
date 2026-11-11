@@ -509,6 +509,43 @@ hotpatch.debug.trace(["patch", "import"]); hotpatch.inspect.explain("pkg.mod")
 | Connection | `hotpatch.connection.get`, `.update`, `.test` (try to connect without swapping) |
 | Legacy aliases | `services.catalog.get`, `services.defaults.get`, `services.config.current/normalize/load/save/apply`, desktop `config.apply` |
 
+
+### 4.8 Hanafubuki integration (P11)
+
+This is the desktop host side, in `/root/code_workspace/Hanafubuki-dev` (Tauri 2: Rust backend plus Vue). Work happens on a feature branch `hotpatch-control`, which is pushed to `origin`. The user merges it. Follow that repo's `AGENTS.md`. Findings from a survey on 2026-11-11:
+
+- **Broker** (`crates/hanafubuki-runtime-broker`):
+  - `queue_command` already accepts any 1–128 byte command type.
+  - Results are stored in a 64-entry FIFO and can only be read by cloning the full session snapshot. `completedAt` is required.
+  - Unknown **event** types are rejected (`session/events.rs:71-85`).
+  - Changes:
+    - accept `hotpatch.event` (bounded, retained like the runtime log events) for the opt-in forwarded events;
+    - add a cheap `command_result(session, command_id)` lookup, so management does not clone snapshots for every query.
+- **Management** (`crates/hanafubuki-management`):
+  - Today `config.apply` is the only broker operation. It is task-shaped, using `BrokerOperationHandle` and the reconciler.
+  - Add a typed **runtime control** service:
+    - **Queries** (`hotpatch.capabilities`, `status`, `patches.list/get`, `sets.list`, `features.list`, `inspect.*`, `debug.events.read`, `debug.trace.get`, `connection.get`) are bounded request/response calls with a short deadline. They wait on the broker's result lookup and do not create a management task.
+    - **Mutations** (`patches.unload`, `sets.unload`, `features.enable/disable/update`, `debug.trace.set`, `debug.strict.set`) are management tasks, like `config.apply`, using the existing claim and maintenance gates.
+  - Python marks some commands `blocking` (`sets.load/reload/update`, `modules.reload`, first-time feature resolution) and rejects them on desktop with `unsupported_transport`. Hanafubuki does not offer them.
+  - Capability gating: probe `hotpatch.capabilities` once per active session and cache the result. An `unknown_command` reply means a legacy peer, and the runtime control capability is reported as unsupported.
+- **IPC.** Thin async Tauri commands through the module guard, with typed requests using `deny_unknown_fields` plus `strict-decoding-policy.toml` entries, registered in `lib.rs`.
+- **Frontend:**
+  - A "Runtime control" area in `HotpatchPanel` covering:
+    - status and capabilities;
+    - patches and patch sets, with unload;
+    - features, with enable, disable and update;
+    - inspect: explain, verify and source;
+    - debug: trace, strict mode, and the event log with cursor paging;
+    - connection status, read-only (desktop settings are owned by Rust).
+  - `HotpatchField` support for the new catalog setting types `json` (a JSON text editor) and `float`, introduced in P5.
+  - Every string in both `en` and `zh`.
+- **Tests:**
+  - broker unit tests (event type, result lookup);
+  - management tests against a real `RuntimeBroker` with a scripted fake runtime, following `hotpatch_and_sessions.rs`;
+  - vitest for the API wrappers, composables and panel.
+- **Docs:** update `docs/backend-spec.md` §8.6 and the relevant `docs/rules/*`.
+- **Validation:** `bun run format:check`, `bun run check` (includes `xtask` architecture policies) and `bun run test`; run `bun run prepare:assets` once before cargo.
+
 ---
 
 ## 5. Compatibility analysis
@@ -534,7 +571,8 @@ hotpatch.debug.trace(["patch", "import"]); hotpatch.inspect.explain("pkg.mod")
 | Patcher standalone | `comfyui_auto_port` already imports `sd_webui_all_in_one.utils` lazily (existing coupling, out of scope). | The new core modules import nothing from `sd_webui_all_in_one`. |
 | Test filename uniqueness | `tests/` has no `__init__.py`. | New files are prefixed `test_control_*` / `control_test_helpers.py`. |
 | Security | Remote load means remote code execution, and connection update redirects logs. | Remote load is off by default and needs a token; loopback is enforced by default; tokens are redacted in status and trace; the host warns about an empty token on a non-loopback bind. |
-| Rust/Hanafubuki | It may want the new commands. | No Rust change is required; Python accepts the new types when Rust starts sending them. Follow-up is out of scope (D4). |
+| Rust/Hanafubuki | It may want the new commands. | No Rust change is required for compatibility: Python accepts the new types when Rust starts sending them. P11 adds the Hanafubuki side (D4, revised 2026-11-11). |
+| Remote load through config | `services.config.apply` and desktop `config.apply` can carry `control.patch_sets` or set `control.allow_remote_load` themselves, bypassing D6 (found in P5). | P7 gates config-borne patch sets on the configuration in effect **before** the request. A remote apply cannot enable `allow_remote_load` and use it in the same request, and remote patch-set entries are refused while the gate is closed. |
 
 ---
 
@@ -554,9 +592,10 @@ Each phase ends **green** on the existing suites before moving on. That covers t
 | **P7 Unified commands** | `control/{commands,controller}.py`; `services.handle_request_json` becomes a shim; desktop handler goes through the registry; `hello` gains `"control"`; post-response actions in `ServiceControlChannel`; `hotpatch` facade export. | `services.py`, `bootstrap.py`, `runtime/protocol.py`, `__init__.py` |
 | **P8 Connection** | `runtime/connection.py`; `RuntimeClient.rebind`; `ConnectionManager` update, test and reconnect; the services and fault channels reopen; desktop is read-only. | `runtime/client.py`, `transport.py`, `services.py`, `faults.py`, `bootstrap.py` |
 | **P9 Host side** | Launch env `host` and `token`, preserved overrides, unified builders; host capability probe and `request_control` wrappers; `HotpatcherRuntimeHost.rebind()` server-side parameter change (D7); empty-token warning; CLI and GUI per D2/D3. | `base_manager/hotpatcher_manager/*`, GUI, `cli_manager/*` |
+| **P11 Hanafubuki integration** | In `Hanafubuki-dev` on a feature branch (§4.8): broker, management, IPC, frontend, tests and docs for the `hotpatch.*` commands, plus the `json`/`float` catalog setting types. | `/root/code_workspace/Hanafubuki-dev` |
 | **P10 Docs and cleanup** | Rewrite this plan as the as-built document at the D1 location; update patcher `README.md`, `docs/{architecture,services,runtime-protocol,environment-variables,extensions,testing}.md`; add `examples/runtime_patch_load.py`; delete `todo.md`. | docs |
 
-Dependencies: P1 → P2 → P3. P4 depends on P1 and P2. P5 depends on P1–P3. P6 can start after P2. P7 depends on P4–P6. P8 depends on P7 for the post-response actions. P9 depends on P7 and P8.
+Dependencies: P1 → P2 → P3. P4 depends on P1 and P2. P5 depends on P1–P3. P6 can start after P2. P7 depends on P4–P6. P8 depends on P7 for the post-response actions. P9 depends on P7 and P8. P11 depends on P6–P8, the Python command surface. It runs after P10 because the as-built docs describe the wire contract P11 consumes, and P11 then updates the hotpatcher docs only where Hanafubuki behaviour is described.
 
 ---
 
@@ -660,7 +699,6 @@ New test files live under `sd_webui_all_in_one/patcher/tests/control/` and `test
 
 ## 9. Out of scope
 
-- Rust/Hanafubuki UI or commands for the new control API. Python is ready; the follow-up belongs in `Hanafubuki-dev`.
 - Changing desktop-broker connection parameters from Python.
 - A new transport, a TLS layer, or authenticating beyond the existing token and session model.
 - Removing the existing `comfyui_auto_port` → `sd_webui_all_in_one.utils` coupling.
@@ -674,7 +712,7 @@ New test files live under `sd_webui_all_in_one/patcher/tests/control/` and `test
 | D1 | Where does the final as-built document go? | (a) `docs/development/hotpatcher-control.md` plus a nav entry in `zensical.toml` under 开发维护, with the patcher's own `patcher/docs/*` updated alongside; (b) only `sd_webui_all_in_one/patcher/docs/control.md`. | **(a)**, written in Chinese to match the project docs. |
 | D2 | Should `--hotpatcher-host` / `--hotpatcher-token` launch flags be added to every product CLI? | Uniform across all products, or env and API only. | **Env and API only** in this change. Uniform CLI flags are a follow-up, because they touch every product CLI, the PS installers and the user docs. |
 | D3 | GUI scope | None, minimal (patch list, load/unload, connection panel), or full. | **Minimal**: one "Runtime control" tab built on `request_control`. |
-| D4 | Hanafubuki integration | In this change, or a follow-up. | **Follow-up.** |
+| D4 | Hanafubuki integration | In this change, or a follow-up. | ~~Follow-up~~ → **revised 2026-11-11: in this change, as P11, after P10** (the user finished Hanafubuki development and asked for the phase). |
 | D5 | Should `apply_config` revert disabled features? | Opt-in reconcile, or default on. | **Opt-in** (`services.reconcile_disabled: false`). |
 | D6 | Remote patch loading | Allowed by default, or gated. | **Gated** (`control.allow_remote_load: false`, non-empty token on legacy). |
 | D7 | What "update the hot-patching server's connection parameters" covers | (a) the child's target only; (b) the child's target **and** a host listener rebind while attached. | **(b)**: both, as in §4.6 Layers 2 and 2b. |
