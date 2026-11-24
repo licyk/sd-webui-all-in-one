@@ -118,9 +118,12 @@ def find_distribution(
     if not name.strip():
         # importlib.metadata 对空包名抛出 ValueError 而不是 PackageNotFoundError
         return None
-    search = {} if path is None else {"path": [str(path)]}
     for candidate in dict.fromkeys((name, normalize_name(name))):
-        for distribution in importlib.metadata.distributions(name=candidate, **search):
+        if path is None:
+            distributions = importlib.metadata.distributions(name=candidate)
+        else:
+            distributions = importlib.metadata.distributions(name=candidate, path=[str(path)])
+        for distribution in distributions:
             if _distribution_version(distribution) is not None:
                 return distribution
     return None
