@@ -98,6 +98,8 @@ def _distribution_version(
 
 def find_distribution(
     name: str,
+    *,
+    path: Path | None = None,
 ) -> importlib.metadata.Distribution | None:
     """按软件包名查找已安装的分发
 
@@ -107,6 +109,8 @@ def find_distribution(
     Args:
         name (str):
             软件包名 (任意写法)
+        path (Path | None):
+            限定搜索的安装目录, 为 None 时查询当前解释器环境
 
     Returns:
         importlib.metadata.Distribution | None: 已安装的分发, 未安装或元数据均已损坏时为 ``None``
@@ -114,8 +118,9 @@ def find_distribution(
     if not name.strip():
         # importlib.metadata 对空包名抛出 ValueError 而不是 PackageNotFoundError
         return None
+    search = {} if path is None else {"path": [str(path)]}
     for candidate in dict.fromkeys((name, normalize_name(name))):
-        for distribution in importlib.metadata.distributions(name=candidate):
+        for distribution in importlib.metadata.distributions(name=candidate, **search):
             if _distribution_version(distribution) is not None:
                 return distribution
     return None
@@ -204,17 +209,21 @@ class InstalledDistribution:
 
 def get_installed_distribution(
     name: str,
+    *,
+    path: Path | None = None,
 ) -> InstalledDistribution | None:
     """获取已安装的分发信息
 
     Args:
         name (str):
             软件包名 (任意写法)
+        path (Path | None):
+            限定搜索的安装目录, 为 None 时查询当前解释器环境
 
     Returns:
         InstalledDistribution | None: 已安装的分发信息, 未安装时为 ``None``
     """
-    distribution = find_distribution(name)
+    distribution = find_distribution(name, path=path)
     if distribution is None:
         return None
     version = _distribution_version(distribution)

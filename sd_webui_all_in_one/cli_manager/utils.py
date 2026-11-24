@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import cast
 
 from sd_webui_all_in_one.cli_manager.argparse_helpers import add_subparsers_with_help
+from sd_webui_all_in_one.cli_manager.requirements import check_requirements
 from sd_webui_all_in_one.cli_manager.python_standalone_cli import register_python_standalone
 from sd_webui_all_in_one.proxy import (
     get_system_proxy_address,
@@ -1093,6 +1094,11 @@ def register_manager(
 
     check_p = sd_webui_all_in_one_sub.add_parser("check", help="检查并更新组件")
     check_sub = add_subparsers_with_help(check_p, dest="check_action")
+
+    requirements = check_sub.add_parser("requirements", help="检查依赖声明 (0: 已满足, 3: 需要安装, 其他: 无法检查)")
+    requirements.add_argument("file", type=Path, help="pip 依赖文件")
+    requirements.add_argument("--target", type=Path, required=True, help="仅查询此安装目录")
+    requirements.set_defaults(func=lambda args: check_requirements(args.file, args.target))
 
     # check aria2
     check_aria2_p = check_sub.add_parser("aria2", help="检查 Aria2 是否需要更新 (当退出代码非 0 时则说明需要更新)")
