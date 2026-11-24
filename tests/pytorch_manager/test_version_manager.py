@@ -131,30 +131,30 @@ def test_query_pytorch_info_index_boundaries(monkeypatch):
         (
             "linux",
             "rocm10",
-            "Torch 2.14.0 (ROCm 10.1.0)",
-            "torch[device-all]==2.14.0+rocm10.1.0 torchvision[device-all]==0.29.0a0+rocm10.1.0 torchaudio==2.11.0.3+rocm10.1.0",
+            "Torch 2.15.0 (ROCm 10.2.0)",
+            "torch[device-all]==2.15.0+rocm10.2.0 torchvision[device-all]==0.29.2+rocm10.2.0 torchaudio==2.11.1+rocm10.2.0",
             "https://stable.repo.amd.com/rocm/whl-next",
         ),
         (
             "win32",
             "rocm10",
-            "Torch 2.14.0 (ROCm 10.1.0)",
-            "torch[device-all]==2.14.0+rocm10.1.0 torchvision[device-all]==0.29.0a0+rocm10.1.0 torchaudio==2.11.0.3+rocm10.1.0",
+            "Torch 2.15.0 (ROCm 10.2.0)",
+            "torch[device-all]==2.15.0+rocm10.2.0 torchvision[device-all]==0.29.2+rocm10.2.0 torchaudio==2.11.1+rocm10.2.0",
             "https://stable.repo.amd.com/rocm/whl-next",
         ),
         # 旧版类型名称等价于 rocm10
         (
             "linux",
             "rocm_linux",
-            "Torch 2.14.0 (ROCm 10.1.0)",
-            "torch[device-all]==2.14.0+rocm10.1.0 torchvision[device-all]==0.29.0a0+rocm10.1.0 torchaudio==2.11.0.3+rocm10.1.0",
+            "Torch 2.15.0 (ROCm 10.2.0)",
+            "torch[device-all]==2.15.0+rocm10.2.0 torchvision[device-all]==0.29.2+rocm10.2.0 torchaudio==2.11.1+rocm10.2.0",
             "https://stable.repo.amd.com/rocm/whl-next",
         ),
         (
             "win32",
             "rocm_win",
-            "Torch 2.14.0 (ROCm 10.1.0)",
-            "torch[device-all]==2.14.0+rocm10.1.0 torchvision[device-all]==0.29.0a0+rocm10.1.0 torchaudio==2.11.0.3+rocm10.1.0",
+            "Torch 2.15.0 (ROCm 10.2.0)",
+            "torch[device-all]==2.15.0+rocm10.2.0 torchvision[device-all]==0.29.2+rocm10.2.0 torchaudio==2.11.1+rocm10.2.0",
             "https://stable.repo.amd.com/rocm/whl-next",
         ),
     ],
@@ -200,17 +200,19 @@ def test_find_latest_pytorch_2_15_info(monkeypatch, dtype, expected_name, expect
 
 
 AMD_MULTI_ARCH_VERSION_TABLE = {
-    # (dtype, torch 版本): (torchvision 版本, torchaudio 版本, ROCm 版本, 支持的平台)
-    ("rocm7", "2.8.0"): ("0.23.0a0", "2.8.0a0", "7.13.0", ["linux"]),
-    ("rocm7", "2.9.1"): ("0.24.0", "2.9.0", "7.13.0", ["win32"]),
-    ("rocm7", "2.10.0"): ("0.25.0", "2.10.0", "7.14.1", ["win32", "linux"]),
-    ("rocm7", "2.11.0"): ("0.26.0", "2.11.0", "7.14.1", ["win32", "linux"]),
-    ("rocm7", "2.12.0"): ("0.27.0", "2.11.0", "7.14.1", ["win32", "linux"]),
-    ("rocm7", "2.13.0"): ("0.28.0", "2.11.0.2", "7.14.0", ["linux"]),
-    ("rocm10", "2.11.0"): ("0.26.0", "2.11.0", "10.0.0", ["win32", "linux"]),
-    ("rocm10", "2.12.0"): ("0.27.0", "2.11.0", "10.0.0", ["win32", "linux"]),
-    ("rocm10", "2.13.0"): ("0.28.0", "2.11.0.2", "10.0.0", ["win32", "linux"]),
-    ("rocm10", "2.14.0"): ("0.29.0a0", "2.11.0.3", "10.1.0", ["win32", "linux"]),
+    # (dtype, torch 完整版本): (torchvision 版本, torchaudio 版本, 支持的平台)
+    ("rocm7", "2.8.0+rocm7.13.0"): ("0.23.0a0", "2.8.0a0", ["linux"]),
+    ("rocm7", "2.9.1+rocm7.13.0"): ("0.24.0", "2.9.0", ["win32"]),
+    ("rocm7", "2.10.0+rocm7.14.1"): ("0.25.0", "2.10.0", ["win32", "linux"]),
+    ("rocm7", "2.11.0+rocm7.14.1"): ("0.26.0", "2.11.0", ["win32", "linux"]),
+    ("rocm7", "2.12.0+rocm7.14.1"): ("0.27.0", "2.11.0", ["win32", "linux"]),
+    ("rocm7", "2.13.0+rocm7.14.0"): ("0.28.0", "2.11.0.2", ["linux"]),
+    ("rocm10", "2.11.0+rocm10.0.0"): ("0.26.0", "2.11.0", ["win32", "linux"]),
+    ("rocm10", "2.12.0+rocm10.0.0"): ("0.27.0", "2.11.0", ["win32", "linux"]),
+    ("rocm10", "2.13.0+rocm10.0.0"): ("0.28.0", "2.11.0.2", ["win32", "linux"]),
+    ("rocm10", "2.14.0+rocm10.1.0"): ("0.29.0a0", "2.11.0.3", ["win32", "linux"]),
+    ("rocm10", "2.15.0+rocm10.1.0"): ("0.29.2", "2.11.1", ["win32", "linux"]),
+    ("rocm10", "2.15.0+rocm10.2.0"): ("0.29.2", "2.11.1", ["win32", "linux"]),
 }
 
 
@@ -223,13 +225,14 @@ def test_amd_multi_arch_version_table_covers_rocm7_and_rocm10():
         if info["dtype"] not in ("rocm7", "rocm10") or "[device-all]==" not in info["torch_ver"]:
             continue
         torch_spec = info["torch_ver"].split()[0]
-        torch_ver = torch_spec.split("==")[1].split("+")[0]
+        torch_ver = torch_spec.split("==")[1]
         pinned[(info["dtype"], torch_ver)] = info
 
     assert set(pinned) == set(AMD_MULTI_ARCH_VERSION_TABLE)
-    for (dtype, torch_ver), (vision_ver, audio_ver, rocm_ver, platform) in AMD_MULTI_ARCH_VERSION_TABLE.items():
+    for (dtype, torch_ver), (vision_ver, audio_ver, platform) in AMD_MULTI_ARCH_VERSION_TABLE.items():
         info = pinned[(dtype, torch_ver)]
-        assert info["torch_ver"] == f"torch[device-all]=={torch_ver}+rocm{rocm_ver} torchvision[device-all]=={vision_ver}+rocm{rocm_ver} torchaudio=={audio_ver}+rocm{rocm_ver}"
+        build = torch_ver.split("+")[1]
+        assert info["torch_ver"] == f"torch[device-all]=={torch_ver} torchvision[device-all]=={vision_ver}+{build} torchaudio=={audio_ver}+{build}"
         assert info["platform"] == platform
         assert info["xformers_ver"] is None
         assert info["index_mirror"]["official"] == info["index_mirror"]["mirror"] == [PYTORCH_ROCM_MIRROR_DICT[dtype][0]]

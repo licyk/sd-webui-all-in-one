@@ -352,9 +352,10 @@ def find_pytorch_info_for_torch_requirement(
 
     候选条目的优先级依次为:
     1. 设备类型为首选类型 (通常为自动检测到的设备类型)
-    2. torch 版本更新
+    2. torch 公开版本更新
     3. 包含 xFormers
     4. 设备类型在 PYTORCH_DEVICE_LIST 中的位置更靠后 (如更新的 CUDA 版本)
+    5. 同一设备类型下, torch 本地构建版本更新 (如 rocm10.2.0 优先于 rocm10.1.0)
 
     Args:
         device_category (PyTorchDeviceTypeCategory):
@@ -378,18 +379,21 @@ def find_pytorch_info_for_torch_requirement(
         if candidate_preferred != current_preferred:
             return candidate_preferred
 
-        # 忽略本地版本号 (如 +cu130), 使同一 torch 版本的不同设备类型组合进入后续比较
-        candidate_ver = Version.parse(_extract_torch_version(candidate.get("torch_ver") or "")).without_local()
-        current_ver = Version.parse(_extract_torch_version(current.get("torch_ver") or "")).without_local()
-        if candidate_ver != current_ver:
-            return candidate_ver > current_ver
+        candidate_ver = Version.parse(_extract_torch_version(candidate.get("torch_ver") or ""))
+        current_ver = Version.parse(_extract_torch_version(current.get("torch_ver") or ""))
+        candidate_public = candidate_ver.without_local()
+        current_public = current_ver.without_local()
+        if candidate_public != current_public:
+            return candidate_public > current_public
 
         candidate_xformers = candidate.get("xformers_ver") is not None
         current_xformers = current.get("xformers_ver") is not None
         if candidate_xformers != current_xformers:
             return candidate_xformers
 
-        return PYTORCH_DEVICE_LIST.index(candidate["dtype"]) > PYTORCH_DEVICE_LIST.index(current["dtype"])
+        if candidate["dtype"] != current["dtype"]:
+            return PYTORCH_DEVICE_LIST.index(candidate["dtype"]) > PYTORCH_DEVICE_LIST.index(current["dtype"])
+        return candidate_ver > current_ver
 
     if preferred_dtype is not None:
         preferred_dtype = resolve_pytorch_device_type(preferred_dtype)
