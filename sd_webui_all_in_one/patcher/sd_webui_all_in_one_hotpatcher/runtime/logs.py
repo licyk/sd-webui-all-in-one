@@ -1152,7 +1152,7 @@ class LogCapture:
         stream = self._stream_originals.get(stream_name) or _get_std_stream(stream_name)
         fd_capture = self._fd_captures.get(stream_name)
         if fd_capture is not None and fd_capture.installed:
-            return fd_capture.writeback_stream(stream)  # ty: ignore[invalid-return-type]
+            return fd_capture.writeback_stream(stream)  # ty: ignore[invalid-explicit-return]
         return stream
 
     def _install_fd_capture(self, *, force_only: bool = False, stream_name: str | None = None) -> bool:
