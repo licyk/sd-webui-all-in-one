@@ -1,9 +1,9 @@
 """Git 锁文件处理测试"""
 
 import os
-import threading
 import time
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
@@ -66,22 +66,15 @@ def test_update_waits_for_fresh_index_lock_to_be_released(monkeypatch, git_remot
     upstream, local = git_remote_pair
     new_commit = push_commit(upstream, "v2\n")
     lock = _make_lock(local / ".git" / "index.lock", 0)
-    monkeypatch.setattr(git_warpper, "LOCK_POLL_INTERVAL", 0.02)
-    unlinked = []
-    real_unlink = Path.unlink
+    subcommands = record_git_subcommands(monkeypatch)
+    # 模拟持锁方在更新流程第一次等待时释放锁。
+    clock = Mock(wraps=time)
+    clock.sleep.side_effect = lambda _seconds: lock.unlink()
+    monkeypatch.setattr(git_warpper, "time", clock)
 
-    def recording_unlink(self, *args, **kwargs):
-        unlinked.append(self)
-        return real_unlink(self, *args, **kwargs)
-
-    monkeypatch.setattr(Path, "unlink", recording_unlink)
-    timer = threading.Timer(0.2, lambda: real_unlink(lock))
-    timer.start()
-    try:
-        assert git_warpper.update(local, live=False) is True
-    finally:
-        timer.cancel()
-    assert unlinked == []
+    assert git_warpper.update(local, live=False) is True
+    clock.sleep.assert_called_once()
+    assert subcommands.count("reset") == 2
     assert real_git(local, "rev-parse", "HEAD") == new_commit
 
 
